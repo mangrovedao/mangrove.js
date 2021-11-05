@@ -1,0 +1,632 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, feature/**, issue/** ]
+    paths-ignore: 
+      - '**.md'
+  pull_request:
+    branches: [ master ]
+    paths-ignore: 
+      - '**.md'
+
+env:
+  NODE_ENV: test
+  working-directory: packages/mangrove-solidity
+
+jobs:
+  # ==== Job: Build and test commonlib.js ====
+  commonlib-js:
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/commonlib.js
+
+    defaults:
+      run:
+        working-directory: packages/commonlib.js
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # build
+    - name: commonlib.js - Build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "commonlib_js_built=true" >> $GITHUB_ENV    
+
+    # == run and report tests == 
+    # NOTE: Uncomment the following two steps, when commonlib.js has tests -->
+    # - name: commonlib.js - Tests
+    #   run: yarn run test
+
+    # - name: commonlib.js - Test Report
+    #   uses: dorny/test-reporter@v1
+    #   if: ${{ env.commonlib_js_built && (success() || failure()) }}
+    #   with:
+    #     name: commonlib.js - Tests                   # Name of the check run which will be created
+    #     path: packages/commonlib.js/commonlib-js-mocha-test-report.json # Path to test results
+    #     reporter: mocha-json                               # Format of test results
+
+    # save artifacts for later stages
+    - name: Zip output
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r commonlib-out.zip ${{env.working-directory}}/dist
+
+    - name: Cache commonlib.js output as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: commonlib-out.zip
+        path: commonlib-out.zip
+  # ==== End job: commonlib-js ====
+
+  # ==== Job: Build and test Mangrove Core
+  mangrove-solidity:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{env.working-directory}}
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == build ==
+    - name: Solidity Compile
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      # So we can fail-fast and drop the X Test Report steps, if build fails
+      # A tiny bit hacky, but it's simple and works
+      run: echo "mangrove_built=true" >> $GITHUB_ENV
+
+    # Run Solidity tests and report
+    - name: Mangrove Solidity Tests
+      run: yarn run test:solidity
+
+    - name: Mangrove Solidity Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.mangrove_built && (success() || failure()) }}
+      with:
+        name: Solidity Tests                  # Name of the check run which will be created
+        path: ${{env.working-directory}}/solidity-mocha-test-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # == Run test suite Ethereum mainnet ==
+    - name: Mangrove Ethereum mainnet Tests
+      run: yarn run test:ethereum-mainnet
+      env:
+        ETHEREUM_NODE_URL: ${{ secrets.ETHEREUM_NODE_URL }}
+
+    - name: Mangrove Ethereum mainnet Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.mangrove_built && (success() || failure()) }}
+      with:
+        name: Ethereum mainnet Tests          # Name of the check run which will be created
+        path: ${{env.working-directory}}/ethereum-mainnet-mocha-test-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # == Run test suite Polygon mainnet == 
+    - name: Mangrove Polygon mainnet Tests
+      run: yarn run test:polygon-mainnet
+      env:
+        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
+
+    - name: Mangrove Polygon mainnet Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.mangrove_built && (success() || failure()) }}
+      with:
+        name: Polygon mainnet Tests           # Name of the check run which will be created
+        path: ${{env.working-directory}}/polygon-mainnet-mocha-test-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # save artifacts for later stages
+    - name: Zip output
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r mangrove-solidity-out.zip ${{env.working-directory}}/build ${{env.working-directory}}/dist
+
+    - name: Cache mangrove-solidity output as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: mangrove-solidity-out.zip
+        path: mangrove-solidity-out.zip
+
+  # ==== End job mangrove-solidity ====
+
+  # ==== Job: Build Mangrove documentation ====
+  mangrove-solidity-doc:
+    needs: mangrove-solidity
+    
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{env.working-directory}}    
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == create and upload docs ==
+    - run: yarn run doc
+
+    - name: Archive documentation
+      uses: actions/upload-artifact@v2
+      with:
+        name: documentation
+        path: ${{env.working-directory}}/doc/
+
+  # ==== End job mangrove-solidity-doc ====
+
+  # ==== Job: Build and test hardhat-mangrove ====
+  hardhat-mangrove:
+    needs: mangrove-solidity
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/hardhat-mangrove
+
+    defaults:
+      run:
+        working-directory: packages/hardhat-mangrove
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == download artefact ==
+    - name: Download cached mangrove-solidity artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-solidity-out.zip
+
+    - name: Unzip artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-solidity-out.zip
+
+    # build
+    - name: hardhat-mangrove - Build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "hardhat_mangrove_built=true" >> $GITHUB_ENV    
+
+    # == run and report tests == 
+    # NOTE: Uncomment the following two steps, when hardhat-mangrove has tests -->
+    # - name: hardhat-mangrove - Tests
+    #   run: yarn run test
+
+    # - name: hardhat-mangrove - Test Report
+    #   uses: dorny/test-reporter@v1
+    #   if: ${{ env.hardhat_mangrove_built && (success() || failure()) }}
+    #   with:
+    #     name: hardhat-mangrove - Tests                   # Name of the check run which will be created
+    #     path: packages/hardhat-mangrove/integration-tests-report.json # Path to test results
+    #     reporter: mocha-json                               # Format of test results
+
+    # save artifacts for later stages
+    # NOTE: Uncomment the following two steps, if/when hardhat-mangrove has build artefacts -->
+    # - name: Zip output
+    #   uses: montudor/action-zip@v1
+    #   with: 
+    #     args: zip -qq -r hardhat-mangrove-out.zip ${{env.working-directory}}/dist
+
+    # - name: Cache hardhat-mangrove output as artifact
+    #   uses: actions/upload-artifact@v2
+    #   with:
+    #     name: hardhat-mangrove-out.zip
+    #     path: hardhat-mangrove-out.zip
+  # ==== End job: hardhat-mangrove ====
+
+  # ==== Job: Build and test mangrove.js ====
+  mangrove-js:
+    needs: [mangrove-solidity, hardhat-mangrove]
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/mangrove.js
+
+    defaults:
+      run:
+        working-directory: packages/mangrove.js
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == download and unzip artefacts ==
+    - name: Download cached mangrove-solidity artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-solidity-out.zip
+
+    - name: Unzip mangrove-solidity artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-solidity-out.zip
+
+    # NOTE: Uncomment the following two steps, if/when hardhat-mangrove has build artefacts -->
+    # - name: Download cached hardhat-mangrove artifact
+    #   uses: actions/download-artifact@v2
+    #   with:
+    #     name: hardhat-mangrove-out.zip
+
+    # - name: Unzip hardhat-mangrove artifact
+    #   uses: montudor/action-zip@v1
+    #   with:
+    #     args: unzip -qq hardhat-mangrove-out.zip
+
+    # == build == 
+    - name: Mangrove.js build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
+
+    # == run and report tests == 
+    - name: Mangrove.js Tests
+      run: yarn run test
+
+    - name: Mangrove.js Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.mangrove_js_built && (success() || failure()) }}
+      with:
+        name: Mangrove.js Tests               # Name of the check run which will be created
+        path: ${{env.working-directory}}/integration-tests-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # save artifacts for later stages
+    - name: Zip output
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r mangrove-js-out.zip ${{env.working-directory}}/dist
+
+    - name: Cache mangrove.js output as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: mangrove-js-out.zip
+        path: mangrove-js-out.zip
+
+  # ==== End job: mangrove-js ====
+        
+  # ==== Job: Build and test cleaning-bot ====
+  cleaning-bot:
+    needs: [commonlib-js, mangrove-solidity, hardhat-mangrove, mangrove-js]
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/cleaning-bot
+
+    defaults:
+      run:
+        working-directory: packages/cleaning-bot
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == download and unzip artefacts ==
+    - name: Download cached mangrove-solidity artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-solidity-out.zip
+
+    - name: Unzip mangrove-solidity artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-solidity-out.zip
+
+    # NOTE: Uncomment the following two steps, if/when hardhat-mangrove has build artefacts -->
+    # - name: Download cached hardhat-mangrove artifact
+    #   uses: actions/download-artifact@v2
+    #   with:
+    #     name: hardhat-mangrove-out.zip
+
+    # - name: Unzip hardhat-mangrove artifact
+    #   uses: montudor/action-zip@v1
+    #   with:
+    #     args: unzip -qq hardhat-mangrove-out.zip
+
+    - name: Download cached mangrove.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-js-out.zip
+
+    - name: Unzip mangrove.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-js-out.zip
+
+    - name: Download cached commonlib.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: commonlib-out.zip
+
+    - name: Unzip commonlib.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq commonlib-out.zip
+
+    # == build ==
+
+    - name: Cleaning Bot - Build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "cleaning_bot_built=true" >> $GITHUB_ENV    
+
+    # == run and report tests == 
+    - name: Cleaning Bot - Tests
+      run: yarn run test
+
+    - name: Cleaning Bot - Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.cleaning_bot_built && (success() || failure()) }}
+      with:
+        name: Cleaning Bot - Tests                   # Name of the check run which will be created
+        path: packages/cleaning-bot/integration-tests-report.json # Path to test results
+        reporter: mocha-json                               # Format of test results
+
+  # ==== End job: cleaning-bot ====        
+
+  # ==== Job: Build and test updategas-bot ====
+  updategas-bot:
+    needs: [commonlib-js, mangrove-solidity, hardhat-mangrove, mangrove-js]
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/updategas-bot
+
+    defaults:
+      run:
+        working-directory: packages/updategas-bot
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == download and unzip artefacts ==
+    - name: Download cached mangrove-solidity artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-solidity-out.zip
+
+    - name: Unzip mangrove-solidity artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-solidity-out.zip
+
+    # NOTE: Uncomment the following two steps, if/when hardhat-mangrove has build artefacts -->
+    # - name: Download cached hardhat-mangrove artifact
+    #   uses: actions/download-artifact@v2
+    #   with:
+    #     name: hardhat-mangrove-out.zip
+
+    # - name: Unzip hardhat-mangrove artifact
+    #   uses: montudor/action-zip@v1
+    #   with:
+    #     args: unzip -qq hardhat-mangrove-out.zip
+
+    - name: Download cached mangrove.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-js-out.zip
+
+    - name: Unzip mangrove.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-js-out.zip
+
+    - name: Download cached commonlib.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: commonlib-out.zip
+
+    - name: Unzip commonlib.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq commonlib-out.zip
+
+    # == build ==
+
+    - name: Update Gas Bot - Build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "updategas_bot_built=true" >> $GITHUB_ENV    
+
+    # == run and report tests == 
+    - name: Update Gas Bot - Tests
+      run: yarn run test
+
+    - name: Update Gas Bot - Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.updategas_bot_built && (success() || failure()) }}
+      with:
+        name: Update Gas Bot - Tests                   # Name of the check run which will be created
+        path: packages/updategas-bot/integration-tests-report.json # Path to test results
+        reporter: mocha-json                               # Format of test results
+
+  # ==== End job: updategas-bot ====

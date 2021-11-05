@@ -1,0 +1,203 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_governance",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_initialMutator",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "outbound_tkn",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "inbound_tkn",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offerId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "offer",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "wants",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gives",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "offerDetail",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "global",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "local",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct MgvLib.SingleOrder",
+        "name": "sor",
+        "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "taker",
+        "type": "address"
+      }
+    ],
+    "name": "notifyFail",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "outbound_tkn",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "inbound_tkn",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offerId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "offer",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "wants",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gives",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "offerDetail",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "global",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "local",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct MgvLib.SingleOrder",
+        "name": "sor",
+        "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "taker",
+        "type": "address"
+      }
+    ],
+    "name": "notifySuccess",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      }
+    ],
+    "name": "read",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "gasprice",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "density",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "gasPrice",
+        "type": "uint256"
+      }
+    ],
+    "name": "setGasPrice",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_mutator",
+        "type": "address"
+      }
+    ],
+    "name": "setMutator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

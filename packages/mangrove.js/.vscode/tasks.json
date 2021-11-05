@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "build",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: build",
+			"detail": "npm run lint && ./node_modules/.bin/tsc && npm run rollup"
+		},
+		{
+			"type": "npm",
+			"script": "test",
+			"group": "test",
+			"problemMatcher": [],
+			"label": "npm: test",
+			"detail": "./node_modules/.bin/nyc --reporter=lcov ./node_modules/.bin/mocha -r ts-node/register ./test/index.js  --timeout 60000 -- -g market",
+		}
+	]
+}

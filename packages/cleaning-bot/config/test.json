@@ -1,0 +1,6 @@
+{
+  "log": {
+    "logLevel": "error"
+  },
+  "markets": [["WETH", "DAI"]]
+}

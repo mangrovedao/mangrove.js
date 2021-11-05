@@ -1,0 +1,3 @@
+# Ignore artifacts:
+.DS_Store
+node_modules

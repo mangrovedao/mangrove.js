@@ -1,0 +1,51 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract AbstractMangrove",
+        "name": "_MGV",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[4][]",
+        "name": "targets",
+        "type": "uint256[4][]"
+      },
+      {
+        "internalType": "bool",
+        "name": "fillWants",
+        "type": "bool"
+      }
+    ],
+    "name": "collect",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "bal",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]

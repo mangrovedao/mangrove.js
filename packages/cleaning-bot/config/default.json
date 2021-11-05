@@ -1,0 +1,10 @@
+{
+  "log": {
+    "logLevel": "info"
+  },
+  "markets": [
+    ["WETH", "DAI"],
+    ["WETH", "USDC"],
+    ["DAI", "USDC"]
+  ]
+}

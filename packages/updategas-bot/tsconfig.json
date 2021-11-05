@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2020",
+    "strict": true,
+    "noImplicitAny": true,
+    "noErrorTruncation": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "dist/nodejs",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

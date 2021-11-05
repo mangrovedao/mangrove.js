@@ -1,0 +1,35 @@
+{
+  "name": "@giry/hardhat-mangrove",
+  "version": "0.0.1",
+  "author": "Mangrove DAO",
+  "description": "Hardhat-based development tools for Mangrove",
+  "license": "MIT",
+  "scripts": {
+    "precommit": "lint-staged",
+    "prepack": "build",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "build-this-package": "",
+    "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
+    "clean-this-package": "",
+    "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
+    "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
+    "test": "echo TODO test $npm_package_name"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  },
+  "dependencies": {
+    "@giry/mangrove-solidity": "workspace:*",
+    "config": "^3.3.6",
+    "ethers": "^5.4.7",
+    "hardhat": "^2.6.5",
+    "mocha": "^9.1.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "lint-staged": "^11.1.2",
+    "prettier": "2.3.2",
+    "prettier-eslint": "^13.0.0"
+  }
+}

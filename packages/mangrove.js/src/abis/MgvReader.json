@@ -1,0 +1,336 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_mgv",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      }
+    ],
+    "name": "config",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "monitor",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "useOracle",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "notify",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gasprice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gasmax",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "dead",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct MgvLib.Global",
+        "name": "global",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "density",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "overhead_gasbase",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offer_gasbase",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "lock",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "best",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "last",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct MgvLib.Local",
+        "name": "local",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ofr_gasreq",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ofr_gasprice",
+        "type": "uint256"
+      }
+    ],
+    "name": "getProvision",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fromId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxOffers",
+        "type": "uint256"
+      }
+    ],
+    "name": "offerList",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "prev",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "next",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gives",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "wants",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gasprice",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct MgvLib.Offer[]",
+        "name": "",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "maker",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gasreq",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "overhead_gasbase",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offer_gasbase",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct MgvLib.OfferDetail[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fromId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxOffers",
+        "type": "uint256"
+      }
+    ],
+    "name": "offerListEndPoints",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "startId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "length",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fromId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxOffers",
+        "type": "uint256"
+      }
+    ],
+    "name": "packedOfferList",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

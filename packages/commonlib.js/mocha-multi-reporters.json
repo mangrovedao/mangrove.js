@@ -1,0 +1,6 @@
+{
+  "reporterEnabled": "spec, @espendk/json-file-reporter",
+  "espendkJsonFileReporterReporterOptions": {
+    "output": "commonlib-js-mocha-test-report.json"
+  }
+}
