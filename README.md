@@ -4,6 +4,9 @@ This is the Mangrove monorepo which contains most of the packages developed for 
 
 Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate repos. The rules for which packages go where are not hard and fast; On the contrary, we are experimenting with different structures, in order to figure out what the pros and cons are in our specific circumstances.
 
+# Documentation
+If you are looking for the Mangrove developer documentation, you can find it [here](https://mangrove-1.gitbook.io/docs/).
+
 # Prerequisites
 You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Yarn 2 workspaces](https://yarnpkg.com/features/workspaces) to manage dependencies and run commands on multiple packages.
 
