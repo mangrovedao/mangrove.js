@@ -28,7 +28,7 @@ const maxGasReq = BigNumber.from(2).pow(256).sub(1);
  * A cleaner class for a single Mangrove market which snipes offers that fail and collects the bounty.
  *
  * The following strategy is used:
- * - Offers are simulated using `STATICCALL`.
+ * - Offers are simulated using `callStatic`.
  * - Snipes with `takerGives = 0` are used for simplicity. Thus, offers that only fail for non-zero trades will not be cleaned. A more sophisticated implementation might use flashloans or similar to clean such offers.
  * - Profitability of cleaning is currently not taken into account, i.e. any failing offer will be cleaned even though the gas costs may outweigh the bounty. Some code for estimating profitability, however, is present and is expected to be completed at a later stage.
  */
