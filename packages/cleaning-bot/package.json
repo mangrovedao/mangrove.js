@@ -11,10 +11,10 @@
     "bot"
   ],
   "scripts": {
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "precommit": "lint-staged",
-    "format": "prettier --write --ignore-unknown --loglevel warn .",
-    "build-this-package": "yarn run format && tsc",
+    "prepack": "yarn build",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "build-this-package": "tsc",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "clean-this-package": "rimraf dist",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
