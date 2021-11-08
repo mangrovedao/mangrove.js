@@ -42,7 +42,7 @@
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
     "@ethersproject/hardware-wallets": "^5.4.0",
-    "@giry/hardhat-mangrove": "workspace:*",
+    "@giry/hardhat-utils": "workspace:*",
     "@giry/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@types/chai": "^4.2.22",

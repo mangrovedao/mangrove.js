@@ -65,7 +65,7 @@
     "@ethersproject/bytes": "^5.0.0",
     "@ethersproject/hardware-wallets": "^5.0.0",
     "@ethersproject/providers": "^5.0.0",
-    "@giry/hardhat-mangrove": "workspace:*",
+    "@giry/hardhat-utils": "workspace:*",
     "@giry/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@rollup/plugin-commonjs": "^20.0.0",

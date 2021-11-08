@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const helpers = require("../util/helpers");
-const hardhatUtils = require("@giry/hardhat-mangrove/hardhat-utils");
+const hardhatUtils = require("@giry/hardhat-utils/hardhat-utils");
 
 const main = async (opts) => {
   console.log("Mnemonic:");
