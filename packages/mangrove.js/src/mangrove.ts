@@ -1,5 +1,3 @@
-// Copyright (c) 2021 Giry SAS. All rights reserved.
-// SPDX-License-Identifier:	BSD-2-Clause
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import { Market } from "./market";
