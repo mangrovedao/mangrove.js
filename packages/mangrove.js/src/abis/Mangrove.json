@@ -959,6 +959,11 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1007,6 +1012,11 @@
       {
         "internalType": "uint256",
         "name": "takerGave",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bounty",
         "type": "uint256"
       }
     ],
@@ -1507,6 +1517,11 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1555,6 +1570,11 @@
       {
         "internalType": "uint256",
         "name": "takerGave",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bounty",
         "type": "uint256"
       }
     ],
