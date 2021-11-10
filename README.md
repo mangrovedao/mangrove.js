@@ -16,7 +16,7 @@ You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Y
 # Usage
 The following sections describe the most common use cases in this monorepo. For more details on how to use Yarn and Yarn workspaces, see the [Yarn 2 CLI documentation](https://yarnpkg.com/cli/install).
 
-⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2. Currently (November 2021), most examples and much tool support is implicitly engineered towards Yarn 1.
+⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2+. Currently (November 2021), most examples and much tool support is implicitly engineered towards Yarn 1.
 
 ## Initial monorepo setup
 After first cloning the repo, you should run `yarn install` in the root folder.
