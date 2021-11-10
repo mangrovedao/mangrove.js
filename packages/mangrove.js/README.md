@@ -36,8 +36,7 @@ import { Mangrove } from "...";
 
 ```js
 const main = async () => {
-  // TODO add rinkeby address
-  const mgv = await Mangrove.connect("rinkeby");
+  const mgv = await Mangrove.connect("maticmum"); // Mumbai testnet
 
   // Connect to ETHUSDC market
   const market = mgv.market({ base: "ETH", quote: "USDC" });
@@ -128,7 +127,7 @@ TODO include transaction options (see here)[https://github.com/compound-finance/
 
 Tests are available in `./test/integration/*.integration.test.js`. Methods are tested using an in-process local chain using [Hardhat](https://hardhat.org/). For free archive node access, get a provider URL from [Alchemy](http://alchemy.com/).
 
-```
+```bash
 ## Run all tests
 yarn test
 
@@ -140,7 +139,7 @@ yarn test -- -g 'subscribes'
 
 Tests are based on [Mocha](https://mochajs.org/). Mocha configuration can be found in `./test/mocha/config`.
 
-The integration tests use the Root Hooks provided by `@giry/hardhat-mangrove` which start an in-process Hardhat chain with Mangrove deployed and add a matching `Provider` to the Mocha `Context`.
+The integration tests use the Root Hooks provided by `@giry/hardhat-utils` which start an in-process Hardhat chain with Mangrove deployed and add a matching `Provider` to the Mocha `Context`.
 
 ### Utility test scripts
 
@@ -177,8 +176,12 @@ Orderbook filler is now running.
 
 ## Build for Node.js & Web Browser
 
+```shell
+$ git clone ...
+$ cd <Mangrove clone>
+$ yarn install              # <- Only required after initial clone, afterwards 'yarn build' is sufficient
+$ cd packages/mangrove.js
+$ yarn build
 ```
-git clone ...
-cd packages/mangrove.js
-yarn build
-```
+
+The build artifacts will be placed in `./dist/nodejs` and `./dist/browser`.

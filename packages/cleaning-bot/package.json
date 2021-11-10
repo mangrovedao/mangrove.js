@@ -11,10 +11,10 @@
     "bot"
   ],
   "scripts": {
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "precommit": "lint-staged",
-    "format": "prettier --write --ignore-unknown --loglevel warn .",
-    "build-this-package": "yarn run format && tsc",
+    "prepack": "yarn build",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "build-this-package": "tsc",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "clean-this-package": "rimraf dist",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
@@ -42,7 +42,7 @@
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
     "@ethersproject/hardware-wallets": "^5.4.0",
-    "@giry/hardhat-mangrove": "workspace:*",
+    "@giry/hardhat-utils": "workspace:*",
     "@giry/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@types/chai": "^4.2.22",
