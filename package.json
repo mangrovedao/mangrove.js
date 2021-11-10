@@ -8,11 +8,16 @@
     },
     "scripts": {
         "postinstall": "husky install",
+        "prepublishOnly": "pinst --disable",
+        "postpublish": "pinst --enable",
         "build": "yarn install && yarn workspaces foreach --topological-dev run build-this-package",
         "clean": "yarn workspaces foreach --topological-dev run clean-this-package",
         "test": "yarn workspaces foreach --topological-dev run test"
     },
     "devDependencies": {
         "husky": "^7.0.2"
+    },
+    "dependencies": {
+        "pinst": "^2.1.6"
     }
 }
