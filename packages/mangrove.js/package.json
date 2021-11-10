@@ -7,8 +7,8 @@
   "main": "dist/nodejs/index.js",
   "scripts": {
     "precommit": "lint-staged",
-    "lint": "npx eslint ./src/*.ts",
     "prepack": "yarn run build",
+    "lint": "npx eslint ./src/*.ts",
     "build-this-package": "yarn run lint && yarn run get-mangrove-abis && yarn run typechain && tsc && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@giry/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
@@ -22,8 +22,8 @@
     "publish_minor": "npm version minor && npm publish --access public",
     "publish_major": "npm version major && npm publish --access public",
     "rollup": "rollup -c rollup.config.ts",
-    "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
+    "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json",
     "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\""
   },
   "files": [
