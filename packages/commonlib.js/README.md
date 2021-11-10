@@ -38,7 +38,7 @@ Tests are executed with
 $ yarn test
 ```
 
-When changing this library, you should build and test the whole repo, to ensure that packages depending on commonlib.js still work:
+When making changes in this library, you should build and test the whole repo, to ensure that packages depending on commonlib.js still work:
 
 ```shell
 $ cd <Mangrove monorepo>
