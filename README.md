@@ -32,7 +32,7 @@ This
 - installs Husky Git hooks.
 
 
-NB: Though the `yarn build` (described next) also runs `yarn install`, Yarn fails with an error if `yarn install` has not been run once. So this must be done after cloning; Afterwards `yarn install` should not be required again.
+NB: Though the `yarn build` (described next) also runs `yarn install`, Yarn fails with an error if `yarn install` has not been run once. So this must be done after cloning. Afterwards `yarn install` should not be required again.
 
 
 ## Update monorepo after clone, pull etc.
@@ -285,3 +285,18 @@ Yarn 2 has introduced an alternative to `node_modules` called "Plug'n'Play". Whi
 We use [Husky](https://typicode.github.io/husky/#/) to manage our Git hooks.
 
 The Git hook scripts are in the `.husky/` folder.
+
+## Husky and Heroku
+
+We currently deploy several off-chain packages to Heroku. To disable Husky from running on a Heroku deploy, we use [pinst](https://github.com/typicode/pinst) package and two heroku-specific `scripts` in the top-level `package.json`:         
+
+```json
+{
+  ...
+    "heroku-postbuild": "pinst --disable && yarn build",
+    "heroku-cleanup": "pinst --enable",
+  ...
+}
+```
+
+Note that when Heroku detects a `heroku-postbuild` it [does *not* run the `build` script](https://devcenter.heroku.com/articles/nodejs-support#customizing-the-build-process), so we need to invoke that specifically.
