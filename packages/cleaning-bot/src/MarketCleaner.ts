@@ -71,58 +71,63 @@ export class MarketCleaner {
 
       return;
     }
-    this.#isCleaning = true;
 
-    // FIXME this should be a property/method on Market
-    if (!(await this.#isMarketOpen())) {
-      logger.warn(`Market is closed so ignoring request to clean`, {
+    // Wrap in a try-finally to ensure #isCleaning is reset to false
+    try {
+      this.#isCleaning = true;
+
+      // FIXME this should be a property/method on Market
+      if (!(await this.#isMarketOpen())) {
+        logger.warn(`Market is closed so ignoring request to clean`, {
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          contextInfo: contextInfo,
+        });
+        return;
+      }
+
+      logger.info("Cleaning market", {
         base: this.#market.base.name,
         quote: this.#market.quote.name,
         contextInfo: contextInfo,
       });
-      return;
+
+      // TODO I think this is not quite EIP-1559 terminology - should fix
+      const gasPrice = await this.#estimateGasPrice(this.#provider);
+      const minerTipPerGas = this.#estimateMinerTipPerGas(
+        this.#provider,
+        contextInfo
+      );
+
+      const { asks, bids } = await this.#market.requestBook();
+      logger.info("Order book retrieved", {
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        contextInfo: contextInfo,
+        data: {
+          asksCount: asks.length,
+          bidsCount: bids.length,
+        },
+      });
+
+      const asksCleaningPromise = this.#cleanOfferList(
+        asks,
+        "asks",
+        gasPrice,
+        minerTipPerGas,
+        contextInfo
+      );
+      const bidsCleaningPromise = this.#cleanOfferList(
+        bids,
+        "bids",
+        gasPrice,
+        minerTipPerGas,
+        contextInfo
+      );
+      await Promise.all([asksCleaningPromise, bidsCleaningPromise]);
+    } finally {
+      this.#isCleaning = false;
     }
-
-    logger.info("Cleaning market", {
-      base: this.#market.base.name,
-      quote: this.#market.quote.name,
-      contextInfo: contextInfo,
-    });
-
-    // TODO I think this is not quite EIP-1559 terminology - should fix
-    const gasPrice = await this.#estimateGasPrice(this.#provider);
-    const minerTipPerGas = this.#estimateMinerTipPerGas(
-      this.#provider,
-      contextInfo
-    );
-
-    const { asks, bids } = await this.#market.requestBook();
-    logger.info("Order book retrieved", {
-      base: this.#market.base.name,
-      quote: this.#market.quote.name,
-      contextInfo: contextInfo,
-      data: {
-        asksCount: asks.length,
-        bidsCount: bids.length,
-      },
-    });
-
-    const asksCleaningPromise = this.#cleanOfferList(
-      asks,
-      "asks",
-      gasPrice,
-      minerTipPerGas,
-      contextInfo
-    );
-    const bidsCleaningPromise = this.#cleanOfferList(
-      bids,
-      "bids",
-      gasPrice,
-      minerTipPerGas,
-      contextInfo
-    );
-    await Promise.all([asksCleaningPromise, bidsCleaningPromise]);
-    this.#isCleaning = false;
   }
 
   async #isMarketOpen(): Promise<boolean> {
