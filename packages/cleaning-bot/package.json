@@ -4,7 +4,7 @@
   "author": "Mangrove DAO",
   "description": "A simple order book cleaning bot for Mangrove",
   "license": "BSD-2-Clause",
-  "main": "dist/index.js",
+  "main": "build/index.js",
   "keywords": [
     "Mangrove",
     "keeper",
@@ -16,7 +16,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "build-this-package": "tsc",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
-    "clean-this-package": "rimraf dist",
+    "clean-this-package": "rimraf build",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "npm-run-all \"test:*\"",
