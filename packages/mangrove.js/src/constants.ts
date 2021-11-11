@@ -5,14 +5,15 @@ export const addresses = {
   kovan: {},
   ropsten: {},
   hardhat: require("./hardhatAddresses.json"),
-  mumbai: {
+  maticmum: {
     Mangrove: "0xF15A2ada64A9C3C14ca11359c8F1d22B063DB2AD",
     MgvReader: "0x5B2F8058Df0A0b7744FDb4fD0885FbCD2394194C",
+    MgvCleaner: "0x3638ecc06526d8b849b06583a5a6c74f8cecff9f",
     MgvOracle: "0xc74E3658C46B669E54449b0b371Fab6E070d3380",
     DAI: "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F",
     USDC: "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e",
-    WETH: "0x3C68CE8504087f89c640D02d133646d98e64ddd9"
-  }
+    WETH: "0x3C68CE8504087f89c640D02d133646d98e64ddd9",
+  },
 };
 
 export const decimals = {

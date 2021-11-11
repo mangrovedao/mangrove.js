@@ -1,0 +1,17 @@
+{
+  "logLevel": "LOG_LEVEL",
+  "acceptableGasGapToOracle": {
+    "__name": "ACCEPTABLE_GAS_GAP_TO_ORACLE",
+    "__format": "number"
+  },
+  "constantOracleGasPrice": {
+    "__name": "CONSTANT_ORACLE_GAS_PRICE",
+    "__format": "number"
+  },
+  "oracleURL": "ORACLE_URL",
+  "oracleURL_Key": "ORACLE_URL_KEY",
+  "runEveryXHours": {
+    "__name": "RUN_EVERY_X_HOURS",
+    "__format": "number"
+  }
+}
