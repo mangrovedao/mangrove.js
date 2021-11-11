@@ -159,17 +159,21 @@ export class MarketCleaner {
     minerTipPerGas: Big,
     contextInfo?: string
   ): Promise<void> {
-    const willOfferFail = await this.#willOfferFail(offer, ba, contextInfo);
-    if (!willOfferFail) {
+    const { willOfferFail, bounty } = await this.#willOfferFail(
+      offer,
+      ba,
+      contextInfo
+    );
+    if (!willOfferFail || bounty === undefined || bounty.eq(0)) {
       return;
     }
 
     const estimates = await this.#estimateCostsAndGains(
       offer,
       ba,
+      bounty,
       gasPrice,
-      minerTipPerGas,
-      contextInfo
+      minerTipPerGas
     );
     logger.info("Collecting offer regardless of profitability", {
       base: this.#market.base.name,
@@ -198,19 +202,20 @@ export class MarketCleaner {
     offer: Offer,
     ba: BA,
     contextInfo?: string
-  ): Promise<boolean> {
+  ): Promise<{ willOfferFail: boolean; bounty?: Big }> {
     // FIXME move to mangrove.js API
     return this.#market.mgv.cleanerContract.callStatic
       .collect(...this.#createCollectParams(ba, offer))
-      .then(() => {
+      .then((bounty) => {
         logger.debug("Static collect of offer succeeded", {
           base: this.#market.base.name,
           quote: this.#market.quote.name,
           ba: ba,
           offer: offer,
           contextInfo: contextInfo,
+          data: { bounty },
         });
-        return true;
+        return { willOfferFail: true, bounty: Big(bounty.toString()) };
       })
       .catch((e) => {
         logger.debug("Static collect of offer failed", {
@@ -221,7 +226,7 @@ export class MarketCleaner {
           contextInfo: contextInfo,
           data: e,
         });
-        return false;
+        return { willOfferFail: false };
       });
   }
 
@@ -332,11 +337,10 @@ export class MarketCleaner {
   async #estimateCostsAndGains(
     offer: Offer,
     ba: BA,
+    bounty: Big,
     gasPrice: Big,
-    minerTipPerGas: Big,
-    contextInfo?: string
+    minerTipPerGas: Big
   ): Promise<OfferCleaningEstimates> {
-    const bounty = this.#estimateBounty(offer, ba, contextInfo);
     const gas = await this.#estimateGas(offer, ba);
     const totalCost = gas.mul(gasPrice.plus(minerTipPerGas));
     const netResult = bounty.minus(totalCost);
@@ -362,21 +366,6 @@ export class MarketCleaner {
       {
         base: this.#market.base.name,
         quote: this.#market.quote.name,
-        contextInfo: contextInfo,
-      }
-    );
-    return Big(1);
-  }
-
-  #estimateBounty(offer: Offer, ba: BA, contextInfo?: string): Big {
-    // TODO Implement
-    logger.debug(
-      "Using hard coded bounty (1) estimate because #estimateBounty is not implemented",
-      {
-        base: this.#market.base.name,
-        quote: this.#market.quote.name,
-        ba: ba,
-        offer: offer,
         contextInfo: contextInfo,
       }
     );
