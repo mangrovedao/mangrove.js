@@ -17,7 +17,7 @@ const consoleLogFormat = format.printf(
   }
 );
 
-const logLevel = config.get<string>("log.logLevel");
+const logLevel = config.get<string>("logLevel");
 export const logger: BetterLogger = createLogger(consoleLogFormat, logLevel);
 
 export default logger;
