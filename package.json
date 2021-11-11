@@ -8,7 +8,7 @@
     },
     "scripts": {
         "postinstall": "husky install",
-        "heroku-postbuild": "pinst --disable",
+        "heroku-postbuild": "pinst --disable && yarn build",
         "heroku-cleanup": "pinst --enable",
         "build": "yarn install && yarn workspaces foreach --topological-dev run build-this-package",
         "clean": "yarn workspaces foreach --topological-dev run clean-this-package",
