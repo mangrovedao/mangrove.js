@@ -3,18 +3,14 @@ import { Market, Offer } from "@giry/mangrove-js/dist/nodejs/market";
 import { MgvToken } from "@giry/mangrove-js/dist/nodejs/mgvtoken";
 import { Provider } from "@ethersproject/providers";
 import { BigNumber, BigNumberish } from "ethers";
-import Big from "big.js";
-
-Big.DP = 20; // precision when dividing
-Big.RM = Big.roundHalfUp; // round to nearest
 
 type OfferCleaningEstimates = {
-  bounty: Big; // wei
-  gas: Big;
-  gasPrice: Big; // wei
-  minerTipPerGas: Big; // wei
-  totalCost: Big; // wei
-  netResult: Big; // wei
+  bounty: BigNumber; // wei
+  gas: BigNumber;
+  gasPrice: BigNumber; // wei
+  minerTipPerGas: BigNumber; // wei
+  totalCost: BigNumber; // wei
+  netResult: BigNumber; // wei
 };
 
 // FIXME Move to mangrove.js
@@ -139,8 +135,8 @@ export class MarketCleaner {
   async #cleanOfferList(
     offerList: Offer[],
     ba: BA,
-    gasPrice: Big,
-    minerTipPerGas: Big,
+    gasPrice: BigNumber,
+    minerTipPerGas: BigNumber,
     contextInfo?: string
   ): Promise<void[]> {
     const cleaningPromises: Promise<void>[] = [];
@@ -155,8 +151,8 @@ export class MarketCleaner {
   async #cleanOffer(
     offer: Offer,
     ba: BA,
-    gasPrice: Big,
-    minerTipPerGas: Big,
+    gasPrice: BigNumber,
+    minerTipPerGas: BigNumber,
     contextInfo?: string
   ): Promise<void> {
     const { willOfferFail, bounty } = await this.#willOfferFail(
@@ -202,7 +198,7 @@ export class MarketCleaner {
     offer: Offer,
     ba: BA,
     contextInfo?: string
-  ): Promise<{ willOfferFail: boolean; bounty?: Big }> {
+  ): Promise<{ willOfferFail: boolean; bounty?: BigNumber }> {
     // FIXME move to mangrove.js API
     return this.#market.mgv.cleanerContract.callStatic
       .collect(...this.#createCollectParams(ba, offer))
@@ -215,7 +211,7 @@ export class MarketCleaner {
           contextInfo: contextInfo,
           data: { bounty },
         });
-        return { willOfferFail: true, bounty: Big(bounty.toString()) };
+        return { willOfferFail: true, bounty: bounty };
       })
       .catch((e) => {
         logger.debug("Static collect of offer failed", {
@@ -337,13 +333,13 @@ export class MarketCleaner {
   async #estimateCostsAndGains(
     offer: Offer,
     ba: BA,
-    bounty: Big,
-    gasPrice: Big,
-    minerTipPerGas: Big
+    bounty: BigNumber,
+    gasPrice: BigNumber,
+    minerTipPerGas: BigNumber
   ): Promise<OfferCleaningEstimates> {
     const gas = await this.#estimateGas(offer, ba);
-    const totalCost = gas.mul(gasPrice.plus(minerTipPerGas));
-    const netResult = bounty.minus(totalCost);
+    const totalCost = gas.mul(gasPrice.add(minerTipPerGas));
+    const netResult = bounty.sub(totalCost);
     return {
       bounty,
       gas,
@@ -354,12 +350,12 @@ export class MarketCleaner {
     };
   }
 
-  async #estimateGasPrice(provider: Provider): Promise<Big> {
+  async #estimateGasPrice(provider: Provider): Promise<BigNumber> {
     const gasPrice = await provider.getGasPrice();
-    return Big(gasPrice.toString());
+    return gasPrice;
   }
 
-  #estimateMinerTipPerGas(provider: Provider, contextInfo?: string): Big {
+  #estimateMinerTipPerGas(provider: Provider, contextInfo?: string): BigNumber {
     // TODO Implement
     logger.debug(
       "Using hard coded miner tip (1) because #estimateMinerTipPerGas is not implemented",
@@ -369,14 +365,14 @@ export class MarketCleaner {
         contextInfo: contextInfo,
       }
     );
-    return Big(1);
+    return BigNumber.from(1);
   }
 
-  async #estimateGas(offer: Offer, ba: BA): Promise<Big> {
+  async #estimateGas(offer: Offer, ba: BA): Promise<BigNumber> {
     const gasEstimate =
       await this.#market.mgv.cleanerContract.estimateGas.collect(
         ...this.#createCollectParams(ba, offer)
       );
-    return Big(gasEstimate.toString());
+    return gasEstimate;
   }
 }
