@@ -159,7 +159,7 @@ export class MarketCleaner {
       ba,
       contextInfo
     );
-    if (!willOfferFail || bounty === undefined) {
+    if (!willOfferFail || bounty === undefined || bounty.eq(0)) {
       return;
     }
 
