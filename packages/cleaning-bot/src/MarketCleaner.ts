@@ -171,7 +171,7 @@ export class MarketCleaner {
       gasPrice,
       minerTipPerGas
     );
-    logger.info("Collecting offer regardless of profitability", {
+    logger.debug("Collecting offer regardless of profitability", {
       base: this.#market.base.name,
       quote: this.#market.quote.name,
       ba: ba,
@@ -248,6 +248,13 @@ export class MarketCleaner {
           base: this.#market.base.name,
           quote: this.#market.quote.name,
           ba: ba,
+          offerId: offer.id,
+          contextInfo: contextInfo,
+        });
+        logger.debug("Details for cleaned offer", {
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
           offer: offer,
           contextInfo: contextInfo,
           data: { txReceipt },
@@ -255,6 +262,13 @@ export class MarketCleaner {
       })
       .catch((e) => {
         logger.warn("Cleaning of offer failed", {
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
+          offerId: offer.id,
+          contextInfo: contextInfo,
+        });
+        logger.debug("Details for failed cleaning", {
           base: this.#market.base.name,
           quote: this.#market.quote.name,
           ba: ba,
