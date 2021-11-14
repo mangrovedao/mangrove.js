@@ -6,7 +6,7 @@ Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate 
 
 
 # Documentation
-If you are looking for the Mangrove developer documentation, you can find it [here](https://mangrove-1.gitbook.io/docs/).
+If you are looking for the Mangrove developer documentation, you can find it [here](https://docs.mangrove.exchange).
 
 
 # Prerequisites
