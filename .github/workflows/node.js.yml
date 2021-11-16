@@ -3,7 +3,7 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: [ master, feature/**, issue/** ]
+    branches: [ master, feature/**, issue/**, dev-solidity, dev ]
     paths-ignore: 
       - '**.md'
   pull_request:
