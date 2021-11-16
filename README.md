@@ -4,8 +4,10 @@ This is the Mangrove monorepo which contains most of the packages developed for 
 
 Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate repos. The rules for which packages go where are not hard and fast; On the contrary, we are experimenting with different structures, in order to figure out what the pros and cons are in our specific circumstances.
 
+
 # Documentation
-If you are looking for the Mangrove developer documentation, you can find it [here](https://mangrove-1.gitbook.io/docs/).
+If you are looking for the Mangrove developer documentation, you can find it [here](https://docs.mangrove.exchange).
+
 
 # Prerequisites
 You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Yarn 2 workspaces](https://yarnpkg.com/features/workspaces) to manage dependencies and run commands on multiple packages. You must also have [Node.js](https://nodejs.org/en/) 14.14+.
@@ -14,11 +16,27 @@ You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Y
 # Usage
 The following sections describe the most common use cases in this monorepo. For more details on how to use Yarn and Yarn workspaces, see the [Yarn 2 CLI documentation](https://yarnpkg.com/cli/install).
 
-⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2. Currently (September 2021), most examples and much tool support is implicitly engineered towards Yarn 1.
+⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2+. Currently (November 2021), most examples and much tool support is implicitly engineered towards Yarn 1.
+
+## Initial monorepo setup
+After first cloning the repo, you should run `yarn install` in the root folder.
+
+```shell
+# In ./ or in ./packages/<somePackage>
+$ yarn install
+```
+
+This
+- installs all dependencies in the monorepo
+- sets up appropriate symlinks inside the `node_modules` folders of packages that depend on other packages in the monorepo
+- installs Husky Git hooks.
+
+
+NB: Though the `yarn build` (described next) also runs `yarn install`, Yarn fails with an error if `yarn install` has not been run once. So this must be done after cloning. Afterwards `yarn install` should not be required again.
 
 
 ## Update monorepo after clone, pull etc.
-Whenever you clone, pull, or similar, you should run `yarn build` afterwards, either in the root folder or in a package folder:
+Whenever you clone, pull, switch branches or similar, you should run `yarn build` afterwards, either in the root folder or in a package folder:
 
 ```shell
 # In ./ or in ./packages/<somePackage>
@@ -29,8 +47,8 @@ This will
 
 1. Run `yarn install` which:
     - installs/updates all dependencies in the monorepo
-    - set up appropriate symlinks inside the `node_modules` folders of packages that depend on other packages in the monorepo
-    - installs Husky Git hooks.
+    - updates symlinks inside the `node_modules` folders of packages that depend on other packages in the monorepo
+    - updates Husky Git hooks.
 2. Build all relevant packages for the folder you're in
     - If you're in root, all packages are built
     - If you're in a package folder, all dependencies of the package and the package itself are built (in topological order).
@@ -135,10 +153,12 @@ The repo root contains the following folders and files:
 ├── .github/         # GitHub related files, in particular CI configurations for GitHub Actions
 ├── .husky/          # Husky Git hooks, e.g. for auto formatting
 ├── .yarn/           # Yarn files
+├── docs/            # GitHub Pages site with documentation
 ├── packages/        # The actual Mangrove packages
 ├── .gitattributes   # Git attributes for the whole monorepo 
 ├── .gitignore       # Git ignore for the whole monorepo
 ├── .yarnrc.yml      # Yarn 2 configuration
+├── LICENSES         # Overview of the licenses that apply to this repo
 ├── README.md        # This README file
 ├── package.json     # Package file with dependencies and scripts for the monorepo
 └── yarn.lock        # Yarn lock file ensuring consistent installs across machines
@@ -162,13 +182,13 @@ Each package should have its own `package.json` file based on the following temp
                                                 // We typically use this to autoformat all staged files with `lint-staged`:
                                                 // lint-staged runs the command specified in the lint-staged section below
                                                 // on the files staged for commit.
-    "prepack": "build",                         // Yarn 2 recommends using the `prepack` lifecycle script for building.
+    "prepack": "yarn build",                    // Yarn 2 recommends using the `prepack` lifecycle script for building.
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx", // Linting of the specified file types.
     "build-this-package": "<build command(s)>", // This script should build just this package.
                                                 // It will be called by `build` scripts whenever this package should be build.
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
                                                 // Update and build dependencies and this package in topological order.
-    "clean-this-package": "clean commmand(s)>", // This script should clean just this package.
+    "clean-this-package": "<clean commmand(s)>",// This script should clean just this package.
                                                 // It will be called by `clean` scripts whenever this package should be cleaned.
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
                                                 // Clean dependencies and this package in topological order.
@@ -239,12 +259,14 @@ This is why we've opted to instead add `yarn install` to the `build` scripts in 
 
 This allows us to run a single `yarn build` in root or package to both update dependencies and build the packages you care about.
 
+Note however, that due to a Yarn limitation, one must run `yarn install` after cloning. Otherwise, Yarn will fail when running `yarn build` even though the first action of that command is to run `yarn install`.
+
 
 # Yarn configuration
 Yarn 2 is configured in two places:
 
-- `package.json`: The `workspaces`section tells Yarn which folders should be considered packages/workspaces.
-- `.yarnrc.yml`: Configuraiton of Yarn's internal settings, see https://yarnpkg.com/configuration/yarnrc
+- `package.json`: The `workspaces` section tells Yarn which folders should be considered packages/workspaces.
+- `.yarnrc.yml`: Configuration of Yarn's internal settings, see https://yarnpkg.com/configuration/yarnrc
 
 A few notes on the reasons for our chosen Yarn 2 configuration:
 
@@ -263,3 +285,18 @@ Yarn 2 has introduced an alternative to `node_modules` called "Plug'n'Play". Whi
 We use [Husky](https://typicode.github.io/husky/#/) to manage our Git hooks.
 
 The Git hook scripts are in the `.husky/` folder.
+
+## Husky and Heroku
+
+We currently deploy several off-chain packages to Heroku. To disable Husky from running on a Heroku deploy, we use [pinst](https://github.com/typicode/pinst) package and two heroku-specific `scripts` in the top-level `package.json`:         
+
+```json
+{
+  ...
+    "heroku-postbuild": "pinst --disable && yarn build",
+    "heroku-cleanup": "pinst --enable",
+  ...
+}
+```
+
+Note that when Heroku detects a `heroku-postbuild` it [does *not* run the `build` script](https://devcenter.heroku.com/articles/nodejs-support#customizing-the-build-process), so we need to invoke that specifically.

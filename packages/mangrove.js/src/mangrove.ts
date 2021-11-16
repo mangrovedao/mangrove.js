@@ -232,6 +232,17 @@ export class Mangrove {
   /********** */
 
   /**
+   * Read all contract addresses on the given network.
+   */
+  static getAllAddresses(network = "mainnet"): [string, string][] {
+    if (!addresses[network]) {
+      throw Error(`No addresses for network ${network}.`);
+    }
+
+    return Object.entries(addresses[network]);
+  }
+
+  /**
    * Read a contract address on the given network.
    */
   static getAddress(name: string, network = "mainnet"): string {

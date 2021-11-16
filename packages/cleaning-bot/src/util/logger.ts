@@ -10,8 +10,8 @@ const consoleLogFormat = format.printf(
       msg += `[(${metadata.base},${metadata.quote})`;
       if (metadata.ba) {
         msg += ` ${metadata.ba}`;
-        if (metadata.offer) {
-          msg += ` #${metadata.offer.id}`;
+        if (metadata.offerId || metadata.offer) {
+          msg += ` #${metadata.offerId || metadata.offer.id}`;
         }
       }
       msg += "] ";
@@ -33,7 +33,7 @@ const consoleLogFormat = format.printf(
   }
 );
 
-const logLevel = config.get<string>("log.logLevel");
+const logLevel = config.get<string>("logLevel");
 export const logger: BetterLogger = createLogger(consoleLogFormat, logLevel);
 
 export default logger;

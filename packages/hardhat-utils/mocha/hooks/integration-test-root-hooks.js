@@ -6,6 +6,7 @@
 // Set up hardhat
 const hre = require("hardhat");
 const hardhatUtils = require("../../hardhat-utils");
+const JsonRpcProvider = require("@ethersproject/providers").JsonRpcProvider;
 
 const ethers = hre.ethers;
 
@@ -23,17 +24,17 @@ exports.mochaHooks = {
       // application specific logging, throwing an error, or other logic here
     });
 
-    this.provider = hre.network.provider;
-    // FIXME the hre.network.provider is not a full ethers Provider, e.g. it doesn't have getBalance() and getGasPrice()
-    // FIXME we therefore introduce a workaround where tests can construct an appropriate provider themselves from a URL.
-    this.providerUrl = `http://${host.name}:${host.port}`;
-
     console.log("Running a Hardhat instance...");
     server = await hardhatUtils.hreServer({
       hostname: host.name,
       port: host.port,
-      provider: this.provider,
+      provider: hre.network.provider,
     });
+
+    this.provider = hre.network.provider;
+    // FIXME the hre.network.provider is not a full ethers Provider, e.g. it doesn't have getBalance() and getGasPrice()
+    // FIXME we therefore introduce a workaround where tests can construct an appropriate provider themselves from a URL.
+    this.providerUrl = `http://${host.name}:${host.port}`;
 
     await hre.network.provider.request({
       method: "hardhat_reset",
@@ -76,12 +77,12 @@ exports.mochaHooks = {
       value: toWei(10),
     }).then((tx) => tx.wait());
 
-    await snapshot();
+    await hardhatUtils.snapshot();
   },
 
   async beforeEach() {
-    await revert();
-    await snapshot();
+    await hardhatUtils.revert();
+    await hardhatUtils.snapshot();
   },
 
   async afterAll() {
@@ -90,20 +91,3 @@ exports.mochaHooks = {
     }
   },
 };
-
-let snapshot_id = null;
-
-async function snapshot() {
-  const res = await hre.network.provider.request({
-    method: "evm_snapshot",
-    params: [],
-  });
-  snapshot_id = res;
-}
-
-async function revert() {
-  await hre.network.provider.request({
-    method: "evm_revert",
-    params: [snapshot_id],
-  });
-}
