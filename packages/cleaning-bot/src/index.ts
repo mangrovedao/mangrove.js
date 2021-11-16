@@ -8,7 +8,6 @@ import config from "./util/config";
 import { ErrorWithData } from "@giry/commonlib-js";
 import { MarketCleaner } from "./MarketCleaner";
 import { logger } from "./util/logger";
-// TODO Figure out where mangrove.js get its addresses from and make it configurable
 import Mangrove from "@giry/mangrove-js";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
@@ -31,6 +30,14 @@ const main = async () => {
   const mgv = await Mangrove.connect({
     provider: process.env["ETHEREUM_NODE_URL"],
     signer: nonceManager,
+  });
+
+  logger.info("Connected to Mangrove", {
+    contextInfo: "init",
+    data: {
+      network: mgv._network,
+      addresses: Mangrove.getAllAddresses(mgv._network.name),
+    },
   });
 
   await exitIfMangroveIsKilled(mgv, "init");

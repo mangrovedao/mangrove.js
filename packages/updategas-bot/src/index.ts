@@ -29,6 +29,13 @@ const main = async () => {
     signer: nonceManager,
   });
 
+  logger.info("Connected to Mangrove", {
+    data: {
+      network: mgv._network,
+      addresses: Mangrove.getAllAddresses(mgv._network.name),
+    },
+  });
+
   // read and use file config
   // - set defaults explicitly
   let acceptableGasGapToOracle = 0;
