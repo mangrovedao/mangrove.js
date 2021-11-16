@@ -1309,7 +1309,13 @@
       }
     ],
     "name": "retractOffer",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "provision",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
