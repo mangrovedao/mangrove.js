@@ -630,3 +630,109 @@ jobs:
         reporter: mocha-json                               # Format of test results
 
   # ==== End job: updategas-bot ====
+          
+  # ==== Job: Build and test obfiller-bot ====
+  obfiller-bot:
+    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/obfiller-bot
+
+    defaults:
+      run:
+        working-directory: packages/obfiller-bot
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == download and unzip artefacts ==
+    - name: Download cached mangrove-solidity artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-solidity-out.zip
+
+    - name: Unzip mangrove-solidity artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-solidity-out.zip
+
+    # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
+    # - name: Download cached hardhat-utils artifact
+    #   uses: actions/download-artifact@v2
+    #   with:
+    #     name: hardhat-utils-out.zip
+
+    # - name: Unzip hardhat-utils artifact
+    #   uses: montudor/action-zip@v1
+    #   with:
+    #     args: unzip -qq hardhat-utils-out.zip
+
+    - name: Download cached mangrove.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-js-out.zip
+
+    - name: Unzip mangrove.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-js-out.zip
+
+    - name: Download cached commonlib.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: commonlib-out.zip
+
+    - name: Unzip commonlib.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq commonlib-out.zip
+
+    # == build ==
+
+    - name: Order Book Filler Bot - Build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "obfiller_bot_built=true" >> $GITHUB_ENV    
+
+    # == run and report tests == 
+    - name: Order Book Filler Bot - Tests
+      run: yarn run test
+
+    - name: Order Book Filler Bot - Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.obfiller_bot_built && (success() || failure()) }}
+      with:
+        name: Order Book Filler Bot - Tests                   # Name of the check run which will be created
+        path: packages/obfiller-bot/integration-tests-report.json # Path to test results
+        reporter: mocha-json                               # Format of test results
+
+  # ==== End job: obfiller-bot ====        
