@@ -6,7 +6,7 @@ import { Provider } from "@ethersproject/providers";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
-import { MakerConfig } from "./MarketConfig";
+import { TakerConfig } from "./MarketConfig";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
@@ -14,44 +14,40 @@ Big.RM = Big.roundHalfUp; // round to nearest
 export type BA = "bids" | "asks";
 
 /**
- * An offer maker for a single Mangrove market which posts offers
+ * An offer taker for a single Mangrove market which takes offers
  * at times following a Poisson distribution.
- *
- * The offers are posted from an EOA and so must be fully provisioned.
  */
-export class OfferMaker {
+export class OfferTaker {
   #market: Market;
   #provider: Provider;
   #bidProbability: number;
-  #lambda: Big;
   #maxQuantity: number;
   #running: boolean;
-  #offerRate: number;
-  #offerTimeRng: () => number;
+  #takeRate: number;
+  #takeTimeRng: () => number;
 
   /**
-   * Constructs an offer maker for the given Mangrove market which will use the given provider for queries and transactions.
-   * @param market The Mangrove market to post offers on.
+   * Constructs an offer taker for the given Mangrove market which will use the given provider for queries and transactions.
+   * @param market The Mangrove market to take offers from.
    * @param provider The provider to use for queries and transactions.
-   * @param makerConfig The parameters to use for this market.
+   * @param takerConfig The parameters to use for this market.
    */
-  constructor(market: Market, provider: Provider, makerConfig: MakerConfig) {
+  constructor(market: Market, provider: Provider, takerConfig: TakerConfig) {
     this.#market = market;
     this.#provider = provider;
-    this.#bidProbability = makerConfig.bidProbability;
-    this.#lambda = Big(makerConfig.lambda);
-    this.#maxQuantity = makerConfig.maxQuantity;
+    this.#bidProbability = takerConfig.bidProbability;
+    this.#maxQuantity = takerConfig.maxQuantity;
 
     this.#running = false;
 
-    this.#offerRate = makerConfig.offerRate / 1_000; // Converting the rate to mean # of offers per millisecond
-    this.#offerTimeRng = random.uniform(0, 1);
+    this.#takeRate = takerConfig.takeRate / 1_000; // Converting the rate to mean # of offers per millisecond
+    this.#takeTimeRng = random.uniform(0, 1);
 
-    logger.info("Initalized offer maker", {
-      contextInfo: "maker init",
+    logger.info("Initalized offer taker", {
+      contextInfo: "taker init",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
-      data: { marketConfig: makerConfig },
+      data: { marketConfig: takerConfig },
     });
   }
 
@@ -63,18 +59,18 @@ export class OfferMaker {
     while (this.#running === true) {
       const delayInMilliseconds = this.#getNextTimeDelay();
       logger.debug(`Sleeping for ${delayInMilliseconds}ms`, {
-        contextInfo: "maker",
+        contextInfo: "taker",
         base: this.#market.base.name,
         quote: this.#market.quote.name,
         data: { delayInMilliseconds },
       });
       await sleep(delayInMilliseconds);
-      await this.#postNewOfferOnBidsOrAsks();
+      await this.#takeOfferOnBidsOrAsks();
     }
   }
 
   #getNextTimeDelay(): number {
-    return -Math.log(1 - this.#offerTimeRng()) / this.#offerRate;
+    return -Math.log(1 - this.#takeTimeRng()) / this.#takeRate;
   }
 
   /**
@@ -84,7 +80,7 @@ export class OfferMaker {
     this.#running = false;
   }
 
-  async #postNewOfferOnBidsOrAsks(): Promise<void> {
+  async #takeOfferOnBidsOrAsks(): Promise<void> {
     let ba: BA;
     let offerList: Offer[];
     const book = this.#market.book();
@@ -96,36 +92,20 @@ export class OfferMaker {
       offerList = book.asks;
     }
     if (offerList.length === 0) {
-      // FIXME this means no activity is generated if there are no offers already on the book
-      logger.warn(
-        "Offer list is empty so will not generate an offer as no reference price is available",
-        {
-          contextInfo: "maker",
-          base: this.#market.base.name,
-          quote: this.#market.quote.name,
-          ba: ba,
-        }
-      );
+      logger.warn("Offer list is empty so not making a market order", {
+        contextInfo: "taker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        ba: ba,
+      });
       return;
     }
-    const price = this.#choosePriceFromExp(
-      ba,
-      offerList[0].price,
-      this.#lambda
-    );
+    const price = offerList[0].price;
     const quantity = Big(random.float(1, this.#maxQuantity));
-    await this.#postOffer(ba, quantity, price);
+    await this.#postMarketOrder(ba, quantity, price);
   }
 
-  #choosePriceFromExp(ba: BA, insidePrice: Big, lambda: Big): Big {
-    // Prices chosen from exp. distribution
-    const plug = lambda.mul(Math.log(1 - random.float(0, 1))); // random.float(0, 1) returns a number in [0; 1), but we need a number in (0; 1] (since log(0) is undefined).
-    return ba === "bids"
-      ? insidePrice.minus(1).minus(plug)
-      : insidePrice.plus(1).plus(plug);
-  }
-
-  async #postOffer(
+  async #postMarketOrder(
     ba: BA,
     quantity: Big,
     price: Big,
@@ -136,8 +116,8 @@ export class OfferMaker {
     const priceInUnits = inboundToken.toUnits(price);
     const quantityInUnits = outboundToken.toUnits(quantity);
 
-    logger.debug("Posting offer", {
-      contextInfo: "maker",
+    logger.debug("Posting market order", {
+      contextInfo: "taker",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
       ba: ba,
@@ -152,20 +132,18 @@ export class OfferMaker {
     });
 
     await this.#market.mgv.contract
-      .newOffer(
+      .marketOrder(
         inboundToken.address,
         outboundToken.address,
-        priceInUnits,
         quantityInUnits,
-        gasReq,
-        gasPrice,
-        0
+        priceInUnits,
+        true
       )
       .then((tx) => tx.wait())
       .then((txReceipt) => {
         // FIXME how do I get the offer ID?
-        logger.info("Successfully posted offer", {
-          contextInfo: "maker",
+        logger.info("Successfully completed market order", {
+          contextInfo: "taker",
           base: this.#market.base.name,
           quote: this.#market.quote.name,
           ba: ba,
@@ -178,8 +156,8 @@ export class OfferMaker {
             gasPrice,
           },
         });
-        logger.debug("Details for posted offer", {
-          contextInfo: "maker",
+        logger.debug("Details for market order", {
+          contextInfo: "taker",
           base: this.#market.base.name,
           quote: this.#market.quote.name,
           ba: ba,
@@ -187,8 +165,8 @@ export class OfferMaker {
         });
       })
       .catch((e) => {
-        logger.warn("Post of offer failed", {
-          contextInfo: "maker",
+        logger.warn("Post of market order failed", {
+          contextInfo: "taker",
           base: this.#market.base.name,
           quote: this.#market.quote.name,
           ba: ba,

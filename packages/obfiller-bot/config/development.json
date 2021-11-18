@@ -4,10 +4,17 @@
     {
       "baseToken": "WETH",
       "quoteToken": "DAI",
-      "offerRate": 0.0375,
-      "bidProbability": 0.5,
-      "lambda": 10,
-      "maxQuantity": 10
+      "makerConfig": {
+        "offerRate": 0.0375,
+        "bidProbability": 0.5,
+        "lambda": 10,
+        "maxQuantity": 10
+      },
+      "takerConfig": {
+        "takeRate": 0.001,
+        "bidProbability": 0.5,
+        "maxQuantity": 1
+      }
     }
   ]
 }
