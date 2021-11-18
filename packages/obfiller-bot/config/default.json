@@ -1,0 +1,29 @@
+{
+  "logLevel": "info",
+  "markets": [
+    {
+      "baseToken": "WETH",
+      "quoteToken": "DAI",
+      "offerRate": 0.0375,
+      "bidProbability": 0.5,
+      "lambda": 10,
+      "maxQuantity": 10
+    },
+    {
+      "baseToken": "WETH",
+      "quoteToken": "USDC",
+      "offerRate": 0.0375,
+      "bidProbability": 0.5,
+      "lambda": 10,
+      "maxQuantity": 10
+    },
+    {
+      "baseToken": "DAI",
+      "quoteToken": "USDC",
+      "offerRate": 0.0375,
+      "bidProbability": 0.5,
+      "lambda": 0.03,
+      "maxQuantity": 10
+    }
+  ]
+}
