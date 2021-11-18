@@ -12,6 +12,7 @@ import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 import { OfferMaker } from "./OfferMaker";
 import { MarketConfig } from "./MarketConfig";
+import { OfferTaker } from "./OfferTaker";
 
 type TokenPair = { token1: string; token2: string };
 
@@ -47,6 +48,7 @@ const main = async () => {
 
   const marketConfigs = getMarketConfigsOrThrow();
   const offerMakerMap = new Map<TokenPair, OfferMaker>();
+  const offerTakerMap = new Map<TokenPair, OfferTaker>();
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -57,9 +59,21 @@ const main = async () => {
       quote: tokenPair.token2,
     });
 
-    const offerMaker = new OfferMaker(market, provider, marketConfig);
+    const offerMaker = new OfferMaker(
+      market,
+      provider,
+      marketConfig.makerConfig
+    );
     offerMakerMap.set(tokenPair, offerMaker);
     offerMaker.start();
+
+    const offerTaker = new OfferTaker(
+      market,
+      provider,
+      marketConfig.takerConfig
+    );
+    offerTakerMap.set(tokenPair, offerTaker);
+    offerTaker.start();
   }
 };
 
