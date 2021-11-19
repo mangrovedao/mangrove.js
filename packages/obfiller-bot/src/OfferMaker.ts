@@ -120,9 +120,11 @@ export class OfferMaker {
   #choosePriceFromExp(ba: BA, insidePrice: Big, lambda: Big): Big {
     // Prices chosen from exp. distribution
     const plug = lambda.mul(Math.log(1 - random.float(0, 1))); // random.float(0, 1) returns a number in [0; 1), but we need a number in (0; 1] (since log(0) is undefined).
-    return ba === "bids"
-      ? insidePrice.minus(1).minus(plug)
-      : insidePrice.plus(1).plus(plug);
+
+    const price =
+      ba === "bids" ? insidePrice.minus(plug) : insidePrice.plus(plug);
+
+    return price.gt(0) ? price : insidePrice;
   }
 
   async #postOffer(
@@ -163,7 +165,7 @@ export class OfferMaker {
       )
       .then((tx) => tx.wait())
       .then((txReceipt) => {
-        // FIXME how do I get the offer ID?
+        // FIXME how do we get the offer ID?
         logger.info("Successfully posted offer", {
           contextInfo: "maker",
           base: this.#market.base.name,
