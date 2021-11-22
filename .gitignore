@@ -5,6 +5,7 @@ ignore
 modd.conf
 out.html
 packages/mangrove-solidity/deployments/hardhat
+packages/mangrove-solidity/deployments/localhost
 packages/mangrove-solidity/doc/MgvDoc.html
 packages/mangrove-solidity/doc/specs.txt
 packages/mangrove-solidity/*-mumbai.sh
