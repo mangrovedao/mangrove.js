@@ -1,9 +1,14 @@
+/**
+ * A simple configurable gas price update bot for the Mangrove DEX.
+ * @module
+ */
+
 import { config } from "./util/config";
 import { logger } from "./util/logger";
 import { GasUpdater } from "./GasUpdater";
 
 import Mangrove from "@giry/mangrove-js";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
@@ -21,7 +26,7 @@ const main = async () => {
   if (!process.env["PRIVATE_KEY"]) {
     throw new Error("No private key provided in PRIVATE_KEY");
   }
-  const provider = new JsonRpcProvider(process.env["ETHEREUM_NODE_URL"]);
+  const provider = new WebSocketProvider(process.env["ETHEREUM_NODE_URL"]);
   const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
   const nonceManager = new NonceManager(signer);
   const mgv = await Mangrove.connect({ signer: nonceManager });
