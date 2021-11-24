@@ -1,3 +1,8 @@
+/**
+ * A simple configurable gas price update bot for the Mangrove DEX.
+ * @module
+ */
+
 import { config } from "./util/config";
 import { logger } from "./util/logger";
 import { GasUpdater } from "./GasUpdater";
