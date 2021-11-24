@@ -24,10 +24,7 @@ const main = async () => {
   const provider = new JsonRpcProvider(process.env["ETHEREUM_NODE_URL"]);
   const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
   const nonceManager = new NonceManager(signer);
-  const mgv = await Mangrove.connect({
-    provider: process.env["ETHEREUM_NODE_URL"],
-    signer: nonceManager,
-  });
+  const mgv = await Mangrove.connect({ signer: nonceManager });
 
   logger.info("Connected to Mangrove", {
     data: {
