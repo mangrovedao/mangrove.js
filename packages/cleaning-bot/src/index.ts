@@ -52,6 +52,7 @@ const main = async () => {
     const market = await mgv.market({
       base: token1,
       quote: token2,
+      bookOptions: { maxOffers: 200 },
     });
 
     marketCleanerMap.set(
