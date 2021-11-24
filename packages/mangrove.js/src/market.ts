@@ -27,13 +27,16 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 type OrderResult = { got: Big; gave: Big };
-type bookOpts = {
-  fromId: number;
-  maxOffers: number;
+export type BookOptions = {
+  fromId?: number;
+  maxOffers?: number;
   chunkSize?: number;
   blockNumber?: number;
 };
-const bookOptsDefault: bookOpts = { fromId: 0, maxOffers: DEFAULT_MAX_OFFERS };
+const bookOptsDefault: BookOptions = {
+  fromId: 0,
+  maxOffers: DEFAULT_MAX_OFFERS,
+};
 
 type offerList = { offers: Map<number, Offer>; best: number };
 
@@ -110,11 +113,12 @@ export class Market {
     mgv: Mangrove;
     base: string;
     quote: string;
+    bookOptions?: BookOptions;
   }): Promise<Market> {
     canConstructMarket = true;
     const market = new Market(params);
     canConstructMarket = false;
-    await market.#initialize();
+    await market.#initialize(params.bookOptions);
     return market;
   }
 
@@ -246,7 +250,7 @@ export class Market {
   }
 
   async #initialize(
-    opts: Omit<bookOpts, "fromId"> = bookOptsDefault
+    opts: Omit<BookOptions, "fromId"> = bookOptsDefault
   ): Promise<void> {
     if (this.#lowLevelCallbacks) throw Error("Already initialized.");
 
@@ -433,7 +437,7 @@ export class Market {
   async rawBook(
     base_a: string,
     quote_a: string,
-    opts: bookOpts = bookOptsDefault
+    opts: BookOptions = bookOptsDefault
   ): Promise<[BookReturns.indices, BookReturns.offers, BookReturns.details]> {
     opts = { ...bookOptsDefault, ...opts };
     // by default chunk size is number of offers desired
@@ -497,7 +501,7 @@ export class Market {
   }
 
   async requestBook(
-    opts: bookOpts = bookOptsDefault
+    opts: BookOptions = bookOptsDefault
   ): Promise<Market["_book"]> {
     const rawAsks = await this.rawBook(
       this.base.address,
@@ -621,7 +625,7 @@ export class Market {
     inboundTkn: MgvToken,
     outboundTkn: MgvToken,
     localConfig: localConfig,
-    opts: Omit<bookOpts, "fromId">
+    opts: Omit<BookOptions, "fromId">
   ): (...args: any[]) => Promise<any> {
     let inilizationCompleteCallback: (semibook: semibook) => void;
     const initializationPromise: Promise<semibook> = new Promise<semibook>(
