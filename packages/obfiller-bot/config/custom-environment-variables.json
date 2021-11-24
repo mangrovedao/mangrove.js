@@ -1,0 +1,7 @@
+{
+  "logLevel": "LOG_LEVEL",
+  "markets": {
+    "__name": "MARKETS",
+    "__format": "json"
+  }
+}
