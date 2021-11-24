@@ -31,10 +31,7 @@ const main = async () => {
   // We will probably be waiting for multiple tx's at the same time
   // (e.g. for different markets), so we must keep track of nonces.
   const nonceManager = new NonceManager(signer);
-  const mgv = await Mangrove.connect({
-    provider: process.env["ETHEREUM_NODE_URL"],
-    signer: nonceManager,
-  });
+  const mgv = await Mangrove.connect({ signer: nonceManager });
 
   logger.info("Connected to Mangrove", {
     contextInfo: "init",
