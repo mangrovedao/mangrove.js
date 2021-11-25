@@ -27,7 +27,12 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 type OrderResult = { got: Big; gave: Big };
-type bookOpts = { fromId: number; maxOffers: number; chunkSize?: number };
+type bookOpts = {
+  fromId: number;
+  maxOffers: number;
+  chunkSize?: number;
+  blockNumber?: number;
+};
 const bookOptsDefault: bookOpts = { fromId: 0, maxOffers: DEFAULT_MAX_OFFERS };
 
 type offerList = { offers: Map<number, Offer>; best: number };
@@ -246,44 +251,24 @@ export class Market {
     if (this.#lowLevelCallbacks) throw Error("Already initialized.");
 
     const config = await this.config();
-
-    const { asksFilter, bidsFilter } = this.#bookFilter();
-
-    const rawAsks = await this.rawBook(this.base.address, this.quote.address, {
-      ...opts,
-      ...{ fromId: 0 },
-    });
-    const rawBids = await this.rawBook(this.quote.address, this.base.address, {
-      ...opts,
-      ...{ fromId: 0 },
-    });
-
-    const asks = {
-      ba: "asks" as const,
-      gasbase: {
-        overhead_gasbase: config.asks.overhead_gasbase,
-        offer_gasbase: config.asks.offer_gasbase,
-      },
-      ...this.rawToMap("asks", ...rawAsks),
-    };
-
-    const bids = {
-      ba: "bids" as const,
-      gasbase: {
-        overhead_gasbase: config.bids.overhead_gasbase,
-        offer_gasbase: config.bids.offer_gasbase,
-      },
-      ...this.rawToMap("bids", ...rawBids),
-    };
-
-    // TODO ensure no missed events
-    // const blockNum = await this.mgv._provider.getBlockNumber();
-
-    const asksCallback = this.#createBookEventCallback(asks);
-    const bidsCallback = this.#createBookEventCallback(bids);
+    const asksCallback = this.#createBookEventCallback(
+      "asks",
+      this.base,
+      this.quote,
+      config.asks,
+      opts
+    );
+    const bidsCallback = this.#createBookEventCallback(
+      "bids",
+      this.quote,
+      this.base,
+      config.bids,
+      opts
+    );
 
     this.#lowLevelCallbacks = { asksCallback, bidsCallback };
 
+    const { asksFilter, bidsFilter } = this.#bookFilter();
     this.mgv.contract.on(asksFilter, asksCallback);
     this.mgv.contract.on(bidsFilter, bidsCallback);
   }
@@ -462,7 +447,10 @@ export class Market {
       offers = [],
       details = [];
 
-    const blockNum = await this.mgv._provider.getBlockNumber(); //stay consistent
+    const blockNum =
+      opts.blockNumber !== undefined
+        ? opts.blockNumber
+        : await this.mgv._provider.getBlockNumber(); //stay consistent by reading from one block
     await this.mgv.readerContract.config(this.mgv._address, this.mgv._address);
     do {
       const [_nextId, _offerIds, _offers, _details] =
@@ -613,7 +601,7 @@ export class Market {
   }
 
   defaultCallback(evt: bookSubscriptionCbArgument, semibook: semibook): void {
-    this._book[semibook.ba] = mapToArray(semibook.best, semibook.offers);
+    this.#updateBook(semibook);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
         this.#subscriptions.delete(cb);
@@ -624,117 +612,173 @@ export class Market {
     }
   }
 
-  #createBookEventCallback(semibook: semibook): (...args: any[]) => any {
-    return (_evt) => {
-      const evt: bookSubscriptionEvent = this.mgv.contract.interface.parseLog(
-        _evt
-      ) as any;
+  #updateBook(semibook: semibook): void {
+    this._book[semibook.ba] = mapToArray(semibook.best, semibook.offers);
+  }
 
-      let offer;
-      let removedOffer;
-      let next;
+  #createBookEventCallback(
+    ba: "bids" | "asks",
+    inboundTkn: MgvToken,
+    outboundTkn: MgvToken,
+    localConfig: localConfig,
+    opts: Omit<bookOpts, "fromId">
+  ): (...args: any[]) => Promise<any> {
+    let inilizationCompleteCallback: (semibook: semibook) => void;
+    const initializationPromise: Promise<semibook> = new Promise<semibook>(
+      (ok) => {
+        inilizationCompleteCallback = ok;
+      }
+    );
+    let firstBlockNumber: number = undefined;
+    return async (event) => {
+      // Initialize by reading a prefix of the offer list on the first callback
+      if (firstBlockNumber === undefined) {
+        firstBlockNumber = event.blockNumber - 1;
 
-      const takerWants_bq = semibook.ba === "asks" ? "base" : "quote";
-      const takerGives_bq = semibook.ba === "asks" ? "quote" : "base";
-
-      switch (evt.name) {
-        case "OfferWrite":
-          // We ignore the return value here because the offer may have been outside the local
-          // cache, but may now enter the local cache due to its new price.
-          removeOffer(semibook, evt.args.id.toNumber());
-
-          /* After removing the offer (a noop if the offer was not in local cache),
-             we reinsert it.
-
-             * The offer comes with id of its prev. If prev does not exist in cache, we skip
-             the event. Note that we still want to remove the offer from the cache.
-             * If the prev exists, we take the prev's next as the offer's next. Whether that next exists in the cache or not is irrelevant.
-          */
-          try {
-            next = getNext(semibook, evt.args.prev.toNumber());
-          } catch (e) {
-            // offer.prev was not found, we are outside local OB copy. skip.
-            break;
+        const rawOffers = await this.rawBook(
+          inboundTkn.address,
+          outboundTkn.address,
+          {
+            ...opts,
+            ...{ fromId: 0, blockNumber: firstBlockNumber },
           }
+        );
 
-          offer = this.#toOfferObject(semibook.ba, {
-            ...evt.args,
-            ...semibook.gasbase,
-            next: BigNumber.from(next),
-          });
+        const semibook = {
+          ba: ba,
+          gasbase: {
+            overhead_gasbase: localConfig.overhead_gasbase,
+            offer_gasbase: localConfig.offer_gasbase,
+          },
+          ...this.rawToMap(ba, ...rawOffers),
+        };
 
-          insertOffer(semibook, evt.args.id.toNumber(), offer);
+        this.#updateBook(semibook);
+        this.#handleBookEvent(semibook, event);
 
+        // Signal any queued events
+        inilizationCompleteCallback(semibook);
+      } else {
+        // Subsequent callbacks must ensure initialization has completed
+        const semibook = await initializationPromise;
+        // If event is from firstBlockNumber (or before), ignore it as it will be included in the initially read offer list
+        if (event.blockNumber <= firstBlockNumber) {
+          return;
+        }
+        this.#handleBookEvent(semibook, event);
+      }
+    };
+  }
+
+  #handleBookEvent(semibook: semibook, event: ethers.Event): void {
+    const evt: bookSubscriptionEvent = this.mgv.contract.interface.parseLog(
+      event
+    ) as any;
+
+    let offer;
+    let removedOffer;
+    let next;
+
+    const takerWants_bq = semibook.ba === "asks" ? "base" : "quote";
+    const takerGives_bq = semibook.ba === "asks" ? "quote" : "base";
+
+    switch (evt.name) {
+      case "OfferWrite":
+        // We ignore the return value here because the offer may have been outside the local
+        // cache, but may now enter the local cache due to its new price.
+        removeOffer(semibook, evt.args.id.toNumber());
+
+        /* After removing the offer (a noop if the offer was not in local cache),
+            we reinsert it.
+
+            * The offer comes with id of its prev. If prev does not exist in cache, we skip
+            the event. Note that we still want to remove the offer from the cache.
+            * If the prev exists, we take the prev's next as the offer's next. Whether that next exists in the cache or not is irrelevant.
+        */
+        try {
+          next = getNext(semibook, evt.args.prev.toNumber());
+        } catch (e) {
+          // offer.prev was not found, we are outside local OB copy. skip.
+          break;
+        }
+
+        offer = this.#toOfferObject(semibook.ba, {
+          ...evt.args,
+          ...semibook.gasbase,
+          next: BigNumber.from(next),
+        });
+
+        insertOffer(semibook, evt.args.id.toNumber(), offer);
+
+        this.defaultCallback(
+          {
+            type: evt.name,
+            offer: offer,
+            ba: semibook.ba,
+          },
+          semibook
+        );
+        break;
+
+      case "OfferFail":
+        removedOffer = removeOffer(semibook, evt.args.id.toNumber());
+        // Don't trigger an event about an offer outside of the local cache
+        if (removedOffer) {
           this.defaultCallback(
             {
               type: evt.name,
-              offer: offer,
               ba: semibook.ba,
+              taker: evt.args.taker,
+              offer: removedOffer,
+              takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
+              takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
+              mgvData: evt.args.mgvData,
             },
             semibook
           );
-          break;
+        }
+        break;
 
-        case "OfferFail":
-          removedOffer = removeOffer(semibook, evt.args.id.toNumber());
-          // Don't trigger an event about an offer outside of the local cache
-          if (removedOffer) {
-            this.defaultCallback(
-              {
-                type: evt.name,
-                ba: semibook.ba,
-                taker: evt.args.taker,
-                offer: removedOffer,
-                takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
-                takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
-                mgvData: evt.args.mgvData,
-              },
-              semibook
-            );
-          }
-          break;
+      case "OfferSuccess":
+        removedOffer = removeOffer(semibook, evt.args.id.toNumber());
+        if (removedOffer) {
+          this.defaultCallback(
+            {
+              type: evt.name,
+              ba: semibook.ba,
+              taker: evt.args.taker,
+              offer: removedOffer,
+              takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
+              takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
+            },
+            semibook
+          );
+        }
+        break;
 
-        case "OfferSuccess":
-          removedOffer = removeOffer(semibook, evt.args.id.toNumber());
-          if (removedOffer) {
-            this.defaultCallback(
-              {
-                type: evt.name,
-                ba: semibook.ba,
-                taker: evt.args.taker,
-                offer: removedOffer,
-                takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
-                takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
-              },
-              semibook
-            );
-          }
-          break;
+      case "OfferRetract":
+        removedOffer = removeOffer(semibook, evt.args.id.toNumber());
+        // Don't trigger an event about an offer outside of the local cache
+        if (removedOffer) {
+          this.defaultCallback(
+            {
+              type: evt.name,
+              ba: semibook.ba,
+              offer: removedOffer,
+            },
+            semibook
+          );
+        }
+        break;
 
-        case "OfferRetract":
-          removedOffer = removeOffer(semibook, evt.args.id.toNumber());
-          // Don't trigger an event about an offer outside of the local cache
-          if (removedOffer) {
-            this.defaultCallback(
-              {
-                type: evt.name,
-                ba: semibook.ba,
-                offer: removedOffer,
-              },
-              semibook
-            );
-          }
-          break;
-
-        case "SetGasbase":
-          semibook.gasbase.overhead_gasbase =
-            evt.args.overhead_gasbase.toNumber();
-          semibook.gasbase.offer_gasbase = evt.args.offer_gasbase.toNumber();
-          break;
-        default:
-          throw Error(`Unknown event ${evt}`);
-      }
-    };
+      case "SetGasbase":
+        semibook.gasbase.overhead_gasbase =
+          evt.args.overhead_gasbase.toNumber();
+        semibook.gasbase.offer_gasbase = evt.args.offer_gasbase.toNumber();
+        break;
+      default:
+        throw Error(`Unknown event ${evt}`);
+    }
   }
 
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {

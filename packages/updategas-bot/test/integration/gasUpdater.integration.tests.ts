@@ -7,7 +7,7 @@ const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { Mangrove } from "@giry/mangrove-js";
-import { GasUpdater } from "../../src/GasUpdater";
+import { GasUpdater, OracleSourceConfiguration } from "../../src/GasUpdater";
 import * as hre from "hardhat";
 import "hardhat-deploy-ethers/dist/src/type-extensions";
 import { config } from "../../src/util/config";
@@ -54,12 +54,16 @@ describe("GasUpdater integration tests", () => {
 
     const constantGasPrice = config.get<number>("constantOracleGasPrice");
 
+    const oracleSourceConfiguration: OracleSourceConfiguration = {
+      OracleGasPrice: constantGasPrice,
+      _tag: "Constant",
+    };
+
     // setup gasUpdater
     const gasUpdater = new GasUpdater(
       mgv,
       acceptableGasGapToOracle,
-      constantGasPrice,
-      ""
+      oracleSourceConfiguration
     );
 
     // Test
