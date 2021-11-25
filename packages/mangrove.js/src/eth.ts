@@ -56,8 +56,10 @@ export async function getProviderNetwork(
  * options.provider can be:
  * - a string (url or ethers.js network name)
  * - an EIP-1193 provider object (eg window.ethereum)
+ * - empty, if `options.signer` is a signer and `options.signer.provider` is a provider.
  *
  * Signing info can be provided by
+ * - `options.signer`, if you want to contruct the Signer yourself
  * - `options.provider`, then you can specify `options.signerIndex` to get the nth account, or
  * - `options.privateKey`, or
  * - `options.mnemonic`, then you can specify the derivation with `options.path`.
@@ -67,6 +69,10 @@ export async function getProviderNetwork(
  * @returns {object} Returns a valid Ethereum network signer object with an attached provider.
  */
 export function _createSigner(options: CreateSignerOptions = {}): Signer {
+  if (options.signer && options.signer.provider) {
+    return options.signer;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let provider: any = options.provider;
   const isADefaultProvider = !!ethers.providers.getNetwork(provider.toString());

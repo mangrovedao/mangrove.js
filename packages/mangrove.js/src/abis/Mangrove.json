@@ -959,6 +959,11 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1007,6 +1012,11 @@
       {
         "internalType": "uint256",
         "name": "takerGave",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bounty",
         "type": "uint256"
       }
     ],
@@ -1299,7 +1309,13 @@
       }
     ],
     "name": "retractOffer",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "provision",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1507,6 +1523,11 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1555,6 +1576,11 @@
       {
         "internalType": "uint256",
         "name": "takerGave",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bounty",
         "type": "uint256"
       }
     ],

@@ -48,9 +48,7 @@ Here's an example configuration file with instances of all possible configuratio
 
 ```json
 {
-  "log": {
-    "logLevel": "info"
-  },
+  "logLevel": "info",
   "acceptableGasGapToOracle": 0.5,
   "constantOracleGasPrice": 3,
   "oracleURL": "https://gasstation-mainnet.matic.network/",
@@ -59,12 +57,14 @@ Here's an example configuration file with instances of all possible configuratio
 }
 ```
 
-- `log-level`: Sets the logging level - the bot employs the [winston](https://github.com/winstonjs/winston) logger, and it's default log-levels.
+- `logLevel`: Sets the logging level - the bot employs the [winston](https://github.com/winstonjs/winston) logger, and it's default log-levels.
 - `acceptableGasGapToOracle`: If the difference between Mangrove's current gas price and the standard gas price reported by the oracle is above this threshold a gas price update will be sent to Mangrove's gas price oracle.
 - `constantOracleGasPrice`: A constant gas price to be returned by this bot. _This setting overrides a given `oracleURL`._
 - `oracleURL`: URL for an external oracle - expects a JSON REST endpoint a la <https://gasstation-mainnet.matic.network/>. _This setting is only used if `constantOracleGasPrice` is not given._
 - `oracleURL_Key`: Name of key to lookup in JSON returned by JSON REST endpoint at `oracleURL`.
 - `runEveryXHours`: Schedule bot to run with an interval of this many hours.
+
+It is possible to override parts of the configuration with environment variables. This is controlled by [./config/custom-environment-variables.json](./config/custom-environment-variables.json). The structure of this file mirrors the configuration structure but with names of environment variables in the places where these can override a part of the configuration.
 
 # Logging
 

@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 const helpers = require("../util/helpers");
 const Mangrove = require("../../src/mangrove");
-const hardhatUtils = require("@giry/hardhat-mangrove/hardhat-utils");
+const hardhatUtils = require("@giry/hardhat-utils/hardhat-utils");
 const seed =
   Math.random().toString(36).substring(2, 15) +
   Math.random().toString(36).substring(2, 15);

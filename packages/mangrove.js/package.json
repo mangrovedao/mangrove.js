@@ -3,12 +3,12 @@
   "version": "0.0.2",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
-  "license": "BSD-3-Clause",
+  "license": "(BSD-2-Clause OR BSD-3-Clause)",
   "main": "dist/nodejs/index.js",
   "scripts": {
     "precommit": "lint-staged",
-    "lint": "npx eslint ./src/*.ts",
     "prepack": "yarn run build",
+    "lint": "npx eslint ./src/*.ts",
     "build-this-package": "yarn run lint && yarn run get-mangrove-abis && yarn run typechain && tsc && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@giry/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
@@ -22,8 +22,8 @@
     "publish_minor": "npm version minor && npm publish --access public",
     "publish_major": "npm version major && npm publish --access public",
     "rollup": "rollup -c rollup.config.ts",
-    "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
+    "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json",
     "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\""
   },
   "files": [
@@ -65,13 +65,13 @@
     "@ethersproject/bytes": "^5.0.0",
     "@ethersproject/hardware-wallets": "^5.0.0",
     "@ethersproject/providers": "^5.0.0",
-    "@giry/hardhat-mangrove": "workspace:*",
+    "@giry/hardhat-utils": "workspace:*",
     "@giry/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@rollup/plugin-commonjs": "^20.0.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^9.0.0",
-    "@typechain/ethers-v5": "^7.0.1",
+    "@typechain/ethers-v5": "^8.0.2",
     "@types/big.js": "^6.1.1",
     "@types/chai-as-promised": "^7.1.4",
     "@types/mocha": "^8.2.0",
@@ -102,7 +102,7 @@
     "shelljs": "^0.8.4",
     "ts-essentials": "^8.1.0",
     "ts-node": "^9.1.1",
-    "typechain": "^5.1.2",
+    "typechain": "^6.0.2",
     "typescript": "^4.4.0"
   }
 }

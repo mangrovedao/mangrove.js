@@ -1,5 +1,3 @@
-// Copyright (c) 2021 Giry SAS. All rights reserved.
-// SPDX-License-Identifier:	BSD-2-Clause
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
 import {

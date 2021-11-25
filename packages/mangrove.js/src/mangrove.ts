@@ -1,5 +1,3 @@
-// Copyright (c) 2021 Giry SAS. All rights reserved.
-// SPDX-License-Identifier:	BSD-2-Clause
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import { Market } from "./market";
@@ -232,6 +230,17 @@ export class Mangrove {
 
   /* Static */
   /********** */
+
+  /**
+   * Read all contract addresses on the given network.
+   */
+  static getAllAddresses(network = "mainnet"): [string, string][] {
+    if (!addresses[network]) {
+      throw Error(`No addresses for network ${network}.`);
+    }
+
+    return Object.entries(addresses[network]);
+  }
 
   /**
    * Read a contract address on the given network.
