@@ -1,6 +1,6 @@
 import { config } from "./util/config";
 import { logger } from "./util/logger";
-import { GasUpdater } from "./GasUpdater";
+import { GasUpdater, OracleSourceConfiguration } from "./GasUpdater";
 
 import Mangrove from "@giry/mangrove-js";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -8,6 +8,12 @@ import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
 import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
+
+type OracleConfig = {
+  acceptableGasGapToOracle: number;
+  runEveryXHours: number;
+  oracleSourceConfiguration: OracleSourceConfiguration;
+};
 
 const scheduler = new ToadScheduler();
 
@@ -29,55 +35,16 @@ const main = async () => {
     signer: nonceManager,
   });
 
-  // read and use file config
-  // - set defaults explicitly
-  let acceptableGasGapToOracle = 0;
-  let constantOracleGasPrice: number | undefined = undefined;
-  let oracleURL = "";
-  let runEveryXHours = 12; // twice a day, by default
-
-  // - read in values
-  if (config.has("acceptableGasGapToOracle")) {
-    acceptableGasGapToOracle = config.get<number>("acceptableGasGapToOracle");
-  }
-
-  if (config.has("constantOracleGasPrice")) {
-    constantOracleGasPrice = config.get<number>("constantOracleGasPrice");
-  }
-
-  if (config.has("oracleURL")) {
-    oracleURL = config.get<string>("oracleURL");
-  }
-
-  if (config.has("runEveryXHours")) {
-    runEveryXHours = config.get<number>("runEveryXHours");
-  }
-
-  // - config validation and logging
-  //   if constant price set, use that and ignore other gas price config
-  if (constantOracleGasPrice !== undefined) {
-    logger.info(
-      `config value for 'constantOracleGasPrice' set. Using the configured value.`,
-      { data: constantOracleGasPrice }
-    );
-  } else {
-    if (oracleURL === undefined) {
-      throw new Error(
-        `Either 'constantOracleGasPrice' or 'oracleURL' must be set in config. Neither found.`
-      );
-    }
-  }
+  const oracleConfig: OracleConfig = readAndValidateConfig();
 
   const gasUpdater = new GasUpdater(
     mgv,
-    acceptableGasGapToOracle,
-    constantOracleGasPrice,
-    oracleURL
+    oracleConfig.acceptableGasGapToOracle,
+    oracleConfig.oracleSourceConfiguration
   );
 
   // create and schedule task
-
-  logger.info(`Running bot every ${runEveryXHours} hours.`);
+  logger.info(`Running bot every ${oracleConfig.runEveryXHours} hours.`);
 
   const task = new AsyncTask(
     "gas-updater bot task",
@@ -87,18 +54,18 @@ const main = async () => {
         return -1;
       });
 
-      logger.verbose(`scheduled bot task running on block ${blockNumber}...`);
-      exitIfMangroveIsKilled(mgv, blockNumber);
+      logger.verbose(`Scheduled bot task running on block ${blockNumber}...`);
+      await exitIfMangroveIsKilled(mgv, blockNumber);
       await gasUpdater.checkSetGasprice();
     },
     (err: Error) => {
-      logger.exception(err);
+      logErrorAndExit(err);
     }
   );
 
   const job = new SimpleIntervalJob(
     {
-      hours: runEveryXHours,
+      hours: oracleConfig.runEveryXHours,
       runImmediately: true,
     },
     task
@@ -106,6 +73,93 @@ const main = async () => {
 
   scheduler.addSimpleIntervalJob(job);
 };
+
+function readAndValidateConfig(): OracleConfig {
+  let acceptableGasGapToOracle = 0;
+  let runEveryXHours = 0;
+
+  const configErrors: string[] = [];
+  // - acceptable gap
+  if (config.has("acceptableGasGapToOracle")) {
+    acceptableGasGapToOracle = config.get<number>("acceptableGasGapToOracle");
+  } else {
+    configErrors.push("'acceptableGasGapToOracle' missing");
+  }
+
+  // - run every X hours
+  if (config.has("runEveryXHours")) {
+    runEveryXHours = config.get<number>("runEveryXHours");
+  } else {
+    configErrors.push("'runEveryXHours' missing");
+  }
+
+  // - oracle source config
+  let constantOracleGasPrice: number | undefined;
+  let oracleURL = "";
+  let oracleURL_Key = "";
+
+  if (config.has("constantOracleGasPrice")) {
+    constantOracleGasPrice = config.get<number>("constantOracleGasPrice");
+  }
+
+  if (config.has("oracleURL")) {
+    oracleURL = config.get<string>("oracleURL");
+  }
+
+  if (config.has("oracleURL_Key")) {
+    oracleURL_Key = config.get<string>("oracleURL_Key");
+  }
+
+  let oracleSourceConfiguration: OracleSourceConfiguration;
+  if (constantOracleGasPrice != null) {
+    // if constant price set, use that and ignore other gas price config
+    logger.info(
+      `Configuration for constant oracle gas price found. Using the configured value.`,
+      { data: constantOracleGasPrice }
+    );
+
+    oracleSourceConfiguration = {
+      OracleGasPrice: constantOracleGasPrice,
+      _tag: "Constant",
+    };
+  } else {
+    // basic validatation of endpoint config
+    if (
+      oracleURL == null ||
+      oracleURL == "" ||
+      oracleURL_Key == null ||
+      oracleURL_Key == ""
+    ) {
+      configErrors.push(
+        `Either 'constantOracleGasPrice' or the pair ('oracleURL', 'oracleURL_Key') must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', oracleURL: '${oracleURL}', oracleURL_Key: '${oracleURL_Key}'`
+      );
+    }
+    logger.info(
+      `Configuration for oracle endpoint found. Using the configured values.`,
+      {
+        data: { oracleURL, oracleURL_Key },
+      }
+    );
+
+    if (configErrors.length > 0) {
+      throw new Error(
+        `Found following config errors: [${configErrors.join(", ")}]`
+      );
+    }
+
+    oracleSourceConfiguration = {
+      oracleEndpointURL: oracleURL,
+      oracleEndpointKey: oracleURL_Key,
+      _tag: "Endpoint",
+    };
+  }
+
+  return {
+    acceptableGasGapToOracle: acceptableGasGapToOracle,
+    oracleSourceConfiguration: oracleSourceConfiguration,
+    runEveryXHours: runEveryXHours,
+  };
+}
 
 // NOTE: Almost equal to method in cleanerbot - commonlib.js candidate
 async function exitIfMangroveIsKilled(
@@ -121,13 +175,16 @@ async function exitIfMangroveIsKilled(
   }
 }
 
+function logErrorAndExit(err: Error) {
+  logger.exception(err);
+  scheduler.stop();
+  process.exit(1);
+}
+
 process.on("unhandledRejection", function (reason, promise) {
   logger.warn("Unhandled Rejection", { data: reason });
 });
 
 main().catch((e) => {
-  //NOTE: naive implementation
-  logger.exception(e);
-  scheduler.stop();
-  process.exit(1);
+  logErrorAndExit(e);
 });

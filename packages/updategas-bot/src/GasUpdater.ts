@@ -6,6 +6,34 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 /**
+ * Configuration for an external oracle JSON REST endpoint.
+ * @param oracleEndpointURL URL for the external oracle - expects a JSON REST endpoint.
+ * @param oracleEndpointKey Name of key to lookup in JSON returned by JSON REST endpoint.
+ */
+type OracleEndpointConfiguration = {
+  readonly _tag: "Endpoint";
+  readonly oracleEndpointURL: string;
+  readonly oracleEndpointKey: string;
+};
+
+/**
+ * @param OracleGasPrice A constant gasprice to be returned by this bot.
+ */
+type ConstantOracleConfiguration = {
+  readonly _tag: "Constant";
+  readonly OracleGasPrice: number;
+};
+
+/**
+ * An oracle source configuration - should be either a constant gas price
+ * oracle or the url of an external oracle (a JSON REST endpoint) and the key
+ * to lookup in the JSON returned by the endpoint.
+ */
+export type OracleSourceConfiguration =
+  | ConstantOracleConfiguration
+  | OracleEndpointConfiguration;
+
+/**
  * A GasUpdater bot, which queries an external oracle for gas prices, and sends
  * gas price updates to Mangrove, through a dedicated oracle contract.
  */
@@ -13,31 +41,36 @@ export class GasUpdater {
   #mangrove: Mangrove;
   #acceptableGasGapToOracle: number;
   #constantOracleGasPrice: number | undefined;
-  #oracleURL: string;
-  #oracleURL_Key = "standard";
+  #oracleURL = "";
+  #oracleURL_Key = "";
 
   /**
    * Constructs a GasUpdater bot.
    * @param mangrove A mangrove.js Mangrove object.
    * @param acceptableGasGapToOracle The allowed gap between the Mangrove gas
    * price and the external oracle gas price.
-   * @param constantOracleGasPrice A constant gasprice to be returned by this bot. This setting overrides a given `oracleURL`.
-   * @param oracleURL URL for an external oracle - expects a JSON REST endpoint. This setting is only used if `constantOracleGasPrice` is not given.
-   * @param oracleURL_Key Name of key to lookup in JSON returned by JSON REST endpoint at `oracleURL`.
+   * @param oracleSourceConfiguration The oracle source configuration - see type `OracleSourceConfiguration`.
    */
   constructor(
     mangrove: Mangrove,
     acceptableGasGapToOracle: number,
-    constantOracleGasPrice: number | undefined,
-    oracleURL: string,
-    oracleURL_Key?: string
+    oracleSourceConfiguration: OracleSourceConfiguration
   ) {
     this.#mangrove = mangrove;
     this.#acceptableGasGapToOracle = acceptableGasGapToOracle;
-    this.#constantOracleGasPrice = constantOracleGasPrice;
-    this.#oracleURL = oracleURL;
-    if (oracleURL_Key !== undefined) {
-      this.#oracleURL_Key = oracleURL_Key;
+
+    switch (oracleSourceConfiguration._tag) {
+      case "Constant":
+        this.#constantOracleGasPrice = oracleSourceConfiguration.OracleGasPrice;
+        break;
+      case "Endpoint":
+        this.#oracleURL = oracleSourceConfiguration.oracleEndpointURL;
+        this.#oracleURL_Key = oracleSourceConfiguration.oracleEndpointKey;
+        break;
+      default:
+        throw new Error(
+          `Parameter oracleSourceConfiguration must be either ConstantOracleConfiguration or OracleEndpointConfiguration. Found '${oracleSourceConfiguration}'`
+        );
     }
   }
 
@@ -72,10 +105,20 @@ export class GasUpdater {
         );
 
       if (shouldUpdateGasPrice) {
+        logger.verbose(`Determined gas price update needed. `, {
+          data: newGasPrice,
+        });
         await this.#updateMangroveGasPrice(newGasPrice);
+      } else {
+        logger.verbose(`Determined gas price update not needed.`);
       }
     } else {
-      logger.error("Could not contact oracle, skipping update.");
+      const url = this.#oracleURL;
+      const key = this.#oracleURL_Key;
+      logger.error(
+        "Error getting gas price from oracle endpoint, skipping update. Oracle endpoint config:",
+        { data: { url, key } }
+      );
     }
   }
 

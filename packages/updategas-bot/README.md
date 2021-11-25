@@ -2,6 +2,8 @@ A simple configurable gas price update bot for the Mangrove DEX.
 
 The bot either employs a (configurable) constant gas price, or queries an external oracle for gas prices. It sends gas price updates to Mangrove, through Mangroves dedicated oracle contract.
 
+_Note:_ All gas prices are in whole units of Gwei (i.e., positive integers). If a gas price oracle returns a floating point as the gas price, we round to the nearest integer and send this gas price to Mangrove.
+
 # Installation
 
 First, clone the repo and install the prerequisites for the monorepo described in the root [README.md](../../README.md).
@@ -40,7 +42,7 @@ $ yarn start
 
 ## Configuration
 
-The bot has a number of configurable settings (which are currently read and used at startup, so need a redeploy to change configuration (_subject to change_)).
+The bot has a number of configurable settings (which are currently read and used at startup, so bot needs to be restarted to change configuration).
 
 Here's an example configuration file with instances of all possible configuration values:
 

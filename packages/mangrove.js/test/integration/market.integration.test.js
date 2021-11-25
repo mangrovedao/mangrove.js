@@ -56,8 +56,12 @@ describe("Market integration tests suite", () => {
     };
     await market.subscribe(cb);
 
-    helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
-    helpers.newOffer(mgv, addrB, addrA, { wants: "1.3", gives: "1.1" });
+    await helpers
+      .newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" })
+      .then((tx) => tx.wait());
+    await helpers
+      .newOffer(mgv, addrB, addrA, { wants: "1.3", gives: "1.1" })
+      .then((tx) => tx.wait());
 
     const offer1 = {
       id: 1,
@@ -183,10 +187,7 @@ describe("Market integration tests suite", () => {
 
   it("crudely simulates market buy", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-    const addrA = market.base.address;
-    const addrB = market.quote.address;
-    await helpers.newOffer(mgv, addrA, addrB, { wants: "1.2", gives: "0.3" });
-    await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "0.25" });
+
     const done = helpers.Deferred();
     market.subscribe((evt) => {
       if (market.book().asks.length === 2) {
@@ -200,6 +201,15 @@ describe("Market integration tests suite", () => {
         done.ok();
       }
     });
+
+    const addrA = market.base.address;
+    const addrB = market.quote.address;
+    await helpers
+      .newOffer(mgv, addrA, addrB, { wants: "1.2", gives: "0.3" })
+      .then((tx) => tx.wait());
+    await helpers
+      .newOffer(mgv, addrA, addrB, { wants: "1", gives: "0.25" })
+      .then((tx) => tx.wait());
     await done;
   });
 

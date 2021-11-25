@@ -13,7 +13,6 @@ config.hardhat = {
       gasMultiplier: 1,
       blockGasLimit: 7000000000,
       allowUnlimitedContractSize: true,
-      loggingEnabled: true,
     },
     localhost: {
       url: "http://127.0.0.1:8545",
