@@ -26,6 +26,7 @@ describe("Market integration tests suite", () => {
     });
 
     //shorten polling for faster tests
+    // @ts-ignore
     mgv._provider.pollingInterval = 250;
     await mgv.contract["fund()"]({ value: toWei(10) });
 

@@ -1,6 +1,7 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import { Market } from "./market";
+import { SimpleMaker } from "./maker";
 import {
   Provider,
   Signer,
@@ -14,6 +15,7 @@ import { MgvToken } from "./mgvtoken";
 
 import Big from "big.js";
 import * as ethers from "ethers";
+import { TransactionResponse } from "@ethersproject/providers";
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
   Big.prototype.toString;
 
@@ -123,6 +125,28 @@ export class Mangrove {
     return await Market.connect({ ...params, mgv: this });
   }
 
+  async fundSelf(amount: Bigish): Promise<TransactionResponse> {
+    return this.fund(await this._signer.getAddress(), amount);
+  }
+
+  fund(address: string, amount: Bigish): Promise<TransactionResponse> {
+    return this.contract["fund(address)"](address, {
+      value: this.toUnits(amount, 18),
+    });
+  }
+
+  /* Get SimpleMaker object. 
+     Argument of the form `{base,quote}` where each is a string.
+     To set your own token, use `setDecimals` and `setAddress`.
+  */
+  async simpleMakerConnect(params: {
+    address: string;
+    base: string;
+    quote: string;
+  }): Promise<SimpleMaker> {
+    return await SimpleMaker.connect({ ...params, mgv: this });
+  }
+
   /* Return MgvToken instance tied to mangrove object. */
   token(name: string): MgvToken {
     return new MgvToken(name, this);
@@ -166,7 +190,7 @@ export class Mangrove {
 
   /** Convert public token amount to internal token representation.
    *
-   * if `extra` is a string, it is interpreted as a token name. Otherwise
+   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
    * it is the number of decimals.
    *
    *  @example
@@ -175,19 +199,19 @@ export class Mangrove {
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
-  toUnits(amount: Bigish, extra: string | number): ethers.BigNumber {
+  toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
     let decimals;
-    if (typeof extra === "number") {
-      decimals = extra;
+    if (typeof nameOrDecimals === "number") {
+      decimals = nameOrDecimals;
     } else {
-      decimals = this.getDecimals(extra);
+      decimals = this.getDecimals(nameOrDecimals);
     }
     return ethers.BigNumber.from(Big(10).pow(decimals).mul(amount).toFixed(0));
   }
 
   /** Convert internal token amount to public token representation.
    *
-   * if `extra` is a string, it is interpreted as a token name. Otherwise
+   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
    * it is the number of decimals.
    *
    *  @example
@@ -196,17 +220,26 @@ export class Mangrove {
    *  mgv.fromUnits("1e19",18) // 10
    *  ```
    */
-  fromUnits(amount: Bigish | ethers.BigNumber, extra: string | number): Big {
+  fromUnits(
+    amount: number | string | ethers.BigNumber,
+    nameOrDecimals: string | number
+  ): Big {
     let decimals;
-    if (typeof extra === "number") {
-      decimals = extra;
+    if (typeof nameOrDecimals === "number") {
+      decimals = nameOrDecimals;
     } else {
-      decimals = this.getDecimals(extra);
+      decimals = this.getDecimals(nameOrDecimals);
     }
     if (amount instanceof ethers.BigNumber) {
       amount = amount.toString();
     }
     return Big(amount).div(Big(10).pow(decimals));
+  }
+
+  /** Provision available at mangrove for address, in ethers */
+  async balanceOf(address: string): Promise<Big> {
+    const bal = await this.contract.balanceOf(address);
+    return this.fromUnits(bal, 18);
   }
 
   /**
