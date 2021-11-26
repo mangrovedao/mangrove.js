@@ -7,6 +7,8 @@ const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 
+import { sleep } from "@giry/commonlib-js";
+
 import { Mangrove, Market } from "@giry/mangrove-js";
 import * as mgvTestUtil from "@giry/mangrove-js/test/util/mgvIntegrationTestUtil";
 
@@ -70,6 +72,7 @@ describe("MarketCleaner integration tests", () => {
     it(`should clean offer failing to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
       await mgvTestUtil.postNewRevertingOffer(market, ba, maker);
+      await sleep(5000);
 
       const marketCleaner = new MarketCleaner(market, cleanerProvider);
 

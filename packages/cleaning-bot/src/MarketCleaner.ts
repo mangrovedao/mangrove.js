@@ -95,7 +95,7 @@ export class MarketCleaner {
         contextInfo
       );
 
-      const { asks, bids } = await this.#market.requestBook();
+      const { asks, bids } = this.#market.book();
       logger.info("Order book retrieved", {
         base: this.#market.base.name,
         quote: this.#market.quote.name,

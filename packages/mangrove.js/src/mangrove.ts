@@ -1,6 +1,6 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
-import { Market } from "./market";
+import { BookOptions, Market } from "./market";
 import {
   Provider,
   Signer,
@@ -119,7 +119,11 @@ export class Mangrove {
      Argument of the form `{base,quote}` where each is a string.
      To set your own token, use `setDecimals` and `setAddress`.
   */
-  async market(params: { base: string; quote: string }): Promise<Market> {
+  async market(params: {
+    base: string;
+    quote: string;
+    bookOptions?: BookOptions;
+  }): Promise<Market> {
     return await Market.connect({ ...params, mgv: this });
   }
 
