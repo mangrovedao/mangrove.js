@@ -382,7 +382,7 @@ export class Market {
   sell(params: TradeParams): Promise<OrderResult> {
     const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
     const _wants =
-      "price" in params ? _gives.div(params.price) : Big(params.wants);
+      "price" in params ? _gives.mul(params.price) : Big(params.wants);
 
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
