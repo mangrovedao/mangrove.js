@@ -254,20 +254,32 @@ export class Market {
   ): Promise<void> {
     if (this.#lowLevelCallbacks) throw Error("Already initialized.");
 
-    const config = await this.config();
+    let asksInilizationCompleteCallback: ({
+      semibook: semibook,
+      firstBlockNumber: number,
+    }) => void;
+    const asksInitializationPromise = new Promise<{
+      semibook: semibook;
+      firstBlockNumber: number;
+    }>((ok) => {
+      asksInilizationCompleteCallback = ok;
+    });
+    let bidsInilizationCompleteCallback: ({
+      semibook: semibook,
+      firstBlockNumber: number,
+    }) => void;
+    const bidsInitializationPromise = new Promise<{
+      semibook: semibook;
+      firstBlockNumber: number;
+    }>((ok) => {
+      bidsInilizationCompleteCallback = ok;
+    });
+
     const asksCallback = this.#createBookEventCallback(
-      "asks",
-      this.base,
-      this.quote,
-      config.asks,
-      opts
+      asksInitializationPromise
     );
     const bidsCallback = this.#createBookEventCallback(
-      "bids",
-      this.quote,
-      this.base,
-      config.bids,
-      opts
+      bidsInitializationPromise
     );
 
     this.#lowLevelCallbacks = { asksCallback, bidsCallback };
@@ -275,6 +287,25 @@ export class Market {
     const { asksFilter, bidsFilter } = this.#bookFilter();
     this.mgv.contract.on(asksFilter, asksCallback);
     this.mgv.contract.on(bidsFilter, bidsCallback);
+
+    const config = await this.config();
+
+    await this.#initializeSemibook(
+      "asks",
+      this.base,
+      this.quote,
+      config.asks,
+      asksInilizationCompleteCallback,
+      opts
+    );
+    await this.#initializeSemibook(
+      "bids",
+      this.base,
+      this.quote,
+      config.bids,
+      bidsInilizationCompleteCallback,
+      opts
+    );
   }
 
   #mapConfig(ba: "bids" | "asks", cfg: rawConfig): localConfig {
@@ -620,57 +651,55 @@ export class Market {
     this._book[semibook.ba] = mapToArray(semibook.best, semibook.offers);
   }
 
-  #createBookEventCallback(
+  async #initializeSemibook(
     ba: "bids" | "asks",
     inboundTkn: MgvToken,
     outboundTkn: MgvToken,
     localConfig: localConfig,
+    initializationCompleteCallback: ({
+      semibook: semibook,
+      firstBlockNumber: number,
+    }) => void,
     opts: Omit<BookOptions, "fromId">
-  ): (...args: any[]) => Promise<any> {
-    let inilizationCompleteCallback: (semibook: semibook) => void;
-    const initializationPromise: Promise<semibook> = new Promise<semibook>(
-      (ok) => {
-        inilizationCompleteCallback = ok;
+  ): Promise<void> {
+    const firstBlockNumber: number = await this.mgv._provider.getBlockNumber();
+    const rawOffers = await this.rawBook(
+      inboundTkn.address,
+      outboundTkn.address,
+      {
+        ...opts,
+        ...{ fromId: 0, blockNumber: firstBlockNumber },
       }
     );
-    let firstBlockNumber: number = undefined;
+
+    const semibook = {
+      ba: ba,
+      gasbase: {
+        overhead_gasbase: localConfig.overhead_gasbase,
+        offer_gasbase: localConfig.offer_gasbase,
+      },
+      ...this.rawToMap(ba, ...rawOffers),
+    };
+
+    this.#updateBook(semibook);
+
+    initializationCompleteCallback({ semibook, firstBlockNumber });
+  }
+
+  #createBookEventCallback(
+    initializationPromise: Promise<{
+      semibook: semibook;
+      firstBlockNumber: number;
+    }>
+  ): (...args: any[]) => Promise<any> {
     return async (event) => {
-      // Initialize by reading a prefix of the offer list on the first callback
-      if (firstBlockNumber === undefined) {
-        firstBlockNumber = event.blockNumber - 1;
-
-        const rawOffers = await this.rawBook(
-          inboundTkn.address,
-          outboundTkn.address,
-          {
-            ...opts,
-            ...{ fromId: 0, blockNumber: firstBlockNumber },
-          }
-        );
-
-        const semibook = {
-          ba: ba,
-          gasbase: {
-            overhead_gasbase: localConfig.overhead_gasbase,
-            offer_gasbase: localConfig.offer_gasbase,
-          },
-          ...this.rawToMap(ba, ...rawOffers),
-        };
-
-        this.#updateBook(semibook);
-        this.#handleBookEvent(semibook, event);
-
-        // Signal any queued events
-        inilizationCompleteCallback(semibook);
-      } else {
-        // Subsequent callbacks must ensure initialization has completed
-        const semibook = await initializationPromise;
-        // If event is from firstBlockNumber (or before), ignore it as it will be included in the initially read offer list
-        if (event.blockNumber <= firstBlockNumber) {
-          return;
-        }
-        this.#handleBookEvent(semibook, event);
+      // Callbacks must ensure initialization has completed
+      const { semibook, firstBlockNumber } = await initializationPromise;
+      // If event is from firstBlockNumber (or before), ignore it as it will be included in the initially read offer list
+      if (event.blockNumber <= firstBlockNumber) {
+        return;
       }
+      this.#handleBookEvent(semibook, event);
     };
   }
 
