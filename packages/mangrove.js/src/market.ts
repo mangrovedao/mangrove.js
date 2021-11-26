@@ -23,8 +23,6 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
-import { eth } from ".";
-import { DiagnosticCategory } from "typescript";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
@@ -67,10 +65,7 @@ type OfferData = {
   gives: BigNumber;
 };
 
-export type bookSubscriptionCbArgument = {
-  ba: "asks" | "bids";
-  offer: Offer;
-} & (
+type bookSubscriptionCbArgument = { ba: "asks" | "bids"; offer: Offer } & (
   | { type: "OfferWrite" }
   | {
       type: "OfferFail";
@@ -83,21 +78,10 @@ export type bookSubscriptionCbArgument = {
   | { type: "OfferRetract" }
 );
 
-type marketCallback<T> = (
-  cbArg: bookSubscriptionCbArgument,
-  evt?: bookSubscriptionEvent,
-  _evt?: ethers.Event
-) => T;
-type storableMarketCallback = marketCallback<any>;
-type marketFilter = marketCallback<boolean>;
+type marketCallback = (event: bookSubscriptionCbArgument) => any;
 type subscriptionParam =
   | { type: "multiple" }
-  | {
-      type: "once";
-      ok: (...a: any[]) => any;
-      ko: (...a: any[]) => any;
-      filter?: (...a: any[]) => boolean;
-    };
+  | { type: "once"; ok: (...a: any[]) => any; ko: (...a: any[]) => any };
 
 /**
  * The Market class focuses on a mangrove market.
@@ -105,7 +89,7 @@ type subscriptionParam =
  * one for the pair (base,quote), the other for the pair (quote,base).
  *
  * Market initialization needs to store the network name, so you cannot
- * directly use the constructor. Instead of `new Market(...)`, do
+ * directly use the constructor. Instead `new Market(...)`, do
  *
  * `await Market.connect(...)`
  */
@@ -113,7 +97,7 @@ export class Market {
   mgv: Mangrove;
   base: MgvToken;
   quote: MgvToken;
-  #subscriptions: Map<storableMarketCallback, subscriptionParam>;
+  #subscriptions: Map<marketCallback, subscriptionParam>;
   #lowLevelCallbacks: null | { asksCallback?: any; bidsCallback?: any };
   _book: { asks: Offer[]; bids: Offer[] };
 
@@ -158,32 +142,8 @@ export class Market {
     this._book = { asks: [], bids: [] };
   }
 
-  /* Given a price, find the id of the immediately-better offer in the
-     book. */
-  getPivot(ba: "asks" | "bids", price: Bigish) {
-    // we select as pivot the immediately-better offer
-    // the actual ordering in the offer list is lexicographic
-    // price * gasreq (or price^{-1} * gasreq)
-    // we ignore the gasreq comparison because we may not
-    // know the gasreq (could be picked by offer contract)
-    price = Big(price);
-    const comparison = ba === "asks" ? "gt" : "lt";
-    let latest_id = 0;
-    for (const offer of this._book[ba]) {
-      if (offer.price[comparison](price)) {
-        break;
-      }
-      latest_id = offer.id;
-    }
-    return latest_id;
-  }
-  async isActive(): Promise<boolean> {
-    const config = await this.config();
-    return config.asks.active && config.bids.active;
-  }
-
   /* Stop calling a user-provided function on book-related events. */
-  unsubscribe(cb: storableMarketCallback): void {
+  unsubscribe(cb: (bookSubscriptionCbArgument) => void): void {
     this.#subscriptions.delete(cb);
   }
 
@@ -274,13 +234,9 @@ export class Market {
   /**
    *  Returns a promise which is fulfilled after execution of the callback.
    */
-  async once<T>(cb: marketCallback<T>, filter?: marketFilter): Promise<T> {
+  async once<T>(cb: (event: bookSubscriptionCbArgument) => T): Promise<T> {
     return new Promise((ok, ko) => {
-      let params: subscriptionParam = { type: "once", ok, ko };
-      if (typeof filter !== "undefined") {
-        params.filter = filter;
-      }
-      this.#subscriptions.set(cb as storableMarketCallback, params);
+      this.#subscriptions.set(cb, { type: "once", ok, ko });
     });
   }
 
@@ -426,7 +382,7 @@ export class Market {
   sell(params: TradeParams): Promise<OrderResult> {
     const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
     const _wants =
-      "price" in params ? _gives.mul(params.price) : Big(params.wants);
+      "price" in params ? _gives.div(params.price) : Big(params.wants);
 
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
@@ -656,27 +612,20 @@ export class Market {
     };
   }
 
-  defaultCallback(
-    cbArg: bookSubscriptionCbArgument,
-    semibook: semibook,
-    evt: bookSubscriptionEvent,
-    _evt: ethers.Event
-  ): void {
+  defaultCallback(evt: bookSubscriptionCbArgument, semibook: semibook): void {
     this._book[semibook.ba] = mapToArray(semibook.best, semibook.offers);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
-        if (!("filter" in params) || params.filter(cbArg, evt, _evt)) {
-          this.#subscriptions.delete(cb);
-          Promise.resolve(cb(cbArg, evt, _evt)).then(params.ok, params.ko);
-        }
+        this.#subscriptions.delete(cb);
+        Promise.resolve(cb(evt)).then(params.ok, params.ko);
       } else {
-        cb(cbArg, evt, _evt);
+        cb(evt);
       }
     }
   }
 
   #createBookEventCallback(semibook: semibook): (...args: any[]) => any {
-    return (_evt: ethers.Event) => {
+    return (_evt) => {
       const evt: bookSubscriptionEvent = this.mgv.contract.interface.parseLog(
         _evt
       ) as any;
@@ -722,9 +671,7 @@ export class Market {
               offer: offer,
               ba: semibook.ba,
             },
-            semibook,
-            evt,
-            _evt
+            semibook
           );
           break;
 
@@ -742,9 +689,7 @@ export class Market {
                 takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
                 mgvData: evt.args.mgvData,
               },
-              semibook,
-              evt,
-              _evt
+              semibook
             );
           }
           break;
@@ -761,9 +706,7 @@ export class Market {
                 takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
                 takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
               },
-              semibook,
-              evt,
-              _evt
+              semibook
             );
           }
           break;
@@ -778,9 +721,7 @@ export class Market {
                 ba: semibook.ba,
                 offer: removedOffer,
               },
-              semibook,
-              evt,
-              _evt
+              semibook
             );
           }
           break;

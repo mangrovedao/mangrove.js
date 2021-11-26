@@ -36,7 +36,7 @@ export class MgvToken {
    * market.fromUnits("1e18") // 1
    * ```
    */
-  fromUnits(amount: string | number | ethers.BigNumber): Big {
+  fromUnits(amount: Bigish | ethers.BigNumber): Big {
     return this.mgv.fromUnits(amount, this.decimals);
   }
   /**
