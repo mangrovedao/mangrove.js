@@ -72,6 +72,69 @@ const main = async () => {
 main().catch(console.error);
 ```
 
+## Using as a maker
+
+For now the only available maker is SimpleMaker. This maker has its own provisions and no internal logic. You can amplify your liquidity by posting more offers than your available liquidity.
+
+```js
+const { Mangrove, SimpleMaker } = require("mangrove.js");
+const mgv = await Mangrove.connect("maticmum"); // Mumbai testnet
+
+// deploy a new maker
+const mkr_address = await SimpleMaker.deploy(mgv);
+
+// SimpleMaker contracts are token-agnostic, but you must instantiate the js object
+// focused on a specific base/quote pair.
+const mkr = await mgv.simpleMakerConnect({
+  address: mkr_address,
+  base: "WETH",
+  quote: "USDC",
+});
+
+// note that mkr.market is a Market object with all the taker functions available
+
+// approve mangrove for transfers
+mkr.approveMangrove("WETH", 10000);
+mkr.approveMangrove("USDC", 1000000000000000);
+
+// read current allowance
+const allowance = await mkr.mangroveAllowance("USDC");
+// you could also do
+const allowance2 = mgv
+  .token("USDC")
+  .allowance({ owner: mkr.address, spender: mgv.address });
+
+// fund maker contract (bot must have ethers)
+await mkr.fund(12);
+
+// check current balance of maker at Mangrove
+let balance = await mgv.balanceOf(mkr.address);
+
+// withdraw maker's balance to the signer's address
+mkr.withdraw(4);
+
+// post a new offer giving weth against usdc
+// you can give gives/wants or price/volume
+// id:number is the new offer id
+// event:ethers.Event is the ethers.js event that created the offer
+const { id: askId, event } = await mkr.newAsk({ wants: 3500, gives: 1 });
+
+// post a new offer giving usdc against weth
+const { id: bidId, event } = await mkr.newBid({ price: 3400, volume: 2 });
+
+const asks /*:Offer[]*/ = await mkr.asks();
+const bids /*:Offer[]*/ = await mkr.bids();
+
+// Update an existing ask.
+// You can update gives/wants or price/volume. Other parameters will not change.
+
+const promise = mkr.updateAsk(askId, { wants: 3600, gives: 1 });
+promise.then((event) => console.log("offer updated", event));
+
+// Cancel an existing bid.
+mkr.cancelBid(bidId);
+```
+
 ## More Code Examples
 
 See the docblock comments above each function definition or the official [mangrove.js Documentation](TODO).

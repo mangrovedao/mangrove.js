@@ -10,10 +10,11 @@ import { decimals } from "./constants";
 
 import { Mangrove } from "./mangrove";
 import { Market } from "./market";
+import { SimpleMaker } from "./maker";
 import { MgvToken } from "./mgvtoken";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
 export default Mangrove;
-export { eth, decimals, ethers, Mangrove, Market, MgvToken };
+export { eth, decimals, ethers, Mangrove, Market, MgvToken, SimpleMaker };
