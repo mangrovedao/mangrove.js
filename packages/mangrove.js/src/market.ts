@@ -2,11 +2,13 @@ import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
 import {
   TradeParams,
+  BookOptions,
   BookReturns,
   Bigish,
   rawConfig,
   localConfig,
   bookSubscriptionEvent,
+  Offer,
 } from "./types";
 import { Mangrove } from "./mangrove";
 import { MgvToken } from "./mgvtoken";
@@ -27,12 +29,6 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 type OrderResult = { got: Big; gave: Big };
-export type BookOptions = {
-  fromId?: number;
-  maxOffers?: number;
-  chunkSize?: number;
-  blockNumber?: number;
-};
 const bookOptsDefault: BookOptions = {
   fromId: 0,
   maxOffers: DEFAULT_MAX_OFFERS,
@@ -43,21 +39,6 @@ type offerList = { offers: Map<number, Offer>; best: number };
 type semibook = offerList & {
   ba: "bids" | "asks";
   gasbase: { offer_gasbase: number; overhead_gasbase: number };
-};
-
-export type Offer = {
-  id: number;
-  prev: number;
-  next: number;
-  gasprice: number;
-  maker: string;
-  gasreq: number;
-  overhead_gasbase: number;
-  offer_gasbase: number;
-  wants: Big;
-  gives: Big;
-  volume: Big;
-  price: Big;
 };
 
 type OfferData = {
