@@ -9,7 +9,7 @@ import { ErrorWithData } from "@giry/commonlib-js";
 import { MarketCleaner } from "./MarketCleaner";
 import { logger } from "./util/logger";
 import Mangrove from "@giry/mangrove-js";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
@@ -24,13 +24,10 @@ const main = async () => {
   if (!process.env["PRIVATE_KEY"]) {
     throw new Error("No private key provided in PRIVATE_KEY");
   }
-  const provider = new JsonRpcProvider(process.env["ETHEREUM_NODE_URL"]);
+  const provider = new WebSocketProvider(process.env["ETHEREUM_NODE_URL"]);
   const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
   const nonceManager = new NonceManager(signer);
-  const mgv = await Mangrove.connect({
-    provider: process.env["ETHEREUM_NODE_URL"],
-    signer: nonceManager,
-  });
+  const mgv = await Mangrove.connect({ signer: nonceManager });
 
   logger.info("Connected to Mangrove", {
     contextInfo: "init",
@@ -55,6 +52,7 @@ const main = async () => {
     const market = await mgv.market({
       base: token1,
       quote: token2,
+      bookOptions: { maxOffers: 200 },
     });
 
     marketCleanerMap.set(
