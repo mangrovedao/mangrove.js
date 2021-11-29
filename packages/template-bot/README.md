@@ -6,7 +6,8 @@ To use this template
 - Update the `package.json` file - at least the description
 - The `src` folder includes extremely minimal code for an `index.ts` file (startup code), and a `TemplateBot.ts` file with a `TemplateBot` class. Update those as needed.
 - The `test` folder includes stub test code for integration tests as well as `mocha` configuration to use the test-reporter that we use. Update as needed.
-- The `config` folder contains basic configuration stubs with a `logLevel` is already defined.
+- The `config` folder contains basic configuration stubs with a `logLevel` is already defined. Extend as needed.
+  - The folder also contains configuration to override the `logLevel` with an environment variable. Extend as needed.
 - Add the new bot to the CI build (with tests as needed).
 - Update this `README.md` file - include at least the following sections, and search for `template-bot` and update accordingly for your bot.
 
