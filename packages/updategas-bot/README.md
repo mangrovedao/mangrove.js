@@ -12,7 +12,7 @@ Next, run the following commands:
 
 ```shell
 $ cd <Mangrove monorepo>/packages/updategas-bot
-$ yarn install   # Sets up the Mangrove monorepo and install dependencies
+$ yarn install   # Sets up the Mangrove monorepo and installs dependencies
 $ yarn build     # Builds the gas update bot and its dependencies
 ```
 
