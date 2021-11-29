@@ -231,11 +231,11 @@ export class SimpleMaker {
     );
 
     return this.market.once(
-      (cbArg, _evt, lowLevelEvt) => ({
+      (cbArg, _event, ethersEvent) => ({
         id: cbArg.offer.id,
-        event: lowLevelEvt,
+        event: ethersEvent,
       }),
-      (_cbArg, _evt, lowLevelEvt) => resp.hash === lowLevelEvt.transactionHash
+      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
   }
 
@@ -280,8 +280,8 @@ export class SimpleMaker {
     );
 
     return this.market.once(
-      (cbArg, evt, _evt) => ({ event: _evt }),
-      (cbArg, evt, _evt) => resp.hash === _evt.transactionHash
+      (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
+      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
   }
 
@@ -314,7 +314,7 @@ export class SimpleMaker {
       (/*cbArg*/) => {
         /*empty*/
       },
-      (_cbArg, _evt, lowLevelEvt) => resp.hash === lowLevelEvt.transactionHash
+      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
   }
 }
