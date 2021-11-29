@@ -167,7 +167,7 @@ export class Market {
 
   /* Given a price, find the id of the immediately-better offer in the
      book. */
-  getPivot(ba: "asks" | "bids", price: Bigish) {
+  getPivot(ba: "asks" | "bids", price: Bigish): number {
     // we select as pivot the immediately-better offer
     // the actual ordering in the offer list is lexicographic
     // price * gasreq (or price^{-1} * gasreq)
@@ -194,10 +194,9 @@ export class Market {
     outbound_tkn: MgvToken;
     inbound_tkn: MgvToken;
   } {
-    let asks = ba === "asks";
     return {
-      outbound_tkn: asks ? this.base : this.quote,
-      inbound_tkn: asks ? this.quote : this.base,
+      outbound_tkn: ba === "asks" ? this.base : this.quote,
+      inbound_tkn: ba === "asks" ? this.quote : this.base,
     };
   }
 
@@ -284,9 +283,7 @@ export class Market {
    *
    * @note Only one subscription may be active at a time.
    */
-  async subscribe(
-    cb: (event: bookSubscriptionCbArgument) => void
-  ): Promise<void> {
+  async subscribe(cb: marketCallback<void>): Promise<void> {
     this.#subscriptions.set(cb, { type: "multiple" });
   }
 
@@ -295,7 +292,7 @@ export class Market {
    */
   async once<T>(cb: marketCallback<T>, filter?: marketFilter): Promise<T> {
     return new Promise((ok, ko) => {
-      let params: subscriptionParam = { type: "once", ok, ko };
+      const params: subscriptionParam = { type: "once", ok, ko };
       if (typeof filter !== "undefined") {
         params.filter = filter;
       }
@@ -848,23 +845,6 @@ export class Market {
               offer: removedOffer,
               takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
               takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
-            },
-            semibook,
-            evt,
-            _evt
-          );
-        }
-        break;
-
-      case "OfferRetract":
-        removedOffer = removeOffer(semibook, evt.args.id.toNumber());
-        // Don't trigger an event about an offer outside of the local cache
-        if (removedOffer) {
-          this.defaultCallback(
-            {
-              type: evt.name,
-              ba: semibook.ba,
-              offer: removedOffer,
             },
             semibook,
             evt,
