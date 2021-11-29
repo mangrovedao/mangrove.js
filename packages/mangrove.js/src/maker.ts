@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
-import { Market, Offer } from "./market";
-import { Bigish } from "./types";
+import { Market } from "./market";
+import { Bigish, Offer } from "./types";
 import { Mangrove } from "./mangrove";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 

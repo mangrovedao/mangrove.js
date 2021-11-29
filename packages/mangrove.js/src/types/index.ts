@@ -47,6 +47,8 @@ export type globalConfig = {
   dead: boolean;
 };
 
+// =-=-=-=-=-= /src/market.ts =-=-=-=-=-=
+
 export type bookSubscriptionEvent =
   | ({ name: "OfferWrite" } & MgvTypes.OfferWriteEvent)
   | ({ name: "OfferFail" } & MgvTypes.OfferFailEvent)
@@ -54,18 +56,26 @@ export type bookSubscriptionEvent =
   | ({ name: "OfferRetract" } & MgvTypes.OfferRetractEvent)
   | ({ name: "SetGasbase" } & MgvTypes.SetGasbaseEvent);
 
+export type BookOptions = {
+  fromId?: number;
+  maxOffers?: number;
+  chunkSize?: number;
+  blockNumber?: number;
+};
+
 export type Offer = {
+  id: number;
   prev: number;
   next: number;
-  volume: Big;
-  price: Big;
-  gives: Big;
-  wants: Big;
-  overhead_gasbase: number;
-  offer_gasbase: number;
+  gasprice: number;
   maker: string;
   gasreq: number;
-  gasprice: number;
+  overhead_gasbase: number;
+  offer_gasbase: number;
+  wants: Big;
+  gives: Big;
+  volume: Big;
+  price: Big;
 };
 
 // =-=-=-=-=-= /src/index.ts =-=-=-=-=-=

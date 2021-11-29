@@ -1,6 +1,6 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
-import { Market, BookOptions } from "./market";
+import { Market } from "./market";
 import { SimpleMaker } from "./maker";
 import {
   Provider,
@@ -9,6 +9,7 @@ import {
   Bigish,
   globalConfig,
   CreateSignerOptions,
+  BookOptions,
 } from "./types";
 import * as typechain from "./types/typechain";
 import { MgvToken } from "./mgvtoken";
