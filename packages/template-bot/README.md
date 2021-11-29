@@ -5,6 +5,7 @@ To use this template
 - copy this folder to a sibling folder and rename it to match the bot you are writing.
 - Update the `package.json` file - at least the description
 - The `src` folder includes extremely minimal code for an `index.ts` file (startup code), and a `TemplateBot.ts` file with a `TemplateBot` class. Update those as needed.
+- The `test` folder includes stub test code for integration tests as well as `mocha` configuration to use the test-reporter that we use.
 - Add the new bot to the CI build (with tests as needed).
 - Update this `README.md` file - include at least the following sections, and search for `template-bot` and update accordingly for your bot.
 
