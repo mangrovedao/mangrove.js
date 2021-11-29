@@ -1,11 +1,8 @@
 import * as ethers from "ethers";
-import { bookSubscriptionCbArgument, Market, Offer } from "./market";
-import { Bigish, bookSubscriptionEvent } from "./types";
+import { Market, Offer } from "./market";
+import { Bigish } from "./types";
 import { Mangrove } from "./mangrove";
-import {
-  TransactionResponse,
-  TransactionReceipt,
-} from "@ethersproject/abstract-provider";
+import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
@@ -30,7 +27,6 @@ Big.RM = Big.roundHalfUp; // round to nearest
 // simpleMaker.deposit(n)
 
 import * as typechain from "./types/typechain";
-import { MgvToken } from ".";
 let canConstruct = false;
 /** Connect to MangroveOffer.
  *  This basic maker contract will relay new/cancel/update
@@ -98,7 +94,7 @@ export class SimpleMaker {
     this.market = await this.mgv.market({ base: p.base, quote: p.quote });
   }
 
-  disconnect() {
+  disconnect(): void {
     this.market.disconnect();
   }
 
@@ -132,7 +128,11 @@ export class SimpleMaker {
   }
 
   /** Transfer a token to someone */
-  transferToken(tokenName: string, recipient: string, amount: Bigish) {
+  transferToken(
+    tokenName: string,
+    recipient: string,
+    amount: Bigish
+  ): Promise<TransactionResponse> {
     return this.contract.transferToken(
       this.mgv.getAddress(tokenName),
       recipient,
@@ -231,8 +231,11 @@ export class SimpleMaker {
     );
 
     return this.market.once(
-      (cbArg, evt, _evt) => ({ id: cbArg.offer.id, event: _evt }),
-      (cbArg, evt, _evt) => resp.hash === _evt.transactionHash
+      (cbArg, _event, ethersEvent) => ({
+        id: cbArg.offer.id,
+        event: ethersEvent,
+      }),
+      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
   }
 
@@ -277,8 +280,8 @@ export class SimpleMaker {
     );
 
     return this.market.once(
-      (cbArg, evt, _evt) => ({ event: _evt }),
-      (cbArg, evt, _evt) => resp.hash === _evt.transactionHash
+      (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
+      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
   }
 
@@ -308,8 +311,10 @@ export class SimpleMaker {
     );
 
     return this.market.once(
-      (cbArg) => {},
-      (cbArg, evt, _evt) => resp.hash === _evt.transactionHash
+      (/*cbArg*/) => {
+        /*empty*/
+      },
+      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
   }
 }
