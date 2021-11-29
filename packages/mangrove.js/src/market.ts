@@ -54,7 +54,10 @@ type OfferData = {
   gives: BigNumber;
 };
 
-type bookSubscriptionCbArgument = { ba: "asks" | "bids"; offer: Offer } & (
+export type bookSubscriptionCbArgument = {
+  ba: "asks" | "bids";
+  offer: Offer;
+} & (
   | { type: "OfferWrite" }
   | {
       type: "OfferFail";
@@ -67,10 +70,21 @@ type bookSubscriptionCbArgument = { ba: "asks" | "bids"; offer: Offer } & (
   | { type: "OfferRetract" }
 );
 
-type marketCallback = (event: bookSubscriptionCbArgument) => any;
+type marketCallback<T> = (
+  cbArg: bookSubscriptionCbArgument,
+  event?: bookSubscriptionEvent,
+  ethersEvent?: ethers.Event
+) => T;
+type storableMarketCallback = marketCallback<any>;
+type marketFilter = marketCallback<boolean>;
 type subscriptionParam =
   | { type: "multiple" }
-  | { type: "once"; ok: (...a: any[]) => any; ko: (...a: any[]) => any };
+  | {
+      type: "once";
+      ok: (...a: any[]) => any;
+      ko: (...a: any[]) => any;
+      filter?: (...a: any[]) => boolean;
+    };
 
 /**
  * The Market class focuses on a mangrove market.
@@ -78,7 +92,7 @@ type subscriptionParam =
  * one for the pair (base,quote), the other for the pair (quote,base).
  *
  * Market initialization needs to store the network name, so you cannot
- * directly use the constructor. Instead `new Market(...)`, do
+ * directly use the constructor. Instead of `new Market(...)`, do
  *
  * `await Market.connect(...)`
  */
@@ -86,7 +100,7 @@ export class Market {
   mgv: Mangrove;
   base: MgvToken;
   quote: MgvToken;
-  #subscriptions: Map<marketCallback, subscriptionParam>;
+  #subscriptions: Map<storableMarketCallback, subscriptionParam>;
   #lowLevelCallbacks: null | { asksCallback?: any; bidsCallback?: any };
   _book: { asks: Offer[]; bids: Offer[] };
 
@@ -132,8 +146,43 @@ export class Market {
     this._book = { asks: [], bids: [] };
   }
 
+  /* Given a price, find the id of the immediately-better offer in the
+     book. */
+  getPivot(ba: "asks" | "bids", price: Bigish): number {
+    // we select as pivot the immediately-better offer
+    // the actual ordering in the offer list is lexicographic
+    // price * gasreq (or price^{-1} * gasreq)
+    // we ignore the gasreq comparison because we may not
+    // know the gasreq (could be picked by offer contract)
+    price = Big(price);
+    const comparison = ba === "asks" ? "gt" : "lt";
+    let latest_id = 0;
+    for (const offer of this._book[ba]) {
+      if (offer.price[comparison](price)) {
+        break;
+      }
+      latest_id = offer.id;
+    }
+    return latest_id;
+  }
+  async isActive(): Promise<boolean> {
+    const config = await this.config();
+    return config.asks.active && config.bids.active;
+  }
+
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids of asks. */
+  getOutboundInbound(ba: "bids" | "asks"): {
+    outbound_tkn: MgvToken;
+    inbound_tkn: MgvToken;
+  } {
+    return {
+      outbound_tkn: ba === "asks" ? this.base : this.quote,
+      inbound_tkn: ba === "asks" ? this.quote : this.base,
+    };
+  }
+
   /* Stop calling a user-provided function on book-related events. */
-  unsubscribe(cb: (bookSubscriptionCbArgument) => void): void {
+  unsubscribe(cb: storableMarketCallback): void {
     this.#subscriptions.delete(cb);
   }
 
@@ -215,18 +264,20 @@ export class Market {
    *
    * @note Only one subscription may be active at a time.
    */
-  async subscribe(
-    cb: (event: bookSubscriptionCbArgument) => void
-  ): Promise<void> {
+  async subscribe(cb: marketCallback<void>): Promise<void> {
     this.#subscriptions.set(cb, { type: "multiple" });
   }
 
   /**
    *  Returns a promise which is fulfilled after execution of the callback.
    */
-  async once<T>(cb: (event: bookSubscriptionCbArgument) => T): Promise<T> {
+  async once<T>(cb: marketCallback<T>, filter?: marketFilter): Promise<T> {
     return new Promise((ok, ko) => {
-      this.#subscriptions.set(cb, { type: "once", ok, ko });
+      const params: subscriptionParam = { type: "once", ok, ko };
+      if (typeof filter !== "undefined") {
+        params.filter = filter;
+      }
+      this.#subscriptions.set(cb as storableMarketCallback, params);
     });
   }
 
@@ -383,7 +434,7 @@ export class Market {
   sell(params: TradeParams): Promise<OrderResult> {
     const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
     const _wants =
-      "price" in params ? _gives.div(params.price) : Big(params.wants);
+      "price" in params ? _gives.mul(params.price) : Big(params.wants);
 
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
@@ -616,14 +667,24 @@ export class Market {
     };
   }
 
-  defaultCallback(evt: bookSubscriptionCbArgument, semibook: semibook): void {
+  defaultCallback(
+    cbArg: bookSubscriptionCbArgument,
+    semibook: semibook,
+    event: bookSubscriptionEvent,
+    ethersEvent: ethers.Event
+  ): void {
     this.#updateBook(semibook);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
-        this.#subscriptions.delete(cb);
-        Promise.resolve(cb(evt)).then(params.ok, params.ko);
+        if (!("filter" in params) || params.filter(cbArg, event, ethersEvent)) {
+          this.#subscriptions.delete(cb);
+          Promise.resolve(cb(cbArg, event, ethersEvent)).then(
+            params.ok,
+            params.ko
+          );
+        }
       } else {
-        cb(evt);
+        cb(cbArg, event, ethersEvent);
       }
     }
   }
@@ -684,9 +745,9 @@ export class Market {
     };
   }
 
-  #handleBookEvent(semibook: semibook, event: ethers.Event): void {
-    const evt: bookSubscriptionEvent = this.mgv.contract.interface.parseLog(
-      event
+  #handleBookEvent(semibook: semibook, ethersEvent: ethers.Event): void {
+    const event: bookSubscriptionEvent = this.mgv.contract.interface.parseLog(
+      ethersEvent
     ) as any;
 
     let offer;
@@ -696,11 +757,11 @@ export class Market {
     const takerWants_bq = semibook.ba === "asks" ? "base" : "quote";
     const takerGives_bq = semibook.ba === "asks" ? "quote" : "base";
 
-    switch (evt.name) {
+    switch (event.name) {
       case "OfferWrite":
         // We ignore the return value here because the offer may have been outside the local
         // cache, but may now enter the local cache due to its new price.
-        removeOffer(semibook, evt.args.id.toNumber());
+        removeOffer(semibook, event.args.id.toNumber());
 
         /* After removing the offer (a noop if the offer was not in local cache),
             we reinsert it.
@@ -710,88 +771,96 @@ export class Market {
             * If the prev exists, we take the prev's next as the offer's next. Whether that next exists in the cache or not is irrelevant.
         */
         try {
-          next = getNext(semibook, evt.args.prev.toNumber());
+          next = getNext(semibook, event.args.prev.toNumber());
         } catch (e) {
           // offer.prev was not found, we are outside local OB copy. skip.
           break;
         }
 
         offer = this.#toOfferObject(semibook.ba, {
-          ...evt.args,
+          ...event.args,
           ...semibook.gasbase,
           next: BigNumber.from(next),
         });
 
-        insertOffer(semibook, evt.args.id.toNumber(), offer);
+        insertOffer(semibook, event.args.id.toNumber(), offer);
 
         this.defaultCallback(
           {
-            type: evt.name,
+            type: event.name,
             offer: offer,
             ba: semibook.ba,
           },
-          semibook
+          semibook,
+          event,
+          ethersEvent
         );
         break;
 
       case "OfferFail":
-        removedOffer = removeOffer(semibook, evt.args.id.toNumber());
+        removedOffer = removeOffer(semibook, event.args.id.toNumber());
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
           this.defaultCallback(
             {
-              type: evt.name,
+              type: event.name,
               ba: semibook.ba,
-              taker: evt.args.taker,
+              taker: event.args.taker,
               offer: removedOffer,
-              takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
-              takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
-              mgvData: evt.args.mgvData,
+              takerWants: this[takerWants_bq].fromUnits(event.args.takerWants),
+              takerGives: this[takerGives_bq].fromUnits(event.args.takerGives),
+              mgvData: event.args.mgvData,
             },
-            semibook
+            semibook,
+            event,
+            ethersEvent
           );
         }
         break;
 
       case "OfferSuccess":
-        removedOffer = removeOffer(semibook, evt.args.id.toNumber());
+        removedOffer = removeOffer(semibook, event.args.id.toNumber());
         if (removedOffer) {
           this.defaultCallback(
             {
-              type: evt.name,
+              type: event.name,
               ba: semibook.ba,
-              taker: evt.args.taker,
+              taker: event.args.taker,
               offer: removedOffer,
-              takerWants: this[takerWants_bq].fromUnits(evt.args.takerWants),
-              takerGives: this[takerGives_bq].fromUnits(evt.args.takerGives),
+              takerWants: this[takerWants_bq].fromUnits(event.args.takerWants),
+              takerGives: this[takerGives_bq].fromUnits(event.args.takerGives),
             },
-            semibook
+            semibook,
+            event,
+            ethersEvent
           );
         }
         break;
 
       case "OfferRetract":
-        removedOffer = removeOffer(semibook, evt.args.id.toNumber());
+        removedOffer = removeOffer(semibook, event.args.id.toNumber());
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
           this.defaultCallback(
             {
-              type: evt.name,
+              type: event.name,
               ba: semibook.ba,
               offer: removedOffer,
             },
-            semibook
+            semibook,
+            event,
+            ethersEvent
           );
         }
         break;
 
       case "SetGasbase":
         semibook.gasbase.overhead_gasbase =
-          evt.args.overhead_gasbase.toNumber();
-        semibook.gasbase.offer_gasbase = evt.args.offer_gasbase.toNumber();
+          event.args.overhead_gasbase.toNumber();
+        semibook.gasbase.offer_gasbase = event.args.offer_gasbase.toNumber();
         break;
       default:
-        throw Error(`Unknown event ${evt}`);
+        throw Error(`Unknown event ${event}`);
     }
   }
 
