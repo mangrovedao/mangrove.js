@@ -147,19 +147,21 @@ jobs:
         path: ${{env.working-directory}}/solidity-mocha-test-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
 
-    # == Run test suite Ethereum mainnet ==
-    - name: Mangrove Ethereum mainnet Tests
-      run: yarn run test:ethereum-mainnet
-      env:
-        ETHEREUM_NODE_URL: ${{ secrets.ETHEREUM_NODE_URL }}
+    # NOTE: Etherium mainnet tests disabled for now, while we focus on Polygon
+    # 
+    # # == Run test suite Ethereum mainnet ==
+    # - name: Mangrove Ethereum mainnet Tests
+    #   run: yarn run test:ethereum-mainnet
+    #   env:
+    #     ETHEREUM_NODE_URL: ${{ secrets.ETHEREUM_NODE_URL }}
 
-    - name: Mangrove Ethereum mainnet Test Report
-      uses: dorny/test-reporter@v1
-      if: ${{ env.mangrove_built && (success() || failure()) }}
-      with:
-        name: Ethereum mainnet Tests          # Name of the check run which will be created
-        path: ${{env.working-directory}}/ethereum-mainnet-mocha-test-report.json # Path to test results
-        reporter: mocha-json                  # Format of test results
+    # - name: Mangrove Ethereum mainnet Test Report
+    #   uses: dorny/test-reporter@v1
+    #   if: ${{ env.mangrove_built && (success() || failure()) }}
+    #   with:
+    #     name: Ethereum mainnet Tests          # Name of the check run which will be created
+    #     path: ${{env.working-directory}}/ethereum-mainnet-mocha-test-report.json # Path to test results
+    #     reporter: mocha-json                  # Format of test results
 
     # == Run test suite Polygon mainnet == 
     - name: Mangrove Polygon mainnet Tests
