@@ -39,7 +39,7 @@ type offerParams =
 export class SimpleMaker {
   mgv: Mangrove;
   market: Market;
-  contract: typechain.MangroveOffer;
+  contract: typechain.SimpleMaker;
   address: string;
 
   constructor(mgv: Mangrove) {
@@ -55,7 +55,7 @@ export class SimpleMaker {
    * @returns The new contract address
    */
   static async deploy(mgv: Mangrove): Promise<string> {
-    const contract = await new typechain.MangroveOffer__factory(
+    const contract = await new typechain.SimpleMaker__factory(
       mgv._signer
     ).deploy(mgv._address);
     return contract.address;
@@ -87,7 +87,7 @@ export class SimpleMaker {
     quote: string;
   }): Promise<void> {
     this.address = p.address;
-    this.contract = typechain.MangroveOffer__factory.connect(
+    this.contract = typechain.SimpleMaker__factory.connect(
       p.address,
       p.mgv._signer
     );
@@ -147,7 +147,7 @@ export class SimpleMaker {
 
   /** Withdraw from the maker's ether balance to the sender */
   async withdraw(amount: Bigish): Promise<TransactionResponse> {
-    return this.contract.withdraw(
+    return this.contract.withdrawFromMangrove(
       await this.mgv._signer.getAddress(),
       this.mgv.toUnits(amount, 18)
     );
@@ -225,7 +225,7 @@ export class SimpleMaker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      ethers.BigNumber.from(2).pow(256).sub(1), // gasreq
+      400000, // gasreq
       0,
       this.market.getPivot(p.ba, price)
     );
