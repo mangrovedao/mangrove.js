@@ -152,19 +152,11 @@ async function startMakersAndTakersForMarkets(mgv: Mangrove) {
       quote: tokenPair.token2,
     });
 
-    const offerMaker = new OfferMaker(
-      market,
-      provider,
-      marketConfig.makerConfig
-    );
+    const offerMaker = new OfferMaker(market, marketConfig.makerConfig);
     offerMakerMap.set(tokenPair, offerMaker);
     offerMaker.start();
 
-    const offerTaker = new OfferTaker(
-      market,
-      provider,
-      marketConfig.takerConfig
-    );
+    const offerTaker = new OfferTaker(market, marketConfig.takerConfig);
     offerTakerMap.set(tokenPair, offerTaker);
     offerTaker.start();
   }
