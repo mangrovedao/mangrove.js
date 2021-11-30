@@ -119,8 +119,7 @@ export class OfferMaker {
   }
 
   #choosePriceFromExp(ba: BA, insidePrice: Big, lambda: Big): Big {
-    // Prices chosen from exp. distribution
-    const plug = lambda.mul(Math.log(1 - random.float(0, 1))); // random.float(0, 1) returns a number in [0; 1), but we need a number in (0; 1] (since log(0) is undefined).
+    const plug = lambda.mul(random.float(0, 1));
 
     const price =
       ba === "bids" ? insidePrice.minus(plug) : insidePrice.plus(plug);
