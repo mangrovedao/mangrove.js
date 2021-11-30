@@ -1,5 +1,20 @@
 {
   "logLevel": "info",
+  "makerTargetProvision": "0.5",
+  "tokens": [
+    {
+      "name": "WETH",
+      "targetAllowance": 1000000000
+    },
+    {
+      "name": "DAI",
+      "targetAllowance": 10000
+    },
+    {
+      "name": "USDC",
+      "targetAllowance": 10000
+    }
+  ],
   "markets": [
     {
       "baseToken": "WETH",
