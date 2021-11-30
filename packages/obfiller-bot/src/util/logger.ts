@@ -16,6 +16,9 @@ const consoleLogFormat = format.printf(
       }
       msg += "] ";
     }
+    if (metadata.token) {
+      msg += `[(${metadata.token})] `;
+    }
     if (metadata.contextInfo) {
       msg += `[${metadata.contextInfo}] `;
     }

@@ -3,7 +3,6 @@ import { sleep } from "@giry/commonlib-js";
 import { Market } from "@giry/mangrove-js/dist/nodejs/market";
 import { Offer } from "@giry/mangrove-js/dist/nodejs/types";
 import { MgvToken } from "@giry/mangrove-js/dist/nodejs/mgvtoken";
-import { Provider } from "@ethersproject/providers";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
@@ -22,7 +21,6 @@ export type BA = "bids" | "asks";
  */
 export class OfferMaker {
   #market: Market;
-  #provider: Provider;
   #bidProbability: number;
   #lambda: Big;
   #maxQuantity: number;
@@ -31,14 +29,12 @@ export class OfferMaker {
   #offerTimeRng: () => number;
 
   /**
-   * Constructs an offer maker for the given Mangrove market which will use the given provider for queries and transactions.
+   * Constructs an offer maker for the given Mangrove market.
    * @param market The Mangrove market to post offers on.
-   * @param provider The provider to use for queries and transactions.
    * @param makerConfig The parameters to use for this market.
    */
-  constructor(market: Market, provider: Provider, makerConfig: MakerConfig) {
+  constructor(market: Market, makerConfig: MakerConfig) {
     this.#market = market;
-    this.#provider = provider;
     this.#bidProbability = makerConfig.bidProbability;
     this.#lambda = Big(makerConfig.lambda);
     this.#maxQuantity = makerConfig.maxQuantity;
@@ -61,6 +57,17 @@ export class OfferMaker {
    */
   public async start(): Promise<void> {
     this.#running = true;
+    const makerAddress = await this.#market.mgv._signer.getAddress();
+    logger.info("Starting offer maker", {
+      contextInfo: "maker start",
+      base: this.#market.base.name,
+      quote: this.#market.quote.name,
+      data: {
+        balanceBase: this.#market.base.contract.balanceOf(makerAddress),
+        balanceQuote: this.#market.quote.contract.balanceOf(makerAddress),
+      },
+    });
+
     while (this.#running === true) {
       const delayInMilliseconds = this.#getNextTimeDelay();
       logger.debug(`Sleeping for ${delayInMilliseconds}ms`, {
@@ -119,8 +126,7 @@ export class OfferMaker {
   }
 
   #choosePriceFromExp(ba: BA, insidePrice: Big, lambda: Big): Big {
-    // Prices chosen from exp. distribution
-    const plug = lambda.mul(Math.log(1 - random.float(0, 1))); // random.float(0, 1) returns a number in [0; 1), but we need a number in (0; 1] (since log(0) is undefined).
+    const plug = lambda.mul(random.float(0, 1));
 
     const price =
       ba === "bids" ? insidePrice.minus(plug) : insidePrice.plus(plug);
@@ -146,9 +152,9 @@ export class OfferMaker {
       ba: ba,
       data: {
         quantity,
-        quantityInUnits,
+        quantityInUnits: quantityInUnits.toString(),
         price,
-        priceInUnits,
+        priceInUnits: priceInUnits.toString(),
         gasReq,
         gasPrice,
       },
@@ -166,7 +172,7 @@ export class OfferMaker {
       )
       .then((tx) => tx.wait())
       .then((txReceipt) => {
-        // FIXME how do we get the offer ID?
+        // FIXME We should include the offer ID. mangrove.js Maker.ts will have a function for posting offers that returns the ID, so we should use that once available
         logger.info("Successfully posted offer", {
           contextInfo: "maker",
           base: this.#market.base.name,
@@ -174,9 +180,9 @@ export class OfferMaker {
           ba: ba,
           data: {
             quantity,
-            quantityInUnits,
+            quantityInUnits: quantityInUnits.toString(),
             price,
-            priceInUnits,
+            priceInUnits: priceInUnits.toString(),
             gasReq,
             gasPrice,
           },
@@ -198,9 +204,9 @@ export class OfferMaker {
           data: {
             reason: e,
             quantity,
-            quantityInUnits,
+            quantityInUnits: quantityInUnits.toString(),
             price,
-            priceInUnits,
+            priceInUnits: priceInUnits.toString(),
             gasReq,
             gasPrice,
           },
