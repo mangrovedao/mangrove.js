@@ -4,15 +4,15 @@
   "tokens": [
     {
       "name": "WETH",
-      "targetAllowance": 1000000000
+      "targetAllowance": 1000
     },
     {
       "name": "DAI",
-      "targetAllowance": 10000
+      "targetAllowance": 1000
     },
     {
       "name": "USDC",
-      "targetAllowance": 10000
+      "targetAllowance": 1000
     }
   ],
   "markets": [
