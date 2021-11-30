@@ -21,6 +21,7 @@ export type BA = "bids" | "asks";
  */
 export class OfferMaker {
   #market: Market;
+  #makerAddress: string;
   #bidProbability: number;
   #lambda: Big;
   #maxQuantity: number;
@@ -31,10 +32,12 @@ export class OfferMaker {
   /**
    * Constructs an offer maker for the given Mangrove market.
    * @param market The Mangrove market to post offers on.
+   * @param makerAddress The address of the EOA used by this maker.
    * @param makerConfig The parameters to use for this market.
    */
-  constructor(market: Market, makerConfig: MakerConfig) {
+  constructor(market: Market, makerAddress: string, makerConfig: MakerConfig) {
     this.#market = market;
+    this.#makerAddress = makerAddress;
     this.#bidProbability = makerConfig.bidProbability;
     this.#lambda = Big(makerConfig.lambda);
     this.#maxQuantity = makerConfig.maxQuantity;
@@ -145,6 +148,13 @@ export class OfferMaker {
     const priceInUnits = inboundToken.toUnits(price);
     const quantityInUnits = outboundToken.toUnits(quantity);
 
+    const baseTokenBalance = await this.#market.base.contract.balanceOf(
+      this.#makerAddress
+    );
+    const quoteTokenBalance = await this.#market.quote.contract.balanceOf(
+      this.#makerAddress
+    );
+
     logger.debug("Posting offer", {
       contextInfo: "maker",
       base: this.#market.base.name,
@@ -157,6 +167,8 @@ export class OfferMaker {
         priceInUnits: priceInUnits.toString(),
         gasReq,
         gasPrice,
+        baseTokenBalance: this.#market.base.fromUnits(baseTokenBalance),
+        quoteTokenBalance: this.#market.quote.fromUnits(quoteTokenBalance),
       },
     });
 

@@ -61,7 +61,7 @@ const main = async () => {
     "init"
   );
 
-  await startMakersAndTakersForMarkets(mgv);
+  await startMakersAndTakersForMarkets(mgv, signer.address, signer.address);
 };
 
 function getTokenConfigsOrThrow(): TokenConfig[] {
@@ -138,7 +138,11 @@ async function approveMangroveForToken(
   }
 }
 
-async function startMakersAndTakersForMarkets(mgv: Mangrove) {
+async function startMakersAndTakersForMarkets(
+  mgv: Mangrove,
+  makerAddress: string,
+  takerAddress: string
+) {
   const marketConfigs = getMarketConfigsOrThrow();
   const offerMakerMap = new Map<TokenPair, OfferMaker>();
   const offerTakerMap = new Map<TokenPair, OfferTaker>();
@@ -152,11 +156,19 @@ async function startMakersAndTakersForMarkets(mgv: Mangrove) {
       quote: tokenPair.token2,
     });
 
-    const offerMaker = new OfferMaker(market, marketConfig.makerConfig);
+    const offerMaker = new OfferMaker(
+      market,
+      makerAddress,
+      marketConfig.makerConfig
+    );
     offerMakerMap.set(tokenPair, offerMaker);
     offerMaker.start();
 
-    const offerTaker = new OfferTaker(market, marketConfig.takerConfig);
+    const offerTaker = new OfferTaker(
+      market,
+      takerAddress,
+      marketConfig.takerConfig
+    );
     offerTakerMap.set(tokenPair, offerTaker);
     offerTaker.start();
   }
