@@ -19,6 +19,7 @@ export type BA = "bids" | "asks";
  */
 export class OfferTaker {
   #market: Market;
+  #takerAddress: string;
   #bidProbability: number;
   #maxQuantity: number;
   #running: boolean;
@@ -28,10 +29,12 @@ export class OfferTaker {
   /**
    * Constructs an offer taker for the given Mangrove market.
    * @param market The Mangrove market to take offers from.
+   * @param takerAddress The address of the EOA used by this taker.
    * @param takerConfig The parameters to use for this market.
    */
-  constructor(market: Market, takerConfig: TakerConfig) {
+  constructor(market: Market, takerAddress: string, takerConfig: TakerConfig) {
     this.#market = market;
+    this.#takerAddress = takerAddress;
     this.#bidProbability = takerConfig.bidProbability;
     this.#maxQuantity = takerConfig.maxQuantity;
 
@@ -52,12 +55,17 @@ export class OfferTaker {
    * Start creating offers.
    */
   public async start(): Promise<void> {
+    if (this.#running) {
+      return;
+    }
     this.#running = true;
     logger.info("Starting offer taker", {
       contextInfo: "taker start",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
     });
+
+    this.#takerAddress = await this.#market.mgv._signer.getAddress();
 
     while (this.#running === true) {
       const delayInMilliseconds = this.#getNextTimeDelay();
@@ -68,7 +76,6 @@ export class OfferTaker {
         data: { delayInMilliseconds },
       });
       await sleep(delayInMilliseconds);
-      // FIXME maybe give a heartbeat and log the balances here? Same in OfferMaker
       await this.#takeOfferOnBidsOrAsks();
     }
   }
@@ -120,6 +127,13 @@ export class OfferTaker {
     const priceInUnits = inboundToken.toUnits(price);
     const quantityInUnits = outboundToken.toUnits(quantity);
 
+    const baseTokenBalance = await this.#market.base.contract.balanceOf(
+      this.#takerAddress
+    );
+    const quoteTokenBalance = await this.#market.quote.contract.balanceOf(
+      this.#takerAddress
+    );
+
     logger.debug("Posting market order", {
       contextInfo: "taker",
       base: this.#market.base.name,
@@ -132,6 +146,8 @@ export class OfferTaker {
         priceInUnits: priceInUnits.toString(),
         gasReq,
         gasPrice,
+        baseTokenBalance: this.#market.base.fromUnits(baseTokenBalance),
+        quoteTokenBalance: this.#market.quote.fromUnits(quoteTokenBalance),
       },
     });
 
