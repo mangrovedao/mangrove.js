@@ -3,7 +3,6 @@ import { sleep } from "@giry/commonlib-js";
 import { Market } from "@giry/mangrove.js/dist/nodejs/market";
 import { Offer } from "@giry/mangrove.js/dist/nodejs/types";
 import { MgvToken } from "@giry/mangrove.js/dist/nodejs/mgvtoken";
-import { Provider } from "@ethersproject/providers";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
@@ -20,7 +19,7 @@ export type BA = "bids" | "asks";
  */
 export class OfferTaker {
   #market: Market;
-  #provider: Provider;
+  #takerAddress: string;
   #bidProbability: number;
   #maxQuantity: number;
   #running: boolean;
@@ -28,14 +27,14 @@ export class OfferTaker {
   #takeTimeRng: () => number;
 
   /**
-   * Constructs an offer taker for the given Mangrove market which will use the given provider for queries and transactions.
+   * Constructs an offer taker for the given Mangrove market.
    * @param market The Mangrove market to take offers from.
-   * @param provider The provider to use for queries and transactions.
+   * @param takerAddress The address of the EOA used by this taker.
    * @param takerConfig The parameters to use for this market.
    */
-  constructor(market: Market, provider: Provider, takerConfig: TakerConfig) {
+  constructor(market: Market, takerAddress: string, takerConfig: TakerConfig) {
     this.#market = market;
-    this.#provider = provider;
+    this.#takerAddress = takerAddress;
     this.#bidProbability = takerConfig.bidProbability;
     this.#maxQuantity = takerConfig.maxQuantity;
 
@@ -48,7 +47,7 @@ export class OfferTaker {
       contextInfo: "taker init",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
-      data: { marketConfig: takerConfig },
+      data: { takerConfig: takerConfig },
     });
   }
 
@@ -56,7 +55,18 @@ export class OfferTaker {
    * Start creating offers.
    */
   public async start(): Promise<void> {
+    if (this.#running) {
+      return;
+    }
     this.#running = true;
+    logger.info("Starting offer taker", {
+      contextInfo: "taker start",
+      base: this.#market.base.name,
+      quote: this.#market.quote.name,
+    });
+
+    this.#takerAddress = await this.#market.mgv._signer.getAddress();
+
     while (this.#running === true) {
       const delayInMilliseconds = this.#getNextTimeDelay();
       logger.debug(`Sleeping for ${delayInMilliseconds}ms`, {
@@ -117,6 +127,18 @@ export class OfferTaker {
     const priceInUnits = inboundToken.toUnits(price);
     const quantityInUnits = outboundToken.toUnits(quantity);
 
+    const wants = quantity;
+    const wantsInUnits = inboundToken.toUnits(wants);
+    const gives = wants.mul(price);
+    const givesInUnits = outboundToken.toUnits(gives);
+
+    const baseTokenBalance = await this.#market.base.contract.balanceOf(
+      this.#takerAddress
+    );
+    const quoteTokenBalance = await this.#market.quote.contract.balanceOf(
+      this.#takerAddress
+    );
+
     logger.debug("Posting market order", {
       contextInfo: "taker",
       base: this.#market.base.name,
@@ -124,25 +146,30 @@ export class OfferTaker {
       ba: ba,
       data: {
         quantity,
-        quantityInUnits,
+        quantityInUnits: quantityInUnits.toString(),
         price,
-        priceInUnits,
+        priceInUnits: priceInUnits.toString(),
+        gives,
+        givesInUnits: givesInUnits.toString(),
+        wants,
+        wantsInUnits: wantsInUnits.toString(),
         gasReq,
         gasPrice,
+        baseTokenBalance: this.#market.base.fromUnits(baseTokenBalance),
+        quoteTokenBalance: this.#market.quote.fromUnits(quoteTokenBalance),
       },
     });
 
     await this.#market.mgv.contract
       .marketOrder(
-        inboundToken.address,
         outboundToken.address,
-        quantityInUnits,
-        priceInUnits,
+        inboundToken.address,
+        wantsInUnits,
+        givesInUnits,
         true
       )
       .then((tx) => tx.wait())
       .then((txReceipt) => {
-        // FIXME how do I get the offer ID?
         logger.info("Successfully completed market order", {
           contextInfo: "taker",
           base: this.#market.base.name,
@@ -150,9 +177,13 @@ export class OfferTaker {
           ba: ba,
           data: {
             quantity,
-            quantityInUnits,
+            quantityInUnits: quantityInUnits.toString(),
             price,
-            priceInUnits,
+            priceInUnits: priceInUnits.toString(),
+            gives,
+            givesInUnits: givesInUnits.toString(),
+            wants,
+            wantsInUnits: wantsInUnits.toString(),
             gasReq,
             gasPrice,
           },
@@ -174,9 +205,13 @@ export class OfferTaker {
           data: {
             reason: e,
             quantity,
-            quantityInUnits,
+            quantityInUnits: quantityInUnits.toString(),
             price,
-            priceInUnits,
+            priceInUnits: priceInUnits.toString(),
+            gives,
+            givesInUnits: givesInUnits.toString(),
+            wants,
+            wantsInUnits: wantsInUnits.toString(),
             gasReq,
             gasPrice,
           },

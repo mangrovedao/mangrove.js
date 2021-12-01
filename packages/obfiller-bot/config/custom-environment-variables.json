@@ -1,5 +1,10 @@
 {
   "logLevel": "LOG_LEVEL",
+  "makerTargetProvision": "MAKER_TARGET_PROVISION",
+  "tokens": {
+    "__name": "TOKENS",
+    "__format": "json"
+  },
   "markets": {
     "__name": "MARKETS",
     "__format": "json"

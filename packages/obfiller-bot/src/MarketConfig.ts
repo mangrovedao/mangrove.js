@@ -6,6 +6,7 @@ export type MakerConfig = {
 };
 
 export type TakerConfig = {
+  targetAllowance: number;
   takeRate: number;
   bidProbability: number;
   maxQuantity: number;
