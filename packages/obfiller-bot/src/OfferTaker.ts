@@ -47,7 +47,7 @@ export class OfferTaker {
       contextInfo: "taker init",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
-      data: { marketConfig: takerConfig },
+      data: { takerConfig: takerConfig },
     });
   }
 
