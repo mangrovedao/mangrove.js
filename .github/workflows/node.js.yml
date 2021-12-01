@@ -325,7 +325,7 @@ jobs:
   # ==== End job: hardhat-utils ====
 
   # ==== Job: Build and test mangrove.js ====
-  mangrove-js:
+  mangrove.js:
     needs: [mangrove-solidity, hardhat-utils]
 
     runs-on: ubuntu-latest
@@ -411,19 +411,19 @@ jobs:
     - name: Zip output
       uses: montudor/action-zip@v1
       with: 
-        args: zip -qq -r mangrove-js-out.zip ${{env.working-directory}}/dist
+        args: zip -qq -r mangrove.js-out.zip ${{env.working-directory}}/dist
 
     - name: Cache mangrove.js output as artifact
       uses: actions/upload-artifact@v2
       with:
-        name: mangrove-js-out.zip
-        path: mangrove-js-out.zip
+        name: mangrove.js-out.zip
+        path: mangrove.js-out.zip
 
-  # ==== End job: mangrove-js ====
+  # ==== End job: mangrove.js ====
         
   # ==== Job: Build and test cleaning-bot ====
   cleaning-bot:
-    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove.js]
 
     runs-on: ubuntu-latest
 
@@ -488,12 +488,12 @@ jobs:
     - name: Download cached mangrove.js artifact
       uses: actions/download-artifact@v2
       with:
-        name: mangrove-js-out.zip
+        name: mangrove.js-out.zip
 
     - name: Unzip mangrove.js artifact
       uses: montudor/action-zip@v1
       with:
-        args: unzip -qq mangrove-js-out.zip
+        args: unzip -qq mangrove.js-out.zip
 
     - name: Download cached commonlib.js artifact
       uses: actions/download-artifact@v2
@@ -529,7 +529,7 @@ jobs:
 
   # ==== Job: Build and test updategas-bot ====
   updategas-bot:
-    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove.js]
 
     runs-on: ubuntu-latest
 
@@ -594,12 +594,12 @@ jobs:
     - name: Download cached mangrove.js artifact
       uses: actions/download-artifact@v2
       with:
-        name: mangrove-js-out.zip
+        name: mangrove.js-out.zip
 
     - name: Unzip mangrove.js artifact
       uses: montudor/action-zip@v1
       with:
-        args: unzip -qq mangrove-js-out.zip
+        args: unzip -qq mangrove.js-out.zip
 
     - name: Download cached commonlib.js artifact
       uses: actions/download-artifact@v2
@@ -635,7 +635,7 @@ jobs:
           
   # ==== Job: Build and test obfiller-bot ====
   obfiller-bot:
-    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove.js]
 
     runs-on: ubuntu-latest
 
@@ -700,12 +700,12 @@ jobs:
     - name: Download cached mangrove.js artifact
       uses: actions/download-artifact@v2
       with:
-        name: mangrove-js-out.zip
+        name: mangrove.js-out.zip
 
     - name: Unzip mangrove.js artifact
       uses: montudor/action-zip@v1
       with:
-        args: unzip -qq mangrove-js-out.zip
+        args: unzip -qq mangrove.js-out.zip
 
     - name: Download cached commonlib.js artifact
       uses: actions/download-artifact@v2

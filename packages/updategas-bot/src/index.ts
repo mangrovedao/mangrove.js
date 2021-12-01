@@ -7,7 +7,7 @@ import { config } from "./util/config";
 import { logger } from "./util/logger";
 import { GasUpdater, OracleSourceConfiguration } from "./GasUpdater";
 
-import Mangrove from "@giry/mangrove-js";
+import Mangrove from "@giry/mangrove.js";
 import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
