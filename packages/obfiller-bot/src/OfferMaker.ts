@@ -120,6 +120,15 @@ export class OfferMaker {
       );
       return;
     }
+
+    logger.debug("Best offer on book", {
+      contextInfo: "maker",
+      base: this.#market.base.name,
+      quote: this.#market.quote.name,
+      ba: ba,
+      data: { bestOffer: offerList[0] },
+    });
+
     const price = this.#choosePriceFromExp(
       ba,
       offerList[0].price,
