@@ -127,6 +127,11 @@ export class OfferTaker {
     const priceInUnits = inboundToken.toUnits(price);
     const quantityInUnits = outboundToken.toUnits(quantity);
 
+    const wants = quantity;
+    const wantsInUnits = inboundToken.toUnits(wants);
+    const gives = wants.mul(price);
+    const givesInUnits = outboundToken.toUnits(gives);
+
     const baseTokenBalance = await this.#market.base.contract.balanceOf(
       this.#takerAddress
     );
@@ -144,6 +149,10 @@ export class OfferTaker {
         quantityInUnits: quantityInUnits.toString(),
         price,
         priceInUnits: priceInUnits.toString(),
+        gives,
+        givesInUnits: givesInUnits.toString(),
+        wants,
+        wantsInUnits: wantsInUnits.toString(),
         gasReq,
         gasPrice,
         baseTokenBalance: this.#market.base.fromUnits(baseTokenBalance),
@@ -153,10 +162,10 @@ export class OfferTaker {
 
     await this.#market.mgv.contract
       .marketOrder(
-        inboundToken.address,
         outboundToken.address,
-        quantityInUnits,
-        priceInUnits,
+        inboundToken.address,
+        wantsInUnits,
+        givesInUnits,
         true
       )
       .then((tx) => tx.wait())
@@ -171,6 +180,10 @@ export class OfferTaker {
             quantityInUnits: quantityInUnits.toString(),
             price,
             priceInUnits: priceInUnits.toString(),
+            gives,
+            givesInUnits: givesInUnits.toString(),
+            wants,
+            wantsInUnits: wantsInUnits.toString(),
             gasReq,
             gasPrice,
           },
@@ -195,6 +208,10 @@ export class OfferTaker {
             quantityInUnits: quantityInUnits.toString(),
             price,
             priceInUnits: priceInUnits.toString(),
+            gives,
+            givesInUnits: givesInUnits.toString(),
+            wants,
+            wantsInUnits: wantsInUnits.toString(),
             gasReq,
             gasPrice,
           },
