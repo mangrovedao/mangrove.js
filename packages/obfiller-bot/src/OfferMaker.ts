@@ -51,7 +51,7 @@ export class OfferMaker {
       contextInfo: "maker init",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
-      data: { marketConfig: makerConfig },
+      data: { makerConfig: makerConfig },
     });
   }
 
@@ -66,8 +66,10 @@ export class OfferMaker {
       base: this.#market.base.name,
       quote: this.#market.quote.name,
       data: {
-        balanceBase: this.#market.base.contract.balanceOf(makerAddress),
-        balanceQuote: this.#market.quote.contract.balanceOf(makerAddress),
+        balanceBase: await this.#market.base.contract.balanceOf(makerAddress),
+        balanceQuote: await this.#market.quote.contract.balanceOf(makerAddress),
+        marketConfig: await this.#market.config(),
+        rawMarketConfig: await this.#market.rawConfig(),
       },
     });
 
