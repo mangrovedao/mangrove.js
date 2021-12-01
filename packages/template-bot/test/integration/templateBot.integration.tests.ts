@@ -1,5 +1,5 @@
 /**
- * Test that integration test infrastructure is working.
+ * Integration tests for the bot.
  */
 
 import { afterEach, before, beforeEach, describe, it } from "mocha";
@@ -24,7 +24,7 @@ describe("Can connect to Mangrove on local chain", () => {
 });
 
 // TODO: integration tests - add/update as needed
-describe("GasUpdater integration tests", () => {
+describe("Bot integration tests", () => {
   let botSigner: SignerWithAddress;
   let mgv: Mangrove;
 
@@ -48,7 +48,7 @@ describe("GasUpdater integration tests", () => {
     mgv.disconnect();
   });
 
-  it("should be able to create a TemplateBot", async function () {
+  it("should be able to create the bot", async function () {
     // setup
     const templateBot = new TemplateBot(mgv);
 
