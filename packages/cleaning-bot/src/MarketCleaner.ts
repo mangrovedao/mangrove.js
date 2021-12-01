@@ -289,13 +289,14 @@ export class MarketCleaner {
     [BigNumberish, BigNumberish, BigNumberish, BigNumberish][],
     boolean
   ] {
-    const { inboundToken, outboundToken } = this.#getTokens(ba);
+    const { outboundToken, inboundToken } = this.#market.getTokens(ba);
     return [
-      inboundToken.address,
       outboundToken.address,
+      inboundToken.address,
       [[offer.id, 0, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
       false,
     ];
+    // FIXME 2021-12-01: The below result may have been affected by wrong order of inbound/outbound tokens
     // FIXME The following are the result of different strategies per 2021-10-26:
     // WORKS:
     //   inboundToken.address,
@@ -332,17 +333,6 @@ export class MarketCleaner {
     //   outboundToken.address,
     //   [[offer.id, maxWantsOrGives, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
     //   true,
-  }
-
-  // FIXME move/integrate into Market API?
-  #getTokens(ba: BA): {
-    inboundToken: MgvToken;
-    outboundToken: MgvToken;
-  } {
-    return {
-      inboundToken: ba === "asks" ? this.#market.base : this.#market.quote,
-      outboundToken: ba === "asks" ? this.#market.quote : this.#market.base,
-    };
   }
 
   async #estimateCostsAndGains(

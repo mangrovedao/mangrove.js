@@ -2,7 +2,6 @@ import { logger } from "./util/logger";
 import { sleep } from "@giry/commonlib-js";
 import { Market } from "@giry/mangrove-js/dist/nodejs/market";
 import { Offer } from "@giry/mangrove-js/dist/nodejs/types";
-import { MgvToken } from "@giry/mangrove-js/dist/nodejs/mgvtoken";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
@@ -123,7 +122,7 @@ export class OfferTaker {
     gasReq: BigNumberish = 100_000,
     gasPrice: BigNumberish = 1
   ): Promise<void> {
-    const { inboundToken, outboundToken } = this.#getTokens(ba);
+    const { outboundToken, inboundToken } = this.#market.getTokens(ba);
     const priceInUnits = inboundToken.toUnits(price);
     const quantityInUnits = outboundToken.toUnits(quantity);
 
@@ -217,16 +216,5 @@ export class OfferTaker {
           },
         });
       });
-  }
-
-  // FIXME move/integrate into Market API?
-  #getTokens(ba: BA): {
-    inboundToken: MgvToken;
-    outboundToken: MgvToken;
-  } {
-    return {
-      inboundToken: ba === "asks" ? this.#market.base : this.#market.quote,
-      outboundToken: ba === "asks" ? this.#market.quote : this.#market.base,
-    };
   }
 }
