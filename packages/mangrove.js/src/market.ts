@@ -204,6 +204,16 @@ export class Market {
     return quoteVolume.div(baseVolume);
   }
 
+  /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
+  getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
+    return ba === "asks" ? gives.mul(price) : gives.div(price);
+  }
+
+  /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
+  getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
+    return ba === "asks" ? wants.div(price) : wants.mul(price);
+  }
+
   /* Stop calling a user-provided function on book-related events. */
   unsubscribe(cb: storableMarketCallback): void {
     this.#subscriptions.delete(cb);
