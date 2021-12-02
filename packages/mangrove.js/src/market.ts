@@ -165,12 +165,13 @@ export class Market {
     }
     return latest_id;
   }
+
   async isActive(): Promise<boolean> {
     const config = await this.config();
     return config.asks.active && config.bids.active;
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids of asks. */
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
   getOutboundInbound(ba: "bids" | "asks"): {
     outbound_tkn: MgvToken;
     inbound_tkn: MgvToken;
@@ -179,6 +180,28 @@ export class Market {
       outbound_tkn: ba === "asks" ? this.base : this.quote,
       inbound_tkn: ba === "asks" ? this.quote : this.base,
     };
+  }
+
+  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
+  getBaseQuoteVolumes(
+    ba: "asks" | "bids",
+    gives: Big,
+    wants: Big
+  ): { baseVolume: Big; quoteVolume: Big } {
+    return {
+      baseVolume: ba === "asks" ? gives : wants,
+      quoteVolume: ba === "asks" ? wants : gives,
+    };
+  }
+
+  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
+  getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
+    const { baseVolume, quoteVolume } = this.getBaseQuoteVolumes(
+      ba,
+      gives,
+      wants
+    );
+    return quoteVolume.div(baseVolume);
   }
 
   /* Stop calling a user-provided function on book-related events. */
@@ -337,11 +360,11 @@ export class Market {
   }
 
   #mapConfig(ba: "bids" | "asks", cfg: rawConfig): localConfig {
-    const { outboundToken } = this.getTokens(ba);
+    const { outbound_tkn } = this.getOutboundInbound(ba);
     return {
       active: cfg.local.active,
       fee: cfg.local.fee.toNumber(),
-      density: outboundToken.fromUnits(cfg.local.density),
+      density: outbound_tkn.fromUnits(cfg.local.density),
       overhead_gasbase: cfg.local.overhead_gasbase.toNumber(),
       offer_gasbase: cfg.local.offer_gasbase.toNumber(),
       lock: cfg.local.lock,
@@ -498,7 +521,7 @@ export class Market {
     opts: BookOptions = bookOptsDefault
   ): Promise<[BookReturns.indices, BookReturns.offers, BookReturns.details]> {
     opts = { ...bookOptsDefault, ...opts };
-    const { outboundToken, inboundToken } = this.getTokens(ba);
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     // by default chunk size is number of offers desired
     const chunkSize =
       typeof opts.chunkSize === "undefined" ? opts.maxOffers : opts.chunkSize;
@@ -518,8 +541,8 @@ export class Market {
     do {
       const [_nextId, _offerIds, _offers, _details] =
         await this.mgv.readerContract.offerList(
-          outboundToken.address,
-          inboundToken.address,
+          outbound_tkn.address,
+          inbound_tkn.address,
           opts.fromId,
           chunkSize,
           { blockTag: blockNum }
@@ -623,12 +646,12 @@ export class Market {
   }
 
   #toOfferObject(ba: "bids" | "asks", raw: OfferData): Offer {
-    const { outboundToken, inboundToken } = this.getTokens(ba);
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
 
-    const _gives = outboundToken.fromUnits(raw.gives);
-    const _wants = inboundToken.fromUnits(raw.wants);
+    const _gives = outbound_tkn.fromUnits(raw.gives);
+    const _wants = inbound_tkn.fromUnits(raw.wants);
 
-    const { baseVolume } = this.getVolumes(ba, _gives, _wants);
+    const { baseVolume } = this.getBaseQuoteVolumes(ba, _gives, _wants);
     const price = this.getPrice(ba, _gives, _wants);
 
     if (baseVolume.eq(0)) {
@@ -735,7 +758,7 @@ export class Market {
     let removedOffer;
     let next;
 
-    const { outboundToken, inboundToken } = this.getTokens(semibook.ba);
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(semibook.ba);
 
     switch (event.name) {
       case "OfferWrite":
@@ -787,8 +810,8 @@ export class Market {
               ba: semibook.ba,
               taker: event.args.taker,
               offer: removedOffer,
-              takerWants: outboundToken.fromUnits(event.args.takerWants),
-              takerGives: inboundToken.fromUnits(event.args.takerGives),
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
               mgvData: event.args.mgvData,
             },
             semibook,
@@ -807,8 +830,8 @@ export class Market {
               ba: semibook.ba,
               taker: event.args.taker,
               offer: removedOffer,
-              takerWants: outboundToken.fromUnits(event.args.takerWants),
-              takerGives: inboundToken.fromUnits(event.args.takerGives),
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
             },
             semibook,
             event,
@@ -900,33 +923,6 @@ export class Market {
       if (draining.eq(0)) break;
     }
     return { estimatedVolume: filling, givenResidue: draining };
-  }
-  /* remove an offer from a {offerMap,bestOffer} pair and keep the structure in a coherent state */
-
-  getTokens(ba: "asks" | "bids"): {
-    outboundToken: MgvToken;
-    inboundToken: MgvToken;
-  } {
-    return {
-      outboundToken: ba === "asks" ? this.base : this.quote,
-      inboundToken: ba === "asks" ? this.quote : this.base,
-    };
-  }
-
-  getVolumes(
-    ba: "asks" | "bids",
-    gives: Big,
-    wants: Big
-  ): { baseVolume: Big; quoteVolume: Big } {
-    return {
-      baseVolume: ba === "asks" ? gives : wants,
-      quoteVolume: ba === "asks" ? wants : gives,
-    };
-  }
-
-  getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
-    const { baseVolume, quoteVolume } = this.getVolumes(ba, gives, wants);
-    return quoteVolume.div(baseVolume);
   }
 }
 

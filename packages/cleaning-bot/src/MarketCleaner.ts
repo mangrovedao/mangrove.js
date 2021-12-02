@@ -1,7 +1,6 @@
 import { logger } from "./util/logger";
 import { Market } from "@giry/mangrove-js/dist/nodejs/market";
 import { Offer } from "@giry/mangrove-js/dist/nodejs/types";
-import { MgvToken } from "@giry/mangrove-js/dist/nodejs/mgvtoken";
 import { Provider } from "@ethersproject/providers";
 import { BigNumber, BigNumberish } from "ethers";
 
@@ -289,48 +288,48 @@ export class MarketCleaner {
     [BigNumberish, BigNumberish, BigNumberish, BigNumberish][],
     boolean
   ] {
-    const { outboundToken, inboundToken } = this.#market.getTokens(ba);
+    const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
     return [
-      outboundToken.address,
-      inboundToken.address,
+      outbound_tkn.address,
+      inbound_tkn.address,
       [[offer.id, 0, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
       false,
     ];
     // FIXME 2021-12-01: The below result may have been affected by wrong order of inbound/outbound tokens
     // FIXME The following are the result of different strategies per 2021-10-26:
     // WORKS:
-    //   inboundToken.address,
-    //   outboundToken.address,
+    //   inbound_tkn.address,
+    //   outbound_tkn.address,
     //   [[offer.id, 0, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
     //   false,
     //
     // WORKS:
-    //   inboundToken.address,
-    //   outboundToken.address,
+    //   inbound_tkn.address,
+    //   outbound_tkn.address,
     //   [[offer.id, 0, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
     //   true,
     //
     // WORKS: This works, though I think Adrien said the last argument should be `false` ?
-    //   inboundToken.address,
-    //   outboundToken.address,
+    //   inbound_tkn.address,
+    //   outbound_tkn.address,
     //   [[offer.id, 0, maxWantsOrGives, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
     //   true,
     //
     // FAILS: This worked in week 41, but no longer - how come? This is the strategy Adrien recommended
-    //   inboundToken.address,
-    //   outboundToken.address,
+    //   inbound_tkn.address,
+    //   outbound_tkn.address,
     //   [[offer.id, 0, maxWantsOrGives, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
     //   false,
     //
     // WEIRD: The following succeeds in the call to MgvCleaner, but does not remove the offer nor yield any bounty - why is that?
-    //   inboundToken.address,
-    //   outboundToken.address,
+    //   inbound_tkn.address,
+    //   outbound_tkn.address,
     //   [[offer.id, maxWantsOrGives, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
     //   false,
     //
     // WEIRD: The following succeeds in the call to MgvCleaner, but does not remove the offer nor yield any bounty - why is that?
-    //   inboundToken.address,
-    //   outboundToken.address,
+    //   inbound_tkn.address,
+    //   outbound_tkn.address,
     //   [[offer.id, maxWantsOrGives, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
     //   true,
   }

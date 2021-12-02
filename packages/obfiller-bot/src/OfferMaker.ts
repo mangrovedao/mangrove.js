@@ -154,14 +154,14 @@ export class OfferMaker {
     gasReq: BigNumberish = 100_000,
     gasPrice: BigNumberish = 1
   ): Promise<void> {
-    const { outboundToken, inboundToken } = this.#market.getTokens(ba);
-    const priceInUnits = inboundToken.toUnits(price);
-    const quantityInUnits = outboundToken.toUnits(quantity);
+    const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
+    const priceInUnits = inbound_tkn.toUnits(price);
+    const quantityInUnits = outbound_tkn.toUnits(quantity);
 
     const gives = quantity;
-    const givesInUnits = outboundToken.toUnits(gives);
+    const givesInUnits = outbound_tkn.toUnits(gives);
     const wants = gives.mul(price);
-    const wantsInUnits = inboundToken.toUnits(wants);
+    const wantsInUnits = inbound_tkn.toUnits(wants);
 
     const baseTokenBalance = await this.#market.base.contract.balanceOf(
       this.#makerAddress
@@ -193,8 +193,8 @@ export class OfferMaker {
 
     await this.#market.mgv.contract
       .newOffer(
-        outboundToken.address,
-        inboundToken.address,
+        outbound_tkn.address,
+        inbound_tkn.address,
         wantsInUnits,
         givesInUnits,
         gasReq,
