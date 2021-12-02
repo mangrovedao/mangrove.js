@@ -2,7 +2,6 @@ import { logger } from "./util/logger";
 import { sleep } from "@giry/commonlib-js";
 import { Market } from "@giry/mangrove-js/dist/nodejs/market";
 import { Offer } from "@giry/mangrove-js/dist/nodejs/types";
-import { MgvToken } from "@giry/mangrove-js/dist/nodejs/mgvtoken";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
@@ -123,14 +122,14 @@ export class OfferTaker {
     gasReq: BigNumberish = 100_000,
     gasPrice: BigNumberish = 1
   ): Promise<void> {
-    const { inboundToken, outboundToken } = this.#getTokens(ba);
-    const priceInUnits = inboundToken.toUnits(price);
-    const quantityInUnits = outboundToken.toUnits(quantity);
+    const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
+    const priceInUnits = inbound_tkn.toUnits(price);
+    const quantityInUnits = outbound_tkn.toUnits(quantity);
 
     const wants = quantity;
-    const wantsInUnits = inboundToken.toUnits(wants);
+    const wantsInUnits = inbound_tkn.toUnits(wants);
     const gives = wants.mul(price);
-    const givesInUnits = outboundToken.toUnits(gives);
+    const givesInUnits = outbound_tkn.toUnits(gives);
 
     const baseTokenBalance = await this.#market.base.contract.balanceOf(
       this.#takerAddress
@@ -162,8 +161,8 @@ export class OfferTaker {
 
     await this.#market.mgv.contract
       .marketOrder(
-        outboundToken.address,
-        inboundToken.address,
+        outbound_tkn.address,
+        inbound_tkn.address,
         wantsInUnits,
         givesInUnits,
         true
@@ -217,16 +216,5 @@ export class OfferTaker {
           },
         });
       });
-  }
-
-  // FIXME move/integrate into Market API?
-  #getTokens(ba: BA): {
-    inboundToken: MgvToken;
-    outboundToken: MgvToken;
-  } {
-    return {
-      inboundToken: ba === "asks" ? this.#market.base : this.#market.quote,
-      outboundToken: ba === "asks" ? this.#market.quote : this.#market.base,
-    };
   }
 }

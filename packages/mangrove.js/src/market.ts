@@ -165,12 +165,13 @@ export class Market {
     }
     return latest_id;
   }
+
   async isActive(): Promise<boolean> {
     const config = await this.config();
     return config.asks.active && config.bids.active;
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids of asks. */
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
   getOutboundInbound(ba: "bids" | "asks"): {
     outbound_tkn: MgvToken;
     inbound_tkn: MgvToken;
@@ -179,6 +180,28 @@ export class Market {
       outbound_tkn: ba === "asks" ? this.base : this.quote,
       inbound_tkn: ba === "asks" ? this.quote : this.base,
     };
+  }
+
+  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
+  getBaseQuoteVolumes(
+    ba: "asks" | "bids",
+    gives: Big,
+    wants: Big
+  ): { baseVolume: Big; quoteVolume: Big } {
+    return {
+      baseVolume: ba === "asks" ? gives : wants,
+      quoteVolume: ba === "asks" ? wants : gives,
+    };
+  }
+
+  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
+  getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
+    const { baseVolume, quoteVolume } = this.getBaseQuoteVolumes(
+      ba,
+      gives,
+      wants
+    );
+    return quoteVolume.div(baseVolume);
   }
 
   /* Stop calling a user-provided function on book-related events. */
@@ -324,16 +347,12 @@ export class Market {
 
     await this.#initializeSemibook(
       "asks",
-      this.base,
-      this.quote,
       config.asks,
       asksInilizationCompleteCallback,
       opts
     );
     await this.#initializeSemibook(
       "bids",
-      this.base,
-      this.quote,
       config.bids,
       bidsInilizationCompleteCallback,
       opts
@@ -341,11 +360,11 @@ export class Market {
   }
 
   #mapConfig(ba: "bids" | "asks", cfg: rawConfig): localConfig {
-    const bq = ba === "asks" ? "base" : "quote";
+    const { outbound_tkn } = this.getOutboundInbound(ba);
     return {
       active: cfg.local.active,
       fee: cfg.local.fee.toNumber(),
-      density: this[bq].fromUnits(cfg.local.density),
+      density: outbound_tkn.fromUnits(cfg.local.density),
       overhead_gasbase: cfg.local.overhead_gasbase.toNumber(),
       offer_gasbase: cfg.local.offer_gasbase.toNumber(),
       lock: cfg.local.lock,
@@ -498,11 +517,11 @@ export class Market {
 
   /* Provides the book with raw BigNumber values */
   async rawBook(
-    base_a: string,
-    quote_a: string,
+    ba: "asks" | "bids",
     opts: BookOptions = bookOptsDefault
   ): Promise<[BookReturns.indices, BookReturns.offers, BookReturns.details]> {
     opts = { ...bookOptsDefault, ...opts };
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     // by default chunk size is number of offers desired
     const chunkSize =
       typeof opts.chunkSize === "undefined" ? opts.maxOffers : opts.chunkSize;
@@ -522,8 +541,8 @@ export class Market {
     do {
       const [_nextId, _offerIds, _offers, _details] =
         await this.mgv.readerContract.offerList(
-          base_a,
-          quote_a,
+          outbound_tkn.address,
+          inbound_tkn.address,
           opts.fromId,
           chunkSize,
           { blockTag: blockNum }
@@ -566,16 +585,8 @@ export class Market {
   async requestBook(
     opts: BookOptions = bookOptsDefault
   ): Promise<Market["_book"]> {
-    const rawAsks = await this.rawBook(
-      this.base.address,
-      this.quote.address,
-      opts
-    );
-    const rawBids = await this.rawBook(
-      this.quote.address,
-      this.base.address,
-      opts
-    );
+    const rawAsks = await this.rawBook("asks", opts);
+    const rawBids = await this.rawBook("bids", opts);
     return {
       asks: this.rawToArray("asks", ...rawAsks),
       bids: this.rawToArray("bids", ...rawBids),
@@ -635,14 +646,13 @@ export class Market {
   }
 
   #toOfferObject(ba: "bids" | "asks", raw: OfferData): Offer {
-    const gives_bq = ba === "asks" ? "base" : "quote";
-    const wants_bq = ba === "asks" ? "quote" : "base";
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
 
-    const _gives = this[gives_bq].fromUnits(raw.gives);
-    const _wants = this[wants_bq].fromUnits(raw.wants);
+    const _gives = outbound_tkn.fromUnits(raw.gives);
+    const _wants = inbound_tkn.fromUnits(raw.wants);
 
-    const [baseVolume, quoteVolume] =
-      ba === "asks" ? [_gives, _wants] : [_wants, _gives];
+    const { baseVolume } = this.getBaseQuoteVolumes(ba, _gives, _wants);
+    const price = this.getPrice(ba, _gives, _wants);
 
     if (baseVolume.eq(0)) {
       throw Error("baseVolume is 0 (not allowed)");
@@ -663,7 +673,7 @@ export class Market {
       gives: _gives,
       wants: _wants,
       volume: baseVolume,
-      price: quoteVolume.div(baseVolume),
+      price: price,
     };
   }
 
@@ -695,8 +705,6 @@ export class Market {
 
   async #initializeSemibook(
     ba: "bids" | "asks",
-    inboundTkn: MgvToken,
-    outboundTkn: MgvToken,
     localConfig: localConfig,
     initializationCompleteCallback: ({
       semibook: semibook,
@@ -705,14 +713,10 @@ export class Market {
     opts: Omit<BookOptions, "fromId">
   ): Promise<void> {
     const firstBlockNumber: number = await this.mgv._provider.getBlockNumber();
-    const rawOffers = await this.rawBook(
-      inboundTkn.address,
-      outboundTkn.address,
-      {
-        ...opts,
-        ...{ fromId: 0, blockNumber: firstBlockNumber },
-      }
-    );
+    const rawOffers = await this.rawBook(ba, {
+      ...opts,
+      ...{ fromId: 0, blockNumber: firstBlockNumber },
+    });
 
     const semibook = {
       ba: ba,
@@ -754,8 +758,7 @@ export class Market {
     let removedOffer;
     let next;
 
-    const takerWants_bq = semibook.ba === "asks" ? "base" : "quote";
-    const takerGives_bq = semibook.ba === "asks" ? "quote" : "base";
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(semibook.ba);
 
     switch (event.name) {
       case "OfferWrite":
@@ -807,8 +810,8 @@ export class Market {
               ba: semibook.ba,
               taker: event.args.taker,
               offer: removedOffer,
-              takerWants: this[takerWants_bq].fromUnits(event.args.takerWants),
-              takerGives: this[takerGives_bq].fromUnits(event.args.takerGives),
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
               mgvData: event.args.mgvData,
             },
             semibook,
@@ -827,8 +830,8 @@ export class Market {
               ba: semibook.ba,
               taker: event.args.taker,
               offer: removedOffer,
-              takerWants: this[takerWants_bq].fromUnits(event.args.takerWants),
-              takerGives: this[takerGives_bq].fromUnits(event.args.takerGives),
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
             },
             semibook,
             event,
@@ -921,7 +924,6 @@ export class Market {
     }
     return { estimatedVolume: filling, givenResidue: draining };
   }
-  /* remove an offer from a {offerMap,bestOffer} pair and keep the structure in a coherent state */
 }
 
 // remove offer id from book and connect its prev/next.

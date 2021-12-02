@@ -2,7 +2,6 @@ import { logger } from "./util/logger";
 import { sleep } from "@giry/commonlib-js";
 import { Market } from "@giry/mangrove-js/dist/nodejs/market";
 import { Offer } from "@giry/mangrove-js/dist/nodejs/types";
-import { MgvToken } from "@giry/mangrove-js/dist/nodejs/mgvtoken";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
@@ -121,6 +120,15 @@ export class OfferMaker {
       );
       return;
     }
+
+    logger.debug("Best offer on book", {
+      contextInfo: "maker",
+      base: this.#market.base.name,
+      quote: this.#market.quote.name,
+      ba: ba,
+      data: { bestOffer: offerList[0] },
+    });
+
     const price = this.#choosePriceFromExp(
       ba,
       offerList[0].price,
@@ -146,14 +154,14 @@ export class OfferMaker {
     gasReq: BigNumberish = 100_000,
     gasPrice: BigNumberish = 1
   ): Promise<void> {
-    const { inboundToken, outboundToken } = this.#getTokens(ba);
-    const priceInUnits = inboundToken.toUnits(price);
-    const quantityInUnits = outboundToken.toUnits(quantity);
+    const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
+    const priceInUnits = inbound_tkn.toUnits(price);
+    const quantityInUnits = outbound_tkn.toUnits(quantity);
 
     const gives = quantity;
-    const givesInUnits = outboundToken.toUnits(gives);
+    const givesInUnits = outbound_tkn.toUnits(gives);
     const wants = gives.mul(price);
-    const wantsInUnits = inboundToken.toUnits(wants);
+    const wantsInUnits = inbound_tkn.toUnits(wants);
 
     const baseTokenBalance = await this.#market.base.contract.balanceOf(
       this.#makerAddress
@@ -185,8 +193,8 @@ export class OfferMaker {
 
     await this.#market.mgv.contract
       .newOffer(
-        outboundToken.address,
-        inboundToken.address,
+        outbound_tkn.address,
+        inbound_tkn.address,
         wantsInUnits,
         givesInUnits,
         gasReq,
@@ -243,16 +251,5 @@ export class OfferMaker {
           },
         });
       });
-  }
-
-  // FIXME move/integrate into Market API?
-  #getTokens(ba: BA): {
-    inboundToken: MgvToken;
-    outboundToken: MgvToken;
-  } {
-    return {
-      inboundToken: ba === "asks" ? this.#market.base : this.#market.quote,
-      outboundToken: ba === "asks" ? this.#market.quote : this.#market.base,
-    };
   }
 }
