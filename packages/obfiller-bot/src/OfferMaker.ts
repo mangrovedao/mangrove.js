@@ -160,7 +160,7 @@ export class OfferMaker {
 
     const gives = quantity;
     const givesInUnits = outbound_tkn.toUnits(gives);
-    const wants = gives.mul(price);
+    const wants = this.#market.getWantsForPrice(ba, gives, price);
     const wantsInUnits = inbound_tkn.toUnits(wants);
 
     const baseTokenBalance = await this.#market.base.contract.balanceOf(
