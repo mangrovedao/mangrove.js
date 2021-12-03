@@ -32,21 +32,6 @@
       }
     },
     {
-      "baseToken": "WETH",
-      "quoteToken": "USDC",
-      "makerConfig": {
-        "offerRate": 0.005,
-        "bidProbability": 0.5,
-        "lambda": 10,
-        "maxQuantity": 10
-      },
-      "takerConfig": {
-        "takeRate": 0.005,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
-      }
-    },
-    {
       "baseToken": "DAI",
       "quoteToken": "USDC",
       "makerConfig": {
