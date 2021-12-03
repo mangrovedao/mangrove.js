@@ -42,6 +42,40 @@ describe("Market integration tests suite", () => {
     mgv.disconnect();
   });
 
+  describe("Readonly mode", () => {
+    let mgvro;
+
+    beforeEach(async () => {
+      mgvro = await Mangrove.connect({
+        provider: "http://localhost:8546",
+        forceReadOnly: true,
+      });
+      //shorten polling for faster tests
+      // @ts-ignore
+      mgvro._provider.pollingInterval = 250;
+    });
+    afterEach(async () => {
+      mgvro.disconnect();
+    });
+
+    it("can read book updates in readonly mode", async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const marketro = await mgvro.market({ base: "TokenA", quote: "TokenB" });
+      const addrA = market.base.address;
+      const addrB = market.quote.address;
+
+      let pro1 = marketro.once((evt) => {
+        assert.equal(
+          marketro.book().asks.length,
+          1,
+          "book should have length 1 by now"
+        );
+      });
+      await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
+      await pro1;
+    });
+  });
+
   it("subscribes", async function () {
     const queue = helpers.asyncQueue();
 

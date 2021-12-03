@@ -7,7 +7,7 @@ import * as chai from "chai";
 const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
-import Mangrove from "@giry/mangrove-js";
+import Mangrove from "@giry/mangrove.js";
 import { TemplateBot } from "../../src/TemplateBot";
 import * as hre from "hardhat";
 import "hardhat-deploy-ethers/dist/src/type-extensions";

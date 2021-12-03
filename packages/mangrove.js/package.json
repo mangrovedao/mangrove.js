@@ -1,5 +1,5 @@
 {
-  "name": "@giry/mangrove-js",
+  "name": "@giry/mangrove.js",
   "version": "0.0.2",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",

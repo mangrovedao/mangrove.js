@@ -413,13 +413,13 @@ jobs:
       with: 
         args: zip -qq -r mangrove-js-out.zip ${{env.working-directory}}/dist
 
-    - name: Cache mangrove.js output as artifact
+    - name: Cache mangrove-js output as artifact
       uses: actions/upload-artifact@v2
       with:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
 
-  # ==== End job: mangrove-js ====
+  # ==== End job: mangrove.js ====
         
   # ==== Job: Build and test cleaning-bot ====
   cleaning-bot:
@@ -485,12 +485,12 @@ jobs:
     #   with:
     #     args: unzip -qq hardhat-utils-out.zip
 
-    - name: Download cached mangrove.js artifact
+    - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v2
       with:
         name: mangrove-js-out.zip
 
-    - name: Unzip mangrove.js artifact
+    - name: Unzip mangrove-js artifact
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq mangrove-js-out.zip
@@ -591,12 +591,12 @@ jobs:
     #   with:
     #     args: unzip -qq hardhat-utils-out.zip
 
-    - name: Download cached mangrove.js artifact
+    - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v2
       with:
         name: mangrove-js-out.zip
 
-    - name: Unzip mangrove.js artifact
+    - name: Unzip mangrove-js artifact
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq mangrove-js-out.zip
@@ -697,12 +697,12 @@ jobs:
     #   with:
     #     args: unzip -qq hardhat-utils-out.zip
 
-    - name: Download cached mangrove.js artifact
+    - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v2
       with:
         name: mangrove-js-out.zip
 
-    - name: Unzip mangrove.js artifact
+    - name: Unzip mangrove-js artifact
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq mangrove-js-out.zip
@@ -804,12 +804,12 @@ jobs:
     #   with:
     #     args: unzip -qq hardhat-utils-out.zip
 
-    - name: Download cached mangrove.js artifact
+    - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v2
       with:
         name: mangrove-js-out.zip
 
-    - name: Unzip mangrove.js artifact
+    - name: Unzip mangrove-js artifact
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq mangrove-js-out.zip

@@ -63,14 +63,23 @@ export async function getProviderNetwork(
  * - `options.provider`, then you can specify `options.signerIndex` to get the nth account, or
  * - `options.privateKey`, or
  * - `options.mnemonic`, then you can specify the derivation with `options.path`.
+ * In addition, you can specify
+ * - `options.forceReadOnly:boolean` to connect readonly to mangrove. If you don't specify a signer and the provider does not include a signer, you will connect in readonly mode.
+ *
+ * When in readonly mode, all write operations will fail and msg.sender will be
+ * 0x0000000000000000000000000000000000000001
  *
  * @hidden
  *
  * @returns {object} Returns a valid Ethereum network signer object with an attached provider.
  */
-export function _createSigner(options: CreateSignerOptions = {}): Signer {
+export function _createSigner(options: CreateSignerOptions = {}): {
+  readOnly: boolean;
+  signer: Signer;
+} {
+  let readOnly = false;
   if (options.signer && options.signer.provider) {
-    return options.signer;
+    return { readOnly, signer: options.signer };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,7 +99,10 @@ export function _createSigner(options: CreateSignerOptions = {}): Signer {
     provider = new ethers.providers.Web3Provider(provider);
   }
 
-  if (provider.getSigner) {
+  if (
+    provider.getSigner &&
+    !("forceReadOnly" in options && options.forceReadOnly)
+  ) {
     signer = provider.getSigner(options.signerIndex || 0);
   }
 
@@ -126,10 +138,13 @@ export function _createSigner(options: CreateSignerOptions = {}): Signer {
       );
     }
   } else if (!signer) {
-    throw Error(
-      "Must provide private key or mnemonic, selected provider has no signer info."
+    // console.warn("No signing info provided or forceReadOnly is true: only read methods will work.");
+    readOnly = true;
+    signer = new ethers.VoidSigner(
+      "0x0000000000000000000000000000000000000001",
+      provider
     );
   }
 
-  return signer;
+  return { readOnly, signer };
 }
