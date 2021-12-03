@@ -28,6 +28,7 @@ export class Mangrove {
   _provider: Provider;
   _signer: Signer;
   _network: ProviderNetwork;
+  _readOnly: boolean;
   _address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
@@ -64,12 +65,13 @@ export class Mangrove {
       options = { provider: options };
     }
 
-    const signer = eth._createSigner(options); // returns a provider equipped signer
+    const { readOnly, signer } = eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
       network: network,
+      readOnly,
     });
     canConstructMangrove = false;
     return mgv;
@@ -81,7 +83,11 @@ export class Mangrove {
   //TODO types in module namespace with same name as class
   //TODO remove _prefix on public properties
 
-  constructor(params: { signer: Signer; network: ProviderNetwork }) {
+  constructor(params: {
+    signer: Signer;
+    network: ProviderNetwork;
+    readOnly: boolean;
+  }) {
     if (!canConstructMangrove) {
       throw Error(
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)"
@@ -91,6 +97,7 @@ export class Mangrove {
     this._provider = params.signer.provider;
     this._signer = params.signer;
     this._network = params.network;
+    this._readOnly = params.readOnly;
     this._address = Mangrove.getAddress("Mangrove", this._network.name);
     this.contract = typechain.Mangrove__factory.connect(
       this._address,

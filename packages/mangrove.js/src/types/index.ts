@@ -135,6 +135,7 @@ export interface CreateSignerOptions {
   path?: string;
   signer?: any;
   signerIndex?: number;
+  forceReadOnly?: boolean;
 }
 
 export interface Connection {
