@@ -65,7 +65,7 @@ export class Mangrove {
       options = { provider: options };
     }
 
-    const { readOnly, signer } = eth._createSigner(options); // returns a provider equipped signer
+    const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
     canConstructMangrove = true;
     const mgv = new Mangrove({
