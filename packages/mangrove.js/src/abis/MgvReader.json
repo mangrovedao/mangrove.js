@@ -203,11 +203,6 @@
             "internalType": "uint256",
             "name": "wants",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "gasprice",
-            "type": "uint256"
           }
         ],
         "internalType": "struct MgvLib.Offer[]",
@@ -234,6 +229,11 @@
           {
             "internalType": "uint256",
             "name": "offer_gasbase",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gasprice",
             "type": "uint256"
           }
         ],
