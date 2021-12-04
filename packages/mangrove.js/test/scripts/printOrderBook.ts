@@ -5,7 +5,9 @@ import chalk from "chalk";
 import yargs from "yargs";
 
 const argv = yargs(process.argv.slice(2))
-  .usage("Usage: ts-node $0 <base token name> <quote token name>")
+  .usage(
+    "Usage: ts-node $0 <base token name> <quote token name> <max offers displayed>"
+  )
   .positional("base", {
     demandOption: true,
     describe: "the name of the base token (WETH, DAI, USDC, ...)",
@@ -16,24 +18,36 @@ const argv = yargs(process.argv.slice(2))
     describe: "the name of the quote token (WETH, DAI, USDC, ...)",
     type: "string",
   })
-  .positional("quote", {
-    demandOption: true,
+  .positional("maxOffers", {
+    //demandOption: true,
     describe: "the max number of offers to display",
     type: "string",
+    //default: 10,
   })
   .help().argv;
+//console.log(argv);
+//console.log(argv["_"]);
 
 const main = async () => {
-  const mangrove = await Mangrove.connect(process.env["MUMBAI_NODE_URL"]); // changed ETHEREUM_ to MUMBAI_
-  const [baseTokenName, quoteTokenName, maxOffersDisplayed] = argv["_"];
-  const numberOffersDisplayed = {
+  // changed ETHEREUM_ to MUMBAI_
+  const mangrove = await Mangrove.connect(process.env["MUMBAI_NODE_URL"]);
+  // added an optional argument to define the number of offers to display
+  let [baseTokenName, quoteTokenName, maxOffersDisplayed] = argv["_"];
+  // if undefined by the command line we set it to default value 10
+  if (typeof maxOffersDisplayed == "undefined") {
+    maxOffersDisplayed = 10;
+  }
+
+  let numberOffersDisplayed = {
     maxOffers: maxOffersDisplayed,
-  }; // added an arg to define the number of offers to display
+  };
+
   const market = await mangrove.market({
     base: baseTokenName,
     quote: quoteTokenName,
     bookOptions: numberOffersDisplayed,
   });
+
   const { asks, bids } = market.book();
 
   console.group("MARKET");
