@@ -1154,12 +1154,12 @@
           },
           {
             "internalType": "uint256",
-            "name": "gives",
+            "name": "wants",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "wants",
+            "name": "gives",
             "type": "uint256"
           },
           {
