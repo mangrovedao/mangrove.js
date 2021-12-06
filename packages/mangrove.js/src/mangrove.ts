@@ -180,7 +180,7 @@ export class Mangrove {
 
   /**
    * Read decimals for `tokenName`.
-   * To read decimals off the chain, use `cacheDecimals`.
+   * To read decimals off the chain, use `fetchDecimals`.
    */
   getDecimals(tokenName: string): number {
     return Mangrove.getDecimals(tokenName);
@@ -196,8 +196,8 @@ export class Mangrove {
   /**
    * Read chain for decimals of `tokenName` on current network and save them.
    */
-  async cacheDecimals(tokenName: string): Promise<number> {
-    return Mangrove.cacheDecimals(tokenName, this._provider);
+  async fetchDecimals(tokenName: string): Promise<number> {
+    return Mangrove.fetchDecimals(tokenName, this._provider);
   }
 
   /** Convert public token amount to internal token representation.
@@ -314,7 +314,7 @@ export class Mangrove {
 
   /**
    * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `cacheDecimals`.
+   * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimals(tokenName: string): number {
     if (typeof loadedDecimals[tokenName] !== "number") {
@@ -334,7 +334,7 @@ export class Mangrove {
   /**
    * Read chain for decimals of `tokenName` on current network and save them
    */
-  static async cacheDecimals(
+  static async fetchDecimals(
     tokenName: string,
     provider: Provider
   ): Promise<number> {
