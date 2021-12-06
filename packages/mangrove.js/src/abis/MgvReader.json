@@ -58,7 +58,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct MgvLib.Global",
+        "internalType": "struct Structs.Global",
         "name": "global",
         "type": "tuple"
       },
@@ -105,7 +105,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.Local",
+        "internalType": "struct Structs.Local",
         "name": "local",
         "type": "tuple"
       }
