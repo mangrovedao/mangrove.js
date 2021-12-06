@@ -279,7 +279,7 @@ export class Mangrove {
   /**
    * Read all contract addresses on the given network.
    */
-  static getAllAddresses(network = "mainnet"): [string, string][] {
+  static getAllAddresses(network: string): [string, string][] {
     if (!addresses[network]) {
       throw Error(`No addresses for network ${network}.`);
     }
@@ -288,9 +288,9 @@ export class Mangrove {
   }
 
   /**
-   * Read a contract address on the given network.
+   * Read a contract address on a given network.
    */
-  static getAddress(name: string, network = "mainnet"): string {
+  static getAddress(name: string, network: string): string {
     if (!addresses[network]) {
       throw Error(`No addresses for network ${network}.`);
     }
@@ -305,7 +305,7 @@ export class Mangrove {
   /**
    * Set a contract address on the given network.
    */
-  static setAddress(name: string, address: string, network = "mainnet"): void {
+  static setAddress(name: string, address: string, network: string): void {
     if (!addresses[network]) {
       addresses[network] = {};
     }
