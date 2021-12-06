@@ -196,16 +196,16 @@
           },
           {
             "internalType": "uint256",
-            "name": "gives",
+            "name": "wants",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "wants",
+            "name": "gives",
             "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.Offer[]",
+        "internalType": "struct Structs.Offer[]",
         "name": "",
         "type": "tuple[]"
       },
@@ -237,7 +237,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.OfferDetail[]",
+        "internalType": "struct Structs.OfferDetail[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -320,7 +320,7 @@
         "type": "uint256[]"
       },
       {
-        "internalType": "bytes32[]",
+        "internalType": "Offer.t[]",
         "name": "",
         "type": "bytes32[]"
       },
