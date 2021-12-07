@@ -15,14 +15,12 @@ module.exports = {
       },
     },
     paths: {
-      artifacts:
-        "node_modules/@giry/mangrove-solidity/build/cache/solpp-generated-contracts",
+      artifacts: "node_modules/@giry/mangrove-solidity/artifacts",
     },
     external: {
       contracts: [
         {
-          artifacts:
-            "node_modules/@giry/mangrove-solidity/build/cache/solpp-generated-contracts",
+          artifacts: "node_modules/@giry/mangrove-solidity/artifacts",
           deploy: "node_modules/@giry/mangrove-solidity/deploy",
         },
       ],
