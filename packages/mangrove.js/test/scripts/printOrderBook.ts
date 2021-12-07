@@ -1,5 +1,4 @@
-// import * from "yargs";
-import { Mangrove } from "../..";
+import { Mangrove } from "../../src";
 import type { Offer } from "../../src/types";
 import chalk from "chalk";
 import yargs from "yargs";
@@ -19,10 +18,7 @@ const argv = yargs(process.argv.slice(2))
   .help().argv;
 
 const main = async () => {
-  const mangrove = await Mangrove.connect({
-    provider: process.env["ETHEREUM_NODE_URL"],
-    privateKey: process.env["PRIVATE_KEY"],
-  });
+  const mangrove = await Mangrove.connect(process.env["ETHEREUM_NODE_URL"]);
   const [baseTokenName, quoteTokenName] = argv["_"];
   const market = await mangrove.market({
     base: baseTokenName,
