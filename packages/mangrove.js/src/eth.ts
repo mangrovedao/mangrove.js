@@ -73,10 +73,12 @@ export async function getProviderNetwork(
  *
  * @returns {object} Returns a valid Ethereum network signer object with an attached provider.
  */
-export function _createSigner(options: CreateSignerOptions = {}): {
+export async function _createSigner(
+  options: CreateSignerOptions = {}
+): Promise<{
   readOnly: boolean;
   signer: Signer;
-} {
+}> {
   let readOnly = false;
   if (options.signer && options.signer.provider) {
     return { readOnly, signer: options.signer };
@@ -104,6 +106,9 @@ export function _createSigner(options: CreateSignerOptions = {}): {
     !("forceReadOnly" in options && options.forceReadOnly)
   ) {
     signer = provider.getSigner(options.signerIndex || 0);
+    await signer.getAddress().catch((e) => {
+      signer = undefined;
+    });
   }
 
   if (

@@ -547,7 +547,6 @@ export class Market {
       opts.blockNumber !== undefined
         ? opts.blockNumber
         : await this.mgv._provider.getBlockNumber(); //stay consistent by reading from one block
-    await this.mgv.readerContract.config(this.mgv._address, this.mgv._address);
     do {
       const [_nextId, _offerIds, _offers, _details] =
         await this.mgv.readerContract.offerList(
