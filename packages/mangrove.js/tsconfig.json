@@ -9,7 +9,7 @@
     "sourceMap": true,
     "declaration": true,
     "noErrorTruncation": true,
-    "target": "es2020",
+    "target": "es2015",
     "incremental":true
     //"strict": true,
     //"suppressImplicitAnyIndexErrors": true,
