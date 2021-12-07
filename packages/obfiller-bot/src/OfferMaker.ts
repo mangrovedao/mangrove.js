@@ -1,7 +1,8 @@
 import { logger } from "./util/logger";
 import { sleep } from "@giry/commonlib-js";
-import { Market } from "@giry/mangrove-js/dist/nodejs/market";
-import { Offer } from "@giry/mangrove-js/dist/nodejs/types";
+import { Market } from "@giry/mangrove.js/dist/nodejs/market";
+import { Offer } from "@giry/mangrove.js/dist/nodejs/types";
+import { MgvToken } from "@giry/mangrove.js/dist/nodejs/mgvtoken";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";

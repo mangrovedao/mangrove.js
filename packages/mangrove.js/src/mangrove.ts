@@ -28,6 +28,7 @@ export class Mangrove {
   _provider: Provider;
   _signer: Signer;
   _network: ProviderNetwork;
+  _readOnly: boolean;
   _address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
@@ -64,12 +65,13 @@ export class Mangrove {
       options = { provider: options };
     }
 
-    const signer = eth._createSigner(options); // returns a provider equipped signer
+    const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
       network: network,
+      readOnly,
     });
     canConstructMangrove = false;
     return mgv;
@@ -81,7 +83,11 @@ export class Mangrove {
   //TODO types in module namespace with same name as class
   //TODO remove _prefix on public properties
 
-  constructor(params: { signer: Signer; network: ProviderNetwork }) {
+  constructor(params: {
+    signer: Signer;
+    network: ProviderNetwork;
+    readOnly: boolean;
+  }) {
     if (!canConstructMangrove) {
       throw Error(
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)"
@@ -91,6 +97,7 @@ export class Mangrove {
     this._provider = params.signer.provider;
     this._signer = params.signer;
     this._network = params.network;
+    this._readOnly = params.readOnly;
     this._address = Mangrove.getAddress("Mangrove", this._network.name);
     this.contract = typechain.Mangrove__factory.connect(
       this._address,
@@ -173,7 +180,7 @@ export class Mangrove {
 
   /**
    * Read decimals for `tokenName`.
-   * To read decimals off the chain, use `cacheDecimals`.
+   * To read decimals off the chain, use `fetchDecimals`.
    */
   getDecimals(tokenName: string): number {
     return Mangrove.getDecimals(tokenName);
@@ -189,8 +196,8 @@ export class Mangrove {
   /**
    * Read chain for decimals of `tokenName` on current network and save them.
    */
-  async cacheDecimals(tokenName: string): Promise<number> {
-    return Mangrove.cacheDecimals(tokenName, this._provider);
+  async fetchDecimals(tokenName: string): Promise<number> {
+    return Mangrove.fetchDecimals(tokenName, this._provider);
   }
 
   /** Convert public token amount to internal token representation.
@@ -272,7 +279,7 @@ export class Mangrove {
   /**
    * Read all contract addresses on the given network.
    */
-  static getAllAddresses(network = "mainnet"): [string, string][] {
+  static getAllAddresses(network: string): [string, string][] {
     if (!addresses[network]) {
       throw Error(`No addresses for network ${network}.`);
     }
@@ -281,9 +288,9 @@ export class Mangrove {
   }
 
   /**
-   * Read a contract address on the given network.
+   * Read a contract address on a given network.
    */
-  static getAddress(name: string, network = "mainnet"): string {
+  static getAddress(name: string, network: string): string {
     if (!addresses[network]) {
       throw Error(`No addresses for network ${network}.`);
     }
@@ -298,7 +305,7 @@ export class Mangrove {
   /**
    * Set a contract address on the given network.
    */
-  static setAddress(name: string, address: string, network = "mainnet"): void {
+  static setAddress(name: string, address: string, network: string): void {
     if (!addresses[network]) {
       addresses[network] = {};
     }
@@ -307,7 +314,7 @@ export class Mangrove {
 
   /**
    * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `cacheDecimals`.
+   * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimals(tokenName: string): number {
     if (typeof loadedDecimals[tokenName] !== "number") {
@@ -327,7 +334,7 @@ export class Mangrove {
   /**
    * Read chain for decimals of `tokenName` on current network and save them
    */
-  static async cacheDecimals(
+  static async fetchDecimals(
     tokenName: string,
     provider: Provider
   ): Promise<number> {

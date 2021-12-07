@@ -7,7 +7,7 @@ import config from "./util/config";
 import { ErrorWithData } from "@giry/commonlib-js";
 import { logger } from "./util/logger";
 
-import Mangrove, { MgvToken } from "@giry/mangrove-js";
+import Mangrove, { MgvToken } from "@giry/mangrove.js";
 
 import { ethers } from "ethers";
 import { WebSocketProvider, Provider } from "@ethersproject/providers";
