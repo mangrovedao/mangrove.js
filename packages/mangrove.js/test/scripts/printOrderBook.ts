@@ -1,12 +1,11 @@
 import { Mangrove } from "../../src";
 import type { Offer } from "../../src/types";
-import type { BookOptions } from "../../src/types";
 import chalk from "chalk";
 import yargs from "yargs";
 
 const argv = yargs(process.argv.slice(2))
   .usage(
-    "Usage: ts-node $0 <base token name> <quote token name> <max offers displayed>"
+    "Usage: ts-node $0 <base token name> <quote token name> [max offers displayed]"
   )
   .positional("base", {
     demandOption: true,
@@ -19,21 +18,18 @@ const argv = yargs(process.argv.slice(2))
     type: "string",
   })
   .positional("maxOffers", {
-    //demandOption: true,
     describe: "the max number of offers to display",
     type: "string",
-    //default: 10,
   })
   .help().argv;
-//console.log(argv);
-//console.log(argv["_"]);
 
 const main = async () => {
   // changed ETHEREUM_ to MUMBAI_
-  const mangrove = await Mangrove.connect(process.env["MUMBAI_NODE_URL"]);
+  const mangrove = await Mangrove.connect(process.env["NODE_URL"]);
   // added an optional argument to define the number of offers to display
   let [baseTokenName, quoteTokenName, maxOffersDisplayed] = argv["_"];
   // if undefined by the command line we set it to default value 10
+  // FIXME there should be a way to set a default value using yargs
   if (typeof maxOffersDisplayed == "undefined") {
     maxOffersDisplayed = 10;
   }
