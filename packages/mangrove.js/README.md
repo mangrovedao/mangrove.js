@@ -89,6 +89,8 @@ const mkr = await mgv.simpleMakerConnect({
   address: mkr_address,
   base: "WETH",
   quote: "USDC",
+  noInit: false, // set to true to initialize market data later
+  bookOptions: undefined, // define additional market options
 });
 
 // note that mkr.market is a Market object with all the taker functions available

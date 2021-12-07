@@ -106,7 +106,7 @@ export async function _createSigner(
     !("forceReadOnly" in options && options.forceReadOnly)
   ) {
     signer = provider.getSigner(options.signerIndex || 0);
-    await signer.getAddress().catch((e) => {
+    await signer.getAddress().catch(() => {
       signer = undefined;
     });
   }

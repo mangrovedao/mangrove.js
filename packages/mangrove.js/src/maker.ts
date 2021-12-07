@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
 import { Market } from "./market";
-import { Bigish, Offer } from "./types";
+import { Bigish, BookOptions, Offer } from "./types";
 import { Mangrove } from "./mangrove";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
@@ -27,6 +27,16 @@ Big.RM = Big.roundHalfUp; // round to nearest
 // simpleMaker.deposit(n)
 
 import * as typechain from "./types/typechain";
+
+type ConstructionParams = {
+  mgv: Mangrove;
+  address: string;
+  base: string;
+  quote: string;
+  noInit?: boolean;
+  bookOptions?: BookOptions;
+};
+
 let canConstruct = false;
 /** Connect to MangroveOffer.
  *  This basic maker contract will relay new/cancel/update
@@ -41,14 +51,20 @@ export class SimpleMaker {
   market: Market;
   contract: typechain.SimpleMaker;
   address: string;
+  #initClosure?: () => Promise<void>;
 
-  constructor(mgv: Mangrove) {
+  constructor(mgv: Mangrove, address: string) {
     if (!canConstruct) {
       throw Error(
         "Simple Maker must be initialized async with SimpleMaker.connect (constructors cannot be async)"
       );
     }
     this.mgv = mgv;
+    this.address = address;
+    this.contract = typechain.SimpleMaker__factory.connect(
+      address,
+      this.mgv._signer
+    );
   }
   /**
    * @note Deploys a fresh MangroveOffer contract
@@ -64,34 +80,35 @@ export class SimpleMaker {
   /**
    * @note Connect to existing MangroveOffer
    */
-  static async connect(p: {
-    mgv: Mangrove;
-    address: string;
-    base: string;
-    quote: string;
-  }): Promise<SimpleMaker> {
+  static async connect(p: ConstructionParams): Promise<SimpleMaker> {
     canConstruct = true;
-    const sm = new SimpleMaker(p.mgv);
+    const sm = new SimpleMaker(p.mgv, p.address);
     canConstruct = false;
-    await sm.#initialize(p);
+    if (p["noInit"]) {
+      sm.#initClosure = () => {
+        return sm.#initialize(p);
+      };
+    } else {
+      await sm.#initialize(p);
+    }
     return sm;
   }
 
   /**
    * Initialize a new SimpleMarket specialized for a base/quote.
    */
-  async #initialize(p: {
-    mgv: Mangrove;
-    address: string;
-    base: string;
-    quote: string;
-  }): Promise<void> {
-    this.address = p.address;
-    this.contract = typechain.SimpleMaker__factory.connect(
-      p.address,
-      p.mgv._signer
-    );
-    this.market = await this.mgv.market({ base: p.base, quote: p.quote });
+  async #initialize(p: ConstructionParams): Promise<void> {
+    this.market = await this.mgv.market(p);
+  }
+
+  initialize(): Promise<void> {
+    if (typeof this.#initClosure === "undefined") {
+      throw new Error("Cannot initialize already initialized maker.");
+    } else {
+      const initClosure = this.#initClosure;
+      this.#initClosure = undefined;
+      return initClosure();
+    }
   }
 
   disconnect(): void {
