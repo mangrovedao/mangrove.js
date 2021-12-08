@@ -58,7 +58,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct Structs.Global",
+        "internalType": "struct GlobalStruct",
         "name": "global",
         "type": "tuple"
       },
@@ -105,7 +105,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct Structs.Local",
+        "internalType": "struct LocalStruct",
         "name": "local",
         "type": "tuple"
       }
@@ -205,7 +205,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct Structs.Offer[]",
+        "internalType": "struct OfferStruct[]",
         "name": "",
         "type": "tuple[]"
       },
@@ -237,7 +237,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct Structs.OfferDetail[]",
+        "internalType": "struct OfferDetailStruct[]",
         "name": "",
         "type": "tuple[]"
       }
