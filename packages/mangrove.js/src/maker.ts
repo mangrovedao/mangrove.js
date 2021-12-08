@@ -128,14 +128,9 @@ export class SimpleMaker {
   }
 
   /** Transfer a token to someone */
-  transferToken(
-    tokenName: string,
-    recipient: string,
-    amount: Bigish
-  ): Promise<TransactionResponse> {
-    return this.contract.transferToken(
+  redeemToken(tokenName: string, amount: Bigish): Promise<TransactionResponse> {
+    return this.contract.redeemToken(
       this.mgv.getAddress(tokenName),
-      recipient,
       this.mgv.toUnits(amount, tokenName)
     );
   }
