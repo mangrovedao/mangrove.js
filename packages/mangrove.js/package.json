@@ -32,6 +32,9 @@
     "LICENSE",
     "README.md"
   ],
+  "bin": {
+    "mgv": "./cli/mgv.ts"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/giry-dev/mangrove.git"
