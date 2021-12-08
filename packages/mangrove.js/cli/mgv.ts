@@ -1,7 +1,9 @@
+#!/usr/bin/env ts-node
+
 import * as yargs from "yargs";
 import chalk from "chalk";
-import { Mangrove } from "../../src";
-import type { Offer } from "../../src/types";
+import { Mangrove } from "../src";
+import type { Offer } from "../src/types";
 
 yargs
   .command(
