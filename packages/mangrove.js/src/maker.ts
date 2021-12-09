@@ -188,13 +188,19 @@ export class SimpleMaker {
   }
 
   /** Post a new ask */
-  newAsk(p: offerParams): Promise<{ id: number; event: ethers.Event }> {
-    return this.newOffer({ ba: "asks", ...p });
+  newAsk(
+    p: offerParams,
+    overrides?: ethers.Overrides
+  ): Promise<{ id: number; event: ethers.Event }> {
+    return this.newOffer({ ba: "asks", ...p }, overrides);
   }
 
   /** Post a new bid */
-  newBid(p: offerParams): Promise<{ id: number; event: ethers.Event }> {
-    return this.newOffer({ ba: "bids", ...p });
+  newBid(
+    p: offerParams,
+    overrides?: ethers.Overrides
+  ): Promise<{ id: number; event: ethers.Event }> {
+    return this.newOffer({ ba: "bids", ...p }, overrides);
   }
 
   /* Create a new offer, let mangrove decide the gasprice. Return a promise fulfilled when mangrove.js has received the tx and updated itself. The tx returns the new offer id.
@@ -210,7 +216,8 @@ export class SimpleMaker {
     To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
   */
   async newOffer(
-    p: { ba: "bids" | "asks" } & offerParams
+    p: { ba: "bids" | "asks" } & offerParams,
+    overrides?: ethers.Overrides
   ): Promise<{ id: number; event: ethers.Event }> {
     const { wants, gives, price } = this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
@@ -222,7 +229,8 @@ export class SimpleMaker {
       outbound_tkn.toUnits(gives),
       400000, // gasreq
       0,
-      this.market.getPivot(p.ba, price)
+      this.market.getPivot(p.ba, price),
+      overrides
     );
 
     return this.market.once(
