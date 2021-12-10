@@ -78,7 +78,8 @@ describe("SimpleMaker", () => {
       it("checks allowance", async () => {
         let allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.equal(allowance.toNumber(), 0, "allowance should be 0");
-        await w(mkr.approveMangrove("TokenB", 10 ** 9));
+        let overridesTest = { gasLimit: 100000 };
+        await w(mkr.approveMangrove("TokenB", 10 ** 9, overridesTest));
         allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.equal(
           allowance.toNumber(),
