@@ -91,7 +91,7 @@ describe("SimpleMaker", () => {
       it("checks provision", async () => {
         let balance = await mgv.balanceOf(mkr.address);
         assert.equal(balance.toNumber(), 0, "balance should be 0");
-        await w(mkr.fund(2));
+        await w(mkr.fundMangrove(2));
         balance = await mkr.balanceAtMangrove();
         assert.equal(balance.toNumber(), 2, "balance should be 2");
       });
@@ -100,7 +100,7 @@ describe("SimpleMaker", () => {
     describe("After setup", () => {
       beforeEach(async () => {
         await mkr.approveMangrove("TokenB", 10 ** 9);
-        await mkr.fund(10);
+        await mkr.fundMangrove(10);
       });
 
       it("withdraws", async () => {
