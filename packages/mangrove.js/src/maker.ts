@@ -131,11 +131,13 @@ export class SimpleMaker {
    */
   approveMangrove(
     tokenName: string,
-    amount: Bigish
+    amount: Bigish,
+    overrides = {}
   ): Promise<TransactionResponse> {
     return this.contract.approveMangrove(
       this.mgv.getAddress(tokenName),
-      this.mgv.toUnits(amount, tokenName)
+      this.mgv.toUnits(amount, tokenName),
+      overrides
     );
   }
 
@@ -145,15 +147,15 @@ export class SimpleMaker {
   }
 
   /** Transfer a token to someone */
-  transferToken(
+  redeemToken(
     tokenName: string,
-    recipient: string,
-    amount: Bigish
+    amount: Bigish,
+    overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    return this.contract.transferToken(
+    return this.contract.redeemToken(
       this.mgv.getAddress(tokenName),
-      recipient,
-      this.mgv.toUnits(amount, tokenName)
+      this.mgv.toUnits(amount, tokenName),
+      overrides
     );
   }
 
@@ -210,13 +212,19 @@ export class SimpleMaker {
   }
 
   /** Post a new ask */
-  newAsk(p: offerParams): Promise<{ id: number; event: ethers.Event }> {
-    return this.newOffer({ ba: "asks", ...p });
+  newAsk(
+    p: offerParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<{ id: number; event: ethers.Event }> {
+    return this.newOffer({ ba: "asks", ...p }, overrides);
   }
 
   /** Post a new bid */
-  newBid(p: offerParams): Promise<{ id: number; event: ethers.Event }> {
-    return this.newOffer({ ba: "bids", ...p });
+  newBid(
+    p: offerParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<{ id: number; event: ethers.Event }> {
+    return this.newOffer({ ba: "bids", ...p }, overrides);
   }
 
   /* Create a new offer, let mangrove decide the gasprice. Return a promise fulfilled when mangrove.js has received the tx and updated itself. The tx returns the new offer id.
@@ -232,7 +240,8 @@ export class SimpleMaker {
     To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
   */
   async newOffer(
-    p: { ba: "bids" | "asks" } & offerParams
+    p: { ba: "bids" | "asks" } & offerParams,
+    overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     const { wants, gives, price } = this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
@@ -244,7 +253,8 @@ export class SimpleMaker {
       outbound_tkn.toUnits(gives),
       400000, // gasreq
       0,
-      this.market.getPivot(p.ba, price)
+      this.market.getPivot(p.ba, price),
+      overrides
     );
 
     return this.market.once(
@@ -257,13 +267,21 @@ export class SimpleMaker {
   }
 
   /** Update an existing ask */
-  updateAsk(id: number, p: offerParams): Promise<{ event: ethers.Event }> {
-    return this.updateOffer(id, { ba: "asks", ...p });
+  updateAsk(
+    id: number,
+    p: offerParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<{ event: ethers.Event }> {
+    return this.updateOffer(id, { ba: "asks", ...p }, overrides);
   }
 
   /** Update an existing offer */
-  updateBid(id: number, p: offerParams): Promise<{ event: ethers.Event }> {
-    return this.updateOffer(id, { ba: "bids", ...p });
+  updateBid(
+    id: number,
+    p: offerParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<{ event: ethers.Event }> {
+    return this.updateOffer(id, { ba: "bids", ...p }, overrides);
   }
 
   /* Update an existing offer. Non-specified parameters will be copied from current
@@ -272,7 +290,8 @@ export class SimpleMaker {
      */
   async updateOffer(
     id: number,
-    p: { ba: "bids" | "asks" } & offerParams
+    p: { ba: "bids" | "asks" } & offerParams,
+    overrides: ethers.Overrides = {}
   ): Promise<{ event: ethers.Event }> {
     const offerList = p.ba === "asks" ? this.asks() : this.bids();
     const offer = offerList.find((o) => o.id === id);
@@ -293,7 +312,8 @@ export class SimpleMaker {
       offer.gasreq,
       offer.gasprice,
       this.market.getPivot(p.ba, price),
-      id
+      id,
+      overrides
     );
 
     return this.market.once(
@@ -303,20 +323,29 @@ export class SimpleMaker {
   }
 
   /** Cancel an ask. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
-  cancelAsk(id: number, deprovision = false): Promise<void> {
-    return this.cancelOffer("asks", id, deprovision);
+  cancelAsk(
+    id: number,
+    deprovision = false,
+    overrides: ethers.Overrides = {}
+  ): Promise<void> {
+    return this.cancelOffer("asks", id, deprovision, overrides);
   }
 
   /** Cancel a bid. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
-  cancelBid(id: number, deprovision = false): Promise<void> {
-    return this.cancelOffer("bids", id, deprovision);
+  cancelBid(
+    id: number,
+    deprovision = false,
+    overrides: ethers.Overrides = {}
+  ): Promise<void> {
+    return this.cancelOffer("bids", id, deprovision, overrides);
   }
 
   /* Cancel an offer. Return a promise fulfilled when mangrove.js has received the tx and updated itself. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
   async cancelOffer(
     ba: "bids" | "asks",
     id: number,
-    deprovision = false
+    deprovision = false,
+    overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
 
@@ -324,7 +353,8 @@ export class SimpleMaker {
       outbound_tkn.address,
       inbound_tkn.address,
       id,
-      deprovision
+      deprovision,
+      overrides
     );
 
     return this.market.once(
