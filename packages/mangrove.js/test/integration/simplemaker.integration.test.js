@@ -79,12 +79,21 @@ describe("SimpleMaker", () => {
         let allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.equal(allowance.toNumber(), 0, "allowance should be 0");
         let overridesTest = { gasLimit: 100000 };
+        // test specified approve amount
         await w(mkr.approveMangrove("TokenB", 10 ** 9, overridesTest));
         allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.equal(
           allowance.toNumber(),
           10 ** 9,
           "allowance should be 1 billion"
+        );
+        // test default approve amount
+        await w(mkr.approveMangrove("TokenB"));
+        allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
+        assert.equal(
+          mgv.toUnits(allowance, 18).toString(),
+          ethers.BigNumber.from(2).pow(256).sub(1).toString(),
+          "allowance should be 2^256-1"
         );
       });
 

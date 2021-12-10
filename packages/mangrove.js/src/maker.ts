@@ -131,12 +131,16 @@ export class SimpleMaker {
    */
   approveMangrove(
     tokenName: string,
-    amount: Bigish,
-    overrides = {}
+    amount?: Bigish,
+    overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
+    const _amount =
+      typeof amount === "undefined"
+        ? ethers.BigNumber.from(2).pow(256).sub(1)
+        : this.mgv.toUnits(amount, tokenName);
     return this.contract.approveMangrove(
       this.mgv.getAddress(tokenName),
-      this.mgv.toUnits(amount, tokenName),
+      _amount,
       overrides
     );
   }

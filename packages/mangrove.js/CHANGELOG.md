@@ -4,6 +4,8 @@
 - Allow initializing markets&makers after construction.
 - Uncertain pivot ids when pushing an offer will throw.
   - TODO: allow giving bookOptions later
+- Calling `maker.approveMangrove(token)` with no specified amount will approve the max amount.
+- Add override sto most functions
 
 # 0.0.4 (December 2021)
 
