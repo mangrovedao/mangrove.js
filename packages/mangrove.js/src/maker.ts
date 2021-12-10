@@ -160,8 +160,13 @@ export class SimpleMaker {
   }
 
   /** Fund the current contract balance with ethers sent from current signer. */
-  fund(amount: Bigish): Promise<TransactionResponse> {
-    return this.mgv.fund(this.contract.address, amount);
+  fundMangrove(
+    amount: Bigish,
+    overrides: ethers.PayableOverrides = {}
+  ): Promise<TransactionResponse> {
+    overrides.value =
+      "value" in overrides ? overrides.value : this.mgv.toUnits(amount, 18);
+    return this.contract.fundMangrove(overrides);
   }
 
   /** Withdraw from the maker's ether balance to the sender */
