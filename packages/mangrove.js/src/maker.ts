@@ -1,6 +1,10 @@
 import * as ethers from "ethers";
 import { Market } from "./market";
-import { Bigish, BookOptions, Offer } from "./types";
+import * as Types from "./types";
+// syntactic sugar
+import { Bigish } from "./types";
+import { Typechain as typechain } from "./types";
+
 import { Mangrove } from "./mangrove";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
@@ -26,15 +30,13 @@ Big.RM = Big.roundHalfUp; // round to nearest
 // simpleMaker.withdrawDeposit()
 // simpleMaker.deposit(n)
 
-import * as typechain from "./types/typechain";
-
 type ConstructionParams = {
   mgv: Mangrove;
   address: string;
   base: string;
   quote: string;
   noInit?: boolean;
-  bookOptions?: BookOptions;
+  bookOptions?: Types.Market.BookOptions;
 };
 
 let canConstruct = false;
@@ -182,12 +184,12 @@ export class SimpleMaker {
   }
 
   /** List all of the maker's asks */
-  asks(): Offer[] {
+  asks(): Types.Market.Offer[] {
     return this.market.book().asks.filter((ofr) => ofr.maker === this.address);
   }
 
   /** List all of the maker's bids */
-  bids(): Offer[] {
+  bids(): Types.Market.Offer[] {
     return this.market.book().bids.filter((ofr) => ofr.maker === this.address);
   }
 

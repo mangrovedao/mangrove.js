@@ -3,8 +3,23 @@
  * @desc These methods facilitate interactions with the Ethereum blockchain.
  */
 
-import { ethers, Signer } from "ethers";
-import { CreateSignerOptions, Provider, ProviderNetwork } from "./types";
+import { ethers } from "ethers";
+import { Provider, Signer } from "./types";
+
+export interface CreateSignerOptions {
+  provider?: Provider | string;
+  privateKey?: string;
+  mnemonic?: string;
+  path?: string;
+  signer?: any;
+  signerIndex?: number;
+  forceReadOnly?: boolean;
+}
+
+export interface ProviderNetwork {
+  id?: number;
+  name?: string;
+}
 
 /**
  * This helps the mangrove.js constructor discover which Ethereum network the

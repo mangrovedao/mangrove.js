@@ -1,15 +1,7 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
-import {
-  TradeParams,
-  BookOptions,
-  BookReturns,
-  Bigish,
-  rawConfig,
-  localConfig,
-  bookSubscriptionEvent,
-  Offer,
-} from "./types";
+import * as Types from "./types";
+import { TradeParams, Bigish, Typechain as typechain, MgvTypes } from "./types";
 import { Mangrove } from "./mangrove";
 import { MgvToken } from "./mgvtoken";
 
@@ -33,6 +25,46 @@ const bookOptsDefault: BookOptions = {
   fromId: 0,
   maxOffers: DEFAULT_MAX_OFFERS,
 };
+
+type MgvReader = typechain.MgvReader;
+
+export type bookSubscriptionEvent =
+  | ({ name: "OfferWrite" } & MgvTypes.OfferWriteEvent)
+  | ({ name: "OfferFail" } & MgvTypes.OfferFailEvent)
+  | ({ name: "OfferSuccess" } & MgvTypes.OfferSuccessEvent)
+  | ({ name: "OfferRetract" } & MgvTypes.OfferRetractEvent)
+  | ({ name: "SetGasbase" } & MgvTypes.SetGasbaseEvent);
+
+export type BookOptions = {
+  fromId?: number;
+  maxOffers?: number;
+  chunkSize?: number;
+  blockNumber?: number;
+};
+
+export type Offer = {
+  id: number;
+  prev: number;
+  next: number;
+  gasprice: number;
+  maker: string;
+  gasreq: number;
+  overhead_gasbase: number;
+  offer_gasbase: number;
+  wants: Big;
+  gives: Big;
+  volume: Big;
+  price: Big;
+};
+
+import type { Awaited } from "ts-essentials";
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace BookReturns {
+  type _bookReturns = Awaited<ReturnType<MgvReader["functions"]["offerList"]>>;
+  export type indices = _bookReturns[1];
+  export type offers = _bookReturns[2];
+  export type details = _bookReturns[3];
+}
 
 type offerList = { offers: Map<number, Offer>; best: number };
 
@@ -386,7 +418,10 @@ export class Market {
     );
   }
 
-  #mapConfig(ba: "bids" | "asks", cfg: rawConfig): localConfig {
+  #mapConfig(
+    ba: "bids" | "asks",
+    cfg: Types.Mangrove.rawConfig
+  ): Types.Mangrove.localConfig {
     const { outbound_tkn } = this.getOutboundInbound(ba);
     return {
       active: cfg.local.active,
@@ -409,7 +444,10 @@ export class Market {
    * density is converted to public token units per gas used
    * fee *remains* in basis points of the token being bought
    */
-  async rawConfig(): Promise<{ asks: rawConfig; bids: rawConfig }> {
+  async rawConfig(): Promise<{
+    asks: Types.Mangrove.rawConfig;
+    bids: Types.Mangrove.rawConfig;
+  }> {
     const rawAskConfig = await this.mgv.readerContract.config(
       this.base.address,
       this.quote.address
@@ -424,7 +462,10 @@ export class Market {
     };
   }
 
-  async config(): Promise<{ asks: localConfig; bids: localConfig }> {
+  async config(): Promise<{
+    asks: Types.Mangrove.localConfig;
+    bids: Types.Mangrove.localConfig;
+  }> {
     const { bids, asks } = await this.rawConfig();
     return {
       asks: this.#mapConfig("asks", asks),
@@ -729,7 +770,7 @@ export class Market {
 
   async #initializeSemibook(
     ba: "bids" | "asks",
-    localConfig: localConfig,
+    localConfig: Types.Mangrove.localConfig,
     initializationCompleteCallback: ({
       semibook: semibook,
       firstBlockNumber: number,
