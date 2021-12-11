@@ -95,6 +95,13 @@ export async function _createSigner(
   signer: Signer;
 }> {
   let readOnly = false;
+  // Cannot give both a signer and provider. Instead, give a provider + signing info.
+  if (options.provider && options.signer) {
+    throw new Error(
+      "Cannot give both a provider and a signer. Try giving a privateKey or a mnemonic instead of a signer."
+    );
+  }
+
   if (options.signer && options.signer.provider) {
     return { readOnly, signer: options.signer };
   }
