@@ -3,8 +3,23 @@
  * @desc These methods facilitate interactions with the Ethereum blockchain.
  */
 
-import { ethers, Signer } from "ethers";
-import { CreateSignerOptions, Provider, ProviderNetwork } from "./types";
+import { ethers } from "ethers";
+import { Provider, Signer } from "./types";
+
+export interface CreateSignerOptions {
+  provider?: Provider | string;
+  privateKey?: string;
+  mnemonic?: string;
+  path?: string;
+  signer?: any;
+  signerIndex?: number;
+  forceReadOnly?: boolean;
+}
+
+export interface ProviderNetwork {
+  id?: number;
+  name?: string;
+}
 
 /**
  * This helps the mangrove.js constructor discover which Ethereum network the
@@ -80,6 +95,13 @@ export async function _createSigner(
   signer: Signer;
 }> {
   let readOnly = false;
+  // Cannot give both a signer and provider. Instead, give a provider + signing info.
+  if (options.provider && options.signer) {
+    throw new Error(
+      "Cannot give both a provider and a signer. Try giving a privateKey or a mnemonic instead of a signer."
+    );
+  }
+
   if (options.signer && options.signer.provider) {
     return { readOnly, signer: options.signer };
   }
@@ -106,7 +128,7 @@ export async function _createSigner(
     !("forceReadOnly" in options && options.forceReadOnly)
   ) {
     signer = provider.getSigner(options.signerIndex || 0);
-    await signer.getAddress().catch((e) => {
+    await signer.getAddress().catch(() => {
       signer = undefined;
     });
   }

@@ -9,7 +9,7 @@
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "yarn run lint && yarn run get-mangrove-abis && yarn run typechain && tsc && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
+    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@giry/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
     "get-mangrove-abis": "cp node_modules/@giry/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
@@ -32,6 +32,9 @@
     "LICENSE",
     "README.md"
   ],
+  "bin": {
+    "mgv": "./cli/mgv.ts"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/giry-dev/mangrove.git"
@@ -53,6 +56,7 @@
     "*.{js,ts,css,md}": "prettier --write"
   },
   "dependencies": {
+    "@ethersproject/experimental": "^5.5.0",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
