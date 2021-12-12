@@ -440,12 +440,6 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "overhead_gasbase",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "offer_gasbase",
         "type": "uint256"
       }
@@ -590,11 +584,6 @@
       {
         "internalType": "uint256",
         "name": "density",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "overhead_gasbase",
         "type": "uint256"
       },
       {
@@ -1181,11 +1170,6 @@
           },
           {
             "internalType": "uint256",
-            "name": "overhead_gasbase",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
             "name": "offer_gasbase",
             "type": "uint256"
           },
@@ -1376,11 +1360,6 @@
         "internalType": "address",
         "name": "inbound_tkn",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "overhead_gasbase",
-        "type": "uint256"
       },
       {
         "internalType": "uint256",

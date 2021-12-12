@@ -26,7 +26,6 @@ export type localConfig = {
   active: boolean;
   fee: number;
   density: Big;
-  overhead_gasbase: number;
   offer_gasbase: number;
   lock: boolean;
   best: number;

@@ -49,7 +49,6 @@ export type Offer = {
   gasprice: number;
   maker: string;
   gasreq: number;
-  overhead_gasbase: number;
   offer_gasbase: number;
   wants: Big;
   gives: Big;
@@ -70,7 +69,7 @@ type offerList = { offers: Map<number, Offer>; best: number };
 
 type semibook = offerList & {
   ba: "bids" | "asks";
-  gasbase: { offer_gasbase: number; overhead_gasbase: number };
+  gasbase: { offer_gasbase: number };
 };
 
 type OfferData = {
@@ -80,7 +79,6 @@ type OfferData = {
   gasprice: number | BigNumber;
   maker: string;
   gasreq: number | BigNumber;
-  overhead_gasbase: number | BigNumber;
   offer_gasbase: number | BigNumber;
   wants: BigNumber;
   gives: BigNumber;
@@ -427,7 +425,6 @@ export class Market {
       active: cfg.local.active,
       fee: cfg.local.fee.toNumber(),
       density: outbound_tkn.fromUnits(cfg.local.density),
-      overhead_gasbase: cfg.local.overhead_gasbase.toNumber(),
       offer_gasbase: cfg.local.offer_gasbase.toNumber(),
       lock: cfg.local.lock,
       best: cfg.local.best.toNumber(),
@@ -733,7 +730,6 @@ export class Market {
       gasprice: toNum(raw.gasprice),
       maker: raw.maker,
       gasreq: toNum(raw.gasreq),
-      overhead_gasbase: toNum(raw.overhead_gasbase),
       offer_gasbase: toNum(raw.offer_gasbase),
       gives: _gives,
       wants: _wants,
@@ -786,7 +782,6 @@ export class Market {
     const semibook = {
       ba: ba,
       gasbase: {
-        overhead_gasbase: localConfig.overhead_gasbase,
         offer_gasbase: localConfig.offer_gasbase,
       },
       ...this.rawToMap(ba, ...rawOffers),
@@ -923,8 +918,6 @@ export class Market {
         break;
 
       case "SetGasbase":
-        semibook.gasbase.overhead_gasbase =
-          event.args.overhead_gasbase.toNumber();
         semibook.gasbase.offer_gasbase = event.args.offer_gasbase.toNumber();
         break;
       default:
@@ -935,7 +928,7 @@ export class Market {
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
     const rawConfig = await this.rawConfig();
     const ba = bs === "buy" ? "asks" : "bids";
-    const estimation = rawConfig[ba].local.overhead_gasbase.add(
+    const estimation = rawConfig[ba].local.offer_gasbase.add(
       volume.div(rawConfig[ba].local.density)
     );
     if (estimation.gt(MAX_MARKET_ORDER_GAS)) {

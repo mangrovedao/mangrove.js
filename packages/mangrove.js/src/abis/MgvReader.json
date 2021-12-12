@@ -81,11 +81,6 @@
           },
           {
             "internalType": "uint256",
-            "name": "overhead_gasbase",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
             "name": "offer_gasbase",
             "type": "uint256"
           },
@@ -219,11 +214,6 @@
           {
             "internalType": "uint256",
             "name": "gasreq",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "overhead_gasbase",
             "type": "uint256"
           },
           {
