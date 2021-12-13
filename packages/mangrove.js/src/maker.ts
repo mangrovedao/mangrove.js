@@ -53,6 +53,7 @@ export class SimpleMaker {
   market: Market;
   contract: typechain.SimpleMaker;
   address: string;
+  gasreq: number;
   #initClosure?: () => Promise<void>;
 
   constructor(mgv: Mangrove, address: string) {
@@ -101,6 +102,7 @@ export class SimpleMaker {
    */
   async #initialize(p: ConstructionParams): Promise<void> {
     this.market = await this.mgv.market(p);
+    this.gasreq = (await this.contract.OFR_GASREQ()).toNumber(); //this is OK since gasreq ~ 10**6
   }
 
   initialize(): Promise<void> {
@@ -128,6 +130,22 @@ export class SimpleMaker {
   }
 
   /**
+   * @note Returns the amount of native tokens needed to provision a `bids` or `asks` offer  on the current market.
+   * If `id` is a live offer id, the function returns the missing provision (possibly 0) in case one wants to update it.
+   */
+  computeOfferProvision(ba: "bids" | "asks", id = 0): Promise<Big> {
+    return this.getMissingProvision(ba, id);
+  }
+
+  computeBidProvision(id = 0): Promise<Big> {
+    return this.getMissingProvision("bids", id);
+  }
+
+  computeAskProvision(id = 0): Promise<Big> {
+    return this.getMissingProvision("asks", id);
+  }
+
+  /**
    *
    * @note Approve Mangrove to spend tokens on the contract's behalf.
    */
@@ -152,7 +170,7 @@ export class SimpleMaker {
     return this.mgv.balanceOf(this.address);
   }
 
-  /** Transfer a token to someone */
+  /** Redeems `amount` tokens from the contract's account */
   redeemToken(
     tokenName: string,
     amount: Bigish,
@@ -225,7 +243,7 @@ export class SimpleMaker {
   /** Post a new ask */
   newAsk(
     p: offerParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "asks", ...p }, overrides);
   }
@@ -233,7 +251,7 @@ export class SimpleMaker {
   /** Post a new bid */
   newBid(
     p: offerParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "bids", ...p }, overrides);
   }
@@ -252,7 +270,7 @@ export class SimpleMaker {
   */
   async newOffer(
     p: { ba: "bids" | "asks" } & offerParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     const { wants, gives, price } = this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
@@ -262,7 +280,7 @@ export class SimpleMaker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      400000, // gasreq
+      this.gasreq, // gasreq
       0,
       this.market.getPivot(p.ba, price),
       overrides
@@ -281,7 +299,7 @@ export class SimpleMaker {
   updateAsk(
     id: number,
     p: offerParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "asks", ...p }, overrides);
   }
@@ -290,7 +308,7 @@ export class SimpleMaker {
   updateBid(
     id: number,
     p: offerParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "bids", ...p }, overrides);
   }
@@ -302,7 +320,7 @@ export class SimpleMaker {
   async updateOffer(
     id: number,
     p: { ba: "bids" | "asks" } & offerParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     const offerList = p.ba === "asks" ? this.asks() : this.bids();
     const offer = offerList.find((o) => o.id === id);
@@ -374,5 +392,17 @@ export class SimpleMaker {
       },
       (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
+  }
+
+  async getMissingProvision(ba: "bids" | "asks", id: number): Promise<Big> {
+    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
+    const prov = await this.contract.getMissingProvision(
+      outbound_tkn.address,
+      inbound_tkn.address,
+      this.gasreq,
+      0, //gasprice
+      id
+    );
+    return this.mgv.fromUnits(prov, 18);
   }
 }
