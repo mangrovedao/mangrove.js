@@ -78,19 +78,29 @@ describe("SimpleMaker", () => {
       it("checks allowance", async () => {
         let allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.equal(allowance.toNumber(), 0, "allowance should be 0");
-        await w(mkr.approveMangrove("TokenB", 10 ** 9));
+        let overridesTest = { gasLimit: 100000 };
+        // test specified approve amount
+        await w(mkr.approveMangrove("TokenB", 10 ** 9, overridesTest));
         allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.equal(
           allowance.toNumber(),
           10 ** 9,
           "allowance should be 1 billion"
         );
+        // test default approve amount
+        await w(mkr.approveMangrove("TokenB"));
+        allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
+        assert.equal(
+          mgv.toUnits(allowance, 18).toString(),
+          ethers.BigNumber.from(2).pow(256).sub(1).toString(),
+          "allowance should be 2^256-1"
+        );
       });
 
       it("checks provision", async () => {
         let balance = await mgv.balanceOf(mkr.address);
         assert.equal(balance.toNumber(), 0, "balance should be 0");
-        await w(mkr.fund(2));
+        await w(mkr.fundMangrove(2));
         balance = await mkr.balanceAtMangrove();
         assert.equal(balance.toNumber(), 2, "balance should be 2");
       });
@@ -99,7 +109,7 @@ describe("SimpleMaker", () => {
     describe("After setup", () => {
       beforeEach(async () => {
         await mkr.approveMangrove("TokenB", 10 ** 9);
-        await mkr.fund(10);
+        await mkr.fundMangrove(10);
       });
 
       it("withdraws", async () => {

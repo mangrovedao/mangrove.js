@@ -440,12 +440,6 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "overhead_gasbase",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "offer_gasbase",
         "type": "uint256"
       }
@@ -594,11 +588,6 @@
       },
       {
         "internalType": "uint256",
-        "name": "overhead_gasbase",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "offer_gasbase",
         "type": "uint256"
       }
@@ -735,12 +724,12 @@
     "name": "config",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "Global.t",
         "name": "_global",
         "type": "bytes32"
       },
       {
-        "internalType": "bytes32",
+        "internalType": "Local.t",
         "name": "_local",
         "type": "bytes32"
       }
@@ -786,7 +775,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "bytes32",
+            "internalType": "Offer.t",
             "name": "offer",
             "type": "bytes32"
           },
@@ -801,17 +790,17 @@
             "type": "uint256"
           },
           {
-            "internalType": "bytes32",
+            "internalType": "OfferDetail.t",
             "name": "offerDetail",
             "type": "bytes32"
           },
           {
-            "internalType": "bytes32",
+            "internalType": "Global.t",
             "name": "global",
             "type": "bytes32"
           },
           {
-            "internalType": "bytes32",
+            "internalType": "Local.t",
             "name": "local",
             "type": "bytes32"
           }
@@ -873,7 +862,7 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "Offer.t",
         "name": "offer",
         "type": "bytes32"
       }
@@ -1112,7 +1101,7 @@
     "name": "offerDetails",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "OfferDetail.t",
         "name": "",
         "type": "bytes32"
       }
@@ -1161,15 +1150,10 @@
             "internalType": "uint256",
             "name": "gives",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "gasprice",
-            "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.Offer",
-        "name": "",
+        "internalType": "struct OfferStruct",
+        "name": "offer",
         "type": "tuple"
       },
       {
@@ -1186,17 +1170,17 @@
           },
           {
             "internalType": "uint256",
-            "name": "overhead_gasbase",
+            "name": "offer_gasbase",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "offer_gasbase",
+            "name": "gasprice",
             "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.OfferDetail",
-        "name": "",
+        "internalType": "struct OfferDetailStruct",
+        "name": "offerDetail",
         "type": "tuple"
       }
     ],
@@ -1224,7 +1208,7 @@
     "name": "offers",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "Offer.t",
         "name": "",
         "type": "bytes32"
       }
@@ -1376,11 +1360,6 @@
         "internalType": "address",
         "name": "inbound_tkn",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "overhead_gasbase",
-        "type": "uint256"
       },
       {
         "internalType": "uint256",

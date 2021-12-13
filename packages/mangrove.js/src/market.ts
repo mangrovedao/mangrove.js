@@ -1,15 +1,7 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
-import {
-  TradeParams,
-  BookOptions,
-  BookReturns,
-  Bigish,
-  rawConfig,
-  localConfig,
-  bookSubscriptionEvent,
-  Offer,
-} from "./types";
+import * as Types from "./types";
+import { TradeParams, Bigish, Typechain as typechain, MgvTypes } from "./types";
 import { Mangrove } from "./mangrove";
 import { MgvToken } from "./mgvtoken";
 
@@ -34,11 +26,50 @@ const bookOptsDefault: BookOptions = {
   maxOffers: DEFAULT_MAX_OFFERS,
 };
 
+type MgvReader = typechain.MgvReader;
+
+export type bookSubscriptionEvent =
+  | ({ name: "OfferWrite" } & MgvTypes.OfferWriteEvent)
+  | ({ name: "OfferFail" } & MgvTypes.OfferFailEvent)
+  | ({ name: "OfferSuccess" } & MgvTypes.OfferSuccessEvent)
+  | ({ name: "OfferRetract" } & MgvTypes.OfferRetractEvent)
+  | ({ name: "SetGasbase" } & MgvTypes.SetGasbaseEvent);
+
+export type BookOptions = {
+  fromId?: number;
+  maxOffers?: number;
+  chunkSize?: number;
+  blockNumber?: number;
+};
+
+export type Offer = {
+  id: number;
+  prev: number;
+  next: number;
+  gasprice: number;
+  maker: string;
+  gasreq: number;
+  offer_gasbase: number;
+  wants: Big;
+  gives: Big;
+  volume: Big;
+  price: Big;
+};
+
+import type { Awaited } from "ts-essentials";
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace BookReturns {
+  type _bookReturns = Awaited<ReturnType<MgvReader["functions"]["offerList"]>>;
+  export type indices = _bookReturns[1];
+  export type offers = _bookReturns[2];
+  export type details = _bookReturns[3];
+}
+
 type offerList = { offers: Map<number, Offer>; best: number };
 
 type semibook = offerList & {
   ba: "bids" | "asks";
-  gasbase: { offer_gasbase: number; overhead_gasbase: number };
+  gasbase: { offer_gasbase: number };
 };
 
 type OfferData = {
@@ -48,7 +79,6 @@ type OfferData = {
   gasprice: number | BigNumber;
   maker: string;
   gasreq: number | BigNumber;
-  overhead_gasbase: number | BigNumber;
   offer_gasbase: number | BigNumber;
   wants: BigNumber;
   gives: BigNumber;
@@ -86,6 +116,8 @@ type subscriptionParam =
       filter?: (...a: any[]) => boolean;
     };
 
+type MarketBook = { asks: Offer[]; bids: Offer[] };
+
 /**
  * The Market class focuses on a mangrove market.
  * Onchain, market are implemented as two orderbooks,
@@ -102,7 +134,8 @@ export class Market {
   quote: MgvToken;
   #subscriptions: Map<storableMarketCallback, subscriptionParam>;
   #lowLevelCallbacks: null | { asksCallback?: any; bidsCallback?: any };
-  _book: { asks: Offer[]; bids: Offer[] };
+  #book: MarketBook;
+  #initClosure?: () => Promise<void>;
 
   static async connect(params: {
     mgv: Mangrove;
@@ -113,7 +146,14 @@ export class Market {
     canConstructMarket = true;
     const market = new Market(params);
     canConstructMarket = false;
-    await market.#initialize(params.bookOptions);
+    if (params["noInit"]) {
+      market.#initClosure = () => {
+        return market.#initialize(params.bookOptions);
+      };
+    } else {
+      await market.#initialize(params.bookOptions);
+    }
+
     return market;
   }
 
@@ -134,16 +174,8 @@ export class Market {
 
     this.base = this.mgv.token(params.base);
     this.quote = this.mgv.token(params.quote);
-    // this.base = {
-    //   name: params.base,
-    //   address: this.mgv.getAddress(params.base),
-    // };
 
-    // this.quote = {
-    //   name: params.quote,
-    //   address: this.mgv.getAddress(params.quote),
-    // };
-    this._book = { asks: [], bids: [] };
+    this.#book = { asks: [], bids: [] };
   }
 
   /* Given a price, find the id of the immediately-better offer in the
@@ -157,11 +189,16 @@ export class Market {
     price = Big(price);
     const comparison = ba === "asks" ? "gt" : "lt";
     let latest_id = 0;
-    for (const offer of this._book[ba]) {
+    for (const [i, offer] of this.#book[ba].entries()) {
       if (offer.price[comparison](price)) {
         break;
       }
       latest_id = offer.id;
+      if (i === this.#book[ba].length) {
+        throw new Error(
+          "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
+        );
+      }
     }
     return latest_id;
   }
@@ -314,6 +351,16 @@ export class Market {
     });
   }
 
+  initialize(): Promise<void> {
+    if (typeof this.#initClosure === "undefined") {
+      throw new Error("Cannot initialize already initialized market.");
+    } else {
+      const initClosure = this.#initClosure;
+      this.#initClosure = undefined;
+      return initClosure();
+    }
+  }
+
   async #initialize(
     opts: Omit<BookOptions, "fromId"> = bookOptsDefault
   ): Promise<void> {
@@ -369,13 +416,15 @@ export class Market {
     );
   }
 
-  #mapConfig(ba: "bids" | "asks", cfg: rawConfig): localConfig {
+  #mapConfig(
+    ba: "bids" | "asks",
+    cfg: Types.Mangrove.rawConfig
+  ): Types.Mangrove.localConfig {
     const { outbound_tkn } = this.getOutboundInbound(ba);
     return {
       active: cfg.local.active,
       fee: cfg.local.fee.toNumber(),
       density: outbound_tkn.fromUnits(cfg.local.density),
-      overhead_gasbase: cfg.local.overhead_gasbase.toNumber(),
       offer_gasbase: cfg.local.offer_gasbase.toNumber(),
       lock: cfg.local.lock,
       best: cfg.local.best.toNumber(),
@@ -392,7 +441,10 @@ export class Market {
    * density is converted to public token units per gas used
    * fee *remains* in basis points of the token being bought
    */
-  async rawConfig(): Promise<{ asks: rawConfig; bids: rawConfig }> {
+  async rawConfig(): Promise<{
+    asks: Types.Mangrove.rawConfig;
+    bids: Types.Mangrove.rawConfig;
+  }> {
     const rawAskConfig = await this.mgv.readerContract.config(
       this.base.address,
       this.quote.address
@@ -407,7 +459,10 @@ export class Market {
     };
   }
 
-  async config(): Promise<{ asks: localConfig; bids: localConfig }> {
+  async config(): Promise<{
+    asks: Types.Mangrove.localConfig;
+    bids: Types.Mangrove.localConfig;
+  }> {
     const { bids, asks } = await this.rawConfig();
     return {
       asks: this.#mapConfig("asks", asks),
@@ -588,12 +643,10 @@ export class Market {
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   book() {
-    return this._book;
+    return this.#book;
   }
 
-  async requestBook(
-    opts: BookOptions = bookOptsDefault
-  ): Promise<Market["_book"]> {
+  async requestBook(opts: BookOptions = bookOptsDefault): Promise<MarketBook> {
     const rawAsks = await this.rawBook("asks", opts);
     const rawBids = await this.rawBook("bids", opts);
     return {
@@ -677,7 +730,6 @@ export class Market {
       gasprice: toNum(raw.gasprice),
       maker: raw.maker,
       gasreq: toNum(raw.gasreq),
-      overhead_gasbase: toNum(raw.overhead_gasbase),
       offer_gasbase: toNum(raw.offer_gasbase),
       gives: _gives,
       wants: _wants,
@@ -709,12 +761,12 @@ export class Market {
   }
 
   #updateBook(semibook: semibook): void {
-    this._book[semibook.ba] = mapToArray(semibook.best, semibook.offers);
+    this.#book[semibook.ba] = mapToArray(semibook.best, semibook.offers);
   }
 
   async #initializeSemibook(
     ba: "bids" | "asks",
-    localConfig: localConfig,
+    localConfig: Types.Mangrove.localConfig,
     initializationCompleteCallback: ({
       semibook: semibook,
       firstBlockNumber: number,
@@ -730,7 +782,6 @@ export class Market {
     const semibook = {
       ba: ba,
       gasbase: {
-        overhead_gasbase: localConfig.overhead_gasbase,
         offer_gasbase: localConfig.offer_gasbase,
       },
       ...this.rawToMap(ba, ...rawOffers),
@@ -867,8 +918,6 @@ export class Market {
         break;
 
       case "SetGasbase":
-        semibook.gasbase.overhead_gasbase =
-          event.args.overhead_gasbase.toNumber();
         semibook.gasbase.offer_gasbase = event.args.offer_gasbase.toNumber();
         break;
       default:
@@ -879,7 +928,7 @@ export class Market {
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
     const rawConfig = await this.rawConfig();
     const ba = bs === "buy" ? "asks" : "bids";
-    const estimation = rawConfig[ba].local.overhead_gasbase.add(
+    const estimation = rawConfig[ba].local.offer_gasbase.add(
       volume.div(rawConfig[ba].local.density)
     );
     if (estimation.gt(MAX_MARKET_ORDER_GAS)) {

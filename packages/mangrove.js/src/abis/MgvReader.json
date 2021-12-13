@@ -58,7 +58,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct MgvLib.Global",
+        "internalType": "struct GlobalStruct",
         "name": "global",
         "type": "tuple"
       },
@@ -77,11 +77,6 @@
           {
             "internalType": "uint256",
             "name": "density",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "overhead_gasbase",
             "type": "uint256"
           },
           {
@@ -105,7 +100,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.Local",
+        "internalType": "struct LocalStruct",
         "name": "local",
         "type": "tuple"
       }
@@ -203,14 +198,9 @@
             "internalType": "uint256",
             "name": "gives",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "gasprice",
-            "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.Offer[]",
+        "internalType": "struct OfferStruct[]",
         "name": "",
         "type": "tuple[]"
       },
@@ -228,16 +218,16 @@
           },
           {
             "internalType": "uint256",
-            "name": "overhead_gasbase",
+            "name": "offer_gasbase",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "offer_gasbase",
+            "name": "gasprice",
             "type": "uint256"
           }
         ],
-        "internalType": "struct MgvLib.OfferDetail[]",
+        "internalType": "struct OfferDetailStruct[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -320,7 +310,7 @@
         "type": "uint256[]"
       },
       {
-        "internalType": "bytes32[]",
+        "internalType": "Offer.t[]",
         "name": "",
         "type": "bytes32[]"
       },
