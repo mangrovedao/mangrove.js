@@ -75,14 +75,21 @@ describe("SimpleMaker", () => {
     let w = async (r) => (await r).wait(1);
 
     describe("Before setup", () => {
+      it("gasreq initialized", async () => {
+        assert.strictEqual(
+          (await mkr.contract.OFR_GASREQ()).toNumber(),
+          mkr.gasreq,
+          "Gasreq not initialized"
+        );
+      });
       it("checks allowance", async () => {
         let allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
-        assert.equal(allowance.toNumber(), 0, "allowance should be 0");
+        assert.strictEqual(allowance.toNumber(), 0, "allowance should be 0");
         let overridesTest = { gasLimit: 100000 };
         // test specified approve amount
         await w(mkr.approveMangrove("TokenB", 10 ** 9, overridesTest));
         allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
-        assert.equal(
+        assert.strictEqual(
           allowance.toNumber(),
           10 ** 9,
           "allowance should be 1 billion"
@@ -90,7 +97,7 @@ describe("SimpleMaker", () => {
         // test default approve amount
         await w(mkr.approveMangrove("TokenB"));
         allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
-        assert.equal(
+        assert.strictEqual(
           mgv.toUnits(allowance, 18).toString(),
           ethers.BigNumber.from(2).pow(256).sub(1).toString(),
           "allowance should be 2^256-1"
@@ -99,23 +106,23 @@ describe("SimpleMaker", () => {
 
       it("checks provision", async () => {
         let balance = await mgv.balanceOf(mkr.address);
-        assert.equal(balance.toNumber(), 0, "balance should be 0");
+        assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
         await w(mkr.fundMangrove(2));
         balance = await mkr.balanceAtMangrove();
-        assert.equal(balance.toNumber(), 2, "balance should be 2");
+        assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
       });
     });
 
     describe("After setup", () => {
       beforeEach(async () => {
         await mkr.approveMangrove("TokenB", 10 ** 9);
-        await mkr.fundMangrove(10);
+        //await mkr.fundMangrove(10);
       });
 
       it("withdraws", async () => {
         const getBal = async () =>
           mgv._provider.getBalance(await mgv._signer.getAddress());
-
+        await mkr.fundMangrove(10);
         const oldBal = await getBal();
         const receipt = await w(mkr.withdraw(10));
         const txcost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
@@ -124,18 +131,26 @@ describe("SimpleMaker", () => {
           18
         );
 
-        assert.equal(diff.toNumber(), 10, "wrong balance");
+        assert.strictEqual(diff.toNumber(), 10, "wrong balance");
       });
 
       it("pushes a new offer", async () => {
+        const provision = await mkr.computeAskProvision();
+        await mkr.fundMangrove(provision);
         const { id: ofrId } = await mkr.newAsk({ wants: 10, gives: 10 });
 
         const asks = mkr.asks();
-        assert.equal(asks.length, 1, "there should be one ask in the book");
+        assert.strictEqual(
+          asks.length,
+          1,
+          "there should be one ask in the book"
+        );
         assert.deepStrictEqual(asks[0].id, ofrId, "wrong offer id");
       });
 
       it("cancels offer", async () => {
+        const provision = await mkr.computeBidProvision();
+        await mkr.fundMangrove(provision);
         const { id: ofrId } = await mkr.newBid({
           wants: 10,
           gives: 20,
@@ -144,15 +159,18 @@ describe("SimpleMaker", () => {
         await mkr.cancelBid(ofrId);
 
         const bids = mkr.bids();
-        assert.equal(bids.length, 0, "offer should have been canceled");
+        assert.strictEqual(bids.length, 0, "offer should have been canceled");
       });
 
       it("updates offer", async () => {
+        let provision = await mkr.computeAskProvision();
+        await mkr.fundMangrove(provision);
         const { id: ofrId } = await mkr.newAsk({
           wants: 10,
           gives: 20,
         });
-
+        provision = await mkr.computeAskProvision(ofrId);
+        assert.equal(provision, 0, `There should be no need to reprovision`);
         await mkr.updateAsk(ofrId, { wants: 12, gives: 10 });
 
         const asks = mkr.asks();
