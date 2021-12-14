@@ -673,7 +673,7 @@ class Market {
    *  Order is from best to worse from taker perspective.
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  book() {
+  book(): Market.MarketBook {
     return this.#book;
   }
 

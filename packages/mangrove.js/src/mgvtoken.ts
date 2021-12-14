@@ -90,7 +90,7 @@ class MgvToken {
   ): Promise<ethers.ContractTransaction> {
     const _amount =
       typeof amount === "undefined"
-        ? ethers.BigNumber.from(2).pow(256).sub(1)
+        ? ethers.constants.MaxUint256
         : this.toUnits(amount);
     return this.contract.approve(spender, _amount);
   }
