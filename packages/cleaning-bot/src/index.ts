@@ -5,15 +5,25 @@
  */
 
 import config from "./util/config";
-import { ErrorWithData } from "@giry/commonlib-js";
-import { MarketCleaner } from "./MarketCleaner";
 import { logger } from "./util/logger";
+
 import Mangrove from "@giry/mangrove.js";
 import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
-type TokenPair = { token1: string; token2: string };
+import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
+
+import { MarketCleaner } from "./MarketCleaner";
+
+type BotConfig = {
+  markets: [string, string][];
+  runEveryXMinutes: number;
+};
+
+type MarketPair = { base: string; quote: string };
+
+const scheduler = new ToadScheduler();
 
 const main = async () => {
   logger.info("Starting cleaning bot...", { contextInfo: "init" });
@@ -39,54 +49,107 @@ const main = async () => {
 
   await exitIfMangroveIsKilled(mgv, "init");
 
-  const marketConfigs = getMarketConfigsOrThrow();
-  const marketCleanerMap = new Map<TokenPair, MarketCleaner>();
+  const botConfig = getAndValidateConfig();
+
+  const marketConfigs = botConfig.markets;
+  const marketCleanerMap = new Map<MarketPair, MarketCleaner>();
   for (const marketConfig of marketConfigs) {
-    if (!Array.isArray(marketConfig) || marketConfig.length != 2) {
-      logger.error("Market configuration is malformed: Should be a pair", {
-        data: marketConfig,
-      });
-      return;
-    }
-    const [token1, token2] = marketConfig;
+    const [base, quote] = marketConfig;
     const market = await mgv.market({
-      base: token1,
-      quote: token2,
+      base: base,
+      quote: quote,
       bookOptions: { maxOffers: 200 },
     });
 
     marketCleanerMap.set(
-      { token1: market.base.name, token2: market.quote.name },
+      { base: market.base.name, quote: market.quote.name },
       new MarketCleaner(market, provider)
     );
   }
 
-  provider.on("block", async function (blockNumber) {
-    const contextInfo = `block#=${blockNumber}`;
-
-    exitIfMangroveIsKilled(mgv, contextInfo);
-
-    logger.debug("Cleaning triggered by new block event", { contextInfo });
-    const cleaningPromises = [];
-    for (const marketCleaner of marketCleanerMap.values()) {
-      cleaningPromises.push(marketCleaner.clean(contextInfo));
-    }
-    return Promise.allSettled(cleaningPromises);
+  // create and schedule task
+  logger.info(`Running bot every ${botConfig.runEveryXMinutes} minutes.`, {
+    data: { runEveryXMinutes: botConfig.runEveryXMinutes },
   });
-};
 
-function getMarketConfigsOrThrow() {
-  if (!config.has("markets")) {
-    throw new Error("No markets have been configured");
+  const task = new AsyncTask(
+    "cleaning bot task",
+    async () => {
+      const blockNumber = await mgv._provider.getBlockNumber().catch((e) => {
+        logger.debug("Error on getting blockNumber via ethers", { data: e });
+        return -1;
+      });
+      const contextInfo = `block#=${blockNumber}`;
+
+      logger.verbose("Scheduled bot task running...", { contextInfo });
+      await exitIfMangroveIsKilled(mgv, contextInfo);
+
+      const cleaningPromises = [];
+      for (const marketCleaner of marketCleanerMap.values()) {
+        cleaningPromises.push(marketCleaner.clean(contextInfo));
+      }
+      await Promise.allSettled(cleaningPromises);
+    },
+    (err: Error) => {
+      logErrorAndExit(err);
+    }
+  );
+
+  const job = new SimpleIntervalJob(
+    {
+      minutes: botConfig.runEveryXMinutes,
+      runImmediately: true,
+    },
+    task
+  );
+
+  scheduler.addSimpleIntervalJob(job);
+};
+// FIXME test that the validations are working
+function getAndValidateConfig(): BotConfig {
+  let runEveryXMinutes = -1;
+  let markets: [string, string][] = [];
+  const configErrors: string[] = [];
+
+  if (config.has("runEveryXMinutes")) {
+    runEveryXMinutes = config.get<number>("runEveryXMinutes");
+    if (typeof runEveryXMinutes !== "number") {
+      configErrors.push(
+        `'runEveryXMinutes' must be a number - given type: ${typeof runEveryXMinutes}`
+      );
+    }
+  } else {
+    configErrors.push("'runEveryXMinutes' missing");
   }
-  const marketsConfig = config.get<Array<Array<string>>>("markets");
-  if (!Array.isArray(marketsConfig)) {
-    throw new ErrorWithData(
-      "Markets configuration is malformed, should be an array of pairs",
-      marketsConfig
+
+  if (!config.has("markets")) {
+    configErrors.push("'markets' missing");
+  } else {
+    markets = config.get<Array<[string, string]>>("markets");
+    if (!Array.isArray(markets)) {
+      configErrors.push("'markets' must be an array of pairs");
+    } else {
+      for (const market of markets) {
+        if (
+          !Array.isArray(market) ||
+          market.length != 2 ||
+          typeof market[0] !== "string" ||
+          typeof market[1] !== "string"
+        ) {
+          configErrors.push("'markets' elements must be arrays of 2 strings");
+          break;
+        }
+      }
+    }
+  }
+
+  if (configErrors.length > 0) {
+    throw new Error(
+      `Found the following config errors: [${configErrors.join(", ")}]`
     );
   }
-  return marketsConfig;
+
+  return { markets, runEveryXMinutes };
 }
 
 async function exitIfMangroveIsKilled(
@@ -101,12 +164,16 @@ async function exitIfMangroveIsKilled(
   }
 }
 
+function logErrorAndExit(err: Error) {
+  logger.exception(err);
+  scheduler.stop();
+  process.exit(1); // TODO Consider adding exit codes
+}
+
 process.on("unhandledRejection", function (reason, promise) {
   logger.warn("Unhandled Rejection", { data: reason });
 });
 
 main().catch((e) => {
-  logger.exception(e);
-  // TODO Consider doing graceful shutdown of market cleaners
-  process.exit(1); // TODO Add exit codes
+  logErrorAndExit(e);
 });
