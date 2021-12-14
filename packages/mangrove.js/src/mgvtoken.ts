@@ -86,8 +86,12 @@ export class MgvToken {
    */
   approve(
     spender: string,
-    amount: Bigish
+    amount?: Bigish
   ): Promise<ethers.ContractTransaction> {
-    return this.contract.approve(spender, this.toUnits(amount));
+    const _amount =
+      typeof amount === "undefined"
+        ? ethers.BigNumber.from(2).pow(256).sub(1)
+        : this.toUnits(amount);
+    return this.contract.approve(spender, _amount);
   }
 }
