@@ -1,10 +1,10 @@
 import * as ethers from "ethers";
-import { Mangrove } from "./mangrove";
+import Mangrove from "./mangrove";
 import { Bigish } from "./types";
 import * as typechain from "./types/typechain";
 import Big from "big.js";
 
-export class MgvToken {
+class MgvToken {
   mgv: Mangrove;
   name: string;
   address: string;
@@ -95,3 +95,5 @@ export class MgvToken {
     return this.contract.approve(spender, _amount);
   }
 }
+
+export default MgvToken;

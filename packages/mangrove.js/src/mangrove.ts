@@ -1,11 +1,10 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import Market from "./market";
-import { SimpleMaker } from "./maker";
-import * as Types from "./types";
+import SimpleMaker from "./maker";
+import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
-import { Typechain as typechain } from "./types";
-import { MgvToken } from "./mgvtoken";
+import MgvToken from "./mgvtoken";
 
 import Big from "big.js";
 import * as ethers from "ethers";
@@ -18,34 +17,37 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
 let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
-export type rawConfig = Awaited<
-  ReturnType<Types.Typechain.MgvReader["functions"]["config"]>
->;
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace Mangrove {
+  export type rawConfig = Awaited<
+    ReturnType<typechain.MgvReader["functions"]["config"]>
+  >;
 
-export type localConfig = {
-  active: boolean;
-  fee: number;
-  density: Big;
-  overhead_gasbase: number;
-  offer_gasbase: number;
-  lock: boolean;
-  best: number;
-  last: number;
-};
+  export type localConfig = {
+    active: boolean;
+    fee: number;
+    density: Big;
+    overhead_gasbase: number;
+    offer_gasbase: number;
+    lock: boolean;
+    best: number;
+    last: number;
+  };
 
-export type globalConfig = {
-  monitor: string;
-  useOracle: boolean;
-  notify: boolean;
-  gasprice: number;
-  gasmax: number;
-  dead: boolean;
-};
+  export type globalConfig = {
+    monitor: string;
+    useOracle: boolean;
+    notify: boolean;
+    gasprice: number;
+    gasmax: number;
+    dead: boolean;
+  };
+}
 
-export class Mangrove {
-  _provider: Types.Provider;
-  _signer: Types.Signer;
-  _network: Types.Eth.ProviderNetwork;
+class Mangrove {
+  _provider: Provider;
+  _signer: Signer;
+  _network: eth.ProviderNetwork;
   _readOnly: boolean;
   _address: string;
   contract: typechain.Mangrove;
@@ -77,7 +79,7 @@ export class Mangrove {
    */
 
   static async connect(
-    options: Types.Eth.CreateSignerOptions | string = {}
+    options: eth.CreateSignerOptions | string = {}
   ): Promise<Mangrove> {
     if (typeof options === "string") {
       options = { provider: options };
@@ -102,8 +104,8 @@ export class Mangrove {
   //TODO remove _prefix on public properties
 
   constructor(params: {
-    signer: Types.Signer;
-    network: Types.Eth.ProviderNetwork;
+    signer: Signer;
+    network: eth.ProviderNetwork;
     readOnly: boolean;
   }) {
     if (!canConstructMangrove) {
@@ -276,7 +278,7 @@ export class Mangrove {
    * Return global Mangrove config
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async config(): Promise<Types.Mangrove.globalConfig> {
+  async config(): Promise<Mangrove.globalConfig> {
     const config = await this.readerContract.config(
       ethers.constants.AddressZero,
       ethers.constants.AddressZero
@@ -354,7 +356,7 @@ export class Mangrove {
    */
   static async fetchDecimals(
     tokenName: string,
-    provider: Types.Provider
+    provider: Provider
   ): Promise<number> {
     const network = await eth.getProviderNetwork(provider);
     const token = typechain.IERC20__factory.connect(
@@ -366,3 +368,5 @@ export class Mangrove {
     return decimals;
   }
 }
+
+export default Mangrove;

@@ -2,9 +2,9 @@ import * as ethers from "ethers";
 import Market from "./market";
 // syntactic sugar
 import { Bigish } from "./types";
-import { Typechain as typechain } from "./types";
+import { typechain } from "./types";
 
-import { Mangrove } from "./mangrove";
+import Mangrove from "./mangrove";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
@@ -17,6 +17,27 @@ import Big from "big.js";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
+let canConstruct = false;
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace SimpleMaker {
+  export type ConstructionParams = {
+    mgv: Mangrove;
+    address: string;
+    base: string;
+    quote: string;
+    noInit?: boolean;
+    bookOptions?: Market.BookOptions;
+  };
+  /** Connect to MangroveOffer.
+   *  This basic maker contract will relay new/cancel/update
+   *  offer order.
+   */
+  export type offerParams =
+    | { price: Bigish; volume: Bigish }
+    | { wants: Bigish; gives: Bigish };
+}
+
 /**
  * The SimpleMaker class connects to a SimpleMaker contract.
  * It posts onchain offers.
@@ -28,26 +49,7 @@ Big.RM = Big.roundHalfUp; // round to nearest
  */
 // simpleMaker.withdrawDeposit()
 // simpleMaker.deposit(n)
-
-type ConstructionParams = {
-  mgv: Mangrove;
-  address: string;
-  base: string;
-  quote: string;
-  noInit?: boolean;
-  bookOptions?: Market.BookOptions;
-};
-
-let canConstruct = false;
-/** Connect to MangroveOffer.
- *  This basic maker contract will relay new/cancel/update
- *  offer order.
- */
-type offerParams =
-  | { price: Bigish; volume: Bigish }
-  | { wants: Bigish; gives: Bigish };
-
-export class SimpleMaker {
+class SimpleMaker {
   mgv: Mangrove;
   market: Market;
   contract: typechain.SimpleMaker;
@@ -82,7 +84,9 @@ export class SimpleMaker {
   /**
    * @note Connect to existing MangroveOffer
    */
-  static async connect(p: ConstructionParams): Promise<SimpleMaker> {
+  static async connect(
+    p: SimpleMaker.ConstructionParams
+  ): Promise<SimpleMaker> {
     canConstruct = true;
     const sm = new SimpleMaker(p.mgv, p.address);
     canConstruct = false;
@@ -99,7 +103,7 @@ export class SimpleMaker {
   /**
    * Initialize a new SimpleMarket specialized for a base/quote.
    */
-  async #initialize(p: ConstructionParams): Promise<void> {
+  async #initialize(p: SimpleMaker.ConstructionParams): Promise<void> {
     this.market = await this.mgv.market(p);
     this.gasreq = (await this.contract.OFR_GASREQ()).toNumber(); //this is OK since gasreq ~ 10**6
   }
@@ -214,7 +218,7 @@ export class SimpleMaker {
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
    *  return {price,wants,gives}
    */
-  normalizeOfferParams(p: { ba: "bids" | "asks" } & offerParams): {
+  normalizeOfferParams(p: { ba: "bids" | "asks" } & SimpleMaker.offerParams): {
     price: Big;
     wants: Big;
     gives: Big;
@@ -241,7 +245,7 @@ export class SimpleMaker {
 
   /** Post a new ask */
   newAsk(
-    p: offerParams,
+    p: SimpleMaker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "asks", ...p }, overrides);
@@ -249,14 +253,14 @@ export class SimpleMaker {
 
   /** Post a new bid */
   newBid(
-    p: offerParams,
+    p: SimpleMaker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "bids", ...p }, overrides);
   }
 
   /* Create a new offer, let mangrove decide the gasprice. Return a promise fulfilled when mangrove.js has received the tx and updated itself. The tx returns the new offer id.
-
+ 
     If the tx created more than one offer, the id of the first one to be written is returned.
   
     Note: we do not return a TransactionResponse because it could be possible to :
@@ -268,7 +272,7 @@ export class SimpleMaker {
     To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
   */
   async newOffer(
-    p: { ba: "bids" | "asks" } & offerParams,
+    p: { ba: "bids" | "asks" } & SimpleMaker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     const { wants, gives, price } = this.normalizeOfferParams(p);
@@ -297,7 +301,7 @@ export class SimpleMaker {
   /** Update an existing ask */
   updateAsk(
     id: number,
-    p: offerParams,
+    p: SimpleMaker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "asks", ...p }, overrides);
@@ -306,7 +310,7 @@ export class SimpleMaker {
   /** Update an existing offer */
   updateBid(
     id: number,
-    p: offerParams,
+    p: SimpleMaker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "bids", ...p }, overrides);
@@ -318,7 +322,7 @@ export class SimpleMaker {
      */
   async updateOffer(
     id: number,
-    p: { ba: "bids" | "asks" } & offerParams,
+    p: { ba: "bids" | "asks" } & SimpleMaker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     const offerList = p.ba === "asks" ? this.asks() : this.bids();
@@ -405,3 +409,5 @@ export class SimpleMaker {
     return this.mgv.fromUnits(prov, 18);
   }
 }
+
+export default SimpleMaker;

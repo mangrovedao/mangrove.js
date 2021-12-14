@@ -1,9 +1,8 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
-import * as Types from "./types";
-import { TradeParams, Bigish, Typechain as typechain, MgvTypes } from "./types";
-import { Mangrove } from "./mangrove";
-import { MgvToken } from "./mgvtoken";
+import { TradeParams, Bigish, typechain } from "./types";
+import Mangrove from "./mangrove";
+import MgvToken from "./mgvtoken";
 
 let canConstructMarket = false;
 
@@ -26,6 +25,104 @@ const bookOptsDefault: Market.BookOptions = {
 };
 
 import type { Awaited } from "ts-essentials";
+import * as TCM from "./types/typechain/Mangrove";
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace Market {
+  export type MgvReader = typechain.MgvReader;
+  export type OrderResult = { got: Big; gave: Big };
+  export type bookSubscriptionEvent =
+    | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
+    | ({ name: "OfferFail" } & TCM.OfferFailEvent)
+    | ({ name: "OfferSuccess" } & TCM.OfferSuccessEvent)
+    | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
+    | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
+
+  export type BookOptions = {
+    fromId?: number;
+    maxOffers?: number;
+    chunkSize?: number;
+    blockNumber?: number;
+  };
+
+  export type Offer = {
+    id: number;
+    prev: number;
+    next: number;
+    gasprice: number;
+    maker: string;
+    gasreq: number;
+    overhead_gasbase: number;
+    offer_gasbase: number;
+    wants: Big;
+    gives: Big;
+    volume: Big;
+    price: Big;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  export namespace BookReturns {
+    type _bookReturns = Awaited<
+      ReturnType<Market.MgvReader["functions"]["offerList"]>
+    >;
+    export type indices = _bookReturns[1];
+    export type offers = _bookReturns[2];
+    export type details = _bookReturns[3];
+  }
+
+  export type offerList = { offers: Map<number, Offer>; best: number };
+
+  export type semibook = offerList & {
+    ba: "bids" | "asks";
+    gasbase: { offer_gasbase: number; overhead_gasbase: number };
+  };
+
+  export type OfferData = {
+    id: number | BigNumber;
+    prev: number | BigNumber;
+    next: number | BigNumber;
+    gasprice: number | BigNumber;
+    maker: string;
+    gasreq: number | BigNumber;
+    overhead_gasbase: number | BigNumber;
+    offer_gasbase: number | BigNumber;
+    wants: BigNumber;
+    gives: BigNumber;
+  };
+
+  export type bookSubscriptionCbArgument = {
+    ba: "asks" | "bids";
+    offer: Offer;
+  } & (
+    | { type: "OfferWrite" }
+    | {
+        type: "OfferFail";
+        taker: string;
+        takerWants: Big;
+        takerGives: Big;
+        mgvData: string;
+      }
+    | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
+    | { type: "OfferRetract" }
+  );
+
+  export type marketCallback<T> = (
+    cbArg: bookSubscriptionCbArgument,
+    event?: bookSubscriptionEvent,
+    ethersEvent?: ethers.Event
+  ) => T;
+  export type storableMarketCallback = marketCallback<any>;
+  export type marketFilter = marketCallback<boolean>;
+  export type subscriptionParam =
+    | { type: "multiple" }
+    | {
+        type: "once";
+        ok: (...a: any[]) => any;
+        ko: (...a: any[]) => any;
+        filter?: (...a: any[]) => boolean;
+      };
+
+  export type MarketBook = { asks: Offer[]; bids: Offer[] };
+}
 
 /**
  * The Market class focuses on a mangrove market.
@@ -330,8 +427,8 @@ class Market {
 
   #mapConfig(
     ba: "bids" | "asks",
-    cfg: Types.Mangrove.rawConfig
-  ): Types.Mangrove.localConfig {
+    cfg: Mangrove.rawConfig
+  ): Mangrove.localConfig {
     const { outbound_tkn } = this.getOutboundInbound(ba);
     return {
       active: cfg.local.active,
@@ -355,8 +452,8 @@ class Market {
    * fee *remains* in basis points of the token being bought
    */
   async rawConfig(): Promise<{
-    asks: Types.Mangrove.rawConfig;
-    bids: Types.Mangrove.rawConfig;
+    asks: Mangrove.rawConfig;
+    bids: Mangrove.rawConfig;
   }> {
     const rawAskConfig = await this.mgv.readerContract.config(
       this.base.address,
@@ -373,8 +470,8 @@ class Market {
   }
 
   async config(): Promise<{
-    asks: Types.Mangrove.localConfig;
-    bids: Types.Mangrove.localConfig;
+    asks: Mangrove.localConfig;
+    bids: Mangrove.localConfig;
   }> {
     const { bids, asks } = await this.rawConfig();
     return {
@@ -688,7 +785,7 @@ class Market {
 
   async #initializeSemibook(
     ba: "bids" | "asks",
-    localConfig: Types.Mangrove.localConfig,
+    localConfig: Mangrove.localConfig,
     initializationCompleteCallback: ({
       semibook: semibook,
       firstBlockNumber: number,
@@ -989,102 +1086,5 @@ const mapToArray = (best: number, offers: Map<number, Market.Offer>) => {
   }
   return ary;
 };
-
-// eslint-disable-next-line @typescript-eslint/no-namespace
-namespace Market {
-  export type MgvReader = typechain.MgvReader;
-  export type OrderResult = { got: Big; gave: Big };
-  export type bookSubscriptionEvent =
-    | ({ name: "OfferWrite" } & MgvTypes.OfferWriteEvent)
-    | ({ name: "OfferFail" } & MgvTypes.OfferFailEvent)
-    | ({ name: "OfferSuccess" } & MgvTypes.OfferSuccessEvent)
-    | ({ name: "OfferRetract" } & MgvTypes.OfferRetractEvent)
-    | ({ name: "SetGasbase" } & MgvTypes.SetGasbaseEvent);
-
-  export type BookOptions = {
-    fromId?: number;
-    maxOffers?: number;
-    chunkSize?: number;
-    blockNumber?: number;
-  };
-
-  export type Offer = {
-    id: number;
-    prev: number;
-    next: number;
-    gasprice: number;
-    maker: string;
-    gasreq: number;
-    overhead_gasbase: number;
-    offer_gasbase: number;
-    wants: Big;
-    gives: Big;
-    volume: Big;
-    price: Big;
-  };
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  export namespace BookReturns {
-    type _bookReturns = Awaited<
-      ReturnType<Market.MgvReader["functions"]["offerList"]>
-    >;
-    export type indices = _bookReturns[1];
-    export type offers = _bookReturns[2];
-    export type details = _bookReturns[3];
-  }
-
-  export type offerList = { offers: Map<number, Offer>; best: number };
-
-  export type semibook = offerList & {
-    ba: "bids" | "asks";
-    gasbase: { offer_gasbase: number; overhead_gasbase: number };
-  };
-
-  export type OfferData = {
-    id: number | BigNumber;
-    prev: number | BigNumber;
-    next: number | BigNumber;
-    gasprice: number | BigNumber;
-    maker: string;
-    gasreq: number | BigNumber;
-    overhead_gasbase: number | BigNumber;
-    offer_gasbase: number | BigNumber;
-    wants: BigNumber;
-    gives: BigNumber;
-  };
-
-  export type bookSubscriptionCbArgument = {
-    ba: "asks" | "bids";
-    offer: Offer;
-  } & (
-    | { type: "OfferWrite" }
-    | {
-        type: "OfferFail";
-        taker: string;
-        takerWants: Big;
-        takerGives: Big;
-        mgvData: string;
-      }
-    | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
-    | { type: "OfferRetract" }
-  );
-
-  export type marketCallback<T> = (
-    cbArg: bookSubscriptionCbArgument,
-    event?: bookSubscriptionEvent,
-    ethersEvent?: ethers.Event
-  ) => T;
-  export type storableMarketCallback = marketCallback<any>;
-  export type marketFilter = marketCallback<boolean>;
-  export type subscriptionParam =
-    | { type: "multiple" }
-    | {
-        type: "once";
-        ok: (...a: any[]) => any;
-        ko: (...a: any[]) => any;
-        filter?: (...a: any[]) => boolean;
-      };
-
-  export type MarketBook = { asks: Offer[]; bids: Offer[] };
-}
 
 export default Market;

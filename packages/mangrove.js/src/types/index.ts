@@ -11,19 +11,11 @@ import { Deferrable } from "@ethersproject/properties";
 import { BigNumber } from "@ethersproject/bignumber/lib/bignumber";
 import type { MarkOptional } from "ts-essentials";
 import type { Big } from "big.js";
-import type * as MgvTypes from "./typechain/Mangrove";
 
-export { MgvTypes };
 export type { Signer, Provider };
 
-import * as Typechain from "./typechain";
-export { Typechain };
-
-import type * as Eth from "../eth";
-export { Eth };
-
-import type * as Mangrove from "../mangrove";
-export { Mangrove };
+import * as typechain from "./typechain";
+export { typechain };
 
 /* Mangrove */
 
