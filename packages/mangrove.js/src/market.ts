@@ -486,6 +486,8 @@ class Market {
    * - `{volume,price}`: buy `wants` tokens for a max average price of `price`, or
    * - `{wants,gives}`: accept implicit max average price of `gives/wants`
    *
+   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
+   *
    * Will stop if
    * - book is empty, or
    * - price no longer good, or
@@ -499,8 +501,12 @@ class Market {
    */
   buy(params: TradeParams): Promise<Market.OrderResult> {
     const _wants = "price" in params ? Big(params.volume) : Big(params.wants);
-    const _gives =
+    let _gives =
       "price" in params ? _wants.mul(params.price) : Big(params.gives);
+
+    const slippage = validateSlippage(params.slippage);
+
+    _gives = _gives.mul(100 + slippage).div(100);
 
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(_gives);
@@ -513,6 +519,8 @@ class Market {
    * Params can be of the form:
    * - `{volume,price}`: sell `gives` tokens for a min average of `price`
    * - `{wants,gives}`: accept implicit min average price of `gives/wants`.
+   *
+   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
    * Will stop if
    * - book is empty, or
@@ -527,8 +535,12 @@ class Market {
    */
   sell(params: TradeParams): Promise<Market.OrderResult> {
     const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
-    const _wants =
+    let _wants =
       "price" in params ? _gives.mul(params.price) : Big(params.wants);
+
+    const slippage = validateSlippage(params.slippage);
+
+    _wants = _wants.mul(100 - slippage).div(100);
 
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
@@ -543,6 +555,8 @@ class Market {
    *
    * If `orderType` is `"sell"`, the quote/base market will be used,
    * with contract function argument `fillWants` set to false.
+   *
+   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
    * Returns a promise for market order result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
@@ -562,6 +576,7 @@ class Market {
         : [this.quote, this.base, false];
 
     const gasLimit = await this.estimateGas(orderType, wants);
+    console.log("Aboutto call contract");
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
@@ -1085,6 +1100,15 @@ const mapToArray = (best: number, offers: Map<number, Market.Offer>) => {
     } while (typeof latest !== "undefined");
   }
   return ary;
+};
+
+const validateSlippage = (slippage = 0) => {
+  if (typeof slippage === "undefined") {
+    return 0;
+  } else if (slippage > 100 || slippage < 0) {
+    throw new Error("slippage should be a number between 0 and 100");
+  }
+  return slippage;
 };
 
 export default Market;
