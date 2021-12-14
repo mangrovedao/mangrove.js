@@ -8,10 +8,60 @@ import {
   rawConfig,
   localConfig,
   bookSubscriptionEvent,
-  Offer,
 } from "./types";
 import { Mangrove } from "./mangrove";
 import { MgvToken } from "./mgvtoken";
+
+// FIXME probably need classes/interfaces here
+type BQToken<BQ extends "base" | "quote"> = {
+  fromUnits: (units: BigNumber) => BQAmount<BQ>;
+};
+
+type BaseToken = {
+  bq: "base";
+  token: MgvToken;
+  fromUnits: (units: BigNumber) => BaseAmount;
+};
+type QuoteToken = {
+  bq: "quote";
+  token: MgvToken;
+  fromUnits: (units: BigNumber) => QuoteAmount;
+};
+
+type GivesToken<BA extends "asks" | "bids"> = BA extends "asks"
+  ? BaseToken
+  : QuoteToken;
+type WantsToken<BA extends "asks" | "bids"> = BA extends "asks"
+  ? QuoteToken
+  : BaseToken;
+
+type BaseAmount = { bq: "base"; amount: Big };
+type QuoteAmount = { bq: "quote"; amount: Big };
+type BQAmount<BQ extends "base" | "quote"> = BQ extends "base"
+  ? BaseAmount
+  : QuoteAmount;
+
+type GivesAmount<BA extends "asks" | "bids"> = BA extends "asks"
+  ? BaseAmount
+  : QuoteAmount;
+type WantsAmount<BA extends "asks" | "bids"> = BA extends "asks"
+  ? QuoteAmount
+  : BaseAmount;
+
+export type Offer<BA extends "asks" | "bids"> = {
+  id: number;
+  prev: number;
+  next: number;
+  gasprice: number;
+  maker: string;
+  gasreq: number;
+  overhead_gasbase: number;
+  offer_gasbase: number;
+  wants: WantsAmount<BA>;
+  gives: GivesAmount<BA>;
+  volume: Big;
+  price: Big;
+};
 
 let canConstructMarket = false;
 
@@ -25,6 +75,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
+import { tokenToString } from "typescript";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
@@ -34,10 +85,13 @@ const bookOptsDefault: BookOptions = {
   maxOffers: DEFAULT_MAX_OFFERS,
 };
 
-type offerList = { offers: Map<number, Offer>; best: number };
+type offerList<BA extends "asks" | "bids"> = {
+  offers: Map<number, Offer<BA>>;
+  best: number;
+};
 
-type semibook = offerList & {
-  ba: "bids" | "asks";
+type semibook<BA extends "asks" | "bids"> = offerList<BA> & {
+  ba: BA;
   gasbase: { offer_gasbase: number; overhead_gasbase: number };
 };
 
@@ -54,9 +108,9 @@ type OfferData = {
   gives: BigNumber;
 };
 
-export type bookSubscriptionCbArgument = {
-  ba: "asks" | "bids";
-  offer: Offer;
+export type bookSubscriptionCbArgument<BA extends "asks" | "bids"> = {
+  ba: BA;
+  offer: Offer<BA>;
 } & (
   | { type: "OfferWrite" }
   | {
@@ -71,7 +125,7 @@ export type bookSubscriptionCbArgument = {
 );
 
 type marketCallback<T> = (
-  cbArg: bookSubscriptionCbArgument,
+  cbArg: bookSubscriptionCbArgument<"asks" | "bids">,
   event?: bookSubscriptionEvent,
   ethersEvent?: ethers.Event
 ) => T;
@@ -98,11 +152,11 @@ type subscriptionParam =
  */
 export class Market {
   mgv: Mangrove;
-  base: MgvToken;
-  quote: MgvToken;
+  base: BaseToken;
+  quote: QuoteToken;
   #subscriptions: Map<storableMarketCallback, subscriptionParam>;
   #lowLevelCallbacks: null | { asksCallback?: any; bidsCallback?: any };
-  _book: { asks: Offer[]; bids: Offer[] };
+  _book: { asks: Offer<"asks">[]; bids: Offer<"bids">[] };
 
   static async connect(params: {
     mgv: Mangrove;
@@ -132,8 +186,22 @@ export class Market {
     this.#lowLevelCallbacks = null;
     this.mgv = params.mgv;
 
-    this.base = this.mgv.token(params.base);
-    this.quote = this.mgv.token(params.quote);
+    const baseToken = this.mgv.token(params.base);
+    const quoteToken = this.mgv.token(params.quote);
+    this.base = {
+      bq: "base",
+      token: baseToken,
+      fromUnits: (amount) => {
+        return { bq: "base", amount: baseToken.fromUnits(amount) };
+      },
+    };
+    this.quote = {
+      bq: "quote",
+      token: quoteToken,
+      fromUnits: (amount) => {
+        return { bq: "quote", amount: quoteToken.fromUnits(amount) };
+      },
+    };
     // this.base = {
     //   name: params.base,
     //   address: this.mgv.getAddress(params.base),
@@ -172,9 +240,9 @@ export class Market {
   }
 
   /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
-  getOutboundInbound(ba: "bids" | "asks"): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
+  getOutboundInbound(ba: "asks" | "bids"): {
+    outbound_tkn: GivesToken<typeof ba>;
+    inbound_tkn: WantsToken<typeof ba>;
   } {
     return {
       outbound_tkn: ba === "asks" ? this.base : this.quote,
@@ -185,9 +253,9 @@ export class Market {
   /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
   getBaseQuoteVolumes(
     ba: "asks" | "bids",
-    gives: Big,
-    wants: Big
-  ): { baseVolume: Big; quoteVolume: Big } {
+    gives: GivesAmount<typeof ba>,
+    wants: WantsAmount<typeof ba>
+  ): { baseVolume: BaseAmount; quoteVolume: QuoteAmount } {
     return {
       baseVolume: ba === "asks" ? gives : wants,
       quoteVolume: ba === "asks" ? wants : gives,
@@ -243,8 +311,8 @@ export class Market {
       )
     );
 
-    const base_padded = ethers.utils.hexZeroPad(this.base.address, 32);
-    const quote_padded = ethers.utils.hexZeroPad(this.quote.address, 32);
+    const base_padded = ethers.utils.hexZeroPad(this.base.token.address, 32);
+    const quote_padded = ethers.utils.hexZeroPad(this.quote.token.address, 32);
 
     const asksFilter = {
       address: this.mgv._address,
@@ -324,7 +392,7 @@ export class Market {
       firstBlockNumber: number,
     }) => void;
     const asksInitializationPromise = new Promise<{
-      semibook: semibook;
+      semibook: semibook<"asks">;
       firstBlockNumber: number;
     }>((ok) => {
       asksInilizationCompleteCallback = ok;
@@ -334,7 +402,7 @@ export class Market {
       firstBlockNumber: number,
     }) => void;
     const bidsInitializationPromise = new Promise<{
-      semibook: semibook;
+      semibook: semibook<"bids">;
       firstBlockNumber: number;
     }>((ok) => {
       bidsInilizationCompleteCallback = ok;
@@ -374,7 +442,7 @@ export class Market {
     return {
       active: cfg.local.active,
       fee: cfg.local.fee.toNumber(),
-      density: outbound_tkn.fromUnits(cfg.local.density),
+      density: outbound_tkn.token.fromUnits(cfg.local.density),
       overhead_gasbase: cfg.local.overhead_gasbase.toNumber(),
       offer_gasbase: cfg.local.offer_gasbase.toNumber(),
       lock: cfg.local.lock,
@@ -394,12 +462,12 @@ export class Market {
    */
   async rawConfig(): Promise<{ asks: rawConfig; bids: rawConfig }> {
     const rawAskConfig = await this.mgv.readerContract.config(
-      this.base.address,
-      this.quote.address
+      this.base.token.address,
+      this.quote.token.address
     );
     const rawBidsConfig = await this.mgv.readerContract.config(
-      this.quote.address,
-      this.base.address
+      this.quote.token.address,
+      this.base.token.address
     );
     return {
       asks: rawAskConfig,
@@ -437,8 +505,8 @@ export class Market {
     const _gives =
       "price" in params ? _wants.mul(params.price) : Big(params.gives);
 
-    const wants = this.base.toUnits(_wants);
-    const gives = this.quote.toUnits(_gives);
+    const wants = this.base.token.toUnits(_wants);
+    const gives = this.quote.token.toUnits(_gives);
 
     return this.#marketOrder({ gives, wants, orderType: "buy" });
   }
@@ -465,8 +533,8 @@ export class Market {
     const _wants =
       "price" in params ? _gives.mul(params.price) : Big(params.wants);
 
-    const gives = this.base.toUnits(_gives);
-    const wants = this.quote.toUnits(_wants);
+    const gives = this.base.token.toUnits(_gives);
+    const wants = this.quote.token.toUnits(_wants);
 
     return this.#marketOrder({ wants, gives, orderType: "sell" });
   }
@@ -498,8 +566,8 @@ export class Market {
 
     const gasLimit = await this.estimateGas(orderType, wants);
     const response = await this.mgv.contract.marketOrder(
-      outboundTkn.address,
-      inboundTkn.address,
+      outboundTkn.token.address,
+      inboundTkn.token.address,
       wants,
       gives,
       fillWants,
@@ -520,8 +588,8 @@ export class Market {
     const got_bq = orderType === "buy" ? "base" : "quote";
     const gave_bq = orderType === "buy" ? "quote" : "base";
     return {
-      got: this[got_bq].fromUnits(result.args.takerGot),
-      gave: this[gave_bq].fromUnits(result.args.takerGave),
+      got: this[got_bq].token.fromUnits(result.args.takerGot),
+      gave: this[gave_bq].token.fromUnits(result.args.takerGave),
     };
   }
 
@@ -551,8 +619,8 @@ export class Market {
     do {
       const [_nextId, _offerIds, _offers, _details] =
         await this.mgv.readerContract.offerList(
-          outbound_tkn.address,
-          inbound_tkn.address,
+          outbound_tkn.token.address,
+          inbound_tkn.token.address,
           opts.fromId,
           chunkSize,
           { blockTag: blockNum }
@@ -603,13 +671,13 @@ export class Market {
     };
   }
 
-  rawToMap(
-    ba: "bids" | "asks",
+  rawToMap<BA extends "asks" | "bids">(
+    ba: BA,
     ids: BookReturns.indices,
     offers: BookReturns.offers,
     details: BookReturns.details
-  ): offerList {
-    const data: offerList = {
+  ): offerList<BA> {
+    const data: offerList<BA> = {
       offers: new Map(),
       best: 0,
     };
@@ -655,7 +723,10 @@ export class Market {
     });
   }
 
-  #toOfferObject(ba: "bids" | "asks", raw: OfferData): Offer {
+  #toOfferObject<BA extends "asks" | "bids">(
+    ba: BA,
+    raw: OfferData
+  ): Offer<BA> {
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
 
     const _gives = outbound_tkn.fromUnits(raw.gives);
@@ -820,8 +891,8 @@ export class Market {
               ba: semibook.ba,
               taker: event.args.taker,
               offer: removedOffer,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+              takerWants: outbound_tkn.token.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.token.fromUnits(event.args.takerGives),
               mgvData: event.args.mgvData,
             },
             semibook,
@@ -840,8 +911,8 @@ export class Market {
               ba: semibook.ba,
               taker: event.args.taker,
               offer: removedOffer,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+              takerWants: outbound_tkn.token.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.token.fromUnits(event.args.takerGives),
             },
             semibook,
             event,
