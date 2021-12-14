@@ -37,7 +37,7 @@ describe("Bot integration tests", () => {
 
   beforeEach(async function () {
     mgv = await Mangrove.connect({
-      provider: this.test?.parent?.parent?.ctx.provider,
+      //provider: this.test?.parent?.parent?.ctx.provider,
       signer: botSigner,
     });
 

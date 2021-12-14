@@ -2,16 +2,9 @@ import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import { Market } from "./market";
 import { SimpleMaker } from "./maker";
-import {
-  Provider,
-  Signer,
-  ProviderNetwork,
-  Bigish,
-  globalConfig,
-  CreateSignerOptions,
-  BookOptions,
-} from "./types";
-import * as typechain from "./types/typechain";
+import * as Types from "./types";
+import { Bigish } from "./types";
+import { Typechain as typechain } from "./types";
 import { MgvToken } from "./mgvtoken";
 
 import Big from "big.js";
@@ -24,10 +17,35 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
    use Mangrove.connect to make sure the network is reached during construction */
 let canConstructMangrove = false;
 
+import type { Awaited } from "ts-essentials";
+export type rawConfig = Awaited<
+  ReturnType<Types.Typechain.MgvReader["functions"]["config"]>
+>;
+
+export type localConfig = {
+  active: boolean;
+  fee: number;
+  density: Big;
+  overhead_gasbase: number;
+  offer_gasbase: number;
+  lock: boolean;
+  best: number;
+  last: number;
+};
+
+export type globalConfig = {
+  monitor: string;
+  useOracle: boolean;
+  notify: boolean;
+  gasprice: number;
+  gasmax: number;
+  dead: boolean;
+};
+
 export class Mangrove {
-  _provider: Provider;
-  _signer: Signer;
-  _network: ProviderNetwork;
+  _provider: Types.Provider;
+  _signer: Types.Signer;
+  _network: Types.Eth.ProviderNetwork;
   _readOnly: boolean;
   _address: string;
   contract: typechain.Mangrove;
@@ -59,7 +77,7 @@ export class Mangrove {
    */
 
   static async connect(
-    options: CreateSignerOptions | string = {}
+    options: Types.Eth.CreateSignerOptions | string = {}
   ): Promise<Mangrove> {
     if (typeof options === "string") {
       options = { provider: options };
@@ -84,8 +102,8 @@ export class Mangrove {
   //TODO remove _prefix on public properties
 
   constructor(params: {
-    signer: Signer;
-    network: ProviderNetwork;
+    signer: Types.Signer;
+    network: Types.Eth.ProviderNetwork;
     readOnly: boolean;
   }) {
     if (!canConstructMangrove) {
@@ -132,7 +150,7 @@ export class Mangrove {
   async market(params: {
     base: string;
     quote: string;
-    bookOptions?: BookOptions;
+    bookOptions?: Types.Market.BookOptions;
   }): Promise<Market> {
     return await Market.connect({ ...params, mgv: this });
   }
@@ -180,7 +198,7 @@ export class Mangrove {
 
   /**
    * Read decimals for `tokenName`.
-   * To read decimals off the chain, use `cacheDecimals`.
+   * To read decimals off the chain, use `fetchDecimals`.
    */
   getDecimals(tokenName: string): number {
     return Mangrove.getDecimals(tokenName);
@@ -196,8 +214,8 @@ export class Mangrove {
   /**
    * Read chain for decimals of `tokenName` on current network and save them.
    */
-  async cacheDecimals(tokenName: string): Promise<number> {
-    return Mangrove.cacheDecimals(tokenName, this._provider);
+  async fetchDecimals(tokenName: string): Promise<number> {
+    return Mangrove.fetchDecimals(tokenName, this._provider);
   }
 
   /** Convert public token amount to internal token representation.
@@ -258,7 +276,7 @@ export class Mangrove {
    * Return global Mangrove config
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async config(): Promise<globalConfig> {
+  async config(): Promise<Types.Mangrove.globalConfig> {
     const config = await this.readerContract.config(
       ethers.constants.AddressZero,
       ethers.constants.AddressZero
@@ -279,7 +297,7 @@ export class Mangrove {
   /**
    * Read all contract addresses on the given network.
    */
-  static getAllAddresses(network = "mainnet"): [string, string][] {
+  static getAllAddresses(network: string): [string, string][] {
     if (!addresses[network]) {
       throw Error(`No addresses for network ${network}.`);
     }
@@ -288,9 +306,9 @@ export class Mangrove {
   }
 
   /**
-   * Read a contract address on the given network.
+   * Read a contract address on a given network.
    */
-  static getAddress(name: string, network = "mainnet"): string {
+  static getAddress(name: string, network: string): string {
     if (!addresses[network]) {
       throw Error(`No addresses for network ${network}.`);
     }
@@ -305,7 +323,7 @@ export class Mangrove {
   /**
    * Set a contract address on the given network.
    */
-  static setAddress(name: string, address: string, network = "mainnet"): void {
+  static setAddress(name: string, address: string, network: string): void {
     if (!addresses[network]) {
       addresses[network] = {};
     }
@@ -314,7 +332,7 @@ export class Mangrove {
 
   /**
    * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `cacheDecimals`.
+   * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimals(tokenName: string): number {
     if (typeof loadedDecimals[tokenName] !== "number") {
@@ -334,9 +352,9 @@ export class Mangrove {
   /**
    * Read chain for decimals of `tokenName` on current network and save them
    */
-  static async cacheDecimals(
+  static async fetchDecimals(
     tokenName: string,
-    provider: Provider
+    provider: Types.Provider
   ): Promise<number> {
     const network = await eth.getProviderNetwork(provider);
     const token = typechain.IERC20__factory.connect(
