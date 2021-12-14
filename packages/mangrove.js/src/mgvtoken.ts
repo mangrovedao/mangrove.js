@@ -78,8 +78,8 @@ class MgvToken {
   /**
    * Set approval for Mangrove on `amount`.
    */
-  approveMgv(amountOPT?: Bigish): Promise<ethers.ContractTransaction> {
-    return this.approve(this.mgv._address, amountOPT);
+  async approveMangrove(amount: Bigish): Promise<ethers.ContractTransaction> {
+    return this.approve(await this.mgv._address, amount);
   }
   /**
    * Set approval for `spender` on `amount`.

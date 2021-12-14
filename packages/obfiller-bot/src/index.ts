@@ -98,7 +98,7 @@ async function approveMangroveForToken(
   const allowance = await token.allowance();
   if (allowance.lt(tokenConfig.targetAllowance)) {
     await token
-      .approveMgv(tokenConfig.targetAllowance)
+      .approveMangrove(tokenConfig.targetAllowance)
       .then((tx) => tx.wait())
       .then((txReceipt) => {
         logger.info(`Mangrove successfully approved for token ${token.name}`, {

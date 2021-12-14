@@ -33,8 +33,8 @@ describe("Market integration tests suite", () => {
     const tokenA = mgv.token("TokenA");
     const tokenB = mgv.token("TokenB");
 
-    await tokenA.approveMgv(1000);
-    await tokenB.approveMgv(1000);
+    await tokenA.approveMangrove(1000);
+    await tokenB.approveMangrove(1000);
   });
   before(async function () {});
 
