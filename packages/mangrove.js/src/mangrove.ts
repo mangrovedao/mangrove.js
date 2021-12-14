@@ -1,7 +1,7 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import Market from "./market";
-import SimpleMaker from "./maker";
+import Maker from "./maker";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
 import MgvToken from "./mgvtoken";
@@ -167,16 +167,16 @@ class Mangrove {
     });
   }
 
-  /* Get SimpleMaker object. 
+  /* Get Maker object. 
      Argument of the form `{base,quote}` where each is a string.
      To set your own token, use `setDecimals` and `setAddress`.
   */
-  async simpleMakerConnect(params: {
+  async MakerConnect(params: {
     address: string;
     base: string;
     quote: string;
-  }): Promise<SimpleMaker> {
-    return await SimpleMaker.connect({ ...params, mgv: this });
+  }): Promise<Maker> {
+    return await Maker.connect({ ...params, mgv: this });
   }
 
   /* Return MgvToken instance tied to mangrove object. */
@@ -291,6 +291,14 @@ class Mangrove {
       gasmax: config.global.gasmax.toNumber(),
       dead: config.global.dead,
     };
+  }
+
+  /**
+   *
+   */
+  prettyPrint(book: Market.MarketBook): void {
+    console.table(book.asks, ["maker", "gives", "volume", "price"]);
+    console.table(book.bids, ["maker", "wants", "volume", "price"]);
   }
 
   /* Static */

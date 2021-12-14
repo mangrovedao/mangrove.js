@@ -84,18 +84,19 @@ main().catch(console.error);
 
 ## Using as a maker
 
-For now the only available maker contract is SimpleMaker. This maker has its own provisions and no internal logic. You can amplify your liquidity by posting more offers than your available liquidity.
+// For now the only available maker is Maker. This maker has its own provisions and no internal 
+// logic. You can amplify your liquidity by posting more offers than your available liquidity.
 
 ```js
-const { Mangrove, SimpleMaker } = require("mangrove.js");
+const { Mangrove, Maker } = require("mangrove.js");
 const mgv = await Mangrove.connect("maticmum"); // Mumbai testnet
 
 // deploy a new maker
-const mkr_address = await SimpleMaker.deploy(mgv);
+const mkr_address = await Maker.deploy(mgv);
 
-// SimpleMaker contracts are token-agnostic, but you must instantiate the js object
+// Maker contracts are token-agnostic, but you must instantiate the js object
 // focused on a specific base/quote pair.
-const mkr = await mgv.simpleMakerConnect({
+const mkr = await mgv.MakerConnect({
   address: mkr_address,
   base: "WETH",
   quote: "USDC",
