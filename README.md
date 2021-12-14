@@ -1,5 +1,7 @@
 [![CI](https://github.com/giry-dev/mangrove/actions/workflows/node.js.yml/badge.svg)](https://github.com/giry-dev/mangrove/actions/workflows/node.js.yml)
 
+**External PR's rule!!!**
+
 This is the Mangrove monorepo which contains most of the packages developed for the Mangrove.
 
 Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate repos. The rules for which packages go where are not hard and fast; On the contrary, we are experimenting with different structures, in order to figure out what the pros and cons are in our specific circumstances.
