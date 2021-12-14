@@ -1,6 +1,5 @@
 import * as ethers from "ethers";
-import { Market } from "./market";
-import * as Types from "./types";
+import Market from "./market";
 // syntactic sugar
 import { Bigish } from "./types";
 import { Typechain as typechain } from "./types";
@@ -36,7 +35,7 @@ type ConstructionParams = {
   base: string;
   quote: string;
   noInit?: boolean;
-  bookOptions?: Types.Market.BookOptions;
+  bookOptions?: Market.BookOptions;
 };
 
 let canConstruct = false;
@@ -202,12 +201,12 @@ export class SimpleMaker {
   }
 
   /** List all of the maker's asks */
-  asks(): Types.Market.Offer[] {
+  asks(): Market.Offer[] {
     return this.market.book().asks.filter((ofr) => ofr.maker === this.address);
   }
 
   /** List all of the maker's bids */
-  bids(): Types.Market.Offer[] {
+  bids(): Market.Offer[] {
     return this.market.book().bids.filter((ofr) => ofr.maker === this.address);
   }
 

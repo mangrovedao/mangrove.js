@@ -20,105 +20,12 @@ import Big from "big.js";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
-type OrderResult = { got: Big; gave: Big };
-const bookOptsDefault: BookOptions = {
+const bookOptsDefault: Market.BookOptions = {
   fromId: 0,
   maxOffers: DEFAULT_MAX_OFFERS,
 };
 
-type MgvReader = typechain.MgvReader;
-
-export type bookSubscriptionEvent =
-  | ({ name: "OfferWrite" } & MgvTypes.OfferWriteEvent)
-  | ({ name: "OfferFail" } & MgvTypes.OfferFailEvent)
-  | ({ name: "OfferSuccess" } & MgvTypes.OfferSuccessEvent)
-  | ({ name: "OfferRetract" } & MgvTypes.OfferRetractEvent)
-  | ({ name: "SetGasbase" } & MgvTypes.SetGasbaseEvent);
-
-export type BookOptions = {
-  fromId?: number;
-  maxOffers?: number;
-  chunkSize?: number;
-  blockNumber?: number;
-};
-
-export type Offer = {
-  id: number;
-  prev: number;
-  next: number;
-  gasprice: number;
-  maker: string;
-  gasreq: number;
-  overhead_gasbase: number;
-  offer_gasbase: number;
-  wants: Big;
-  gives: Big;
-  volume: Big;
-  price: Big;
-};
-
 import type { Awaited } from "ts-essentials";
-// eslint-disable-next-line @typescript-eslint/no-namespace
-export namespace BookReturns {
-  type _bookReturns = Awaited<ReturnType<MgvReader["functions"]["offerList"]>>;
-  export type indices = _bookReturns[1];
-  export type offers = _bookReturns[2];
-  export type details = _bookReturns[3];
-}
-
-type offerList = { offers: Map<number, Offer>; best: number };
-
-type semibook = offerList & {
-  ba: "bids" | "asks";
-  gasbase: { offer_gasbase: number; overhead_gasbase: number };
-};
-
-type OfferData = {
-  id: number | BigNumber;
-  prev: number | BigNumber;
-  next: number | BigNumber;
-  gasprice: number | BigNumber;
-  maker: string;
-  gasreq: number | BigNumber;
-  overhead_gasbase: number | BigNumber;
-  offer_gasbase: number | BigNumber;
-  wants: BigNumber;
-  gives: BigNumber;
-};
-
-export type bookSubscriptionCbArgument = {
-  ba: "asks" | "bids";
-  offer: Offer;
-} & (
-  | { type: "OfferWrite" }
-  | {
-      type: "OfferFail";
-      taker: string;
-      takerWants: Big;
-      takerGives: Big;
-      mgvData: string;
-    }
-  | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
-  | { type: "OfferRetract" }
-);
-
-type marketCallback<T> = (
-  cbArg: bookSubscriptionCbArgument,
-  event?: bookSubscriptionEvent,
-  ethersEvent?: ethers.Event
-) => T;
-type storableMarketCallback = marketCallback<any>;
-type marketFilter = marketCallback<boolean>;
-type subscriptionParam =
-  | { type: "multiple" }
-  | {
-      type: "once";
-      ok: (...a: any[]) => any;
-      ko: (...a: any[]) => any;
-      filter?: (...a: any[]) => boolean;
-    };
-
-type MarketBook = { asks: Offer[]; bids: Offer[] };
 
 /**
  * The Market class focuses on a mangrove market.
@@ -130,20 +37,20 @@ type MarketBook = { asks: Offer[]; bids: Offer[] };
  *
  * `await Market.connect(...)`
  */
-export class Market {
+class Market {
   mgv: Mangrove;
   base: MgvToken;
   quote: MgvToken;
-  #subscriptions: Map<storableMarketCallback, subscriptionParam>;
+  #subscriptions: Map<Market.storableMarketCallback, Market.subscriptionParam>;
   #lowLevelCallbacks: null | { asksCallback?: any; bidsCallback?: any };
-  #book: MarketBook;
+  #book: Market.MarketBook;
   #initClosure?: () => Promise<void>;
 
   static async connect(params: {
     mgv: Mangrove;
     base: string;
     quote: string;
-    bookOptions?: BookOptions;
+    bookOptions?: Market.BookOptions;
   }): Promise<Market> {
     canConstructMarket = true;
     const market = new Market(params);
@@ -254,7 +161,7 @@ export class Market {
   }
 
   /* Stop calling a user-provided function on book-related events. */
-  unsubscribe(cb: storableMarketCallback): void {
+  unsubscribe(cb: Market.storableMarketCallback): void {
     this.#subscriptions.delete(cb);
   }
 
@@ -336,20 +243,23 @@ export class Market {
    *
    * @note Only one subscription may be active at a time.
    */
-  async subscribe(cb: marketCallback<void>): Promise<void> {
+  async subscribe(cb: Market.marketCallback<void>): Promise<void> {
     this.#subscriptions.set(cb, { type: "multiple" });
   }
 
   /**
    *  Returns a promise which is fulfilled after execution of the callback.
    */
-  async once<T>(cb: marketCallback<T>, filter?: marketFilter): Promise<T> {
+  async once<T>(
+    cb: Market.marketCallback<T>,
+    filter?: Market.marketFilter
+  ): Promise<T> {
     return new Promise((ok, ko) => {
-      const params: subscriptionParam = { type: "once", ok, ko };
+      const params: Market.subscriptionParam = { type: "once", ok, ko };
       if (typeof filter !== "undefined") {
         params.filter = filter;
       }
-      this.#subscriptions.set(cb as storableMarketCallback, params);
+      this.#subscriptions.set(cb as Market.storableMarketCallback, params);
     });
   }
 
@@ -364,7 +274,7 @@ export class Market {
   }
 
   async #initialize(
-    opts: Omit<BookOptions, "fromId"> = bookOptsDefault
+    opts: Omit<Market.BookOptions, "fromId"> = bookOptsDefault
   ): Promise<void> {
     if (this.#lowLevelCallbacks) throw Error("Already initialized.");
 
@@ -373,7 +283,7 @@ export class Market {
       firstBlockNumber: number,
     }) => void;
     const asksInitializationPromise = new Promise<{
-      semibook: semibook;
+      semibook: Market.semibook;
       firstBlockNumber: number;
     }>((ok) => {
       asksInilizationCompleteCallback = ok;
@@ -383,7 +293,7 @@ export class Market {
       firstBlockNumber: number,
     }) => void;
     const bidsInitializationPromise = new Promise<{
-      semibook: semibook;
+      semibook: Market.semibook;
       firstBlockNumber: number;
     }>((ok) => {
       bidsInilizationCompleteCallback = ok;
@@ -490,7 +400,7 @@ export class Market {
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
-  buy(params: TradeParams): Promise<OrderResult> {
+  buy(params: TradeParams): Promise<Market.OrderResult> {
     const _wants = "price" in params ? Big(params.volume) : Big(params.wants);
     const _gives =
       "price" in params ? _wants.mul(params.price) : Big(params.gives);
@@ -518,7 +428,7 @@ export class Market {
    * market.sell({volume: 100, price: 1})
    * ```
    */
-  sell(params: TradeParams): Promise<OrderResult> {
+  sell(params: TradeParams): Promise<Market.OrderResult> {
     const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
     const _wants =
       "price" in params ? _gives.mul(params.price) : Big(params.wants);
@@ -586,8 +496,14 @@ export class Market {
   /* Provides the book with raw BigNumber values */
   async rawBook(
     ba: "asks" | "bids",
-    opts: BookOptions = bookOptsDefault
-  ): Promise<[BookReturns.indices, BookReturns.offers, BookReturns.details]> {
+    opts: Market.BookOptions = bookOptsDefault
+  ): Promise<
+    [
+      Market.BookReturns.indices,
+      Market.BookReturns.offers,
+      Market.BookReturns.details
+    ]
+  > {
     opts = { ...bookOptsDefault, ...opts };
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     // by default chunk size is number of offers desired
@@ -649,7 +565,9 @@ export class Market {
     return this.#book;
   }
 
-  async requestBook(opts: BookOptions = bookOptsDefault): Promise<MarketBook> {
+  async requestBook(
+    opts: Market.BookOptions = bookOptsDefault
+  ): Promise<Market.MarketBook> {
     const rawAsks = await this.rawBook("asks", opts);
     const rawBids = await this.rawBook("bids", opts);
     return {
@@ -660,11 +578,11 @@ export class Market {
 
   rawToMap(
     ba: "bids" | "asks",
-    ids: BookReturns.indices,
-    offers: BookReturns.offers,
-    details: BookReturns.details
-  ): offerList {
-    const data: offerList = {
+    ids: Market.BookReturns.indices,
+    offers: Market.BookReturns.offers,
+    details: Market.BookReturns.details
+  ): Market.offerList {
+    const data: Market.offerList = {
       offers: new Map(),
       best: 0,
     };
@@ -697,9 +615,9 @@ export class Market {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   rawToArray(
     ba: "bids" | "asks",
-    ids: BookReturns.indices,
-    offers: BookReturns.offers,
-    details: BookReturns.details
+    ids: Market.BookReturns.indices,
+    offers: Market.BookReturns.offers,
+    details: Market.BookReturns.details
   ) {
     return ids.map((offerId, index) => {
       return this.#toOfferObject(ba, {
@@ -710,7 +628,7 @@ export class Market {
     });
   }
 
-  #toOfferObject(ba: "bids" | "asks", raw: OfferData): Offer {
+  #toOfferObject(ba: "bids" | "asks", raw: Market.OfferData): Market.Offer {
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
 
     const _gives = outbound_tkn.fromUnits(raw.gives);
@@ -743,9 +661,9 @@ export class Market {
   }
 
   defaultCallback(
-    cbArg: bookSubscriptionCbArgument,
-    semibook: semibook,
-    event: bookSubscriptionEvent,
+    cbArg: Market.bookSubscriptionCbArgument,
+    semibook: Market.semibook,
+    event: Market.bookSubscriptionEvent,
     ethersEvent: ethers.Event
   ): void {
     this.#updateBook(semibook);
@@ -764,7 +682,7 @@ export class Market {
     }
   }
 
-  #updateBook(semibook: semibook): void {
+  #updateBook(semibook: Market.semibook): void {
     this.#book[semibook.ba] = mapToArray(semibook.best, semibook.offers);
   }
 
@@ -775,7 +693,7 @@ export class Market {
       semibook: semibook,
       firstBlockNumber: number,
     }) => void,
-    opts: Omit<BookOptions, "fromId">
+    opts: Omit<Market.BookOptions, "fromId">
   ): Promise<void> {
     const firstBlockNumber: number = await this.mgv._provider.getBlockNumber();
     const rawOffers = await this.rawBook(ba, {
@@ -799,7 +717,7 @@ export class Market {
 
   #createBookEventCallback(
     initializationPromise: Promise<{
-      semibook: semibook;
+      semibook: Market.semibook;
       firstBlockNumber: number;
     }>
   ): (...args: any[]) => Promise<any> {
@@ -814,10 +732,9 @@ export class Market {
     };
   }
 
-  #handleBookEvent(semibook: semibook, ethersEvent: ethers.Event): void {
-    const event: bookSubscriptionEvent = this.mgv.contract.interface.parseLog(
-      ethersEvent
-    ) as any;
+  #handleBookEvent(semibook: Market.semibook, ethersEvent: ethers.Event): void {
+    const event: Market.bookSubscriptionEvent =
+      this.mgv.contract.interface.parseLog(ethersEvent) as any;
 
     let offer;
     let removedOffer;
@@ -993,7 +910,7 @@ export class Market {
 
 // remove offer id from book and connect its prev/next.
 // return null if offer was not found in book
-const removeOffer = (semibook: semibook, id: number) => {
+const removeOffer = (semibook: Market.semibook, id: number) => {
   const ofr = semibook.offers.get(id);
   if (ofr) {
     // we differentiate prev==0 (offer is best)
@@ -1025,7 +942,11 @@ const removeOffer = (semibook: semibook, id: number) => {
 
 // Assumes ofr.prev and ofr.next are present in local OB copy.
 // Assumes id is not already in book;
-const insertOffer = (semibook: semibook, id: number, ofr: Offer) => {
+const insertOffer = (
+  semibook: Market.semibook,
+  id: number,
+  ofr: Market.Offer
+) => {
   semibook.offers.set(id, ofr);
   if (ofr.prev === 0) {
     semibook.best = ofr.id;
@@ -1041,7 +962,7 @@ const insertOffer = (semibook: semibook, id: number, ofr: Offer) => {
 // return id of offer next to offerId, according to cache.
 // note that offers[offers[offerId].next] may be not exist!
 // throws if offerId is not found
-const getNext = ({ offers, best }: semibook, offerId: number) => {
+const getNext = ({ offers, best }: Market.semibook, offerId: number) => {
   if (offerId === 0) {
     return best;
   } else {
@@ -1056,7 +977,7 @@ const getNext = ({ offers, best }: semibook, offerId: number) => {
 };
 
 /* Turn {bestOffer,offerMap} into an offer array */
-const mapToArray = (best: number, offers: Map<number, Offer>) => {
+const mapToArray = (best: number, offers: Map<number, Market.Offer>) => {
   const ary = [];
 
   if (best !== 0) {
@@ -1068,3 +989,102 @@ const mapToArray = (best: number, offers: Map<number, Offer>) => {
   }
   return ary;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace Market {
+  export type MgvReader = typechain.MgvReader;
+  export type OrderResult = { got: Big; gave: Big };
+  export type bookSubscriptionEvent =
+    | ({ name: "OfferWrite" } & MgvTypes.OfferWriteEvent)
+    | ({ name: "OfferFail" } & MgvTypes.OfferFailEvent)
+    | ({ name: "OfferSuccess" } & MgvTypes.OfferSuccessEvent)
+    | ({ name: "OfferRetract" } & MgvTypes.OfferRetractEvent)
+    | ({ name: "SetGasbase" } & MgvTypes.SetGasbaseEvent);
+
+  export type BookOptions = {
+    fromId?: number;
+    maxOffers?: number;
+    chunkSize?: number;
+    blockNumber?: number;
+  };
+
+  export type Offer = {
+    id: number;
+    prev: number;
+    next: number;
+    gasprice: number;
+    maker: string;
+    gasreq: number;
+    overhead_gasbase: number;
+    offer_gasbase: number;
+    wants: Big;
+    gives: Big;
+    volume: Big;
+    price: Big;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  export namespace BookReturns {
+    type _bookReturns = Awaited<
+      ReturnType<Market.MgvReader["functions"]["offerList"]>
+    >;
+    export type indices = _bookReturns[1];
+    export type offers = _bookReturns[2];
+    export type details = _bookReturns[3];
+  }
+
+  export type offerList = { offers: Map<number, Offer>; best: number };
+
+  export type semibook = offerList & {
+    ba: "bids" | "asks";
+    gasbase: { offer_gasbase: number; overhead_gasbase: number };
+  };
+
+  export type OfferData = {
+    id: number | BigNumber;
+    prev: number | BigNumber;
+    next: number | BigNumber;
+    gasprice: number | BigNumber;
+    maker: string;
+    gasreq: number | BigNumber;
+    overhead_gasbase: number | BigNumber;
+    offer_gasbase: number | BigNumber;
+    wants: BigNumber;
+    gives: BigNumber;
+  };
+
+  export type bookSubscriptionCbArgument = {
+    ba: "asks" | "bids";
+    offer: Offer;
+  } & (
+    | { type: "OfferWrite" }
+    | {
+        type: "OfferFail";
+        taker: string;
+        takerWants: Big;
+        takerGives: Big;
+        mgvData: string;
+      }
+    | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
+    | { type: "OfferRetract" }
+  );
+
+  export type marketCallback<T> = (
+    cbArg: bookSubscriptionCbArgument,
+    event?: bookSubscriptionEvent,
+    ethersEvent?: ethers.Event
+  ) => T;
+  export type storableMarketCallback = marketCallback<any>;
+  export type marketFilter = marketCallback<boolean>;
+  export type subscriptionParam =
+    | { type: "multiple" }
+    | {
+        type: "once";
+        ok: (...a: any[]) => any;
+        ko: (...a: any[]) => any;
+        filter?: (...a: any[]) => boolean;
+      };
+
+  export type MarketBook = { asks: Offer[]; bids: Offer[] };
+}
+
+export default Market;

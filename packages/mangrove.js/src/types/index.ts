@@ -19,9 +19,6 @@ export type { Signer, Provider };
 import * as Typechain from "./typechain";
 export { Typechain };
 
-import type * as Market from "../market";
-export { Market };
-
 import type * as Eth from "../eth";
 export { Eth };
 

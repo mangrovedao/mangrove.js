@@ -9,7 +9,7 @@ import * as eth from "./eth";
 import { decimals } from "./constants";
 
 import { Mangrove } from "./mangrove";
-import { Market } from "./market";
+import Market from "./market";
 import { SimpleMaker } from "./maker";
 import { MgvToken } from "./mgvtoken";
 

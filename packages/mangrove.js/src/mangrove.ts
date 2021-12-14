@@ -1,6 +1,6 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
-import { Market } from "./market";
+import Market from "./market";
 import { SimpleMaker } from "./maker";
 import * as Types from "./types";
 import { Bigish } from "./types";
@@ -150,7 +150,7 @@ export class Mangrove {
   async market(params: {
     base: string;
     quote: string;
-    bookOptions?: Types.Market.BookOptions;
+    bookOptions?: Market.BookOptions;
   }): Promise<Market> {
     return await Market.connect({ ...params, mgv: this });
   }
