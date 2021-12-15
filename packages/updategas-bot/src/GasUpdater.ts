@@ -1,5 +1,5 @@
 import { logger } from "./util/logger";
-import Mangrove from "@giry/mangrove.js";
+import Mangrove from "@mangrovedao/mangrove.js";
 import Big from "big.js";
 import get from "axios";
 Big.DP = 20; // precision when dividing

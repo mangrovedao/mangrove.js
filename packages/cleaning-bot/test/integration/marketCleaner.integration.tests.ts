@@ -9,8 +9,8 @@ chai.use(chaiAsPromised);
 
 import { sleep } from "@giry/commonlib-js";
 
-import { Mangrove, Market } from "@giry/mangrove.js";
-import * as mgvTestUtil from "@giry/mangrove.js/test/util/mgvIntegrationTestUtil";
+import { Mangrove, Market } from "@mangrovedao/mangrove.js";
+import * as mgvTestUtil from "@mangrovedao/mangrove.js/test/util/mgvIntegrationTestUtil";
 
 import { ethers } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";

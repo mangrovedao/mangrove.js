@@ -1,5 +1,5 @@
 import { logger } from "./util/logger";
-import Mangrove from "@giry/mangrove.js";
+import Mangrove from "@mangrovedao/mangrove.js";
 
 // TODO: Change and rename this class to match your needs.
 
