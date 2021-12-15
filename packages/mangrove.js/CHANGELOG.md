@@ -1,4 +1,4 @@
-# Current
+# 0.0.5 (December 2021)
 
 - Add `bookOptions` to SimpleMaker constructor.
 - Allow initializing markets&makers after construction.
