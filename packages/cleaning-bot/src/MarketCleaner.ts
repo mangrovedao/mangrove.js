@@ -1,8 +1,8 @@
 import { logger } from "./util/logger";
-import { Market } from "@giry/mangrove.js/dist/nodejs/market";
+import Market from "@giry/mangrove.js/dist/nodejs/market";
 import * as Types from "@giry/mangrove.js/dist/nodejs/types";
-type Offer = Types.Market.Offer;
-import { MgvToken } from "@giry/mangrove.js/dist/nodejs/mgvtoken";
+type Offer = Market.Offer;
+import MgvToken from "@giry/mangrove.js/dist/nodejs/mgvtoken";
 import { Provider } from "@ethersproject/providers";
 import { BigNumber, BigNumberish } from "ethers";
 
