@@ -1,10 +1,10 @@
 import * as ethers from "ethers";
-import { Mangrove } from "./mangrove";
+import Mangrove from "./mangrove";
 import { Bigish } from "./types";
 import * as typechain from "./types/typechain";
 import Big from "big.js";
 
-export class MgvToken {
+class MgvToken {
   mgv: Mangrove;
   name: string;
   address: string;
@@ -78,16 +78,22 @@ export class MgvToken {
   /**
    * Set approval for Mangrove on `amount`.
    */
-  async approveMgv(amount: Bigish): Promise<ethers.ContractTransaction> {
-    return this.approve(await this.mgv._address, amount);
+  approveMangrove(amountOPT?: Bigish): Promise<ethers.ContractTransaction> {
+    return this.approve(this.mgv._address, amountOPT);
   }
   /**
    * Set approval for `spender` on `amount`.
    */
   approve(
     spender: string,
-    amount: Bigish
+    amount?: Bigish
   ): Promise<ethers.ContractTransaction> {
-    return this.contract.approve(spender, this.toUnits(amount));
+    const _amount =
+      typeof amount === "undefined"
+        ? ethers.constants.MaxUint256
+        : this.toUnits(amount);
+    return this.contract.approve(spender, _amount);
   }
 }
+
+export default MgvToken;

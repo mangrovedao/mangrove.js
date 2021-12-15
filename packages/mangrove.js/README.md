@@ -6,40 +6,51 @@ This SDK is in **open beta**, and is constantly under development. **USE AT YOUR
 
 ## Install / Import
 
-Web Browser
-
-- TODO Push to npm once ready
+### Web Browser
 
 ```html
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/..."></script>
+<script
+  type="text/javascript"
+  src="https://cdn.jsdelivr.net/npm/@giry/mangrove.js"
+></script>
 
 <script type="text/javascript">
-  window.Mangrove; // or `Mangrove`
+  Mangrove.(...)
 </script>
 ```
 
-Node.js
+### Node.js
 
 ```
-npm install ...
+npm install @giry/mangrove.js
 ```
 
 ```js
-const { Mangrove } = require("...");
-
-// or, when using ES6
-
-import { Mangrove } from "...";
+const { Mangrove } = require("..."); // cjs
+import { Mangrove } from "..."; // or using ES6
 ```
 
-## Usage
+## Basic taker usage
 
 ```js
+// using a .env to store constants
+const dotenv = require("dotenv");
+dotenv.config();
+
 const main = async () => {
-  const mgv = await Mangrove.connect("maticmum"); // Mumbai testnet
+  // use alchemy or infura to connect to the mumbai testnet
+  const mgv = await Mangrove.connect({
+    provider: process.env.NODE_URL,
+    privateKey: process.env.SK,
+  });
 
   // Connect to ETHUSDC market
   const market = mgv.market({ base: "ETH", quote: "USDC" });
+
+  // Check allowance
+  const allowance = await market.base.allowance(); // by default returns Mangrove allowance for current signer address
+  // Set max allowance
+  await market.quote.approveMangrove("WETH");
 
   // Buy ETH with USDC
   market.buy({ volume: 2.1, price: 3700 });
@@ -62,10 +73,9 @@ const main = async () => {
   */
 
   // Subscribe to orderbook
-  market.subscribe((event, utils) => {
+  market.subscribe((event) => {
     /* `event` is an offer write, failure, success, or cancel */
-    console.log(utils.book());
-    /* Prints the updated book, same format as `market.book()` */
+    console.log(market.book());
   });
 };
 
@@ -74,18 +84,19 @@ main().catch(console.error);
 
 ## Using as a maker
 
-For now the only available maker is SimpleMaker. This maker has its own provisions and no internal logic. You can amplify your liquidity by posting more offers than your available liquidity.
+// For now the only available maker is Maker. This maker has its own provisions and no internal 
+// logic. You can amplify your liquidity by posting more offers than your available liquidity.
 
 ```js
-const { Mangrove, SimpleMaker } = require("mangrove.js");
+const { Mangrove, Maker } = require("mangrove.js");
 const mgv = await Mangrove.connect("maticmum"); // Mumbai testnet
 
 // deploy a new maker
-const mkr_address = await SimpleMaker.deploy(mgv);
+const mkr_address = await Maker.deploy(mgv);
 
-// SimpleMaker contracts are token-agnostic, but you must instantiate the js object
+// Maker contracts are token-agnostic, but you must instantiate the js object
 // focused on a specific base/quote pair.
-const mkr = await mgv.simpleMakerConnect({
+const mkr = await mgv.MakerConnect({
   address: mkr_address,
   base: "WETH",
   quote: "USDC",

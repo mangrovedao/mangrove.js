@@ -1,9 +1,9 @@
 import { logger } from "./util/logger";
 import { sleep } from "@giry/commonlib-js";
-import { Market } from "@mangrovedao/mangrove.js/dist/nodejs/market";
+import Market from "@mangrovedao/mangrove.js/dist/nodejs/market";
 import * as Types from "@mangrovedao/mangrove.js/dist/nodejs/types";
-type Offer = Types.Market.Offer;
-import { MgvToken } from "@mangrovedao/mangrove.js/dist/nodejs/mgvtoken";
+type Offer = Market.Offer;
+import MgvToken from "@mangrovedao/mangrove.js/dist/nodejs/mgvtoken";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
