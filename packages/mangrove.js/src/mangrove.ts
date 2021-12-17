@@ -293,14 +293,6 @@ class Mangrove {
     };
   }
 
-  /**
-   *
-   */
-  prettyPrint(book: Market.MarketBook): void {
-    console.table(book.asks, ["maker", "gives", "volume", "price"]);
-    console.table(book.bids, ["maker", "wants", "volume", "price"]);
-  }
-
   /* Static */
   /********** */
 

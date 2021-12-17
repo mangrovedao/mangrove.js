@@ -652,6 +652,70 @@ class Market {
     return [offerIds, offers, details];
   }
 
+  /**Pretty prints the current state of the order book of the market */
+  async consoleAsks(
+    filter?: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "overhead_gasbase"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    let column = [];
+    column = filter ? filter : ["id", "maker", "volume", "price"];
+    await this.prettyPrint("asks", column);
+  }
+  async consoleBids(
+    filter?: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "overhead_gasbase"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    let column = [];
+    column = filter ? filter : ["id", "maker", "volume", "price"];
+    await this.prettyPrint("bids", column);
+  }
+
+  async prettyPrint(
+    ba: "bids" | "asks",
+    filter: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "overhead_gasbase"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    const book = await this.requestBook();
+    const offers = ba === "bids" ? book.bids : book.asks;
+    console.table(offers, filter);
+  }
+
   /**
    * Return current book state of the form
    * @example
