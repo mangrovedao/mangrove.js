@@ -135,18 +135,29 @@ namespace Market {
  * `await Market.connect(...)`
  */
 class Market {
+  /** The Mangrove instance to which the market is connected. */
   mgv: Mangrove;
+  /** The base token of this market. */
   base: MgvToken;
+  /** The quote token of this market. */
   quote: MgvToken;
   #subscriptions: Map<Market.storableMarketCallback, Market.subscriptionParam>;
   #lowLevelCallbacks: null | { asksCallback?: any; bidsCallback?: any };
   #book: Market.MarketBook;
   #initClosure?: () => Promise<void>;
 
+  /**
+   * Create a new `base`/`quote` market on on the given mangrove instance.
+   * You can add `bookOptions` to specify how the market should fetch OB information.
+   * To connect without initializing the book state and subscribing to updates, add `noInit:true`.
+   *
+   * **This should be used instead of the Market class constructor**
+   */
   static async connect(params: {
     mgv: Mangrove;
     base: string;
     quote: string;
+    noInit?: boolean;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
     canConstructMarket = true;
@@ -163,7 +174,19 @@ class Market {
     return market;
   }
 
+  /** If you created a market without initializing it, you can do that later by calling `initialize`. */
+  initialize(): Promise<void> {
+    if (typeof this.#initClosure === "undefined") {
+      throw new Error("Cannot initialize already initialized market.");
+    } else {
+      const initClosure = this.#initClosure;
+      this.#initClosure = undefined;
+      return initClosure();
+    }
+  }
+
   /**
+   * @internal
    * Initialize a new `params.base`:`params.quote` market.
    *
    * `params.mgv` will be used as mangrove instance
@@ -184,122 +207,72 @@ class Market {
     this.#book = { asks: [], bids: [] };
   }
 
-  /* Given a price, find the id of the immediately-better offer in the
-     book. */
-  getPivot(ba: "asks" | "bids", price: Bigish): number {
-    // we select as pivot the immediately-better offer
-    // the actual ordering in the offer list is lexicographic
-    // price * gasreq (or price^{-1} * gasreq)
-    // we ignore the gasreq comparison because we may not
-    // know the gasreq (could be picked by offer contract)
-    price = Big(price);
-    const comparison = ba === "asks" ? "gt" : "lt";
-    let latest_id = 0;
-    for (const [i, offer] of this.#book[ba].entries()) {
-      if (offer.price[comparison](price)) {
-        break;
-      }
-      latest_id = offer.id;
-      if (i === this.#book[ba].length) {
-        throw new Error(
-          "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
-        );
-      }
-    }
-    return latest_id;
+  /**
+   * Market buy order. Will attempt to buy base token using quote tokens.
+   * Params can be of the form:
+   * - `{volume,price}`: buy `wants` tokens for a max average price of `price`, or
+   * - `{wants,gives}`: accept implicit max average price of `gives/wants`
+   *
+   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
+   *
+   * Will stop if
+   * - book is empty, or
+   * - price no longer good, or
+   * - `wants` tokens have been bought.
+   *
+   * @example
+   * ```
+   * const market = await mgv.market({base:"USDC",quote:"DAI"}
+   * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
+   * ```
+   */
+  buy(params: TradeParams): Promise<Market.OrderResult> {
+    const _wants = "price" in params ? Big(params.volume) : Big(params.wants);
+    let _gives =
+      "price" in params ? _wants.mul(params.price) : Big(params.gives);
+
+    const slippage = validateSlippage(params.slippage);
+
+    _gives = _gives.mul(100 + slippage).div(100);
+
+    const wants = this.base.toUnits(_wants);
+    const gives = this.quote.toUnits(_gives);
+
+    return this.#marketOrder({ gives, wants, orderType: "buy" });
   }
 
-  async isActive(): Promise<boolean> {
-    const config = await this.config();
-    return config.asks.active && config.bids.active;
-  }
+  /**
+   * Market sell order. Will attempt to sell base token for quote tokens.
+   * Params can be of the form:
+   * - `{volume,price}`: sell `gives` tokens for a min average of `price`
+   * - `{wants,gives}`: accept implicit min average price of `gives/wants`.
+   *
+   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
+   *
+   * Will stop if
+   * - book is empty, or
+   * - price no longer good, or
+   * -`gives` tokens have been sold.
+   *
+   * @example
+   * ```
+   * const market = await mgv.market({base:"USDC",quote:"DAI"}
+   * market.sell({volume: 100, price: 1})
+   * ```
+   */
+  sell(params: TradeParams): Promise<Market.OrderResult> {
+    const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
+    let _wants =
+      "price" in params ? _gives.mul(params.price) : Big(params.wants);
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
-  getOutboundInbound(ba: "bids" | "asks"): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
-  } {
-    return {
-      outbound_tkn: ba === "asks" ? this.base : this.quote,
-      inbound_tkn: ba === "asks" ? this.quote : this.base,
-    };
-  }
+    const slippage = validateSlippage(params.slippage);
 
-  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
-  getBaseQuoteVolumes(
-    ba: "asks" | "bids",
-    gives: Big,
-    wants: Big
-  ): { baseVolume: Big; quoteVolume: Big } {
-    return {
-      baseVolume: ba === "asks" ? gives : wants,
-      quoteVolume: ba === "asks" ? wants : gives,
-    };
-  }
+    _wants = _wants.mul(100 - slippage).div(100);
 
-  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
-  getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
-    const { baseVolume, quoteVolume } = this.getBaseQuoteVolumes(
-      ba,
-      gives,
-      wants
-    );
-    return quoteVolume.div(baseVolume);
-  }
+    const gives = this.base.toUnits(_gives);
+    const wants = this.quote.toUnits(_wants);
 
-  /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
-  getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
-    return ba === "asks" ? gives.mul(price) : gives.div(price);
-  }
-
-  /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
-  getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
-    return ba === "asks" ? wants.div(price) : wants.mul(price);
-  }
-
-  /* Stop calling a user-provided function on book-related events. */
-  unsubscribe(cb: Market.storableMarketCallback): void {
-    this.#subscriptions.delete(cb);
-  }
-
-  /* Stop listening to events from mangrove */
-  disconnect(): void {
-    const { asksFilter, bidsFilter } = this.#bookFilter();
-    if (!this.#lowLevelCallbacks) return;
-    const { asksCallback, bidsCallback } = this.#lowLevelCallbacks;
-    this.mgv.contract.off(asksFilter, asksCallback);
-    this.mgv.contract.off(bidsFilter, bidsCallback);
-  }
-
-  /* eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types */
-  #bookFilter() {
-    /* Disjunction of possible event names */
-    const topics0 = [
-      "OfferSuccess",
-      "OfferFail",
-      "OfferWrite",
-      "OfferRetract",
-      "SetGasbase",
-    ].map((e) =>
-      this.mgv.contract.interface.getEventTopic(
-        this.mgv.contract.interface.getEvent(e as any)
-      )
-    );
-
-    const base_padded = ethers.utils.hexZeroPad(this.base.address, 32);
-    const quote_padded = ethers.utils.hexZeroPad(this.quote.address, 32);
-
-    const asksFilter = {
-      address: this.mgv._address,
-      topics: [topics0, base_padded, quote_padded],
-    };
-
-    const bidsFilter = {
-      address: this.mgv._address,
-      topics: [topics0, quote_padded, base_padded],
-    };
-
-    return { asksFilter, bidsFilter };
+    return this.#marketOrder({ wants, gives, orderType: "sell" });
   }
 
   /**
@@ -346,6 +319,10 @@ class Market {
 
   /**
    *  Returns a promise which is fulfilled after execution of the callback.
+   *  The market will run `filter` on every incoming event and only execute `cb`
+   *  once the filter returns true.
+   *
+   *  You can unsubscribe from a `once` as you would from a normal subscription using `unsubscribe`.
    */
   async once<T>(
     cb: Market.marketCallback<T>,
@@ -360,14 +337,183 @@ class Market {
     });
   }
 
-  initialize(): Promise<void> {
-    if (typeof this.#initClosure === "undefined") {
-      throw new Error("Cannot initialize already initialized market.");
-    } else {
-      const initClosure = this.#initClosure;
-      this.#initClosure = undefined;
-      return initClosure();
+  /** Stop calling a user-provided function on book-related events. */
+  unsubscribe(cb: Market.storableMarketCallback): void {
+    this.#subscriptions.delete(cb);
+  }
+
+  /** Stop listening to events from mangrove */
+  disconnect(): void {
+    const { asksFilter, bidsFilter } = this.#bookFilter();
+    if (!this.#lowLevelCallbacks) return;
+    const { asksCallback, bidsCallback } = this.#lowLevelCallbacks;
+    this.mgv.contract.off(asksFilter, asksCallback);
+    this.mgv.contract.off(bidsFilter, bidsCallback);
+  }
+
+  /** Given a price, find the id of the immediately-better (aka 'prev') offer in the
+     book. */
+  getPivot(ba: "asks" | "bids", price: Bigish): number {
+    // we select as pivot the immediately-better offer
+    // the actual ordering in the offer list is lexicographic
+    // price * gasreq (or price^{-1} * gasreq)
+    // we ignore the gasreq comparison because we may not
+    // know the gasreq (could be picked by offer contract)
+    price = Big(price);
+    const comparison = ba === "asks" ? "gt" : "lt";
+    let latest_id = 0;
+    for (const [i, offer] of this.#book[ba].entries()) {
+      if (offer.price[comparison](price)) {
+        break;
+      }
+      latest_id = offer.id;
+      if (i === this.#book[ba].length) {
+        throw new Error(
+          "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
+        );
+      }
     }
+    return latest_id;
+  }
+
+  /** Returns true iff both the asks and bids offer lists are active. */
+  async isActive(): Promise<boolean> {
+    const config = await this.config();
+    return config.asks.active && config.bids.active;
+  }
+
+  /** Estimate the maximum gas consumed using the density parameter. TODO add offer_gasbase? depends if density takes it into account. */
+  async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
+    const rawConfig = await this.rawConfig();
+    const ba = bs === "buy" ? "asks" : "bids";
+    const estimation = rawConfig[ba].local.overhead_gasbase.add(
+      volume.div(rawConfig[ba].local.density)
+    );
+    if (estimation.gt(MAX_MARKET_ORDER_GAS)) {
+      return BigNumber.from(MAX_MARKET_ORDER_GAS);
+    } else {
+      return estimation;
+    }
+  }
+
+  /**
+   * Volume estimator, very crude (based on cached book).
+   *
+   * if you say `estimateVolume({given:100,what:"base",to:"buy"})`,
+   *
+   * it will give you an estimate of how much quote token you would have to
+   * spend to get 100 base tokens.
+   *
+   * if you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
+   *
+   * it will given you an estimate of how much base tokens you'd have to buy in
+   * order to spend 10 quote tokens.
+   * */
+  estimateVolume(params: {
+    given: Bigish;
+    what: "base" | "quote";
+    to: "buy" | "sell";
+  }): { estimatedVolume: Big; givenResidue: Big } {
+    const dict = {
+      base: {
+        buy: { offers: "asks", drainer: "gives", filler: "wants" },
+        sell: { offers: "bids", drainer: "wants", filler: "gives" },
+      },
+      quote: {
+        buy: { offers: "bids", drainer: "gives", filler: "wants" },
+        sell: { offers: "asks", drainer: "wants", filler: "gives" },
+      },
+    } as const;
+
+    const data = dict[params.what][params.to];
+
+    const offers = this.book()[data.offers];
+    let draining = Big(params.given);
+    let filling = Big(0);
+    for (const o of offers) {
+      const _drainer = o[data.drainer];
+      const drainer = draining.gt(_drainer) ? _drainer : draining;
+      const filler = o[data.filler].times(drainer).div(_drainer);
+      draining = draining.minus(drainer);
+      filling = filling.plus(filler);
+      if (draining.eq(0)) break;
+    }
+    return { estimatedVolume: filling, givenResidue: draining };
+  }
+
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  getOutboundInbound(ba: "bids" | "asks"): {
+    outbound_tkn: MgvToken;
+    inbound_tkn: MgvToken;
+  } {
+    return {
+      outbound_tkn: ba === "asks" ? this.base : this.quote,
+      inbound_tkn: ba === "asks" ? this.quote : this.base,
+    };
+  }
+
+  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
+  getBaseQuoteVolumes(
+    ba: "asks" | "bids",
+    gives: Big,
+    wants: Big
+  ): { baseVolume: Big; quoteVolume: Big } {
+    return {
+      baseVolume: ba === "asks" ? gives : wants,
+      quoteVolume: ba === "asks" ? wants : gives,
+    };
+  }
+
+  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
+  getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
+    const { baseVolume, quoteVolume } = this.getBaseQuoteVolumes(
+      ba,
+      gives,
+      wants
+    );
+    return quoteVolume.div(baseVolume);
+  }
+
+  /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
+  getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
+    return ba === "asks" ? gives.mul(price) : gives.div(price);
+  }
+
+  /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
+  getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
+    return ba === "asks" ? wants.div(price) : wants.mul(price);
+  }
+
+  /** Return ethers.js filters for all relevant mangrove events on the current book. */
+  /* eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types */
+  #bookFilter() {
+    /* Disjunction of possible event names */
+    const topics0 = [
+      "OfferSuccess",
+      "OfferFail",
+      "OfferWrite",
+      "OfferRetract",
+      "SetGasbase",
+    ].map((e) =>
+      this.mgv.contract.interface.getEventTopic(
+        this.mgv.contract.interface.getEvent(e as any)
+      )
+    );
+
+    const base_padded = ethers.utils.hexZeroPad(this.base.address, 32);
+    const quote_padded = ethers.utils.hexZeroPad(this.quote.address, 32);
+
+    const asksFilter = {
+      address: this.mgv._address,
+      topics: [topics0, base_padded, quote_padded],
+    };
+
+    const bidsFilter = {
+      address: this.mgv._address,
+      topics: [topics0, quote_padded, base_padded],
+    };
+
+    return { asksFilter, bidsFilter };
   }
 
   async #initialize(
@@ -441,34 +587,6 @@ class Market {
       last: cfg.local.last.toNumber(),
     };
   }
-
-  /**
-   * Return config local to a market.
-   * Returned object is of the form
-   * {bids,asks} where bids and asks are of type `localConfig`
-   * Notes:
-   * Amounts are converted to plain numbers.
-   * density is converted to public token units per gas used
-   * fee *remains* in basis points of the token being bought
-   */
-  async rawConfig(): Promise<{
-    asks: Mangrove.rawConfig;
-    bids: Mangrove.rawConfig;
-  }> {
-    const rawAskConfig = await this.mgv.readerContract.config(
-      this.base.address,
-      this.quote.address
-    );
-    const rawBidsConfig = await this.mgv.readerContract.config(
-      this.quote.address,
-      this.base.address
-    );
-    return {
-      asks: rawAskConfig,
-      bids: rawBidsConfig,
-    };
-  }
-
   async config(): Promise<{
     asks: Mangrove.localConfig;
     bids: Mangrove.localConfig;
@@ -479,75 +597,6 @@ class Market {
       bids: this.#mapConfig("bids", bids),
     };
   }
-
-  /**
-   * Market buy order. Will attempt to buy base token using quote tokens.
-   * Params can be of the form:
-   * - `{volume,price}`: buy `wants` tokens for a max average price of `price`, or
-   * - `{wants,gives}`: accept implicit max average price of `gives/wants`
-   *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
-   *
-   * Will stop if
-   * - book is empty, or
-   * - price no longer good, or
-   * - `wants` tokens have been bought.
-   *
-   * @example
-   * ```
-   * const market = await mgv.market({base:"USDC",quote:"DAI"}
-   * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
-   * ```
-   */
-  buy(params: TradeParams): Promise<Market.OrderResult> {
-    const _wants = "price" in params ? Big(params.volume) : Big(params.wants);
-    let _gives =
-      "price" in params ? _wants.mul(params.price) : Big(params.gives);
-
-    const slippage = validateSlippage(params.slippage);
-
-    _gives = _gives.mul(100 + slippage).div(100);
-
-    const wants = this.base.toUnits(_wants);
-    const gives = this.quote.toUnits(_gives);
-
-    return this.#marketOrder({ gives, wants, orderType: "buy" });
-  }
-
-  /**
-   * Market sell order. Will attempt to sell base token for quote tokens.
-   * Params can be of the form:
-   * - `{volume,price}`: sell `gives` tokens for a min average of `price`
-   * - `{wants,gives}`: accept implicit min average price of `gives/wants`.
-   *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
-   *
-   * Will stop if
-   * - book is empty, or
-   * - price no longer good, or
-   * -`gives` tokens have been sold.
-   *
-   * @example
-   * ```
-   * const market = await mgv.market({base:"USDC",quote:"DAI"}
-   * market.sell({volume: 100, price: 1})
-   * ```
-   */
-  sell(params: TradeParams): Promise<Market.OrderResult> {
-    const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
-    let _wants =
-      "price" in params ? _gives.mul(params.price) : Big(params.wants);
-
-    const slippage = validateSlippage(params.slippage);
-
-    _wants = _wants.mul(100 - slippage).div(100);
-
-    const gives = this.base.toUnits(_gives);
-    const wants = this.quote.toUnits(_wants);
-
-    return this.#marketOrder({ wants, gives, orderType: "sell" });
-  }
-
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
@@ -605,7 +654,7 @@ class Market {
     };
   }
 
-  /* Provides the book with raw BigNumber values */
+  /** Provides the book with raw BigNumber values */
   async rawBook(
     ba: "asks" | "bids",
     opts: Market.BookOptions = bookOptsDefault
@@ -677,18 +726,19 @@ class Market {
     return this.#book;
   }
 
+  /** Request the current OB state (might be useful bypass local cache issues during e.g. testing) */
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
   ): Promise<Market.MarketBook> {
     const rawAsks = await this.rawBook("asks", opts);
     const rawBids = await this.rawBook("bids", opts);
     return {
-      asks: this.rawToArray("asks", ...rawAsks),
-      bids: this.rawToArray("bids", ...rawBids),
+      asks: this.#rawToArray("asks", ...rawAsks),
+      bids: this.#rawToArray("bids", ...rawBids),
     };
   }
 
-  rawToMap(
+  #rawToMap(
     ba: "bids" | "asks",
     ids: Market.BookReturns.indices,
     offers: Market.BookReturns.offers,
@@ -725,7 +775,7 @@ class Market {
    * * if mapping bids, volume is token being sold by taker
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  rawToArray(
+  #rawToArray(
     ba: "bids" | "asks",
     ids: Market.BookReturns.indices,
     offers: Market.BookReturns.offers,
@@ -772,7 +822,7 @@ class Market {
     };
   }
 
-  defaultCallback(
+  #defaultCallback(
     cbArg: Market.bookSubscriptionCbArgument,
     semibook: Market.semibook,
     event: Market.bookSubscriptionEvent,
@@ -819,7 +869,7 @@ class Market {
         overhead_gasbase: localConfig.overhead_gasbase,
         offer_gasbase: localConfig.offer_gasbase,
       },
-      ...this.rawToMap(ba, ...rawOffers),
+      ...this.#rawToMap(ba, ...rawOffers),
     };
 
     this.#updateBook(semibook);
@@ -882,7 +932,7 @@ class Market {
 
         insertOffer(semibook, event.args.id.toNumber(), offer);
 
-        this.defaultCallback(
+        this.#defaultCallback(
           {
             type: event.name,
             offer: offer,
@@ -898,7 +948,7 @@ class Market {
         removedOffer = removeOffer(semibook, event.args.id.toNumber());
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
-          this.defaultCallback(
+          this.#defaultCallback(
             {
               type: event.name,
               ba: semibook.ba,
@@ -918,7 +968,7 @@ class Market {
       case "OfferSuccess":
         removedOffer = removeOffer(semibook, event.args.id.toNumber());
         if (removedOffer) {
-          this.defaultCallback(
+          this.#defaultCallback(
             {
               type: event.name,
               ba: semibook.ba,
@@ -938,7 +988,7 @@ class Market {
         removedOffer = removeOffer(semibook, event.args.id.toNumber());
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
-          this.defaultCallback(
+          this.#defaultCallback(
             {
               type: event.name,
               ba: semibook.ba,
@@ -961,62 +1011,31 @@ class Market {
     }
   }
 
-  async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
-    const rawConfig = await this.rawConfig();
-    const ba = bs === "buy" ? "asks" : "bids";
-    const estimation = rawConfig[ba].local.overhead_gasbase.add(
-      volume.div(rawConfig[ba].local.density)
-    );
-    if (estimation.gt(MAX_MARKET_ORDER_GAS)) {
-      return BigNumber.from(MAX_MARKET_ORDER_GAS);
-    } else {
-      return estimation;
-    }
-  }
-
   /**
-   * Volume estimator, very crude (based on cached book).
-   *
-   * if you say `estimateVolume({given:100,what:"base",to:"buy"})`,
-   *
-   * it will give you an estimate of how much quote token you would have to
-   * spend to get 100 base tokens.
-   *
-   * if you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
-   *
-   * it will given you an estimate of how much base tokens you'd have to buy in
-   * order to spend 10 quote tokens.
-   * */
-  estimateVolume(params: {
-    given: Bigish;
-    what: "base" | "quote";
-    to: "buy" | "sell";
-  }): { estimatedVolume: Big; givenResidue: Big } {
-    const dict = {
-      base: {
-        buy: { offers: "asks", drainer: "gives", filler: "wants" },
-        sell: { offers: "bids", drainer: "wants", filler: "gives" },
-      },
-      quote: {
-        buy: { offers: "bids", drainer: "gives", filler: "wants" },
-        sell: { offers: "asks", drainer: "wants", filler: "gives" },
-      },
-    } as const;
-
-    const data = dict[params.what][params.to];
-
-    const offers = this.book()[data.offers];
-    let draining = Big(params.given);
-    let filling = Big(0);
-    for (const o of offers) {
-      const _drainer = o[data.drainer];
-      const drainer = draining.gt(_drainer) ? _drainer : draining;
-      const filler = o[data.filler].times(drainer).div(_drainer);
-      draining = draining.minus(drainer);
-      filling = filling.plus(filler);
-      if (draining.eq(0)) break;
-    }
-    return { estimatedVolume: filling, givenResidue: draining };
+   * Return config local to a market.
+   * Returned object is of the form
+   * {bids,asks} where bids and asks are of type `localConfig`
+   * Notes:
+   * Amounts are converted to plain numbers.
+   * density is converted to public token units per gas used
+   * fee *remains* in basis points of the token being bought
+   */
+  async rawConfig(): Promise<{
+    asks: Mangrove.rawConfig;
+    bids: Mangrove.rawConfig;
+  }> {
+    const rawAskConfig = await this.mgv.readerContract.config(
+      this.base.address,
+      this.quote.address
+    );
+    const rawBidsConfig = await this.mgv.readerContract.config(
+      this.quote.address,
+      this.base.address
+    );
+    return {
+      asks: rawAskConfig,
+      bids: rawBidsConfig,
+    };
   }
 }
 

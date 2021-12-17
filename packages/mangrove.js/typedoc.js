@@ -3,4 +3,5 @@ module.exports = {
   out: "docs",
   excludePrivate: true,
   excludeInternal: true,
+  sort: "source-order",
 };
