@@ -8,6 +8,8 @@ Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate 
 # Documentation
 If you are looking for the Mangrove developer documentation, you can find it [here](https://docs.mangrove.exchange).
 
+You can also generate [typedoc](https://typedoc.org/) for this package by running `yarn run doc` after installation. Then open `docs/index.html`.
+
 
 # Prerequisites
 You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Yarn 2 workspaces](https://yarnpkg.com/features/workspaces) to manage dependencies and run commands on multiple packages. You must also have [Node.js](https://nodejs.org/en/) 14.14+.
