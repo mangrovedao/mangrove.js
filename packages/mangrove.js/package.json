@@ -24,7 +24,8 @@
     "rollup": "rollup -c rollup.config.ts",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json",
-    "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\""
+    "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
+    "doc": "typedoc src/index.ts"
   },
   "files": [
     "dist/",
@@ -108,6 +109,7 @@
     "ts-essentials": "^8.1.0",
     "ts-node": "^9.1.1",
     "typechain": "^6.0.2",
+    "typedoc": "^0.22.10",
     "typescript": "^4.4.0",
     "yargs": "^17.3.0"
   }

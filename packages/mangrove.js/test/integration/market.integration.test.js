@@ -313,7 +313,6 @@ describe("Market integration tests suite", () => {
     bids = complete(false, bids);
 
     /* Start testing */
-
     const book = await market.requestBook({ maxOffers: 3 });
     mgv.prettyPrint(book);
     // Convert big.js numbers to string for easier debugging
