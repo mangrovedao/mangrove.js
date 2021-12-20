@@ -18,7 +18,7 @@ export interface CreateSignerOptions {
 
 export interface ProviderNetwork {
   id?: number;
-  name?: string;
+  name: string;
 }
 
 /**

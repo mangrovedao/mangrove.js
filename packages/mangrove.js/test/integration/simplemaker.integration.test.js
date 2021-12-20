@@ -4,7 +4,7 @@ const ethers = require("ethers");
 const BigNumber = ethers.BigNumber;
 
 const assert = require("assert");
-const { Mangrove, SimpleMaker } = require("../../src");
+const { Mangrove, Maker } = require("../../src");
 const helpers = require("../util/helpers");
 
 const { Big } = require("big.js");
@@ -32,8 +32,8 @@ describe("SimpleMaker", () => {
       //shorten polling for faster tests
       // @ts-ignore
       mgv._provider.pollingInterval = 250;
-      const mkr_address = await SimpleMaker.deploy(mgv);
-      const mkr = await mgv.simpleMakerConnect({
+      const mkr_address = await Maker.deploy(mgv, "SimpleMaker");
+      const mkr = await mgv.MakerConnect({
         address: mkr_address,
         base: "TokenA",
         quote: "TokenB",
@@ -61,8 +61,8 @@ describe("SimpleMaker", () => {
       tokenA = mgv.token("TokenA");
       tokenB = mgv.token("TokenB");
 
-      const mkr_address = await SimpleMaker.deploy(mgv);
-      mkr = await mgv.simpleMakerConnect({
+      const mkr_address = await Maker.deploy(mgv, "SimpleMaker");
+      mkr = await mgv.MakerConnect({
         address: mkr_address,
         base: "TokenA",
         quote: "TokenB",

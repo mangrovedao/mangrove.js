@@ -1,4 +1,4 @@
-# Current
+# 0.0.5 (December 2021)
 
 - Add `bookOptions` to SimpleMaker constructor.
 - Allow initializing markets&makers after construction.
@@ -6,6 +6,7 @@
   - TODO: allow giving bookOptions later
 - Calling `maker.approveMangrove(token)` with no specified amount will approve the max amount.
 - Add override sto most functions
+- User can add slippage limit to market orders
 
 # 0.0.4 (December 2021)
 

@@ -3,5 +3,9 @@
   "markets": {
     "__name": "MARKETS",
     "__format": "json"
+  },
+  "runEveryXMinutes": {
+    "__name": "RUN_EVERY_X_MINUTES",
+    "__format": "number"
   }
 }

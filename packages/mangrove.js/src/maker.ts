@@ -1,11 +1,10 @@
 import * as ethers from "ethers";
-import { Market } from "./market";
-import * as Types from "./types";
+import Market from "./market";
 // syntactic sugar
 import { Bigish } from "./types";
-import { Typechain as typechain } from "./types";
+import { typechain } from "./types";
 
-import { Mangrove } from "./mangrove";
+import Mangrove from "./mangrove";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
@@ -18,37 +17,39 @@ import Big from "big.js";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
+let canConstruct = false;
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace Maker {
+  export type ConstructionParams = {
+    mgv: Mangrove;
+    address: string;
+    base: string;
+    quote: string;
+    noInit?: boolean;
+    bookOptions?: Market.BookOptions;
+  };
+  /** Connect to MangroveOffer.
+   *  This basic maker contract will relay new/cancel/update
+   *  offer order.
+   */
+  export type offerParams =
+    | { price: Bigish; volume: Bigish }
+    | { wants: Bigish; gives: Bigish };
+}
+
 /**
- * The SimpleMaker class connects to a SimpleMaker contract.
+ * The Maker class connects to a Maker contract.
  * It posts onchain offers.
  *
  * Maker initialization needs to store the network name, so you cannot
- * directly use the constructor. Instead of `new SimpleMaker(...)`, do
+ * directly use the constructor. Instead of `new Maker(...)`, do
  *
- * `await SimpleMaker.connect(...)`
+ * `await Maker.connect(...)`
  */
-// simpleMaker.withdrawDeposit()
-// simpleMaker.deposit(n)
-
-type ConstructionParams = {
-  mgv: Mangrove;
-  address: string;
-  base: string;
-  quote: string;
-  noInit?: boolean;
-  bookOptions?: Types.Market.BookOptions;
-};
-
-let canConstruct = false;
-/** Connect to MangroveOffer.
- *  This basic maker contract will relay new/cancel/update
- *  offer order.
- */
-type offerParams =
-  | { price: Bigish; volume: Bigish }
-  | { wants: Bigish; gives: Bigish };
-
-export class SimpleMaker {
+// Maker.withdrawDeposit()
+// Maker.deposit(n)
+class Maker {
   mgv: Mangrove;
   market: Market;
   contract: typechain.SimpleMaker;
@@ -59,7 +60,7 @@ export class SimpleMaker {
   constructor(mgv: Mangrove, address: string) {
     if (!canConstruct) {
       throw Error(
-        "Simple Maker must be initialized async with SimpleMaker.connect (constructors cannot be async)"
+        "Simple Maker must be initialized async with Maker.connect (constructors cannot be async)"
       );
     }
     this.mgv = mgv;
@@ -73,8 +74,8 @@ export class SimpleMaker {
    * @note Deploys a fresh MangroveOffer contract
    * @returns The new contract address
    */
-  static async deploy(mgv: Mangrove): Promise<string> {
-    const contract = await new typechain.SimpleMaker__factory(
+  static async deploy(mgv: Mangrove, contractName: string): Promise<string> {
+    const contract = await new typechain[`${contractName}__factory`](
       mgv._signer
     ).deploy(mgv._address);
     return contract.address;
@@ -83,9 +84,9 @@ export class SimpleMaker {
   /**
    * @note Connect to existing MangroveOffer
    */
-  static async connect(p: ConstructionParams): Promise<SimpleMaker> {
+  static async connect(p: Maker.ConstructionParams): Promise<Maker> {
     canConstruct = true;
-    const sm = new SimpleMaker(p.mgv, p.address);
+    const sm = new Maker(p.mgv, p.address);
     canConstruct = false;
     if (p["noInit"]) {
       sm.#initClosure = () => {
@@ -100,7 +101,7 @@ export class SimpleMaker {
   /**
    * Initialize a new SimpleMarket specialized for a base/quote.
    */
-  async #initialize(p: ConstructionParams): Promise<void> {
+  async #initialize(p: Maker.ConstructionParams): Promise<void> {
     this.market = await this.mgv.market(p);
     this.gasreq = (await this.contract.OFR_GASREQ()).toNumber(); //this is OK since gasreq ~ 10**6
   }
@@ -202,12 +203,12 @@ export class SimpleMaker {
   }
 
   /** List all of the maker's asks */
-  asks(): Types.Market.Offer[] {
+  asks(): Market.Offer[] {
     return this.market.book().asks.filter((ofr) => ofr.maker === this.address);
   }
 
   /** List all of the maker's bids */
-  bids(): Types.Market.Offer[] {
+  bids(): Market.Offer[] {
     return this.market.book().bids.filter((ofr) => ofr.maker === this.address);
   }
 
@@ -215,7 +216,7 @@ export class SimpleMaker {
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
    *  return {price,wants,gives}
    */
-  normalizeOfferParams(p: { ba: "bids" | "asks" } & offerParams): {
+  normalizeOfferParams(p: { ba: "bids" | "asks" } & Maker.offerParams): {
     price: Big;
     wants: Big;
     gives: Big;
@@ -242,7 +243,7 @@ export class SimpleMaker {
 
   /** Post a new ask */
   newAsk(
-    p: offerParams,
+    p: Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "asks", ...p }, overrides);
@@ -250,14 +251,14 @@ export class SimpleMaker {
 
   /** Post a new bid */
   newBid(
-    p: offerParams,
+    p: Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "bids", ...p }, overrides);
   }
 
   /* Create a new offer, let mangrove decide the gasprice. Return a promise fulfilled when mangrove.js has received the tx and updated itself. The tx returns the new offer id.
-
+ 
     If the tx created more than one offer, the id of the first one to be written is returned.
   
     Note: we do not return a TransactionResponse because it could be possible to :
@@ -269,7 +270,7 @@ export class SimpleMaker {
     To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
   */
   async newOffer(
-    p: { ba: "bids" | "asks" } & offerParams,
+    p: { ba: "bids" | "asks" } & Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     const { wants, gives, price } = this.normalizeOfferParams(p);
@@ -298,7 +299,7 @@ export class SimpleMaker {
   /** Update an existing ask */
   updateAsk(
     id: number,
-    p: offerParams,
+    p: Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "asks", ...p }, overrides);
@@ -307,7 +308,7 @@ export class SimpleMaker {
   /** Update an existing offer */
   updateBid(
     id: number,
-    p: offerParams,
+    p: Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "bids", ...p }, overrides);
@@ -319,7 +320,7 @@ export class SimpleMaker {
      */
   async updateOffer(
     id: number,
-    p: { ba: "bids" | "asks" } & offerParams,
+    p: { ba: "bids" | "asks" } & Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     const offerList = p.ba === "asks" ? this.asks() : this.bids();
@@ -406,3 +407,5 @@ export class SimpleMaker {
     return this.mgv.fromUnits(prov, 18);
   }
 }
+
+export default Maker;

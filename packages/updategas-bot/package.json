@@ -31,7 +31,7 @@
   "dependencies": {
     "@ethersproject/experimental": "^5.5.0",
     "@giry/commonlib-js": "workspace:*",
-    "@giry/mangrove.js": "workspace:*",
+    "@mangrovedao/mangrove.js": "workspace:*",
     "@types/big.js": "^6.1.2",
     "axios": "^0.24.0",
     "big.js": "^6.1.1",

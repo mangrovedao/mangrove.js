@@ -53,7 +53,7 @@ The Root Hooks start an in-process Hardhat chain with Mangrove deployed and add 
 In your integration tests you can access the chain and Mangrove as follows:
 
 ```javascript
-const Mangrove = require("@giry/mangrove.js");
+const Mangrove = require("@mangrovedao/mangrove.js");
 
 describe("Can connect to Mangrove on local chain", () => {
   it("should be able to connect to Mangrove", function () {

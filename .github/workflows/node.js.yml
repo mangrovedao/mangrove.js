@@ -6,18 +6,67 @@ on:
     branches: [ master, feature/**, issue/**, dev-solidity, dev ]
     paths-ignore: 
       - '**.md'
-  pull_request:
+  pull_request_target:
     branches: [ master ]
+    types: [opened, synchronize, reopened, labeled]
     paths-ignore: 
       - '**.md'
 
 env:
   NODE_ENV: test
   working-directory: packages/mangrove-solidity
+  # Ternary-esque expression hack: The first two lines are the condition,
+  # the 3rd line is the value if `true`, the 4th line is the value if `false`.
+  GIT_REF_TO_TEST: >
+                   ${{  (   (   github.event_name != 'pull_request_target'
+                             || github.event.pull_request.head.repo.full_name == github.repository)
+                         && github.ref )
+                      || format('refs/pull/{0}/merge', github.event.number) }}
 
 jobs:
+  # ==== Job: Security guard ====
+  # The security guard job only allows workflows triggered by external PR's to continue
+  # if they are labelled 'safe to test'.
+  security-guard:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Comment external PR's with first time (before being labelled 'external PR')
+      if: >
+          !(   github.event_name != 'pull_request_target'
+            || github.event.pull_request.head.repo.full_name == github.repository
+            || contains(github.event.pull_request.labels.*.name, 'external PR') )
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: >
+              Pull requests from forks must be reviewed before build and tests are run.
+
+              A maintainer will review and add the 'safe to test' label if everything looks good.
+
+    - name: Label external PR's with 'external PR'
+      if: >
+          !(   github.event_name != 'pull_request_target'
+            || github.event.pull_request.head.repo.full_name == github.repository
+            || contains(github.event.pull_request.labels.*.name, 'external PR') )
+      uses: actions-ecosystem/action-add-labels@v1
+      with:
+        labels: external PR
+
+    - name: Fail if workflow triggered by external PR *not* labelled 'safe to test'
+      if: >
+          !(   github.event_name != 'pull_request_target'
+            || github.event.pull_request.head.repo.full_name == github.repository
+            || contains(github.event.pull_request.labels.*.name, 'safe to test') )
+      uses: actions/github-script@v3
+      with:
+        script: core.setFailed('External PR must be marked \'safe to test\' for CI to run')
+  # ==== End job: Security guard ====
+
   # ==== Job: Build and test commonlib.js ====
   commonlib-js:
+    needs: [security-guard]
+
     runs-on: ubuntu-latest
 
     env:
@@ -91,6 +140,8 @@ jobs:
 
   # ==== Job: Build and test Mangrove Core
   mangrove-solidity:
+    needs: [security-guard]
+
     runs-on: ubuntu-latest
 
     defaults:
@@ -188,13 +239,12 @@ jobs:
       with:
         name: mangrove-solidity-out.zip
         path: mangrove-solidity-out.zip
-
   # ==== End job mangrove-solidity ====
 
   # ==== Job: Build Mangrove documentation ====
   mangrove-solidity-doc:
-    needs: mangrove-solidity
-    
+    needs: [security-guard, mangrove-solidity]
+
     runs-on: ubuntu-latest
 
     defaults:
@@ -234,12 +284,11 @@ jobs:
       with:
         name: documentation
         path: ${{env.working-directory}}/doc/
-
   # ==== End job mangrove-solidity-doc ====
 
   # ==== Job: Build and test hardhat-utils ====
   hardhat-utils:
-    needs: mangrove-solidity
+    needs: [security-guard, mangrove-solidity]
 
     runs-on: ubuntu-latest
 
@@ -326,7 +375,7 @@ jobs:
 
   # ==== Job: Build and test mangrove.js ====
   mangrove-js:
-    needs: [mangrove-solidity, hardhat-utils]
+    needs: [security-guard, mangrove-solidity, hardhat-utils]
 
     runs-on: ubuntu-latest
 
@@ -418,12 +467,11 @@ jobs:
       with:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
-
   # ==== End job: mangrove.js ====
         
   # ==== Job: Build and test cleaning-bot ====
   cleaning-bot:
-    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
 
     runs-on: ubuntu-latest
 
@@ -524,12 +572,11 @@ jobs:
         name: Cleaning Bot - Tests                   # Name of the check run which will be created
         path: packages/cleaning-bot/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
-
   # ==== End job: cleaning-bot ====        
 
   # ==== Job: Build and test updategas-bot ====
   updategas-bot:
-    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
 
     runs-on: ubuntu-latest
 
@@ -630,12 +677,11 @@ jobs:
         name: Update Gas Bot - Tests                   # Name of the check run which will be created
         path: packages/updategas-bot/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
-
   # ==== End job: updategas-bot ====
           
   # ==== Job: Build and test obfiller-bot ====
   obfiller-bot:
-    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
 
     runs-on: ubuntu-latest
 
@@ -736,13 +782,11 @@ jobs:
         name: Order Book Filler Bot - Tests                   # Name of the check run which will be created
         path: packages/obfiller-bot/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
-
   # ==== End job: obfiller-bot ====        
-
 
   # ==== Job: Build and test template-bot ====
   template-bot:
-    needs: [commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
 
     runs-on: ubuntu-latest
 
@@ -843,5 +887,4 @@ jobs:
         name: Template Bot - Tests                   # Name of the check run which will be created
         path: packages/template-bot/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
-
   # ==== End job: template-bot ====

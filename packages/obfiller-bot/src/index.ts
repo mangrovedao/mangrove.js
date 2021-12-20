@@ -7,7 +7,7 @@ import config from "./util/config";
 import { ErrorWithData } from "@giry/commonlib-js";
 import { logger } from "./util/logger";
 
-import Mangrove, { MgvToken } from "@giry/mangrove.js";
+import Mangrove, { MgvToken } from "@mangrovedao/mangrove.js";
 
 import { ethers } from "ethers";
 import { WebSocketProvider, Provider } from "@ethersproject/providers";
@@ -98,7 +98,7 @@ async function approveMangroveForToken(
   const allowance = await token.allowance();
   if (allowance.lt(tokenConfig.targetAllowance)) {
     await token
-      .approveMgv(tokenConfig.targetAllowance)
+      .approveMangrove(tokenConfig.targetAllowance)
       .then((tx) => tx.wait())
       .then((txReceipt) => {
         logger.info(`Mangrove successfully approved for token ${token.name}`, {

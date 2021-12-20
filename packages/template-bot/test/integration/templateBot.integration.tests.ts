@@ -7,7 +7,7 @@ import * as chai from "chai";
 const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
-import Mangrove from "@giry/mangrove.js";
+import Mangrove from "@mangrovedao/mangrove.js";
 import { TemplateBot } from "../../src/TemplateBot";
 import * as hre from "hardhat";
 import "hardhat-deploy-ethers/dist/src/type-extensions";
@@ -37,7 +37,7 @@ describe("Bot integration tests", () => {
 
   beforeEach(async function () {
     mgv = await Mangrove.connect({
-      provider: this.test?.parent?.parent?.ctx.provider,
+      //provider: this.test?.parent?.parent?.ctx.provider,
       signer: botSigner,
     });
 

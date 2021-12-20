@@ -11,11 +11,8 @@
     "clean-this-package": "rimraf build cache dist",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
-    "test": "npm-run-all \"test:*\"",
-    "test:solidity": "cross-env NODE_ENV=test NODE_APP_INSTANCE=solidity hardhat test-solidity",
-    "test:ethereum-mainnet": "yarn run testSuites --network ethereum",
-    "test:polygon-mainnet": "yarn run testSuites --network polygon",
-    "testSuites": "cross-env NODE_ENV=test node lib/test-suite-runner.js"
+    "test": "npm run test:solidity",
+    "test:solidity": "cross-env NODE_ENV=test NODE_APP_INSTANCE=solidity hardhat test-solidity"
   },
   "lint-staged": {
     "*.{js,css,md,sol}": "prettier --write --ignore-unknown"

@@ -31,13 +31,14 @@
   "dependencies": {
     "@ethersproject/experimental": "^5.5.0",
     "@giry/commonlib-js": "workspace:*",
-    "@giry/mangrove.js": "workspace:*",
+    "@mangrovedao/mangrove.js": "workspace:*",
     "@types/big.js": "^6.1.2",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
     "ethers": "^5.4.7",
-    "fast-safe-stringify": "^2.1.1"
+    "fast-safe-stringify": "^2.1.1",
+    "toad-scheduler": "^1.6.0"
   },
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
