@@ -26,7 +26,7 @@
         "maxQuantity": 10
       },
       "takerConfig": {
-        "takeRate": 0.005,
+        "takeRate": 0.0275,
         "bidProbability": 0.5,
         "maxQuantity": 1
       }
@@ -41,7 +41,7 @@
         "maxQuantity": 10
       },
       "takerConfig": {
-        "takeRate": 0.005,
+        "takeRate": 0.0275,
         "bidProbability": 0.5,
         "maxQuantity": 1
       }
@@ -56,7 +56,7 @@
         "maxQuantity": 10
       },
       "takerConfig": {
-        "takeRate": 0.005,
+        "takeRate": 0.0275,
         "bidProbability": 0.5,
         "maxQuantity": 1
       }
