@@ -750,6 +750,104 @@
         "type": "address"
       }
     ],
+    "name": "configInfo",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "monitor",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "useOracle",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "notify",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gasprice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "gasmax",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "dead",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct GlobalStruct",
+        "name": "global",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "density",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offer_gasbase",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "lock",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "best",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "last",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct LocalStruct",
+        "name": "local",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "outbound_tkn",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "inbound_tkn",
+        "type": "address"
+      }
+    ],
     "name": "deactivate",
     "outputs": [],
     "stateMutability": "nonpayable",
