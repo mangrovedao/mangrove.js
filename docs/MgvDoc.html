@@ -1155,7 +1155,7 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="left">
         <div class="blockComment"><ul>
 <li><code>wants</code> is the amount of <code>inbound_tkn</code> the offer wants in exchange for <code>gives</code>.
-<em>96 bits wide</em>, so assuming the usual 18 decimals, amounts can only go up t&gt;o
+<em>96 bits wide</em>, so assuming the usual 18 decimals, amounts can only go up to
 10 billions.</li>
 </ul>
 </div>
@@ -1295,7 +1295,7 @@ They have the following fields:</p>
       <div class="hover-background"></div>
       <div class="left">
         <div class="blockComment"><ul>
-<li><a id="structs.js/gasreq"></a><code>gasreq</code> gas will be provided to <code>execute</code>. <em>24 bits wide</em>, 33% more than the block limit as of late 2020. Note that if more room was needed, we could bring it down to 16 bits and have it represent 1k gas increments.</li>
+<li><a id="structs.js/gasreq"></a><code>gasreq</code> gas will be provided to <code>execute</code>. <em>24 bits wide</em>, i.e. around 16M gas. Note that if more room was needed, we could bring it down to 16 bits and have it represent 1k gas increments.</li>
 </ul>
 </div>
       </div>
@@ -1589,7 +1589,7 @@ following amount of wei:</p>
       <code class="right solidity">
         <div class="codewrap">
           <code class="lines"><pre>147</pre></code>
-          <pre>    <span class="token punctuation">{</span> name<span class="token operator">:</span> <span class="token string">"density"</span><span class="token punctuation">,</span> bits<span class="token operator">:</span> <span class="token number">32</span><span class="token punctuation">,</span> type<span class="token operator">:</span> <span class="token string">"uint"</span> <span class="token punctuation">}</span><span class="token punctuation">,</span></pre>
+          <pre>    <span class="token punctuation">{</span> name<span class="token operator">:</span> <span class="token string">"density"</span><span class="token punctuation">,</span> bits<span class="token operator">:</span> <span class="token number">128</span><span class="token punctuation">,</span> type<span class="token operator">:</span> <span class="token string">"uint"</span> <span class="token punctuation">}</span><span class="token punctuation">,</span></pre>
         </div>
         <div class="focuser">
           <div class="focus-icon"><!--⥮--></div>
@@ -1901,10 +1901,14 @@ myStruct: [
           <code class="lines"><pre>16
 17
 18
-19</pre></code>
+19
+20
+21</pre></code>
           <pre>
 <span class="token keyword">pragma</span> <span class="token keyword">solidity</span> <span class="token operator">^</span><span class="token version number">0.7.0</span><span class="token punctuation">;</span>
 <span class="token keyword">pragma</span> abicoder v2<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token string">"./IERC20.sol"</span><span class="token punctuation">;</span>
 </pre>
         </div>
         <div class="focuser">
@@ -1923,9 +1927,7 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>22
-23
-24
+          <code class="lines"><pre>24
 25
 26
 27
@@ -1957,7 +1959,9 @@ myStruct: [
 53
 54
 55
-56</pre></code>
+56
+57
+58</pre></code>
           <pre><span class="token keyword">library</span> <span class="token class-name">MgvLib</span> <span class="token punctuation">{</span>
   <span class="token keyword">struct</span> <span class="token class-name">Offer</span> <span class="token punctuation">{</span>
     <span class="token builtin">uint</span> prev<span class="token punctuation">;</span>
@@ -2043,11 +2047,11 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>62
-63
-64
+          <code class="lines"><pre>64
 65
-66</pre></code>
+66
+67
+68</pre></code>
           <pre>  <span class="token keyword">struct</span> <span class="token class-name">SingleOrder</span> <span class="token punctuation">{</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">;</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">;</span>
@@ -2069,8 +2073,8 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>68
-69</pre></code>
+          <code class="lines"><pre>70
+71</pre></code>
           <pre>    <span class="token builtin">uint</span> wants<span class="token punctuation">;</span>
     <span class="token builtin">uint</span> gives<span class="token punctuation">;</span></pre>
         </div>
@@ -2089,11 +2093,11 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>71
-72
-73
+          <code class="lines"><pre>73
 74
-75</pre></code>
+75
+76
+77</pre></code>
           <pre>    <span class="token builtin">bytes32</span> offerDetail<span class="token punctuation">;</span>
     <span class="token builtin">bytes32</span> global<span class="token punctuation">;</span>
     <span class="token builtin">bytes32</span> local<span class="token punctuation">;</span>
@@ -2115,8 +2119,8 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>77
-78</pre></code>
+          <code class="lines"><pre>79
+80</pre></code>
           <pre>
   <span class="token keyword">struct</span> <span class="token class-name">OrderResult</span> <span class="token punctuation">{</span></pre>
         </div>
@@ -2135,7 +2139,7 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>80</pre></code>
+          <code class="lines"><pre>82</pre></code>
           <pre>    <span class="token builtin">bytes32</span> makerData<span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
@@ -2153,10 +2157,10 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>82
-83
-84
-85</pre></code>
+          <code class="lines"><pre>84
+85
+86
+87</pre></code>
           <pre>    <span class="token builtin">bytes32</span> mgvData<span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
@@ -2178,7 +2182,7 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>88</pre></code>
+          <code class="lines"><pre>90</pre></code>
           <pre><span class="token keyword">contract</span> <span class="token class-name">HasMgvEvents</span> <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
@@ -2198,8 +2202,8 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>90
-91</pre></code>
+          <code class="lines"><pre>92
+93</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">NewMgv</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -2238,7 +2242,7 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>94</pre></code>
+          <code class="lines"><pre>96</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">Credit</span><span class="token punctuation">(</span><span class="token builtin">address</span> <span class="token keyword">indexed</span> maker<span class="token punctuation">,</span> <span class="token builtin">uint</span> amount<span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
@@ -2258,8 +2262,8 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>96
-97</pre></code>
+          <code class="lines"><pre>98
+99</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">Debit</span><span class="token punctuation">(</span><span class="token builtin">address</span> <span class="token keyword">indexed</span> maker<span class="token punctuation">,</span> <span class="token builtin">uint</span> amount<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -2280,9 +2284,7 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>99
-100
-101
+          <code class="lines"><pre>101
 102
 103
 104
@@ -2308,7 +2310,9 @@ myStruct: [
 124
 125
 126
-127</pre></code>
+127
+128
+129</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">SetActive</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2354,14 +2358,14 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>129
-130
-131
+          <code class="lines"><pre>131
 132
 133
 134
 135
-136</pre></code>
+136
+137
+138</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">OrderComplete</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2388,10 +2392,10 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>138
-139
-140
-141</pre></code>
+          <code class="lines"><pre>140
+141
+142
+143</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">OfferSuccess</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2412,11 +2416,11 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>143
-144
-145
+          <code class="lines"><pre>145
 146
-147</pre></code>
+147
+148
+149</pre></code>
           <pre>    <span class="token builtin">address</span> taker<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> takerWants<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> takerGives
@@ -2438,10 +2442,10 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>149
-150
-151
-152</pre></code>
+          <code class="lines"><pre>151
+152
+153
+154</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">OfferFail</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2462,9 +2466,9 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>154
-155
-156</pre></code>
+          <code class="lines"><pre>156
+157
+158</pre></code>
           <pre>    <span class="token builtin">address</span> taker<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> takerWants<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> takerGives<span class="token punctuation">,</span></pre>
@@ -2484,9 +2488,9 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>158
-159
-160</pre></code>
+          <code class="lines"><pre>160
+161
+162</pre></code>
           <pre>    <span class="token builtin">bytes32</span> mgvData
   <span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
@@ -2506,12 +2510,12 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>162
-163
-164
+          <code class="lines"><pre>164
 165
 166
-167</pre></code>
+167
+168
+169</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">PosthookFail</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2536,14 +2540,14 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>169
-170
-171
+          <code class="lines"><pre>171
 172
 173
 174
 175
-176</pre></code>
+176
+177
+178</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">Approval</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2570,8 +2574,8 @@ myStruct: [
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>178
-179</pre></code>
+          <code class="lines"><pre>180
+181</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">Kill</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -2605,9 +2609,7 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>196
-197
-198
+          <code class="lines"><pre>198
 199
 200
 201
@@ -2616,7 +2618,9 @@ useless in client code.</p>
 204
 205
 206
-207</pre></code>
+207
+208
+209</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">OfferWrite</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2647,13 +2651,13 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>209
-210
-211
+          <code class="lines"><pre>211
 212
 213
 214
-215</pre></code>
+215
+216
+217</pre></code>
           <pre>  <span class="token keyword">event</span> <span class="token function">OfferRetract</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">indexed</span> inbound_tkn<span class="token punctuation">,</span>
@@ -2677,7 +2681,7 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>217</pre></code>
+          <code class="lines"><pre>219</pre></code>
           <pre><span class="token keyword">interface</span> <span class="token class-name">IMaker</span> <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
@@ -2703,10 +2707,10 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>229
-230
-231
-232</pre></code>
+          <code class="lines"><pre>231
+232
+233
+234</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">makerExecute</span><span class="token punctuation">(</span>MgvLib<span class="token punctuation">.</span>SingleOrder <span class="token keyword">calldata</span> order<span class="token punctuation">)</span>
     <span class="token keyword">external</span>
     <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">bytes32</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -2727,12 +2731,12 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>234
-235
-236
+          <code class="lines"><pre>236
 237
 238
-239</pre></code>
+239
+240
+241</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">makerPosthook</span><span class="token punctuation">(</span>
     MgvLib<span class="token punctuation">.</span>SingleOrder <span class="token keyword">calldata</span> order<span class="token punctuation">,</span>
     MgvLib<span class="token punctuation">.</span>OrderResult <span class="token keyword">calldata</span> result
@@ -2755,7 +2759,7 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>241</pre></code>
+          <code class="lines"><pre>243</pre></code>
           <pre><span class="token keyword">interface</span> <span class="token class-name">ITaker</span> <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
@@ -2773,9 +2777,9 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>243
-244
-245</pre></code>
+          <code class="lines"><pre>245
+246
+247</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">takerTrade</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span></pre>
@@ -2795,7 +2799,7 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>247</pre></code>
+          <code class="lines"><pre>249</pre></code>
           <pre>    <span class="token builtin">uint</span> totalGot<span class="token punctuation">,</span></pre>
         </div>
         <div class="focuser">
@@ -2813,10 +2817,10 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>249
-250
-251
-252</pre></code>
+          <code class="lines"><pre>251
+252
+253
+254</pre></code>
           <pre>    <span class="token builtin">uint</span> totalGives
   <span class="token punctuation">)</span> <span class="token keyword">external</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span>
@@ -2838,9 +2842,7 @@ useless in client code.</p>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>255
-256
-257
+          <code class="lines"><pre>257
 258
 259
 260
@@ -2850,31 +2852,7 @@ useless in client code.</p>
 264
 265
 266
-267
-268
-269
-270
-271
-272
-273
-274
-275
-276
-277
-278
-279
-280
-281
-282
-283
-284
-285
-286
-287
-288
-289
-290
-291</pre></code>
+267</pre></code>
           <pre><span class="token keyword">interface</span> <span class="token class-name">IMgvMonitor</span> <span class="token punctuation">{</span>
   <span class="token keyword">function</span> <span class="token function">notifySuccess</span><span class="token punctuation">(</span>MgvLib<span class="token punctuation">.</span>SingleOrder <span class="token keyword">calldata</span> sor<span class="token punctuation">,</span> <span class="token builtin">address</span> taker<span class="token punctuation">)</span>
     <span class="token keyword">external</span><span class="token punctuation">;</span>
@@ -2885,60 +2863,6 @@ useless in client code.</p>
     <span class="token keyword">external</span>
     <span class="token keyword">view</span>
     <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span> gasprice<span class="token punctuation">,</span> <span class="token builtin">uint</span> density<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
-
-<span class="token keyword">interface</span> <span class="token class-name">IERC20</span> <span class="token punctuation">{</span>
-  <span class="token keyword">function</span> <span class="token function">totalSupply</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">view</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">balanceOf</span><span class="token punctuation">(</span><span class="token builtin">address</span> account<span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">view</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">transfer</span><span class="token punctuation">(</span><span class="token builtin">address</span> recipient<span class="token punctuation">,</span> <span class="token builtin">uint</span> amount<span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">bool</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">allowance</span><span class="token punctuation">(</span><span class="token builtin">address</span> owner<span class="token punctuation">,</span> <span class="token builtin">address</span> spender<span class="token punctuation">)</span>
-    <span class="token keyword">external</span>
-    <span class="token keyword">view</span>
-    <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">approve</span><span class="token punctuation">(</span><span class="token builtin">address</span> spender<span class="token punctuation">,</span> <span class="token builtin">uint</span> amount<span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">bool</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">transferFrom</span><span class="token punctuation">(</span>
-    <span class="token builtin">address</span> sender<span class="token punctuation">,</span>
-    <span class="token builtin">address</span> recipient<span class="token punctuation">,</span>
-    <span class="token builtin">uint</span> amount
-  <span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">bool</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">symbol</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">view</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">string</span> <span class="token keyword">memory</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">event</span> <span class="token function">Transfer</span><span class="token punctuation">(</span><span class="token builtin">address</span> <span class="token keyword">indexed</span> <span class="token keyword">from</span><span class="token punctuation">,</span> <span class="token builtin">address</span> <span class="token keyword">indexed</span> to<span class="token punctuation">,</span> <span class="token builtin">uint</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
-  <span class="token keyword">event</span> <span class="token function">Approval</span><span class="token punctuation">(</span><span class="token builtin">address</span> <span class="token keyword">indexed</span> owner<span class="token punctuation">,</span> <span class="token builtin">address</span> <span class="token keyword">indexed</span> spender<span class="token punctuation">,</span> <span class="token builtin">uint</span> value<span class="token punctuation">)</span><span class="token punctuation">;</span>
-</pre>
-        </div>
-        <div class="focuser">
-          <div class="focus-icon"><!--⥮--></div>
-          <div class="warning-overlay"></div>
-        </div>
-      </code>
-    </div>
-    <div class="level">
-      <div class="left-background"></div>
-      <div class="hover-background"></div>
-      <div class="left">
-        <div class="lineComment"><p>/ for wETH contract</p>
-</div>
-      </div>
-      <code class="right solidity">
-        <div class="codewrap">
-          <code class="lines"><pre>293
-294
-295
-296
-297
-298</pre></code>
-          <pre>  <span class="token keyword">function</span> <span class="token function">deposit</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">payable</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">withdraw</span><span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span> <span class="token keyword">external</span><span class="token punctuation">;</span>
-
-  <span class="token keyword">function</span> <span class="token function">decimals</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">view</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint8</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span></pre>
         </div>
         <div class="focuser">
@@ -3390,7 +3314,7 @@ useless in client code.</p>
 57
 58</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">checkDensity</span><span class="token punctuation">(</span><span class="token builtin">uint</span> density<span class="token punctuation">)</span> <span class="token keyword">internal</span> <span class="token keyword">pure</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">bool</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> <span class="token builtin">uint32</span><span class="token punctuation">(</span>density<span class="token punctuation">)</span> <span class="token operator">==</span> density<span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token builtin">uint128</span><span class="token punctuation">(</span>density<span class="token punctuation">)</span> <span class="token operator">==</span> density<span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 </pre>
         </div>
@@ -5209,7 +5133,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> offerId<span class="token punctuation">,</span>
     <span class="token builtin">bool</span> deprovision
-  <span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token punctuation">{</span>
+  <span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span> provision<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token punctuation">(</span><span class="token punctuation">,</span> <span class="token builtin">bytes32</span> local<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">config</span><span class="token punctuation">(</span>outbound_tkn<span class="token punctuation">,</span> inbound_tkn<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">unlockedMarketOnly</span><span class="token punctuation">(</span>local<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token builtin">bytes32</span> offer <span class="token operator">=</span> offers<span class="token punctuation">[</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>offerId<span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -5318,9 +5242,11 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 187
 188
 189
-190</pre></code>
+190
+191</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span>deprovision<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-      <span class="token builtin">uint</span> provision <span class="token operator">=</span> <span class="token number">10</span><span class="token operator">**</span><span class="token number">9</span> <span class="token operator">*</span>
+      provision <span class="token operator">=</span>
+        <span class="token number">10</span><span class="token operator">**</span><span class="token number">9</span> <span class="token operator">*</span>
         $$<span class="token punctuation">(</span><span class="token function">offer_gasprice</span><span class="token punctuation">(</span><span class="token string">"offer"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token comment">//gasprice is 0 if offer was deprovisioned</span>
         <span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">offerDetail_gasreq</span><span class="token punctuation">(</span><span class="token string">"offerDetail"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">+</span>
           $$<span class="token punctuation">(</span><span class="token function">offerDetail_overhead_gasbase</span><span class="token punctuation">(</span><span class="token string">"offerDetail"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">+</span>
@@ -5341,11 +5267,11 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>192
-193
+          <code class="lines"><pre>193
 194
 195
-196</pre></code>
+196
+197</pre></code>
           <pre>      <span class="token function">creditWei</span><span class="token punctuation">(</span>msg<span class="token punctuation">.</span>sender<span class="token punctuation">,</span> provision<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
     <span class="token keyword">emit</span> <span class="token function">OfferRetract</span><span class="token punctuation">(</span>outbound_tkn<span class="token punctuation">,</span> inbound_tkn<span class="token punctuation">,</span> offerId<span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -5403,8 +5329,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>206
-207
+          <code class="lines"><pre>207
 208
 209
 210
@@ -5412,7 +5337,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 212
 213
 214
-215</pre></code>
+215
+216</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">fund</span><span class="token punctuation">(</span><span class="token builtin">address</span> maker<span class="token punctuation">)</span> <span class="token keyword">public</span> <span class="token keyword">payable</span> <span class="token punctuation">{</span>
     <span class="token punctuation">(</span><span class="token builtin">bytes32</span> _global<span class="token punctuation">,</span> <span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">config</span><span class="token punctuation">(</span><span class="token builtin">address</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token builtin">address</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">liveMgvOnly</span><span class="token punctuation">(</span>_global<span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -5439,10 +5365,10 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>217
-218
+          <code class="lines"><pre>218
 219
-220</pre></code>
+220
+221</pre></code>
           <pre>  <span class="token function">receive</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">payable</span> <span class="token punctuation">{</span>
     <span class="token function">fund</span><span class="token punctuation">(</span>msg<span class="token punctuation">.</span>sender<span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
@@ -5463,7 +5389,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>222</pre></code>
+          <code class="lines"><pre>223</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">withdraw</span><span class="token punctuation">(</span><span class="token builtin">uint</span> amount<span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">bool</span> noRevert<span class="token punctuation">)</span> <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
@@ -5481,10 +5407,10 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>224
-225
+          <code class="lines"><pre>225
 226
-227</pre></code>
+227
+228</pre></code>
           <pre>    <span class="token function">debitWei</span><span class="token punctuation">(</span>msg<span class="token punctuation">.</span>sender<span class="token punctuation">,</span> amount<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">(</span>noRevert<span class="token punctuation">,</span> <span class="token punctuation">)</span> <span class="token operator">=</span> msg<span class="token punctuation">.</span>sender<span class="token punctuation">.</span>call<span class="token punctuation">{</span>value<span class="token punctuation">:</span> amount<span class="token punctuation">}</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
@@ -5523,8 +5449,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>231
-232</pre></code>
+          <code class="lines"><pre>232
+233</pre></code>
           <pre>
   <span class="token keyword">function</span> <span class="token function">writeOffer</span><span class="token punctuation">(</span>OfferPack <span class="token keyword">memory</span> ofp<span class="token punctuation">,</span> <span class="token builtin">bool</span> update<span class="token punctuation">)</span> <span class="token keyword">internal</span> <span class="token punctuation">{</span></pre>
         </div>
@@ -5543,15 +5469,15 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>234
-235
+          <code class="lines"><pre>235
 236
 237
 238
 239
 240
 241
-242</pre></code>
+242
+243</pre></code>
           <pre>    <span class="token keyword">require</span><span class="token punctuation">(</span>
       <span class="token builtin">uint16</span><span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>gasprice<span class="token punctuation">)</span> <span class="token operator">==</span> ofp<span class="token punctuation">.</span>gasprice<span class="token punctuation">,</span>
       <span class="token string">"mgv/writeOffer/gasprice/16bits"</span>
@@ -5579,10 +5505,10 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>244
-245
+          <code class="lines"><pre>245
 246
-247</pre></code>
+247
+248</pre></code>
           <pre>    <span class="token keyword">require</span><span class="token punctuation">(</span>
       ofp<span class="token punctuation">.</span>gasreq <span class="token operator">&lt;=</span> $$<span class="token punctuation">(</span><span class="token function">global_gasmax</span><span class="token punctuation">(</span><span class="token string">"ofp.global"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
       <span class="token string">"mgv/writeOffer/gasreq/tooHigh"</span>
@@ -5605,7 +5531,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>249</pre></code>
+          <code class="lines"><pre>250</pre></code>
           <pre>    <span class="token keyword">require</span><span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>gives <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token string">"mgv/writeOffer/gives/tooLow"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
@@ -5625,13 +5551,13 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>251
-252
+          <code class="lines"><pre>252
 253
 254
 255
 256
-257</pre></code>
+257
+258</pre></code>
           <pre>    <span class="token keyword">require</span><span class="token punctuation">(</span>
       ofp<span class="token punctuation">.</span>gives <span class="token operator">>=</span>
         <span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>gasreq <span class="token operator">+</span> $$<span class="token punctuation">(</span><span class="token function">local_offer_gasbase</span><span class="token punctuation">(</span><span class="token string">"ofp.local"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">*</span>
@@ -5655,9 +5581,9 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>259
-260
-261</pre></code>
+          <code class="lines"><pre>260
+261
+262</pre></code>
           <pre>    <span class="token keyword">require</span><span class="token punctuation">(</span><span class="token builtin">uint96</span><span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>gives<span class="token punctuation">)</span> <span class="token operator">==</span> ofp<span class="token punctuation">.</span>gives<span class="token punctuation">,</span> <span class="token string">"mgv/writeOffer/gives/96bits"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">require</span><span class="token punctuation">(</span><span class="token builtin">uint96</span><span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>wants<span class="token punctuation">)</span> <span class="token operator">==</span> ofp<span class="token punctuation">.</span>wants<span class="token punctuation">,</span> <span class="token string">"mgv/writeOffer/wants/96bits"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
@@ -5679,8 +5605,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>267
-268</pre></code>
+          <code class="lines"><pre>268
+269</pre></code>
           <pre>    <span class="token punctuation">(</span><span class="token builtin">uint</span> prev<span class="token punctuation">,</span> <span class="token builtin">uint</span> next<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">findPosition</span><span class="token punctuation">(</span>ofp<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -5699,8 +5625,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>270
-271
+          <code class="lines"><pre>271
 272
 273
 274
@@ -5710,7 +5635,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 278
 279
 280
-281</pre></code>
+281
+282</pre></code>
           <pre>    <span class="token keyword">emit</span> <span class="token function">OfferWrite</span><span class="token punctuation">(</span>
       ofp<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">,</span>
       ofp<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">,</span>
@@ -5739,8 +5665,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>283
-284
+          <code class="lines"><pre>284
 285
 286
 287
@@ -5756,7 +5681,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 297
 298
 299
-300</pre></code>
+300
+301</pre></code>
           <pre>    <span class="token builtin">uint</span> oldProvision<span class="token punctuation">;</span>
     <span class="token punctuation">{</span>
       <span class="token builtin">bytes32</span> offerDetail <span class="token operator">=</span> offerDetails<span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>
@@ -5791,8 +5717,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>302
-303
+          <code class="lines"><pre>303
 304
 305
 306
@@ -5813,7 +5738,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 321
 322
 323
-324</pre></code>
+324
+325</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>
         <span class="token operator">!</span>update <span class="token operator">||</span>
         $$<span class="token punctuation">(</span><span class="token function">offerDetail_gasreq</span><span class="token punctuation">(</span><span class="token string">"offerDetail"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> ofp<span class="token punctuation">.</span>gasreq <span class="token operator">||</span>
@@ -5853,8 +5779,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>326
-327
+          <code class="lines"><pre>327
 328
 329
 330
@@ -5864,7 +5789,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 334
 335
 336
-337</pre></code>
+337
+338</pre></code>
           <pre>    <span class="token punctuation">{</span>
       <span class="token builtin">uint</span> provision <span class="token operator">=</span> <span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>gasreq <span class="token operator">+</span>
         $$<span class="token punctuation">(</span><span class="token function">local_offer_gasbase</span><span class="token punctuation">(</span><span class="token string">"ofp.local"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">+</span>
@@ -5912,7 +5838,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>343</pre></code>
+          <code class="lines"><pre>344</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">isLive</span><span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>oldOffer<span class="token punctuation">)</span> <span class="token operator">||</span> prev <span class="token operator">!=</span> $$<span class="token punctuation">(</span><span class="token function">offer_prev</span><span class="token punctuation">(</span><span class="token string">"ofp.oldOffer"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
@@ -5932,8 +5858,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>345
-346
+          <code class="lines"><pre>346
 347
 348
 349
@@ -5942,7 +5867,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 352
 353
 354
-355</pre></code>
+355
+356</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>prev <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         offers<span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>prev<span class="token punctuation">]</span> <span class="token operator">=</span> $$<span class="token punctuation">(</span>
           <span class="token function">set_offer</span><span class="token punctuation">(</span>
@@ -5972,15 +5898,15 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>357
-358
+          <code class="lines"><pre>358
 359
 360
 361
 362
 363
 364
-365</pre></code>
+365
+366</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>next <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         offers<span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>next<span class="token punctuation">]</span> <span class="token operator">=</span> $$<span class="token punctuation">(</span>
           <span class="token function">set_offer</span><span class="token punctuation">(</span>
@@ -6008,8 +5934,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>367
-368
+          <code class="lines"><pre>368
 369
 370
 371
@@ -6018,7 +5943,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 374
 375
 376
-377</pre></code>
+377
+378</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>update <span class="token operator">&amp;&amp;</span> <span class="token function">isLive</span><span class="token punctuation">(</span>ofp<span class="token punctuation">.</span>oldOffer<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         ofp<span class="token punctuation">.</span>local <span class="token operator">=</span> <span class="token function">stitchOffers</span><span class="token punctuation">(</span>
           ofp<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">,</span>
@@ -6046,8 +5972,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>379
-380
+          <code class="lines"><pre>380
 381
 382
 383
@@ -6059,7 +5984,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 389
 390
 391
-392</pre></code>
+392
+393</pre></code>
           <pre>    <span class="token builtin">bytes32</span> ofr <span class="token operator">=</span> $$<span class="token punctuation">(</span>
       <span class="token function">make_offer</span><span class="token punctuation">(</span>
         <span class="token punctuation">[</span>
@@ -6109,14 +6035,14 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>397
-398
+          <code class="lines"><pre>398
 399
 400
 401
 402
 403
-404</pre></code>
+404
+405</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">findPosition</span><span class="token punctuation">(</span>OfferPack <span class="token keyword">memory</span> ofp<span class="token punctuation">)</span>
     <span class="token keyword">internal</span>
     <span class="token keyword">view</span>
@@ -6141,10 +6067,10 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>406
-407
+          <code class="lines"><pre>407
 408
-409</pre></code>
+409
+410</pre></code>
           <pre>    <span class="token builtin">bytes32</span> pivot <span class="token operator">=</span> pivotId <span class="token operator">==</span> ofp<span class="token punctuation">.</span>id
       <span class="token operator">?</span> ofp<span class="token punctuation">.</span>oldOffer
       <span class="token punctuation">:</span> offers<span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>pivotId<span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -6165,11 +6091,11 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>411
-412
+          <code class="lines"><pre>412
 413
 414
-415</pre></code>
+415
+416</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token function">isLive</span><span class="token punctuation">(</span>pivot<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
       pivotId <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">local_best</span><span class="token punctuation">(</span><span class="token string">"ofp.local"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       pivot <span class="token operator">=</span> offers<span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>ofp<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>pivotId<span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -6193,8 +6119,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>417
-418
+          <code class="lines"><pre>418
 419
 420
 421
@@ -6204,7 +6129,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 425
 426
 427
-428</pre></code>
+428
+429</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">better</span><span class="token punctuation">(</span>ofp<span class="token punctuation">,</span> pivot<span class="token punctuation">,</span> pivotId<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
       <span class="token builtin">bytes32</span> pivotNext<span class="token punctuation">;</span>
       <span class="token keyword">while</span> <span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">offer_next</span><span class="token punctuation">(</span><span class="token string">"pivot"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -6233,8 +6159,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>430
-431</pre></code>
+          <code class="lines"><pre>431
+432</pre></code>
           <pre>      <span class="token punctuation">(</span>prevId<span class="token punctuation">,</span> nextId<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">(</span>pivotId<span class="token punctuation">,</span> $$<span class="token punctuation">(</span><span class="token function">offer_next</span><span class="token punctuation">(</span><span class="token string">"pivot"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -6255,8 +6181,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>433
-434
+          <code class="lines"><pre>434
 435
 436
 437
@@ -6276,7 +6201,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 451
 452
 453
-454</pre></code>
+454
+455</pre></code>
           <pre>    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
       <span class="token builtin">bytes32</span> pivotPrev<span class="token punctuation">;</span>
       <span class="token keyword">while</span> <span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">offer_prev</span><span class="token punctuation">(</span><span class="token string">"pivot"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -6335,12 +6261,12 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>460
-461
+          <code class="lines"><pre>461
 462
 463
 464
-465</pre></code>
+465
+466</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">better</span><span class="token punctuation">(</span>
     OfferPack <span class="token keyword">memory</span> ofp<span class="token punctuation">,</span>
     <span class="token builtin">bytes32</span> offer1<span class="token punctuation">,</span>
@@ -6363,8 +6289,7 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>467
-468
+          <code class="lines"><pre>468
 469
 470
 471
@@ -6383,7 +6308,8 @@ In case of emergency, the Mangrove can be <code>kill</code>ed. It cannot be resu
 484
 485
 486
-487</pre></code>
+487
+488</pre></code>
           <pre>      <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
     <span class="token builtin">uint</span> wants1 <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">offer_wants</span><span class="token punctuation">(</span><span class="token string">"offer1"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -6848,14 +6774,28 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
 65
 66
 67
-68</pre></code>
+68
+69
+70
+71
+72
+73
+74
+75</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">marketOrder</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> takerWants<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> takerGives<span class="token punctuation">,</span>
     <span class="token builtin">bool</span> fillWants
-  <span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">,</span> <span class="token builtin">uint</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token punctuation">)</span>
+    <span class="token keyword">external</span>
+    <span class="token keyword">returns</span> <span class="token punctuation">(</span>
+      <span class="token builtin">uint</span><span class="token punctuation">,</span>
+      <span class="token builtin">uint</span><span class="token punctuation">,</span>
+      <span class="token builtin">uint</span>
+    <span class="token punctuation">)</span>
+  <span class="token punctuation">{</span>
     <span class="token keyword">return</span>
       <span class="token function">generalMarketOrder</span><span class="token punctuation">(</span>
         outbound_tkn<span class="token punctuation">,</span>
@@ -6918,14 +6858,21 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>73
-74
-75
-76
-77
-78
-79
-80</pre></code>
+          <code class="lines"><pre>80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">generalMarketOrder</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
@@ -6933,7 +6880,14 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
     <span class="token builtin">uint</span> takerGives<span class="token punctuation">,</span>
     <span class="token builtin">bool</span> fillWants<span class="token punctuation">,</span>
     <span class="token builtin">address</span> taker
-  <span class="token punctuation">)</span> <span class="token keyword">internal</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">,</span> <span class="token builtin">uint</span><span class="token punctuation">)</span> <span class="token punctuation">{</span></pre>
+  <span class="token punctuation">)</span>
+    <span class="token keyword">internal</span>
+    <span class="token keyword">returns</span> <span class="token punctuation">(</span>
+      <span class="token builtin">uint</span><span class="token punctuation">,</span>
+      <span class="token builtin">uint</span><span class="token punctuation">,</span>
+      <span class="token builtin">uint</span>
+    <span class="token punctuation">)</span>
+  <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
           <div class="focus-icon"><!--⥮--></div>
@@ -6950,9 +6904,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>82
-83
-84</pre></code>
+          <code class="lines"><pre>96
+97
+98</pre></code>
           <pre>    <span class="token keyword">require</span><span class="token punctuation">(</span><span class="token builtin">uint160</span><span class="token punctuation">(</span>takerWants<span class="token punctuation">)</span> <span class="token operator">==</span> takerWants<span class="token punctuation">,</span> <span class="token string">"mgv/mOrder/takerWants/160bits"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">require</span><span class="token punctuation">(</span><span class="token builtin">uint160</span><span class="token punctuation">(</span>takerGives<span class="token punctuation">)</span> <span class="token operator">==</span> takerGives<span class="token punctuation">,</span> <span class="token string">"mgv/mOrder/takerGives/160bits"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
@@ -6972,10 +6926,10 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>86
-87
-88
-89</pre></code>
+          <code class="lines"><pre>100
+101
+102
+103</pre></code>
           <pre>    ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">;</span>
     sor<span class="token punctuation">.</span>outbound_tkn <span class="token operator">=</span> outbound_tkn<span class="token punctuation">;</span>
     sor<span class="token punctuation">.</span>inbound_tkn <span class="token operator">=</span> inbound_tkn<span class="token punctuation">;</span>
@@ -6996,8 +6950,8 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>91
-92</pre></code>
+          <code class="lines"><pre>105
+106</pre></code>
           <pre>    sor<span class="token punctuation">.</span>offerId <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">local_best</span><span class="token punctuation">(</span><span class="token string">"sor.local"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     sor<span class="token punctuation">.</span>offer <span class="token operator">=</span> offers<span class="token punctuation">[</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>offerId<span class="token punctuation">]</span><span class="token punctuation">;</span></pre>
         </div>
@@ -7016,9 +6970,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>94
-95
-96</pre></code>
+          <code class="lines"><pre>108
+109
+110</pre></code>
           <pre>    sor<span class="token punctuation">.</span>wants <span class="token operator">=</span> takerWants<span class="token punctuation">;</span>
     sor<span class="token punctuation">.</span>gives <span class="token operator">=</span> takerGives<span class="token punctuation">;</span>
 </pre>
@@ -7038,12 +6992,12 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>98
-99
-100
-101
-102
-103</pre></code>
+          <code class="lines"><pre>112
+113
+114
+115
+116
+117</pre></code>
           <pre>    MultiOrder <span class="token keyword">memory</span> mor<span class="token punctuation">;</span>
     mor<span class="token punctuation">.</span>initialWants <span class="token operator">=</span> takerWants<span class="token punctuation">;</span>
     mor<span class="token punctuation">.</span>initialGives <span class="token operator">=</span> takerGives<span class="token punctuation">;</span>
@@ -7066,9 +7020,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>105
-106
-107</pre></code>
+          <code class="lines"><pre>119
+120
+121</pre></code>
           <pre>    <span class="token function">activeMarketOnly</span><span class="token punctuation">(</span>sor<span class="token punctuation">.</span>global<span class="token punctuation">,</span> sor<span class="token punctuation">.</span>local<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">unlockedMarketOnly</span><span class="token punctuation">(</span>sor<span class="token punctuation">.</span>local<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
@@ -7146,9 +7100,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>115
-116
-117</pre></code>
+          <code class="lines"><pre>129
+130
+131</pre></code>
           <pre>    sor<span class="token punctuation">.</span>local <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">set_local</span><span class="token punctuation">(</span><span class="token string">"sor.local"</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token string">"lock"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     locals<span class="token punctuation">[</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>inbound_tkn<span class="token punctuation">]</span> <span class="token operator">=</span> sor<span class="token punctuation">.</span>local<span class="token punctuation">;</span>
 </pre>
@@ -7168,8 +7122,8 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>119
-120</pre></code>
+          <code class="lines"><pre>133
+134</pre></code>
           <pre>    <span class="token function">internalMarketOrder</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -7188,16 +7142,16 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>122
-123
-124
-125
-126
-127
-128
-129
-130
-131</pre></code>
+          <code class="lines"><pre>136
+137
+138
+139
+140
+141
+142
+143
+144
+145</pre></code>
           <pre>    <span class="token function">sendPenalty</span><span class="token punctuation">(</span>mor<span class="token punctuation">.</span>totalPenalty<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
     <span class="token keyword">emit</span> <span class="token function">OrderComplete</span><span class="token punctuation">(</span>
@@ -7222,10 +7176,10 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>133
-134
-135</pre></code>
-          <pre>    <span class="token keyword">return</span> <span class="token punctuation">(</span>mor<span class="token punctuation">.</span>totalGot<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalGave<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <code class="lines"><pre>147
+148
+149</pre></code>
+          <pre>    <span class="token keyword">return</span> <span class="token punctuation">(</span>mor<span class="token punctuation">.</span>totalGot<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalGave<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalPenalty<span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 </pre>
         </div>
@@ -7279,11 +7233,11 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>141
-142
-143
-144
-145</pre></code>
+          <code class="lines"><pre>155
+156
+157
+158
+159</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">internalMarketOrder</span><span class="token punctuation">(</span>
     MultiOrder <span class="token keyword">memory</span> mor<span class="token punctuation">,</span>
     ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">,</span>
@@ -7323,14 +7277,14 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>148
-149
-150
-151
-152
-153
-154
-155</pre></code>
+          <code class="lines"><pre>162
+163
+164
+165
+166
+167
+168
+169</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span>
       proceed <span class="token operator">&amp;&amp;</span>
       <span class="token punctuation">(</span>mor<span class="token punctuation">.</span>fillWants <span class="token operator">?</span> sor<span class="token punctuation">.</span>wants <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">:</span> sor<span class="token punctuation">.</span>gives <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span>
@@ -7366,8 +7320,8 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>167
-168</pre></code>
+          <code class="lines"><pre>181
+182</pre></code>
           <pre>      <span class="token builtin">bytes32</span> mgvData<span class="token punctuation">;</span>
 </pre>
         </div>
@@ -7386,10 +7340,10 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>170
-171
-172
-173</pre></code>
+          <code class="lines"><pre>184
+185
+186
+187</pre></code>
           <pre>      sor<span class="token punctuation">.</span>offerDetail <span class="token operator">=</span> offerDetails<span class="token punctuation">[</span>sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>
         sor<span class="token punctuation">.</span>offerId
       <span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -7428,9 +7382,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>176
-177
-178</pre></code>
+          <code class="lines"><pre>190
+191
+192</pre></code>
           <pre>
       <span class="token punctuation">(</span>gasused<span class="token punctuation">,</span> makerData<span class="token punctuation">,</span> mgvData<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">execute</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
@@ -7450,12 +7404,12 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>180
-181
-182
-183
-184
-185</pre></code>
+          <code class="lines"><pre>194
+195
+196
+197
+198
+199</pre></code>
           <pre>      <span class="token builtin">uint</span> takerWants <span class="token operator">=</span> sor<span class="token punctuation">.</span>wants<span class="token punctuation">;</span>
       <span class="token builtin">uint</span> takerGives <span class="token operator">=</span> sor<span class="token punctuation">.</span>gives<span class="token punctuation">;</span>
       <span class="token builtin">uint</span> offerId <span class="token operator">=</span> sor<span class="token punctuation">.</span>offerId<span class="token punctuation">;</span>
@@ -7478,10 +7432,10 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>187
-188
-189
-190</pre></code>
+          <code class="lines"><pre>201
+202
+203
+204</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>mgvData <span class="token operator">!=</span> <span class="token string">"mgv/notExecuted"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         sor<span class="token punctuation">.</span>wants <span class="token operator">=</span> mor<span class="token punctuation">.</span>initialWants <span class="token operator">></span> mor<span class="token punctuation">.</span>totalGot
           <span class="token operator">?</span> mor<span class="token punctuation">.</span>initialWants <span class="token operator">-</span> mor<span class="token punctuation">.</span>totalGot
@@ -7507,11 +7461,11 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>196
-197
-198
-199
-200</pre></code>
+          <code class="lines"><pre>210
+211
+212
+213
+214</pre></code>
           <pre>        sor<span class="token punctuation">.</span>gives <span class="token operator">=</span> mor<span class="token punctuation">.</span>initialGives <span class="token operator">-</span> mor<span class="token punctuation">.</span>totalGave<span class="token punctuation">;</span>
         sor<span class="token punctuation">.</span>offerId <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">offer_next</span><span class="token punctuation">(</span><span class="token string">"sor.offer"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
         sor<span class="token punctuation">.</span>offer <span class="token operator">=</span> offers<span class="token punctuation">[</span>sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>offerId<span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -7533,9 +7487,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>202
-203
-204</pre></code>
+          <code class="lines"><pre>216
+217
+218</pre></code>
           <pre>      <span class="token function">internalMarketOrder</span><span class="token punctuation">(</span>
         mor<span class="token punctuation">,</span>
         sor<span class="token punctuation">,</span></pre>
@@ -7555,9 +7509,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>206
-207
-208</pre></code>
+          <code class="lines"><pre>220
+221
+222</pre></code>
           <pre>        mgvData <span class="token operator">!=</span> <span class="token string">"mgv/notExecuted"</span>
       <span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
@@ -7577,12 +7531,12 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>210
-211
-212
-213
-214
-215</pre></code>
+          <code class="lines"><pre>224
+225
+226
+227
+228
+229</pre></code>
           <pre>      sor<span class="token punctuation">.</span>offerId <span class="token operator">=</span> offerId<span class="token punctuation">;</span>
       sor<span class="token punctuation">.</span>wants <span class="token operator">=</span> takerWants<span class="token punctuation">;</span>
       sor<span class="token punctuation">.</span>gives <span class="token operator">=</span> takerGives<span class="token punctuation">;</span>
@@ -7605,10 +7559,10 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>217
-218
-219
-220</pre></code>
+          <code class="lines"><pre>231
+232
+233
+234</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>mgvData <span class="token operator">!=</span> <span class="token string">"mgv/notExecuted"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token function">postExecute</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">,</span> gasused<span class="token punctuation">,</span> makerData<span class="token punctuation">,</span> mgvData<span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token punctuation">}</span>
@@ -7647,7 +7601,7 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>223</pre></code>
+          <code class="lines"><pre>237</pre></code>
           <pre>    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
@@ -7665,13 +7619,13 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>225
-226
-227
-228
-229
-230
-231</pre></code>
+          <code class="lines"><pre>239
+240
+241
+242
+243
+244
+245</pre></code>
           <pre>      sor<span class="token punctuation">.</span>local <span class="token operator">=</span> <span class="token function">stitchOffers</span><span class="token punctuation">(</span>
         sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">,</span>
         sor<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">,</span>
@@ -7700,9 +7654,9 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>239
-240
-241</pre></code>
+          <code class="lines"><pre>253
+254
+255</pre></code>
           <pre>      sor<span class="token punctuation">.</span>local <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">set_local</span><span class="token punctuation">(</span><span class="token string">"sor.local"</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token string">"lock"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       locals<span class="token punctuation">[</span>sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span> <span class="token operator">=</span> sor<span class="token punctuation">.</span>local<span class="token punctuation">;</span>
 </pre>
@@ -7722,8 +7676,8 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>243
-244</pre></code>
+          <code class="lines"><pre>257
+258</pre></code>
           <pre>      <span class="token function">payTakerMinusFees</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -7742,10 +7696,10 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>246
-247
-248
-249</pre></code>
+          <code class="lines"><pre>260
+261
+262
+263</pre></code>
           <pre>      <span class="token function">executeEnd</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">}</span>
@@ -7813,29 +7767,30 @@ Note that the <code>taker</code> can be anyone. This is safe when <code>taker ==
       <div class="left-background"></div>
       <div class="hover-background"></div>
       <div class="left">
-        <div class="blockComment"><p><code>snipes</code> executes multiple offers. It takes a <code>uint[4][]</code> as penultimate argument, with each array element of the form <code>[offerId,takerWants,takerGives,offerGasreq]</code>. The return parameters are of the form <code>(successes,totalGot,totalGave)</code>.
+        <div class="blockComment"><p><code>snipes</code> executes multiple offers. It takes a <code>uint[4][]</code> as penultimate argument, with each array element of the form <code>[offerId,takerWants,takerGives,offerGasreq]</code>. The return parameters are of the form <code>(successes,totalGot,totalGave,bounty)</code>.
 Note that we do not distinguish further between mismatched arguments/offer fields on the one hand, and an execution failure on the other. Still, a failed offer has to pay a penalty, and ultimately transaction logs explicitly mention execution failures (see <code>MgvLib.sol</code>).</p>
 </div>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>256
-257
-258
-259
-260
-261
-262
-263
-264
-265
-266
-267
-268
-269
-270
+          <code class="lines"><pre>270
 271
-272</pre></code>
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">snipes</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
@@ -7844,6 +7799,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
   <span class="token punctuation">)</span>
     <span class="token keyword">external</span>
     <span class="token keyword">returns</span> <span class="token punctuation">(</span>
+      <span class="token builtin">uint</span><span class="token punctuation">,</span>
       <span class="token builtin">uint</span><span class="token punctuation">,</span>
       <span class="token builtin">uint</span><span class="token punctuation">,</span>
       <span class="token builtin">uint</span>
@@ -7864,35 +7820,36 @@ Note that we do not distinguish further between mismatched arguments/offer field
       <div class="left-background"></div>
       <div class="hover-background"></div>
       <div class="left">
-        <div class="blockComment"><p>From an array of <em>n</em> <code>[offerId, takerWants,takerGives,gasreq]</code> elements, execute each snipe in sequence. Returns <code>(successes, takerGot, takerGave)</code>.</p>
+        <div class="blockComment"><p>From an array of <em>n</em> <code>[offerId, takerWants,takerGives,gasreq]</code> elements, execute each snipe in sequence. Returns <code>(successes, takerGot, takerGave, bounty)</code>.</p>
 <p>Note that if this function is not internal, anyone can make anyone use Mangrove.</p>
 </div>
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>277
-278
-279
-280
-281
-282
-283
-284
-285
-286
-287
-288
-289
-290
-291
-292
+          <code class="lines"><pre>292
 293
 294
 295
 296
 297
 298
-299</pre></code>
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">generalSnipes</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
@@ -7902,6 +7859,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
   <span class="token punctuation">)</span>
     <span class="token keyword">internal</span>
     <span class="token keyword">returns</span> <span class="token punctuation">(</span>
+      <span class="token builtin">uint</span><span class="token punctuation">,</span>
       <span class="token builtin">uint</span><span class="token punctuation">,</span>
       <span class="token builtin">uint</span><span class="token punctuation">,</span>
       <span class="token builtin">uint</span>
@@ -7932,9 +7890,9 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>301
-302
-303</pre></code>
+          <code class="lines"><pre>317
+318
+319</pre></code>
           <pre>    <span class="token function">activeMarketOnly</span><span class="token punctuation">(</span>sor<span class="token punctuation">.</span>global<span class="token punctuation">,</span> sor<span class="token punctuation">.</span>local<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">unlockedMarketOnly</span><span class="token punctuation">(</span>sor<span class="token punctuation">.</span>local<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
@@ -7988,9 +7946,9 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>308
-309
-310</pre></code>
+          <code class="lines"><pre>324
+325
+326</pre></code>
           <pre>    sor<span class="token punctuation">.</span>local <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">set_local</span><span class="token punctuation">(</span><span class="token string">"sor.local"</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token string">"lock"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     locals<span class="token punctuation">[</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>inbound_tkn<span class="token punctuation">]</span> <span class="token operator">=</span> sor<span class="token punctuation">.</span>local<span class="token punctuation">;</span>
 </pre>
@@ -8010,8 +7968,8 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>312
-313</pre></code>
+          <code class="lines"><pre>328
+329</pre></code>
           <pre>    <span class="token function">internalSnipes</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">,</span> targets<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -8030,7 +7988,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>315</pre></code>
+          <code class="lines"><pre>331</pre></code>
           <pre>    <span class="token function">sendPenalty</span><span class="token punctuation">(</span>mor<span class="token punctuation">.</span>totalPenalty<span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
@@ -8046,18 +8004,18 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>317
-318
-319
-320
-321
-322
-323
-324
-325
-326
-327
-328</pre></code>
+          <code class="lines"><pre>333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344</pre></code>
           <pre>
     <span class="token keyword">emit</span> <span class="token function">OrderComplete</span><span class="token punctuation">(</span>
       outbound_tkn<span class="token punctuation">,</span>
@@ -8067,7 +8025,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
       mor<span class="token punctuation">.</span>totalGave
     <span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">return</span> <span class="token punctuation">(</span>mor<span class="token punctuation">.</span>successCount<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalGot<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalGave<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> <span class="token punctuation">(</span>mor<span class="token punctuation">.</span>successCount<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalGot<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalGave<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>totalPenalty<span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 </pre>
         </div>
@@ -8121,12 +8079,12 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>334
-335
-336
-337
-338
-339</pre></code>
+          <code class="lines"><pre>350
+351
+352
+353
+354
+355</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">internalSnipes</span><span class="token punctuation">(</span>
     MultiOrder <span class="token keyword">memory</span> mor<span class="token punctuation">,</span>
     ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">,</span>
@@ -8149,13 +8107,13 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>341
-342
-343
-344
-345
-346
-347</pre></code>
+          <code class="lines"><pre>357
+358
+359
+360
+361
+362
+363</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">&lt;</span> targets<span class="token punctuation">.</span>length<span class="token punctuation">)</span> <span class="token punctuation">{</span>
       sor<span class="token punctuation">.</span>offerId <span class="token operator">=</span> targets<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
       sor<span class="token punctuation">.</span>offer <span class="token operator">=</span> offers<span class="token punctuation">[</span>sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>offerId<span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -8179,10 +8137,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>349
-350
-351
-352</pre></code>
+          <code class="lines"><pre>365
+366
+367
+368</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>
         <span class="token operator">!</span><span class="token function">isLive</span><span class="token punctuation">(</span>sor<span class="token punctuation">.</span>offer<span class="token punctuation">)</span> <span class="token operator">||</span>
         $$<span class="token punctuation">(</span><span class="token function">offerDetail_gasreq</span><span class="token punctuation">(</span><span class="token string">"sor.offerDetail"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">></span> targets<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span>
@@ -8203,23 +8161,23 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>354
-355
-356
-357
-358
-359
-360
-361
-362
-363
-364
-365
-366
-367
-368
-369
-370</pre></code>
+          <code class="lines"><pre>370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386</pre></code>
           <pre>        <span class="token function">internalSnipes</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">,</span> targets<span class="token punctuation">,</span> i <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
         <span class="token builtin">uint</span> gasused<span class="token punctuation">;</span>
@@ -8271,8 +8229,8 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>373
-374</pre></code>
+          <code class="lines"><pre>389
+390</pre></code>
           <pre>        <span class="token punctuation">(</span>gasused<span class="token punctuation">,</span> makerData<span class="token punctuation">,</span> mgvData<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">execute</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -8291,17 +8249,17 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>376
-377
-378
-379
-380
-381
-382
-383
-384
-385
-386</pre></code>
+          <code class="lines"><pre>392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402</pre></code>
           <pre>        <span class="token keyword">if</span> <span class="token punctuation">(</span>mgvData <span class="token operator">!=</span> <span class="token string">"mgv/notExecuted"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
           sor<span class="token punctuation">.</span>local <span class="token operator">=</span> <span class="token function">stitchOffers</span><span class="token punctuation">(</span>
             sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">,</span>
@@ -8329,12 +8287,12 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>388
-389
-390
-391
-392
-393</pre></code>
+          <code class="lines"><pre>404
+405
+406
+407
+408
+409</pre></code>
           <pre>          <span class="token builtin">uint</span> offerId <span class="token operator">=</span> sor<span class="token punctuation">.</span>offerId<span class="token punctuation">;</span>
           <span class="token builtin">uint</span> takerWants <span class="token operator">=</span> sor<span class="token punctuation">.</span>wants<span class="token punctuation">;</span>
           <span class="token builtin">uint</span> takerGives <span class="token operator">=</span> sor<span class="token punctuation">.</span>gives<span class="token punctuation">;</span>
@@ -8357,8 +8315,8 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>395
-396</pre></code>
+          <code class="lines"><pre>411
+412</pre></code>
           <pre>          <span class="token function">internalSnipes</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">,</span> targets<span class="token punctuation">,</span> i <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </pre>
         </div>
@@ -8377,13 +8335,13 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>398
-399
-400
-401
-402
-403
-404</pre></code>
+          <code class="lines"><pre>414
+415
+416
+417
+418
+419
+420</pre></code>
           <pre>          sor<span class="token punctuation">.</span>offerId <span class="token operator">=</span> offerId<span class="token punctuation">;</span>
           sor<span class="token punctuation">.</span>wants <span class="token operator">=</span> takerWants<span class="token punctuation">;</span>
           sor<span class="token punctuation">.</span>gives <span class="token operator">=</span> takerGives<span class="token punctuation">;</span>
@@ -8407,10 +8365,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>406
-407
-408
-409</pre></code>
+          <code class="lines"><pre>422
+423
+424
+425</pre></code>
           <pre>        <span class="token keyword">if</span> <span class="token punctuation">(</span>mgvData <span class="token operator">!=</span> <span class="token string">"mgv/notExecuted"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
           <span class="token function">postExecute</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">,</span> gasused<span class="token punctuation">,</span> makerData<span class="token punctuation">,</span> mgvData<span class="token punctuation">)</span><span class="token punctuation">;</span>
         <span class="token punctuation">}</span>
@@ -8431,7 +8389,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>411</pre></code>
+          <code class="lines"><pre>427</pre></code>
           <pre>    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span></pre>
         </div>
         <div class="focuser">
@@ -8454,8 +8412,8 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>418
-419</pre></code>
+          <code class="lines"><pre>434
+435</pre></code>
           <pre>      sor<span class="token punctuation">.</span>local <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">set_local</span><span class="token punctuation">(</span><span class="token string">"sor.local"</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token string">"lock"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       locals<span class="token punctuation">[</span>sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">]</span><span class="token punctuation">[</span>sor<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">]</span> <span class="token operator">=</span> sor<span class="token punctuation">.</span>local<span class="token punctuation">;</span></pre>
         </div>
@@ -8474,7 +8432,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>421</pre></code>
+          <code class="lines"><pre>437</pre></code>
           <pre>      <span class="token function">payTakerMinusFees</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
@@ -8492,10 +8450,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>423
-424
-425
-426</pre></code>
+          <code class="lines"><pre>439
+440
+441
+442</pre></code>
           <pre>      <span class="token function">executeEnd</span><span class="token punctuation">(</span>mor<span class="token punctuation">,</span> sor<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">}</span>
@@ -8576,14 +8534,14 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>438
-439
-440
-441
-442
-443
-444
-445</pre></code>
+          <code class="lines"><pre>454
+455
+456
+457
+458
+459
+460
+461</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">execute</span><span class="token punctuation">(</span>MultiOrder <span class="token keyword">memory</span> mor<span class="token punctuation">,</span> ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">)</span>
     <span class="token keyword">internal</span>
     <span class="token keyword">returns</span> <span class="token punctuation">(</span>
@@ -8642,11 +8600,11 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>450
-451
-452
-453
-454</pre></code>
+          <code class="lines"><pre>466
+467
+468
+469
+470</pre></code>
           <pre>    <span class="token punctuation">{</span>
       <span class="token builtin">uint</span> offerWants <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">offer_wants</span><span class="token punctuation">(</span><span class="token string">"sor.offer"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token builtin">uint</span> offerGives <span class="token operator">=</span> $$<span class="token punctuation">(</span><span class="token function">offer_gives</span><span class="token punctuation">(</span><span class="token string">"sor.offer"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -8669,10 +8627,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>458
-459
-460
-461</pre></code>
+          <code class="lines"><pre>474
+475
+476
+477</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>offerWants <span class="token operator">*</span> takerWants <span class="token operator">></span> offerGives <span class="token operator">*</span> takerGives<span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token builtin">bytes32</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"mgv/notExecuted"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token punctuation">}</span>
@@ -8727,28 +8685,28 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>501
-502
-503
-504
-505
-506
-507
-508
-509
-510
-511
-512
-513
-514
-515
-516
-517
+          <code class="lines"><pre>517
 518
 519
 520
 521
-522</pre></code>
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>
         <span class="token punctuation">(</span>mor<span class="token punctuation">.</span>fillWants <span class="token operator">&amp;&amp;</span> offerGives <span class="token operator">&lt;</span> takerWants<span class="token punctuation">)</span> <span class="token operator">||</span>
         <span class="token punctuation">(</span><span class="token operator">!</span>mor<span class="token punctuation">.</span>fillWants <span class="token operator">&amp;&amp;</span> offerWants <span class="token operator">&lt;</span> takerGives<span class="token punctuation">)</span>
@@ -8791,10 +8749,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>527
-528
-529
-530</pre></code>
+          <code class="lines"><pre>543
+544
+545
+546</pre></code>
           <pre>    <span class="token punctuation">(</span><span class="token builtin">bool</span> success<span class="token punctuation">,</span> <span class="token builtin">bytes</span> <span class="token keyword">memory</span> retdata<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token builtin">address</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">call</span><span class="token punctuation">(</span>
       abi<span class="token punctuation">.</span><span class="token function">encodeWithSelector</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>flashloan<span class="token punctuation">.</span>selector<span class="token punctuation">,</span> sor<span class="token punctuation">,</span> mor<span class="token punctuation">.</span>taker<span class="token punctuation">)</span>
     <span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -8815,8 +8773,8 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>532
-533</pre></code>
+          <code class="lines"><pre>548
+549</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span>success<span class="token punctuation">)</span> <span class="token punctuation">{</span>
       mor<span class="token punctuation">.</span>successCount <span class="token operator">+=</span> <span class="token number">1</span><span class="token punctuation">;</span></pre>
         </div>
@@ -8835,7 +8793,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>535</pre></code>
+          <code class="lines"><pre>551</pre></code>
           <pre>      gasused <span class="token operator">=</span> abi<span class="token punctuation">.</span><span class="token function">decode</span><span class="token punctuation">(</span>retdata<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
@@ -8853,16 +8811,16 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>537
-538
-539
-540
-541
-542
-543
-544
-545
-546</pre></code>
+          <code class="lines"><pre>553
+554
+555
+556
+557
+558
+559
+560
+561
+562</pre></code>
           <pre>      mgvData <span class="token operator">=</span> <span class="token builtin">bytes32</span><span class="token punctuation">(</span><span class="token string">"mgv/tradeSuccess"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token keyword">emit</span> <span class="token function">OfferSuccess</span><span class="token punctuation">(</span>
         sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">,</span>
@@ -8889,13 +8847,13 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>548
-549
-550
-551
-552
-553
-554</pre></code>
+          <code class="lines"><pre>564
+565
+566
+567
+568
+569
+570</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">global_notify</span><span class="token punctuation">(</span><span class="token string">"sor.global"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token function">IMgvMonitor</span><span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">global_monitor</span><span class="token punctuation">(</span><span class="token string">"sor.global"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">notifySuccess</span><span class="token punctuation">(</span>
           sor<span class="token punctuation">,</span>
@@ -8937,9 +8895,9 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>557
-558
-559</pre></code>
+          <code class="lines"><pre>573
+574
+575</pre></code>
           <pre>      mor<span class="token punctuation">.</span>totalGot <span class="token operator">+=</span> sor<span class="token punctuation">.</span>wants<span class="token punctuation">;</span>
       mor<span class="token punctuation">.</span>totalGave <span class="token operator">+=</span> sor<span class="token punctuation">.</span>gives<span class="token punctuation">;</span>
     <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span></pre>
@@ -8959,7 +8917,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>561</pre></code>
+          <code class="lines"><pre>577</pre></code>
           <pre>      <span class="token punctuation">(</span>mgvData<span class="token punctuation">,</span> gasused<span class="token punctuation">,</span> makerData<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">innerDecode</span><span class="token punctuation">(</span>retdata<span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
@@ -8977,24 +8935,24 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>563
-564
-565
-566
-567
-568
-569
-570
-571
-572
-573
-574
-575
-576
-577
-578
-579
-580</pre></code>
+          <code class="lines"><pre>579
+580
+581
+582
+583
+584
+585
+586
+587
+588
+589
+590
+591
+592
+593
+594
+595
+596</pre></code>
           <pre>      <span class="token keyword">if</span> <span class="token punctuation">(</span>
         mgvData <span class="token operator">==</span> <span class="token string">"mgv/makerRevert"</span> <span class="token operator">||</span>
         mgvData <span class="token operator">==</span> <span class="token string">"mgv/makerAbort"</span> <span class="token operator">||</span>
@@ -9029,12 +8987,12 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>582
-583
-584
-585
-586
-587</pre></code>
+          <code class="lines"><pre>598
+599
+600
+601
+602
+603</pre></code>
           <pre>        <span class="token keyword">if</span> <span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">global_notify</span><span class="token punctuation">(</span><span class="token string">"sor.global"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
           <span class="token function">IMgvMonitor</span><span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">global_monitor</span><span class="token punctuation">(</span><span class="token string">"sor.global"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">notifyFail</span><span class="token punctuation">(</span>
             sor<span class="token punctuation">,</span>
@@ -9057,11 +9015,11 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>589
-590
-591
-592
-593</pre></code>
+          <code class="lines"><pre>605
+606
+607
+608
+609</pre></code>
           <pre>      <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>mgvData <span class="token operator">==</span> <span class="token string">"mgv/notEnoughGasForMakerTrade"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token keyword">revert</span><span class="token punctuation">(</span><span class="token string">"mgv/notEnoughGasForMakerTrade"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>mgvData <span class="token operator">==</span> <span class="token string">"mgv/takerTransferFail"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -9083,10 +9041,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>595
-596
-597
-598</pre></code>
+          <code class="lines"><pre>611
+612
+613
+614</pre></code>
           <pre>        <span class="token keyword">revert</span><span class="token punctuation">(</span><span class="token string">"mgv/swapError"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
       <span class="token punctuation">}</span>
     <span class="token punctuation">}</span>
@@ -9107,15 +9065,15 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>600
-601
-602
-603
-604
-605
-606
-607
-608</pre></code>
+          <code class="lines"><pre>616
+617
+618
+619
+620
+621
+622
+623
+624</pre></code>
           <pre>    <span class="token function">dirtyDeleteOffer</span><span class="token punctuation">(</span>
       sor<span class="token punctuation">.</span>outbound_tkn<span class="token punctuation">,</span>
       sor<span class="token punctuation">.</span>inbound_tkn<span class="token punctuation">,</span>
@@ -9160,11 +9118,11 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>613
-614
-615
-616
-617</pre></code>
+          <code class="lines"><pre>629
+630
+631
+632
+633</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">flashloan</span><span class="token punctuation">(</span>ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">calldata</span> sor<span class="token punctuation">,</span> <span class="token builtin">address</span> taker<span class="token punctuation">)</span>
     <span class="token keyword">external</span>
     virtual
@@ -9204,16 +9162,16 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>620
-621
-622
-623
-624
-625
-626
-627
-628
-629</pre></code>
+          <code class="lines"><pre>636
+637
+638
+639
+640
+641
+642
+643
+644
+645</pre></code>
           <pre>
   <span class="token keyword">function</span> <span class="token function">makerExecute</span><span class="token punctuation">(</span>ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">calldata</span> sor<span class="token punctuation">)</span>
     <span class="token keyword">internal</span>
@@ -9258,18 +9216,18 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>632
-633
-634
-635
-636
-637
-638
-639
-640
-641
-642
-643</pre></code>
+          <code class="lines"><pre>648
+649
+650
+651
+652
+653
+654
+655
+656
+657
+658
+659</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>oldGas <span class="token operator">-</span> oldGas <span class="token operator">/</span> <span class="token number">64</span> <span class="token operator">>=</span> gasreq<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
       <span class="token function">innerRevert</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token builtin">bytes32</span><span class="token punctuation">(</span><span class="token string">"mgv/notEnoughGasForMakerTrade"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
@@ -9298,24 +9256,24 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>646
-647
-648
-649
-650
-651
-652
-653
-654
-655
-656
-657
-658
-659
-660
-661
-662
-663</pre></code>
+          <code class="lines"><pre>662
+663
+664
+665
+666
+667
+668
+669
+670
+671
+672
+673
+674
+675
+676
+677
+678
+679</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span>makerData <span class="token operator">!=</span> <span class="token string">""</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
       <span class="token function">innerRevert</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token builtin">bytes32</span><span class="token punctuation">(</span><span class="token string">"mgv/makerAbort"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token builtin">bytes32</span><span class="token punctuation">(</span>gasused<span class="token punctuation">)</span><span class="token punctuation">,</span> makerData<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
@@ -9368,10 +9326,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>666
-667
-668
-669</pre></code>
+          <code class="lines"><pre>682
+683
+684
+685</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">executeEnd</span><span class="token punctuation">(</span>MultiOrder <span class="token keyword">memory</span> mor<span class="token punctuation">,</span> ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">)</span>
     <span class="token keyword">internal</span>
     virtual<span class="token punctuation">;</span>
@@ -9414,19 +9372,19 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>675
-676
-677
-678
-679
-680
-681
-682
-683
-684
-685
-686
-687</pre></code>
+          <code class="lines"><pre>691
+692
+693
+694
+695
+696
+697
+698
+699
+700
+701
+702
+703</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">postExecute</span><span class="token punctuation">(</span>
     MultiOrder <span class="token keyword">memory</span> mor<span class="token punctuation">,</span>
     ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">,</span>
@@ -9456,19 +9414,19 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>689
-690
-691
-692
-693
-694
-695
-696
-697
-698
-699
-700
-701</pre></code>
+          <code class="lines"><pre>705
+706
+707
+708
+709
+710
+711
+712
+713
+714
+715
+716
+717</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span>gasused <span class="token operator">></span> gasreq<span class="token punctuation">)</span> <span class="token punctuation">{</span>
       gasused <span class="token operator">=</span> gasreq<span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
@@ -9516,9 +9474,9 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>704
-705
-706</pre></code>
+          <code class="lines"><pre>720
+721
+722</pre></code>
           <pre>
   <span class="token keyword">function</span> <span class="token function">beforePosthook</span><span class="token punctuation">(</span>ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">)</span> <span class="token keyword">internal</span> virtual<span class="token punctuation">;</span>
 </pre>
@@ -9538,12 +9496,12 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>708
-709
-710
-711
-712
-713</pre></code>
+          <code class="lines"><pre>724
+725
+726
+727
+728
+729</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">makerPosthook</span><span class="token punctuation">(</span>
     ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> gasLeft<span class="token punctuation">,</span>
@@ -9566,15 +9524,15 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>715
-716
-717
-718
-719
-720
-721
-722
-723</pre></code>
+          <code class="lines"><pre>731
+732
+733
+734
+735
+736
+737
+738
+739</pre></code>
           <pre>    <span class="token builtin">bytes</span> <span class="token keyword">memory</span> cd <span class="token operator">=</span> abi<span class="token punctuation">.</span><span class="token function">encodeWithSelector</span><span class="token punctuation">(</span>
       IMaker<span class="token punctuation">.</span>makerPosthook<span class="token punctuation">.</span>selector<span class="token punctuation">,</span>
       sor<span class="token punctuation">,</span>
@@ -9600,19 +9558,19 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>725
-726
-727
-728
-729
-730
-731
-732
-733
-734
-735
-736
-737</pre></code>
+          <code class="lines"><pre>741
+742
+743
+744
+745
+746
+747
+748
+749
+750
+751
+752
+753</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span>oldGas <span class="token operator">-</span> oldGas <span class="token operator">/</span> <span class="token number">64</span> <span class="token operator">>=</span> gasLeft<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
       <span class="token keyword">revert</span><span class="token punctuation">(</span><span class="token string">"mgv/notEnoughGasForMakerPosthook"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
@@ -9660,20 +9618,20 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>740
-741
-742
-743
-744
-745
-746
-747
-748
-749
-750
-751
-752
-753</pre></code>
+          <code class="lines"><pre>756
+757
+758
+759
+760
+761
+762
+763
+764
+765
+766
+767
+768
+769</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">controlledCall</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> callee<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> gasreq<span class="token punctuation">,</span>
@@ -9788,19 +9746,19 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>775
-776
-777
-778
-779
-780
-781
-782
-783
-784
-785
-786
-787</pre></code>
+          <code class="lines"><pre>791
+792
+793
+794
+795
+796
+797
+798
+799
+800
+801
+802
+803</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">applyPenalty</span><span class="token punctuation">(</span>
     ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">,</span>
     <span class="token builtin">uint</span> gasused<span class="token punctuation">,</span>
@@ -9830,10 +9788,10 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>789
-790
-791
-792</pre></code>
+          <code class="lines"><pre>805
+806
+807
+808</pre></code>
           <pre>    <span class="token keyword">if</span> <span class="token punctuation">(</span>gasused <span class="token operator">></span> gasreq<span class="token punctuation">)</span> <span class="token punctuation">{</span>
       gasused <span class="token operator">=</span> gasreq<span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
@@ -9854,17 +9812,17 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>794
-795
-796
-797
-798
-799
-800
-801
-802
-803
-804</pre></code>
+          <code class="lines"><pre>810
+811
+812
+813
+814
+815
+816
+817
+818
+819
+820</pre></code>
           <pre>    <span class="token builtin">uint</span> penalty <span class="token operator">=</span> <span class="token number">10</span><span class="token operator">**</span><span class="token number">9</span> <span class="token operator">*</span>
       $$<span class="token punctuation">(</span><span class="token function">global_gasprice</span><span class="token punctuation">(</span><span class="token string">"sor.global"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">*</span>
       <span class="token punctuation">(</span>gasused <span class="token operator">+</span>
@@ -9892,18 +9850,18 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>806
-807
-808
-809
-810
-811
-812
-813
-814
-815
-816
-817</pre></code>
+          <code class="lines"><pre>822
+823
+824
+825
+826
+827
+828
+829
+830
+831
+832
+833</pre></code>
           <pre>    <span class="token function">creditWei</span><span class="token punctuation">(</span>$$<span class="token punctuation">(</span><span class="token function">offerDetail_maker</span><span class="token punctuation">(</span><span class="token string">"sor.offerDetail"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> provision <span class="token operator">-</span> penalty<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
     <span class="token keyword">return</span> penalty<span class="token punctuation">;</span>
@@ -9932,9 +9890,9 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>819
-820
-821</pre></code>
+          <code class="lines"><pre>835
+836
+837</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">payTakerMinusFees</span><span class="token punctuation">(</span>MultiOrder <span class="token keyword">memory</span> mor<span class="token punctuation">,</span> ML<span class="token punctuation">.</span>SingleOrder <span class="token keyword">memory</span> sor<span class="token punctuation">)</span>
     <span class="token keyword">internal</span>
   <span class="token punctuation">{</span></pre>
@@ -9954,23 +9912,23 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>823
-824
-825
-826
-827
-828
-829
-830
-831
-832
-833
-834
-835
-836
-837
-838
-839</pre></code>
+          <code class="lines"><pre>839
+840
+841
+842
+843
+844
+845
+846
+847
+848
+849
+850
+851
+852
+853
+854
+855</pre></code>
           <pre>
     <span class="token builtin">uint</span> concreteFee <span class="token operator">=</span> <span class="token punctuation">(</span>mor<span class="token punctuation">.</span>totalGot <span class="token operator">*</span> $$<span class="token punctuation">(</span><span class="token function">local_fee</span><span class="token punctuation">(</span><span class="token string">"sor.local"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token number">10</span>_000<span class="token punctuation">;</span>
     <span class="token keyword">if</span> <span class="token punctuation">(</span>concreteFee <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -10022,15 +9980,15 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>843
-844
-845
-846
-847
-848
-849
-850
-851</pre></code>
+          <code class="lines"><pre>859
+860
+861
+862
+863
+864
+865
+866
+867</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">innerDecode</span><span class="token punctuation">(</span><span class="token builtin">bytes</span> <span class="token keyword">memory</span> data<span class="token punctuation">)</span>
     <span class="token keyword">internal</span>
     <span class="token keyword">pure</span>
@@ -10056,13 +10014,13 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>853
-854
-855
-856
-857
-858
-859</pre></code>
+          <code class="lines"><pre>869
+870
+871
+872
+873
+874
+875</pre></code>
           <pre>    <span class="token keyword">assembly</span> <span class="token punctuation">{</span>
       mgvData <span class="token operator">:=</span> <span class="token function">mload</span><span class="token punctuation">(</span><span class="token function">add</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
       gasused <span class="token operator">:=</span> <span class="token function">mload</span><span class="token punctuation">(</span><span class="token function">add</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
@@ -10086,12 +10044,12 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>861
-862
-863
-864
-865
-866</pre></code>
+          <code class="lines"><pre>877
+878
+879
+880
+881
+882</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">innerRevert</span><span class="token punctuation">(</span><span class="token builtin">bytes32</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span> <span class="token keyword">memory</span> data<span class="token punctuation">)</span> <span class="token keyword">internal</span> <span class="token keyword">pure</span> <span class="token punctuation">{</span>
     <span class="token keyword">assembly</span> <span class="token punctuation">{</span>
       <span class="token keyword">revert</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> <span class="token number">96</span><span class="token punctuation">)</span>
@@ -10116,23 +10074,7 @@ Note that we do not distinguish further between mismatched arguments/offer field
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>872
-873
-874
-875
-876
-877
-878
-879
-880
-881
-882
-883
-884
-885
-886
-887
-888
+          <code class="lines"><pre>888
 889
 890
 891
@@ -10145,7 +10087,23 @@ Note that we do not distinguish further between mismatched arguments/offer field
 898
 899
 900
-901</pre></code>
+901
+902
+903
+904
+905
+906
+907
+908
+909
+910
+911
+912
+913
+914
+915
+916
+917</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">transferTokenFrom</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> tokenAddress<span class="token punctuation">,</span>
     <span class="token builtin">address</span> <span class="token keyword">from</span><span class="token punctuation">,</span>
@@ -10797,7 +10755,11 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
 133
 134
 135
-136</pre></code>
+136
+137
+138
+139
+140</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">marketOrderFor</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
@@ -10805,16 +10767,42 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
     <span class="token builtin">uint</span> takerGives<span class="token punctuation">,</span>
     <span class="token builtin">bool</span> fillWants<span class="token punctuation">,</span>
     <span class="token builtin">address</span> taker
-  <span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token keyword">returns</span> <span class="token punctuation">(</span><span class="token builtin">uint</span> takerGot<span class="token punctuation">,</span> <span class="token builtin">uint</span> takerGave<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token punctuation">(</span>takerGot<span class="token punctuation">,</span> takerGave<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">generalMarketOrder</span><span class="token punctuation">(</span>
+  <span class="token punctuation">)</span>
+    <span class="token keyword">external</span>
+    <span class="token keyword">returns</span> <span class="token punctuation">(</span>
+      <span class="token builtin">uint</span> takerGot<span class="token punctuation">,</span>
+      <span class="token builtin">uint</span> takerGave<span class="token punctuation">,</span>
+      <span class="token builtin">uint</span> bounty
+    <span class="token punctuation">)</span>
+  <span class="token punctuation">{</span>
+    <span class="token punctuation">(</span>takerGot<span class="token punctuation">,</span> takerGave<span class="token punctuation">,</span> bounty<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">generalMarketOrder</span><span class="token punctuation">(</span>
       outbound_tkn<span class="token punctuation">,</span>
       inbound_tkn<span class="token punctuation">,</span>
       takerWants<span class="token punctuation">,</span>
       takerGives<span class="token punctuation">,</span>
       fillWants<span class="token punctuation">,</span>
       taker
-    <span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token function">deductSenderAllowance</span><span class="token punctuation">(</span>outbound_tkn<span class="token punctuation">,</span> inbound_tkn<span class="token punctuation">,</span> taker<span class="token punctuation">,</span> takerGave<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
+        </div>
+        <div class="focuser">
+          <div class="focus-icon"><!--⥮--></div>
+          <div class="warning-overlay"></div>
+        </div>
+      </code>
+    </div>
+    <div class="level">
+      <div class="left-background"></div>
+      <div class="hover-background"></div>
+      <div class="left">
+        <div class="blockComment"><p>The sender’s allowance is verified after the order complete so that <code>takerGave</code> rather than <code>takerGives</code> is checked against the allowance. The former may be lower.</p>
+</div>
+      </div>
+      <code class="right solidity">
+        <div class="codewrap">
+          <code class="lines"><pre>142
+143
+144</pre></code>
+          <pre>    <span class="token function">deductSenderAllowance</span><span class="token punctuation">(</span>outbound_tkn<span class="token punctuation">,</span> inbound_tkn<span class="token punctuation">,</span> taker<span class="token punctuation">,</span> takerGave<span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 </pre>
         </div>
@@ -10833,15 +10821,7 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>138
-139
-140
-141
-142
-143
-144
-145
-146
+          <code class="lines"><pre>146
 147
 148
 149
@@ -10856,7 +10836,13 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
 158
 159
 160
-161</pre></code>
+161
+162
+163
+164
+165
+166
+167</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">snipesFor</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
@@ -10868,17 +10854,38 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
     <span class="token keyword">returns</span> <span class="token punctuation">(</span>
       <span class="token builtin">uint</span> successes<span class="token punctuation">,</span>
       <span class="token builtin">uint</span> takerGot<span class="token punctuation">,</span>
-      <span class="token builtin">uint</span> takerGave
+      <span class="token builtin">uint</span> takerGave<span class="token punctuation">,</span>
+      <span class="token builtin">uint</span> bounty
     <span class="token punctuation">)</span>
   <span class="token punctuation">{</span>
-    <span class="token punctuation">(</span>successes<span class="token punctuation">,</span> takerGot<span class="token punctuation">,</span> takerGave<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">generalSnipes</span><span class="token punctuation">(</span>
+    <span class="token punctuation">(</span>successes<span class="token punctuation">,</span> takerGot<span class="token punctuation">,</span> takerGave<span class="token punctuation">,</span> bounty<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">generalSnipes</span><span class="token punctuation">(</span>
       outbound_tkn<span class="token punctuation">,</span>
       inbound_tkn<span class="token punctuation">,</span>
       targets<span class="token punctuation">,</span>
       fillWants<span class="token punctuation">,</span>
       taker
-    <span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token function">deductSenderAllowance</span><span class="token punctuation">(</span>outbound_tkn<span class="token punctuation">,</span> inbound_tkn<span class="token punctuation">,</span> taker<span class="token punctuation">,</span> takerGave<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
+        </div>
+        <div class="focuser">
+          <div class="focus-icon"><!--⥮--></div>
+          <div class="warning-overlay"></div>
+        </div>
+      </code>
+    </div>
+    <div class="level">
+      <div class="left-background"></div>
+      <div class="hover-background"></div>
+      <div class="left">
+        <div class="blockComment"><p>The sender’s allowance is verified after the order complete so that the actual amounts are checked against the allowance, instead of the declared <code>takerGives</code>. The former may be lower.</p>
+<p>An immediate consequence is that any funds availale to Mangrove through <code>approve</code> can be used to clean offers. After a <code>snipesFor</code> where all offers have failed, all token transfers have been reverted, so <code>takerGave=0</code> and the check will succeed – but the sender will still have received the bounty of the failing offers.</p>
+</div>
+      </div>
+      <code class="right solidity">
+        <div class="codewrap">
+          <code class="lines"><pre>171
+172
+173</pre></code>
+          <pre>    <span class="token function">deductSenderAllowance</span><span class="token punctuation">(</span>outbound_tkn<span class="token punctuation">,</span> inbound_tkn<span class="token punctuation">,</span> taker<span class="token punctuation">,</span> takerGave<span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 </pre>
         </div>
@@ -10915,17 +10922,17 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
       </div>
       <code class="right solidity">
         <div class="codewrap">
-          <code class="lines"><pre>165
-166
-167
-168
-169
-170
-171
-172
-173
-174
-175</pre></code>
+          <code class="lines"><pre>177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187</pre></code>
           <pre>  <span class="token keyword">function</span> <span class="token function">deductSenderAllowance</span><span class="token punctuation">(</span>
     <span class="token builtin">address</span> outbound_tkn<span class="token punctuation">,</span>
     <span class="token builtin">address</span> inbound_tkn<span class="token punctuation">,</span>
@@ -11574,7 +11581,7 @@ abstract <span class="token keyword">contract</span> <span class="token class-na
   <span class="token punctuation">)</span> <span class="token keyword">public</span> <span class="token punctuation">{</span>
     <span class="token function">authOnly</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token keyword">require</span><span class="token punctuation">(</span><span class="token function">checkDensity</span><span class="token punctuation">(</span>density<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"mgv/config/density/32bits"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
+    <span class="token keyword">require</span><span class="token punctuation">(</span><span class="token function">checkDensity</span><span class="token punctuation">(</span>density<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"mgv/config/density/128bits"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></pre>
         </div>
         <div class="focuser">
           <div class="focus-icon"><!--⥮--></div>
