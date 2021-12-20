@@ -17,21 +17,6 @@
   ],
   "markets": [
     {
-      "baseToken": "WETH",
-      "quoteToken": "DAI",
-      "makerConfig": {
-        "offerRate": 0.005,
-        "bidProbability": 0.5,
-        "lambda": 10,
-        "maxQuantity": 10
-      },
-      "takerConfig": {
-        "takeRate": 0.005,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
-      }
-    },
-    {
       "baseToken": "DAI",
       "quoteToken": "USDC",
       "makerConfig": {
@@ -41,7 +26,7 @@
         "maxQuantity": 10
       },
       "takerConfig": {
-        "takeRate": 0.005,
+        "takeRate": 0.0275,
         "bidProbability": 0.5,
         "maxQuantity": 1
       }
