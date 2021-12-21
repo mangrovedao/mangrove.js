@@ -1,3 +1,9 @@
+# 0.0.6
+
+- SimpleMaker constructor is called Maker
+- `market.consoleAsk` and `market.consoleBids` now allows for pretty printing semi OB
+- `bids` and `asks` allows for optional parameters `gasreq` and `gasprice` if one wants to change their values
+
 # 0.0.5 (December 2021)
 
 - Add `bookOptions` to SimpleMaker constructor.
@@ -9,8 +15,6 @@
 - User can add slippage limit to market orders
 
 # 0.0.4 (December 2021)
-
-TODO fill in
 
 # 0.0.3 (December 2021)
 
