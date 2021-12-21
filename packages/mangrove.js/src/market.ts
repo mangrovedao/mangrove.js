@@ -576,7 +576,6 @@ class Market {
         : [this.quote, this.base, false];
 
     const gasLimit = await this.estimateGas(orderType, wants);
-    console.log("Aboutto call contract");
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
