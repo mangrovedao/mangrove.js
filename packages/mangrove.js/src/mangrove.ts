@@ -20,14 +20,13 @@ import type { Awaited } from "ts-essentials";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type rawConfig = Awaited<
-    ReturnType<typechain.MgvReader["functions"]["config"]>
+    ReturnType<typechain.Mangrove["functions"]["configInfo"]>
   >;
 
   export type localConfig = {
     active: boolean;
     fee: number;
     density: Big;
-    overhead_gasbase: number;
     offer_gasbase: number;
     lock: boolean;
     best: number;
@@ -279,7 +278,7 @@ class Mangrove {
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async config(): Promise<Mangrove.globalConfig> {
-    const config = await this.readerContract.config(
+    const config = await this.contract.configInfo(
       ethers.constants.AddressZero,
       ethers.constants.AddressZero
     );

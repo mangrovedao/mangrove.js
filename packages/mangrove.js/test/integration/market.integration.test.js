@@ -105,7 +105,6 @@ describe("Market integration tests suite", () => {
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
-      overhead_gasbase: (await market.config()).asks.overhead_gasbase,
       offer_gasbase: (await market.config()).asks.offer_gasbase,
       wants: Big("1"),
       gives: Big("1.2"),
@@ -130,7 +129,6 @@ describe("Market integration tests suite", () => {
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
-      overhead_gasbase: (await market.config()).bids.overhead_gasbase,
       offer_gasbase: (await market.config()).bids.offer_gasbase,
       wants: Big("1.3"),
       gives: Big("1.1"),
@@ -302,7 +300,6 @@ describe("Market integration tests suite", () => {
           volume: Big(ofr[baseVolume]),
           price: Big(ofr[quoteVolume]).div(Big(ofr[baseVolume])),
           maker: selfAddress,
-          overhead_gasbase: _config.overhead_gasbase,
           offer_gasbase: _config.offer_gasbase,
         };
       });

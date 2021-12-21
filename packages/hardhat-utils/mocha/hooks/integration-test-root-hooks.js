@@ -64,10 +64,10 @@ exports.mochaHooks = {
     );
 
     await mgvContract
-      .activate(TokenA.address, TokenB.address, 0, 10, 80000, 20000)
+      .activate(TokenA.address, TokenB.address, 0, 10, 20000)
       .then((tx) => tx.wait());
     await mgvContract
-      .activate(TokenB.address, TokenA.address, 0, 10, 80000, 20000)
+      .activate(TokenB.address, TokenA.address, 0, 10, 20000)
       .then((tx) => tx.wait());
 
     await TokenA.mint(testerAddress, toWei(10));
