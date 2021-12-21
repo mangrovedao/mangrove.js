@@ -576,7 +576,6 @@ class Market {
         : [this.quote, this.base, false];
 
     const gasLimit = await this.estimateGas(orderType, wants);
-    console.log("Aboutto call contract");
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
@@ -650,6 +649,70 @@ class Market {
     } while (maxOffersLeft > 0 && nextId !== 0);
 
     return [offerIds, offers, details];
+  }
+
+  /**Pretty prints the current state of the order book of the market */
+  async consoleAsks(
+    filter?: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "overhead_gasbase"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    let column = [];
+    column = filter ? filter : ["id", "maker", "volume", "price"];
+    await this.prettyPrint("asks", column);
+  }
+  async consoleBids(
+    filter?: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "overhead_gasbase"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    let column = [];
+    column = filter ? filter : ["id", "maker", "volume", "price"];
+    await this.prettyPrint("bids", column);
+  }
+
+  async prettyPrint(
+    ba: "bids" | "asks",
+    filter: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "overhead_gasbase"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    const book = await this.requestBook();
+    const offers = ba === "bids" ? book.bids : book.asks;
+    console.table(offers, filter);
   }
 
   /**

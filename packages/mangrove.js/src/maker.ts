@@ -33,9 +33,12 @@ namespace Maker {
    *  This basic maker contract will relay new/cancel/update
    *  offer order.
    */
+
+  type optParams = { gasreq?: number; gasprice?: number };
+
   export type offerParams =
-    | { price: Bigish; volume: Bigish }
-    | { wants: Bigish; gives: Bigish };
+    | ({ price: Bigish; volume: Bigish } & optParams)
+    | ({ wants: Bigish; gives: Bigish } & optParams);
 }
 
 /**
@@ -220,6 +223,8 @@ class Maker {
     price: Big;
     wants: Big;
     gives: Big;
+    gasreq?: number;
+    gasprice?: number;
   } {
     let wants, gives, price;
     // deduce price from wants&gives, or deduce wants&gives from volume&price
@@ -237,8 +242,9 @@ class Maker {
         [wants, gives] = [gives, wants];
       }
     }
-
-    return { wants, gives, price };
+    const gasreq = p.gasreq;
+    const gasprice = p.gasprice;
+    return { wants, gives, price, gasreq, gasprice };
   }
 
   /** Post a new ask */
@@ -273,7 +279,8 @@ class Maker {
     p: { ba: "bids" | "asks" } & Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
-    const { wants, gives, price } = this.normalizeOfferParams(p);
+    const { wants, gives, price, gasreq, gasprice } =
+      this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     const resp = await this.contract.newOffer(
@@ -281,8 +288,8 @@ class Maker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      this.gasreq, // gasreq
-      0,
+      gasreq ? gasreq : this.gasreq, // gasreq
+      gasprice ? gasprice : 0,
       this.market.getPivot(p.ba, price),
       overrides
     );
@@ -331,7 +338,8 @@ class Maker {
       );
     }
 
-    const { wants, gives, price } = this.normalizeOfferParams(p);
+    const { wants, gives, price, gasreq, gasprice } =
+      this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     const resp = await this.contract.updateOffer(
@@ -339,8 +347,8 @@ class Maker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      offer.gasreq,
-      offer.gasprice,
+      gasreq ? gasreq : offer.gasreq,
+      gasprice ? gasprice : offer.gasprice,
       this.market.getPivot(p.ba, price),
       id,
       overrides
