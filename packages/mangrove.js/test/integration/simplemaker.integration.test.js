@@ -169,13 +169,17 @@ describe("SimpleMaker", () => {
           wants: 10,
           gives: 20,
         });
+        await mkr.updateAsk(ofrId, { wants: 12, gives: 10 });
         provision = await mkr.computeAskProvision(ofrId);
         assert.equal(provision, 0, `There should be no need to reprovision`);
-        await mkr.updateAsk(ofrId, { wants: 12, gives: 10 });
-
+        await mkr.updateAsk(ofrId, { wants: 12, gives: 10, gasreq: 90000 });
         const asks = mkr.asks();
         assert.equal(asks[0].wants, 12, "offer should have updated wants");
         assert.equal(asks[0].gives, 10, "offer should have updated gives");
+        assert.equal(asks[0].gasreq, 90000, "offer should have updated gasreq");
+        await mkr.setGasreq(150000);
+        const gasreq = await mkr.fetchGasreq();
+        assert.equal(gasreq, 150000, "offer default gasreq is incorrect");
       });
     });
   });

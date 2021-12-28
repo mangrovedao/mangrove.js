@@ -33,9 +33,12 @@ namespace Maker {
    *  This basic maker contract will relay new/cancel/update
    *  offer order.
    */
+
+  type optParams = { gasreq?: number; gasprice?: number };
+
   export type offerParams =
-    | { price: Bigish; volume: Bigish }
-    | { wants: Bigish; gives: Bigish };
+    | ({ price: Bigish; volume: Bigish } & optParams)
+    | ({ wants: Bigish; gives: Bigish } & optParams);
 }
 
 /**
@@ -157,7 +160,7 @@ class Maker {
   ): Promise<TransactionResponse> {
     const _amount =
       typeof amount === "undefined"
-        ? ethers.BigNumber.from(2).pow(256).sub(1)
+        ? ethers.constants.MaxUint256
         : this.mgv.toUnits(amount, tokenName);
     return this.contract.approveMangrove(
       this.mgv.getAddress(tokenName),
@@ -202,6 +205,22 @@ class Maker {
     );
   }
 
+  async setGasreq(amount: number): Promise<TransactionResponse> {
+    if (amount > 2 ** 24 - 1) {
+      throw Error(
+        `Gas required ${amount.toString()} too high, should be 24 bits`
+      );
+    }
+    this.gasreq = amount;
+    return this.contract.setGasreq(ethers.BigNumber.from(amount));
+  }
+
+  async fetchGasreq(): Promise<number> {
+    const bn_gasreq = await this.contract.OFR_GASREQ();
+    this.gasreq = bn_gasreq.toNumber();
+    return this.gasreq;
+  }
+
   /** List all of the maker's asks */
   asks(): Market.Offer[] {
     return this.market.book().asks.filter((ofr) => ofr.maker === this.address);
@@ -220,6 +239,8 @@ class Maker {
     price: Big;
     wants: Big;
     gives: Big;
+    gasreq?: number;
+    gasprice?: number;
   } {
     let wants, gives, price;
     // deduce price from wants&gives, or deduce wants&gives from volume&price
@@ -237,8 +258,9 @@ class Maker {
         [wants, gives] = [gives, wants];
       }
     }
-
-    return { wants, gives, price };
+    const gasreq = p.gasreq;
+    const gasprice = p.gasprice;
+    return { wants, gives, price, gasreq, gasprice };
   }
 
   /** Post a new ask */
@@ -273,7 +295,8 @@ class Maker {
     p: { ba: "bids" | "asks" } & Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
-    const { wants, gives, price } = this.normalizeOfferParams(p);
+    const { wants, gives, price, gasreq, gasprice } =
+      this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     const resp = await this.contract.newOffer(
@@ -281,8 +304,8 @@ class Maker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      this.gasreq, // gasreq
-      0,
+      gasreq ? gasreq : this.gasreq, // gasreq
+      gasprice ? gasprice : 0,
       this.market.getPivot(p.ba, price),
       overrides
     );
@@ -331,7 +354,8 @@ class Maker {
       );
     }
 
-    const { wants, gives, price } = this.normalizeOfferParams(p);
+    const { wants, gives, price, gasreq, gasprice } =
+      this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     const resp = await this.contract.updateOffer(
@@ -339,8 +363,8 @@ class Maker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      offer.gasreq,
-      offer.gasprice,
+      gasreq ? gasreq : offer.gasreq,
+      gasprice ? gasprice : offer.gasprice,
       this.market.getPivot(p.ba, price),
       id,
       overrides
