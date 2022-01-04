@@ -214,12 +214,12 @@
       {
         "internalType": "Offer.t[]",
         "name": "",
-        "type": "bytes32[]"
+        "type": "uint256[]"
       },
       {
         "internalType": "OfferDetail.t[]",
         "name": "",
-        "type": "bytes32[]"
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
