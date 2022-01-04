@@ -1,5 +1,5 @@
 {
-  "name": "@giry/obfiller-bot",
+  "name": "@mangrovedao/obfiller-bot",
   "version": "0.0.1",
   "author": "Mangrove DAO",
   "description": "A simple order book filler bot for testing Mangrove",
@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.5.0",
-    "@giry/commonlib-js": "workspace:*",
+    "@mangrovedao/commonlib-js": "workspace:*",
     "@mangrovedao/mangrove.js": "workspace:*",
     "@types/big.js": "^6.1.2",
     "big.js": "^6.1.1",
@@ -43,8 +43,8 @@
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
     "@ethersproject/hardware-wallets": "^5.4.0",
-    "@giry/hardhat-utils": "workspace:*",
-    "@giry/mangrove-solidity": "workspace:*",
+    "@mangrovedao/hardhat-utils": "workspace:*",
+    "@mangrovedao/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@types/chai": "^4.2.22",
     "@types/chai-as-promised": "^7.1.4",

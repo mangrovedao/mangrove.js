@@ -1,5 +1,5 @@
 import { logger } from "./util/logger";
-import { sleep } from "@giry/commonlib-js";
+import { sleep } from "@mangrovedao/commonlib-js";
 import Market from "@mangrovedao/mangrove.js/dist/nodejs/market";
 import * as Types from "@mangrovedao/mangrove.js/dist/nodejs/types";
 type Offer = Market.Offer;

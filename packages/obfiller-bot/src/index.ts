@@ -4,7 +4,7 @@
  */
 
 import config from "./util/config";
-import { ErrorWithData } from "@giry/commonlib-js";
+import { ErrorWithData } from "@mangrovedao/commonlib-js";
 import { logger } from "./util/logger";
 
 import Mangrove, { MgvToken } from "@mangrovedao/mangrove.js";

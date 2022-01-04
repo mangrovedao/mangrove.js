@@ -15,17 +15,17 @@ module.exports = {
       },
     },
     paths: {
-      artifacts: "node_modules/@giry/mangrove-solidity/artifacts",
+      artifacts: "node_modules/@mangrovedao/mangrove-solidity/artifacts",
     },
     external: {
       contracts: [
         {
-          artifacts: "node_modules/@giry/mangrove-solidity/artifacts",
-          deploy: "node_modules/@giry/mangrove-solidity/deploy",
+          artifacts: "node_modules/@mangrovedao/mangrove-solidity/artifacts",
+          deploy: "node_modules/@mangrovedao/mangrove-solidity/deploy",
         },
       ],
       deployments: {
-        localhost: "node_modules/@giry/mangrove-solidity/deployments",
+        localhost: "node_modules/@mangrovedao/mangrove-solidity/deployments",
       },
     },
     // see github.com/wighawag/hardhat-deploy#1-namedaccounts-ability-to-name-addresses

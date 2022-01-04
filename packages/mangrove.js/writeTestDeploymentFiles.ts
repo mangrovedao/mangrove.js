@@ -1,4 +1,4 @@
-const getParams = require("@giry/mangrove-solidity/lib/testDeploymentParams");
+const getParams = require("@mangrovedao/mangrove-solidity/lib/testDeploymentParams");
 const fs = require("fs");
 const JSON_FILE = "./src/hardhatAddresses.json";
 
