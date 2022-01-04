@@ -1,5 +1,5 @@
 {
-  "name": "@giry/hardhat-utils",
+  "name": "@mangrovedao/hardhat-utils",
   "version": "0.0.1",
   "author": "Mangrove DAO",
   "description": "Hardhat utilities for Mangrove",
@@ -20,7 +20,7 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
-    "@giry/mangrove-solidity": "workspace:*",
+    "@mangrovedao/mangrove-solidity": "workspace:*",
     "ethers": "^5.4.7",
     "hardhat": "^2.6.5",
     "mocha": "^9.1.2"

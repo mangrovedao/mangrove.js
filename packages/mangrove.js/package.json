@@ -11,8 +11,8 @@
     "lint": "npx eslint ./src/*.ts",
     "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
-    "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@giry/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
-    "get-mangrove-abis": "cp node_modules/@giry/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
+    "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
+    "get-mangrove-abis": "cp node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
     "copy-static-and-generated-assets": "ts-node copyStaticAndGeneratedAssets.ts",
     "write-test-deployment-file": "ts-node writeTestDeploymentFiles.ts",
     "clean-this-package": "yarn run clean-typechain && rimraf dist",
@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/giry-dev/mangrove.git"
+    "url": "https://github.com/mangrovedao/mangrove.git"
   },
   "keywords": [
     "mangrove",
@@ -69,8 +69,8 @@
     "@ethersproject/bytes": "^5.0.0",
     "@ethersproject/hardware-wallets": "^5.0.0",
     "@ethersproject/providers": "^5.0.0",
-    "@giry/hardhat-utils": "workspace:*",
-    "@giry/mangrove-solidity": "workspace:*",
+    "@mangrovedao/hardhat-utils": "workspace:*",
+    "@mangrovedao/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@rollup/plugin-commonjs": "^20.0.0",
     "@rollup/plugin-json": "^4.1.0",

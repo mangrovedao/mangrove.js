@@ -11,7 +11,7 @@ This SDK is in **open beta**, and is constantly under development. **USE AT YOUR
 ```html
 <script
   type="text/javascript"
-  src="https://cdn.jsdelivr.net/npm/@giry/mangrove.js"
+  src="https://cdn.jsdelivr.net/npm/@mangrovedao/mangrove.js"
 ></script>
 
 <script type="text/javascript">
@@ -22,7 +22,7 @@ This SDK is in **open beta**, and is constantly under development. **USE AT YOUR
 ### Node.js
 
 ```
-npm install @giry/mangrove.js
+npm install @mangrovedao/mangrove.js
 ```
 
 ```js
@@ -84,7 +84,7 @@ main().catch(console.error);
 
 ## Using as a maker
 
-// For now the only available maker is Maker. This maker has its own provisions and no internal 
+// For now the only available maker is Maker. This maker has its own provisions and no internal
 // logic. You can amplify your liquidity by posting more offers than your available liquidity.
 
 ```js
@@ -215,7 +215,7 @@ yarn test -- -g 'subscribes'
 
 Tests are based on [Mocha](https://mochajs.org/). Mocha configuration can be found in `./test/mocha/config`.
 
-The integration tests use the Root Hooks provided by `@giry/hardhat-utils` which start an in-process Hardhat chain with Mangrove deployed and add a matching `Provider` to the Mocha `Context`.
+The integration tests use the Root Hooks provided by `@mangrovedao/hardhat-utils` which start an in-process Hardhat chain with Mangrove deployed and add a matching `Provider` to the Mocha `Context`.
 
 ### Utility test scripts
 

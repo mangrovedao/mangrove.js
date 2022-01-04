@@ -1,1 +1,1 @@
-worker: yarn workspace @giry/updategas-bot start
+worker: yarn workspace @mangrovedao/updategas-bot start

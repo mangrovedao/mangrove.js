@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const helpers = require("../util/helpers");
-const hardhatUtils = require("@giry/hardhat-utils/hardhat-utils");
+const hardhatUtils = require("@mangrovedao/hardhat-utils/hardhat-utils");
 const main = async () => {
   const { Mangrove } = require("../../src");
 
