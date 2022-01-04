@@ -726,12 +726,12 @@
       {
         "internalType": "Global.t",
         "name": "_global",
-        "type": "bytes32"
+        "type": "uint256"
       },
       {
         "internalType": "Local.t",
         "name": "_local",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -875,7 +875,7 @@
           {
             "internalType": "Offer.t",
             "name": "offer",
-            "type": "bytes32"
+            "type": "uint256"
           },
           {
             "internalType": "uint256",
@@ -890,17 +890,17 @@
           {
             "internalType": "OfferDetail.t",
             "name": "offerDetail",
-            "type": "bytes32"
+            "type": "uint256"
           },
           {
             "internalType": "Global.t",
             "name": "global",
-            "type": "bytes32"
+            "type": "uint256"
           },
           {
             "internalType": "Local.t",
             "name": "local",
-            "type": "bytes32"
+            "type": "uint256"
           }
         ],
         "internalType": "struct MgvLib.SingleOrder",
@@ -962,7 +962,7 @@
       {
         "internalType": "Offer.t",
         "name": "offer",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
     "name": "isLive",
@@ -1201,7 +1201,7 @@
       {
         "internalType": "OfferDetail.t",
         "name": "",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1308,7 +1308,7 @@
       {
         "internalType": "Offer.t",
         "name": "",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
