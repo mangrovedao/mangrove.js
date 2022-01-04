@@ -187,6 +187,20 @@ class Maker {
     );
   }
 
+  /**Deposits `amount` tokens on the contract accounts */
+  depositToken(
+    tokenName: string,
+    amount: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<TransactionResponse> {
+    const tk = this.mgv.token(tokenName);
+    return tk.contract.transfer(
+      this.contract.address,
+      this.mgv.toUnits(amount, tokenName),
+      overrides
+    );
+  }
+
   /** Fund the current contract balance with ethers sent from current signer. */
   fundMangrove(
     amount: Bigish,
