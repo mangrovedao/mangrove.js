@@ -3,6 +3,7 @@ import { BigNumber } from "ethers"; // syntactic sugar
 import { TradeParams, Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
+import { OrderCompleteEvent } from "./types/typechain/Mangrove";
 
 let canConstructMarket = false;
 
@@ -30,7 +31,7 @@ import * as TCM from "./types/typechain/Mangrove";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
   export type MgvReader = typechain.MgvReader;
-  export type OrderResult = { got: Big; gave: Big };
+  export type OrderResult = { got: Big; gave: Big; penalty: Big };
   export type bookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
     | ({ name: "OfferFail" } & TCM.OfferFailEvent)
@@ -72,7 +73,7 @@ namespace Market {
 
   export type semibook = offerList & {
     ba: "bids" | "asks";
-    gasbase: { offer_gasbase: number; };
+    gasbase: { offer_gasbase: number };
   };
 
   export type OfferData = {
@@ -566,7 +567,7 @@ class Market {
     wants: ethers.BigNumber;
     gives: ethers.BigNumber;
     orderType: "buy" | "sell";
-  }): Promise<{ got: Big; gave: Big }> {
+  }): Promise<Market.OrderResult> {
     const [outboundTkn, inboundTkn, fillWants] =
       orderType === "buy"
         ? [this.base, this.quote, true]
@@ -587,7 +588,9 @@ class Market {
     //last OrderComplete is ours!
     for (const evt of receipt.events) {
       if (evt.event === "OrderComplete") {
-        result = evt;
+        if ((evt as OrderCompleteEvent).args.taker === receipt.from) {
+          result = evt;
+        }
       }
     }
     if (!result) {
@@ -598,6 +601,7 @@ class Market {
     return {
       got: this[got_bq].fromUnits(result.args.takerGot),
       gave: this[gave_bq].fromUnits(result.args.takerGave),
+      penalty: this.mgv.fromUnits(result.args.penalty, 18),
     };
   }
 
