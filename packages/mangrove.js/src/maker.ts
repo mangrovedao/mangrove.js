@@ -211,6 +211,18 @@ class Maker {
     return this.contract.fundMangrove(overrides);
   }
 
+  setDefaultGasreq(
+    amount: number,
+    overrides: ethers.Overrides = {}
+  ): Promise<TransactionResponse> {
+    const tx = this.contract.setGasreq(
+      ethers.BigNumber.from(amount),
+      overrides
+    );
+    this.gasreq = amount;
+    return tx;
+  }
+
   /** Withdraw from the maker's ether balance to the sender */
   async withdraw(amount: Bigish): Promise<TransactionResponse> {
     return this.contract.withdrawFromMangrove(

@@ -177,6 +177,10 @@ describe("SimpleMaker", () => {
         assert.equal(asks[0].wants, 12, "offer should have updated wants");
         assert.equal(asks[0].gives, 10, "offer should have updated gives");
       });
+      it("changes gasreq", async () => {
+        await mkr.setDefaultGasreq(50000);
+        assert.equal(50000, (await mkr.contract.OFR_GASREQ().toNumber()), "Offer default gasreq not updated");
+      });
     });
   });
 });
