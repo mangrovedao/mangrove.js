@@ -3,6 +3,7 @@ export type MakerConfig = {
   bidProbability: number;
   lambda: number;
   maxQuantity: number;
+  maxTotalLiquidityPublished: number;
 };
 
 export type TakerConfig = {
