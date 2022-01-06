@@ -5,7 +5,6 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { NonceManager } from "@ethersproject/experimental";
 import { Mangrove, Market } from "../../src";
-import type { Offer } from "../../src/types";
 
 export const command = "retract <base> <quote>";
 export const aliases = [];
@@ -28,7 +27,7 @@ export async function handler(argv: Arguments): Promise<void> {
   const provider = new JsonRpcProvider(argv.nodeUrl);
   const wallet = new Wallet(argv.privateKey, provider);
   const nonceManager = new NonceManager(wallet);
-  const mangrove = await Mangrove.connect(nonceManager);
+  const mangrove = await Mangrove.connect({ signer: nonceManager });
   const market = await mangrove.market({
     base: argv.base,
     quote: argv.quote,
@@ -67,7 +66,7 @@ export async function handler(argv: Arguments): Promise<void> {
 async function retractAllFromOfferlist(
   market: Market,
   ba: "asks" | "bids",
-  offerList: Offer[],
+  offerList: Market.Offer[],
   makerAddress: string,
   deprovision: boolean
 ) {
