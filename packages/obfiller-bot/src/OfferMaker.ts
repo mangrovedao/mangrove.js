@@ -140,13 +140,14 @@ export class OfferMaker {
     await this.#postOffer(ba, quantity, price);
   }
 
-  #choosePriceFromExp(ba: BA, insidePrice: Big, lambda: Big): Big {
-    const plug = lambda.mul(random.float(0, 1));
+  #choosePriceFromExp(ba: BA, referencePrice: Big, lambda: Big): Big {
+    const u = random.float(0, 1) - 0.5;
+    const plug = lambda.mul(u);
 
     const price =
-      ba === "bids" ? insidePrice.minus(plug) : insidePrice.plus(plug);
+      ba === "bids" ? referencePrice.minus(plug) : referencePrice.plus(plug);
 
-    return price.gt(0) ? price : insidePrice;
+    return price.gt(0) ? price : referencePrice;
   }
 
   async #postOffer(
