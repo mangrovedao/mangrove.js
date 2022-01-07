@@ -1,6 +1,6 @@
 require("hardhat-deploy");
 require("hardhat-deploy-ethers");
-require("@giry/hardhat-test-solidity");
+require("@mangrovedao/hardhat-test-solidity");
 
 let mumbaiExtraConfig = {};
 if (process.env["USE_DEPLOYER_ACCOUNTS"]) {

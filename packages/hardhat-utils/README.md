@@ -8,13 +8,13 @@ Install as development dependency:
 
 ```
 # NPM
-npm install --save-dev @giry/hardhat-utils
+npm install --save-dev @mangrovedao/hardhat-utils
 
 # Yarn
-yarn add --dev @giry/hardhat-utils
+yarn add --dev @mangrovedao/hardhat-utils
 
 # Inside this monorepo
-yarn add --dev "@giry/hardhat-utils@workspace:*"
+yarn add --dev "@mangrovedao/hardhat-utils@workspace:*"
 ```
 
 ## `hardhat-utils.js`
@@ -25,9 +25,9 @@ Simply require/import the package:
 
 ```javascript
 // CommonJS
-const hardhatUtils = require("@giry/hardhat-utils");
+const hardhatUtils = require("@mangrovedao/hardhat-utils");
 // ES
-import hardhatUtils from "@giry/hardhat-utils";
+import hardhatUtils from "@mangrovedao/hardhat-utils";
 ```
 
 ## Hardhat configuration for Mangrove
@@ -46,7 +46,7 @@ It provides the following:
 You can write integration tests against Mangrove on a local in-process Hardhat network by using the provided [Mocha](https://mochajs.org/) Root Hooks. Just `require` the root hooks when you run Mocha, e.g.:
 
 ```
-mocha --require "@giry/hardhat-utils/mocha/hooks/integration-test-hooks" <your Mocha args here>
+mocha --require "@mangrovedao/hardhat-utils/mocha/hooks/integration-test-hooks" <your Mocha args here>
 ```
 
 The Root Hooks start an in-process Hardhat chain with Mangrove deployed and add a matching `Provider` to the Mocha `Context`.

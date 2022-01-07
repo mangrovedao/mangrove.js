@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.6;
 
-import {Test} from "@giry/hardhat-test-solidity/test.sol";
+import {Test} from "@mangrovedao/hardhat-test-solidity/test.sol";
 
 import "./Faucet.sol";
 

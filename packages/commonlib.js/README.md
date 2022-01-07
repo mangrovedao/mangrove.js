@@ -7,14 +7,14 @@ This package is not intended for use outside of the Mangrove monorepo.
 Inside the monorepo, dependencies to this package can be added using the `workspace:*` version range, e.g:
 
 ```bash
-$ yarn add "@giry/commonlib-js@workspace:*"
+$ yarn add "@mangrovedao/commonlib-js@workspace:*"
 ```
 
 which will add
 
 ```json
   "dependencies": {
-    "@giry/commonlib-js": "workspace:*"
+    "@mangrovedao/commonlib-js": "workspace:*"
   }
 ```
 

@@ -1,13 +1,12 @@
 import { logger } from "./util/logger";
-import { sleep } from "@giry/commonlib-js";
+import { sleep } from "@mangrovedao/commonlib-js";
 import Market from "@mangrovedao/mangrove.js/dist/nodejs/market";
-import * as Types from "@mangrovedao/mangrove.js/dist/nodejs/types";
 type Offer = Market.Offer;
-import MgvToken from "@mangrovedao/mangrove.js/dist/nodejs/mgvtoken";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
 import { MakerConfig } from "./MarketConfig";
+import assert from "assert";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
@@ -26,6 +25,7 @@ export class OfferMaker {
   #bidProbability: number;
   #lambda: Big;
   #maxQuantity: number;
+  #maxTotalLiquidityPublished: number;
   #running: boolean;
   #offerRate: number;
   #offerTimeRng: () => number;
@@ -42,6 +42,7 @@ export class OfferMaker {
     this.#bidProbability = makerConfig.bidProbability;
     this.#lambda = Big(makerConfig.lambda);
     this.#maxQuantity = makerConfig.maxQuantity;
+    this.#maxTotalLiquidityPublished = makerConfig.maxTotalLiquidityPublished;
 
     this.#running = false;
 
@@ -131,6 +132,11 @@ export class OfferMaker {
       data: { bestOffer: offerList[0] },
     });
 
+    await this.#retractWorstOfferIfTotalLiquidityPublishedExceedsMax(
+      ba,
+      offerList
+    );
+
     const price = this.#choosePriceFromExp(
       ba,
       offerList[0].price,
@@ -140,13 +146,52 @@ export class OfferMaker {
     await this.#postOffer(ba, quantity, price);
   }
 
-  #choosePriceFromExp(ba: BA, insidePrice: Big, lambda: Big): Big {
-    const plug = lambda.mul(random.float(0, 1));
+  async #retractWorstOfferIfTotalLiquidityPublishedExceedsMax(
+    ba: BA,
+    offerList: Offer[]
+  ): Promise<void> {
+    assert(offerList.length > 0);
+    const [totalLiquidityPublished, myWorstOffer] = offerList
+      .filter((o) => o.maker === this.#makerAddress)
+      .reduce<[Big, Offer]>(
+        ([t], o) => [t.add(o.volume), o],
+        [Big(0), offerList[0]]
+      );
+
+    if (totalLiquidityPublished.gt(this.#maxTotalLiquidityPublished)) {
+      logger.info(
+        "Total liquidity published exceeds max, retracting worst offer",
+        {
+          contextInfo: "maker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
+          data: {
+            totalLiquidityPublished,
+            maxTotalLiquidityPublished: this.#maxTotalLiquidityPublished,
+            myWorstOffer,
+          },
+        }
+      );
+      // FIXME: Retract should be implemented in market.ts
+      const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
+      await this.#market.mgv.contract.retractOffer(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        myWorstOffer.id,
+        false
+      );
+    }
+  }
+
+  #choosePriceFromExp(ba: BA, referencePrice: Big, lambda: Big): Big {
+    const u = random.float(0, 1) - 0.5;
+    const plug = lambda.mul(u);
 
     const price =
-      ba === "bids" ? insidePrice.minus(plug) : insidePrice.plus(plug);
+      ba === "bids" ? referencePrice.minus(plug) : referencePrice.plus(plug);
 
-    return price.gt(0) ? price : insidePrice;
+    return price.gt(0) ? price : referencePrice;
   }
 
   async #postOffer(

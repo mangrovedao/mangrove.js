@@ -1,7 +1,6 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
-import { Mangrove } from "../../src";
-import type { Offer } from "../../src/types";
+import { Mangrove, Market } from "../../src";
 
 export const command = "print <base> <quote>";
 export const aliases = [];
@@ -48,7 +47,7 @@ export async function handler(argv: Arguments): Promise<void> {
   process.exit(0);
 }
 
-function printOfferList(ba: "asks" | "bids", offerList: Offer[]) {
+function printOfferList(ba: "asks" | "bids", offerList: Market.Offer[]) {
   console.group(ba);
   console.table(offerList);
   console.groupEnd();

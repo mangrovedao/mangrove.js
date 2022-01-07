@@ -1,4 +1,4 @@
-[![CI](https://github.com/giry-dev/mangrove/actions/workflows/node.js.yml/badge.svg)](https://github.com/giry-dev/mangrove/actions/workflows/node.js.yml)
+[![CI](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml)
 
 This is the Mangrove monorepo which contains most of the packages developed for the Mangrove.
 
@@ -172,7 +172,7 @@ Each package should have its own `package.json` file based on the following temp
 
 ```jsonc
 {
-  "name": "@giry/<packageName>",                // All packages should be scoped with @giry.
+  "name": "@mangrovedao/<packageName>",                // All packages should be scoped with @mangrovedao.
   "version": "0.0.1",
   "author": "Mangrove DAO",
   "description": "<description of the package>",
@@ -207,7 +207,7 @@ Each package should have its own `package.json` file based on the following temp
     "@mangrovedao/mangrove.js": "workspace:*"          // This is an example of a run-time dependency to another package in the monorepo
   },
   "devDependencies": {
-    "@giry/mangrove-solidity": "workspace:*",   // This is an example of a build-time dependency to another package in the monorepo
+    "@mangrovedao/mangrove-solidity": "workspace:*",   // This is an example of a build-time dependency to another package in the monorepo
 
     "eslint": "^7.32.0",                        // You probably want this and the following development dependencies
     "eslint-config-prettier": "^8.3.0",         // (the version patterns will probably soon be outdated...):
