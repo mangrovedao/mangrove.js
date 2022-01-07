@@ -166,15 +166,14 @@ class Mangrove {
     });
   }
 
-  /* Get Maker object. 
-     Argument of the form `{base,quote}` where each is a string.
-     To set your own token, use `setDecimals` and `setAddress`.
-  */
-  async MakerConnect(params: {
-    address: string;
-    base: string;
-    quote: string;
-  }): Promise<Maker> {
+  /** Get Maker object.
+   *
+   * Argument of the form `Maker.ConstructionParams`, except the `mgv` field which will be `this`.
+   * Reminder: to set your own `base`/`quote` other than those known by mangrove.js, use `setDecimals` and `setAddress` before calling this function.
+   */
+  async MakerConnect(
+    params: Omit<Maker.ConstructionParams, "mgv">
+  ): Promise<Maker> {
     return await Maker.connect({ ...params, mgv: this });
   }
 
@@ -290,14 +289,6 @@ class Mangrove {
       gasmax: config.global.gasmax.toNumber(),
       dead: config.global.dead,
     };
-  }
-
-  /**
-   *
-   */
-  prettyPrint(book: Market.MarketBook): void {
-    console.table(book.asks, ["maker", "gives", "volume", "price"]);
-    console.table(book.bids, ["maker", "wants", "volume", "price"]);
   }
 
   /* Static */

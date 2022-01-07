@@ -3,6 +3,7 @@ import { BigNumber } from "ethers"; // syntactic sugar
 import { TradeParams, Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
+import { OrderCompleteEvent } from "./types/typechain/Mangrove";
 
 let canConstructMarket = false;
 
@@ -30,7 +31,7 @@ import * as TCM from "./types/typechain/Mangrove";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
   export type MgvReader = typechain.MgvReader;
-  export type OrderResult = { got: Big; gave: Big };
+  export type OrderResult = { got: Big; gave: Big; penalty: Big };
   export type bookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
     | ({ name: "OfferFail" } & TCM.OfferFailEvent)
@@ -72,7 +73,7 @@ namespace Market {
 
   export type semibook = offerList & {
     ba: "bids" | "asks";
-    gasbase: { offer_gasbase: number; };
+    gasbase: { offer_gasbase: number };
   };
 
   export type OfferData = {
@@ -566,14 +567,13 @@ class Market {
     wants: ethers.BigNumber;
     gives: ethers.BigNumber;
     orderType: "buy" | "sell";
-  }): Promise<{ got: Big; gave: Big }> {
+  }): Promise<Market.OrderResult> {
     const [outboundTkn, inboundTkn, fillWants] =
       orderType === "buy"
         ? [this.base, this.quote, true]
         : [this.quote, this.base, false];
 
     const gasLimit = await this.estimateGas(orderType, wants);
-    console.log("Aboutto call contract");
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
@@ -588,7 +588,9 @@ class Market {
     //last OrderComplete is ours!
     for (const evt of receipt.events) {
       if (evt.event === "OrderComplete") {
-        result = evt;
+        if ((evt as OrderCompleteEvent).args.taker === receipt.from) {
+          result = evt;
+        }
       }
     }
     if (!result) {
@@ -599,6 +601,7 @@ class Market {
     return {
       got: this[got_bq].fromUnits(result.args.takerGot),
       gave: this[gave_bq].fromUnits(result.args.takerGave),
+      penalty: this.mgv.fromUnits(result.args.penalty, 18),
     };
   }
 
@@ -647,6 +650,68 @@ class Market {
     } while (maxOffersLeft > 0 && nextId !== 0);
 
     return [offerIds, offers, details];
+  }
+
+  /**Pretty prints the current state of the order book of the market */
+  async consoleAsks(
+    filter?: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    let column = [];
+    column = filter ? filter : ["id", "maker", "volume", "price"];
+    await this.prettyPrint("asks", column);
+  }
+  async consoleBids(
+    filter?: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    let column = [];
+    column = filter ? filter : ["id", "maker", "volume", "price"];
+    await this.prettyPrint("bids", column);
+  }
+
+  async prettyPrint(
+    ba: "bids" | "asks",
+    filter: Array<
+      | "id"
+      | "prev"
+      | "next"
+      | "gasprice"
+      | "maker"
+      | "gasreq"
+      | "overhead_gasbase"
+      | "offer_gasbase"
+      | "wants"
+      | "gives"
+      | "volume"
+      | "price"
+    >
+  ): Promise<void> {
+    const book = await this.requestBook();
+    const offers = ba === "bids" ? book.bids : book.asks;
+    console.table(offers, filter);
   }
 
   /**
@@ -1103,5 +1168,6 @@ const validateSlippage = (slippage = 0) => {
   }
   return slippage;
 };
+
 
 export default Market;

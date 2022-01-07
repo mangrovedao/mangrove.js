@@ -33,9 +33,12 @@ namespace Maker {
    *  This basic maker contract will relay new/cancel/update
    *  offer order.
    */
+
+  type optParams = { gasreq?: number; gasprice?: number };
+
   export type offerParams =
-    | { price: Bigish; volume: Bigish }
-    | { wants: Bigish; gives: Bigish };
+    | ({ price: Bigish; volume: Bigish } & optParams)
+    | ({ wants: Bigish; gives: Bigish } & optParams);
 }
 
 /**
@@ -134,16 +137,19 @@ class Maker {
    * @note Returns the amount of native tokens needed to provision a `bids` or `asks` offer  on the current market.
    * If `id` is a live offer id, the function returns the missing provision (possibly 0) in case one wants to update it.
    */
-  computeOfferProvision(ba: "bids" | "asks", id = 0): Promise<Big> {
-    return this.getMissingProvision(ba, id);
+  computeOfferProvision(
+    ba: "bids" | "asks",
+    opts: { id?: number; gasreq?: number }
+  ): Promise<Big> {
+    return this.getMissingProvision(ba, opts);
   }
 
-  computeBidProvision(id = 0): Promise<Big> {
-    return this.getMissingProvision("bids", id);
+  computeBidProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
+    return this.getMissingProvision("bids", opts);
   }
 
-  computeAskProvision(id = 0): Promise<Big> {
-    return this.getMissingProvision("asks", id);
+  computeAskProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
+    return this.getMissingProvision("asks", opts);
   }
 
   /**
@@ -184,6 +190,20 @@ class Maker {
     );
   }
 
+  /**Deposits `amount` tokens on the contract accounts */
+  depositToken(
+    tokenName: string,
+    amount: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<TransactionResponse> {
+    const tk = this.mgv.token(tokenName);
+    return tk.contract.transfer(
+      this.contract.address,
+      this.mgv.toUnits(amount, tokenName),
+      overrides
+    );
+  }
+
   /** Fund the current contract balance with ethers sent from current signer. */
   fundMangrove(
     amount: Bigish,
@@ -192,6 +212,18 @@ class Maker {
     overrides.value =
       "value" in overrides ? overrides.value : this.mgv.toUnits(amount, 18);
     return this.contract.fundMangrove(overrides);
+  }
+
+  setDefaultGasreq(
+    amount: number,
+    overrides: ethers.Overrides = {}
+  ): Promise<TransactionResponse> {
+    const tx = this.contract.setGasreq(
+      ethers.BigNumber.from(amount),
+      overrides
+    );
+    this.gasreq = amount;
+    return tx;
   }
 
   /** Withdraw from the maker's ether balance to the sender */
@@ -220,6 +252,8 @@ class Maker {
     price: Big;
     wants: Big;
     gives: Big;
+    gasreq?: number;
+    gasprice?: number;
   } {
     let wants, gives, price;
     // deduce price from wants&gives, or deduce wants&gives from volume&price
@@ -237,8 +271,9 @@ class Maker {
         [wants, gives] = [gives, wants];
       }
     }
-
-    return { wants, gives, price };
+    const gasreq = p.gasreq;
+    const gasprice = p.gasprice;
+    return { wants, gives, price, gasreq, gasprice };
   }
 
   /** Post a new ask */
@@ -273,7 +308,8 @@ class Maker {
     p: { ba: "bids" | "asks" } & Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
-    const { wants, gives, price } = this.normalizeOfferParams(p);
+    const { wants, gives, price, gasreq, gasprice } =
+      this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     const resp = await this.contract.newOffer(
@@ -281,8 +317,8 @@ class Maker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      this.gasreq, // gasreq
-      0,
+      gasreq ? gasreq : this.gasreq, // gasreq
+      gasprice ? gasprice : 0,
       this.market.getPivot(p.ba, price),
       overrides
     );
@@ -331,7 +367,8 @@ class Maker {
       );
     }
 
-    const { wants, gives, price } = this.normalizeOfferParams(p);
+    const { wants, gives, price, gasreq, gasprice } =
+      this.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     const resp = await this.contract.updateOffer(
@@ -339,8 +376,8 @@ class Maker {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      offer.gasreq,
-      offer.gasprice,
+      gasreq ? gasreq : offer.gasreq,
+      gasprice ? gasprice : offer.gasprice,
       this.market.getPivot(p.ba, price),
       id,
       overrides
@@ -395,16 +432,19 @@ class Maker {
     );
   }
 
-  async getMissingProvision(ba: "bids" | "asks", id: number): Promise<Big> {
+  async getMissingProvision(
+    ba: "bids" | "asks",
+    opts: { id?: number; gasreq?: number } = {}
+  ): Promise<Big> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
     const prov = await this.contract.getMissingProvision(
       outbound_tkn.address,
       inbound_tkn.address,
-      this.gasreq,
+      opts.gasreq ? opts.gasreq : this.gasreq,
       0, //gasprice
-      id
+      opts.id ? opts.id : 0
     );
-    return this.mgv.fromUnits(prov, 18);
+    return this.mgv.fromUnits(prov, "ETH");
   }
 }
 
