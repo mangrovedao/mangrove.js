@@ -169,7 +169,8 @@ describe("SimpleMaker", () => {
           wants: 10,
           gives: 20,
         });
-        provision = await mkr.computeAskProvision(ofrId);
+        provision = await mkr.computeAskProvision({ id: ofrId });
+        console.log(provision);
         assert.equal(provision, 0, `There should be no need to reprovision`);
         await mkr.updateAsk(ofrId, { wants: 12, gives: 10 });
 
@@ -179,7 +180,11 @@ describe("SimpleMaker", () => {
       });
       it("changes gasreq", async () => {
         await mkr.setDefaultGasreq(50000);
-        assert.equal(50000, (await mkr.contract.OFR_GASREQ().toNumber()), "Offer default gasreq not updated");
+        assert.equal(
+          50000,
+          (await mkr.contract.OFR_GASREQ()).toNumber(),
+          "Offer default gasreq not updated"
+        );
       });
     });
   });

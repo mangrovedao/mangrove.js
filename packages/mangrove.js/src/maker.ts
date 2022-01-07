@@ -434,7 +434,7 @@ class Maker {
 
   async getMissingProvision(
     ba: "bids" | "asks",
-    opts: { id?: number; gasreq?: number }
+    opts: { id?: number; gasreq?: number } = {}
   ): Promise<Big> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
     const prov = await this.contract.getMissingProvision(
@@ -444,7 +444,7 @@ class Maker {
       0, //gasprice
       opts.id ? opts.id : 0
     );
-    return this.mgv.fromUnits(prov, 18);
+    return this.mgv.fromUnits(prov, "ETH");
   }
 }
 
