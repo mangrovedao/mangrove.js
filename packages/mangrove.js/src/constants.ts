@@ -6,9 +6,9 @@ export const addresses = {
   ropsten: {},
   hardhat: require("./hardhatAddresses.json"),
   maticmum: {
-    Mangrove: "0x493Bd4Ae961B3C50e1a1C86CC0D433aDa66870D0",
-    MgvCleaner: "0xad53eB62d210DeeB30854e1b73dD4Ee88E612cc9",
-    MgvReader: "0x69dE7df175444cd44667DdfA74FbEb5095C3dB34",
+    Mangrove: "0xD27139C60ED051b65c3AEe193BCABFfa1067D243",
+    MgvCleaner: "0x9C0AC5b8F47c912b33Bdd0a21273A673e2A47D32",
+    MgvReader: "0xa1e2f6EEe41799d44e365135F70fD23b0d0505D6",
     MgvOracle: "0xb4C0B66F158C314FfBDF1b64d9B517B8aaB46773",
     DAI: "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F",
     USDC: "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e",

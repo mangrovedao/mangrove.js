@@ -137,16 +137,19 @@ class Maker {
    * @note Returns the amount of native tokens needed to provision a `bids` or `asks` offer  on the current market.
    * If `id` is a live offer id, the function returns the missing provision (possibly 0) in case one wants to update it.
    */
-  computeOfferProvision(ba: "bids" | "asks", id = 0): Promise<Big> {
-    return this.getMissingProvision(ba, id);
+  computeOfferProvision(
+    ba: "bids" | "asks",
+    opts: { id?: number; gasreq?: number }
+  ): Promise<Big> {
+    return this.getMissingProvision(ba, opts);
   }
 
-  computeBidProvision(id = 0): Promise<Big> {
-    return this.getMissingProvision("bids", id);
+  computeBidProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
+    return this.getMissingProvision("bids", opts);
   }
 
-  computeAskProvision(id = 0): Promise<Big> {
-    return this.getMissingProvision("asks", id);
+  computeAskProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
+    return this.getMissingProvision("asks", opts);
   }
 
   /**
@@ -209,6 +212,18 @@ class Maker {
     overrides.value =
       "value" in overrides ? overrides.value : this.mgv.toUnits(amount, 18);
     return this.contract.fundMangrove(overrides);
+  }
+
+  setDefaultGasreq(
+    amount: number,
+    overrides: ethers.Overrides = {}
+  ): Promise<TransactionResponse> {
+    const tx = this.contract.setGasreq(
+      ethers.BigNumber.from(amount),
+      overrides
+    );
+    this.gasreq = amount;
+    return tx;
   }
 
   /** Withdraw from the maker's ether balance to the sender */
@@ -417,16 +432,19 @@ class Maker {
     );
   }
 
-  async getMissingProvision(ba: "bids" | "asks", id: number): Promise<Big> {
+  async getMissingProvision(
+    ba: "bids" | "asks",
+    opts: { id?: number; gasreq?: number } = {}
+  ): Promise<Big> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
     const prov = await this.contract.getMissingProvision(
       outbound_tkn.address,
       inbound_tkn.address,
-      this.gasreq,
+      opts.gasreq ? opts.gasreq : this.gasreq,
       0, //gasprice
-      id
+      opts.id ? opts.id : 0
     );
-    return this.mgv.fromUnits(prov, 18);
+    return this.mgv.fromUnits(prov, "ETH");
   }
 }
 

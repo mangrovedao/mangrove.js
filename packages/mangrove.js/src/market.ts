@@ -661,7 +661,6 @@ class Market {
       | "gasprice"
       | "maker"
       | "gasreq"
-      | "overhead_gasbase"
       | "offer_gasbase"
       | "wants"
       | "gives"
@@ -681,7 +680,6 @@ class Market {
       | "gasprice"
       | "maker"
       | "gasreq"
-      | "overhead_gasbase"
       | "offer_gasbase"
       | "wants"
       | "gives"
@@ -1170,5 +1168,6 @@ const validateSlippage = (slippage = 0) => {
   }
   return slippage;
 };
+
 
 export default Market;
