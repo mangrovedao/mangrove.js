@@ -23,7 +23,7 @@ let canConstruct = false;
 namespace Maker {
   export type ConstructionParams = {
     mgv: Mangrove;
-    address: string;
+    address: string; //Offer logic address
     base: string;
     quote: string;
     noInit?: boolean;
@@ -216,7 +216,7 @@ class Maker {
 
   setDefaultGasreq(
     amount: number,
-    overrides: ethers.Overrides = {}
+    overrides?: ethers.Overrides
   ): Promise<TransactionResponse> {
     const tx = this.contract.setGasreq(
       ethers.BigNumber.from(amount),
@@ -226,11 +226,22 @@ class Maker {
     return tx;
   }
 
+  setAdmin(
+    newAdmin: string,
+    overrides?: ethers.Overrides
+  ): Promise<TransactionResponse> {
+    return this.contract.setAdmin(newAdmin, overrides);
+  }
+
   /** Withdraw from the maker's ether balance to the sender */
-  async withdraw(amount: Bigish): Promise<TransactionResponse> {
+  async withdraw(
+    amount: Bigish,
+    overrides?: ethers.Overrides
+  ): Promise<TransactionResponse> {
     return this.contract.withdrawFromMangrove(
       await this.mgv._signer.getAddress(),
-      this.mgv.toUnits(amount, 18)
+      this.mgv.toUnits(amount, 18),
+      overrides
     );
   }
 
@@ -248,7 +259,7 @@ class Maker {
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
    *  return {price,wants,gives}
    */
-  normalizeOfferParams(p: { ba: "bids" | "asks" } & Maker.offerParams): {
+  #normalizeOfferParams(p: { ba: "bids" | "asks" } & Maker.offerParams): {
     price: Big;
     wants: Big;
     gives: Big;
@@ -309,9 +320,9 @@ class Maker {
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     const { wants, gives, price, gasreq, gasprice } =
-      this.normalizeOfferParams(p);
+      this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-
+    const pivot = this.market.getPivot(p.ba, price);
     const resp = await this.contract.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -319,7 +330,7 @@ class Maker {
       outbound_tkn.toUnits(gives),
       gasreq ? gasreq : this.gasreq, // gasreq
       gasprice ? gasprice : 0,
-      this.market.getPivot(p.ba, price),
+      pivot,
       overrides
     );
 
@@ -327,6 +338,7 @@ class Maker {
       (cbArg, _event, ethersEvent) => ({
         id: cbArg.offer.id,
         event: ethersEvent,
+        pivot: pivot,
       }),
       (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
     );
@@ -368,7 +380,7 @@ class Maker {
     }
 
     const { wants, gives, price, gasreq, gasprice } =
-      this.normalizeOfferParams(p);
+      this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     const resp = await this.contract.updateOffer(
