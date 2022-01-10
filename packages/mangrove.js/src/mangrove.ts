@@ -156,16 +156,6 @@ class Mangrove {
     return await Market.connect({ ...params, mgv: this });
   }
 
-  async fundSelf(amount: Bigish): Promise<TransactionResponse> {
-    return this.fund(await this._signer.getAddress(), amount);
-  }
-
-  fund(address: string, amount: Bigish): Promise<TransactionResponse> {
-    return this.contract["fund(address)"](address, {
-      value: this.toUnits(amount, 18),
-    });
-  }
-
   /** Get Maker object.
    *
    * Argument of the form `Maker.ConstructionParams`, except the `mgv` field which will be `this`.
