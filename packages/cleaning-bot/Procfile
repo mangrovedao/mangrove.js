@@ -1,1 +1,1 @@
-worker: yarn workspace @mangrovedao/cleaning-bot start
+web: yarn workspace @mangrovedao/cleaning-bot start
