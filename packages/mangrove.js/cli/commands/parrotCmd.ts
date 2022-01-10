@@ -20,6 +20,9 @@ const COMPONENT_MANGROVE_REPO = "repo";
 const COMPONENT_MANGROVE_JS = "mangrove.js";
 const COMPONENT_MANGROVE_CONFIGURATION = "config";
 const COMPONENT_DAPP = "dApp";
+const COMPONENT_BOT_CLEANER = "bot:cleaner";
+const COMPONENT_BOT_OBFILLER = "bot:obfiller";
+const COMPONENT_BOT_UPDATEGAS = "bot:updategas";
 
 const CONTRACT_MANGROVE = "Mangrove";
 const CONTRACT_MGV_CLEANER = "MgvCleaner";
@@ -33,6 +36,9 @@ const CONTRACTS = [
 ];
 
 const DAPP_URL = "https://testnet.mangrove.exchange";
+const CLEANING_BOT_URL = "https://mangrove-cleaning-bot.herokuapp.com/";
+const OB_FILLER_BOT_URL = "https://mangrove-obfiller-bot.herokuapp.com/";
+const UPDATE_GAS_BOT_URL = "https://mangrove-updategas-bot.herokuapp.com/";
 
 type Address = string;
 type ContractAddresses = Map<string, Address>; // contract name |-> address
@@ -56,7 +62,7 @@ type MangroveConfigurationInfo = {
   globalConfig: Mangrove.globalConfig;
   localConfigs: { base: string; quote: string; config: Mangrove.localConfig }[];
 };
-type DAppEnvironmentInfo = {
+type MangroveJsAppEnvironmentInfo = {
   url: string;
   mangroveJsVersion: string;
 };
@@ -75,19 +81,40 @@ export async function handler(argv: Arguments): Promise<void> {
   const mangroveConfigurationInfoPromise = getMangroveConfigurationInfo(
     argv.nodeUrl
   );
-  const dAppEnvironmentInfoPromise = getDAppEnvironmentInfo();
+  const dAppEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
+    COMPONENT_DAPP,
+    DAPP_URL
+  );
+  const cleanerBotEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
+    COMPONENT_BOT_CLEANER,
+    CLEANING_BOT_URL
+  );
+  const obFillerBotEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
+    COMPONENT_BOT_OBFILLER,
+    OB_FILLER_BOT_URL
+  );
+  const updateGasBotEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
+    COMPONENT_BOT_UPDATEGAS,
+    UPDATE_GAS_BOT_URL
+  );
 
   const repoEnvironmentInfo = await repoEnvironmentInfoPromise;
   const mangroveJsEnvironmentInfo = await mangroveJsEnvironmentInfoPromise;
   const mangroveConfigurationInfo = await mangroveConfigurationInfoPromise;
   const dAppEnvironmentInfo = await dAppEnvironmentInfoPromise;
+  const cleanerBotEnvironmentInfo = await cleanerBotEnvironmentInfoPromise;
+  const obFillerBotEnvironmentInfo = await obFillerBotEnvironmentInfoPromise;
+  const updateGasBotEnvironmentInfo = await updateGasBotEnvironmentInfoPromise;
 
   const { notes: crossComponentNotes, warnings: crossComponentWarnings } =
     analyzeEnvironment(
       repoEnvironmentInfo.info,
       mangroveJsEnvironmentInfo.info,
       mangroveConfigurationInfo.info,
-      dAppEnvironmentInfo.info
+      dAppEnvironmentInfo.info,
+      cleanerBotEnvironmentInfo.info,
+      obFillerBotEnvironmentInfo.info,
+      updateGasBotEnvironmentInfo.info
     );
 
   const notes = [
@@ -96,6 +123,9 @@ export async function handler(argv: Arguments): Promise<void> {
     ...mangroveJsEnvironmentInfo.notes,
     ...mangroveConfigurationInfo.notes,
     ...dAppEnvironmentInfo.notes,
+    ...cleanerBotEnvironmentInfo.notes,
+    ...obFillerBotEnvironmentInfo.notes,
+    ...updateGasBotEnvironmentInfo.notes,
   ];
   const warnings = [
     ...crossComponentWarnings,
@@ -103,6 +133,9 @@ export async function handler(argv: Arguments): Promise<void> {
     ...mangroveJsEnvironmentInfo.warnings,
     ...mangroveConfigurationInfo.warnings,
     ...dAppEnvironmentInfo.warnings,
+    ...cleanerBotEnvironmentInfo.warnings,
+    ...obFillerBotEnvironmentInfo.warnings,
+    ...updateGasBotEnvironmentInfo.warnings,
   ];
 
   if (argv.jsonOutput) {
@@ -115,6 +148,9 @@ export async function handler(argv: Arguments): Promise<void> {
           mangroveJsEnvironmentInfo: mangroveJsEnvironmentInfo.info,
           mangroveConfigurationInfo: mangroveConfigurationInfo.info,
           dAppEnvironmentInfo: dAppEnvironmentInfo.info,
+          cleanerBotEnvironmentInfo: cleanerBotEnvironmentInfo.info,
+          obFillerBotEnvironmentInfo: obFillerBotEnvironmentInfo.info,
+          updateGasBotEnvironmentInfo: updateGasBotEnvironmentInfo.info,
         },
         jsonStringifyReplacer,
         2
@@ -150,10 +186,13 @@ function analyzeEnvironment(
   repoEnvInfo: RepoEnvironmentInfo,
   mangroveJsEnvInfo: MangroveJsEnvironmentInfo,
   mangroveConfInfo: MangroveConfigurationInfo,
-  dAppEnvironmentInfo: DAppEnvironmentInfo
+  dAppEnvironmentInfo: MangroveJsAppEnvironmentInfo,
+  cleanerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
+  obFillerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
+  updateGasBotEnvironmentInfo: MangroveJsAppEnvironmentInfo
 ): { notes: Note[]; warnings: Warning[] } {
-  const notes: Note[] = [];
-  const warnings: Warning[] = [];
+  let notes: Note[] = [];
+  let warnings: Warning[] = [];
 
   const mgvOracleAddress =
     repoEnvInfo.contractAddresses.get(CONTRACT_MGV_ORACLE);
@@ -167,13 +206,62 @@ function analyzeEnvironment(
     });
   }
 
+  const { notes: dAppNotes, warnings: dAppWarnings } = analyzeMangroveJsApp(
+    COMPONENT_DAPP,
+    dAppEnvironmentInfo,
+    mangroveJsEnvInfo
+  );
+  notes = [...notes, ...dAppNotes];
+  warnings = [...warnings, ...dAppWarnings];
+
+  const { notes: cleanerBotNotes, warnings: cleanerBotWarnings } =
+    analyzeMangroveJsApp(
+      COMPONENT_BOT_CLEANER,
+      cleanerBotEnvironmentInfo,
+      mangroveJsEnvInfo
+    );
+  notes = [...notes, ...cleanerBotNotes];
+  warnings = [...warnings, ...cleanerBotWarnings];
+
+  const { notes: obFillerBotNotes, warnings: obFillerBotWarnings } =
+    analyzeMangroveJsApp(
+      COMPONENT_BOT_OBFILLER,
+      obFillerBotEnvironmentInfo,
+      mangroveJsEnvInfo
+    );
+  notes = [...notes, ...obFillerBotNotes];
+  warnings = [...warnings, ...obFillerBotWarnings];
+
+  const { notes: updateGasBotNotes, warnings: updateGasBotWarnings } =
+    analyzeMangroveJsApp(
+      COMPONENT_BOT_UPDATEGAS,
+      updateGasBotEnvironmentInfo,
+      mangroveJsEnvInfo
+    );
+  notes = [...notes, ...updateGasBotNotes];
+  warnings = [...warnings, ...updateGasBotWarnings];
+
+  return {
+    notes,
+    warnings,
+  };
+}
+
+function analyzeMangroveJsApp(
+  component: string,
+  mangroveJsAppEnvironmentInfo: MangroveJsAppEnvironmentInfo,
+  mangroveJsEnvInfo: MangroveJsEnvironmentInfo
+): { notes: Note[]; warnings: Warning[] } {
+  const notes: Note[] = [];
+  const warnings: Warning[] = [];
+
   if (
-    dAppEnvironmentInfo.mangroveJsVersion !==
+    mangroveJsAppEnvironmentInfo.mangroveJsVersion !==
     mangroveJsEnvInfo.latestPackageVersion
   ) {
     warnings.push({
-      components: [COMPONENT_DAPP, COMPONENT_MANGROVE_JS],
-      content: `dApp is not using the latest mangrove.js version - dApp mangrove.js version=${dAppEnvironmentInfo.mangroveJsVersion}, mangrove.js latest version=${mangroveJsEnvInfo.latestPackageVersion}`,
+      components: [component, COMPONENT_MANGROVE_JS],
+      content: `${component} is not using the latest mangrove.js version - dApp mangrove.js version=${mangroveJsAppEnvironmentInfo.mangroveJsVersion}, mangrove.js latest version=${mangroveJsEnvInfo.latestPackageVersion}`,
     });
   }
 
@@ -354,22 +442,23 @@ async function getMangroveConfigurationInfo(
   };
 }
 
-async function getDAppEnvironmentInfo(): Promise<
-  AnnotatedInfo<DAppEnvironmentInfo>
-> {
+async function getMangroveJsAppEnvironmentInfo(
+  component: string,
+  url: string
+): Promise<AnnotatedInfo<MangroveJsAppEnvironmentInfo>> {
   const notes: Note[] = [];
   const warnings: Warning[] = [];
 
   let mangroveJsVersion: string;
-  const dAppUrlForEnvInfoJsonFile = `${DAPP_URL}/environmentInformation.json`;
-  await fetchJson(dAppUrlForEnvInfoJsonFile)
+  const urlForEnvInfoJsonFile = `${url}/environmentInformation.json`;
+  await fetchJson(urlForEnvInfoJsonFile)
     .then((json) => {
       mangroveJsVersion = json.mangroveJsVersion;
     })
     .catch((e) => {
       warnings.push({
-        components: [COMPONENT_DAPP],
-        content: `Error encountered when fetching environment info json file from dApp: URL=${dAppUrlForEnvInfoJsonFile}, error=${e}`,
+        components: [component],
+        content: `Error encountered when fetching environment info json file: URL=${urlForEnvInfoJsonFile}, error=${e}`,
       });
     });
 
@@ -377,7 +466,7 @@ async function getDAppEnvironmentInfo(): Promise<
     notes,
     warnings,
     info: {
-      url: dAppUrlForEnvInfoJsonFile,
+      url: url,
       mangroveJsVersion,
     },
   };
