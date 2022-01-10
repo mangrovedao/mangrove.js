@@ -216,7 +216,7 @@ class Maker {
 
   setDefaultGasreq(
     amount: number,
-    overrides?: ethers.Overrides
+    overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
     const tx = this.contract.setGasreq(
       ethers.BigNumber.from(amount),
@@ -236,7 +236,7 @@ class Maker {
   /** Withdraw from the maker's ether balance to the sender */
   async withdraw(
     amount: Bigish,
-    overrides?: ethers.Overrides
+    overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
     return this.contract.withdrawFromMangrove(
       await this.mgv._signer.getAddress(),
@@ -318,7 +318,7 @@ class Maker {
   async newOffer(
     p: { ba: "bids" | "asks" } & Maker.offerParams,
     overrides: ethers.PayableOverrides = {}
-  ): Promise<{ id: number; event: ethers.Event }> {
+  ): Promise<{ id: number; pivot: number; event: ethers.Event }> {
     const { wants, gives, price, gasreq, gasprice } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
@@ -427,7 +427,6 @@ class Maker {
     overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-
     const resp = await this.contract.retractOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -437,7 +436,7 @@ class Maker {
     );
 
     return this.market.once(
-      (/*cbArg*/) => {
+      (/*cbArg, event, ethersEvent*/) => {
         /*empty*/
       },
       (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
