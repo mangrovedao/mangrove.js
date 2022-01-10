@@ -14,6 +14,10 @@ import { Wallet } from "@ethersproject/wallet";
 
 import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
 
+import http from "http";
+import finalhandler from "finalhandler";
+import serveStatic from "serve-static";
+
 type OracleConfig = {
   acceptableGasGapToOracle: number;
   runEveryXHours: number;
@@ -197,3 +201,15 @@ process.on("unhandledRejection", function (reason, promise) {
 main().catch((e) => {
   logErrorAndExit(e);
 });
+
+// The node http server is used solely to serve static information files for environment management
+const staticBasePath = "./static";
+
+const serve = serveStatic(staticBasePath, { index: false });
+
+const server = http.createServer(function (req, res) {
+  const done = finalhandler(req, res);
+  serve(req, res, () => done(undefined)); // 'undefined' means no error
+});
+
+server.listen(8080);
