@@ -1,12 +1,14 @@
 #!/usr/bin/env ts-node
 
 import * as yargs from "yargs";
-import * as retractCmd from "./commands/retractCmd";
+import * as parrotCmd from "./commands/parrotCmd";
 import * as printCmd from "./commands/printCmd";
+import * as retractCmd from "./commands/retractCmd";
 
 const ENV_VAR_PREFIX = "MGV";
 
 yargs
+  .command(parrotCmd)
   .command(printCmd)
   .command(retractCmd)
   .strictCommands()
