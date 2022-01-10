@@ -14,7 +14,7 @@
     "precommit": "lint-staged",
     "prepack": "yarn build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "build-this-package": "tsc",
+    "build-this-package": "tsc && yarn run write-env-info-file",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "clean-this-package": "rimraf build",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
@@ -23,7 +23,8 @@
     "test:integration": "cross-env NODE_ENV=test mocha --config test/mocha/config/integration-tests.json",
     "start": "node build/index.js",
     "local-hardhat:start-node": "hardhat node --no-deploy",
-    "local-hardhat:deploy-mangrove": "hardhat deploy --network localhost"
+    "local-hardhat:deploy-mangrove": "hardhat deploy --network localhost",
+    "write-env-info-file": "node ./scripts/writeEnvInfoFile.js"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
@@ -33,12 +34,16 @@
     "@mangrovedao/commonlib-js": "workspace:*",
     "@mangrovedao/mangrove.js": "workspace:*",
     "@types/big.js": "^6.1.2",
+    "@types/finalhandler": "^1.1.1",
+    "@types/serve-static": "^1.13.10",
     "axios": "^0.24.0",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
     "ethers": "^5.4.7",
     "fast-safe-stringify": "^2.1.1",
+    "finalhandler": "^1.1.2",
+    "serve-static": "^1.14.2",
     "toad-scheduler": "^1.6.0"
   },
   "devDependencies": {
