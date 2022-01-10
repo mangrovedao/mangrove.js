@@ -16,6 +16,49 @@ export const builder = (yargs) => {
     .option("nodeUrl", { type: "string", demandOption: true });
 };
 
+const COMPONENT_MANGROVE_REPO = "repo";
+const COMPONENT_MANGROVE_JS = "mangrove.js";
+const COMPONENT_MANGROVE_CONFIGURATION = "config";
+
+const CONTRACT_MANGROVE = "Mangrove";
+const CONTRACT_MGV_CLEANER = "MgvCleaner";
+const CONTRACT_MGV_ORACLE = "MgvOracle";
+const CONTRACT_MGV_READER = "MgvReader";
+const CONTRACTS = [
+  CONTRACT_MANGROVE,
+  CONTRACT_MGV_CLEANER,
+  CONTRACT_MGV_ORACLE,
+  CONTRACT_MGV_READER,
+];
+
+type Address = string;
+type ContractAddresses = Map<string, Address>; // contract name |-> address
+
+type Annotation = {
+  components: string[];
+  content: string;
+};
+type Note = Annotation;
+type Warning = Annotation;
+
+type RepoEnvironmentInfo = {
+  contractAddresses: ContractAddresses;
+};
+type MangroveJsEnvironmentInfo = {
+  latestPackageVersion: string;
+  localPackageVersion: string;
+  contractAddresses: ContractAddresses;
+};
+type MangroveConfigurationInfo = {
+  globalConfig: Mangrove.globalConfig;
+  localConfigs: { base: string; quote: string; config: Mangrove.localConfig }[];
+};
+type AnnotatedInfo<TInfo> = {
+  notes: Note[];
+  warnings: Warning[];
+  info: TInfo;
+};
+
 type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
 
 export async function handler(argv: Arguments): Promise<void> {
@@ -25,12 +68,21 @@ export async function handler(argv: Arguments): Promise<void> {
     argv.nodeUrl
   );
 
+  const { notes: crossComponentNotes, warnings: crossComponentWarnings } =
+    analyzeEnvironment(
+      repoEnvironmentInfo.info,
+      mangroveJsEnvironmentInfo.info,
+      mangroveConfigurationInfo.info
+    );
+
   const notes = [
+    ...crossComponentNotes,
     ...repoEnvironmentInfo.notes,
     ...mangroveJsEnvironmentInfo.notes,
     ...mangroveConfigurationInfo.notes,
   ];
   const warnings = [
+    ...crossComponentWarnings,
     ...repoEnvironmentInfo.warnings,
     ...mangroveJsEnvironmentInfo.warnings,
     ...mangroveConfigurationInfo.warnings,
@@ -53,13 +105,17 @@ export async function handler(argv: Arguments): Promise<void> {
   } else {
     if (warnings.length > 0) {
       console.group("WARNINGS");
-      warnings.forEach((w) => console.warn(w));
+      warnings.forEach((w) =>
+        console.warn(`${w.components.join(", ")}: ${w.content}`)
+      );
       console.groupEnd();
       console.log();
     }
     if (notes.length > 0) {
       console.group("NOTES");
-      notes.forEach((n) => console.log(n));
+      notes.forEach((n) =>
+        console.log(`${n.components.join(", ")}: ${n.content}`)
+      );
       console.groupEnd();
       console.log();
     }
@@ -72,6 +128,32 @@ export async function handler(argv: Arguments): Promise<void> {
   process.exit(0);
 }
 
+function analyzeEnvironment(
+  repoEnvInfo: RepoEnvironmentInfo,
+  mangroveJsEnvInfo: MangroveJsEnvironmentInfo,
+  mangroveConfInfo: MangroveConfigurationInfo
+): { notes: Note[]; warnings: Warning[] } {
+  const notes: Note[] = [];
+  const warnings: Warning[] = [];
+
+  const mgvOracleAddress =
+    repoEnvInfo.contractAddresses.get(CONTRACT_MGV_ORACLE);
+  if (
+    !mangroveConfInfo.globalConfig.useOracle ||
+    mangroveConfInfo.globalConfig.monitor !== mgvOracleAddress
+  ) {
+    warnings.push({
+      components: [COMPONENT_MANGROVE_CONFIGURATION, COMPONENT_MANGROVE_REPO],
+      content: `Mangrove is not configured to use the latest ${CONTRACT_MGV_ORACLE} contract - globalConfig.useOracle=${mangroveConfInfo.globalConfig.useOracle}, globalConfig.monitor=${mangroveConfInfo.globalConfig.monitor}, address of ${CONTRACT_MGV_ORACLE}=${mgvOracleAddress}`,
+    });
+  }
+
+  return {
+    notes,
+    warnings,
+  };
+}
+
 function jsonStringifyReplacer(key: string, value: any) {
   if (value instanceof Big) {
     return value.toString();
@@ -79,18 +161,19 @@ function jsonStringifyReplacer(key: string, value: any) {
   return value;
 }
 
-const contracts = ["Mangrove", "MgvCleaner", "MgvOracle", "MgvReader"];
-async function getRepoEnvironmentInfo() {
-  const notes = [];
-  const warnings = [];
-  const contractAddresses = [];
+async function getRepoEnvironmentInfo(): Promise<
+  AnnotatedInfo<RepoEnvironmentInfo>
+> {
+  const notes: Note[] = [];
+  const warnings: Warning[] = [];
+  const contractAddresses = new Map<string, Address>();
   const fetchPromises = [];
-  for (const contractName of contracts) {
+  for (const contractName of CONTRACTS) {
     const gitHubUrlForDeploymentJsonFile = `https://raw.githubusercontent.com/mangrovedao/mangrove/master/packages/mangrove-solidity/deployments/mumbai/${contractName}.json`;
     const fetchPromise = fetchJson(gitHubUrlForDeploymentJsonFile)
       .then((json) => {
         if (json.address !== undefined) {
-          contractAddresses.push([contractName, json.address]);
+          contractAddresses.set(contractName, json.address);
         } else {
           console.warn(
             `Deployment json file for contract '${contractName}' did not contain an address`
@@ -115,9 +198,11 @@ async function getRepoEnvironmentInfo() {
   };
 }
 
-async function getMangroveJsEnvironmentInfo() {
-  const notes = [];
-  const warnings = [];
+async function getMangroveJsEnvironmentInfo(): Promise<
+  AnnotatedInfo<MangroveJsEnvironmentInfo>
+> {
+  const notes: Note[] = [];
+  const warnings: Warning[] = [];
   let latestPackageVersion = undefined;
   const npmjsRegistryUrl =
     "https://registry.npmjs.org/@mangrovedao/mangrove.js";
@@ -151,13 +236,15 @@ async function getMangroveJsEnvironmentInfo() {
   // mangrove.js and report an issue if its version number doesn't match the latest
   // published version
   const localPackageVersion = packageJson.version;
-  notes.push(
-    `mangrove.js: Reported mangrove.js addresses are from the local version (tagged as ${localPackageVersion}, but may include unpublished changes) not the latest package published on npm (${latestPackageVersion})`
-  );
+  notes.push({
+    components: [COMPONENT_MANGROVE_JS],
+    content: `Reported mangrove.js addresses are from the local version (tagged as ${localPackageVersion}, but may include unpublished changes) not the latest package published on npm (${latestPackageVersion})`,
+  });
   if (localPackageVersion !== latestPackageVersion) {
-    warnings.push(
-      `mangrove.js: The local version of mangrove.js (tagged as ${localPackageVersion}, but may include unpublished changes) is different from the latest published version on npm ${latestPackageVersion}`
-    );
+    warnings.push({
+      components: [COMPONENT_MANGROVE_JS],
+      content: `The local version of mangrove.js (tagged as ${localPackageVersion}, but may include unpublished changes) is different from the latest published version on npm ${latestPackageVersion}`,
+    });
   }
 
   return {
@@ -166,24 +253,31 @@ async function getMangroveJsEnvironmentInfo() {
     info: {
       latestPackageVersion,
       localPackageVersion,
-      addresses: Mangrove.getAllAddresses("maticmum"),
+      contractAddresses: new Map(Mangrove.getAllAddresses("maticmum")),
     },
   };
 }
 
 const tokens = ["WETH", "DAI", "USDC"];
-async function getMangroveConfigurationInfo(nodeUrl: string) {
-  const notes = [];
-  const warnings = [];
+async function getMangroveConfigurationInfo(
+  nodeUrl: string
+): Promise<AnnotatedInfo<MangroveConfigurationInfo>> {
+  const notes: Note[] = [];
+  const warnings: Warning[] = [];
 
   const mgv: Mangrove = await Mangrove.connect(nodeUrl).catch((reason) => {
-    warnings.push(
-      `Could not connect to Mangrove using mangrove.js, reason: ${reason}`
-    );
+    warnings.push({
+      components: [COMPONENT_MANGROVE_CONFIGURATION],
+      content: `Could not connect to Mangrove using mangrove.js, reason: ${reason}`,
+    });
     return undefined;
   });
   if (mgv === undefined) {
-    return { notes, warnings };
+    return {
+      notes,
+      warnings,
+      info: { globalConfig: undefined, localConfigs: undefined },
+    };
   }
 
   const globalConfig = await mgv.config();
@@ -203,6 +297,13 @@ async function getMangroveConfigurationInfo(nodeUrl: string) {
         config,
       });
     }
+  }
+
+  if (globalConfig.dead) {
+    warnings.push({
+      components: [COMPONENT_MANGROVE_CONFIGURATION],
+      content: `Mangrove at ${mgv.contract.address} is dead`,
+    });
   }
 
   return {
