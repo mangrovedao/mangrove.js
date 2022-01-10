@@ -70,18 +70,24 @@ type AnnotatedInfo<TInfo> = {
 type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
 
 export async function handler(argv: Arguments): Promise<void> {
-  const repoEnvironmentInfo = await getRepoEnvironmentInfo();
-  const mangroveJsEnvironmentInfo = await getMangroveJsEnvironmentInfo();
-  const mangroveConfigurationInfo = await getMangroveConfigurationInfo(
+  const repoEnvironmentInfoPromise = getRepoEnvironmentInfo();
+  const mangroveJsEnvironmentInfoPromise = getMangroveJsEnvironmentInfo();
+  const mangroveConfigurationInfoPromise = getMangroveConfigurationInfo(
     argv.nodeUrl
   );
-  const dAppEnvironmentInfo = await getDAppEnvironmentInfo();
+  const dAppEnvironmentInfoPromise = getDAppEnvironmentInfo();
+
+  const repoEnvironmentInfo = await repoEnvironmentInfoPromise;
+  const mangroveJsEnvironmentInfo = await mangroveJsEnvironmentInfoPromise;
+  const mangroveConfigurationInfo = await mangroveConfigurationInfoPromise;
+  const dAppEnvironmentInfo = await dAppEnvironmentInfoPromise;
 
   const { notes: crossComponentNotes, warnings: crossComponentWarnings } =
     analyzeEnvironment(
       repoEnvironmentInfo.info,
       mangroveJsEnvironmentInfo.info,
-      mangroveConfigurationInfo.info
+      mangroveConfigurationInfo.info,
+      dAppEnvironmentInfo.info
     );
 
   const notes = [
@@ -143,7 +149,8 @@ export async function handler(argv: Arguments): Promise<void> {
 function analyzeEnvironment(
   repoEnvInfo: RepoEnvironmentInfo,
   mangroveJsEnvInfo: MangroveJsEnvironmentInfo,
-  mangroveConfInfo: MangroveConfigurationInfo
+  mangroveConfInfo: MangroveConfigurationInfo,
+  dAppEnvironmentInfo: DAppEnvironmentInfo
 ): { notes: Note[]; warnings: Warning[] } {
   const notes: Note[] = [];
   const warnings: Warning[] = [];
@@ -157,6 +164,16 @@ function analyzeEnvironment(
     warnings.push({
       components: [COMPONENT_MANGROVE_CONFIGURATION, COMPONENT_MANGROVE_REPO],
       content: `Mangrove is not configured to use the latest ${CONTRACT_MGV_ORACLE} contract - globalConfig.useOracle=${mangroveConfInfo.globalConfig.useOracle}, globalConfig.monitor=${mangroveConfInfo.globalConfig.monitor}, address of ${CONTRACT_MGV_ORACLE}=${mgvOracleAddress}`,
+    });
+  }
+
+  if (
+    dAppEnvironmentInfo.mangroveJsVersion !==
+    mangroveJsEnvInfo.latestPackageVersion
+  ) {
+    warnings.push({
+      components: [COMPONENT_DAPP, COMPONENT_MANGROVE_JS],
+      content: `dApp is not using the latest mangrove.js version - dApp mangrove.js version=${dAppEnvironmentInfo.mangroveJsVersion}, mangrove.js latest version=${mangroveJsEnvInfo.latestPackageVersion}`,
     });
   }
 
@@ -292,24 +309,33 @@ async function getMangroveConfigurationInfo(
     };
   }
 
-  const globalConfig = await mgv.config();
+  const globalConfigPromise = mgv.config();
+  const localConfigPromises = [];
   const localConfigs = [];
   // Go through all pairs of tokens
   for (let i = 0; i < tokens.length; ++i) {
     for (let j = i + 1; j < tokens.length; ++j) {
-      const market = await mgv.market({
-        base: tokens[i],
-        quote: tokens[j],
-        bookOptions: { maxOffers: 0 },
-      });
-      const config = await market.config();
-      localConfigs.push({
-        base: market.base.name,
-        quote: market.quote.name,
-        config,
-      });
+      localConfigPromises.push(
+        mgv
+          .market({
+            base: tokens[i],
+            quote: tokens[j],
+            bookOptions: { maxOffers: 0 },
+          })
+          .then((market) => market.config())
+          .then((localConfig) => {
+            localConfigs.push({
+              base: tokens[i],
+              quote: tokens[j],
+              config: localConfig,
+            });
+          })
+      );
     }
   }
+
+  const globalConfig = await globalConfigPromise;
+  Promise.allSettled(localConfigPromises);
 
   if (globalConfig.dead) {
     warnings.push({
