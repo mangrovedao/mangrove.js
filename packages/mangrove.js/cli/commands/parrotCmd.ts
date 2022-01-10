@@ -19,6 +19,7 @@ export const builder = (yargs) => {
 const COMPONENT_MANGROVE_REPO = "repo";
 const COMPONENT_MANGROVE_JS = "mangrove.js";
 const COMPONENT_MANGROVE_CONFIGURATION = "config";
+const COMPONENT_DAPP = "dApp";
 
 const CONTRACT_MANGROVE = "Mangrove";
 const CONTRACT_MGV_CLEANER = "MgvCleaner";
@@ -30,6 +31,8 @@ const CONTRACTS = [
   CONTRACT_MGV_ORACLE,
   CONTRACT_MGV_READER,
 ];
+
+const DAPP_URL = "https://testnet.mangrove.exchange";
 
 type Address = string;
 type ContractAddresses = Map<string, Address>; // contract name |-> address
@@ -53,6 +56,11 @@ type MangroveConfigurationInfo = {
   globalConfig: Mangrove.globalConfig;
   localConfigs: { base: string; quote: string; config: Mangrove.localConfig }[];
 };
+type DAppEnvironmentInfo = {
+  url: string;
+  mangroveJsVersion: string;
+};
+
 type AnnotatedInfo<TInfo> = {
   notes: Note[];
   warnings: Warning[];
@@ -67,6 +75,7 @@ export async function handler(argv: Arguments): Promise<void> {
   const mangroveConfigurationInfo = await getMangroveConfigurationInfo(
     argv.nodeUrl
   );
+  const dAppEnvironmentInfo = await getDAppEnvironmentInfo();
 
   const { notes: crossComponentNotes, warnings: crossComponentWarnings } =
     analyzeEnvironment(
@@ -80,12 +89,14 @@ export async function handler(argv: Arguments): Promise<void> {
     ...repoEnvironmentInfo.notes,
     ...mangroveJsEnvironmentInfo.notes,
     ...mangroveConfigurationInfo.notes,
+    ...dAppEnvironmentInfo.notes,
   ];
   const warnings = [
     ...crossComponentWarnings,
     ...repoEnvironmentInfo.warnings,
     ...mangroveJsEnvironmentInfo.warnings,
     ...mangroveConfigurationInfo.warnings,
+    ...dAppEnvironmentInfo.warnings,
   ];
 
   if (argv.jsonOutput) {
@@ -97,6 +108,7 @@ export async function handler(argv: Arguments): Promise<void> {
           repoEnvironmentInfo: repoEnvironmentInfo.info,
           mangroveJsEnvironmentInfo: mangroveJsEnvironmentInfo.info,
           mangroveConfigurationInfo: mangroveConfigurationInfo.info,
+          dAppEnvironmentInfo: dAppEnvironmentInfo.info,
         },
         jsonStringifyReplacer,
         2
@@ -312,6 +324,35 @@ async function getMangroveConfigurationInfo(
     info: {
       globalConfig,
       localConfigs,
+    },
+  };
+}
+
+async function getDAppEnvironmentInfo(): Promise<
+  AnnotatedInfo<DAppEnvironmentInfo>
+> {
+  const notes: Note[] = [];
+  const warnings: Warning[] = [];
+
+  let mangroveJsVersion: string;
+  const dAppUrlForEnvInfoJsonFile = `${DAPP_URL}/environmentInformation.json`;
+  await fetchJson(dAppUrlForEnvInfoJsonFile)
+    .then((json) => {
+      mangroveJsVersion = json.mangroveJsVersion;
+    })
+    .catch((e) => {
+      warnings.push({
+        components: [COMPONENT_DAPP],
+        content: `Error encountered when fetching environment info json file from dApp: URL=${dAppUrlForEnvInfoJsonFile}, error=${e}`,
+      });
+    });
+
+  return {
+    notes,
+    warnings,
+    info: {
+      url: dAppUrlForEnvInfoJsonFile,
+      mangroveJsVersion,
     },
   };
 }
