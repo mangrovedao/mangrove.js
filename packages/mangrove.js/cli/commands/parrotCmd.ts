@@ -36,9 +36,9 @@ const CONTRACTS = [
 ];
 
 const DAPP_URL = "https://testnet.mangrove.exchange";
-const CLEANING_BOT_URL = "https://mangrove-cleaning-bot.herokuapp.com/";
-const OB_FILLER_BOT_URL = "https://mangrove-obfiller-bot.herokuapp.com/";
-const UPDATE_GAS_BOT_URL = "https://mangrove-updategas-bot.herokuapp.com/";
+const CLEANING_BOT_URL = "https://mangrove-cleaning-bot.herokuapp.com";
+const OB_FILLER_BOT_URL = "https://mangrove-obfiller-bot.herokuapp.com";
+const UPDATE_GAS_BOT_URL = "https://mangrove-updategas-bot.herokuapp.com";
 
 type Address = string;
 type ContractAddresses = Map<string, Address>; // contract name |-> address
@@ -275,6 +275,9 @@ function jsonStringifyReplacer(key: string, value: any) {
   if (value instanceof Big) {
     return value.toString();
   }
+  if (value instanceof Map) {
+    return Object.fromEntries(value);
+  }
   return value;
 }
 
@@ -423,7 +426,7 @@ async function getMangroveConfigurationInfo(
   }
 
   const globalConfig = await globalConfigPromise;
-  Promise.allSettled(localConfigPromises);
+  await Promise.allSettled(localConfigPromises);
 
   if (globalConfig.dead) {
     warnings.push({
