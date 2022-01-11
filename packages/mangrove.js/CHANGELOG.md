@@ -1,4 +1,6 @@
-# 0.0.6
+# Current
+
+# 0.0.8
 
 - SimpleMaker constructor is called Maker
 - `market.consoleAsk` and `market.consoleBids` now allows for pretty printing semi OB
