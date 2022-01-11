@@ -332,14 +332,12 @@ class Market {
    * @example
    * ```
    * const market = await mgv.market({base:"USDC",quote:"DAI"}
-   * await market.subscribe((event,utils) => console.log(event.type, utils.book()))
+   * market.subscribe((event,utils) => console.log(event.type, utils.book()))
    * ```
-   *
-   * @note The subscription is only effective once the void Promise returned by `subscribe` has fulfilled.
    *
    * @note Only one subscription may be active at a time.
    */
-  async subscribe(cb: Market.marketCallback<void>): Promise<void> {
+  subscribe(cb: Market.marketCallback<void>): void {
     this.#subscriptions.set(cb, { type: "multiple" });
   }
 
@@ -410,18 +408,20 @@ class Market {
 
     const config = await this.config();
 
-    await this.#initializeSemibook(
+    const asksSemibookInitializationPromise = this.#initializeSemibook(
       "asks",
       config.asks,
       asksInilizationCompleteCallback,
       opts
     );
-    await this.#initializeSemibook(
+    const bidsSemibookInitializationPromise = this.#initializeSemibook(
       "bids",
       config.bids,
       bidsInilizationCompleteCallback,
       opts
     );
+    await asksSemibookInitializationPromise;
+    await bidsSemibookInitializationPromise;
   }
 
   #mapConfig(
@@ -453,16 +453,18 @@ class Market {
     asks: Mangrove.rawConfig;
     bids: Mangrove.rawConfig;
   }> {
-    const rawAskConfig = await this.mgv.contract.configInfo(
+    const rawAsksConfigPromise = this.mgv.contract.configInfo(
       this.base.address,
       this.quote.address
     );
-    const rawBidsConfig = await this.mgv.contract.configInfo(
+    const rawBidsConfigPromise = this.mgv.contract.configInfo(
       this.quote.address,
       this.base.address
     );
+    const rawAsksConfig = await rawAsksConfigPromise;
+    const rawBidsConfig = await rawBidsConfigPromise;
     return {
-      asks: rawAskConfig,
+      asks: rawAsksConfig,
       bids: rawBidsConfig,
     };
   }
@@ -742,8 +744,10 @@ class Market {
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
   ): Promise<Market.MarketBook> {
-    const rawAsks = await this.rawBook("asks", opts);
-    const rawBids = await this.rawBook("bids", opts);
+    const rawAsksPromise = this.rawBook("asks", opts);
+    const rawBidsPromise = this.rawBook("bids", opts);
+    const rawAsks = await rawAsksPromise;
+    const rawBids = await rawBidsPromise;
     return {
       asks: this.rawToArray("asks", ...rawAsks),
       bids: this.rawToArray("bids", ...rawBids),
@@ -908,9 +912,9 @@ class Market {
     const event: Market.bookSubscriptionEvent =
       this.mgv.contract.interface.parseLog(ethersEvent) as any;
 
-    let offer;
-    let removedOffer;
-    let next;
+    let offer: Market.Offer;
+    let removedOffer: Market.Offer;
+    let next: number;
 
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(semibook.ba);
 
@@ -1168,6 +1172,5 @@ const validateSlippage = (slippage = 0) => {
   }
   return slippage;
 };
-
 
 export default Market;

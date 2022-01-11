@@ -89,7 +89,7 @@ describe("Market integration tests suite", () => {
       queue.put(evt);
       latestBook = market.book();
     };
-    await market.subscribe(cb);
+    market.subscribe(cb);
 
     await helpers
       .newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" })
