@@ -40,8 +40,10 @@ const CLEANING_BOT_URL = "https://mangrove-cleaning-bot.herokuapp.com";
 const OB_FILLER_BOT_URL = "https://mangrove-obfiller-bot.herokuapp.com";
 const UPDATE_GAS_BOT_URL = "https://mangrove-updategas-bot.herokuapp.com";
 
+type ComponentName = string;
+type ContractName = string;
 type Address = string;
-type ContractAddresses = Map<string, Address>; // contract name |-> address
+type ContractAddresses = Map<ContractName, Address>; // contract name |-> address
 
 type Annotation = {
   components: string[];
@@ -106,16 +108,19 @@ export async function handler(argv: Arguments): Promise<void> {
   const obFillerBotEnvironmentInfo = await obFillerBotEnvironmentInfoPromise;
   const updateGasBotEnvironmentInfo = await updateGasBotEnvironmentInfoPromise;
 
-  const { notes: crossComponentNotes, warnings: crossComponentWarnings } =
-    analyzeEnvironment(
-      repoEnvironmentInfo.info,
-      mangroveJsEnvironmentInfo.info,
-      mangroveConfigurationInfo.info,
-      dAppEnvironmentInfo.info,
-      cleanerBotEnvironmentInfo.info,
-      obFillerBotEnvironmentInfo.info,
-      updateGasBotEnvironmentInfo.info
-    );
+  const {
+    notes: crossComponentNotes,
+    warnings: crossComponentWarnings,
+    contractAddressesPerComponent,
+  } = analyzeEnvironment(
+    repoEnvironmentInfo.info,
+    mangroveJsEnvironmentInfo.info,
+    mangroveConfigurationInfo.info,
+    dAppEnvironmentInfo.info,
+    cleanerBotEnvironmentInfo.info,
+    obFillerBotEnvironmentInfo.info,
+    updateGasBotEnvironmentInfo.info
+  );
 
   const notes = [
     ...crossComponentNotes,
@@ -144,6 +149,7 @@ export async function handler(argv: Arguments): Promise<void> {
         {
           notes,
           warnings,
+          contractAddressesPerComponent,
           repoEnvironmentInfo: repoEnvironmentInfo.info,
           mangroveJsEnvironmentInfo: mangroveJsEnvironmentInfo.info,
           mangroveConfigurationInfo: mangroveConfigurationInfo.info,
@@ -174,8 +180,13 @@ export async function handler(argv: Arguments): Promise<void> {
       console.log();
     }
 
+    const addressesTable = {};
+    contractAddressesPerComponent.forEach(
+      (innerMap, contractName) =>
+        (addressesTable[contractName] = Object.fromEntries(innerMap))
+    );
     console.group("ADDRESSES");
-    console.table(repoEnvironmentInfo.info.contractAddresses);
+    console.table(addressesTable);
     console.groupEnd();
   }
 
@@ -190,7 +201,11 @@ function analyzeEnvironment(
   cleanerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
   obFillerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
   updateGasBotEnvironmentInfo: MangroveJsAppEnvironmentInfo
-): { notes: Note[]; warnings: Warning[] } {
+): {
+  notes: Note[];
+  warnings: Warning[];
+  contractAddressesPerComponent: Map<ContractName, Map<ComponentName, Address>>;
+} {
   let notes: Note[] = [];
   let warnings: Warning[] = [];
 
@@ -205,6 +220,14 @@ function analyzeEnvironment(
       content: `Mangrove is not configured to use the latest ${CONTRACT_MGV_ORACLE} contract - globalConfig.useOracle=${mangroveConfInfo.globalConfig.useOracle}, globalConfig.monitor=${mangroveConfInfo.globalConfig.monitor}, address of ${CONTRACT_MGV_ORACLE}=${mgvOracleAddress}`,
     });
   }
+
+  const {
+    notes: addressNotes,
+    warnings: addressWarnings,
+    contractAddressesPerComponent,
+  } = analyzeAddresses(repoEnvInfo, mangroveJsEnvInfo);
+  notes = [...notes, ...addressNotes];
+  warnings = [...warnings, ...addressWarnings];
 
   const { notes: dAppNotes, warnings: dAppWarnings } = analyzeMangroveJsApp(
     COMPONENT_DAPP,
@@ -244,7 +267,95 @@ function analyzeEnvironment(
   return {
     notes,
     warnings,
+    contractAddressesPerComponent,
   };
+}
+
+function analyzeAddresses(
+  repoEnvInfo: RepoEnvironmentInfo,
+  mangroveJsEnvInfo: MangroveJsEnvironmentInfo
+): {
+  notes: Note[];
+  warnings: Warning[];
+  contractAddressesPerComponent: Map<ContractName, Map<ComponentName, Address>>;
+} {
+  const notes: Note[] = [];
+  const warnings: Warning[] = [];
+
+  const contractAddressesPerComponent = new Map<
+    ContractName,
+    Map<ComponentName, Address>
+  >();
+  addComponentContractAddresses(
+    COMPONENT_MANGROVE_REPO,
+    repoEnvInfo.contractAddresses,
+    contractAddressesPerComponent
+  );
+  addComponentContractAddresses(
+    COMPONENT_MANGROVE_JS,
+    mangroveJsEnvInfo.contractAddresses,
+    contractAddressesPerComponent
+  );
+
+  for (const [
+    contractName,
+    addressesPerComponent,
+  ] of contractAddressesPerComponent) {
+    const contractAddressInRepo = addressesPerComponent.get(
+      COMPONENT_MANGROVE_REPO
+    );
+    for (const component of [COMPONENT_MANGROVE_JS]) {
+      const contractAddressInComponent = addressesPerComponent.get(component);
+      if (
+        contractAddressInRepo === undefined &&
+        contractAddressInComponent !== undefined
+      ) {
+        notes.push({
+          components: [component, COMPONENT_MANGROVE_REPO],
+          content: `Found address for '${contractName}' which is not in ${COMPONENT_MANGROVE_REPO} - address in ${component}=${contractAddressInComponent}`,
+        });
+      } else if (contractAddressInComponent !== contractAddressInRepo) {
+        warnings.push({
+          components: [component, COMPONENT_MANGROVE_REPO],
+          content: `Address of '${contractName}' in ${component} is not the latest address from ${COMPONENT_MANGROVE_REPO} - address in ${component}=${contractAddressInComponent}, address in repo=${contractAddressInRepo}`,
+        });
+      }
+    }
+  }
+
+  return {
+    notes,
+    warnings,
+    contractAddressesPerComponent,
+  };
+}
+
+function addComponentContractAddresses(
+  component: ComponentName,
+  contractAddresses: ContractAddresses,
+  contractAddressesPerComponent: Map<ContractName, Map<ComponentName, Address>>
+) {
+  for (const [contractName, address] of contractAddresses) {
+    addOrUpdate(
+      contractAddressesPerComponent,
+      contractName,
+      () => new Map<ComponentName, Address>([[component, address]]),
+      (map) => map.set(component, address)
+    );
+  }
+}
+
+function addOrUpdate<K, V>(
+  map: Map<K, V>,
+  key: K,
+  createValue: () => V,
+  updateValue: (v: V) => V
+): void {
+  if (map.has(key)) {
+    updateValue(map.get(key));
+  } else {
+    map.set(key, createValue());
+  }
 }
 
 function analyzeMangroveJsApp(
