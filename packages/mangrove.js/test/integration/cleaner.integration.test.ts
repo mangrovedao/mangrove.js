@@ -1,18 +1,12 @@
 // Integration tests for Cleaner.ts
-import { describe, it } from "mocha";
+import { describe } from "mocha";
 import * as chai from "chai";
-const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 
-import hre from "hardhat";
 import "hardhat/types";
 
 import Mangrove from "../../src";
-import { ethers } from "ethers";
-const BigNumber = ethers.BigNumber;
-
-import helpers from "../util/helpers";
 
 import { Big } from "big.js";
 //pretty-print when using console.log
@@ -32,13 +26,13 @@ describe("Cleaner integration tests suite", () => {
 
   beforeEach(async function () {
     //set mgv object
-    const deployer = (await hre.getNamedAccounts()).deployer;
     mgv = await Mangrove.connect({
       provider: this.test?.parent?.parent?.ctx.provider,
     });
 
     // Shorten polling for faster tests
     // Workaround for the fact that Ethers.js does not expose Provider.pollingInterval in its type declarations
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     mgv._provider.pollingInterval = 250;
   });
@@ -47,15 +41,15 @@ describe("Cleaner integration tests suite", () => {
     mgv.disconnect();
   });
 
-  it("cannot approve Mangrove from non-admin account", async function () {
-    const tokenB = await mgv.token("TokenB");
+  // FIXME temporarily disable
+  // it("cannot approve Mangrove from non-admin account", async function () {
+  //   const tokenB = await mgv.token("TokenB");
 
-    // FIXME rewrite to use Mangrove API
-    // FIXME temporarily disable
-    // expect(
-    //   mgv.cleanerContract.approveMgv(tokenB.address, tokenB.toUnits(10))
-    // ).to.eventually.throw("AccessControlled/Invalid");
-  });
+  //     // FIXME rewrite to use Mangrove API
+  //     expect(
+  //       mgv.cleanerContract.approveMgv(tokenB.address, tokenB.toUnits(10))
+  //     ).to.eventually.throw("AccessControlled/Invalid");
+  // });
 
   // TODO test other Cleaner functions
 });

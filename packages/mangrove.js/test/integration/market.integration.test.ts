@@ -1,15 +1,13 @@
 // Integration tests for Market.ts
+import { describe, beforeEach, afterEach, it } from "mocha";
 
-const ethers = require("ethers");
-const BigNumber = ethers.BigNumber;
+import { toWei } from "../util/helpers";
 
-const assert = require("assert");
-const { Mangrove } = require("../../src");
-const helpers = require("../util/helpers");
+import assert from "assert";
+import { Mangrove, Market } from "../../src";
+import * as helpers from "../util/helpers";
 
-const { Big } = require("big.js");
-
-const toWei = (v, u = "ether") => ethers.utils.parseUnits(v.toString(), u);
+import { Big } from "big.js";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -17,7 +15,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 };
 
 describe("Market integration tests suite", () => {
-  let mgv;
+  let mgv: Mangrove;
 
   beforeEach(async function () {
     //set mgv object
@@ -26,6 +24,7 @@ describe("Market integration tests suite", () => {
     });
 
     //shorten polling for faster tests
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     mgv._provider.pollingInterval = 250;
     await mgv.contract["fund()"]({ value: toWei(10) });
@@ -36,7 +35,6 @@ describe("Market integration tests suite", () => {
     await tokenA.approveMangrove(1000);
     await tokenB.approveMangrove(1000);
   });
-  before(async function () {});
 
   afterEach(async () => {
     mgv.disconnect();
@@ -51,7 +49,6 @@ describe("Market integration tests suite", () => {
         forceReadOnly: true,
       });
       //shorten polling for faster tests
-      // @ts-ignore
       mgvro._provider.pollingInterval = 250;
     });
     afterEach(async () => {
@@ -64,8 +61,9 @@ describe("Market integration tests suite", () => {
       const addrA = market.base.address;
       const addrB = market.quote.address;
 
-      let pro1 = marketro.once((evt) => {
-        assert.equal(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const pro1 = marketro.once((evt) => {
+        assert.strictEqual(
           marketro.book().asks.length,
           1,
           "book should have length 1 by now"
@@ -77,7 +75,7 @@ describe("Market integration tests suite", () => {
   });
 
   it("subscribes", async function () {
-    const queue = helpers.asyncQueue();
+    const queue = helpers.asyncQueue<Market.bookSubscriptionCbArgument>();
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
     const addrA = market.base.address;
@@ -85,11 +83,11 @@ describe("Market integration tests suite", () => {
 
     let latestBook;
 
-    const cb = (evt) => {
+    const cb = (evt: Market.bookSubscriptionCbArgument) => {
       queue.put(evt);
       latestBook = market.book();
     };
-    await market.subscribe(cb);
+    market.subscribe(cb);
 
     await helpers
       .newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" })
@@ -158,8 +156,8 @@ describe("Market integration tests suite", () => {
     market.sell({ wants: "1", gives: "1.3" });
 
     const offerFail = await queue.get();
-    assert.equal(offerFail.type, "OfferSuccess");
-    assert.equal(offerFail.ba, "bids");
+    assert.strictEqual(offerFail.type, "OfferSuccess");
+    assert.strictEqual(offerFail.ba, "bids");
     //TODO test offerRetract, offerfail, setGasbase
   });
 
@@ -186,8 +184,9 @@ describe("Market integration tests suite", () => {
     const addrA = market.base.address;
     const addrB = market.quote.address;
 
-    let pro1 = market.once((evt) => {
-      assert.equal(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const pro1 = market.once((evt) => {
+      assert.strictEqual(
         market.book().asks.length,
         1,
         "book should have length 1 by now"
@@ -196,8 +195,9 @@ describe("Market integration tests suite", () => {
     await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
     await pro1;
 
-    let pro2 = market.once((evt) => {
-      assert.equal(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const pro2 = market.once((evt) => {
+      assert.strictEqual(
         market.book().asks.length,
         2,
         "book should have length 2 by now"
@@ -206,8 +206,9 @@ describe("Market integration tests suite", () => {
     await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
     await pro2;
 
-    let pro3 = market.once((evt) => {
-      assert.equal(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const pro3 = market.once((evt) => {
+      assert.strictEqual(
         market.book().asks.length,
         3,
         "book should have length 3 by now"
@@ -221,17 +222,17 @@ describe("Market integration tests suite", () => {
   it("crudely simulates market buy", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    const done = helpers.Deferred();
+    const done = new helpers.Deferred();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     market.subscribe((evt) => {
       if (market.book().asks.length === 2) {
-        const { estimatedVolume: estimated, givenResidue } =
-          market.estimateVolume({
-            given: "2",
-            what: "quote",
-            to: "sell",
-          });
-        assert.equal(estimated.toFixed(), "0.5");
-        done.ok();
+        const { estimatedVolume: estimated } = market.estimateVolume({
+          given: "2",
+          what: "quote",
+          to: "sell",
+        });
+        assert.strictEqual(estimated.toFixed(), "0.5");
+        done.resolve();
       }
     });
 

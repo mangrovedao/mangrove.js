@@ -1,5 +1,7 @@
 # Next version
 
+- `Market.subscribe` is no longer `async`
+
 # 0.0.8
 
 - SimpleMaker constructor is called Maker
