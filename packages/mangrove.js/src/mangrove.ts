@@ -8,7 +8,6 @@ import MgvToken from "./mgvtoken";
 
 import Big from "big.js";
 import * as ethers from "ethers";
-import { TransactionResponse } from "@ethersproject/providers";
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
   Big.prototype.toString;
 

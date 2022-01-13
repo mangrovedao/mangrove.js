@@ -1,15 +1,13 @@
 // Integration tests for SimpleMaker.ts
+import { afterEach, beforeEach, describe, it } from "mocha";
 
-const ethers = require("ethers");
-const BigNumber = ethers.BigNumber;
+import { BigNumber } from "ethers";
 
-const assert = require("assert");
-const { Mangrove, Maker } = require("../../src");
-const helpers = require("../util/helpers");
+import assert from "assert";
+import { Mangrove, Maker } from "../../src";
 
-const { Big } = require("big.js");
-
-const toWei = (v, u = "ether") => ethers.utils.parseUnits(v.toString(), u);
+import { Big } from "big.js";
+import { toWei } from "../util/helpers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -17,19 +15,19 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 };
 
 describe("SimpleMaker", () => {
-  let mgv;
+  let mgv: Mangrove;
 
   afterEach(async () => {
     mgv.disconnect();
   });
 
   describe("SimpleMaker connectivity", () => {
-    before(async function () {});
     it("deploys and connects", async () => {
       mgv = await Mangrove.connect({
         provider: "http://localhost:8546",
       });
       //shorten polling for faster tests
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       mgv._provider.pollingInterval = 250;
       const mkr_address = await Maker.deploy(mgv, "SimpleMaker");
@@ -44,9 +42,7 @@ describe("SimpleMaker", () => {
   });
 
   describe("SimpleMaker integration tests suite", () => {
-    let mkr;
-    let tokenA;
-    let tokenB;
+    let mkr: Maker;
 
     beforeEach(async function () {
       //set mgv object
@@ -55,11 +51,10 @@ describe("SimpleMaker", () => {
       });
 
       //shorten polling for faster tests
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       mgv._provider.pollingInterval = 250;
       await mgv.contract["fund()"]({ value: toWei(10) });
-
-      tokenA = mgv.token("TokenA");
-      tokenB = mgv.token("TokenB");
 
       const mkr_address = await Maker.deploy(mgv, "SimpleMaker");
       mkr = await mgv.MakerConnect({
@@ -69,10 +64,8 @@ describe("SimpleMaker", () => {
       });
     });
 
-    before(async function () {});
-
     /* Make sure tx has been mined so we can read the result off the chain */
-    let w = async (r) => (await r).wait(1);
+    const w = async (r) => (await r).wait(1);
 
     describe("Before setup", () => {
       it("gasreq initialized", async () => {
@@ -85,7 +78,7 @@ describe("SimpleMaker", () => {
       it("checks allowance", async () => {
         let allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.strictEqual(allowance.toNumber(), 0, "allowance should be 0");
-        let overridesTest = { gasLimit: 100000 };
+        const overridesTest = { gasLimit: 100000 };
         // test specified approve amount
         await w(mkr.approveMangrove("TokenB", 10 ** 9, overridesTest));
         allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
@@ -99,7 +92,7 @@ describe("SimpleMaker", () => {
         allowance /*:Big*/ = await mkr.mangroveAllowance("TokenB");
         assert.strictEqual(
           mgv.toUnits(allowance, 18).toString(),
-          ethers.BigNumber.from(2).pow(256).sub(1).toString(),
+          BigNumber.from(2).pow(256).sub(1).toString(),
           "allowance should be 2^256-1"
         );
       });
@@ -135,7 +128,7 @@ describe("SimpleMaker", () => {
       });
 
       it("pushes a new offer", async () => {
-        const provision = await mkr.computeAskProvision();
+        const provision = await mkr.computeAskProvision({});
         await mkr.fundMangrove(provision);
         const { id: ofrId } = await mkr.newAsk({ wants: 10, gives: 10 });
 
@@ -149,7 +142,7 @@ describe("SimpleMaker", () => {
       });
 
       it("cancels offer", async () => {
-        const provision = await mkr.computeBidProvision();
+        const provision = await mkr.computeBidProvision({});
         await mkr.fundMangrove(provision);
         const { id: ofrId } = await mkr.newBid({
           wants: 10,
@@ -163,24 +156,36 @@ describe("SimpleMaker", () => {
       });
 
       it("updates offer", async () => {
-        let provision = await mkr.computeAskProvision();
+        let provision = await mkr.computeAskProvision({});
         await mkr.fundMangrove(provision);
         const { id: ofrId } = await mkr.newAsk({
           wants: 10,
           gives: 20,
         });
         provision = await mkr.computeAskProvision({ id: ofrId });
-        console.log(provision);
-        assert.equal(provision, 0, `There should be no need to reprovision`);
+        assert.strictEqual(
+          provision.toNumber(),
+          0,
+          `There should be no need to reprovision`
+        );
         await mkr.updateAsk(ofrId, { wants: 12, gives: 10 });
 
         const asks = mkr.asks();
-        assert.equal(asks[0].wants, 12, "offer should have updated wants");
-        assert.equal(asks[0].gives, 10, "offer should have updated gives");
+        assert.strictEqual(
+          asks[0].wants.toNumber(),
+          12,
+          "offer should have updated wants"
+        );
+        assert.strictEqual(
+          asks[0].gives.toNumber(),
+          10,
+          "offer should have updated gives"
+        );
       });
+
       it("changes gasreq", async () => {
         await mkr.setDefaultGasreq(50000);
-        assert.equal(
+        assert.strictEqual(
           50000,
           (await mkr.contract.OFR_GASREQ()).toNumber(),
           "Offer default gasreq not updated"
