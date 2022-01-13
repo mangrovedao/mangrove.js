@@ -96,7 +96,7 @@ const mkr_address = await Maker.deploy(mgv);
 
 // Maker contracts are token-agnostic, but you must instantiate the js object
 // focused on a specific base/quote pair.
-const mkr = await mgv.MakerConnect({
+const mkr = await mgv.makerConnect({
   address: mkr_address,
   base: "WETH",
   quote: "USDC",

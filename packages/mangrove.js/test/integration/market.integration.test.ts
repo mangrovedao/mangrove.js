@@ -75,7 +75,7 @@ describe("Market integration tests suite", () => {
   });
 
   it("subscribes", async function () {
-    const queue = helpers.asyncQueue<Market.bookSubscriptionCbArgument>();
+    const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
     const addrA = market.base.address;
@@ -83,7 +83,7 @@ describe("Market integration tests suite", () => {
 
     let latestBook;
 
-    const cb = (evt: Market.bookSubscriptionCbArgument) => {
+    const cb = (evt: Market.BookSubscriptionCbArgument) => {
       queue.put(evt);
       latestBook = market.book();
     };

@@ -31,7 +31,7 @@ describe("SimpleMaker", () => {
       // @ts-ignore
       mgv._provider.pollingInterval = 250;
       const mkr_address = await Maker.deploy(mgv, "SimpleMaker");
-      const mkr = await mgv.MakerConnect({
+      const mkr = await mgv.makerConnect({
         address: mkr_address,
         base: "TokenA",
         quote: "TokenB",
@@ -57,7 +57,7 @@ describe("SimpleMaker", () => {
       await mgv.contract["fund()"]({ value: toWei(10) });
 
       const mkr_address = await Maker.deploy(mgv, "SimpleMaker");
-      mkr = await mgv.MakerConnect({
+      mkr = await mgv.makerConnect({
         address: mkr_address,
         base: "TokenA",
         quote: "TokenB",
