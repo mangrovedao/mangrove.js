@@ -8,8 +8,6 @@ on:
     types:
       - completed
 
-env:
-
 jobs:
   publish-mangrove-solidity-docs:
     runs-on: ubuntu-latest
