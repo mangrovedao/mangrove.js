@@ -8,7 +8,6 @@ import MgvToken from "./mgvtoken";
 
 import Big from "big.js";
 import * as ethers from "ethers";
-import { TransactionResponse } from "@ethersproject/providers";
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
   Big.prototype.toString;
 
@@ -19,11 +18,11 @@ let canConstructMangrove = false;
 import type { Awaited } from "ts-essentials";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
-  export type rawConfig = Awaited<
+  export type RawConfig = Awaited<
     ReturnType<typechain.Mangrove["functions"]["configInfo"]>
   >;
 
-  export type localConfig = {
+  export type LocalConfig = {
     active: boolean;
     fee: number;
     density: Big;
@@ -33,7 +32,7 @@ namespace Mangrove {
     last: number;
   };
 
-  export type globalConfig = {
+  export type GlobalConfig = {
     monitor: string;
     useOracle: boolean;
     notify: boolean;
@@ -161,7 +160,7 @@ class Mangrove {
    * Argument of the form `Maker.ConstructionParams`, except the `mgv` field which will be `this`.
    * Reminder: to set your own `base`/`quote` other than those known by mangrove.js, use `setDecimals` and `setAddress` before calling this function.
    */
-  async MakerConnect(
+  async makerConnect(
     params: Omit<Maker.ConstructionParams, "mgv">
   ): Promise<Maker> {
     return await Maker.connect({ ...params, mgv: this });
@@ -266,7 +265,7 @@ class Mangrove {
    * Return global Mangrove config
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async config(): Promise<Mangrove.globalConfig> {
+  async config(): Promise<Mangrove.GlobalConfig> {
     const config = await this.contract.configInfo(
       ethers.constants.AddressZero,
       ethers.constants.AddressZero

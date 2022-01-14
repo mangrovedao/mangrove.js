@@ -1,1 +1,1 @@
-worker: yarn workspace @mangrovedao/template-bot start
+web: yarn workspace @mangrovedao/template-bot start

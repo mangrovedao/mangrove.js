@@ -1,15 +1,12 @@
 name: doc
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["CI"]
     branches: [master]
     types:
       - completed
-
-env:
-  NODE_ENV: test
-  working-directory: packages/mangrove-solidity
 
 jobs:
   publish-mangrove-solidity-docs:
@@ -22,16 +19,14 @@ jobs:
       uses: dawidd6/action-download-artifact@v2
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}      
-        workflow: CI
-        # ...
+        workflow: node.js.yml
         workflow_conclusion: success
         branch: master
         event: push
-        # ...
         name: documentation
         path: docs
 
-    - name: Deploy to GitHub Pages
+    - name: Deploy to GitHub Pages branch
       if: success()
       uses: crazy-max/ghaction-github-pages@v2
       with:

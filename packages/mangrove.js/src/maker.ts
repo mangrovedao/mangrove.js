@@ -34,11 +34,11 @@ namespace Maker {
    *  offer order.
    */
 
-  type optParams = { gasreq?: number; gasprice?: number };
+  type OptParams = { gasreq?: number; gasprice?: number };
 
-  export type offerParams =
-    | ({ price: Bigish; volume: Bigish } & optParams)
-    | ({ wants: Bigish; gives: Bigish } & optParams);
+  export type OfferParams =
+    | ({ price: Bigish; volume: Bigish } & OptParams)
+    | ({ wants: Bigish; gives: Bigish } & OptParams);
 }
 
 /**
@@ -259,7 +259,7 @@ class Maker {
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
    *  return {price,wants,gives}
    */
-  #normalizeOfferParams(p: { ba: "bids" | "asks" } & Maker.offerParams): {
+  #normalizeOfferParams(p: { ba: "bids" | "asks" } & Maker.OfferParams): {
     price: Big;
     wants: Big;
     gives: Big;
@@ -289,7 +289,7 @@ class Maker {
 
   /** Post a new ask */
   newAsk(
-    p: Maker.offerParams,
+    p: Maker.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "asks", ...p }, overrides);
@@ -297,7 +297,7 @@ class Maker {
 
   /** Post a new bid */
   newBid(
-    p: Maker.offerParams,
+    p: Maker.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; event: ethers.Event }> {
     return this.newOffer({ ba: "bids", ...p }, overrides);
@@ -316,7 +316,7 @@ class Maker {
     To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
   */
   async newOffer(
-    p: { ba: "bids" | "asks" } & Maker.offerParams,
+    p: { ba: "bids" | "asks" } & Maker.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ id: number; pivot: number; event: ethers.Event }> {
     const { wants, gives, price, gasreq, gasprice } =
@@ -347,7 +347,7 @@ class Maker {
   /** Update an existing ask */
   updateAsk(
     id: number,
-    p: Maker.offerParams,
+    p: Maker.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "asks", ...p }, overrides);
@@ -356,7 +356,7 @@ class Maker {
   /** Update an existing offer */
   updateBid(
     id: number,
-    p: Maker.offerParams,
+    p: Maker.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     return this.updateOffer(id, { ba: "bids", ...p }, overrides);
@@ -368,7 +368,7 @@ class Maker {
      */
   async updateOffer(
     id: number,
-    p: { ba: "bids" | "asks" } & Maker.offerParams,
+    p: { ba: "bids" | "asks" } & Maker.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.Event }> {
     const offerList = p.ba === "asks" ? this.asks() : this.bids();

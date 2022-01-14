@@ -19,6 +19,10 @@ import { MarketConfig } from "./MarketConfig";
 import { OfferTaker } from "./OfferTaker";
 import { TokenConfig } from "./TokenConfig";
 
+import http from "http";
+import finalhandler from "finalhandler";
+import serveStatic from "serve-static";
+
 type TokenPair = { token1: string; token2: string };
 
 const main = async () => {
@@ -296,3 +300,15 @@ main().catch((e) => {
   // TODO Consider doing graceful shutdown of takers and makers
   process.exit(1); // TODO Add exit codes
 });
+
+// The node http server is used solely to serve static information files for environment management
+const staticBasePath = "./static";
+
+const serve = serveStatic(staticBasePath, { index: false });
+
+const server = http.createServer(function (req, res) {
+  const done = finalhandler(req, res);
+  serve(req, res, () => done(undefined)); // 'undefined' means no error
+});
+
+server.listen(process.env.PORT || 8080);

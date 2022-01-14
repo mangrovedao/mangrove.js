@@ -159,7 +159,7 @@ export class OfferMaker {
       );
 
     if (totalLiquidityPublished.gt(this.#maxTotalLiquidityPublished)) {
-      logger.info(
+      logger.debug(
         "Total liquidity published exceeds max, retracting worst offer",
         {
           contextInfo: "maker",
@@ -175,12 +175,41 @@ export class OfferMaker {
       );
       // FIXME: Retract should be implemented in market.ts
       const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
-      await this.#market.mgv.contract.retractOffer(
-        outbound_tkn.address,
-        inbound_tkn.address,
-        myWorstOffer.id,
-        false
-      );
+      await this.#market.mgv.contract
+        .retractOffer(
+          outbound_tkn.address,
+          inbound_tkn.address,
+          myWorstOffer.id,
+          false
+        )
+        .then((tx) => tx.wait())
+        .then((txReceipt) => {
+          logger.info("Succesfully retracted offer", {
+            contextInfo: "maker",
+            base: this.#market.base.name,
+            quote: this.#market.quote.name,
+            ba: ba,
+            data: {
+              myWorstOffer,
+            },
+          });
+          logger.debug("Details for retraction", {
+            contextInfo: "maker",
+            data: { txReceipt },
+          });
+        })
+        .catch((e) =>
+          logger.error("Error occurred while retracting offer", {
+            contextInfo: "maker",
+            base: this.#market.base.name,
+            quote: this.#market.quote.name,
+            ba: ba,
+            data: {
+              reason: e,
+              myWorstOffer,
+            },
+          })
+        );
     }
   }
 

@@ -1,4 +1,10 @@
-# 0.0.6
+# Next version
+
+- All types now start with upper case
+- All functions now start with lower case
+- `Market.subscribe` is no longer `async`
+
+# 0.0.8
 
 - SimpleMaker constructor is called Maker
 - `market.consoleAsk` and `market.consoleBids` now allows for pretty printing semi OB

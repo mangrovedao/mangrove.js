@@ -13,6 +13,10 @@ import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
+import http from "http";
+import finalhandler from "finalhandler";
+import serveStatic from "serve-static";
+
 const main = async () => {
   logger.info("Starting template-updater bot...");
 
@@ -50,3 +54,15 @@ process.on("unhandledRejection", function (reason, promise) {
 main().catch((e) => {
   logErrorAndExit(e);
 });
+
+// The node http server is used solely to serve static information files for environment management
+const staticBasePath = "./static";
+
+const serve = serveStatic(staticBasePath, { index: false });
+
+const server = http.createServer(function (req, res) {
+  const done = finalhandler(req, res);
+  serve(req, res, () => done(undefined)); // 'undefined' means no error
+});
+
+server.listen(process.env.PORT || 8080);

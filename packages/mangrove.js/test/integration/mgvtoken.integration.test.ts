@@ -1,26 +1,11 @@
-const ethers = require("ethers");
-const BigNumber = ethers.BigNumber;
+import { afterEach, beforeEach, describe, it } from "mocha";
+import assert from "assert";
+import { Mangrove } from "../../src";
 
-const assert = require("assert");
-const { Mangrove } = require("../../src");
-const helpers = require("../util/helpers");
-
-const { Big } = require("big.js");
+import { Big } from "big.js";
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
   return `<Big>${this.toString()}`; // previously just Big.prototype.toString;
-};
-
-const newOffer = (mgv, base, quote, { wants, gives, gasreq, gasprice }) => {
-  return mgv.contract.newOffer(
-    base,
-    quote,
-    helpers.toWei(wants),
-    helpers.toWei(gives),
-    gasreq || 10000,
-    gasprice || 1,
-    0
-  );
 };
 
 describe("MGV Token integration tests suite", () => {
