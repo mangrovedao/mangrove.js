@@ -26,7 +26,7 @@ jobs:
         name: documentation
         path: docs
 
-    - name: Deploy to GitHub Pages
+    - name: Deploy to GitHub Pages branch
       if: success()
       uses: crazy-max/ghaction-github-pages@v2
       with:
