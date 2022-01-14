@@ -155,6 +155,10 @@ class Mangrove {
     return await Market.connect({ ...params, mgv: this });
   }
 
+  async offerLogic(addr: string): Promise<OfferLogic> {
+    return await OfferLogic.connect({ address: addr, mgv: this });
+  }
+
   /** Get Maker object.
    *
    * Argument of the form `Maker.ConstructionParams`, except the `mgv` field which will be `this`.
