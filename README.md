@@ -153,7 +153,6 @@ The repo root contains the following folders and files:
 ├── .github/         # GitHub related files, in particular CI configurations for GitHub Actions
 ├── .husky/          # Husky Git hooks, e.g. for auto formatting
 ├── .yarn/           # Yarn files
-├── docs/            # GitHub Pages site with documentation
 ├── packages/        # The actual Mangrove packages
 ├── .gitattributes   # Git attributes for the whole monorepo 
 ├── .gitignore       # Git ignore for the whole monorepo
