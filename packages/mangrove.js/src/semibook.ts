@@ -8,60 +8,116 @@
  * - Volumes are in terms of base tokens
  * @module
  */
-// FIXME: How much of the fetching of chain data should be done here?
-//        If this API ends up including methods that may trigger fetching of data,
-//        if would make sense for that to be handled here
 
-// FIXME: this introduces a circular dependency - is that an issue`
+import { ethers, BigNumber } from "ethers";
 import { Market } from ".";
+import { TypedEventFilter, TypedListener } from "./types/typechain/common";
+import { Deferred } from "./util";
 
-// FIXME: These are copied from market.ts - where should they live?
-const DEFAULT_MAX_OFFERS = 50;
-const bookOptsDefault: Market.BookOptions = {
-  fromId: 0,
-  maxOffers: DEFAULT_MAX_OFFERS,
-};
+// Guard constructor against external calls
+let canConstructSemibook = false;
 
 export class Semibook {
   readonly ba: "bids" | "asks";
   readonly market: Market;
-  readonly options: Market.BookOptions; // FIXME: Is this reasonable? E.g. do we really support `fromId` and `blockNumber` ?
+  readonly options: Market.BookOptions;
 
-  // FIXME: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration
-  // FIXME: Should not be modifiable from outside - make private and add getter?
-  offer_gasbase: number;
+  // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
+  #offer_gasbase: number;
+
+  #initializationPromise: Promise<void>; // Resolves when initialization has completed. Used to queue events until initialization is complete.
+  #canInitialize: boolean; // Guard against multiple initialization calls
+
+  #eventFilter: TypedEventFilter<any>;
+  #eventCallback: TypedListener<any>;
 
   // FIXME: Describe invariants
   #offers: Map<number, Market.Offer>;
-  #best: number; // FIXME: empty list => | undefined; // id of the best/first offer in the offer list iff #offers is non-empty
-  firstBlockNumber: number; // the block number that the offer list prefix is consistent with // FIXME: should not be modifiable from the outside
+  #best: number; // FIXME: 0 => empty semibook - would be better to use undefined undefined; // id of the best/first offer in the offer list iff #offers is non-empty
+  #firstBlockNumber: number; // the block number that the offer list prefix is consistent with // FIXME: should not be modifiable from the outside
   // FIXME: the following are potential optimizations that can be implemented when the existing functionality has been extracted
   // #worst: number | undefined; // id of the worst/last offer in the offer list iff the whole list is in #offers; Otherwise, undefined
   // #prexixWorst: number; // id of the worst offer in #offers
   // #prefixVolume: Big; // volume of the offers in #offers
 
-  // FIXME: This is an "internal" constructor
-  constructor(
+  static async connect(
     market: Market,
     ba: "bids" | "asks",
-    options: Omit<Market.BookOptions, "fromId"> = bookOptsDefault // FIXME: Omit blockNumber if it is reintroduced
+    options: Market.BookOptions
+  ): Promise<Semibook> {
+    canConstructSemibook = true;
+    const semibook = new Semibook(market, ba, options);
+    canConstructSemibook = false;
+    await semibook.#initialize();
+    return semibook;
+  }
+
+  /* Stop listening to events from mangrove */
+  disconnect(): void {
+    this.market.mgv.contract.off(this.#eventFilter, this.#eventCallback);
+  }
+
+  // FIXME: Perhaps we should provide a way to iterate over the offers instead?
+  //        I'd rather not encourage users to work with the array as it has lost information
+  //        about the prefix such as whether it is a true prefix or a complete offer list.
+  public toArray(): Market.Offer[] {
+    const result = [];
+
+    if (this.#best !== 0) {
+      // FIXME: Should test for undefined when we fix the assumption that 0 => undefined
+      let latest = this.#offers.get(this.#best);
+      do {
+        result.push(latest);
+        latest = this.#offers.get(latest.next);
+      } while (latest !== undefined);
+    }
+    return result;
+  }
+
+  private constructor(
+    market: Market,
+    ba: "bids" | "asks",
+    options: Market.BookOptions
   ) {
+    if (!canConstructSemibook) {
+      throw Error(
+        "Mangrove Semibook must be initialized async with Semibook.connect (constructors cannot be async)"
+      );
+    }
+
     this.market = market;
     this.ba = ba;
-    this.options = { ...bookOptsDefault, ...options };
+    this.options = options;
+
+    this.#canInitialize = true;
+
+    this.#eventFilter = this.#createEventFilter();
+    this.#eventCallback = (a: any) => this.#handleBookEvent(a);
+
     this.#offers = new Map();
     this.#best = 0; // FIXME: This should not be needed - undefined would make more sense for an empty list
   }
 
-  // FIXME: This should be guarded, so initialization can only happen once
-  async initialize(): Promise<void> {
+  async #initialize(): Promise<void> {
+    if (!this.#canInitialize) return;
+    this.#canInitialize = false;
+
     const { asks: asksConfig, bids: bidsConfig } = await this.market.config();
     const localConfig = this.ba === "bids" ? bidsConfig : asksConfig;
 
-    this.offer_gasbase = localConfig.offer_gasbase;
+    this.#offer_gasbase = localConfig.offer_gasbase;
 
-    this.firstBlockNumber = await this.market.mgv._provider.getBlockNumber();
-    const offers = await this.#fetchOfferListPrefix(this.firstBlockNumber);
+    // To avoid missing any events, we register the event listener before
+    // reading the semibook. However, the events must not be processed
+    // before the semibooks has been initialized. This is ensured by
+    // having the event listeners await a promise that will resolve when
+    // semibook reading has completed.
+    const deferredInitialization = new Deferred();
+    this.#initializationPromise = deferredInitialization.promise;
+    this.market.mgv.contract.on(this.#eventFilter, this.#eventCallback);
+
+    this.#firstBlockNumber = await this.market.mgv._provider.getBlockNumber();
+    const offers = await this.#fetchOfferListPrefix(this.#firstBlockNumber);
 
     if (offers.length > 0) {
       this.#best = offers[0].id;
@@ -70,61 +126,138 @@ export class Semibook {
         this.#offers.set(offer.id, offer);
       }
     }
+
+    deferredInitialization.resolve();
   }
 
-  // FIXME: Rename to match what it does: Fetch an offer list prefix
-  /* Provides the book with raw BigNumber values */
-  async #fetchOfferListPrefix(blockNumber: number): Promise<Market.Offer[]> {
+  async #handleBookEvent(ethersEvent: ethers.Event): Promise<void> {
+    // Book events must wait for initialization to complete
+    await this.#initializationPromise;
+    // If event is from firstBlockNumber (or before), ignore it as it
+    // will be included in the initially read offer list
+    if (ethersEvent.blockNumber <= this.#firstBlockNumber) {
+      return;
+    }
+
+    const event: Market.BookSubscriptionEvent =
+      this.market.mgv.contract.interface.parseLog(ethersEvent) as any;
+
+    let offer: Market.Offer;
+    let removedOffer: Market.Offer;
+    let next: number;
+
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
       this.ba
     );
-    // by default chunk size is number of offers desired
-    const chunkSize =
-      typeof this.options.chunkSize === "undefined"
-        ? this.options.maxOffers
-        : this.options.chunkSize;
-    // save total number of offers we want
-    let maxOffersLeft = this.options.maxOffers;
 
-    let nextId = this.options.fromId; // fromId == 0 means "start from best" // FIXME: Do we ever use `fromId` !== 0 ?
+    switch (event.name) {
+      case "OfferWrite":
+        // We ignore the return value here because the offer may have been outside the local
+        // cache, but may now enter the local cache due to its new price.
+        this.#removeOffer(event.args.id.toNumber());
 
-    const result: Market.Offer[] = [];
-    // FIXME: This must be reintroduced, if BookOptions.blockNumber is actually ever used - otherwise, this should be deleted
-    // const blockNum =
-    // this.options.blockNumber !== undefined
-    // ? opts.blockNumber
-    // : await this.market.mgv._provider.getBlockNumber(); //stay consistent by reading from one block
-    do {
-      const [_nextId, offerIds, offers, details] =
-        await this.market.mgv.readerContract.offerList(
-          outbound_tkn.address,
-          inbound_tkn.address,
-          this.options.fromId,
-          chunkSize,
-          { blockTag: blockNumber }
+        /* After removing the offer (a noop if the offer was not in local cache),
+            we reinsert it.
+
+            * The offer comes with id of its prev. If prev does not exist in cache, we skip
+            the event. Note that we still want to remove the offer from the cache.
+            * If the prev exists, we take the prev's next as the offer's next. Whether that next exists in the cache or not is irrelevant.
+        */
+        try {
+          next = this.#getNextId(event.args.prev.toNumber());
+        } catch (e) {
+          // offer.prev was not found, we are outside local OB copy. skip.
+          break;
+        }
+
+        offer = this.#toOfferObject({
+          ...event.args,
+          offer_gasbase: this.#offer_gasbase,
+          next: BigNumber.from(next),
+        });
+
+        this.#insertOffer(offer);
+
+        this.market.defaultCallback(
+          {
+            type: event.name,
+            offer: offer,
+            ba: this.ba,
+          },
+          this.ba,
+          event,
+          ethersEvent
         );
+        break;
 
-      for (const [index, offerId] of offerIds.entries()) {
-        result.push(
-          this.market.toOfferObject(this.ba, {
-            id: offerId,
-            ...offers[index],
-            ...details[index],
-          })
-        );
-      }
+      case "OfferFail":
+        removedOffer = this.#removeOffer(event.args.id.toNumber());
+        // Don't trigger an event about an offer outside of the local cache
+        if (removedOffer) {
+          this.market.defaultCallback(
+            {
+              type: event.name,
+              ba: this.ba,
+              taker: event.args.taker,
+              offer: removedOffer,
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+              mgvData: event.args.mgvData,
+            },
+            this.ba,
+            event,
+            ethersEvent
+          );
+        }
+        break;
 
-      nextId = _nextId.toNumber();
-      maxOffersLeft = maxOffersLeft - chunkSize;
-    } while (maxOffersLeft > 0 && nextId !== 0);
+      case "OfferSuccess":
+        removedOffer = this.#removeOffer(event.args.id.toNumber());
+        if (removedOffer) {
+          this.market.defaultCallback(
+            {
+              type: event.name,
+              ba: this.ba,
+              taker: event.args.taker,
+              offer: removedOffer,
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+            },
+            this.ba,
+            event,
+            ethersEvent
+          );
+        }
+        break;
 
-    return result;
+      case "OfferRetract":
+        removedOffer = this.#removeOffer(event.args.id.toNumber());
+        // Don't trigger an event about an offer outside of the local cache
+        if (removedOffer) {
+          this.market.defaultCallback(
+            {
+              type: event.name,
+              ba: this.ba,
+              offer: removedOffer,
+            },
+            this.ba,
+            event,
+            ethersEvent
+          );
+        }
+        break;
+
+      case "SetGasbase":
+        this.#offer_gasbase = event.args.offer_gasbase.toNumber();
+        break;
+      default:
+        throw Error(`Unknown event ${event}`);
+    }
   }
 
   // Assumes ofr.prev and ofr.next are present in local OB copy.
   // Assumes id is not already in book;
-  // FIXME: This should probably be private when the refac is complete. Might violate invariants, if the user tries to insert an offer that is not on the chain offer list
-  public insertOffer(offer: Market.Offer): void {
+  #insertOffer(offer: Market.Offer): void {
     this.#offers.set(offer.id, offer);
     if (offer.prev === 0) {
       this.#best = offer.id;
@@ -139,8 +272,7 @@ export class Semibook {
 
   // remove offer id from book and connect its prev/next.
   // return null if offer was not found in book
-  // FIXME: This should probably be private when the refac is complete. Might violate invariants, if the user tries to delete an offer that is not removed on the chain offer list
-  public removeOffer(id: number): Market.Offer {
+  #removeOffer(id: number): Market.Offer {
     const ofr = this.#offers.get(id);
     if (ofr) {
       // we differentiate prev==0 (offer is best)
@@ -173,9 +305,7 @@ export class Semibook {
   // return id of offer next to offerId, according to cache.
   // note that offers[offers[offerId].next] may be not exist!
   // throws if offerId is not found
-  // FIXME: This is only used internally when the refactoring is complete, so should be made private
-  // FIXME: Should either be renamed to indicate it returns an ID or changed to return the next offer (I think I prefer this)
-  public getNext(offerId: number): number {
+  #getNextId(offerId: number): number {
     if (offerId === 0) {
       // FIXME this is a bit weird - why should 0 mean the best?
       return this.#best;
@@ -190,27 +320,111 @@ export class Semibook {
     }
   }
 
-  // FIXME: Perhaps we should provide a way to iterate over the offers instead?
-  //        I'd rather not encourage users to work with the array as it has lost information
-  //        about the prefix such as whether it is a true prefix or a complete offer list.
-  public toArray(): Market.Offer[] {
-    const result = [];
+  /* Provides the book with raw BigNumber values */
+  async #fetchOfferListPrefix(blockNumber: number): Promise<Market.Offer[]> {
+    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
+      this.ba
+    );
+    // by default chunk size is number of offers desired
+    const chunkSize =
+      typeof this.options.chunkSize === "undefined"
+        ? this.options.maxOffers
+        : this.options.chunkSize;
+    // save total number of offers we want
+    let maxOffersLeft = this.options.maxOffers;
 
-    if (this.#best !== 0) {
-      // FIXME: Should test for undefined when we fix the assumption that 0 => undefined
-      let latest = this.#offers.get(this.#best);
-      do {
-        result.push(latest);
-        latest = this.#offers.get(latest.next);
-      } while (latest !== undefined);
-    }
+    let nextId = 0;
+
+    const result: Market.Offer[] = [];
+    do {
+      const [_nextId, offerIds, offers, details] =
+        await this.market.mgv.readerContract.offerList(
+          outbound_tkn.address,
+          inbound_tkn.address,
+          nextId,
+          chunkSize,
+          { blockTag: blockNumber }
+        );
+
+      for (const [index, offerId] of offerIds.entries()) {
+        result.push(
+          this.#toOfferObject({
+            id: offerId,
+            ...offers[index],
+            ...details[index],
+          })
+        );
+      }
+
+      nextId = _nextId.toNumber();
+      maxOffersLeft = maxOffersLeft - chunkSize;
+    } while (maxOffersLeft > 0 && nextId !== 0);
+
     return result;
   }
 
-  // /**
-  //  * isComplete
-  //  */
-  // public isComplete(): boolean {
-  //   return this.#worst !== undefined;
-  // }
+  #toOfferObject(raw: Market.OfferData): Market.Offer {
+    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
+      this.ba
+    );
+
+    const _gives = outbound_tkn.fromUnits(raw.gives);
+    const _wants = inbound_tkn.fromUnits(raw.wants);
+
+    const { baseVolume } = this.market.getBaseQuoteVolumes(
+      this.ba,
+      _gives,
+      _wants
+    );
+    const price = this.market.getPrice(this.ba, _gives, _wants);
+
+    if (baseVolume.eq(0)) {
+      throw Error("baseVolume is 0 (not allowed)");
+    }
+
+    const toNum = (i: number | BigNumber): number =>
+      typeof i === "number" ? i : i.toNumber();
+
+    return {
+      id: toNum(raw.id),
+      prev: toNum(raw.prev),
+      next: toNum(raw.next),
+      gasprice: toNum(raw.gasprice),
+      maker: raw.maker,
+      gasreq: toNum(raw.gasreq),
+      offer_gasbase: toNum(raw.offer_gasbase),
+      gives: _gives,
+      wants: _wants,
+      volume: baseVolume,
+      price: price,
+    };
+  }
+
+  #createEventFilter(): TypedEventFilter<any> {
+    /* Disjunction of possible event names */
+    const topics0 = [
+      "OfferSuccess",
+      "OfferFail",
+      "OfferWrite",
+      "OfferRetract",
+      "SetGasbase",
+    ].map((e) =>
+      this.market.mgv.contract.interface.getEventTopic(
+        this.market.mgv.contract.interface.getEvent(e as any)
+      )
+    );
+
+    const base_padded = ethers.utils.hexZeroPad(this.market.base.address, 32);
+    const quote_padded = ethers.utils.hexZeroPad(this.market.quote.address, 32);
+
+    const topics =
+      this.ba === "asks"
+        ? [topics0, base_padded, quote_padded]
+        : [topics0, quote_padded, base_padded];
+
+    return {
+      address: this.market.mgv._address,
+      topics: topics,
+    };
+  }
 }

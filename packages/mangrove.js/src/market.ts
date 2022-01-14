@@ -21,9 +21,7 @@ import Big from "big.js";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
-// FIXME: Should these be moved to Semibook?
 const bookOptsDefault: Market.BookOptions = {
-  fromId: 0,
   maxOffers: DEFAULT_MAX_OFFERS,
 };
 
@@ -42,11 +40,8 @@ namespace Market {
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
   export type BookOptions = {
-    fromId?: number;
     maxOffers?: number;
     chunkSize?: number;
-    // FIXME: This can be removed, right?
-    // blockNumber?: number;
   };
 
   export type Offer = {
@@ -118,6 +113,7 @@ namespace Market {
       };
 
   // FIXME: This name is misleading, since you're only getting prefixes of the offer lists.
+  // FIXME: Perhaps we should expose Semibook instead of arrays? Semibooks carry more information.
   export type MarketBook = { asks: Offer[]; bids: Offer[] };
 }
 
@@ -136,7 +132,8 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
-  #lowLevelCallbacks: null | { asksCallback?: any; bidsCallback?: any };
+  #asksSemibook: Semibook;
+  #bidsSemibook: Semibook;
   #book: Market.MarketBook;
   #initClosure?: () => Promise<void>;
 
@@ -165,14 +162,13 @@ class Market {
    *
    * `params.mgv` will be used as mangrove instance
    */
-  constructor(params: { mgv: Mangrove; base: string; quote: string }) {
+  private constructor(params: { mgv: Mangrove; base: string; quote: string }) {
     if (!canConstructMarket) {
       throw Error(
         "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)"
       );
     }
     this.#subscriptions = new Map();
-    this.#lowLevelCallbacks = null;
     this.mgv = params.mgv;
 
     this.base = this.mgv.token(params.base);
@@ -261,42 +257,8 @@ class Market {
 
   /* Stop listening to events from mangrove */
   disconnect(): void {
-    const { asksFilter, bidsFilter } = this.#bookFilter();
-    if (!this.#lowLevelCallbacks) return;
-    const { asksCallback, bidsCallback } = this.#lowLevelCallbacks;
-    this.mgv.contract.off(asksFilter, asksCallback);
-    this.mgv.contract.off(bidsFilter, bidsCallback);
-  }
-
-  /* eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types */
-  #bookFilter() {
-    /* Disjunction of possible event names */
-    const topics0 = [
-      "OfferSuccess",
-      "OfferFail",
-      "OfferWrite",
-      "OfferRetract",
-      "SetGasbase",
-    ].map((e) =>
-      this.mgv.contract.interface.getEventTopic(
-        this.mgv.contract.interface.getEvent(e as any)
-      )
-    );
-
-    const base_padded = ethers.utils.hexZeroPad(this.base.address, 32);
-    const quote_padded = ethers.utils.hexZeroPad(this.quote.address, 32);
-
-    const asksFilter = {
-      address: this.mgv._address,
-      topics: [topics0, base_padded, quote_padded],
-    };
-
-    const bidsFilter = {
-      address: this.mgv._address,
-      topics: [topics0, quote_padded, base_padded],
-    };
-
-    return { asksFilter, bidsFilter };
+    this.#asksSemibook.disconnect();
+    this.#bidsSemibook.disconnect();
   }
 
   /**
@@ -365,46 +327,17 @@ class Market {
     }
   }
 
-  async #initialize(
-    opts: Omit<Market.BookOptions, "fromId"> = bookOptsDefault
-  ): Promise<void> {
-    if (this.#lowLevelCallbacks) throw Error("Already initialized.");
+  async #initialize(opts: Market.BookOptions = bookOptsDefault): Promise<void> {
     opts = { ...bookOptsDefault, ...opts };
 
-    let asksInilizationCompleteCallback: (semibook: Semibook) => void;
-    const asksInitializationPromise = new Promise<Semibook>((ok) => {
-      asksInilizationCompleteCallback = ok;
-    });
-    let bidsInilizationCompleteCallback: (semibook: Semibook) => void;
-    const bidsInitializationPromise = new Promise<Semibook>((ok) => {
-      bidsInilizationCompleteCallback = ok;
-    });
+    const asksSemibookPromise = Semibook.connect(this, "asks", opts);
+    const bidsSemibookPromise = Semibook.connect(this, "bids", opts);
 
-    const asksCallback = this.#createBookEventCallback(
-      asksInitializationPromise
-    );
-    const bidsCallback = this.#createBookEventCallback(
-      bidsInitializationPromise
-    );
+    this.#asksSemibook = await asksSemibookPromise;
+    this.#bidsSemibook = await bidsSemibookPromise;
 
-    this.#lowLevelCallbacks = { asksCallback, bidsCallback };
-
-    const { asksFilter, bidsFilter } = this.#bookFilter();
-    this.mgv.contract.on(asksFilter, asksCallback);
-    this.mgv.contract.on(bidsFilter, bidsCallback);
-
-    const asksSemibook = new Semibook(this, "asks", opts);
-    const bidsSemibook = new Semibook(this, "bids", opts);
-    const asksSemibookInitializationPromise = asksSemibook.initialize();
-    const bidsSemibookInitializationPromise = bidsSemibook.initialize();
-    await asksSemibookInitializationPromise;
-    asksInilizationCompleteCallback(asksSemibook);
-    await bidsSemibookInitializationPromise;
-    bidsInilizationCompleteCallback(bidsSemibook);
-
-    // FIXME:  Update #book if this isnt't replaced the semibooks
-    this.#updateBook(asksSemibook);
-    this.#updateBook(bidsSemibook);
+    this.#updateBook("asks");
+    this.#updateBook("bids");
   }
 
   #mapConfig(
@@ -652,7 +585,6 @@ class Market {
     console.table(offers, filter);
   }
 
-  // FIXME: Perhaps we should actually expose the OfferListPrefix/Semibook? Would be clearer what is (and isn't) contained in the result.
   /**
    * Return current book state of the form
    * @example
@@ -673,7 +605,6 @@ class Market {
    *  All prices are in quote/base, all volumes are in base.
    *  Order is from best to worse from taker perspective.
    */
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   book(): Market.MarketBook {
     return this.#book;
   }
@@ -682,57 +613,23 @@ class Market {
     opts: Market.BookOptions = bookOptsDefault
   ): Promise<Market.MarketBook> {
     opts = { ...bookOptsDefault, ...opts };
-    const asks = new Semibook(this, "asks", opts);
-    const bids = new Semibook(this, "bids", opts);
-    const asksInitializationPromise = asks.initialize();
-    const bidsInitializationPromise = bids.initialize();
-    await asksInitializationPromise;
-    await bidsInitializationPromise;
+    const asksSemibookPromise = Semibook.connect(this, "asks", opts);
+    const bidsSemibookPromise = Semibook.connect(this, "bids", opts);
+    const asksSemibook = await asksSemibookPromise;
+    const bidsSemibook = await bidsSemibookPromise;
     return {
-      asks: asks.toArray(),
-      bids: bids.toArray(),
-    };
-  }
-
-  // FIXME: Can we move this to OfferListPrefix?
-  toOfferObject(ba: "bids" | "asks", raw: Market.OfferData): Market.Offer {
-    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
-
-    const _gives = outbound_tkn.fromUnits(raw.gives);
-    const _wants = inbound_tkn.fromUnits(raw.wants);
-
-    const { baseVolume } = this.getBaseQuoteVolumes(ba, _gives, _wants);
-    const price = this.getPrice(ba, _gives, _wants);
-
-    if (baseVolume.eq(0)) {
-      throw Error("baseVolume is 0 (not allowed)");
-    }
-
-    const toNum = (i: number | BigNumber): number =>
-      typeof i === "number" ? i : i.toNumber();
-
-    return {
-      id: toNum(raw.id),
-      prev: toNum(raw.prev),
-      next: toNum(raw.next),
-      gasprice: toNum(raw.gasprice),
-      maker: raw.maker,
-      gasreq: toNum(raw.gasreq),
-      offer_gasbase: toNum(raw.offer_gasbase),
-      gives: _gives,
-      wants: _wants,
-      volume: baseVolume,
-      price: price,
+      asks: asksSemibook.toArray(),
+      bids: bidsSemibook.toArray(),
     };
   }
 
   defaultCallback(
     cbArg: Market.BookSubscriptionCbArgument,
-    semibook: Semibook,
+    ba: "bids" | "asks",
     event: Market.BookSubscriptionEvent,
     ethersEvent: ethers.Event
   ): void {
-    this.#updateBook(semibook);
+    this.#updateBook(ba);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
         if (!("filter" in params) || params.filter(cbArg, event, ethersEvent)) {
@@ -748,139 +645,10 @@ class Market {
     }
   }
 
-  // FIXME: Perhaps we should expose the semibook instead of calling this
-  #updateBook(semibook: Semibook): void {
-    this.#book[semibook.ba] = semibook.toArray();
-  }
-
-  #createBookEventCallback(
-    initializationPromise: Promise<Semibook>
-  ): (...args: any[]) => Promise<any> {
-    return async (event) => {
-      // Callbacks must ensure initialization has completed
-      const semibook = await initializationPromise;
-      // If event is from firstBlockNumber (or before), ignore it as it will be included in the initially read offer list
-      if (event.blockNumber <= semibook.firstBlockNumber) {
-        return;
-      }
-      this.#handleBookEvent(semibook, event);
-    };
-  }
-
-  // FIXME: This should be moved to OfferListPrefix to ensure invariants
-  #handleBookEvent(semibook: Semibook, ethersEvent: ethers.Event): void {
-    const event: Market.BookSubscriptionEvent =
-      this.mgv.contract.interface.parseLog(ethersEvent) as any;
-
-    let offer: Market.Offer;
-    let removedOffer: Market.Offer;
-    let next: number;
-
-    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(semibook.ba);
-
-    switch (event.name) {
-      case "OfferWrite":
-        // We ignore the return value here because the offer may have been outside the local
-        // cache, but may now enter the local cache due to its new price.
-        semibook.removeOffer(event.args.id.toNumber());
-
-        /* After removing the offer (a noop if the offer was not in local cache),
-            we reinsert it.
-
-            * The offer comes with id of its prev. If prev does not exist in cache, we skip
-            the event. Note that we still want to remove the offer from the cache.
-            * If the prev exists, we take the prev's next as the offer's next. Whether that next exists in the cache or not is irrelevant.
-        */
-        try {
-          next = semibook.getNext(event.args.prev.toNumber());
-        } catch (e) {
-          // offer.prev was not found, we are outside local OB copy. skip.
-          break;
-        }
-
-        offer = this.toOfferObject(semibook.ba, {
-          ...event.args,
-          offer_gasbase: semibook.offer_gasbase,
-          next: BigNumber.from(next),
-        });
-
-        semibook.insertOffer(offer);
-
-        this.defaultCallback(
-          {
-            type: event.name,
-            offer: offer,
-            ba: semibook.ba,
-          },
-          semibook,
-          event,
-          ethersEvent
-        );
-        break;
-
-      case "OfferFail":
-        removedOffer = semibook.removeOffer(event.args.id.toNumber());
-        // Don't trigger an event about an offer outside of the local cache
-        if (removedOffer) {
-          this.defaultCallback(
-            {
-              type: event.name,
-              ba: semibook.ba,
-              taker: event.args.taker,
-              offer: removedOffer,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-              mgvData: event.args.mgvData,
-            },
-            semibook,
-            event,
-            ethersEvent
-          );
-        }
-        break;
-
-      case "OfferSuccess":
-        removedOffer = semibook.removeOffer(event.args.id.toNumber());
-        if (removedOffer) {
-          this.defaultCallback(
-            {
-              type: event.name,
-              ba: semibook.ba,
-              taker: event.args.taker,
-              offer: removedOffer,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-            },
-            semibook,
-            event,
-            ethersEvent
-          );
-        }
-        break;
-
-      case "OfferRetract":
-        removedOffer = semibook.removeOffer(event.args.id.toNumber());
-        // Don't trigger an event about an offer outside of the local cache
-        if (removedOffer) {
-          this.defaultCallback(
-            {
-              type: event.name,
-              ba: semibook.ba,
-              offer: removedOffer,
-            },
-            semibook,
-            event,
-            ethersEvent
-          );
-        }
-        break;
-
-      case "SetGasbase":
-        semibook.offer_gasbase = event.args.offer_gasbase.toNumber();
-        break;
-      default:
-        throw Error(`Unknown event ${event}`);
-    }
+  #updateBook(ba: "bids" | "asks"): void {
+    this.#book[ba] = (
+      ba === "asks" ? this.#asksSemibook : this.#bidsSemibook
+    ).toArray();
   }
 
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {

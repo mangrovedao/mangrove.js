@@ -8,6 +8,7 @@ import { Mangrove, Market } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
+import { Deferred } from "../../src/util";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -222,7 +223,7 @@ describe("Market integration tests suite", () => {
   it("crudely simulates market buy", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    const done = new helpers.Deferred();
+    const done = new Deferred();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     market.subscribe((evt) => {
       if (market.book().asks.length === 2) {
