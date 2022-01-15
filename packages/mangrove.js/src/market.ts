@@ -106,9 +106,9 @@ namespace Market {
 }
 
 /**
- * The Market class focuses on a mangrove market.
- * Onchain, market are implemented as two orderbooks,
- * one for the pair (base,quote), the other for the pair (quote,base).
+ * The Market class focuses on a Mangrove market.
+ * On-chain, markets are implemented as two offer lists,
+ * one for asks (base,quote), the other for bids (quote,base).
  *
  * Market initialization needs to store the network name, so you cannot
  * directly use the constructor. Instead of `new Market(...)`, do

@@ -1,14 +1,3 @@
-/**
- * Data structure for maintaining a cached prefix of an offer list for one side of a market.
- *
- * While offer lists on-chain for a market A-B are symmetric (the offer lists are
- * the same for the market B-A), a `Semibook` depends on the market:
- *
- * - Prices are in terms of quote tokens
- * - Volumes are in terms of base tokens
- * @module
- */
-
 import { ethers, BigNumber } from "ethers";
 import { Market } from ".";
 import { TypedEventFilter, TypedListener } from "./types/typechain/common";
@@ -38,7 +27,17 @@ type RawOfferData = {
   gives: BigNumber;
 };
 
-// TODO: Describe class and invariants
+/**
+ * The Semibook is a data structure for maintaining a cached prefix
+ * of an offer list for one side (asks or bids) of a market.
+ *
+ * While offer lists on-chain for a market A-B are symmetric (the offer lists are
+ * the same for the market B-A), a `Semibook` depends on the market:
+ *
+ * - Prices are in terms of quote tokens
+ * - Volumes are in terms of base tokens
+ */
+// TODO: Document invariants
 export class Semibook {
   readonly ba: "bids" | "asks";
   readonly market: Market;
@@ -57,10 +56,6 @@ export class Semibook {
   #offers: Map<number, Market.Offer>;
   #best: number | undefined; // id of the best/first offer in the offer list iff #offers is non-empty
   #firstBlockNumber: number; // the block number that the offer list prefix is consistent with
-  // FIXME: the following are potential optimizations that can be implemented when the existing functionality has been extracted
-  // #worst: number | undefined; // id of the worst/last offer in the offer list iff the whole list is in #offers; Otherwise, undefined
-  // #prexixWorst: number; // id of the worst offer in #offers
-  // #prefixVolume: Big; // volume of the offers in #offers
 
   static async connect(
     market: Market,
