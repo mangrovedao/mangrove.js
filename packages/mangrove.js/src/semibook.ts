@@ -17,6 +17,15 @@ import { Deferred } from "./util";
 // Guard constructor against external calls
 let canConstructSemibook = false;
 
+export type SemibookEvent = {
+  cbArg: Market.BookSubscriptionCbArgument;
+  ba: "bids" | "asks";
+  event: Market.BookSubscriptionEvent;
+  ethersEvent: ethers.Event;
+};
+
+export type SemibookEventListener = (e: SemibookEvent) => void;
+
 export class Semibook {
   readonly ba: "bids" | "asks";
   readonly market: Market;
@@ -30,6 +39,7 @@ export class Semibook {
 
   #eventFilter: TypedEventFilter<any>;
   #eventCallback: TypedListener<any>;
+  #eventListener: SemibookEventListener;
 
   // FIXME: Describe invariants
   #offers: Map<number, Market.Offer>;
@@ -43,10 +53,11 @@ export class Semibook {
   static async connect(
     market: Market,
     ba: "bids" | "asks",
+    eventListener: SemibookEventListener,
     options: Market.BookOptions
   ): Promise<Semibook> {
     canConstructSemibook = true;
-    const semibook = new Semibook(market, ba, options);
+    const semibook = new Semibook(market, ba, eventListener, options);
     canConstructSemibook = false;
     await semibook.#initialize();
     return semibook;
@@ -57,10 +68,19 @@ export class Semibook {
     this.market.mgv.contract.off(this.#eventFilter, this.#eventCallback);
   }
 
+  async requestOfferListPrefix(
+    options: Market.BookOptions
+  ): Promise<Market.Offer[]> {
+    return await this.#fetchOfferListPrefix(
+      await this.market.mgv._provider.getBlockNumber(),
+      options
+    );
+  }
+
   // FIXME: Perhaps we should provide a way to iterate over the offers instead?
   //        I'd rather not encourage users to work with the array as it has lost information
   //        about the prefix such as whether it is a true prefix or a complete offer list.
-  public toArray(): Market.Offer[] {
+  toArray(): Market.Offer[] {
     const result = [];
 
     if (this.#best !== 0) {
@@ -77,6 +97,7 @@ export class Semibook {
   private constructor(
     market: Market,
     ba: "bids" | "asks",
+    eventListener: SemibookEventListener,
     options: Market.BookOptions
   ) {
     if (!canConstructSemibook) {
@@ -91,6 +112,7 @@ export class Semibook {
 
     this.#canInitialize = true;
 
+    this.#eventListener = eventListener;
     this.#eventFilter = this.#createEventFilter();
     this.#eventCallback = (a: any) => this.#handleBookEvent(a);
 
@@ -117,7 +139,10 @@ export class Semibook {
     this.market.mgv.contract.on(this.#eventFilter, this.#eventCallback);
 
     this.#firstBlockNumber = await this.market.mgv._provider.getBlockNumber();
-    const offers = await this.#fetchOfferListPrefix(this.#firstBlockNumber);
+    const offers = await this.#fetchOfferListPrefix(
+      this.#firstBlockNumber,
+      this.options
+    );
 
     if (offers.length > 0) {
       this.#best = offers[0].id;
@@ -178,24 +203,24 @@ export class Semibook {
 
         this.#insertOffer(offer);
 
-        this.market.defaultCallback(
-          {
+        this.#eventListener({
+          cbArg: {
             type: event.name,
             offer: offer,
             ba: this.ba,
           },
-          this.ba,
+          ba: this.ba,
           event,
-          ethersEvent
-        );
+          ethersEvent,
+        });
         break;
 
       case "OfferFail":
         removedOffer = this.#removeOffer(event.args.id.toNumber());
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
-          this.market.defaultCallback(
-            {
+          this.#eventListener({
+            cbArg: {
               type: event.name,
               ba: this.ba,
               taker: event.args.taker,
@@ -204,18 +229,18 @@ export class Semibook {
               takerGives: inbound_tkn.fromUnits(event.args.takerGives),
               mgvData: event.args.mgvData,
             },
-            this.ba,
+            ba: this.ba,
             event,
-            ethersEvent
-          );
+            ethersEvent,
+          });
         }
         break;
 
       case "OfferSuccess":
         removedOffer = this.#removeOffer(event.args.id.toNumber());
         if (removedOffer) {
-          this.market.defaultCallback(
-            {
+          this.#eventListener({
+            cbArg: {
               type: event.name,
               ba: this.ba,
               taker: event.args.taker,
@@ -223,10 +248,10 @@ export class Semibook {
               takerWants: outbound_tkn.fromUnits(event.args.takerWants),
               takerGives: inbound_tkn.fromUnits(event.args.takerGives),
             },
-            this.ba,
+            ba: this.ba,
             event,
-            ethersEvent
-          );
+            ethersEvent,
+          });
         }
         break;
 
@@ -234,16 +259,16 @@ export class Semibook {
         removedOffer = this.#removeOffer(event.args.id.toNumber());
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
-          this.market.defaultCallback(
-            {
+          this.#eventListener({
+            cbArg: {
               type: event.name,
               ba: this.ba,
               offer: removedOffer,
             },
-            this.ba,
+            ba: this.ba,
             event,
-            ethersEvent
-          );
+            ethersEvent,
+          });
         }
         break;
 
@@ -321,17 +346,18 @@ export class Semibook {
   }
 
   /* Provides the book with raw BigNumber values */
-  async #fetchOfferListPrefix(blockNumber: number): Promise<Market.Offer[]> {
+  async #fetchOfferListPrefix(
+    blockNumber: number,
+    options: Market.BookOptions
+  ): Promise<Market.Offer[]> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
       this.ba
     );
     // by default chunk size is number of offers desired
     const chunkSize =
-      typeof this.options.chunkSize === "undefined"
-        ? this.options.maxOffers
-        : this.options.chunkSize;
+      options.chunkSize === undefined ? options.maxOffers : options.chunkSize;
     // save total number of offers we want
-    let maxOffersLeft = this.options.maxOffers;
+    let maxOffersLeft = options.maxOffers;
 
     let nextId = 0;
 

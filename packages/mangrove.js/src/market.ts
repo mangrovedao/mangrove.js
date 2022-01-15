@@ -4,7 +4,7 @@ import { TradeParams, Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
-import { Semibook } from "./semibook";
+import { Semibook, SemibookEvent } from "./semibook";
 
 let canConstructMarket = false;
 
@@ -196,8 +196,18 @@ class Market {
   async #initialize(opts: Market.BookOptions = bookOptsDefault): Promise<void> {
     opts = { ...bookOptsDefault, ...opts };
 
-    const asksSemibookPromise = Semibook.connect(this, "asks", opts);
-    const bidsSemibookPromise = Semibook.connect(this, "bids", opts);
+    const asksSemibookPromise = Semibook.connect(
+      this,
+      "asks",
+      (e) => this.#semibookCallback(e),
+      opts
+    );
+    const bidsSemibookPromise = Semibook.connect(
+      this,
+      "bids",
+      (e) => this.#semibookCallback(e),
+      opts
+    );
 
     this.#asksSemibook = await asksSemibookPromise;
     this.#bidsSemibook = await bidsSemibookPromise;
@@ -206,12 +216,7 @@ class Market {
     this.#updateBook("bids");
   }
 
-  defaultCallback(
-    cbArg: Market.BookSubscriptionCbArgument,
-    ba: "bids" | "asks",
-    event: Market.BookSubscriptionEvent,
-    ethersEvent: ethers.Event
-  ): void {
+  #semibookCallback({ cbArg, ba, event, ethersEvent }: SemibookEvent): void {
     this.#updateBook(ba);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
@@ -262,13 +267,11 @@ class Market {
     opts: Market.BookOptions = bookOptsDefault
   ): Promise<Market.MarketBook> {
     opts = { ...bookOptsDefault, ...opts };
-    const asksSemibookPromise = Semibook.connect(this, "asks", opts);
-    const bidsSemibookPromise = Semibook.connect(this, "bids", opts);
-    const asksSemibook = await asksSemibookPromise;
-    const bidsSemibook = await bidsSemibookPromise;
+    const asksPromise = this.#asksSemibook.requestOfferListPrefix(opts);
+    const bidsPromise = this.#bidsSemibook.requestOfferListPrefix(opts);
     return {
-      asks: asksSemibook.toArray(),
-      bids: bidsSemibook.toArray(),
+      asks: await asksPromise,
+      bids: await bidsPromise,
     };
   }
 
