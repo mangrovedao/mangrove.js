@@ -1,10 +1,10 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import Market from "./market";
-import Maker from "./maker";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
 import MgvToken from "./mgvtoken";
+import OfferLogic from "./offerLogic";
 
 import Big from "big.js";
 import * as ethers from "ethers";
@@ -155,19 +155,9 @@ class Mangrove {
     return await Market.connect({ ...params, mgv: this });
   }
 
-  async offerLogic(addr: string): Promise<OfferLogic> {
-    return await OfferLogic.connect({ address: addr, mgv: this });
-  }
-
-  /** Get Maker object.
-   *
-   * Argument of the form `Maker.ConstructionParams`, except the `mgv` field which will be `this`.
-   * Reminder: to set your own `base`/`quote` other than those known by mangrove.js, use `setDecimals` and `setAddress` before calling this function.
-   */
-  async makerConnect(
-    params: Omit<Maker.ConstructionParams, "mgv">
-  ): Promise<Maker> {
-    return await Maker.connect({ ...params, mgv: this });
+  /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
+  offerLogic(addr: string): OfferLogic {
+    return new OfferLogic(this, addr);
   }
 
   /* Return MgvToken instance tied to mangrove object. */

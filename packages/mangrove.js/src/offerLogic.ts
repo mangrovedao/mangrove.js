@@ -4,7 +4,7 @@ import Market from "./market";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import Mangrove from "./mangrove";
+import { LiquidityProvider as LP, Mangrove } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
@@ -23,8 +23,8 @@ namespace OfferLogic {
     mgv: Mangrove;
     address: string; //Offer logic address
   };
-  /** Connect to MangroveOffer.
-   *  This basic OfferLogic contract will relay new/cancel/update
+  /*
+   *  This basic API will connect to an onchain offerLogic that relays new/cancel/update
    *  offer order.
    */
 
@@ -38,17 +38,11 @@ namespace OfferLogic {
 /**
  * The OfferLogic class connects to a OfferLogic contract.
  * It posts onchain offers.
- *
- * OfferLogic initialization needs to store the network name, so you cannot
- * directly use the constructor. Instead of `new OfferLogic(...)`, do
- *
- * `await OfferLogic.connect(...)`
  */
 // OfferLogic.withdrawDeposit()
 // OfferLogic.deposit(n)
 class OfferLogic {
   mgv: Mangrove;
-  market: Market | undefined;
   contract: typechain.SimpleMaker;
   address: string;
 
@@ -79,25 +73,6 @@ class OfferLogic {
     return this.mgv
       .token(tokenName)
       .allowance({ owner: this.address, spender: this.mgv._address });
-  }
-
-  /**
-   * @note Returns the amount of native tokens needed to provision a `bids` or `asks` offer  on the current market.
-   * If `id` is a live offer id, the function returns the missing provision (possibly 0) in case one wants to update it.
-   */
-  computeOfferProvision(
-    ba: "bids" | "asks",
-    opts: { id?: number; gasreq?: number }
-  ): Promise<Big> {
-    return this.getMissingProvision(ba, opts);
-  }
-
-  computeBidProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
-    return this.getMissingProvision("bids", opts);
-  }
-
-  computeAskProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
-    return this.getMissingProvision("asks", opts);
   }
 
   /**
@@ -191,15 +166,6 @@ class OfferLogic {
       overrides
     );
   }
-
-  #marketDisconnected() {
-    if (this.market === undefined) {
-      throw Error(
-        `OfferLogic is not connected to any market. Use OfferLogic.connectMarket({base:string, quote:string})`
-      );
-    }
-  }
-
   async connectMarket(
     p:
       | Market
@@ -208,229 +174,12 @@ class OfferLogic {
           quote: string;
           bookOptions?: Market.BookOptions;
         }
-  ): Promise<void> {
+  ): Promise<LP> {
     if (p instanceof Market) {
-      this.market = p;
+      return new LP(this.mgv, this, p);
     } else {
-      this.market = await this.mgv.market(p);
+      return new LP(this.mgv, this, await this.mgv.market(p));
     }
-  }
-
-  /** List all of the OfferLogic's asks */
-  asks(): Market.Offer[] {
-    return this.market.book().asks.filter((ofr) => ofr.maker === this.address);
-  }
-
-  /** List all of the OfferLogic's bids */
-  bids(): Market.Offer[] {
-    return this.market.book().bids.filter((ofr) => ofr.maker === this.address);
-  }
-
-  /**
-   *  Given offer params (bids/asks + price info as wants&gives or price&volume),
-   *  return {price,wants,gives}
-   */
-  #normalizeOfferParams(p: { ba: "bids" | "asks" } & OfferLogic.OfferParams): {
-    price: Big;
-    wants: Big;
-    gives: Big;
-    gasreq?: number;
-    gasprice?: number;
-  } {
-    let wants, gives, price;
-    // deduce price from wants&gives, or deduce wants&gives from volume&price
-    if ("gives" in p) {
-      [wants, gives] = [p.wants, p.gives];
-      let [base_amt, quote_amt] = [gives, wants];
-      if (p.ba === "bids") {
-        [base_amt, quote_amt] = [quote_amt, base_amt];
-      }
-      price = Big(quote_amt).div(base_amt);
-    } else {
-      price = p.price;
-      [wants, gives] = [Big(p.volume).mul(price), Big(p.volume)];
-      if (p.ba === "bids") {
-        [wants, gives] = [gives, wants];
-      }
-    }
-    const gasreq = p.gasreq;
-    const gasprice = p.gasprice;
-    return { wants, gives, price, gasreq, gasprice };
-  }
-
-  /** Post a new ask */
-  newAsk(
-    p: OfferLogic.OfferParams,
-    overrides: ethers.PayableOverrides = {}
-  ): Promise<{ id: number; event: ethers.Event }> {
-    return this.newOffer({ ba: "asks", ...p }, overrides);
-  }
-
-  /** Post a new bid */
-  newBid(
-    p: OfferLogic.OfferParams,
-    overrides: ethers.PayableOverrides = {}
-  ): Promise<{ id: number; event: ethers.Event }> {
-    return this.newOffer({ ba: "bids", ...p }, overrides);
-  }
-
-  /* Create a new offer, let mangrove decide the gasprice. Return a promise fulfilled when mangrove.js has received the tx and updated itself. The tx returns the new offer id.
- 
-    If the tx created more than one offer, the id of the first one to be written is returned.
-  
-    Note: we do not return a TransactionResponse because it could be possible to :
-     * wait for the response to be mined
-     * try to read market.book
-     * still get the old book (before new offer is inserted)
-    This is due to ethers.js subscription calling the txresponse first and
-    updating subscriptions only later.
-    To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
-  */
-  async newOffer(
-    p: { ba: "bids" | "asks" } & OfferLogic.OfferParams,
-    overrides: ethers.PayableOverrides = {}
-  ): Promise<{ id: number; pivot: number; event: ethers.Event }> {
-    this.#marketDisconnected();
-    const { wants, gives, price, gasreq, gasprice } =
-      this.#normalizeOfferParams(p);
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-    const pivot = this.market.getPivot(p.ba, price);
-    const resp = await this.contract.newOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      inbound_tkn.toUnits(wants),
-      outbound_tkn.toUnits(gives),
-      gasreq ? gasreq : this.gasreq, // gasreq
-      gasprice ? gasprice : 0,
-      pivot,
-      overrides
-    );
-
-    return this.market.once(
-      (cbArg, _event, ethersEvent) => ({
-        id: cbArg.offer.id,
-        event: ethersEvent,
-        pivot: pivot,
-      }),
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
-    );
-  }
-
-  /** Update an existing ask */
-  updateAsk(
-    id: number,
-    p: OfferLogic.OfferParams,
-    overrides: ethers.PayableOverrides = {}
-  ): Promise<{ event: ethers.Event }> {
-    return this.updateOffer(id, { ba: "asks", ...p }, overrides);
-  }
-
-  /** Update an existing offer */
-  updateBid(
-    id: number,
-    p: OfferLogic.OfferParams,
-    overrides: ethers.PayableOverrides = {}
-  ): Promise<{ event: ethers.Event }> {
-    return this.updateOffer(id, { ba: "bids", ...p }, overrides);
-  }
-
-  /* Update an existing offer. Non-specified parameters will be copied from current
-     data in the offer. Reuse current offer's gasprice.
-     Input should be {ba:"bids"|"asks"} and price info as wants&gives or as price&volume
-     */
-  async updateOffer(
-    id: number,
-    p: { ba: "bids" | "asks" } & OfferLogic.OfferParams,
-    overrides: ethers.PayableOverrides = {}
-  ): Promise<{ event: ethers.Event }> {
-    this.#marketDisconnected();
-    const offerList = p.ba === "asks" ? this.asks() : this.bids();
-    const offer = offerList.find((o) => o.id === id);
-    if (typeof offer === "undefined") {
-      throw Error(
-        `No offer in ${p} with id ${id} owned by this OfferLogic contract.`
-      );
-    }
-
-    const { wants, gives, price, gasreq, gasprice } =
-      this.#normalizeOfferParams(p);
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-
-    const resp = await this.contract.updateOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      inbound_tkn.toUnits(wants),
-      outbound_tkn.toUnits(gives),
-      gasreq ? gasreq : offer.gasreq,
-      gasprice ? gasprice : offer.gasprice,
-      this.market.getPivot(p.ba, price),
-      id,
-      overrides
-    );
-
-    return this.market.once(
-      (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
-    );
-  }
-
-  /** Cancel an ask. If deprovision is true, will return the offer's provision to the OfferLogic balance at Mangrove. */
-  cancelAsk(
-    id: number,
-    deprovision = false,
-    overrides: ethers.Overrides = {}
-  ): Promise<void> {
-    return this.cancelOffer("asks", id, deprovision, overrides);
-  }
-
-  /** Cancel a bid. If deprovision is true, will return the offer's provision to the OfferLogic balance at Mangrove. */
-  cancelBid(
-    id: number,
-    deprovision = false,
-    overrides: ethers.Overrides = {}
-  ): Promise<void> {
-    return this.cancelOffer("bids", id, deprovision, overrides);
-  }
-
-  /* Cancel an offer. Return a promise fulfilled when mangrove.js has received the tx and updated itself. If deprovision is true, will return the offer's provision to the OfferLogic balance at Mangrove. */
-  async cancelOffer(
-    ba: "bids" | "asks",
-    id: number,
-    deprovision = false,
-    overrides: ethers.Overrides = {}
-  ): Promise<void> {
-    this.#marketDisconnected();
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    const resp = await this.contract.retractOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      id,
-      deprovision,
-      overrides
-    );
-
-    return this.market.once(
-      (/*cbArg, event, ethersEvent*/) => {
-        /*empty*/
-      },
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
-    );
-  }
-
-  async getMissingProvision(
-    ba: "bids" | "asks",
-    opts: { id?: number; gasreq?: number } = {}
-  ): Promise<Big> {
-    this.#marketDisconnected();
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    const prov = await this.contract.getMissingProvision(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      opts.gasreq ? opts.gasreq : await this.contract.OFR_GASREQ(),
-      0, //gasprice
-      opts.id ? opts.id : 0
-    );
-    return this.mgv.fromUnits(prov, "ETH");
   }
 }
 
