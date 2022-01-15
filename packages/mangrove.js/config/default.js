@@ -1,4 +1,6 @@
 // Config file with defaults
-var config = {};
+var config = {
+  logLevel: "debug",
+};
 
 module.exports = config;

@@ -1,3 +1,4 @@
+import { logger } from "./util/logger";
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import { typechain, Provider, Signer } from "./types";
@@ -90,11 +91,18 @@ class Mangrove {
       readOnly,
     });
     canConstructMangrove = false;
+
+    logger.debug("Initalize Mangrove", {
+      data: { signer: signer, network: network, readOnly: readOnly },
+    });
+
     return mgv;
   }
 
   disconnect(): void {
     this._provider.removeAllListeners();
+
+    logger.debug("Disconnect from Mangrove");
   }
   //TODO types in module namespace with same name as class
   //TODO remove _prefix on public properties
@@ -141,7 +149,7 @@ class Mangrove {
   /* Instance */
   /************** */
 
-  /* Get Market object. 
+  /* Get Market object.
      Argument of the form `{base,quote}` where each is a string.
      To set your own token, use `setDecimals` and `setAddress`.
   */
@@ -150,6 +158,7 @@ class Mangrove {
     quote: string;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
+    logger.debug("Initalize Market", { data: params });
     return await Market.connect({ ...params, mgv: this });
   }
 
