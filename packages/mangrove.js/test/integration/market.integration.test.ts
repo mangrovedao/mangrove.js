@@ -314,8 +314,8 @@ describe("Market integration tests suite", () => {
     /* Start testing */
 
     const book = await market.requestBook({ maxOffers: 3 });
-    await market.consoleAsks(["id", "maker"]);
-    await market.consoleBids(["id", "maker"]);
+    market.consoleAsks(["id", "maker"]);
+    market.consoleBids(["id", "maker"]);
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }) => {

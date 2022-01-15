@@ -2,7 +2,7 @@
 
 - All types now start with upper case
 - All functions now start with lower case
-- `Market.subscribe` is no longer `async`
+- `Market.{subscribe|consoleAsks|consoleBids|prettyPrint}` are no longer `async`
 - Removed `fromId` and `blockNumber` from `Market.BookOptions`
 
 # 0.0.8
