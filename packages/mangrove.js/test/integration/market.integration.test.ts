@@ -8,6 +8,7 @@ import { Mangrove, Market } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
+import { Deferred } from "../../src/util";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -98,8 +99,8 @@ describe("Market integration tests suite", () => {
 
     const offer1 = {
       id: 1,
-      prev: 0,
-      next: 0,
+      prev: undefined,
+      next: undefined,
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
@@ -122,8 +123,8 @@ describe("Market integration tests suite", () => {
 
     const offer2 = {
       id: 1,
-      prev: 0,
-      next: 0,
+      prev: undefined,
+      next: undefined,
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
@@ -222,7 +223,7 @@ describe("Market integration tests suite", () => {
   it("crudely simulates market buy", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    const done = new helpers.Deferred();
+    const done = new Deferred();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     market.subscribe((evt) => {
       if (market.book().asks.length === 2) {
@@ -296,8 +297,8 @@ describe("Market integration tests suite", () => {
           : ["wants", "gives"];
         return {
           ...ofr,
-          prev: ary[i - 1]?.id || 0,
-          next: ary[i + 1]?.id || 0,
+          prev: ary[i - 1]?.id,
+          next: ary[i + 1]?.id,
           volume: Big(ofr[baseVolume]),
           price: Big(ofr[quoteVolume]).div(Big(ofr[baseVolume])),
           maker: selfAddress,
@@ -313,8 +314,8 @@ describe("Market integration tests suite", () => {
     /* Start testing */
 
     const book = await market.requestBook({ maxOffers: 3 });
-    await market.consoleAsks(["id", "maker"]);
-    await market.consoleBids(["id", "maker"]);
+    market.consoleAsks(["id", "maker"]);
+    market.consoleBids(["id", "maker"]);
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }) => {
