@@ -26,6 +26,19 @@ export type SemibookEvent = {
 
 export type SemibookEventListener = (e: SemibookEvent) => void;
 
+type RawOfferData = {
+  id: BigNumber;
+  prev: BigNumber;
+  next: BigNumber;
+  gasprice: BigNumber;
+  maker: string;
+  gasreq: BigNumber;
+  offer_gasbase: BigNumber;
+  wants: BigNumber;
+  gives: BigNumber;
+};
+
+// TODO: Describe class and invariants
 export class Semibook {
   readonly ba: "bids" | "asks";
   readonly market: Market;
@@ -41,10 +54,9 @@ export class Semibook {
   #eventCallback: TypedListener<any>;
   #eventListener: SemibookEventListener;
 
-  // FIXME: Describe invariants
   #offers: Map<number, Market.Offer>;
-  #best: number; // FIXME: 0 => empty semibook - would be better to use undefined undefined; // id of the best/first offer in the offer list iff #offers is non-empty
-  #firstBlockNumber: number; // the block number that the offer list prefix is consistent with // FIXME: should not be modifiable from the outside
+  #best: number | undefined; // id of the best/first offer in the offer list iff #offers is non-empty
+  #firstBlockNumber: number; // the block number that the offer list prefix is consistent with
   // FIXME: the following are potential optimizations that can be implemented when the existing functionality has been extracted
   // #worst: number | undefined; // id of the worst/last offer in the offer list iff the whole list is in #offers; Otherwise, undefined
   // #prexixWorst: number; // id of the worst offer in #offers
@@ -83,8 +95,7 @@ export class Semibook {
   toArray(): Market.Offer[] {
     const result = [];
 
-    if (this.#best !== 0) {
-      // FIXME: Should test for undefined when we fix the assumption that 0 => undefined
+    if (this.#best !== undefined) {
       let latest = this.#offers.get(this.#best);
       do {
         result.push(latest);
@@ -117,7 +128,6 @@ export class Semibook {
     this.#eventCallback = (a: any) => this.#handleBookEvent(a);
 
     this.#offers = new Map();
-    this.#best = 0; // FIXME: This should not be needed - undefined would make more sense for an empty list
   }
 
   async #initialize(): Promise<void> {
@@ -179,17 +189,22 @@ export class Semibook {
       case "OfferWrite":
         // We ignore the return value here because the offer may have been outside the local
         // cache, but may now enter the local cache due to its new price.
-        this.#removeOffer(event.args.id.toNumber());
+        this.#removeOffer(this.#rawIdToId(event.args.id));
 
-        /* After removing the offer (a noop if the offer was not in local cache),
-            we reinsert it.
-
-            * The offer comes with id of its prev. If prev does not exist in cache, we skip
-            the event. Note that we still want to remove the offer from the cache.
-            * If the prev exists, we take the prev's next as the offer's next. Whether that next exists in the cache or not is irrelevant.
-        */
+        /* After removing the offer (a noop if the offer was not in local cache), we reinsert it.
+         * The offer comes with id of its prev. If prev does not exist in cache, we skip
+         * the event. Note that we still want to remove the offer from the cache.
+         * If the prev exists, we take the prev's next as the offer's next.
+         * Whether that next exists in the cache or not is irrelevant.
+         */
         try {
-          next = this.#getNextId(event.args.prev.toNumber());
+          const prev = this.#rawIdToId(event.args.prev);
+          if (prev === undefined) {
+            // The removed offer was the best, so the next offer is the new best
+            next = this.#best;
+          } else {
+            next = this.#getNextId(prev);
+          }
         } catch (e) {
           // offer.prev was not found, we are outside local OB copy. skip.
           break;
@@ -197,8 +212,8 @@ export class Semibook {
 
         offer = this.#toOfferObject({
           ...event.args,
-          offer_gasbase: this.#offer_gasbase,
-          next: BigNumber.from(next),
+          offer_gasbase: BigNumber.from(this.#offer_gasbase),
+          next: this.#idToRawId(next),
         });
 
         this.#insertOffer(offer);
@@ -216,7 +231,7 @@ export class Semibook {
         break;
 
       case "OfferFail":
-        removedOffer = this.#removeOffer(event.args.id.toNumber());
+        removedOffer = this.#removeOffer(this.#rawIdToId(event.args.id));
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
           this.#eventListener({
@@ -237,7 +252,7 @@ export class Semibook {
         break;
 
       case "OfferSuccess":
-        removedOffer = this.#removeOffer(event.args.id.toNumber());
+        removedOffer = this.#removeOffer(this.#rawIdToId(event.args.id));
         if (removedOffer) {
           this.#eventListener({
             cbArg: {
@@ -256,7 +271,7 @@ export class Semibook {
         break;
 
       case "OfferRetract":
-        removedOffer = this.#removeOffer(event.args.id.toNumber());
+        removedOffer = this.#removeOffer(this.#rawIdToId(event.args.id));
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
           this.#eventListener({
@@ -284,13 +299,13 @@ export class Semibook {
   // Assumes id is not already in book;
   #insertOffer(offer: Market.Offer): void {
     this.#offers.set(offer.id, offer);
-    if (offer.prev === 0) {
+    if (offer.prev === undefined) {
       this.#best = offer.id;
     } else {
       this.#offers.get(offer.prev).next = offer.id;
     }
 
-    if (offer.next !== 0) {
+    if (offer.next !== undefined) {
       this.#offers.get(offer.next).prev = offer.id;
     }
   }
@@ -300,9 +315,9 @@ export class Semibook {
   #removeOffer(id: number): Market.Offer {
     const ofr = this.#offers.get(id);
     if (ofr) {
-      // we differentiate prev==0 (offer is best)
+      // we differentiate prev===undefined (offer is best)
       // from offers[prev] does not exist (we're outside of the local cache)
-      if (ofr.prev === 0) {
+      if (ofr.prev === undefined) {
         this.#best = ofr.next;
       } else {
         const prevOffer = this.#offers.get(ofr.prev);
@@ -312,7 +327,7 @@ export class Semibook {
       }
 
       // checking that nextOffers exists takes care of
-      // 1. ofr.next==0, i.e. we're at the end of the book
+      // 1. ofr.next===undefined, i.e. we're at the end of the book
       // 2. offers[ofr.next] does not exist, i.e. we're at the end of the local cache
       const nextOffer = this.#offers.get(ofr.next);
       if (nextOffer) {
@@ -331,17 +346,12 @@ export class Semibook {
   // note that offers[offers[offerId].next] may be not exist!
   // throws if offerId is not found
   #getNextId(offerId: number): number {
-    if (offerId === 0) {
-      // FIXME this is a bit weird - why should 0 mean the best?
-      return this.#best;
+    if (!this.#offers.has(offerId)) {
+      throw Error(
+        "Trying to get next of an offer absent from local orderbook copy"
+      );
     } else {
-      if (!this.#offers.has(offerId)) {
-        throw Error(
-          "Trying to get next of an offer absent from local orderbook copy"
-        );
-      } else {
-        return this.#offers.get(offerId).next;
-      }
+      return this.#offers.get(offerId).next;
     }
   }
 
@@ -389,7 +399,7 @@ export class Semibook {
     return result;
   }
 
-  #toOfferObject(raw: Market.OfferData): Market.Offer {
+  #toOfferObject(raw: RawOfferData): Market.Offer {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
       this.ba
     );
@@ -408,22 +418,28 @@ export class Semibook {
       throw Error("baseVolume is 0 (not allowed)");
     }
 
-    const toNum = (i: number | BigNumber): number =>
-      typeof i === "number" ? i : i.toNumber();
-
     return {
-      id: toNum(raw.id),
-      prev: toNum(raw.prev),
-      next: toNum(raw.next),
-      gasprice: toNum(raw.gasprice),
+      id: this.#rawIdToId(raw.id),
+      prev: this.#rawIdToId(raw.prev),
+      next: this.#rawIdToId(raw.next),
+      gasprice: raw.gasprice.toNumber(),
       maker: raw.maker,
-      gasreq: toNum(raw.gasreq),
-      offer_gasbase: toNum(raw.offer_gasbase),
+      gasreq: raw.gasreq.toNumber(),
+      offer_gasbase: raw.offer_gasbase.toNumber(),
       gives: _gives,
       wants: _wants,
       volume: baseVolume,
       price: price,
     };
+  }
+
+  #rawIdToId(rawId: BigNumber): number | undefined {
+    const id = rawId.toNumber();
+    return id === 0 ? undefined : id;
+  }
+
+  #idToRawId(id: number | undefined): BigNumber {
+    return id === undefined ? BigNumber.from(0) : BigNumber.from(id);
   }
 
   #createEventFilter(): TypedEventFilter<any> {

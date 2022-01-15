@@ -68,18 +68,6 @@ namespace Market {
     export type Details = _BookReturns[3];
   }
 
-  export type OfferData = {
-    id: number | BigNumber;
-    prev: number | BigNumber;
-    next: number | BigNumber;
-    gasprice: number | BigNumber;
-    maker: string;
-    gasreq: number | BigNumber;
-    offer_gasbase: number | BigNumber;
-    wants: BigNumber;
-    gives: BigNumber;
-  };
-
   export type BookSubscriptionCbArgument = {
     ba: "asks" | "bids";
     offer: Offer;

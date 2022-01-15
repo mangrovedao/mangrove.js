@@ -4,6 +4,7 @@
 - All functions now start with lower case
 - `Market.{subscribe|consoleAsks|consoleBids|prettyPrint}` are no longer `async`
 - Removed `fromId` and `blockNumber` from `Market.BookOptions`
+- `Market.Offer.{prev|next}` are now `undefined` if there is no previous/next offer
 
 # 0.0.8
 

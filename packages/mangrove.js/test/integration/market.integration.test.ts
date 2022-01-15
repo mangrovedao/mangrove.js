@@ -99,8 +99,8 @@ describe("Market integration tests suite", () => {
 
     const offer1 = {
       id: 1,
-      prev: 0,
-      next: 0,
+      prev: undefined,
+      next: undefined,
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
@@ -123,8 +123,8 @@ describe("Market integration tests suite", () => {
 
     const offer2 = {
       id: 1,
-      prev: 0,
-      next: 0,
+      prev: undefined,
+      next: undefined,
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
@@ -297,8 +297,8 @@ describe("Market integration tests suite", () => {
           : ["wants", "gives"];
         return {
           ...ofr,
-          prev: ary[i - 1]?.id || 0,
-          next: ary[i + 1]?.id || 0,
+          prev: ary[i - 1]?.id,
+          next: ary[i + 1]?.id,
           volume: Big(ofr[baseVolume]),
           price: Big(ofr[quoteVolume]).div(Big(ofr[baseVolume])),
           maker: selfAddress,
