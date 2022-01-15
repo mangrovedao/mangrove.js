@@ -222,9 +222,9 @@ class Market {
   }
 
   #updateBook(ba: "bids" | "asks"): void {
-    this.#book[ba] = (
+    this.#book[ba] = Array.from(
       ba === "asks" ? this.#asksSemibook : this.#bidsSemibook
-    ).toArray();
+    );
   }
 
   /**

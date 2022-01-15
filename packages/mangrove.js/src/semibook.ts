@@ -38,7 +38,7 @@ type RawOfferData = {
  * - Volumes are in terms of base tokens
  */
 // TODO: Document invariants
-export class Semibook {
+export class Semibook implements Iterable<Market.Offer> {
   readonly ba: "bids" | "asks";
   readonly market: Market;
   readonly options: Market.BookOptions;
@@ -84,20 +84,19 @@ export class Semibook {
     );
   }
 
-  // FIXME: Perhaps we should provide a way to iterate over the offers instead?
-  //        I'd rather not encourage users to work with the array as it has lost information
-  //        about the prefix such as whether it is a true prefix or a complete offer list.
-  toArray(): Market.Offer[] {
-    const result = [];
-
-    if (this.#best !== undefined) {
-      let latest = this.#offers.get(this.#best);
-      do {
-        result.push(latest);
-        latest = this.#offers.get(latest.next);
-      } while (latest !== undefined);
-    }
-    return result;
+  [Symbol.iterator](): Iterator<Market.Offer> {
+    let latest = this.#best;
+    return {
+      next: () => {
+        const value =
+          latest === undefined ? undefined : this.#offers.get(latest);
+        latest = value?.next;
+        return {
+          done: value === undefined,
+          value: value,
+        };
+      },
+    };
   }
 
   private constructor(
