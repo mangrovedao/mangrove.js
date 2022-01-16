@@ -47,9 +47,9 @@ namespace LP {
 // Maker.withdrawDeposit()
 // Maker.deposit(n)
 class LiquidityProvider {
-  mgv: Mangrove;
-  logic: OfferLogic;
-  market: Market;
+  mgv: Mangrove; // API abstraction of the Mangrove ethers.js contract
+  logic: OfferLogic; // API abstraction of the underlying offer logic ethers.js contract
+  market: Market; // API market abstraction over Mangrove's offer lists
 
   constructor(mgv: Mangrove, logic: OfferLogic, market: Market) {
     this.mgv = mgv;
