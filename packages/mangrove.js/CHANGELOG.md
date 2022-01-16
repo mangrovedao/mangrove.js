@@ -2,8 +2,9 @@
 
 - All types now start with upper case
 - All functions now start with lower case
-- `Market.{subscribe|consoleAsks|consoleBids|prettyPrint}` are no longer `async`
 - Removed `fromId` and `blockNumber` from `Market.BookOptions`
+- `Market.{subscribe|consoleAsks|consoleBids|prettyPrint}` are no longer `async`
+- `Market.{getBaseQuoteVolumes|getPrice|getWantsForPrice|getGivesForPrice}` are now `static`
 - `Market.Offer.{prev|next}` are now `undefined` (instead of `0`) if there is no previous/next offer
 - `Market.getPivot` renamed to `Market.getPivotId`
 - `Market.getPivotId` now returns `undefined` (instead of `0`) if no offer with better price exists

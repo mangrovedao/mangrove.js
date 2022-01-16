@@ -268,29 +268,6 @@ class Market {
     return config.asks.active && config.bids.active;
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
-  getOutboundInbound(ba: "bids" | "asks"): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
-  } {
-    return {
-      outbound_tkn: ba === "asks" ? this.base : this.quote,
-      inbound_tkn: ba === "asks" ? this.quote : this.base,
-    };
-  }
-
-  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
-  getBaseQuoteVolumes(
-    ba: "asks" | "bids",
-    gives: Big,
-    wants: Big
-  ): { baseVolume: Big; quoteVolume: Big } {
-    return {
-      baseVolume: ba === "asks" ? gives : wants,
-      quoteVolume: ba === "asks" ? wants : gives,
-    };
-  }
-
   /** Given a price, find the id of the immediately-better offer in the
    * book. If there is no offer with a better price, `undefined` is returned.
    */
@@ -323,26 +300,6 @@ class Market {
         "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
       );
     }
-  }
-
-  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
-  getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
-    const { baseVolume, quoteVolume } = this.getBaseQuoteVolumes(
-      ba,
-      gives,
-      wants
-    );
-    return quoteVolume.div(baseVolume);
-  }
-
-  /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
-  getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
-    return ba === "asks" ? gives.mul(price) : gives.div(price);
-  }
-
-  /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
-  getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
-    return ba === "asks" ? wants.div(price) : wants.mul(price);
   }
 
   /**
@@ -708,6 +665,61 @@ class Market {
   /* Stop calling a user-provided function on book-related events. */
   unsubscribe(cb: Market.StorableMarketCallback): void {
     this.#subscriptions.delete(cb);
+  }
+
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  getOutboundInbound(ba: "bids" | "asks"): {
+    outbound_tkn: MgvToken;
+    inbound_tkn: MgvToken;
+  } {
+    return Market.getOutboundInbound(ba, this.base, this.quote);
+  }
+
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  static getOutboundInbound(
+    ba: "bids" | "asks",
+    base: MgvToken,
+    quote: MgvToken
+  ): {
+    outbound_tkn: MgvToken;
+    inbound_tkn: MgvToken;
+  } {
+    return {
+      outbound_tkn: ba === "asks" ? base : quote,
+      inbound_tkn: ba === "asks" ? quote : base,
+    };
+  }
+
+  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
+  static getBaseQuoteVolumes(
+    ba: "asks" | "bids",
+    gives: Big,
+    wants: Big
+  ): { baseVolume: Big; quoteVolume: Big } {
+    return {
+      baseVolume: ba === "asks" ? gives : wants,
+      quoteVolume: ba === "asks" ? wants : gives,
+    };
+  }
+
+  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
+  static getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
+    const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
+      ba,
+      gives,
+      wants
+    );
+    return quoteVolume.div(baseVolume);
+  }
+
+  /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
+  static getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
+    return ba === "asks" ? gives.mul(price) : gives.div(price);
+  }
+
+  /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
+  static getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
+    return ba === "asks" ? wants.div(price) : wants.mul(price);
   }
 }
 

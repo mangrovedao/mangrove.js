@@ -396,12 +396,8 @@ export class Semibook implements Iterable<Market.Offer> {
     const _gives = outbound_tkn.fromUnits(raw.gives);
     const _wants = inbound_tkn.fromUnits(raw.wants);
 
-    const { baseVolume } = this.market.getBaseQuoteVolumes(
-      this.ba,
-      _gives,
-      _wants
-    );
-    const price = this.market.getPrice(this.ba, _gives, _wants);
+    const { baseVolume } = Market.getBaseQuoteVolumes(this.ba, _gives, _wants);
+    const price = Market.getPrice(this.ba, _gives, _wants);
 
     if (baseVolume.eq(0)) {
       throw Error("baseVolume is 0 (not allowed)");
