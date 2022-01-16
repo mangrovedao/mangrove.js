@@ -294,26 +294,34 @@ class Market {
   /* Given a price, find the id of the immediately-better offer in the
      book. */
   getPivot(ba: "asks" | "bids", price: Bigish): number {
-    // we select as pivot the immediately-better offer
-    // the actual ordering in the offer list is lexicographic
+    // We select as pivot the immediately-better offer.
+    // The actual ordering in the offer list is lexicographic
     // price * gasreq (or price^{-1} * gasreq)
-    // we ignore the gasreq comparison because we may not
+    // We ignore the gasreq comparison because we may not
     // know the gasreq (could be picked by offer contract)
     price = Big(price);
     const comparison = ba === "asks" ? "gt" : "lt";
-    let latest_id = 0;
-    for (const [i, offer] of this.#book[ba].entries()) {
+    let lastSeenOffer: Market.Offer;
+    let pivotFound = false;
+    for (const offer of this.#book[ba]) {
+      lastSeenOffer = offer;
       if (offer.price[comparison](price)) {
+        pivotFound = true;
         break;
       }
-      latest_id = offer.id;
-      if (i === this.#book[ba].length) {
-        throw new Error(
-          "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
-        );
-      }
     }
-    return latest_id;
+    if (pivotFound) {
+      return lastSeenOffer.prev || 0;
+    }
+    // If we reached the end of the offer list (which is possible empty), use the last offer as pivot
+    if (lastSeenOffer?.next === undefined) {
+      return lastSeenOffer?.id || 0;
+    } else {
+      // The semibook cache is incomplete
+      throw new Error(
+        "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
+      );
+    }
   }
 
   /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
