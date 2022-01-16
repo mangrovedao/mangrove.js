@@ -430,10 +430,12 @@ class Market {
   }
 
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
-    const rawConfig = await this.rawConfig();
-    const ba = bs === "buy" ? "asks" : "bids";
-    const estimation = rawConfig[ba].local.offer_gasbase.add(
-      volume.div(rawConfig[ba].local.density)
+    const rawConfig =
+      bs === "buy"
+        ? await this.#asksSemibook.getRawConfig()
+        : await this.#bidsSemibook.getRawConfig();
+    const estimation = rawConfig.local.offer_gasbase.add(
+      volume.div(rawConfig.local.density)
     );
     if (estimation.gt(MAX_MARKET_ORDER_GAS)) {
       return BigNumber.from(MAX_MARKET_ORDER_GAS);
@@ -500,46 +502,11 @@ class Market {
     asks: Mangrove.LocalConfig;
     bids: Mangrove.LocalConfig;
   }> {
-    const { bids, asks } = await this.rawConfig();
+    const asksConfigPromise = this.#asksSemibook.getConfig();
+    const bidsConfigPromise = this.#bidsSemibook.getConfig();
     return {
-      asks: this.#mapConfig("asks", asks),
-      bids: this.#mapConfig("bids", bids),
-    };
-  }
-
-  async rawConfig(): Promise<{
-    asks: Mangrove.RawConfig;
-    bids: Mangrove.RawConfig;
-  }> {
-    const rawAsksConfigPromise = this.mgv.contract.configInfo(
-      this.base.address,
-      this.quote.address
-    );
-    const rawBidsConfigPromise = this.mgv.contract.configInfo(
-      this.quote.address,
-      this.base.address
-    );
-    const rawAsksConfig = await rawAsksConfigPromise;
-    const rawBidsConfig = await rawBidsConfigPromise;
-    return {
-      asks: rawAsksConfig,
-      bids: rawBidsConfig,
-    };
-  }
-
-  #mapConfig(
-    ba: "bids" | "asks",
-    cfg: Mangrove.RawConfig
-  ): Mangrove.LocalConfig {
-    const { outbound_tkn } = this.getOutboundInbound(ba);
-    return {
-      active: cfg.local.active,
-      fee: cfg.local.fee.toNumber(),
-      density: outbound_tkn.fromUnits(cfg.local.density),
-      offer_gasbase: cfg.local.offer_gasbase.toNumber(),
-      lock: cfg.local.lock,
-      best: cfg.local.best.toNumber(),
-      last: cfg.local.last.toNumber(),
+      asks: await asksConfigPromise,
+      bids: await bidsConfigPromise,
     };
   }
 

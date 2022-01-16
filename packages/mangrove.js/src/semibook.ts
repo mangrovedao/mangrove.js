@@ -1,5 +1,5 @@
 import { ethers, BigNumber } from "ethers";
-import { Market } from ".";
+import { Mangrove, Market } from ".";
 import { TypedEventFilter, TypedListener } from "./types/typechain/common";
 import { Deferred } from "./util";
 
@@ -83,6 +83,30 @@ export class Semibook implements Iterable<Market.Offer> {
     );
   }
 
+  /**
+   * Return config local to a semibook.
+   * Notes:
+   * Amounts are converted to plain numbers.
+   * density is converted to public token units per gas used
+   * fee *remains* in basis points of the token being bought
+   */
+  async getConfig(): Promise<Mangrove.LocalConfig> {
+    const rawConfig = await this.getRawConfig();
+    return this.#rawConfigToConfig(rawConfig);
+  }
+
+  async getRawConfig(): Promise<Mangrove.RawConfig> {
+    const { outbound_tkn, inbound_tkn } = Market.getOutboundInbound(
+      this.ba,
+      this.market.base,
+      this.market.quote
+    );
+    return await this.market.mgv.contract.configInfo(
+      outbound_tkn.address,
+      inbound_tkn.address
+    );
+  }
+
   [Symbol.iterator](): Iterator<Market.Offer> {
     let latest = this.#best;
     return {
@@ -127,9 +151,7 @@ export class Semibook implements Iterable<Market.Offer> {
     if (!this.#canInitialize) return;
     this.#canInitialize = false;
 
-    const { asks: asksConfig, bids: bidsConfig } = await this.market.config();
-    const localConfig = this.ba === "bids" ? bidsConfig : asksConfig;
-
+    const localConfig = await this.getConfig();
     this.#offer_gasbase = localConfig.offer_gasbase;
 
     // To avoid missing any events, we register the event listener before
@@ -203,7 +225,7 @@ export class Semibook implements Iterable<Market.Offer> {
           break;
         }
 
-        offer = this.#toOfferObject({
+        offer = this.#rawOfferToOffer({
           ...event.args,
           offer_gasbase: BigNumber.from(this.#offer_gasbase),
           next: this.#idToRawId(next),
@@ -373,7 +395,7 @@ export class Semibook implements Iterable<Market.Offer> {
 
       for (const [index, offerId] of offerIds.entries()) {
         result.push(
-          this.#toOfferObject({
+          this.#rawOfferToOffer({
             id: offerId,
             ...offers[index],
             ...details[index],
@@ -388,7 +410,20 @@ export class Semibook implements Iterable<Market.Offer> {
     return result;
   }
 
-  #toOfferObject(raw: RawOfferData): Market.Offer {
+  #rawConfigToConfig(cfg: Mangrove.RawConfig): Mangrove.LocalConfig {
+    const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
+    return {
+      active: cfg.local.active,
+      fee: cfg.local.fee.toNumber(),
+      density: outbound_tkn.fromUnits(cfg.local.density),
+      offer_gasbase: cfg.local.offer_gasbase.toNumber(),
+      lock: cfg.local.lock,
+      best: this.#rawIdToId(cfg.local.best),
+      last: this.#rawIdToId(cfg.local.last),
+    };
+  }
+
+  #rawOfferToOffer(raw: RawOfferData): Market.Offer {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
       this.ba
     );
