@@ -43,16 +43,21 @@ namespace OfferLogic {
 // OfferLogic.deposit(n)
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.SimpleMaker;
+  contract: typechain.SimpleMaker | ethers.Contract;
   address: string;
 
-  constructor(mgv: Mangrove, address: string) {
+  constructor(mgv: Mangrove, logic: string | ethers.Contract) {
     this.mgv = mgv;
-    this.address = address;
-    this.contract = typechain.SimpleMaker__factory.connect(
-      address,
-      this.mgv._signer
-    );
+    if (typeof logic === "string") {
+      this.address = logic;
+      this.contract = typechain.SimpleMaker__factory.connect(
+        logic,
+        this.mgv._signer
+      );
+    } else {
+      this.address = logic.address;
+      this.contract = logic.connect(this.mgv._signer);
+    }
   }
   /**
    * @note Deploys a fresh MangroveOffer contract
@@ -155,7 +160,7 @@ class OfferLogic {
     return this.contract.setAdmin(newAdmin, overrides);
   }
 
-  /** Withdraw from the OfferLogic's ether balance to the sender */
+  /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
   async withdraw(
     amount: Bigish,
     overrides: ethers.Overrides = {}
@@ -166,6 +171,8 @@ class OfferLogic {
       overrides
     );
   }
+
+  /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object */
   async connectMarket(
     p:
       | Market

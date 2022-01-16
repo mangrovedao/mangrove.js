@@ -156,8 +156,8 @@ class Mangrove {
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(addr: string): OfferLogic {
-    return new OfferLogic(this, addr);
+  offerLogic(logic: string | ethers.Contract): OfferLogic {
+    return new OfferLogic(this, logic);
   }
 
   /* Return MgvToken instance tied to mangrove object. */
