@@ -204,8 +204,8 @@ class Market {
     this.#updateBook("bids");
   }
 
-  #semibookCallback({ cbArg, ba, event, ethersEvent }: SemibookEvent): void {
-    this.#updateBook(ba);
+  #semibookCallback({ cbArg, event, ethersEvent }: SemibookEvent): void {
+    this.#updateBook(cbArg.ba);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
         if (!("filter" in params) || params.filter(cbArg, event, ethersEvent)) {
