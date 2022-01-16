@@ -322,7 +322,7 @@ class Maker {
     const { wants, gives, price, gasreq, gasprice } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-    const pivot = this.market.getPivot(p.ba, price);
+    const pivot = this.market.getPivotId(p.ba, price);
     const resp = await this.contract.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -330,7 +330,7 @@ class Maker {
       outbound_tkn.toUnits(gives),
       gasreq ? gasreq : this.gasreq, // gasreq
       gasprice ? gasprice : 0,
-      pivot,
+      pivot ?? 0,
       overrides
     );
 
@@ -390,7 +390,7 @@ class Maker {
       outbound_tkn.toUnits(gives),
       gasreq ? gasreq : offer.gasreq,
       gasprice ? gasprice : offer.gasprice,
-      this.market.getPivot(p.ba, price),
+      this.market.getPivotId(p.ba, price) ?? 0,
       id,
       overrides
     );

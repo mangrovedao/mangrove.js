@@ -4,8 +4,10 @@
 - All functions now start with lower case
 - `Market.{subscribe|consoleAsks|consoleBids|prettyPrint}` are no longer `async`
 - Removed `fromId` and `blockNumber` from `Market.BookOptions`
-- `Market.Offer.{prev|next}` are now `undefined` if there is no previous/next offer
-- `Market.getPivot` now throws `Error` if the order book cache is insufficient to determine a pivot
+- `Market.Offer.{prev|next}` are now `undefined` (instead of `0`) if there is no previous/next offer
+- `Market.getPivot` renamed to `Market.getPivotId`
+- `Market.getPivotId` now returns `undefined` (instead of `0`) if no offer with better price exists
+- `Market.getPivotId` now throws `Error` if the order book cache is insufficient to determine a pivot
 
 # 0.0.8
 

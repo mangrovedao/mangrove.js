@@ -291,9 +291,10 @@ class Market {
     };
   }
 
-  /* Given a price, find the id of the immediately-better offer in the
-     book. */
-  getPivot(ba: "asks" | "bids", price: Bigish): number {
+  /** Given a price, find the id of the immediately-better offer in the
+   * book. If there is no offer with a better price, `undefined` is returned.
+   */
+  getPivotId(ba: "asks" | "bids", price: Bigish): number | undefined {
     // We select as pivot the immediately-better offer.
     // The actual ordering in the offer list is lexicographic
     // price * gasreq (or price^{-1} * gasreq)
@@ -311,11 +312,11 @@ class Market {
       }
     }
     if (pivotFound) {
-      return lastSeenOffer.prev || 0;
+      return lastSeenOffer.prev;
     }
     // If we reached the end of the offer list (which is possible empty), use the last offer as pivot
     if (lastSeenOffer?.next === undefined) {
-      return lastSeenOffer?.id || 0;
+      return lastSeenOffer?.id;
     } else {
       // The semibook cache is incomplete
       throw new Error(
