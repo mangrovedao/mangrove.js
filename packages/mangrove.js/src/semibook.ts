@@ -8,7 +8,6 @@ let canConstructSemibook = false;
 
 export type SemibookEvent = {
   cbArg: Market.BookSubscriptionCbArgument;
-  ba: "bids" | "asks";
   event: Market.BookSubscriptionEvent;
   ethersEvent: ethers.Event;
 };
@@ -218,7 +217,6 @@ export class Semibook implements Iterable<Market.Offer> {
             offer: offer,
             ba: this.ba,
           },
-          ba: this.ba,
           event,
           ethersEvent,
         });
@@ -238,7 +236,6 @@ export class Semibook implements Iterable<Market.Offer> {
               takerGives: inbound_tkn.fromUnits(event.args.takerGives),
               mgvData: event.args.mgvData,
             },
-            ba: this.ba,
             event,
             ethersEvent,
           });
@@ -257,7 +254,6 @@ export class Semibook implements Iterable<Market.Offer> {
               takerWants: outbound_tkn.fromUnits(event.args.takerWants),
               takerGives: inbound_tkn.fromUnits(event.args.takerGives),
             },
-            ba: this.ba,
             event,
             ethersEvent,
           });
@@ -274,7 +270,6 @@ export class Semibook implements Iterable<Market.Offer> {
               ba: this.ba,
               offer: removedOffer,
             },
-            ba: this.ba,
             event,
             ethersEvent,
           });
