@@ -46,8 +46,8 @@ namespace Market {
 
   export type Offer = {
     id: number;
-    prev: number;
-    next: number;
+    prev: number | undefined;
+    next: number | undefined;
     gasprice: number;
     maker: string;
     gasreq: number;
