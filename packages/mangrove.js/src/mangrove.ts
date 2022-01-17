@@ -1,10 +1,8 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
-import Market from "./market";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
-import MgvToken from "./mgvtoken";
-import OfferLogic from "./offerLogic";
+import { LiquidityProvider, OfferLogic, MgvToken, Market } from ".";
 
 import Big from "big.js";
 import * as ethers from "ethers";
@@ -160,6 +158,31 @@ class Mangrove {
     return new OfferLogic(this, logic);
   }
 
+  /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object */
+  async liquidityProvider(
+    p:
+      | Market
+      | {
+          base: string;
+          quote: string;
+          bookOptions?: Market.BookOptions;
+        }
+  ): Promise<LiquidityProvider> {
+    if (p instanceof Market) {
+      return new LiquidityProvider({
+        mgv: this,
+        eoa: await this._signer.getAddress(),
+        market: p,
+      });
+    } else {
+      return new LiquidityProvider({
+        mgv: this,
+        eoa: await this._signer.getAddress(),
+        market: await this.market(p),
+      });
+    }
+  }
+
   /* Return MgvToken instance tied to mangrove object. */
   token(name: string): MgvToken {
     return new MgvToken(name, this);
@@ -253,6 +276,30 @@ class Mangrove {
   async balanceOf(address: string): Promise<Big> {
     const bal = await this.contract.balanceOf(address);
     return this.fromUnits(bal, 18);
+  }
+
+  /**Signer approves token for Mangrove transfer */
+  approveMangrove(
+    tokenName: string,
+    amount?: Bigish
+  ): Promise<ethers.ContractTransaction> {
+    const token = this.token(tokenName);
+    return token.approveMangrove(amount);
+  }
+
+  fundMangrove(
+    amount: Bigish,
+    overrides: ethers.PayableOverrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    overrides.value =
+      "value" in overrides ? overrides.value : this.toUnits(amount, 18);
+    return this.contract["fund()"](overrides);
+  }
+
+  /** Get the current balance the signer has in Mangrove */
+  async balanceAtMangrove(): Promise<Big> {
+    const address = await this._signer.getAddress();
+    return this.balanceOf(address);
   }
 
   /**
