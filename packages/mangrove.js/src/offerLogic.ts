@@ -4,7 +4,7 @@ import Market from "./market";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { LiquidityProvider as LP, Mangrove } from ".";
+import { LiquidityProvider, Mangrove } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
@@ -89,10 +89,9 @@ class OfferLogic {
     amount?: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const _amount =
-      typeof amount === "undefined"
-        ? ethers.BigNumber.from(2).pow(256).sub(1)
-        : this.mgv.toUnits(amount, tokenName);
+    const _amount = amount
+      ? this.mgv.toUnits(amount, tokenName)
+      : ethers.constants.MaxUint256;
     return this.contract.approveMangrove(
       this.mgv.getAddress(tokenName),
       _amount,
@@ -118,6 +117,16 @@ class OfferLogic {
     );
   }
 
+  // connects a provider or signer to this.contract
+  connect(
+    signerOrProvider:
+      | string
+      | ethers.ethers.Signer
+      | ethers.ethers.providers.Provider
+  ): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.connect(signerOrProvider));
+  }
+
   /**Deposits `amount` tokens on the contract accounts */
   depositToken(
     tokenName: string,
@@ -135,11 +144,13 @@ class OfferLogic {
   /** Fund the current contract balance with ethers sent from current signer. */
   fundMangrove(
     amount: Bigish,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    overrides.value =
-      "value" in overrides ? overrides.value : this.mgv.toUnits(amount, 18);
-    return this.contract.fundMangrove(overrides);
+    const overrides_ = {
+      value: this.mgv.toUnits(amount, 18),
+      ...overrides,
+    };
+    return this.contract.fundMangrove(overrides_);
   }
 
   setDefaultGasreq(
@@ -173,7 +184,7 @@ class OfferLogic {
   }
 
   /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object */
-  async connectMarket(
+  async liquidityProvider(
     p:
       | Market
       | {
@@ -181,11 +192,15 @@ class OfferLogic {
           quote: string;
           bookOptions?: Market.BookOptions;
         }
-  ): Promise<LP> {
+  ): Promise<LiquidityProvider> {
     if (p instanceof Market) {
-      return new LP(this.mgv, this, p);
+      return new LiquidityProvider({ mgv: this.mgv, logic: this, market: p });
     } else {
-      return new LP(this.mgv, this, await this.mgv.market(p));
+      return new LiquidityProvider({
+        mgv: this.mgv,
+        logic: this,
+        market: await this.mgv.market(p),
+      });
     }
   }
 }
