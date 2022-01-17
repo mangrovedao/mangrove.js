@@ -1,4 +1,5 @@
 import { logger } from "./util/logger";
+import pick from "object.pick";
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
 import { typechain, Provider, Signer } from "./types";
@@ -92,7 +93,8 @@ class Mangrove {
     });
     canConstructMangrove = false;
 
-    logger.debug("Initalize Mangrove", {
+    logger.debug("Initialize Mangrove", {
+      contextInfo: "mangrove.base",
       data: { signer: signer, network: network, readOnly: readOnly },
     });
 
@@ -102,7 +104,9 @@ class Mangrove {
   disconnect(): void {
     this._provider.removeAllListeners();
 
-    logger.debug("Disconnect from Mangrove");
+    logger.debug("Disconnect from Mangrove", {
+      contextInfo: "mangrove.base",
+    });
   }
   //TODO types in module namespace with same name as class
   //TODO remove _prefix on public properties
@@ -158,7 +162,10 @@ class Mangrove {
     quote: string;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
-    logger.debug("Initalize Market", { data: params });
+    logger.debug("Initialize Market", {
+      contextInfo: "mangrove.base",
+      data: pick(params, ["base", "quote", "bookOptions"]),
+    });
     return await Market.connect({ ...params, mgv: this });
   }
 
