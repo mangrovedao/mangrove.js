@@ -27,9 +27,10 @@ const consoleLogFormat = format.printf(
 
 const logLevel = config.get<string>("logLevel");
 
-const logFile = config.get<string>("logFile");
 const additionnalTransports = [];
-if (logFile) {
+
+if (config.has("logFile")) {
+  const logFile = config.get<string>("logFile");
   additionnalTransports.push(
     new transports.File({
       level: logLevel,
