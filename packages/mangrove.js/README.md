@@ -256,6 +256,12 @@ The precision used when dividing is 20 decimal places.
 
 TODO include transaction options (see here)[https://github.com/compound-finance/compound-js#transaction-options]
 
+## Logging
+
+Console logging is enabled by default.
+
+You can enable file logging by set `logFile` configuration parameter.
+
 ## Test
 
 Tests are available in `./test/integration/*.integration.test.js`. Methods are tested using an in-process local chain using [Hardhat](https://hardhat.org/). For free archive node access, get a provider URL from [Alchemy](http://alchemy.com/).

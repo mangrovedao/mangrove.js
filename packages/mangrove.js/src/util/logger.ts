@@ -1,4 +1,9 @@
-import { createLogger, BetterLogger, format } from "@mangrovedao/commonlib-js";
+import {
+  createLogger,
+  BetterLogger,
+  format,
+  transports,
+} from "@mangrovedao/commonlib-js";
 import os from "os";
 import safeStringify from "fast-safe-stringify";
 import config from "./config";
@@ -21,6 +26,28 @@ const consoleLogFormat = format.printf(
 );
 
 const logLevel = config.get<string>("logLevel");
-export const logger: BetterLogger = createLogger(consoleLogFormat, logLevel);
+
+const logFile = config.get<string>("logFile");
+const additionnalTransports = [];
+if (logFile) {
+  additionnalTransports.push(
+    new transports.File({
+      level: logLevel,
+      filename: logFile,
+      format: format.combine(
+        format.colorize(),
+        format.splat(),
+        format.timestamp(),
+        consoleLogFormat
+      ),
+    })
+  );
+}
+
+export const logger: BetterLogger = createLogger(
+  consoleLogFormat,
+  logLevel,
+  additionnalTransports
+);
 
 export default logger;
