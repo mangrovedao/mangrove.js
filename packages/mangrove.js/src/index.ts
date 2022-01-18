@@ -10,6 +10,7 @@ import { decimals } from "./constants";
 
 import Mangrove from "./mangrove";
 import Market from "./market";
+import Semibook from "./semibook";
 import Maker from "./maker";
 import MgvToken from "./mgvtoken";
 
@@ -17,4 +18,4 @@ import MgvToken from "./mgvtoken";
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
 export default Mangrove;
-export { eth, decimals, ethers, Mangrove, Market, MgvToken, Maker };
+export { eth, decimals, ethers, Mangrove, Market, Semibook, MgvToken, Maker };

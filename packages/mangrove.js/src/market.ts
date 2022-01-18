@@ -102,7 +102,12 @@ namespace Market {
 
   // FIXME: This name is misleading, since you're only getting prefixes of the offer lists.
   // FIXME: Perhaps we should expose Semibook instead of arrays? Semibooks carry more information.
+  /**
+   * @deprecated This has been subsumed by the `Book` type
+   */
   export type MarketBook = { asks: Offer[]; bids: Offer[] };
+
+  export type Book = { asks: Semibook; bids: Semibook };
 }
 
 /**
@@ -246,9 +251,27 @@ class Market {
    *  Bids are standing offers to buy base and sell quote.
    *  All prices are in quote/base, all volumes are in base.
    *  Order is from best to worse from taker perspective.
+   * @deprecated Subsumed by `getBook` which returns the more versatile `Book` type.
    */
   book(): Market.MarketBook {
     return this.#book;
+  }
+
+  /**
+   * Return the semibooks of this market
+   */
+  getBook(): Market.Book {
+    return {
+      asks: this.#asksSemibook,
+      bids: this.#bidsSemibook,
+    };
+  }
+
+  /**
+   * Return the asks or bids semibook
+   */
+  getSemibook(ba: "bids" | "asks"): Semibook {
+    return ba === "asks" ? this.#asksSemibook : this.#bidsSemibook;
   }
 
   async requestBook(
@@ -272,34 +295,9 @@ class Market {
    * book. If there is no offer with a better price, `undefined` is returned.
    */
   getPivotId(ba: "asks" | "bids", price: Bigish): number | undefined {
-    // We select as pivot the immediately-better offer.
-    // The actual ordering in the offer list is lexicographic
-    // price * gasreq (or price^{-1} * gasreq)
-    // We ignore the gasreq comparison because we may not
-    // know the gasreq (could be picked by offer contract)
-    price = Big(price);
-    const comparison = ba === "asks" ? "gt" : "lt";
-    let lastSeenOffer: Market.Offer;
-    let pivotFound = false;
-    for (const offer of this.#book[ba]) {
-      lastSeenOffer = offer;
-      if (offer.price[comparison](price)) {
-        pivotFound = true;
-        break;
-      }
-    }
-    if (pivotFound) {
-      return lastSeenOffer.prev;
-    }
-    // If we reached the end of the offer list (which is possible empty), use the last offer as pivot
-    if (lastSeenOffer?.next === undefined) {
-      return lastSeenOffer?.id;
-    } else {
-      // The semibook cache is incomplete
-      throw new Error(
-        "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
-      );
-    }
+    return ba === "asks"
+      ? this.#asksSemibook.getPivotId(price)
+      : this.#bidsSemibook.getPivotId(price);
   }
 
   /**

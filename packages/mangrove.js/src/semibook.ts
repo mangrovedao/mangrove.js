@@ -1,5 +1,7 @@
+import { Big } from "big.js";
 import { ethers, BigNumber } from "ethers";
 import { Mangrove, Market } from ".";
+import { Bigish } from "./types";
 import { TypedEventFilter, TypedListener } from "./types/typechain/common";
 import { Deferred } from "./util";
 
@@ -53,7 +55,8 @@ export class Semibook implements Iterable<Market.Offer> {
   #eventListener: SemibookEventListener;
 
   #offers: Map<number, Market.Offer>;
-  #best: number | undefined; // id of the best/first offer in the offer list iff #offers is non-empty
+  #best: number | undefined; // id of the best/first offer in the offer list iff the offer list is non-empty. NB: #offers might not contain this offer.
+  #bestInCache: number | undefined; // id of the best/first offer in the offer list iff #offers is non-empty
   #firstBlockNumber: number; // the block number that the offer list prefix is consistent with
 
   static async connect(
@@ -90,12 +93,12 @@ export class Semibook implements Iterable<Market.Offer> {
    * density is converted to public token units per gas used
    * fee *remains* in basis points of the token being bought
    */
-  async getConfig(): Promise<Mangrove.LocalConfig> {
-    const rawConfig = await this.getRawConfig();
+  async getConfig(blockNumber?: number): Promise<Mangrove.LocalConfig> {
+    const rawConfig = await this.getRawConfig(blockNumber);
     return this.#rawConfigToConfig(rawConfig);
   }
 
-  async getRawConfig(): Promise<Mangrove.RawConfig> {
+  async getRawConfig(blockNumber?: number): Promise<Mangrove.RawConfig> {
     const { outbound_tkn, inbound_tkn } = Market.getOutboundInbound(
       this.ba,
       this.market.base,
@@ -103,12 +106,13 @@ export class Semibook implements Iterable<Market.Offer> {
     );
     return await this.market.mgv.contract.configInfo(
       outbound_tkn.address,
-      inbound_tkn.address
+      inbound_tkn.address,
+      { blockTag: blockNumber }
     );
   }
 
   [Symbol.iterator](): Iterator<Market.Offer> {
-    let latest = this.#best;
+    let latest = this.#bestInCache;
     return {
       next: () => {
         const value =
@@ -120,6 +124,50 @@ export class Semibook implements Iterable<Market.Offer> {
         };
       },
     };
+  }
+
+  /**
+   * Returns true if the offer list is empty, regardless of what offers have been cached.
+   */
+  isOfferListEmpty(): boolean {
+    return this.#best === undefined;
+  }
+
+  /** Given a price, find the id of the immediately-better offer in the
+   * semibook. If there is no offer with a better price, `undefined` is returned.
+   */
+  getPivotId(price: Bigish): number | undefined {
+    if (this.isOfferListEmpty()) {
+      return undefined;
+    }
+    // We select as pivot the immediately-better offer.
+    // The actual ordering in the offer list is lexicographic
+    // price * gasreq (or price^{-1} * gasreq)
+    // We ignore the gasreq comparison because we may not
+    // know the gasreq (could be picked by offer contract)
+    price = Big(price);
+    const comparison = this.ba === "asks" ? "gt" : "lt";
+    let lastSeenOffer: Market.Offer;
+    let pivotFound = false;
+    for (const offer of this) {
+      lastSeenOffer = offer;
+      if (offer.price[comparison](price)) {
+        pivotFound = true;
+        break;
+      }
+    }
+    if (pivotFound) {
+      return lastSeenOffer.prev;
+    }
+    // If we reached the end of the offer list, use the last offer as pivot
+    if (lastSeenOffer !== undefined && lastSeenOffer.next === undefined) {
+      return lastSeenOffer.id;
+    } else {
+      // The semibook cache is incomplete
+      throw new Error(
+        "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
+      );
+    }
   }
 
   private constructor(
@@ -151,7 +199,11 @@ export class Semibook implements Iterable<Market.Offer> {
     if (!this.#canInitialize) return;
     this.#canInitialize = false;
 
-    const localConfig = await this.getConfig();
+    // To ensure consistency in this cache, everything is initially fetched from a specific block
+    this.#firstBlockNumber = await this.market.mgv._provider.getBlockNumber();
+
+    const localConfig = await this.getConfig(this.#firstBlockNumber);
+    this.#best = localConfig.best;
     this.#offer_gasbase = localConfig.offer_gasbase;
 
     // To avoid missing any events, we register the event listener before
@@ -163,14 +215,13 @@ export class Semibook implements Iterable<Market.Offer> {
     this.#initializationPromise = deferredInitialization.promise;
     this.market.mgv.contract.on(this.#eventFilter, this.#eventCallback);
 
-    this.#firstBlockNumber = await this.market.mgv._provider.getBlockNumber();
     const offers = await this.#fetchOfferListPrefix(
       this.#firstBlockNumber,
       this.options
     );
 
     if (offers.length > 0) {
-      this.#best = offers[0].id;
+      this.#bestInCache = offers[0].id;
 
       for (const offer of offers) {
         this.#offers.set(offer.id, offer);
@@ -201,10 +252,12 @@ export class Semibook implements Iterable<Market.Offer> {
     );
 
     switch (event.name) {
-      case "OfferWrite":
+      case "OfferWrite": {
         // We ignore the return value here because the offer may have been outside the local
         // cache, but may now enter the local cache due to its new price.
-        this.#removeOffer(this.#rawIdToId(event.args.id));
+        const id = this.#rawIdToId(event.args.id);
+        const prev = this.#rawIdToId(event.args.prev);
+        this.#removeOffer(id);
 
         /* After removing the offer (a noop if the offer was not in local cache), we reinsert it.
          * The offer comes with id of its prev. If prev does not exist in cache, we skip
@@ -213,10 +266,10 @@ export class Semibook implements Iterable<Market.Offer> {
          * Whether that next exists in the cache or not is irrelevant.
          */
         try {
-          const prev = this.#rawIdToId(event.args.prev);
           if (prev === undefined) {
-            // The removed offer was the best, so the next offer is the new best
-            next = this.#best;
+            // The removed offer will be the best, so the next offer is the current best
+            next = this.#bestInCache;
+            this.#best = id;
           } else {
             next = this.#getNextId(prev);
           }
@@ -243,11 +296,16 @@ export class Semibook implements Iterable<Market.Offer> {
           ethersEvent,
         });
         break;
+      }
 
-      case "OfferFail":
-        removedOffer = this.#removeOffer(this.#rawIdToId(event.args.id));
+      case "OfferFail": {
+        const id = this.#rawIdToId(event.args.id);
+        removedOffer = this.#removeOffer(id);
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
+          if (id === this.#best) {
+            this.#best = removedOffer.next;
+          }
           this.#eventListener({
             cbArg: {
               type: event.name,
@@ -261,12 +319,23 @@ export class Semibook implements Iterable<Market.Offer> {
             event,
             ethersEvent,
           });
+        } else {
+          // If the best offer failed and was not in the cache, we need to fetch the new best offer
+          // as the event does not carry information about the next offer.
+          if (id === this.#best) {
+            this.#best = (await this.getConfig(event.blockNumber)).best;
+          }
         }
         break;
+      }
 
-      case "OfferSuccess":
-        removedOffer = this.#removeOffer(this.#rawIdToId(event.args.id));
+      case "OfferSuccess": {
+        const id = this.#rawIdToId(event.args.id);
+        removedOffer = this.#removeOffer(id);
         if (removedOffer) {
+          if (id === this.#best) {
+            this.#best = removedOffer.next;
+          }
           this.#eventListener({
             cbArg: {
               type: event.name,
@@ -279,13 +348,24 @@ export class Semibook implements Iterable<Market.Offer> {
             event,
             ethersEvent,
           });
+        } else {
+          // If the best offer succeeded and was not in the cache, we need to fetch the new best offer
+          // as the event does not carry information about the next offer.
+          if (id === this.#best) {
+            this.#best = (await this.getConfig(event.blockNumber)).best;
+          }
         }
         break;
+      }
 
-      case "OfferRetract":
-        removedOffer = this.#removeOffer(this.#rawIdToId(event.args.id));
+      case "OfferRetract": {
+        const id = this.#rawIdToId(event.args.id);
+        removedOffer = this.#removeOffer(id);
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
+          if (id === this.#best) {
+            this.#best = removedOffer.next;
+          }
           this.#eventListener({
             cbArg: {
               type: event.name,
@@ -295,8 +375,15 @@ export class Semibook implements Iterable<Market.Offer> {
             event,
             ethersEvent,
           });
+        } else {
+          // If the best offer was retracted and was not in the cache, we need to fetch the new best offer
+          // as the event does not carry information about the next offer.
+          if (id === this.#best) {
+            this.#best = (await this.getConfig(event.blockNumber)).best;
+          }
         }
         break;
+      }
 
       case "SetGasbase":
         this.#offer_gasbase = event.args.offer_gasbase.toNumber();
@@ -311,7 +398,7 @@ export class Semibook implements Iterable<Market.Offer> {
   #insertOffer(offer: Market.Offer): void {
     this.#offers.set(offer.id, offer);
     if (offer.prev === undefined) {
-      this.#best = offer.id;
+      this.#bestInCache = offer.id;
     } else {
       this.#offers.get(offer.prev).next = offer.id;
     }
@@ -329,7 +416,7 @@ export class Semibook implements Iterable<Market.Offer> {
       // we differentiate prev===undefined (offer is best)
       // from offers[prev] does not exist (we're outside of the local cache)
       if (ofr.prev === undefined) {
-        this.#best = ofr.next;
+        this.#bestInCache = ofr.next;
       } else {
         const prevOffer = this.#offers.get(ofr.prev);
         if (prevOffer) {
@@ -490,3 +577,5 @@ export class Semibook implements Iterable<Market.Offer> {
     };
   }
 }
+
+export default Semibook;
