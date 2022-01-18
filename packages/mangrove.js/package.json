@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.5.0",
-    "@mangrovedao/commonlib-js": "workspace:^",
+    "@mangrovedao/commonlib-js": "workspace:*",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
