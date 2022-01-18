@@ -4,7 +4,7 @@ import { describe, beforeEach, afterEach, it } from "mocha";
 import { toWei } from "../util/helpers";
 
 import assert from "assert";
-import { Mangrove, Market } from "../../src";
+import { Mangrove, Market } from "../..";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";

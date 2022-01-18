@@ -1,6 +1,6 @@
 // Utility functions for writing integration tests against Mangrove.
 import { ContractTransaction, ethers } from "ethers";
-import { Market, MgvToken } from "../../src";
+import { Market, MgvToken } from "../..";
 import * as typechain from "../../dist/nodejs/types/typechain";
 import "hardhat-deploy-ethers/dist/src/type-extensions";
 import { ethers as hardhatEthers } from "hardhat";
@@ -200,9 +200,9 @@ export type NewOffer = {
 
 export let isTrackingPolls = false;
 let providerCopy: Provider;
-let lastTxReceipt: TransactionReceipt;
+let lastTxReceipt: TransactionReceipt | undefined;
+let awaitedPollId: number | undefined;
 let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
-let awaitedPollId: number;
 
 /**
  * Await this when you want to wait for all events corresponding to the last sent tx to have been sent.

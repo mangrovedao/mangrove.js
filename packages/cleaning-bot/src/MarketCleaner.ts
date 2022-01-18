@@ -1,5 +1,5 @@
 import { logger } from "./util/logger";
-import Market from "@mangrovedao/mangrove.js/dist/nodejs/market";
+import { Market } from "@mangrovedao/mangrove.js";
 import { Provider } from "@ethersproject/providers";
 import { BigNumber, BigNumberish } from "ethers";
 
