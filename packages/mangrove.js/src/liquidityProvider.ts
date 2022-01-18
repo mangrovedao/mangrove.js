@@ -4,7 +4,6 @@ import { EOA_offer_gasreq } from "./constants";
 import Market from "./market";
 // syntactic sugar
 import { Bigish } from "./types";
-
 import Mangrove from "./mangrove";
 
 /* Note on big.js:
@@ -198,12 +197,8 @@ class LiquidityProvider {
   #proxy(): Mangrove | OfferLogic {
     return this.logic ? this.logic : this.mgv;
   }
-  #gasreq(gr?: number): ethers.BigNumber | number {
-    return gr
-      ? gr
-      : this.logic
-      ? ethers.constants.MaxUint256
-      : EOA_offer_gasreq;
+  async #gasreq(): Promise<number> {
+    return this.logic ? await this.logic.getDefaultGasreq() : EOA_offer_gasreq;
   }
 
   async newOffer(
@@ -219,7 +214,7 @@ class LiquidityProvider {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      this.#gasreq(gasreq),
+      gasreq ? gasreq : await this.#gasreq(),
       gasprice ? gasprice : 0,
       pivot,
       overrides
@@ -279,7 +274,7 @@ class LiquidityProvider {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      this.#gasreq(gasreq),
+      gasreq ? gasreq : await this.#gasreq(),
       gasprice ? gasprice : offer.gasprice,
       this.market.getPivot(p.ba, price),
       id,
@@ -338,7 +333,7 @@ class LiquidityProvider {
     if (this.logic) {
       return this.logic.balanceAtMangrove();
     } else {
-      return this.mgv.balanceOf(this.eoa);
+      return this.mgv.balanceAtMangroveOf(this.eoa);
     }
   }
 
@@ -347,7 +342,7 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     if (this.logic) {
-      return this.logic.withdraw(amount, overrides);
+      return this.logic.withdrawFromMangrove(amount, overrides);
     } else {
       return this.mgv.contract.withdraw(
         this.mgv.toUnits(amount, 18),
@@ -356,20 +351,26 @@ class LiquidityProvider {
     }
   }
 
-  // TODO implement for EOA makers
   async getMissingProvision(
     ba: "bids" | "asks",
-    opts: { id?: number; gasreq?: number } = {}
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    const prov = await this.logic.contract.getMissingProvision(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      opts.gasreq ? opts.gasreq : ethers.constants.MaxUint256,
-      0, //gasprice
-      opts.id ? opts.id : 0
-    );
-    return this.mgv.fromUnits(prov, "ETH");
+    const gasreq = opts.gasreq ? opts.gasreq : await this.#gasreq();
+    const gasprice = opts.gasprice ? opts.gasprice : 0;
+    const bounty = await this.market.getOfferProvision(ba, gasreq, gasprice);
+    let lockedProvision = Big(0);
+    if (opts.id) {
+      const offer = await this.market.offerInfo(ba, opts.id);
+      const prov_in_gwei: Big = new Big(
+        (offer.gasreq + offer.offer_gasbase) * offer.gasprice
+      );
+      lockedProvision = prov_in_gwei.div(10 ** 9);
+    }
+    const balance = await this.balanceAtMangrove();
+    const currentOfferProvision = lockedProvision.add(balance);
+    return currentOfferProvision.gte(bounty)
+      ? new Big(0)
+      : bounty.sub(currentOfferProvision);
   }
 }
 
