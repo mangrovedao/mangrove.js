@@ -154,11 +154,11 @@ class Mangrove {
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(logic: string | ethers.Contract): OfferLogic {
+  offerLogic(logic: string): OfferLogic {
     return new OfferLogic(this, logic);
   }
 
-  /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object */
+  /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/
   async liquidityProvider(
     p:
       | Market
@@ -168,22 +168,23 @@ class Mangrove {
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
+    const EOA = await this._signer.getAddress();
     if (p instanceof Market) {
       return new LiquidityProvider({
         mgv: this,
-        eoa: await this._signer.getAddress(),
+        eoa: EOA,
         market: p,
       });
     } else {
       return new LiquidityProvider({
         mgv: this,
-        eoa: await this._signer.getAddress(),
+        eoa: EOA,
         market: await this.market(p),
       });
     }
   }
 
-  /* Return MgvToken instance tied to mangrove object. */
+  /* Return MgvToken instance tied. */
   token(name: string): MgvToken {
     return new MgvToken(name, this);
   }
@@ -272,8 +273,8 @@ class Mangrove {
     return Big(amount).div(Big(10).pow(decimals));
   }
 
-  /** Provision available at mangrove for address, in ethers */
-  async balanceOf(address: string): Promise<Big> {
+  /** Provision available at mangrove for address given in argument, in ethers */
+  async balanceAtMangroveOf(address: string): Promise<Big> {
     const bal = await this.contract.balanceOf(address);
     return this.fromUnits(bal, 18);
   }
@@ -294,12 +295,6 @@ class Mangrove {
     overrides.value =
       "value" in overrides ? overrides.value : this.toUnits(amount, 18);
     return this.contract["fund()"](overrides);
-  }
-
-  /** Get the current balance the signer has in Mangrove */
-  async balanceAtMangrove(): Promise<Big> {
-    const address = await this._signer.getAddress();
-    return this.balanceOf(address);
   }
 
   /**
