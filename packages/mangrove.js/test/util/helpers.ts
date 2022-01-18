@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish, ContractTransaction, utils } from "ethers";
-import Mangrove from "../../src";
+import Mangrove, { MgvToken } from "../../src";
 
 export const sleep = (ms?: number): Promise<void> => {
   return new Promise((cb) => setTimeout(cb, ms));
@@ -44,13 +44,17 @@ export type OfferData = {
 
 export const newOffer = (
   mgv: Mangrove,
-  base: string,
-  quote: string,
+  base: string | MgvToken,
+  quote: string | MgvToken,
   { wants, gives, gasreq, gasprice }: OfferData
 ): Promise<ContractTransaction> => {
+  const baseAddress =
+    typeof base === "string" ? mgv.getAddress(base) : base.address;
+  const quoteAddress =
+    typeof quote === "string" ? mgv.getAddress(quote) : quote.address;
   return mgv.contract.newOffer(
-    base,
-    quote,
+    baseAddress,
+    quoteAddress,
     toWei(wants),
     toWei(gives),
     gasreq || 10000,
