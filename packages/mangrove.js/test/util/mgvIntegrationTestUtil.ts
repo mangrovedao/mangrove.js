@@ -1,10 +1,11 @@
 // Utility functions for writing integration tests against Mangrove.
-import { ethers } from "ethers";
+import { ContractTransaction, ethers } from "ethers";
 import { Market, MgvToken } from "../..";
 import * as typechain from "../../dist/nodejs/types/typechain";
 import "hardhat-deploy-ethers/dist/src/type-extensions";
 import { ethers as hardhatEthers } from "hardhat";
-import { Provider } from "@ethersproject/abstract-provider";
+import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
+import { Deferred } from "../../src/util";
 
 export type Account = {
   name: string;
@@ -197,6 +198,84 @@ export type NewOffer = {
   shouldRevert?: boolean;
 };
 
+export let isTrackingPolls = false;
+let providerCopy: Provider;
+let lastTxReceipt: TransactionReceipt | undefined;
+let awaitedPollId: number | undefined;
+let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
+
+/**
+ * Await this when you want to wait for all events corresponding to the last sent tx to have been sent.
+ */
+export let eventsForLastTxHaveBeenGenerated: Promise<void>;
+
+// Handler for ethers.js "poll" events:
+// "emitted during each poll cycle after `blockNumber` is updated (if changed) and
+// before any other events (if any) are emitted during the poll loop"
+// https://docs.ethers.io/v5/single-page/#/v5/api/providers/provider/
+function pollEventHandler(pollId: number, blockNumber: number): void {
+  if (!isTrackingPolls) return;
+
+  if (lastTxReceipt !== undefined && blockNumber >= lastTxReceipt.blockNumber) {
+    awaitedPollId = pollId;
+    lastTxReceipt = undefined;
+  }
+}
+
+// Handler for ethers.js "poll" events:
+// "emitted after all events from a polling loop are emitted"
+// https://docs.ethers.io/v5/single-page/#/v5/api/providers/provider/
+function didPollEventHandler(pollId: number): void {
+  if (!isTrackingPolls) return;
+
+  if (pollId === awaitedPollId) {
+    awaitedPollId = undefined;
+    // setImmediate(() => setImmediate(() => eventsForLastTxHaveBeenGeneratedDeferred.resolve()));
+    // TODO: This hack seems to work, but a more direct solution would be great
+    // NB: We tried various uses of setImmediately, but couldn't get it to work.
+    setTimeout(() => eventsForLastTxHaveBeenGeneratedDeferred.resolve(), 1);
+  }
+}
+
+/**
+ * Call this to enable tracking of whether the last transaction sent by this library has been mined and polled.
+ */
+export const initPollOfTransactionTracking = (provider: Provider): void => {
+  isTrackingPolls = true;
+  providerCopy = provider;
+  provider.on("poll", pollEventHandler);
+  provider.on("didPoll", didPollEventHandler);
+};
+
+/**
+ * Call this disable tracking of whether the last transaction sent by this library has been mined and polled.
+ */
+export const stopPollOfTransactionTracking = (): void => {
+  isTrackingPolls = false;
+  providerCopy.off("poll", pollEventHandler);
+  providerCopy.off("didPoll", didPollEventHandler);
+};
+
+/**
+ * Use this to await transactions. In addition to convenience,
+ * it allows us to track when events for the last tx have been generated.
+ * NB: Only works when this is awaited before sending more tx's.
+ */
+export async function waitForTransaction(
+  txPromise: Promise<ContractTransaction>
+): Promise<TransactionReceipt> {
+  awaitedPollId = undefined;
+  lastTxReceipt = undefined;
+  const tx = await txPromise;
+  lastTxReceipt = await tx.wait();
+  if (isTrackingPolls) {
+    eventsForLastTxHaveBeenGeneratedDeferred = new Deferred();
+    eventsForLastTxHaveBeenGenerated =
+      eventsForLastTxHaveBeenGeneratedDeferred.promise;
+  }
+  return lastTxReceipt;
+}
+
 // By default, a new offer will succeed
 export const postNewOffer = async ({
   market,
@@ -211,20 +290,21 @@ export const postNewOffer = async ({
 }: NewOffer): Promise<void> => {
   const { inboundToken, outboundToken } = getTokens(market, ba);
 
-  await maker.connectedContracts.testMaker
-    .shouldFail(shouldFail)
-    .then((tx) => tx.wait());
-  await maker.connectedContracts.testMaker
-    .shouldAbort(shouldAbort)
-    .then((tx) => tx.wait());
-  await maker.connectedContracts.testMaker
-    .shouldRevert(shouldRevert)
-    .then((tx) => tx.wait());
+  await waitForTransaction(
+    maker.connectedContracts.testMaker.shouldFail(shouldFail)
+  );
+  await waitForTransaction(
+    maker.connectedContracts.testMaker.shouldAbort(shouldAbort)
+  );
+  await waitForTransaction(
+    maker.connectedContracts.testMaker.shouldRevert(shouldRevert)
+  );
 
-  await maker.connectedContracts.testMaker[
-    "newOffer(address,address,uint256,uint256,uint256,uint256)"
-  ](inboundToken.address, outboundToken.address, wants, gives, gasreq, 1) // (base address, quote address, wants, gives, gasreq, pivotId)
-    .then((tx) => tx.wait());
+  await waitForTransaction(
+    maker.connectedContracts.testMaker[
+      "newOffer(address,address,uint256,uint256,uint256,uint256)"
+    ](inboundToken.address, outboundToken.address, wants, gives, gasreq, 1)
+  ); // (base address, quote address, wants, gives, gasreq, pivotId)
 };
 
 export const postNewRevertingOffer = async (
@@ -254,9 +334,9 @@ export const setMgvGasPrice = async (
   gasPrice: ethers.BigNumberish
 ): Promise<void> => {
   const deployer = await getAccount(AccountName.Deployer);
-  await deployer.connectedContracts.mangrove
-    .setGasprice(gasPrice)
-    .then((tx) => tx.wait());
+  await waitForTransaction(
+    deployer.connectedContracts.mangrove.setGasprice(gasPrice)
+  );
 };
 
 export const mint = async (
@@ -267,16 +347,22 @@ export const mint = async (
   const deployer = await getAccount(AccountName.Deployer);
   switch (token.name) {
     case "TokenA":
-      await deployer.connectedContracts.tokenA
-        .mint(receiver.address, token.toUnits(amount))
-        .then((tx) => tx.wait());
+      await waitForTransaction(
+        deployer.connectedContracts.tokenA.mint(
+          receiver.address,
+          token.toUnits(amount)
+        )
+      );
 
       break;
 
     case "TokenB":
-      await deployer.connectedContracts.tokenB
-        .mint(receiver.address, token.toUnits(amount))
-        .then((tx) => tx.wait());
+      await waitForTransaction(
+        deployer.connectedContracts.tokenB.mint(
+          receiver.address,
+          token.toUnits(amount)
+        )
+      );
 
       break;
   }
@@ -299,16 +385,22 @@ export const approve = async (
 ): Promise<void> => {
   switch (token.name) {
     case "TokenA":
-      await owner.connectedContracts.tokenA
-        .approve(spenderAddress, token.toUnits(amount))
-        .then((tx) => tx.wait());
+      await waitForTransaction(
+        owner.connectedContracts.tokenA.approve(
+          spenderAddress,
+          token.toUnits(amount)
+        )
+      );
 
       break;
 
     case "TokenB":
-      await owner.connectedContracts.tokenB
-        .approve(spenderAddress, token.toUnits(amount))
-        .then((tx) => tx.wait());
+      await waitForTransaction(
+        owner.connectedContracts.tokenB.approve(
+          spenderAddress,
+          token.toUnits(amount)
+        )
+      );
 
       break;
   }

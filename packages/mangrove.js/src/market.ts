@@ -102,7 +102,12 @@ namespace Market {
 
   // FIXME: This name is misleading, since you're only getting prefixes of the offer lists.
   // FIXME: Perhaps we should expose Semibook instead of arrays? Semibooks carry more information.
+  /**
+   * @deprecated This has been subsumed by the `Book` type
+   */
   export type MarketBook = { asks: Offer[]; bids: Offer[] };
+
+  export type Book = { asks: Semibook; bids: Semibook };
 }
 
 /**
@@ -246,9 +251,27 @@ class Market {
    *  Bids are standing offers to buy base and sell quote.
    *  All prices are in quote/base, all volumes are in base.
    *  Order is from best to worse from taker perspective.
+   * @deprecated Subsumed by `getBook` which returns the more versatile `Book` type.
    */
   book(): Market.MarketBook {
     return this.#book;
+  }
+
+  /**
+   * Return the semibooks of this market
+   */
+  getBook(): Market.Book {
+    return {
+      asks: this.#asksSemibook,
+      bids: this.#bidsSemibook,
+    };
+  }
+
+  /**
+   * Return the asks or bids semibook
+   */
+  getSemibook(ba: "bids" | "asks"): Semibook {
+    return ba === "asks" ? this.#asksSemibook : this.#bidsSemibook;
   }
 
   async requestBook(
@@ -268,80 +291,13 @@ class Market {
     return config.asks.active && config.bids.active;
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
-  getOutboundInbound(ba: "bids" | "asks"): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
-  } {
-    return {
-      outbound_tkn: ba === "asks" ? this.base : this.quote,
-      inbound_tkn: ba === "asks" ? this.quote : this.base,
-    };
-  }
-
-  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
-  getBaseQuoteVolumes(
-    ba: "asks" | "bids",
-    gives: Big,
-    wants: Big
-  ): { baseVolume: Big; quoteVolume: Big } {
-    return {
-      baseVolume: ba === "asks" ? gives : wants,
-      quoteVolume: ba === "asks" ? wants : gives,
-    };
-  }
-
-  /* Given a price, find the id of the immediately-better offer in the
-     book. */
-  getPivot(ba: "asks" | "bids", price: Bigish): number {
-    // We select as pivot the immediately-better offer.
-    // The actual ordering in the offer list is lexicographic
-    // price * gasreq (or price^{-1} * gasreq)
-    // We ignore the gasreq comparison because we may not
-    // know the gasreq (could be picked by offer contract)
-    price = Big(price);
-    const comparison = ba === "asks" ? "gt" : "lt";
-    let lastSeenOffer: Market.Offer;
-    let pivotFound = false;
-    for (const offer of this.#book[ba]) {
-      lastSeenOffer = offer;
-      if (offer.price[comparison](price)) {
-        pivotFound = true;
-        break;
-      }
-    }
-    if (pivotFound) {
-      return lastSeenOffer.prev || 0;
-    }
-    // If we reached the end of the offer list (which is possible empty), use the last offer as pivot
-    if (lastSeenOffer?.next === undefined) {
-      return lastSeenOffer?.id || 0;
-    } else {
-      // The semibook cache is incomplete
-      throw new Error(
-        "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
-      );
-    }
-  }
-
-  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
-  getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
-    const { baseVolume, quoteVolume } = this.getBaseQuoteVolumes(
-      ba,
-      gives,
-      wants
-    );
-    return quoteVolume.div(baseVolume);
-  }
-
-  /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
-  getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
-    return ba === "asks" ? gives.mul(price) : gives.div(price);
-  }
-
-  /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
-  getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
-    return ba === "asks" ? wants.div(price) : wants.mul(price);
+  /** Given a price, find the id of the immediately-better offer in the
+   * book. If there is no offer with a better price, `undefined` is returned.
+   */
+  getPivotId(ba: "asks" | "bids", price: Bigish): number | undefined {
+    return ba === "asks"
+      ? this.#asksSemibook.getPivotId(price)
+      : this.#bidsSemibook.getPivotId(price);
   }
 
   /**
@@ -472,10 +428,12 @@ class Market {
   }
 
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
-    const rawConfig = await this.rawConfig();
-    const ba = bs === "buy" ? "asks" : "bids";
-    const estimation = rawConfig[ba].local.offer_gasbase.add(
-      volume.div(rawConfig[ba].local.density)
+    const rawConfig =
+      bs === "buy"
+        ? await this.#asksSemibook.getRawConfig()
+        : await this.#bidsSemibook.getRawConfig();
+    const estimation = rawConfig.local.offer_gasbase.add(
+      volume.div(rawConfig.local.density)
     );
     if (estimation.gt(MAX_MARKET_ORDER_GAS)) {
       return BigNumber.from(MAX_MARKET_ORDER_GAS);
@@ -542,46 +500,11 @@ class Market {
     asks: Mangrove.LocalConfig;
     bids: Mangrove.LocalConfig;
   }> {
-    const { bids, asks } = await this.rawConfig();
+    const asksConfigPromise = this.#asksSemibook.getConfig();
+    const bidsConfigPromise = this.#bidsSemibook.getConfig();
     return {
-      asks: this.#mapConfig("asks", asks),
-      bids: this.#mapConfig("bids", bids),
-    };
-  }
-
-  async rawConfig(): Promise<{
-    asks: Mangrove.RawConfig;
-    bids: Mangrove.RawConfig;
-  }> {
-    const rawAsksConfigPromise = this.mgv.contract.configInfo(
-      this.base.address,
-      this.quote.address
-    );
-    const rawBidsConfigPromise = this.mgv.contract.configInfo(
-      this.quote.address,
-      this.base.address
-    );
-    const rawAsksConfig = await rawAsksConfigPromise;
-    const rawBidsConfig = await rawBidsConfigPromise;
-    return {
-      asks: rawAsksConfig,
-      bids: rawBidsConfig,
-    };
-  }
-
-  #mapConfig(
-    ba: "bids" | "asks",
-    cfg: Mangrove.RawConfig
-  ): Mangrove.LocalConfig {
-    const { outbound_tkn } = this.getOutboundInbound(ba);
-    return {
-      active: cfg.local.active,
-      fee: cfg.local.fee.toNumber(),
-      density: outbound_tkn.fromUnits(cfg.local.density),
-      offer_gasbase: cfg.local.offer_gasbase.toNumber(),
-      lock: cfg.local.lock,
-      best: cfg.local.best.toNumber(),
-      last: cfg.local.last.toNumber(),
+      asks: await asksConfigPromise,
+      bids: await bidsConfigPromise,
     };
   }
 
@@ -707,6 +630,61 @@ class Market {
   /* Stop calling a user-provided function on book-related events. */
   unsubscribe(cb: Market.StorableMarketCallback): void {
     this.#subscriptions.delete(cb);
+  }
+
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  getOutboundInbound(ba: "bids" | "asks"): {
+    outbound_tkn: MgvToken;
+    inbound_tkn: MgvToken;
+  } {
+    return Market.getOutboundInbound(ba, this.base, this.quote);
+  }
+
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  static getOutboundInbound(
+    ba: "bids" | "asks",
+    base: MgvToken,
+    quote: MgvToken
+  ): {
+    outbound_tkn: MgvToken;
+    inbound_tkn: MgvToken;
+  } {
+    return {
+      outbound_tkn: ba === "asks" ? base : quote,
+      inbound_tkn: ba === "asks" ? quote : base,
+    };
+  }
+
+  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
+  static getBaseQuoteVolumes(
+    ba: "asks" | "bids",
+    gives: Big,
+    wants: Big
+  ): { baseVolume: Big; quoteVolume: Big } {
+    return {
+      baseVolume: ba === "asks" ? gives : wants,
+      quoteVolume: ba === "asks" ? wants : gives,
+    };
+  }
+
+  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
+  static getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
+    const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
+      ba,
+      gives,
+      wants
+    );
+    return quoteVolume.div(baseVolume);
+  }
+
+  /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
+  static getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
+    return ba === "asks" ? gives.mul(price) : gives.div(price);
+  }
+
+  /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
+  static getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
+    return ba === "asks" ? wants.div(price) : wants.mul(price);
   }
 }
 
