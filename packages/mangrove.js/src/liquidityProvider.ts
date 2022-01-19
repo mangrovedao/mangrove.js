@@ -329,11 +329,11 @@ class LiquidityProvider {
     );
   }
   /** Get the current balance the liquidity provider has in Mangrove */
-  balanceAtMangrove(): Promise<Big> {
+  balanceOnMangrove(): Promise<Big> {
     if (this.logic) {
-      return this.logic.balanceAtMangrove();
+      return this.logic.balanceOnMangrove();
     } else {
-      return this.mgv.balanceAtMangroveOf(this.eoa);
+      return this.mgv.balanceOf(this.eoa);
     }
   }
 
@@ -366,7 +366,7 @@ class LiquidityProvider {
       );
       lockedProvision = prov_in_gwei.div(10 ** 9);
     }
-    const balance = await this.balanceAtMangrove();
+    const balance = await this.balanceOnMangrove();
     const currentOfferProvision = lockedProvision.add(balance);
     return currentOfferProvision.gte(bounty)
       ? new Big(0)
