@@ -1,10 +1,8 @@
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
-import Market from "./market";
-import Maker from "./maker";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
-import MgvToken from "./mgvtoken";
+import { LiquidityProvider, OfferLogic, MgvToken, Market } from ".";
 
 import Big from "big.js";
 import * as ethers from "ethers";
@@ -155,18 +153,38 @@ class Mangrove {
     return await Market.connect({ ...params, mgv: this });
   }
 
-  /** Get Maker object.
-   *
-   * Argument of the form `Maker.ConstructionParams`, except the `mgv` field which will be `this`.
-   * Reminder: to set your own `base`/`quote` other than those known by mangrove.js, use `setDecimals` and `setAddress` before calling this function.
-   */
-  async makerConnect(
-    params: Omit<Maker.ConstructionParams, "mgv">
-  ): Promise<Maker> {
-    return await Maker.connect({ ...params, mgv: this });
+  /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
+  offerLogic(logic: string): OfferLogic {
+    return new OfferLogic(this, logic);
   }
 
-  /* Return MgvToken instance tied to mangrove object. */
+  /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/
+  async liquidityProvider(
+    p:
+      | Market
+      | {
+          base: string;
+          quote: string;
+          bookOptions?: Market.BookOptions;
+        }
+  ): Promise<LiquidityProvider> {
+    const EOA = await this._signer.getAddress();
+    if (p instanceof Market) {
+      return new LiquidityProvider({
+        mgv: this,
+        eoa: EOA,
+        market: p,
+      });
+    } else {
+      return new LiquidityProvider({
+        mgv: this,
+        eoa: EOA,
+        market: await this.market(p),
+      });
+    }
+  }
+
+  /* Return MgvToken instance tied. */
   token(name: string): MgvToken {
     return new MgvToken(name, this);
   }
@@ -255,10 +273,28 @@ class Mangrove {
     return Big(amount).div(Big(10).pow(decimals));
   }
 
-  /** Provision available at mangrove for address, in ethers */
-  async balanceOf(address: string): Promise<Big> {
+  /** Provision available at mangrove for address given in argument, in ethers */
+  async balanceAtMangroveOf(address: string): Promise<Big> {
     const bal = await this.contract.balanceOf(address);
     return this.fromUnits(bal, 18);
+  }
+
+  /**Signer approves token for Mangrove transfer */
+  approveMangrove(
+    tokenName: string,
+    amount?: Bigish
+  ): Promise<ethers.ContractTransaction> {
+    const token = this.token(tokenName);
+    return token.approveMangrove(amount);
+  }
+
+  fundMangrove(
+    amount: Bigish,
+    overrides: ethers.PayableOverrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    overrides.value =
+      "value" in overrides ? overrides.value : this.toUnits(amount, 18);
+    return this.contract["fund()"](overrides);
   }
 
   /**

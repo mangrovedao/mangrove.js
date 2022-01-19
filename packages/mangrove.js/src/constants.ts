@@ -19,6 +19,8 @@ export const addresses = {
   },
 };
 
+export const EOA_offer_gasreq = 5000;
+
 export const decimals = {
   cBAT: 8,
   cCOMP: 8,

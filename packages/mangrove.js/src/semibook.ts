@@ -86,6 +86,28 @@ export class Semibook implements Iterable<Market.Offer> {
     );
   }
 
+  /** Returns struct containing offer details in the current offer list */
+  async offerInfo(offerId: number): Promise<Market.Offer> {
+    const cachedOffer = this.#offers.get(offerId);
+    if (cachedOffer !== undefined) {
+      return cachedOffer;
+    }
+
+    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
+      this.ba
+    );
+    const [offer, details] = await this.market.mgv.contract.offerInfo(
+      outbound_tkn.address,
+      inbound_tkn.address,
+      offerId
+    );
+    return this.#rawOfferToOffer({
+      id: this.#idToRawId(offerId),
+      ...offer,
+      ...details,
+    });
+  }
+
   /**
    * Return config local to a semibook.
    * Notes:
