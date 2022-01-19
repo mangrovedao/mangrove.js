@@ -18,22 +18,29 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
-namespace OfferLogic {
-  export type ConstructionParams = {
-    mgv: Mangrove;
-    address: string; //Offer logic address
-  };
-  /*
-   *  This basic API will connect to an onchain offerLogic that relays new/cancel/update
-   *  offer order.
-   */
+// namespace OL {
+//   export type ConstructionParams = {
+//     mgv: Mangrove;
+//     address: string; //Offer logic address
+//   };
+//   /*
+//    *  This basic API will connect to an onchain offerLogic that relays new/cancel/update
+//    *  offer order.
+//    */
 
-  type OptParams = { gasreq?: number; gasprice?: number };
+//   type OptParams = { gasreq?: number; gasprice?: number };
 
-  export type OfferParams =
-    | ({ price: Bigish; volume: Bigish } & OptParams)
-    | ({ wants: Bigish; gives: Bigish } & OptParams);
-}
+//   export type OfferParams =
+//     | ({ price: Bigish; volume: Bigish } & OptParams)
+//     | ({ wants: Bigish; gives: Bigish } & OptParams);
+
+//   export type SignerOrProvider =
+//     | ethers.ethers.Signer
+//     | ethers.ethers.providers.Provider;
+
+// }
+
+type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 
 /**
  * The OfferLogic class connects to a OfferLogic contract.
@@ -43,21 +50,16 @@ namespace OfferLogic {
 // OfferLogic.deposit(n)
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.SimpleMaker | ethers.Contract;
+  contract: typechain.SimpleMaker; /** Would be great to have a generic type for all contracts in the typechain */
   address: string;
 
-  constructor(mgv: Mangrove, logic: string | ethers.Contract) {
+  constructor(mgv: Mangrove, logic: string, signer?: SignerOrProvider) {
     this.mgv = mgv;
-    if (typeof logic === "string") {
-      this.address = logic;
-      this.contract = typechain.SimpleMaker__factory.connect(
-        logic,
-        this.mgv._signer
-      );
-    } else {
-      this.address = logic.address;
-      this.contract = logic.connect(this.mgv._signer);
-    }
+    this.address = logic;
+    this.contract = typechain.SimpleMaker__factory.connect(
+      logic,
+      signer ? signer : this.mgv._signer
+    );
   }
   /**
    * @note Deploys a fresh MangroveOffer contract
@@ -101,7 +103,7 @@ class OfferLogic {
 
   /** Get the current balance the contract has in Mangrove */
   balanceAtMangrove(): Promise<Big> {
-    return this.mgv.balanceOf(this.address);
+    return this.mgv.balanceAtMangroveOf(this.address);
   }
 
   /** Redeems `amount` tokens from the contract's account */
@@ -117,14 +119,9 @@ class OfferLogic {
     );
   }
 
-  // connects a provider or signer to this.contract
-  connect(
-    signerOrProvider:
-      | string
-      | ethers.ethers.Signer
-      | ethers.ethers.providers.Provider
-  ): OfferLogic {
-    return new OfferLogic(this.mgv, this.contract.connect(signerOrProvider));
+  // returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
+  connect(sOp: SignerOrProvider): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.address, sOp);
   }
 
   /**Deposits `amount` tokens on the contract accounts */
@@ -164,6 +161,11 @@ class OfferLogic {
     return tx;
   }
 
+  async getDefaultGasreq(): Promise<number> {
+    const gr = await this.contract.OFR_GASREQ();
+    return gr.toNumber();
+  }
+
   setAdmin(
     newAdmin: string,
     overrides?: ethers.Overrides
@@ -172,7 +174,7 @@ class OfferLogic {
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
-  async withdraw(
+  async withdrawFromMangrove(
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {

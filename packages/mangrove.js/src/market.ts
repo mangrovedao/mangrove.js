@@ -480,6 +480,47 @@ class Market {
     };
   }
 
+  async getOfferProvision(
+    ba: "bids" | "asks",
+    gasreq: number,
+    gasprice: number
+  ): Promise<Big> {
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
+    const prov = await this.mgv.readerContract.getProvision(
+      outbound_tkn.address,
+      inbound_tkn.address,
+      gasreq,
+      gasprice
+    );
+    return this.mgv.fromUnits(prov, 18);
+  }
+
+  getBidProvision(gasreq: number, gasprice: number): Promise<Big> {
+    return this.getOfferProvision("bids", gasreq, gasprice);
+  }
+  getAskProvision(gasreq: number, gasprice: number): Promise<Big> {
+    return this.getOfferProvision("asks", gasreq, gasprice);
+  }
+
+  bidInfo(offerId: number): Promise<Market.Offer> {
+    return this.offerInfo("bids", offerId);
+  }
+
+  askInfo(offerId: number): Promise<Market.Offer> {
+    return this.offerInfo("asks", offerId);
+  }
+
+  /** Returns struct containing offer details in the current market */
+  async offerInfo(ba: "bids" | "asks", offerId: number): Promise<Market.Offer> {
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
+    const [offer, details] = await this.mgv.contract.offerInfo(
+      outbound_tkn.address,
+      inbound_tkn.address,
+      offerId
+    );
+    return this.#toOfferObject(ba, { id: offerId, ...offer, ...details });
+  }
+
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    * Params can be of the form:

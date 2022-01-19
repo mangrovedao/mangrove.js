@@ -7,7 +7,6 @@ import assert from "assert";
 import { Mangrove, OfferLogic, LiquidityProvider } from "../../src";
 
 import { Big } from "big.js";
-import { toWei } from "../util/helpers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -179,7 +178,6 @@ describe("SimpleMaker", () => {
         const provision = await onchain_lp.computeAskProvision({});
         await onchain_lp.fundMangrove(provision);
         const { id: ofrId } = await onchain_lp.newAsk({ wants: 10, gives: 10 });
-
         const asks = onchain_lp.asks();
         assert.strictEqual(
           asks.length,
@@ -187,6 +185,13 @@ describe("SimpleMaker", () => {
           "there should be one ask in the book"
         );
         assert.deepStrictEqual(asks[0].id, ofrId, "wrong offer id");
+        const missingProvision = await onchain_lp.computeAskProvision({
+          id: ofrId,
+        });
+        assert(
+          missingProvision.eq(0),
+          `there should be no missing provision for this offer (${missingProvision.toNumber()})`
+        );
       });
 
       it("cancels offer", async () => {
