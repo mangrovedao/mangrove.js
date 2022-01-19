@@ -1,5 +1,8 @@
 # Next version
 
+# 0.0.9 (January 2022)
+
+- New Mangrove deployment
 - All types now start with upper case
 - All functions now start with lower case
 - Removed `fromId` and `blockNumber` from `Market.BookOptions`
