@@ -168,9 +168,13 @@ class OfferLogic {
 
   setAdmin(
     newAdmin: string,
-    overrides?: ethers.Overrides
+    overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
     return this.contract.setAdmin(newAdmin, overrides);
+  }
+
+  getAdmin(): Promise<string> {
+    return this.contract.admin();
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
