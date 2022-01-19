@@ -102,8 +102,8 @@ class OfferLogic {
   }
 
   /** Get the current balance the contract has in Mangrove */
-  balanceAtMangrove(): Promise<Big> {
-    return this.mgv.balanceAtMangroveOf(this.address);
+  balanceOnMangrove(): Promise<Big> {
+    return this.mgv.balanceOf(this.address);
   }
 
   /** Redeems `amount` tokens from the contract's account */
