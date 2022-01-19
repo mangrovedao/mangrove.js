@@ -4,10 +4,11 @@ import { describe, beforeEach, afterEach, it } from "mocha";
 import { toWei } from "../util/helpers";
 
 import assert from "assert";
-import { Mangrove, Market } from "../../src";
+import { Mangrove, Market } from "../..";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
+import { Deferred } from "../../src/util";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -58,8 +59,6 @@ describe("Market integration tests suite", () => {
     it("can read book updates in readonly mode", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const marketro = await mgvro.market({ base: "TokenA", quote: "TokenB" });
-      const addrA = market.base.address;
-      const addrB = market.quote.address;
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const pro1 = marketro.once((evt) => {
@@ -69,7 +68,10 @@ describe("Market integration tests suite", () => {
           "book should have length 1 by now"
         );
       });
-      await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
+      await helpers.newOffer(mgv, market.base, market.quote, {
+        wants: "1",
+        gives: "1.2",
+      });
       await pro1;
     });
   });
@@ -78,8 +80,6 @@ describe("Market integration tests suite", () => {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-    const addrA = market.base.address;
-    const addrB = market.quote.address;
 
     let latestBook;
 
@@ -90,16 +90,16 @@ describe("Market integration tests suite", () => {
     market.subscribe(cb);
 
     await helpers
-      .newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" })
+      .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "1.2" })
       .then((tx) => tx.wait());
     await helpers
-      .newOffer(mgv, addrB, addrA, { wants: "1.3", gives: "1.1" })
+      .newOffer(mgv, market.quote, market.base, { wants: "1.3", gives: "1.1" })
       .then((tx) => tx.wait());
 
     const offer1 = {
       id: 1,
-      prev: 0,
-      next: 0,
+      prev: undefined,
+      next: undefined,
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
@@ -122,8 +122,8 @@ describe("Market integration tests suite", () => {
 
     const offer2 = {
       id: 1,
-      prev: 0,
-      next: 0,
+      prev: undefined,
+      next: undefined,
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv._signer.getAddress(),
@@ -181,8 +181,6 @@ describe("Market integration tests suite", () => {
 
   it("updates OB", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-    const addrA = market.base.address;
-    const addrB = market.quote.address;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const pro1 = market.once((evt) => {
@@ -192,7 +190,10 @@ describe("Market integration tests suite", () => {
         "book should have length 1 by now"
       );
     });
-    await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
+    await helpers.newOffer(mgv, market.base, market.quote, {
+      wants: "1",
+      gives: "1.2",
+    });
     await pro1;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -203,7 +204,10 @@ describe("Market integration tests suite", () => {
         "book should have length 2 by now"
       );
     });
-    await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
+    await helpers.newOffer(mgv, market.base, market.quote, {
+      wants: "1",
+      gives: "1.2",
+    });
     await pro2;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -214,7 +218,10 @@ describe("Market integration tests suite", () => {
         "book should have length 3 by now"
       );
     });
-    await helpers.newOffer(mgv, addrA, addrB, { wants: "1", gives: "1.2" });
+    await helpers.newOffer(mgv, market.base, market.quote, {
+      wants: "1",
+      gives: "1.2",
+    });
     await pro3;
     //TODO add to after
   });
@@ -222,7 +229,7 @@ describe("Market integration tests suite", () => {
   it("crudely simulates market buy", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    const done = new helpers.Deferred();
+    const done = new Deferred();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     market.subscribe((evt) => {
       if (market.book().asks.length === 2) {
@@ -236,13 +243,11 @@ describe("Market integration tests suite", () => {
       }
     });
 
-    const addrA = market.base.address;
-    const addrB = market.quote.address;
     await helpers
-      .newOffer(mgv, addrA, addrB, { wants: "1.2", gives: "0.3" })
+      .newOffer(mgv, market.base, market.quote, { wants: "1.2", gives: "0.3" })
       .then((tx) => tx.wait());
     await helpers
-      .newOffer(mgv, addrA, addrB, { wants: "1", gives: "0.25" })
+      .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "0.25" })
       .then((tx) => tx.wait());
     await done;
   });
@@ -267,10 +272,10 @@ describe("Market integration tests suite", () => {
     /* fill orderbook with bids and asks */
     /* note that we are NOT testing mangrove.js's newOffer function
      * so we create offers through ethers.js generic API */
-    const addrA = mgv.getAddress("TokenA");
-    const addrB = mgv.getAddress("TokenB");
-    for (const ask of asks) await helpers.newOffer(mgv, addrA, addrB, ask);
-    for (const bid of bids) await helpers.newOffer(mgv, addrB, addrA, bid);
+    for (const ask of asks)
+      await helpers.newOffer(mgv, "TokenA", "TokenB", ask);
+    for (const bid of bids)
+      await helpers.newOffer(mgv, "TokenB", "TokenA", bid);
 
     /* Now we create the orderbook we expect to get back so we can compare them */
 
@@ -296,8 +301,8 @@ describe("Market integration tests suite", () => {
           : ["wants", "gives"];
         return {
           ...ofr,
-          prev: ary[i - 1]?.id || 0,
-          next: ary[i + 1]?.id || 0,
+          prev: ary[i - 1]?.id,
+          next: ary[i + 1]?.id,
           volume: Big(ofr[baseVolume]),
           price: Big(ofr[quoteVolume]).div(Big(ofr[baseVolume])),
           maker: selfAddress,
@@ -313,8 +318,8 @@ describe("Market integration tests suite", () => {
     /* Start testing */
 
     const book = await market.requestBook({ maxOffers: 3 });
-    await market.consoleAsks(["id", "maker"]);
-    await market.consoleBids(["id", "maker"]);
+    market.consoleAsks(["id", "maker"]);
+    market.consoleBids(["id", "maker"]);
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }) => {

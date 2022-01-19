@@ -10,6 +10,7 @@ import { decimals } from "./constants";
 
 import Mangrove from "./mangrove";
 import Market from "./market";
+import Semibook from "./semibook";
 import OfferLogic from "./offerLogic";
 import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
@@ -24,6 +25,7 @@ export {
   ethers,
   Mangrove,
   Market,
+  Semibook,
   MgvToken,
   OfferLogic,
   LiquidityProvider,

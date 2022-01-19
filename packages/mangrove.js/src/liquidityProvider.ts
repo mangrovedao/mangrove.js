@@ -208,7 +208,7 @@ class LiquidityProvider {
     const { wants, gives, price, gasreq, gasprice } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-    const pivot = this.market.getPivot(p.ba, price);
+    const pivot = this.market.getPivotId(p.ba, price);
     const resp = await this.#proxy().contract.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -216,7 +216,7 @@ class LiquidityProvider {
       outbound_tkn.toUnits(gives),
       gasreq ? gasreq : await this.#gasreq(),
       gasprice ? gasprice : 0,
-      pivot,
+      pivot ?? 0,
       overrides
     );
 
@@ -276,7 +276,7 @@ class LiquidityProvider {
       outbound_tkn.toUnits(gives),
       gasreq ? gasreq : await this.#gasreq(),
       gasprice ? gasprice : offer.gasprice,
-      this.market.getPivot(p.ba, price),
+      this.market.getPivotId(p.ba, price) ?? 0,
       id,
       overrides
     );

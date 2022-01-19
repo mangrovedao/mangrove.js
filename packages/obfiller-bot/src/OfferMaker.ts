@@ -71,7 +71,6 @@ export class OfferMaker {
         balanceBase: await this.#market.base.contract.balanceOf(makerAddress),
         balanceQuote: await this.#market.quote.contract.balanceOf(makerAddress),
         marketConfig: await this.#market.config(),
-        rawMarketConfig: await this.#market.rawConfig(),
       },
     });
 
@@ -236,7 +235,7 @@ export class OfferMaker {
 
     const gives = quantity;
     const givesInUnits = outbound_tkn.toUnits(gives);
-    const wants = this.#market.getWantsForPrice(ba, gives, price);
+    const wants = Market.getWantsForPrice(ba, gives, price);
     const wantsInUnits = inbound_tkn.toUnits(wants);
 
     const baseTokenBalance = await this.#market.base.contract.balanceOf(

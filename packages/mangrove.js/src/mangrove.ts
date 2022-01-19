@@ -26,8 +26,8 @@ namespace Mangrove {
     density: Big;
     offer_gasbase: number;
     lock: boolean;
-    best: number;
-    last: number;
+    best: number | undefined;
+    last: number | undefined;
   };
 
   export type GlobalConfig = {
