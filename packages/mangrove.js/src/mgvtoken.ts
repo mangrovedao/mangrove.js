@@ -78,21 +78,25 @@ class MgvToken {
   /**
    * Set approval for Mangrove on `amount`.
    */
-  approveMangrove(amountOPT?: Bigish): Promise<ethers.ContractTransaction> {
-    return this.approve(this.mgv._address, amountOPT);
+  approveMangrove(
+    amountOPT?: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.approve(this.mgv._address, amountOPT, overrides);
   }
   /**
    * Set approval for `spender` on `amount`.
    */
   approve(
     spender: string,
-    amount?: Bigish
+    amount?: Bigish,
+    overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     const _amount =
       typeof amount === "undefined"
         ? ethers.constants.MaxUint256
         : this.toUnits(amount);
-    return this.contract.approve(spender, _amount);
+    return this.contract.approve(spender, _amount, overrides);
   }
 }
 

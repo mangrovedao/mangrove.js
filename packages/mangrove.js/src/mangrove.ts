@@ -274,27 +274,39 @@ class Mangrove {
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
-  async balanceAtMangroveOf(address: string): Promise<Big> {
+  async balanceOf(address: string): Promise<Big> {
     const bal = await this.contract.balanceOf(address);
     return this.fromUnits(bal, 18);
   }
 
-  /**Signer approves token for Mangrove transfer */
-  approveMangrove(
-    tokenName: string,
-    amount?: Bigish
-  ): Promise<ethers.ContractTransaction> {
-    const token = this.token(tokenName);
-    return token.approveMangrove(amount);
-  }
-
   fundMangrove(
     amount: Bigish,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {},
+    maker?: string
   ): Promise<ethers.ContractTransaction> {
-    overrides.value =
-      "value" in overrides ? overrides.value : this.toUnits(amount, 18);
-    return this.contract["fund()"](overrides);
+    const _overrides = { value: this.toUnits(amount, 18), ...overrides };
+    if (maker) {
+      //fund maker account
+      return this.contract["fund(address)"](maker, _overrides);
+    } else {
+      // fund signer's account
+      return this.contract["fund()"](_overrides);
+    }
+  }
+
+  withdraw(
+    amount: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.contract.withdraw(this.toUnits(amount, 18), overrides);
+  }
+
+  approveMangrove(
+    tokenName: string,
+    amount?: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.token(tokenName).approveMangrove(amount, overrides);
   }
 
   /**

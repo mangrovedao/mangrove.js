@@ -137,18 +137,18 @@ describe("SimpleMaker", () => {
       });
 
       it("checks provision for EOA provider", async () => {
-        let balance = await eoa_lp.balanceAtMangrove();
+        let balance = await eoa_lp.balanceOnMangrove();
         assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
         await w(eoa_lp.fundMangrove(2));
-        balance = await eoa_lp.balanceAtMangrove();
+        balance = await eoa_lp.balanceOnMangrove();
         assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
       });
 
       it("checks provision for onchain logic", async () => {
-        let balance = await onchain_lp.balanceAtMangrove();
+        let balance = await onchain_lp.balanceOnMangrove();
         assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
         await w(onchain_lp.fundMangrove(2));
-        balance = await onchain_lp.balanceAtMangrove();
+        balance = await onchain_lp.balanceOnMangrove();
         assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
       });
     });
