@@ -318,3 +318,30 @@ $ yarn build
 ```
 
 The build artifacts will be placed in `./dist/nodejs` and `./dist/browser`.
+
+## CLI: `mgv`
+
+mangrove.js includes an experimental command line interface (CLI) for interacting with Mangrove.
+You can run it using `npx`, `yarn`, or directly (if you install mangrove.js globally):
+
+```shell
+$ npx mgv
+$ yarn mgv
+$ mgv         # requires mangrove.js to be installed globally: npm -g install mangrove.js
+mgv.js <command>
+
+Commands:
+  mgv.js parrot                  reports the current environment and warns of
+                                 any discrepancies       [aliases: env-overview]
+  mgv.js print <base> <quote>    print the offers on a market
+  mgv.js retract <base> <quote>  retracts all offers from the given market
+
+Options:
+  --version  Show version number                                       [boolean]
+  --help     Show help                                                 [boolean]
+
+Arguments may be provided in env vars beginning with 'MGV_'. For example,
+MGV_NODE_URL=https://node.url can be used instead of --nodeUrl https://node.url
+
+You need at least one command before moving on
+```
