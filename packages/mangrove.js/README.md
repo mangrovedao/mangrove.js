@@ -104,7 +104,7 @@ const { takerGot, takerGave, bounty } = await market.buy({
 });
 // Sell ETH for USDC (taker needs to approve WETH for mangrove transfer)
 await market.base.approveMangrove();
-const { takerGot, takerGave, bounty } = await market.sell({
+const { takerGot2, takerGave2, bounty2 } = await market.sell({
   volume: 1.1,
   price: 3750,
 });
@@ -138,7 +138,7 @@ await logic.mgv.fundMangrove(0.1, logic.address);
 // check current balance of offer logic at Mangrove
 let balance = await logic.balanceOnMangrove();
 // which is equivalent to the more generic call
-let balance = await mgv.balanceOf(logic.address);
+balance = await mgv.balanceOf(logic.address);
 
 // withdraw offer logic's balance from Mangrove to the signer's address
 await logic.withdrawFromMangrove(0.01);
@@ -153,9 +153,9 @@ To post direct offers on a market (via signer's EOA), on gets a `LiquidityProvid
 ```js
 const market = await mgv.market({ base: "ETH", quote: "USDC" });
 // get a liquidity provider using signer's account for posting offers
-const liquidity_provider = await mgv.liquidityProvider(market);
+let liquidity_provider = await mgv.liquidityProvider(market);
 //or one is not connected to a market already:
-const liquidity_provider = await mgv.liquidityProvider({
+liquidity_provider = await mgv.liquidityProvider({
   base: "ETH",
   quote: "USDC",
 });
@@ -187,7 +187,7 @@ const { id: askId, event } = await liquidity_provider.newAsk({
 });
 
 // post a new offer giving usdc against weth
-const { id: bidId, event } = await liquidity_provider.newBid({
+const { id: bidId, event_ } = await liquidity_provider.newBid({
   price: 3400,
   volume: 2,
 });
