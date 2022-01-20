@@ -1,5 +1,7 @@
 # Next version
 
+- Add experimental CLI: `mgv`. See README.md for instructions
+
 # 0.0.9 (January 2022)
 
 - New Mangrove deployment

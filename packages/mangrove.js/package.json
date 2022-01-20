@@ -9,10 +9,11 @@
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
+    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc --build src && yarn run make-cli-executable && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
     "get-mangrove-abis": "cp node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
+    "make-cli-executable": "shx chmod u+x ./dist/nodejs/cli/mgv.js",
     "copy-static-and-generated-assets": "ts-node copyStaticAndGeneratedAssets.ts",
     "write-test-deployment-file": "ts-node writeTestDeploymentFiles.ts",
     "clean-this-package": "yarn run clean-typechain && rimraf dist",
@@ -33,7 +34,7 @@
     "README.md"
   ],
   "bin": {
-    "mgv": "./cli/mgv.ts"
+    "mgv": "./dist/nodejs/cli/mgv.js"
   },
   "repository": {
     "type": "git",
@@ -106,6 +107,7 @@
     "rollup-plugin-terser": "^7.0.2",
     "seedrandom": "^3.0.5",
     "shelljs": "^0.8.4",
+    "shx": "^0.3.4",
     "ts-essentials": "^8.1.0",
     "ts-node": "^9.1.1",
     "typechain": "^6.0.2",

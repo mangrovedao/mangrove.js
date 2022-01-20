@@ -1,7 +1,7 @@
 import * as yargs from "yargs";
-import { Mangrove } from "../../src";
+import { Mangrove } from "../..";
 import { fetchJson } from "ethers/lib/utils";
-import packageJson from "../../package.json";
+import packageJson from "../../../package.json";
 import { Big } from "big.js";
 
 export const command = "parrot";
@@ -61,8 +61,8 @@ type MangroveJsEnvironmentInfo = {
   contractAddresses: ContractAddresses;
 };
 type MangroveConfigurationInfo = {
-  globalConfig: Mangrove.globalConfig;
-  localConfigs: { base: string; quote: string; config: Mangrove.localConfig }[];
+  globalConfig: Mangrove.GlobalConfig;
+  localConfigs: { base: string; quote: string; config: Mangrove.LocalConfig }[];
 };
 type MangroveJsAppEnvironmentInfo = {
   url: string;

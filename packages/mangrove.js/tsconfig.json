@@ -2,20 +2,15 @@
   "compilerOptions": {
     "module": "CommonJS",
     "esModuleInterop": true,
-    "outDir": "dist/nodejs/",
     "lib": ["ES2020", "dom"],
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "sourceMap": true,
-    "declaration": true,
-    "noErrorTruncation": true,
     "target": "es2015",
-    "incremental":true
-    //"strict": true,
-    //"suppressImplicitAnyIndexErrors": true,
+    "rootDir": ".",
+    "outDir": "./dist",  // if out path for a file is same as its src path, nothing will be emitted
+    "composite": true  // required on the dependency project for references to work
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts"
+  "files": [         // by whitelisting the files to include, TS won't automatically
+    "package.json"   // include all source below root, which is the default.
   ]
 }
