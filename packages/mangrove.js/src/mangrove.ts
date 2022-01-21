@@ -274,8 +274,11 @@ class Mangrove {
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
-  async balanceOf(address: string): Promise<Big> {
-    const bal = await this.contract.balanceOf(address);
+  async balanceOf(
+    address: string,
+    overrides: ethers.Overrides = {}
+  ): Promise<Big> {
+    const bal = await this.contract.balanceOf(address, overrides);
     return this.fromUnits(bal, 18);
   }
 
