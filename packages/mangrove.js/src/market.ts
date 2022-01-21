@@ -21,7 +21,7 @@ import Big from "big.js";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
-const bookOptsDefault: Market.BookOptions = {
+export const bookOptsDefault: Market.BookOptions = {
   maxOffers: DEFAULT_MAX_OFFERS,
 };
 
@@ -87,7 +87,7 @@ namespace Market {
   export type MarketCallback<T> = (
     cbArg: BookSubscriptionCbArgument,
     event?: BookSubscriptionEvent,
-    ethersEvent?: ethers.Event
+    ethersLog?: ethers.providers.Log
   ) => T;
   export type StorableMarketCallback = MarketCallback<any>;
   export type MarketFilter = MarketCallback<boolean>;
@@ -209,19 +209,23 @@ class Market {
     this.#updateBook("bids");
   }
 
-  #semibookCallback({ cbArg, event, ethersEvent }: SemibookEvent): void {
+  #semibookCallback({
+    cbArg,
+    event,
+    ethersLog: ethersLog,
+  }: SemibookEvent): void {
     this.#updateBook(cbArg.ba);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
-        if (!("filter" in params) || params.filter(cbArg, event, ethersEvent)) {
+        if (!("filter" in params) || params.filter(cbArg, event, ethersLog)) {
           this.#subscriptions.delete(cb);
-          Promise.resolve(cb(cbArg, event, ethersEvent)).then(
+          Promise.resolve(cb(cbArg, event, ethersLog)).then(
             params.ok,
             params.ko
           );
         }
       } else {
-        cb(cbArg, event, ethersEvent);
+        cb(cbArg, event, ethersLog);
       }
     }
   }
@@ -294,10 +298,13 @@ class Market {
   /** Given a price, find the id of the immediately-better offer in the
    * book. If there is no offer with a better price, `undefined` is returned.
    */
-  getPivotId(ba: "asks" | "bids", price: Bigish): number | undefined {
+  async getPivotId(
+    ba: "asks" | "bids",
+    price: Bigish
+  ): Promise<number | undefined> {
     return ba === "asks"
-      ? this.#asksSemibook.getPivotId(price)
-      : this.#bidsSemibook.getPivotId(price);
+      ? await this.#asksSemibook.getPivotId(price)
+      : await this.#bidsSemibook.getPivotId(price);
   }
 
   async getOfferProvision(
