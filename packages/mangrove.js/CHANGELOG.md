@@ -1,6 +1,7 @@
 # Next version
 
 - Add experimental CLI: `mgv`. See README.md for instructions
+- You can do `market.buy({total: 100, price:null})` on a BAT/DAI market to buy BAT by spending 100 DAI, no (real) price limit. You can also specify a limit average price, and also specify a `total` in quote token on `Market#sell`.
 
 # 0.0.9 (January 2022)
 
