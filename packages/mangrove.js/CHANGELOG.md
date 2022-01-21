@@ -1,5 +1,10 @@
 # Next version
 
+# 0.1.0 (January 2022)
+
+- 2 new classes `OfferLogic` and `LiquidityProvider`. `OfferLogic` allows one to connect to an onchain offer logic and calls functions of the `IOfferLogic.sol` interface. A `LiquidityProvider` instance is obtained either direclty from a `Mangrove` instance, in which case the liquidity provider is the signer, or from an `OfferLogic` instance, in which case all calls to Mangrove are done via the onchain contract.
+- `MgvToken` implements `balanceOf`
+
 # 0.0.9 (January 2022)
 
 - New Mangrove deployment

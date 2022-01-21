@@ -102,8 +102,16 @@ class OfferLogic {
   }
 
   /** Get the current balance the contract has in Mangrove */
-  balanceOnMangrove(): Promise<Big> {
-    return this.mgv.balanceOf(this.address);
+  async balanceOnMangrove(): Promise<Big> {
+    const balance = await this.contract.balanceOnMangrove();
+    return this.mgv.fromUnits(balance, 18);
+  }
+
+  async tokenBalance(tokenName: string): Promise<Big> {
+    const bal = await this.contract.tokenBalance(
+      this.mgv.getAddress(tokenName)
+    );
+    return this.mgv.fromUnits(bal, this.mgv.getDecimals(tokenName));
   }
 
   /** Redeems `amount` tokens from the contract's account */

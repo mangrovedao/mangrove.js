@@ -161,13 +161,13 @@ class LiquidityProvider {
     return this.#proxy().approveMangrove(tokenName, amount, overrides);
   }
 
-  approveBase(
+  approveMangroveForBase(
     amount?: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     return this.approveMangrove(this.market.base.name, amount, overrides);
   }
-  approveQuote(
+  approveMangroveForQuote(
     amount?: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
@@ -331,9 +331,21 @@ class LiquidityProvider {
   /** Get the current balance the liquidity provider has in Mangrove */
   balanceOnMangrove(): Promise<Big> {
     if (this.logic) {
+      // if liquidity provider has a logic, then one should ask its contract what is the balance of signer (could be multiple users)
       return this.logic.balanceOnMangrove();
     } else {
+      // if liquidity provider has no logic, balance is the balanceOf(signer)
       return this.mgv.balanceOf(this.eoa);
+    }
+  }
+
+  tokenBalance(tokenName: string): Promise<Big> {
+    if (this.logic) {
+      // if liquidity provider has a logic, then one should ask its contract what is the balance of signer (could be multiple users)
+      return this.logic.tokenBalance(tokenName);
+    } else {
+      // if liquidity provider has no logic, balance is the token.balanceOf(signer)
+      return this.mgv.token(tokenName).balanceOf(this.eoa);
     }
   }
 
