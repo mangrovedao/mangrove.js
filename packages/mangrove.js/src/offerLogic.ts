@@ -102,8 +102,20 @@ class OfferLogic {
   }
 
   /** Get the current balance the contract has in Mangrove */
-  balanceOnMangrove(): Promise<Big> {
-    return this.mgv.balanceOf(this.address);
+  async balanceOnMangrove(overrides: ethers.Overrides = {}): Promise<Big> {
+    const balance = await this.contract.balanceOnMangrove(overrides);
+    return this.mgv.fromUnits(balance, 18);
+  }
+
+  async tokenBalance(
+    tokenName: string,
+    overrides: ethers.Overrides = {}
+  ): Promise<Big> {
+    const bal = await this.contract.tokenBalance(
+      this.mgv.getAddress(tokenName),
+      overrides
+    );
+    return this.mgv.fromUnits(bal, this.mgv.getDecimals(tokenName));
   }
 
   /** Redeems `amount` tokens from the contract's account */
@@ -182,8 +194,9 @@ class OfferLogic {
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
+    const owner = await this.mgv._signer.getAddress();
     return this.contract.withdrawFromMangrove(
-      await this.mgv._signer.getAddress(),
+      owner,
       this.mgv.toUnits(amount, 18),
       overrides
     );

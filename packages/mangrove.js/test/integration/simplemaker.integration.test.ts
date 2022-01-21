@@ -162,7 +162,7 @@ describe("SimpleMaker", () => {
       it("withdraws", async () => {
         const getBal = async () =>
           mgv._provider.getBalance(await mgv._signer.getAddress());
-        await onchain_lp.fundMangrove(10);
+        await w(onchain_lp.fundMangrove(10));
         const oldBal = await getBal();
         const receipt = await w(onchain_lp.withdraw(10));
         const txcost = receipt.effectiveGasPrice.mul(receipt.gasUsed);

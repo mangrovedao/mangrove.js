@@ -26,8 +26,6 @@ class MgvToken {
    * Convert base/quote from internal amount to public amount.
    * Uses each token's `decimals` parameter.
    *
-   * If `bq` is `"base"`, will convert the base, the quote otherwise.
-   *
    * @example
    * ```
    * const usdc = mgv.token("USDC");
@@ -97,6 +95,17 @@ class MgvToken {
         ? ethers.constants.MaxUint256
         : this.toUnits(amount);
     return this.contract.approve(spender, _amount, overrides);
+  }
+
+  /**
+   * Returns the balance of `account`.
+   */
+  async balanceOf(
+    account: string,
+    overrides: ethers.Overrides = {}
+  ): Promise<Big> {
+    const bal = await this.contract.balanceOf(account, overrides);
+    return this.mgv.fromUnits(bal, this.decimals);
   }
 }
 
