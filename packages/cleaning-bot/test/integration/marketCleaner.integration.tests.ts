@@ -7,8 +7,6 @@ const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 
-import { sleep } from "@mangrovedao/commonlib-js";
-
 import { Mangrove, Market } from "@mangrovedao/mangrove.js";
 import * as mgvTestUtil from "@mangrovedao/mangrove.js/test/util/mgvIntegrationTestUtil";
 
