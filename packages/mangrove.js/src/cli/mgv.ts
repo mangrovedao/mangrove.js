@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env node
 
 import * as yargs from "yargs";
 import * as parrotCmd from "./commands/parrotCmd";

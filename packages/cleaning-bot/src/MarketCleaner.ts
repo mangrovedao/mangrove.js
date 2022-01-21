@@ -15,7 +15,7 @@ type OfferCleaningEstimates = {
 export type BA = "bids" | "asks";
 
 // FIXME move to Mangrove.js
-const maxWantsOrGives = BigNumber.from(2).pow(96).sub(1);
+// const maxWantsOrGives = BigNumber.from(2).pow(96).sub(1);
 const maxGasReq = BigNumber.from(2).pow(256).sub(1);
 
 /**

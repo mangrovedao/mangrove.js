@@ -4,7 +4,7 @@ import ethers from "ethers";
 import { WebSocketProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { NonceManager } from "@ethersproject/experimental";
-import { Mangrove, Market } from "../../src";
+import { Mangrove, Market } from "../..";
 
 export const command = "retract <base> <quote>";
 export const aliases = [];

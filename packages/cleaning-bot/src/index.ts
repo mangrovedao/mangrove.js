@@ -174,6 +174,7 @@ function logErrorAndExit(err: Error) {
   process.exit(1); // TODO Consider adding exit codes
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 process.on("unhandledRejection", function (reason, promise) {
   logger.warn("Unhandled Rejection", { data: reason });
 });

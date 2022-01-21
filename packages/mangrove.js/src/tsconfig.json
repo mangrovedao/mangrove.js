@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "outDir": "../dist/nodejs/",
+    "lib": ["ES2020", "dom"],
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "declaration": true,
+    "noErrorTruncation": true,
+    "target": "es2015",
+    "incremental":true
+    //"strict": true,
+    //"suppressImplicitAnyIndexErrors": true,
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.d.ts"
+  ],
+  "references": [
+    { "path": "../" }
+  ]
+}

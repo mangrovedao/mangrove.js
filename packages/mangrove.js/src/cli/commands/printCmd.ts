@@ -1,6 +1,6 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
-import { Mangrove, Market } from "../../src";
+import { Mangrove, Market } from "../..";
 
 export const command = "print <base> <quote>";
 export const aliases = [];

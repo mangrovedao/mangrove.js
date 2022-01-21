@@ -74,7 +74,7 @@ const mgv = await Mangrove.connect({
  await market.consoleAsks();
  /*
  prints by default
- ┌─────────┬─────┬──────────────────────────────────────────────┬────────────────────┬────────────────────────┐
+┌─────────┬─────┬──────────────────────────────────────────────┬────────────────────┬────────────────────────┐
 │ (index) │ id  │                    maker                     │       volume       │         price          │
 ├─────────┼─────┼──────────────────────────────────────────────┼────────────────────┼────────────────────────┤
 │    0    │ 63  │ '0xcBb37575320FF499E9F69d0090b6944bc0aD7585' │        1000        │          1.01          │
@@ -84,7 +84,9 @@ const mgv = await Mangrove.connect({
 │    4    │ 140 │ '0x3073A02460D7BE1A1C9afC60A059Ad8d788A4502' │ 3.6346162334836647 │ 1.01073119251408598466 │
 └─────────┴─────┴──────────────────────────────────────────────┴────────────────────┴────────────────────────┘
  */
-
+// Apply filter using
+const filter = ["id", "wants", "gives", "gasprice", "maker"];
+await market.consoleAsks(filter);
 
 // Subscribe to orderbook
 market.subscribe((event) => {
@@ -104,7 +106,7 @@ const { takerGot, takerGave, bounty } = await market.buy({
 });
 // Sell ETH for USDC (taker needs to approve WETH for mangrove transfer)
 await market.base.approveMangrove();
-const { takerGot, takerGave, bounty } = await market.sell({
+const { takerGot2, takerGave2, bounty2 } = await market.sell({
   volume: 1.1,
   price: 3750,
 });
@@ -138,7 +140,7 @@ await logic.mgv.fundMangrove(0.1, logic.address);
 // check current balance of offer logic at Mangrove
 let balance = await logic.balanceOnMangrove();
 // which is equivalent to the more generic call
-let balance = await mgv.balanceOf(logic.address);
+balance = await mgv.balanceOf(logic.address);
 
 // withdraw offer logic's balance from Mangrove to the signer's address
 await logic.withdrawFromMangrove(0.01);
@@ -153,9 +155,9 @@ To post direct offers on a market (via signer's EOA), on gets a `LiquidityProvid
 ```js
 const market = await mgv.market({ base: "ETH", quote: "USDC" });
 // get a liquidity provider using signer's account for posting offers
-const liquidity_provider = await mgv.liquidityProvider(market);
+let liquidity_provider = await mgv.liquidityProvider(market);
 //or one is not connected to a market already:
-const liquidity_provider = await mgv.liquidityProvider({
+liquidity_provider = await mgv.liquidityProvider({
   base: "ETH",
   quote: "USDC",
 });
@@ -187,7 +189,7 @@ const { id: askId, event } = await liquidity_provider.newAsk({
 });
 
 // post a new offer giving usdc against weth
-const { id: bidId, event } = await liquidity_provider.newBid({
+const { id: bidId, event_ } = await liquidity_provider.newBid({
   price: 3400,
   volume: 2,
 });
@@ -316,3 +318,30 @@ $ yarn build
 ```
 
 The build artifacts will be placed in `./dist/nodejs` and `./dist/browser`.
+
+## CLI: `mgv`
+
+mangrove.js includes an experimental command line interface (CLI) for interacting with Mangrove.
+You can run it using `npx`, `yarn`, or directly (if you install mangrove.js globally):
+
+```shell
+$ npx mgv
+$ yarn mgv
+$ mgv         # requires mangrove.js to be installed globally: npm -g install mangrove.js
+mgv.js <command>
+
+Commands:
+  mgv.js parrot                  reports the current environment and warns of
+                                 any discrepancies       [aliases: env-overview]
+  mgv.js print <base> <quote>    print the offers on a market
+  mgv.js retract <base> <quote>  retracts all offers from the given market
+
+Options:
+  --version  Show version number                                       [boolean]
+  --help     Show help                                                 [boolean]
+
+Arguments may be provided in env vars beginning with 'MGV_'. For example,
+MGV_NODE_URL=https://node.url can be used instead of --nodeUrl https://node.url
+
+You need at least one command before moving on
+```

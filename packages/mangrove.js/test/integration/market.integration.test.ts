@@ -1,5 +1,6 @@
 // Integration tests for Market.ts
 import { describe, beforeEach, afterEach, it } from "mocha";
+import { expect } from "chai";
 
 import { toWei } from "../util/helpers";
 
@@ -42,7 +43,7 @@ describe("Market integration tests suite", () => {
   });
 
   describe("Readonly mode", () => {
-    let mgvro;
+    let mgvro: Mangrove;
 
     beforeEach(async () => {
       mgvro = await Mangrove.connect({
@@ -50,6 +51,8 @@ describe("Market integration tests suite", () => {
         forceReadOnly: true,
       });
       //shorten polling for faster tests
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       mgvro._provider.pollingInterval = 250;
     });
     afterEach(async () => {
@@ -81,7 +84,7 @@ describe("Market integration tests suite", () => {
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    let latestBook;
+    let latestBook: Market.MarketBook;
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
       queue.put(evt);
@@ -110,16 +113,6 @@ describe("Market integration tests suite", () => {
       price: Big("1").div(Big("1.2")),
     };
 
-    assert.deepStrictEqual(
-      await queue.get(),
-      {
-        type: "OfferWrite",
-        ba: "asks",
-        offer: offer1,
-      },
-      "offer1(ask) not correct"
-    );
-
     const offer2 = {
       id: 1,
       prev: undefined,
@@ -134,15 +127,20 @@ describe("Market integration tests suite", () => {
       price: Big("1.1").div(Big("1.3")),
     };
 
-    assert.deepStrictEqual(
-      await queue.get(),
+    // Events may be received in different order
+    const events = [await queue.get(), await queue.get()];
+    expect(events).to.have.deep.members([
+      {
+        type: "OfferWrite",
+        ba: "asks",
+        offer: offer1,
+      },
       {
         type: "OfferWrite",
         ba: "bids",
         offer: offer2,
       },
-      "offer2(bid) not correct"
-    );
+    ]);
 
     assert.deepStrictEqual(
       latestBook,
