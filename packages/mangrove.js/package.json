@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.5.0",
+    "async-mutex": "^0.3.2",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
