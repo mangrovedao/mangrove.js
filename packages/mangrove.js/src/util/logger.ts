@@ -31,7 +31,11 @@ const stringifyData = (data) => {
   else return safeStringify(data);
 };
 
-const logLevel = config.get<string>("logLevel");
+const defaultLogLevel = "error";
+
+const logLevel = config.has("logLevel")
+  ? config.get<string>("logLevel")
+  : defaultLogLevel;
 
 const additionnalTransports = [];
 
