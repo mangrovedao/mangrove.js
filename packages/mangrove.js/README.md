@@ -233,6 +233,15 @@ mgv = await Mangrove.connect('https://mainnet.infura.io/v3/_your_project_id_', {
 mgv = await Mangrove.connect('mainnet' {
   mnemonic: 'clutch captain shoe...', // preferably with environment variable
 });
+
+// Init with a keystore file (json wallet)
+mgv = await Mangrove.connect({
+  provider: 'https://mainnet.infura.io/v3/_your_project_id_',
+  jsonWallet: {
+    path: 'path/to/UTC--created_date_time--address',
+    password: 'wallet_password'
+  }
+});
 ```
 
 ## Constants and Contract Addresses
