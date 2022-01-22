@@ -3,6 +3,7 @@ import {
   BetterLogger,
   format,
   transports,
+  logdataProcessor,
 } from "@mangrovedao/commonlib-js";
 import os from "os";
 import safeStringify from "fast-safe-stringify";
@@ -16,7 +17,7 @@ const consoleLogFormat = format.printf(
     }
     msg += message;
     if (metadata.data !== undefined) {
-      msg += ` | data: ${safeStringify(metadata.data)}`;
+      msg += ` | data: ${stringifyData(metadata.data)}`;
     }
     if (metadata.stack) {
       msg += `${os.EOL}${metadata.stack}`;
@@ -24,6 +25,11 @@ const consoleLogFormat = format.printf(
     return msg;
   }
 );
+
+const stringifyData = (data) => {
+  if (typeof data == "string") return data;
+  else return safeStringify(data);
+};
 
 const logLevel = config.get<string>("logLevel");
 
@@ -44,6 +50,8 @@ if (config.has("logFile")) {
     })
   );
 }
+
+export { logdataProcessor };
 
 export const logger: BetterLogger = createLogger(
   consoleLogFormat,

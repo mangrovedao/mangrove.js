@@ -1,5 +1,4 @@
 import { logger } from "./util/logger";
-import pick from "object.pick";
 import * as ethers from "ethers";
 import { EOA_offer_gasreq } from "./constants";
 
