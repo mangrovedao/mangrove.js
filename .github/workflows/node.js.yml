@@ -138,6 +138,79 @@ jobs:
         path: commonlib-out.zip
   # ==== End job: commonlib-js ====
 
+  # ==== Job: Build and test faucet ====
+  faucet:
+    needs: [security-guard]
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{env.working-directory}}
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == build ==
+    - name: Solidity Compile
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      # So we can fail-fast and drop the X Test Report steps, if build fails
+      # A tiny bit hacky, but it's simple and works
+      run: echo "faucet_built=true" >> $GITHUB_ENV
+
+    # Run Solidity tests and report
+    - name: Faucet Tests
+      run: yarn run test:solidity
+
+    - name: Faucet Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.faucet_built && (success() || failure()) }}
+      with:
+        name: Faucet Tests                  # Name of the check run which will be created
+        path: ${{env.working-directory}}/solidity-mocha-test-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # save artifacts for later stages
+    - name: Zip output
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r faucet-out.zip ${{env.working-directory}}/artifacts ${{env.working-directory}}/dist
+
+    - name: Cache faucet output as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: faucet-out.zip
+        path: faucet-out.zip
+  # ==== End job faucet ====
+
   # ==== Job: Build and test Mangrove Core
   mangrove-solidity:
     needs: [security-guard]

@@ -1,9 +1,11 @@
 import { Big } from "big.js";
 import { ethers, BigNumber } from "ethers";
 import { Mangrove, Market } from ".";
+import { bookOptsDefault } from "./market";
 import { Bigish } from "./types";
-import { TypedEventFilter, TypedListener } from "./types/typechain/common";
-import { Deferred } from "./util";
+import { TypedEventFilter } from "./types/typechain/common";
+import { Mutex } from "async-mutex";
+import { Listener } from "@ethersproject/providers";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -11,7 +13,7 @@ let canConstructSemibook = false;
 export type SemibookEvent = {
   cbArg: Market.BookSubscriptionCbArgument;
   event: Market.BookSubscriptionEvent;
-  ethersEvent: ethers.Event;
+  ethersLog: ethers.providers.Log;
 };
 
 export type SemibookEventListener = (e: SemibookEvent) => void;
@@ -42,22 +44,22 @@ type RawOfferData = {
 export class Semibook implements Iterable<Market.Offer> {
   readonly ba: "bids" | "asks";
   readonly market: Market;
-  readonly options: Market.BookOptions;
+  readonly options: Market.BookOptions; // complete and validated
 
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
   #offer_gasbase: number;
 
-  #initializationPromise: Promise<void>; // Resolves when initialization has completed. Used to queue events until initialization is complete.
   #canInitialize: boolean; // Guard against multiple initialization calls
 
+  #blockEventCallback: Listener;
   #eventFilter: TypedEventFilter<any>;
-  #eventCallback: TypedListener<any>;
   #eventListener: SemibookEventListener;
 
-  #offers: Map<number, Market.Offer>;
-  #best: number | undefined; // id of the best/first offer in the offer list iff the offer list is non-empty. NB: #offers might not contain this offer.
-  #bestInCache: number | undefined; // id of the best/first offer in the offer list iff #offers is non-empty
-  #firstBlockNumber: number; // the block number that the offer list prefix is consistent with
+  #cacheLock: Mutex; // Lock that must be acquired when modifying the cache to ensure consistency and to queue cache updating events.
+  #offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
+  #bestInCache: number | undefined; // id of the best/first offer in the offer list iff #offerCache is non-empty
+  #worstInCache: number | undefined; // id of the worst/last offer in #offerCache
+  #lastReadBlockNumber: number; // the block number that the cache is consistent with
 
   static async connect(
     market: Market,
@@ -74,7 +76,7 @@ export class Semibook implements Iterable<Market.Offer> {
 
   /* Stop listening to events from mangrove */
   disconnect(): void {
-    this.market.mgv.contract.off(this.#eventFilter, this.#eventCallback);
+    this.market.mgv._provider.off("block", this.#blockEventCallback);
   }
 
   async requestOfferListPrefix(
@@ -82,13 +84,14 @@ export class Semibook implements Iterable<Market.Offer> {
   ): Promise<Market.Offer[]> {
     return await this.#fetchOfferListPrefix(
       await this.market.mgv._provider.getBlockNumber(),
+      0,
       options
     );
   }
 
   /** Returns struct containing offer details in the current offer list */
   async offerInfo(offerId: number): Promise<Market.Offer> {
-    const cachedOffer = this.#offers.get(offerId);
+    const cachedOffer = this.#offerCache.get(offerId);
     if (cachedOffer !== undefined) {
       return cachedOffer;
     }
@@ -138,7 +141,7 @@ export class Semibook implements Iterable<Market.Offer> {
     return {
       next: () => {
         const value =
-          latest === undefined ? undefined : this.#offers.get(latest);
+          latest === undefined ? undefined : this.#offerCache.get(latest);
         latest = value?.next;
         return {
           done: value === undefined,
@@ -148,28 +151,68 @@ export class Semibook implements Iterable<Market.Offer> {
     };
   }
 
-  /**
-   * Returns true if the offer list is empty, regardless of what offers have been cached.
-   */
-  isOfferListEmpty(): boolean {
-    return this.#best === undefined;
-  }
-
   /** Given a price, find the id of the immediately-better offer in the
    * semibook. If there is no offer with a better price, `undefined` is returned.
    */
-  getPivotId(price: Bigish): number | undefined {
-    if (this.isOfferListEmpty()) {
-      return undefined;
-    }
+  async getPivotId(price: Bigish): Promise<number | undefined> {
     // We select as pivot the immediately-better offer.
     // The actual ordering in the offer list is lexicographic
     // price * gasreq (or price^{-1} * gasreq)
     // We ignore the gasreq comparison because we may not
     // know the gasreq (could be picked by offer contract)
-    price = Big(price);
+    const priceAsBig = Big(price);
+    let [pivotFound, pivotId] = this.#getPivotIdInCache(priceAsBig);
+    if (pivotFound) {
+      return pivotId;
+    }
+    // Either the offer list is empty or the cache is insufficient.
+    // Lock the cache as we are going to fetch more offers and put them in the cache
+    return await this.#cacheLock.runExclusive(async () => {
+      // When the lock has been obtained, the cache may have changed,
+      // so we need to start the search from the beginning
+      [pivotFound, pivotId] = this.#getPivotIdInCache(priceAsBig);
+      if (pivotFound) {
+        return pivotId;
+      }
+      // Either the offer list is still empty or the cache is still insufficient.
+      // Try to fetch more offers to determine a pivot.
+      const comparison = this.ba === "asks" ? "gt" : "lt";
+      let lastSeenOffer = this.#offerCache.get(this.#worstInCache);
+      let nextId = lastSeenOffer?.next;
+      let pivotOffer: Market.Offer;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const nextOffers = await this.#fetchOfferListPrefix(
+          this.#lastReadBlockNumber,
+          nextId
+        );
+        for (const offer of nextOffers) {
+          // We try to insert all the fetched offers in case the cache is not at max size
+          this.#insertOffer(offer);
+          if (!pivotFound && offer.price[comparison](priceAsBig)) {
+            pivotFound = true;
+            pivotOffer = lastSeenOffer;
+          }
+          lastSeenOffer = offer;
+          nextId = offer.next;
+        }
+        if (pivotFound) {
+          return pivotOffer?.id;
+        }
+        if (nextOffers.length < this.options.chunkSize) {
+          // No more offers - and there might not be any at all
+          return lastSeenOffer?.id;
+        }
+      }
+    });
+  }
+
+  // Try to find a pivot id in the current cache.
+  // Returns [true, pivot id | undefined] if a pivot was found in the cache.
+  // Returns [false, undefined] if a pivot cannot be determined from the current cache.
+  #getPivotIdInCache(price: Big): [boolean, number | undefined] {
     const comparison = this.ba === "asks" ? "gt" : "lt";
-    let lastSeenOffer: Market.Offer;
+    let lastSeenOffer: Market.Offer | undefined;
     let pivotFound = false;
     for (const offer of this) {
       lastSeenOffer = offer;
@@ -179,17 +222,13 @@ export class Semibook implements Iterable<Market.Offer> {
       }
     }
     if (pivotFound) {
-      return lastSeenOffer.prev;
+      return [true, lastSeenOffer.prev];
     }
     // If we reached the end of the offer list, use the last offer as pivot
     if (lastSeenOffer !== undefined && lastSeenOffer.next === undefined) {
-      return lastSeenOffer.id;
-    } else {
-      // The semibook cache is incomplete
-      throw new Error(
-        "Impossible to safely determine a pivot. Please restart with a larger maxOffers."
-      );
+      return [true, lastSeenOffer.id];
     }
+    return [false, undefined];
   }
 
   private constructor(
@@ -203,67 +242,75 @@ export class Semibook implements Iterable<Market.Offer> {
         "Mangrove Semibook must be initialized async with Semibook.connect (constructors cannot be async)"
       );
     }
+    this.options = this.#setDefaultsAndValidateOptions(options);
 
     this.market = market;
     this.ba = ba;
-    this.options = options;
 
     this.#canInitialize = true;
+    this.#cacheLock = new Mutex();
 
+    this.#blockEventCallback = (blockNumber: number) =>
+      this.#handleBlockEvent(blockNumber);
     this.#eventListener = eventListener;
     this.#eventFilter = this.#createEventFilter();
-    this.#eventCallback = (a: any) => this.#handleBookEvent(a);
 
-    this.#offers = new Map();
+    this.#offerCache = new Map();
   }
 
   async #initialize(): Promise<void> {
     if (!this.#canInitialize) return;
     this.#canInitialize = false;
 
-    // To ensure consistency in this cache, everything is initially fetched from a specific block
-    this.#firstBlockNumber = await this.market.mgv._provider.getBlockNumber();
+    // To avoid missing any blocks, we register the event listener before
+    // reading the offer list. However, the events must not be processed
+    // before the semibook has been initialized. This is ensured by
+    // locking the cache and having the event listener await and take that lock.
+    await this.#cacheLock.runExclusive(async () => {
+      this.market.mgv._provider.on("block", this.#blockEventCallback);
 
-    const localConfig = await this.getConfig(this.#firstBlockNumber);
-    this.#best = localConfig.best;
-    this.#offer_gasbase = localConfig.offer_gasbase;
+      // To ensure consistency in this cache, everything is initially fetched from a specific block
+      this.#lastReadBlockNumber =
+        await this.market.mgv._provider.getBlockNumber();
+      const localConfig = await this.getConfig(this.#lastReadBlockNumber);
+      this.#offer_gasbase = localConfig.offer_gasbase;
 
-    // To avoid missing any events, we register the event listener before
-    // reading the semibook. However, the events must not be processed
-    // before the semibooks has been initialized. This is ensured by
-    // having the event listeners await a promise that will resolve when
-    // semibook reading has completed.
-    const deferredInitialization = new Deferred();
-    this.#initializationPromise = deferredInitialization.promise;
-    this.market.mgv.contract.on(this.#eventFilter, this.#eventCallback);
+      const offers = await this.#fetchOfferListPrefix(
+        this.#lastReadBlockNumber
+      );
 
-    const offers = await this.#fetchOfferListPrefix(
-      this.#firstBlockNumber,
-      this.options
-    );
+      if (offers.length > 0) {
+        this.#bestInCache = offers[0].id;
+        this.#worstInCache = offers[offers.length - 1].id;
 
-    if (offers.length > 0) {
-      this.#bestInCache = offers[0].id;
-
-      for (const offer of offers) {
-        this.#offers.set(offer.id, offer);
+        for (const offer of offers) {
+          this.#insertOffer(offer);
+        }
       }
-    }
-
-    deferredInitialization.resolve();
+    });
   }
 
-  async #handleBookEvent(ethersEvent: ethers.Event): Promise<void> {
-    // Book events must wait for initialization to complete
-    await this.#initializationPromise;
-    // If event is from firstBlockNumber (or before), ignore it as it
-    // will be included in the initially read offer list
-    if (ethersEvent.blockNumber <= this.#firstBlockNumber) {
-      return;
-    }
+  async #handleBlockEvent(blockNumber: number): Promise<void> {
+    await this.#cacheLock.runExclusive(async () => {
+      // During initialization events may queue up, even some for the
+      // initialization block or previous ones; These should be disregarded.
+      if (blockNumber <= this.#lastReadBlockNumber) {
+        return;
+      }
+      const logs = await this.market.mgv._provider.getLogs({
+        fromBlock: blockNumber,
+        toBlock: blockNumber,
+        ...this.#eventFilter,
+      });
+      logs.forEach((l) => this.#handleBookEvent(l));
+      this.#lastReadBlockNumber = blockNumber;
+    });
+  }
 
+  // This modifies the cache so must be called in a context where #cacheLock is acquired
+  #handleBookEvent(ethersLog: ethers.providers.Log): Promise<void> {
     const event: Market.BookSubscriptionEvent =
-      this.market.mgv.contract.interface.parseLog(ethersEvent) as any;
+      this.market.mgv.contract.interface.parseLog(ethersLog) as any;
 
     let offer: Market.Offer;
     let removedOffer: Market.Offer;
@@ -287,15 +334,12 @@ export class Semibook implements Iterable<Market.Offer> {
          * If the prev exists, we take the prev's next as the offer's next.
          * Whether that next exists in the cache or not is irrelevant.
          */
-        try {
-          if (prev === undefined) {
-            // The removed offer will be the best, so the next offer is the current best
-            next = this.#bestInCache;
-            this.#best = id;
-          } else {
-            next = this.#getNextId(prev);
-          }
-        } catch (e) {
+        if (prev === undefined) {
+          // The removed offer will be the best, so the next offer is the current best
+          next = this.#bestInCache;
+        } else if (this.#offerCache.has(prev)) {
+          next = this.#offerCache.get(prev).next;
+        } else {
           // offer.prev was not found, we are outside local OB copy. skip.
           break;
         }
@@ -306,7 +350,11 @@ export class Semibook implements Iterable<Market.Offer> {
           next: this.#idToRawId(next),
         });
 
-        this.#insertOffer(offer);
+        const wasInserted = this.#insertOffer(offer);
+        if (!wasInserted) {
+          // Offer did not fit in cache and was therefore not inserted
+          return;
+        }
 
         this.#eventListener({
           cbArg: {
@@ -315,7 +363,7 @@ export class Semibook implements Iterable<Market.Offer> {
             ba: this.ba,
           },
           event,
-          ethersEvent,
+          ethersLog: ethersLog,
         });
         break;
       }
@@ -325,9 +373,6 @@ export class Semibook implements Iterable<Market.Offer> {
         removedOffer = this.#removeOffer(id);
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
-          if (id === this.#best) {
-            this.#best = removedOffer.next;
-          }
           this.#eventListener({
             cbArg: {
               type: event.name,
@@ -339,14 +384,8 @@ export class Semibook implements Iterable<Market.Offer> {
               mgvData: event.args.mgvData,
             },
             event,
-            ethersEvent,
+            ethersLog: ethersLog,
           });
-        } else {
-          // If the best offer failed and was not in the cache, we need to fetch the new best offer
-          // as the event does not carry information about the next offer.
-          if (id === this.#best) {
-            this.#best = (await this.getConfig(event.blockNumber)).best;
-          }
         }
         break;
       }
@@ -355,9 +394,6 @@ export class Semibook implements Iterable<Market.Offer> {
         const id = this.#rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(id);
         if (removedOffer) {
-          if (id === this.#best) {
-            this.#best = removedOffer.next;
-          }
           this.#eventListener({
             cbArg: {
               type: event.name,
@@ -368,14 +404,8 @@ export class Semibook implements Iterable<Market.Offer> {
               takerGives: inbound_tkn.fromUnits(event.args.takerGives),
             },
             event,
-            ethersEvent,
+            ethersLog: ethersLog,
           });
-        } else {
-          // If the best offer succeeded and was not in the cache, we need to fetch the new best offer
-          // as the event does not carry information about the next offer.
-          if (id === this.#best) {
-            this.#best = (await this.getConfig(event.blockNumber)).best;
-          }
         }
         break;
       }
@@ -385,9 +415,6 @@ export class Semibook implements Iterable<Market.Offer> {
         removedOffer = this.#removeOffer(id);
         // Don't trigger an event about an offer outside of the local cache
         if (removedOffer) {
-          if (id === this.#best) {
-            this.#best = removedOffer.next;
-          }
           this.#eventListener({
             cbArg: {
               type: event.name,
@@ -395,14 +422,8 @@ export class Semibook implements Iterable<Market.Offer> {
               offer: removedOffer,
             },
             event,
-            ethersEvent,
+            ethersLog: ethersLog,
           });
-        } else {
-          // If the best offer was retracted and was not in the cache, we need to fetch the new best offer
-          // as the event does not carry information about the next offer.
-          if (id === this.#best) {
-            this.#best = (await this.getConfig(event.blockNumber)).best;
-          }
         }
         break;
       }
@@ -415,81 +436,84 @@ export class Semibook implements Iterable<Market.Offer> {
     }
   }
 
-  // Assumes ofr.prev and ofr.next are present in local OB copy.
-  // Assumes id is not already in book;
-  #insertOffer(offer: Market.Offer): void {
-    this.#offers.set(offer.id, offer);
+  // Assumes id is not already in the cache
+  // Returns `true` if the offer was inserted into the cache; Otherwise, `false`.
+  // This modifies the cache so must be called in a context where #cacheLock is acquired
+  #insertOffer(offer: Market.Offer): boolean {
+    // Only insert offers that are extensions of the cache
+    if (offer.prev !== undefined && !this.#offerCache.has(offer.prev)) {
+      return false;
+    }
+
+    this.#offerCache.set(offer.id, offer);
+
     if (offer.prev === undefined) {
       this.#bestInCache = offer.id;
     } else {
-      this.#offers.get(offer.prev).next = offer.id;
+      this.#offerCache.get(offer.prev).next = offer.id;
     }
 
-    if (offer.next !== undefined) {
-      this.#offers.get(offer.next).prev = offer.id;
+    if (offer.prev === this.#worstInCache) {
+      this.#worstInCache = offer.id;
     }
+
+    const nextOffer = this.#offerCache.get(offer.next);
+    if (nextOffer !== undefined) {
+      nextOffer.prev = offer.id;
+    }
+
+    // Evict worst offer if over max size
+    if (this.#offerCache.size > this.options.maxOffers) {
+      const removedOffer = this.#removeOffer(this.#worstInCache);
+      if (offer.id === removedOffer.id) {
+        return false;
+      }
+    }
+    return true;
   }
 
   // remove offer id from book and connect its prev/next.
-  // return null if offer was not found in book
+  // return 'undefined' if offer was not found in book
+  // This modifies the cache so must be called in a context where #cacheLock is acquired
   #removeOffer(id: number): Market.Offer {
-    const ofr = this.#offers.get(id);
-    if (ofr) {
-      // we differentiate prev===undefined (offer is best)
-      // from offers[prev] does not exist (we're outside of the local cache)
-      if (ofr.prev === undefined) {
-        this.#bestInCache = ofr.next;
-      } else {
-        const prevOffer = this.#offers.get(ofr.prev);
-        if (prevOffer) {
-          prevOffer.next = ofr.next;
-        }
-      }
+    const offer = this.#offerCache.get(id);
+    if (offer === undefined) return undefined;
 
-      // checking that nextOffers exists takes care of
-      // 1. ofr.next===undefined, i.e. we're at the end of the book
-      // 2. offers[ofr.next] does not exist, i.e. we're at the end of the local cache
-      const nextOffer = this.#offers.get(ofr.next);
-      if (nextOffer) {
-        nextOffer.prev = ofr.prev;
-      }
-
-      this.#offers.delete(id);
-      return ofr;
+    if (offer.prev === undefined) {
+      this.#bestInCache = offer.next;
     } else {
-      return null;
+      this.#offerCache.get(offer.prev).next = offer.next;
     }
-    /* Insert an offer in a {offerMap,bestOffer} semibook and keep the structure in a coherent state */
-  }
 
-  // return id of offer next to offerId, according to cache.
-  // note that offers[offers[offerId].next] may be not exist!
-  // throws if offerId is not found
-  #getNextId(offerId: number): number {
-    if (!this.#offers.has(offerId)) {
-      throw Error(
-        "Trying to get next of an offer absent from local orderbook copy"
-      );
+    const nextOffer = this.#offerCache.get(offer.next);
+    if (nextOffer === undefined) {
+      this.#worstInCache = offer.prev;
     } else {
-      return this.#offers.get(offerId).next;
+      nextOffer.prev = offer.prev;
     }
+
+    this.#offerCache.delete(id);
+    return offer;
   }
 
   /* Provides the book with raw BigNumber values */
   async #fetchOfferListPrefix(
     blockNumber: number,
-    options: Market.BookOptions
+    fromId?: number,
+    options?: Market.BookOptions
   ): Promise<Market.Offer[]> {
+    const opts = this.#setDefaultsAndValidateOptions({
+      ...this.options,
+      ...options,
+    });
+
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
       this.ba
     );
-    // by default chunk size is number of offers desired
-    const chunkSize =
-      options.chunkSize === undefined ? options.maxOffers : options.chunkSize;
     // save total number of offers we want
-    let maxOffersLeft = options.maxOffers;
+    let maxOffersLeft = opts.maxOffers;
 
-    let nextId = 0;
+    let nextId = fromId ?? 0;
 
     const result: Market.Offer[] = [];
     do {
@@ -498,7 +522,7 @@ export class Semibook implements Iterable<Market.Offer> {
           outbound_tkn.address,
           inbound_tkn.address,
           nextId,
-          chunkSize,
+          opts.chunkSize,
           { blockTag: blockNumber }
         );
 
@@ -512,8 +536,8 @@ export class Semibook implements Iterable<Market.Offer> {
         );
       }
 
-      nextId = _nextId.toNumber();
-      maxOffersLeft = maxOffersLeft - chunkSize;
+      nextId = this.#rawIdToId(_nextId);
+      maxOffersLeft = maxOffersLeft - opts.chunkSize;
     } while (maxOffersLeft > 0 && nextId !== 0);
 
     return result;
@@ -597,6 +621,25 @@ export class Semibook implements Iterable<Market.Offer> {
       address: this.market.mgv._address,
       topics: topics,
     };
+  }
+
+  #setDefaultsAndValidateOptions(
+    options: Market.BookOptions
+  ): Market.BookOptions {
+    const result = { ...bookOptsDefault, ...options };
+    if (result.chunkSize === undefined) {
+      result.chunkSize =
+        result.maxOffers !== undefined && result.maxOffers > 0
+          ? result.maxOffers
+          : bookOptsDefault.maxOffers;
+    }
+    if (options.maxOffers < 0) {
+      throw Error("Semibook options.maxOffers must be >= 0");
+    }
+    if (options.chunkSize <= 0) {
+      throw Error("Semibook options.chunkSize must be > 0");
+    }
+    return result;
   }
 }
 

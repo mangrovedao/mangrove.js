@@ -133,7 +133,7 @@ class LiquidityProvider {
   newAsk(
     p: LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
-  ): Promise<{ id: number; event: ethers.Event }> {
+  ): Promise<{ id: number; event: ethers.providers.Log }> {
     return this.newOffer({ ba: "asks", ...p }, overrides);
   }
 
@@ -141,7 +141,7 @@ class LiquidityProvider {
   newBid(
     p: LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
-  ): Promise<{ id: number; event: ethers.Event }> {
+  ): Promise<{ id: number; event: ethers.providers.Log }> {
     return this.newOffer({ ba: "bids", ...p }, overrides);
   }
 
@@ -205,11 +205,11 @@ class LiquidityProvider {
   async newOffer(
     p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
-  ): Promise<{ id: number; pivot: number; event: ethers.Event }> {
+  ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
     const { wants, gives, price, gasreq, gasprice } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-    const pivot = this.market.getPivotId(p.ba, price);
+    const pivot = await this.market.getPivotId(p.ba, price);
     const resp = await this.#proxy().contract.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -241,7 +241,7 @@ class LiquidityProvider {
     id: number,
     p: LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
-  ): Promise<{ event: ethers.Event }> {
+  ): Promise<{ event: ethers.providers.Log }> {
     return this.updateOffer(id, { ba: "asks", ...p }, overrides);
   }
 
@@ -250,7 +250,7 @@ class LiquidityProvider {
     id: number,
     p: LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
-  ): Promise<{ event: ethers.Event }> {
+  ): Promise<{ event: ethers.providers.Log }> {
     return this.updateOffer(id, { ba: "bids", ...p }, overrides);
   }
 
@@ -262,7 +262,7 @@ class LiquidityProvider {
     id: number,
     p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
-  ): Promise<{ event: ethers.Event }> {
+  ): Promise<{ event: ethers.providers.Log }> {
     const offerList = p.ba === "asks" ? this.asks() : this.bids();
     const offer = offerList.find((o) => o.id === id);
     if (typeof offer === "undefined") {
@@ -282,7 +282,7 @@ class LiquidityProvider {
       outbound_tkn.toUnits(gives),
       gasreq ? gasreq : await this.#gasreq(),
       gasprice ? gasprice : offer.gasprice,
-      this.market.getPivotId(p.ba, price) ?? 0,
+      (await this.market.getPivotId(p.ba, price)) ?? 0,
       id,
       overrides
     );

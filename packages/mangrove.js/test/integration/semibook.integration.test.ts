@@ -44,11 +44,12 @@ describe("Semibook integration tests suite", () => {
     it("returns `undefined` when offer list is empty", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.getPivotId(Big(1))).to.be.undefined;
+      expect(await semibook.getPivotId(Big(1))).to.be.undefined;
     });
 
-    it("throws Error when cache is empty and offer list is not", async function () {
+    it("loads offers and finds pivot when cache is empty and offer list is not", async function () {
       // Put one offer on asks
+      // TODO: Can we explicitly get the id of this offer?
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
@@ -61,14 +62,15 @@ describe("Semibook integration tests suite", () => {
         bookOptions: { maxOffers: 0 },
       });
       const semibook = market.getSemibook("asks");
-      expect(() => semibook.getPivotId(Big(1))).to.throw(Error);
+      expect(await semibook.getPivotId(Big(1))).to.equal(1);
     });
 
-    it("throws Error when cache is partial and price is worse than offers in cache", async function () {
+    it("loads offers and finds pivot when cache is partial and price is worse than offers in cache", async function () {
       // Put one offer on asks
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
+      // TODO: Can we explicitly get the id of this offer?
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
       );
@@ -81,7 +83,7 @@ describe("Semibook integration tests suite", () => {
         bookOptions: { maxOffers: 1 },
       });
       const semibook = market.getSemibook("asks");
-      expect(() => semibook.getPivotId(Big(1))).to.throw(Error);
+      expect(await semibook.getPivotId(Big(1.5))).to.equal(1);
     });
 
     it("returns `undefined` if price is better than best offer", async function () {
@@ -93,7 +95,7 @@ describe("Semibook integration tests suite", () => {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
       expect([...semibook]).to.have.lengthOf(1);
-      expect(semibook.getPivotId(Big(0.5))).to.be.undefined;
+      expect(await semibook.getPivotId(Big(0.5))).to.be.undefined;
     });
 
     it("returns id of the last offer if price is worse than worst offer", async function () {
@@ -108,7 +110,7 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.getPivotId(Big(3))).to.equal(2);
+      expect(await semibook.getPivotId(Big(3))).to.equal(2);
     });
   });
 
@@ -127,6 +129,6 @@ describe("Semibook integration tests suite", () => {
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
     const semibook = market.getSemibook("asks");
-    expect(semibook.getPivotId(Big(2.5))).to.equal(2);
+    expect(await semibook.getPivotId(Big(2.5))).to.equal(2);
   });
 });
