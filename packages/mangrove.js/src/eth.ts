@@ -175,7 +175,6 @@ export async function _createSigner(
       );
     }
   } else if (options.jsonWallet) {
-    console.log("jsonWallet options");
     const jsonWalletFile = fs.readFileSync(options.jsonWallet.path, "utf8");
     signer = new ethers.Wallet(
       await ethers.Wallet.fromEncryptedJson(
