@@ -504,31 +504,14 @@ class Market {
     what: "base" | "quote";
     to: "buy" | "sell";
   }): { estimatedVolume: Big; givenResidue: Big } {
-    const dict = {
-      base: {
-        buy: { offers: "asks", drainer: "gives", filler: "wants" },
-        sell: { offers: "bids", drainer: "wants", filler: "gives" },
-      },
-      quote: {
-        buy: { offers: "bids", drainer: "gives", filler: "wants" },
-        sell: { offers: "asks", drainer: "wants", filler: "gives" },
-      },
-    } as const;
-
-    const data = dict[params.what][params.to];
-
-    const offers = this.book()[data.offers];
-    let draining = Big(params.given);
-    let filling = Big(0);
-    for (const o of offers) {
-      const _drainer = o[data.drainer];
-      const drainer = draining.gt(_drainer) ? _drainer : draining;
-      const filler = o[data.filler].times(drainer).div(_drainer);
-      draining = draining.minus(drainer);
-      filling = filling.plus(filler);
-      if (draining.eq(0)) break;
+    if (
+      (params.what === "base" && params.to === "buy") ||
+      (params.what === "quote" && params.to === "sell")
+    ) {
+      return this.#asksSemibook.estimateVolume(params);
+    } else {
+      return this.#bidsSemibook.estimateVolume(params);
     }
-    return { estimatedVolume: filling, givenResidue: draining };
   }
 
   /**

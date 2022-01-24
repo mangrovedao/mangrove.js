@@ -231,6 +231,43 @@ export class Semibook implements Iterable<Market.Offer> {
     return [false, undefined];
   }
 
+  /**
+   * Volume estimator, very crude (based on cached offer list). FIXME: Update comment when complete
+   *
+   * if you say `estimateVolume({given:100,to:"buy"})`,
+   *
+   * it will give you an estimate of how much quote token you would have to
+   * spend to get 100 base tokens.
+   *
+   * if you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
+   *
+   * it will given you an estimate of how much base tokens you'd have to buy in
+   * order to spend 10 quote tokens.
+   * */
+  estimateVolume(params: { given: Bigish; to: "buy" | "sell" }): {
+    estimatedVolume: Big;
+    givenResidue: Big;
+  } {
+    const dict = {
+      buy: { offers: "asks", drainer: "gives", filler: "wants" },
+      sell: { offers: "bids", drainer: "wants", filler: "gives" },
+    };
+
+    const data = dict[params.to];
+
+    let draining = Big(params.given);
+    let filling = Big(0);
+    for (const o of this) {
+      const _drainer = o[data.drainer];
+      const drainer = draining.gt(_drainer) ? _drainer : draining;
+      const filler = o[data.filler].times(drainer).div(_drainer);
+      draining = draining.minus(drainer);
+      filling = filling.plus(filler);
+      if (draining.eq(0)) break;
+    }
+    return { estimatedVolume: filling, givenResidue: draining };
+  }
+
   private constructor(
     market: Market,
     ba: "bids" | "asks",
