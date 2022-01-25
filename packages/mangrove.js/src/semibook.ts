@@ -239,33 +239,40 @@ export class Semibook implements Iterable<Market.Offer> {
    * it will give you an estimate of how much quote token you would have to
    * spend to get 100 base tokens.
    *
-   * if you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
+   * if you say `estimateVolume({given:10,to:"sell"})`,
    *
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
-   * */
+   *
+   * The returned `givenResidue` is how much of the given token that cannot be
+   * traded due to insufficient volume on the book.
+   */
   estimateVolume(params: { given: Bigish; to: "buy" | "sell" }): {
     estimatedVolume: Big;
     givenResidue: Big;
   } {
     const dict = {
-      buy: { offers: "asks", drainer: "gives", filler: "wants" },
-      sell: { offers: "bids", drainer: "wants", filler: "gives" },
-    };
+      buy: { drainer: "gives", filler: "wants" },
+      sell: { drainer: "wants", filler: "gives" },
+    } as const;
 
     const data = dict[params.to];
 
-    let draining = Big(params.given);
-    let filling = Big(0);
+    let volumeToDrain = Big(params.given);
+    let volumeFilled = Big(0);
     for (const o of this) {
-      const _drainer = o[data.drainer];
-      const drainer = draining.gt(_drainer) ? _drainer : draining;
-      const filler = o[data.filler].times(drainer).div(_drainer);
-      draining = draining.minus(drainer);
-      filling = filling.plus(filler);
-      if (draining.eq(0)) break;
+      const offerDrainerVolume = o[data.drainer];
+      const offerVolumeDrained = volumeToDrain.gt(offerDrainerVolume)
+        ? offerDrainerVolume
+        : volumeToDrain;
+      const offerFillerVolume = o[data.filler];
+      const offerPercentageUsed = offerVolumeDrained.div(offerDrainerVolume);
+      const offerVolumeFilled = offerFillerVolume.times(offerPercentageUsed);
+      volumeToDrain = volumeToDrain.minus(offerVolumeDrained);
+      volumeFilled = volumeFilled.plus(offerVolumeFilled);
+      if (volumeToDrain.eq(0)) break;
     }
-    return { estimatedVolume: filling, givenResidue: draining };
+    return { estimatedVolume: volumeFilled, givenResidue: volumeToDrain };
   }
 
   private constructor(
