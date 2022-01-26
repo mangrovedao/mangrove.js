@@ -161,74 +161,23 @@ export class Semibook implements Iterable<Market.Offer> {
     // We ignore the gasreq comparison because we may not
     // know the gasreq (could be picked by offer contract)
     const priceAsBig = Big(price);
-    let [pivotFound, pivotId] = this.#getPivotIdInCache(priceAsBig);
-    if (pivotFound) {
-      return pivotId;
-    }
-    // Either the offer list is empty or the cache is insufficient.
-    // Lock the cache as we are going to fetch more offers and put them in the cache
-    return await this.#cacheLock.runExclusive(async () => {
-      // When the lock has been obtained, the cache may have changed,
-      // so we need to start the search from the beginning
-      [pivotFound, pivotId] = this.#getPivotIdInCache(priceAsBig);
-      if (pivotFound) {
-        return pivotId;
-      }
-      // Either the offer list is still empty or the cache is still insufficient.
-      // Try to fetch more offers to determine a pivot.
-      const comparison = this.ba === "asks" ? "gt" : "lt";
-      let lastSeenOffer = this.#offerCache.get(this.#worstInCache);
-      let nextId = lastSeenOffer?.next;
-      let pivotOffer: Market.Offer;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const nextOffers = await this.#fetchOfferListPrefix(
-          this.#lastReadBlockNumber,
-          nextId
-        );
-        for (const offer of nextOffers) {
-          // We try to insert all the fetched offers in case the cache is not at max size
-          this.#insertOffer(offer);
-          if (!pivotFound && offer.price[comparison](priceAsBig)) {
-            pivotFound = true;
-            pivotOffer = lastSeenOffer;
-          }
-          lastSeenOffer = offer;
-          nextId = offer.next;
-        }
-        if (pivotFound) {
-          return pivotOffer?.id;
-        }
-        if (nextId === undefined) {
-          // No more offers - and there might not be any at all
-          return lastSeenOffer?.id;
-        }
-      }
-    });
-  }
-
-  // Try to find a pivot id in the current cache.
-  // Returns [true, pivot id | undefined] if a pivot was found in the cache.
-  // Returns [false, undefined] if a pivot cannot be determined from the current cache.
-  #getPivotIdInCache(price: Big): [boolean, number | undefined] {
     const comparison = this.ba === "asks" ? "gt" : "lt";
-    let lastSeenOffer: Market.Offer | undefined;
-    let pivotFound = false;
-    for (const offer of this) {
-      lastSeenOffer = offer;
-      if (offer.price[comparison](price)) {
-        pivotFound = true;
-        break;
+    const result = await this.#foldLeftUntil(
+      {
+        pivotFound: false,
+        pivotId: undefined as number,
+      },
+      (accumulator) => accumulator.pivotFound,
+      (offer, accumulator) => {
+        if (offer.price[comparison](priceAsBig)) {
+          accumulator.pivotFound = true;
+        } else {
+          accumulator.pivotId = offer.id;
+        }
+        return accumulator;
       }
-    }
-    if (pivotFound) {
-      return [true, lastSeenOffer.prev];
-    }
-    // If we reached the end of the offer list, use the last offer as pivot
-    if (lastSeenOffer !== undefined && lastSeenOffer.next === undefined) {
-      return [true, lastSeenOffer.id];
-    }
-    return [false, undefined];
+    );
+    return result.pivotId;
   }
 
   /**
@@ -251,40 +200,91 @@ export class Semibook implements Iterable<Market.Offer> {
     given: Bigish;
     to: "buy" | "sell";
   }): Promise<Market.VolumeEstimate> {
-    const cacheVolumeEstimate = this.#estimateVolumeInCache(params);
+    const dict = {
+      buy: { drainer: "gives", filler: "wants" },
+      sell: { drainer: "wants", filler: "gives" },
+    } as const;
+    const data = dict[params.to];
 
-    let nextId = this.#offerCache.get(this.#worstInCache)?.next;
-    // Estimatation complete or are we certain to be at the end of the book?
-    if (
-      cacheVolumeEstimate.givenResidue.eq(0) ||
-      (nextId === undefined && this.#offerCache.size > 0)
-    ) {
-      return cacheVolumeEstimate;
+    return await this.#foldLeftUntil(
+      { estimatedVolume: Big(0), givenResidue: Big(params.given) },
+      (accumulator) => accumulator.givenResidue.eq(0),
+      (offer, accumulator) => {
+        const offerDrainerVolume = offer[data.drainer];
+        const offerVolumeDrained = accumulator.givenResidue.gt(
+          offerDrainerVolume
+        )
+          ? offerDrainerVolume
+          : accumulator.givenResidue;
+        const offerFillerVolume = offer[data.filler];
+        const offerPercentageUsed = offerVolumeDrained.div(offerDrainerVolume);
+        const offerVolumeFilled = offerFillerVolume.times(offerPercentageUsed);
+        accumulator.givenResidue =
+          accumulator.givenResidue.minus(offerVolumeDrained);
+        accumulator.estimatedVolume =
+          accumulator.estimatedVolume.plus(offerVolumeFilled);
+        return accumulator;
+      }
+    );
+  }
+
+  // Fold over offers until `stopCondition` is met.
+  // If cache is insufficient, fetch more offers in batches until `stopCondition` is met.
+  // All fetched offers are inserted in the cache if there is room.
+  async #foldLeftUntil<T>(
+    accumulator: T, // NB: Must work with cloning by `Object.assign`
+    stopCondition: (acc: T) => boolean,
+    op: (offer: Market.Offer, acc: T) => T
+  ): Promise<T> {
+    // Store accumulator in case we need to rerun after locking the cache
+    const originalAccumulator = accumulator;
+
+    // Fold only on current cache
+    accumulator = this.#foldLeftUntilInCache(
+      Object.assign({}, originalAccumulator),
+      stopCondition,
+      op
+    );
+    if (stopCondition(accumulator)) {
+      return accumulator;
+    }
+
+    // Are we certain to be at the end of the book?
+    const isCacheCertainlyComplete =
+      this.#offerCache.size > 0 &&
+      this.#offerCache.get(this.#worstInCache).next === undefined;
+    if (isCacheCertainlyComplete) {
+      return accumulator;
     }
 
     // Either the offer list is empty or the cache is insufficient.
     // Lock the cache as we are going to fetch more offers and put them in the cache
     return await this.#cacheLock.runExclusive(async () => {
       // When the lock has been obtained, the cache may have changed,
-      // so we need to start the estimation from the beginning
-      let { estimatedVolume, givenResidue } =
-        this.#estimateVolumeInCache(params);
-      nextId = this.#offerCache.get(this.#worstInCache)?.next;
-      // Estimatation complete or are we certain to be at the end of the book?
-      if (
-        cacheVolumeEstimate.givenResidue.eq(0) ||
-        (nextId === undefined && this.#offerCache.size > 0)
-      ) {
-        return { estimatedVolume, givenResidue };
-      }
-      // Either the offer list is still empty or the cache is still insufficient.
-      // Try to fetch more offers to estimate the volume
-      const dict = {
-        buy: { drainer: "gives", filler: "wants" },
-        sell: { drainer: "wants", filler: "gives" },
-      } as const;
+      // so we need to restart from the beginning
 
-      const data = dict[params.to];
+      // Fold only on current cache
+      accumulator = this.#foldLeftUntilInCache(
+        Object.assign({}, originalAccumulator),
+        stopCondition,
+        op
+      );
+      if (stopCondition(accumulator)) {
+        return accumulator;
+      }
+
+      // Are we certain to be at the end of the book?
+      const isCacheCertainlyComplete =
+        this.#offerCache.size > 0 &&
+        this.#offerCache.get(this.#worstInCache).next === undefined;
+      if (isCacheCertainlyComplete) {
+        return accumulator;
+      }
+
+      // Either the offer list is still empty or the cache is still insufficient.
+      // Try to fetch more offers to complete the fold
+      let nextId = this.#offerCache.get(this.#worstInCache)?.next;
+
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const nextOffers = await this.#fetchOfferListPrefix(
@@ -295,56 +295,34 @@ export class Semibook implements Iterable<Market.Offer> {
           // We try to insert all the fetched offers in case the cache is not at max size
           this.#insertOffer(offer);
 
-          if (givenResidue.gt(0)) {
-            const offerDrainerVolume = offer[data.drainer];
-            const offerVolumeDrained = givenResidue.gt(offerDrainerVolume)
-              ? offerDrainerVolume
-              : givenResidue;
-            const offerFillerVolume = offer[data.filler];
-            const offerPercentageUsed =
-              offerVolumeDrained.div(offerDrainerVolume);
-            const offerVolumeFilled =
-              offerFillerVolume.times(offerPercentageUsed);
-            givenResidue = givenResidue.minus(offerVolumeDrained);
-            estimatedVolume = estimatedVolume.plus(offerVolumeFilled);
+          // Only apply op f stop condition is _not_ met
+          if (!stopCondition(accumulator)) {
+            accumulator = op(offer, accumulator);
           }
-          nextId = offer.next;
         }
-        // Done or no more offers - and there might not be any at all
-        if (givenResidue.eq(0) || nextId === undefined) {
-          return { estimatedVolume, givenResidue };
+        if (stopCondition(accumulator)) {
+          return accumulator;
+        }
+        nextId = nextOffers[nextOffers.length - 1]?.next;
+        if (nextId === undefined) {
+          // No more offers (and there might not be any at all)
+          return accumulator;
         }
       }
     });
   }
 
-  #estimateVolumeInCache(params: {
-    given: Bigish;
-    to: "buy" | "sell";
-  }): Market.VolumeEstimate {
-    const dict = {
-      buy: { drainer: "gives", filler: "wants" },
-      sell: { drainer: "wants", filler: "gives" },
-    } as const;
-
-    const data = dict[params.to];
-
-    let volumeToDrain = Big(params.given);
-    let volumeFilled = Big(0);
+  // Fold over offers _in cache_ until `stopCondition` is met.
+  #foldLeftUntilInCache<T>(
+    accumulator: T,
+    stopCondition: (a: T) => boolean,
+    op: (offer: Market.Offer, acc: T) => T
+  ): T {
     for (const offer of this) {
-      const offerDrainerVolume = offer[data.drainer];
-      const offerVolumeDrained = volumeToDrain.gt(offerDrainerVolume)
-        ? offerDrainerVolume
-        : volumeToDrain;
-      const offerFillerVolume = offer[data.filler];
-      const offerPercentageUsed = offerVolumeDrained.div(offerDrainerVolume);
-      const offerVolumeFilled = offerFillerVolume.times(offerPercentageUsed);
-      volumeToDrain = volumeToDrain.minus(offerVolumeDrained);
-      volumeFilled = volumeFilled.plus(offerVolumeFilled);
-      if (volumeToDrain.eq(0)) break;
+      accumulator = op(offer, accumulator);
+      if (stopCondition(accumulator)) break;
     }
-
-    return { estimatedVolume: volumeFilled, givenResidue: volumeToDrain };
+    return accumulator;
   }
 
   private constructor(
