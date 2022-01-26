@@ -532,7 +532,7 @@ class Market {
   }
 
   /**
-   * Volume estimator, very crude (based on cached book).
+   * Volume estimator.
    *
    * if you say `estimateVolume({given:100,what:"base",to:"buy"})`,
    *
