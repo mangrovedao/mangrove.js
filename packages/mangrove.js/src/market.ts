@@ -108,6 +108,11 @@ namespace Market {
   export type MarketBook = { asks: Offer[]; bids: Offer[] };
 
   export type Book = { asks: Semibook; bids: Semibook };
+
+  export type VolumeEstimate = {
+    estimatedVolume: Big;
+    givenResidue: Big;
+  };
 }
 
 /**
@@ -499,36 +504,19 @@ class Market {
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    * */
-  estimateVolume(params: {
+  async estimateVolume(params: {
     given: Bigish;
     what: "base" | "quote";
     to: "buy" | "sell";
-  }): { estimatedVolume: Big; givenResidue: Big } {
-    const dict = {
-      base: {
-        buy: { offers: "asks", drainer: "gives", filler: "wants" },
-        sell: { offers: "bids", drainer: "wants", filler: "gives" },
-      },
-      quote: {
-        buy: { offers: "bids", drainer: "gives", filler: "wants" },
-        sell: { offers: "asks", drainer: "wants", filler: "gives" },
-      },
-    } as const;
-
-    const data = dict[params.what][params.to];
-
-    const offers = this.book()[data.offers];
-    let draining = Big(params.given);
-    let filling = Big(0);
-    for (const o of offers) {
-      const _drainer = o[data.drainer];
-      const drainer = draining.gt(_drainer) ? _drainer : draining;
-      const filler = o[data.filler].times(drainer).div(_drainer);
-      draining = draining.minus(drainer);
-      filling = filling.plus(filler);
-      if (draining.eq(0)) break;
+  }): Promise<Market.VolumeEstimate> {
+    if (
+      (params.what === "base" && params.to === "buy") ||
+      (params.what === "quote" && params.to === "sell")
+    ) {
+      return await this.#asksSemibook.estimateVolume(params);
+    } else {
+      return await this.#bidsSemibook.estimateVolume(params);
     }
-    return { estimatedVolume: filling, givenResidue: draining };
   }
 
   /**
