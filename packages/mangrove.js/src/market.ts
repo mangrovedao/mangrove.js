@@ -464,9 +464,7 @@ class Market {
     fillWants: boolean;
   }): Promise<Market.OrderResult> {
     const [outboundTkn, inboundTkn] =
-      orderType === "buy"
-        ? [this.base, this.quote, true]
-        : [this.quote, this.base, false];
+      orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
 
     const gasLimit = await this.estimateGas(orderType, wants);
     const response = await this.mgv.contract.marketOrder(
