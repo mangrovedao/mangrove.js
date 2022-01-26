@@ -31,9 +31,3 @@ export interface MarketParams {
 }
 
 export type Bigish = Big | number | string;
-
-export type TradeParams = { slippage?: number } & (
-  | { volume: Bigish; price: Bigish | null }
-  | { total: Bigish; price: Bigish | null }
-  | { wants: Bigish; gives: Bigish; fillWants?: boolean }
-);

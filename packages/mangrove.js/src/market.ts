@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
-import { TradeParams, Bigish, typechain } from "./types";
+import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
@@ -38,6 +38,12 @@ namespace Market {
     | ({ name: "OfferSuccess" } & TCM.OfferSuccessEvent)
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
+
+  export type TradeParams = { slippage?: number } & (
+    | { volume: Bigish; price: Bigish | null }
+    | { total: Bigish; price: Bigish | null }
+    | { wants: Bigish; gives: Bigish; fillWants?: boolean }
+  );
 
   export type BookOptions = {
     maxOffers?: number;
@@ -357,7 +363,7 @@ class Market {
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
-  buy(params: TradeParams): Promise<Market.OrderResult> {
+  buy(params: Market.TradeParams): Promise<Market.OrderResult> {
     let _wants, _gives, fillWants;
     if ("price" in params) {
       if ("volume" in params) {
@@ -408,7 +414,7 @@ class Market {
    * market.sell({volume: 100, price: 1})
    * ```
    */
-  sell(params: TradeParams): Promise<Market.OrderResult> {
+  sell(params: Market.TradeParams): Promise<Market.OrderResult> {
     let _wants, _gives, fillWants;
     if ("price" in params) {
       if ("volume" in params) {
