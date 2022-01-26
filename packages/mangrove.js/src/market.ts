@@ -4,7 +4,7 @@ import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
-import { Semibook, SemibookEvent } from "./semibook";
+import Semibook from "./semibook";
 
 let canConstructMarket = false;
 
@@ -224,7 +224,7 @@ class Market {
     cbArg,
     event,
     ethersLog: ethersLog,
-  }: SemibookEvent): void {
+  }: Semibook.Event): void {
     this.#updateBook(cbArg.ba);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {

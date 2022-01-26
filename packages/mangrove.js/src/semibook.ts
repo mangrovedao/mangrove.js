@@ -10,13 +10,16 @@ import { Listener } from "@ethersproject/providers";
 // Guard constructor against external calls
 let canConstructSemibook = false;
 
-export type SemibookEvent = {
-  cbArg: Market.BookSubscriptionCbArgument;
-  event: Market.BookSubscriptionEvent;
-  ethersLog: ethers.providers.Log;
-};
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace Semibook {
+  export type Event = {
+    cbArg: Market.BookSubscriptionCbArgument;
+    event: Market.BookSubscriptionEvent;
+    ethersLog: ethers.providers.Log;
+  };
 
-export type SemibookEventListener = (e: SemibookEvent) => void;
+  export type EventListener = (e: Event) => void;
+}
 
 type RawOfferData = {
   id: BigNumber;
@@ -41,7 +44,7 @@ type RawOfferData = {
  * - Volumes are in terms of base tokens
  */
 // TODO: Document invariants
-export class Semibook implements Iterable<Market.Offer> {
+class Semibook implements Iterable<Market.Offer> {
   readonly ba: "bids" | "asks";
   readonly market: Market;
   readonly options: Market.BookOptions; // complete and validated
@@ -53,7 +56,7 @@ export class Semibook implements Iterable<Market.Offer> {
 
   #blockEventCallback: Listener;
   #eventFilter: TypedEventFilter<any>;
-  #eventListener: SemibookEventListener;
+  #eventListener: Semibook.EventListener;
 
   #cacheLock: Mutex; // Lock that must be acquired when modifying the cache to ensure consistency and to queue cache updating events.
   #offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
@@ -64,7 +67,7 @@ export class Semibook implements Iterable<Market.Offer> {
   static async connect(
     market: Market,
     ba: "bids" | "asks",
-    eventListener: SemibookEventListener,
+    eventListener: Semibook.EventListener,
     options: Market.BookOptions
   ): Promise<Semibook> {
     canConstructSemibook = true;
@@ -328,7 +331,7 @@ export class Semibook implements Iterable<Market.Offer> {
   private constructor(
     market: Market,
     ba: "bids" | "asks",
-    eventListener: SemibookEventListener,
+    eventListener: Semibook.EventListener,
     options: Market.BookOptions
   ) {
     if (!canConstructSemibook) {
