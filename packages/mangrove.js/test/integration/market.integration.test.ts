@@ -229,9 +229,9 @@ describe("Market integration tests suite", () => {
 
     const done = new Deferred();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    market.subscribe((evt) => {
+    market.subscribe(async (evt) => {
       if (market.book().asks.length === 2) {
-        const { estimatedVolume: estimated } = market.estimateVolume({
+        const { estimatedVolume: estimated } = await market.estimateVolume({
           given: "2",
           what: "quote",
           to: "sell",

@@ -137,14 +137,13 @@ describe("Semibook integration tests suite", () => {
       it("returns all given as residue when cache and offer list is empty", async function () {
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
-        expect(semibook.estimateVolume({ given: 1, to })).to.deep.equal({
+        expect(await semibook.estimateVolume({ given: 1, to })).to.deep.equal({
           estimatedVolume: Big(0),
           givenResidue: Big(1),
         });
       });
 
-      // FIXME: This needs to be changed to cover dynamic loading; Right now we're testing the old behaviour
-      it("returns all given as residue when cache is empty and offer list is not", async function () {
+      it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
         // Put one offer on asks
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
@@ -158,14 +157,13 @@ describe("Semibook integration tests suite", () => {
           bookOptions: { maxOffers: 0 },
         });
         const semibook = market.getSemibook("asks");
-        expect(semibook.estimateVolume({ given: 1, to })).to.deep.equal({
-          estimatedVolume: Big(0),
-          givenResidue: Big(1),
+        expect(await semibook.estimateVolume({ given: 1, to })).to.deep.equal({
+          estimatedVolume: Big(1),
+          givenResidue: Big(0),
         });
       });
 
-      // FIXME: This needs to be changed to cover dynamic loading; Right now we're testing the old behaviour
-      it("returns only estimate for offers in cache when cache is partial", async function () {
+      it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
         // Put one offer on asks
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
@@ -182,8 +180,31 @@ describe("Semibook integration tests suite", () => {
           bookOptions: { maxOffers: 1 },
         });
         const semibook = market.getSemibook("asks");
-        expect(semibook.estimateVolume({ given: 2, to })).to.deep.equal({
-          estimatedVolume: Big(1),
+        expect(await semibook.estimateVolume({ given: 2, to })).to.deep.equal({
+          estimatedVolume: Big(2),
+          givenResidue: Big(0),
+        });
+      });
+
+      it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
+        // Put one offer on asks
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        // Load 1 offer in cache
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          bookOptions: { maxOffers: 1 },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(await semibook.estimateVolume({ given: 3, to })).to.deep.equal({
+          estimatedVolume: Big(2),
           givenResidue: Big(1),
         });
       });
@@ -199,7 +220,9 @@ describe("Semibook integration tests suite", () => {
       await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 0, to: "buy" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 0, to: "buy" })
+      ).to.deep.equal({
         estimatedVolume: Big(0),
         givenResidue: Big(0),
       });
@@ -213,7 +236,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 2, to: "buy" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 2, to: "buy" })
+      ).to.deep.equal({
         estimatedVolume: Big(2),
         givenResidue: Big(1),
       });
@@ -230,7 +255,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 3, to: "buy" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 3, to: "buy" })
+      ).to.deep.equal({
         estimatedVolume: Big(5),
         givenResidue: Big(1),
       });
@@ -244,7 +271,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 1, to: "buy" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 1, to: "buy" })
+      ).to.deep.equal({
         estimatedVolume: Big(2),
         givenResidue: Big(0),
       });
@@ -261,7 +290,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 2, to: "buy" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 2, to: "buy" })
+      ).to.deep.equal({
         estimatedVolume: Big(4),
         givenResidue: Big(0),
       });
@@ -277,7 +308,9 @@ describe("Semibook integration tests suite", () => {
       await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 0, to: "sell" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 0, to: "sell" })
+      ).to.deep.equal({
         estimatedVolume: Big(0),
         givenResidue: Big(0),
       });
@@ -291,7 +324,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 3, to: "sell" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 3, to: "sell" })
+      ).to.deep.equal({
         estimatedVolume: Big(1),
         givenResidue: Big(1),
       });
@@ -308,7 +343,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 6, to: "sell" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 6, to: "sell" })
+      ).to.deep.equal({
         estimatedVolume: Big(2),
         givenResidue: Big(1),
       });
@@ -322,7 +359,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 2, to: "sell" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 2, to: "sell" })
+      ).to.deep.equal({
         estimatedVolume: Big(1),
         givenResidue: Big(0),
       });
@@ -339,7 +378,9 @@ describe("Semibook integration tests suite", () => {
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      expect(semibook.estimateVolume({ given: 3, to: "sell" })).to.deep.equal({
+      expect(
+        await semibook.estimateVolume({ given: 3, to: "sell" })
+      ).to.deep.equal({
         estimatedVolume: Big(1.5),
         givenResidue: Big(0),
       });

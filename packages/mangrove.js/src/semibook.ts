@@ -199,7 +199,7 @@ export class Semibook implements Iterable<Market.Offer> {
         if (pivotFound) {
           return pivotOffer?.id;
         }
-        if (nextOffers.length < this.options.chunkSize) {
+        if (nextId === undefined) {
           // No more offers - and there might not be any at all
           return lastSeenOffer?.id;
         }
@@ -232,7 +232,7 @@ export class Semibook implements Iterable<Market.Offer> {
   }
 
   /**
-   * Volume estimator, very crude (based on cached offer list). FIXME: Update comment when complete
+   * Volume estimator.
    *
    * if you say `estimateVolume({given:100,to:"buy"})`,
    *
@@ -247,10 +247,81 @@ export class Semibook implements Iterable<Market.Offer> {
    * The returned `givenResidue` is how much of the given token that cannot be
    * traded due to insufficient volume on the book.
    */
-  estimateVolume(params: { given: Bigish; to: "buy" | "sell" }): {
-    estimatedVolume: Big;
-    givenResidue: Big;
-  } {
+  async estimateVolume(params: {
+    given: Bigish;
+    to: "buy" | "sell";
+  }): Promise<Market.VolumeEstimate> {
+    const cacheVolumeEstimate = this.#estimateVolumeInCache(params);
+
+    let nextId = this.#offerCache.get(this.#worstInCache)?.next;
+    // Estimatation complete or are we certain to be at the end of the book?
+    if (
+      cacheVolumeEstimate.givenResidue.eq(0) ||
+      (nextId === undefined && this.#offerCache.size > 0)
+    ) {
+      return cacheVolumeEstimate;
+    }
+
+    // Either the offer list is empty or the cache is insufficient.
+    // Lock the cache as we are going to fetch more offers and put them in the cache
+    return await this.#cacheLock.runExclusive(async () => {
+      // When the lock has been obtained, the cache may have changed,
+      // so we need to start the estimation from the beginning
+      let { estimatedVolume, givenResidue } =
+        this.#estimateVolumeInCache(params);
+      nextId = this.#offerCache.get(this.#worstInCache)?.next;
+      // Estimatation complete or are we certain to be at the end of the book?
+      if (
+        cacheVolumeEstimate.givenResidue.eq(0) ||
+        (nextId === undefined && this.#offerCache.size > 0)
+      ) {
+        return { estimatedVolume, givenResidue };
+      }
+      // Either the offer list is still empty or the cache is still insufficient.
+      // Try to fetch more offers to estimate the volume
+      const dict = {
+        buy: { drainer: "gives", filler: "wants" },
+        sell: { drainer: "wants", filler: "gives" },
+      } as const;
+
+      const data = dict[params.to];
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const nextOffers = await this.#fetchOfferListPrefix(
+          this.#lastReadBlockNumber,
+          nextId
+        );
+        for (const offer of nextOffers) {
+          // We try to insert all the fetched offers in case the cache is not at max size
+          this.#insertOffer(offer);
+
+          if (givenResidue.gt(0)) {
+            const offerDrainerVolume = offer[data.drainer];
+            const offerVolumeDrained = givenResidue.gt(offerDrainerVolume)
+              ? offerDrainerVolume
+              : givenResidue;
+            const offerFillerVolume = offer[data.filler];
+            const offerPercentageUsed =
+              offerVolumeDrained.div(offerDrainerVolume);
+            const offerVolumeFilled =
+              offerFillerVolume.times(offerPercentageUsed);
+            givenResidue = givenResidue.minus(offerVolumeDrained);
+            estimatedVolume = estimatedVolume.plus(offerVolumeFilled);
+          }
+          nextId = offer.next;
+        }
+        // Done or no more offers - and there might not be any at all
+        if (givenResidue.eq(0) || nextId === undefined) {
+          return { estimatedVolume, givenResidue };
+        }
+      }
+    });
+  }
+
+  #estimateVolumeInCache(params: {
+    given: Bigish;
+    to: "buy" | "sell";
+  }): Market.VolumeEstimate {
     const dict = {
       buy: { drainer: "gives", filler: "wants" },
       sell: { drainer: "wants", filler: "gives" },
@@ -260,18 +331,19 @@ export class Semibook implements Iterable<Market.Offer> {
 
     let volumeToDrain = Big(params.given);
     let volumeFilled = Big(0);
-    for (const o of this) {
-      const offerDrainerVolume = o[data.drainer];
+    for (const offer of this) {
+      const offerDrainerVolume = offer[data.drainer];
       const offerVolumeDrained = volumeToDrain.gt(offerDrainerVolume)
         ? offerDrainerVolume
         : volumeToDrain;
-      const offerFillerVolume = o[data.filler];
+      const offerFillerVolume = offer[data.filler];
       const offerPercentageUsed = offerVolumeDrained.div(offerDrainerVolume);
       const offerVolumeFilled = offerFillerVolume.times(offerPercentageUsed);
       volumeToDrain = volumeToDrain.minus(offerVolumeDrained);
       volumeFilled = volumeFilled.plus(offerVolumeFilled);
       if (volumeToDrain.eq(0)) break;
     }
+
     return { estimatedVolume: volumeFilled, givenResidue: volumeToDrain };
   }
 

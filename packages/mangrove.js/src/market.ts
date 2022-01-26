@@ -108,6 +108,11 @@ namespace Market {
   export type MarketBook = { asks: Offer[]; bids: Offer[] };
 
   export type Book = { asks: Semibook; bids: Semibook };
+
+  export type VolumeEstimate = {
+    estimatedVolume: Big;
+    givenResidue: Big;
+  };
 }
 
 /**
@@ -499,18 +504,18 @@ class Market {
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    * */
-  estimateVolume(params: {
+  async estimateVolume(params: {
     given: Bigish;
     what: "base" | "quote";
     to: "buy" | "sell";
-  }): { estimatedVolume: Big; givenResidue: Big } {
+  }): Promise<Market.VolumeEstimate> {
     if (
       (params.what === "base" && params.to === "buy") ||
       (params.what === "quote" && params.to === "sell")
     ) {
-      return this.#asksSemibook.estimateVolume(params);
+      return await this.#asksSemibook.estimateVolume(params);
     } else {
-      return this.#bidsSemibook.estimateVolume(params);
+      return await this.#bidsSemibook.estimateVolume(params);
     }
   }
 
