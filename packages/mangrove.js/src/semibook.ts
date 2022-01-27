@@ -97,7 +97,7 @@ class Semibook implements Iterable<Market.Offer> {
   ): Promise<Market.Offer[]> {
     return await this.#fetchOfferListPrefix(
       await this.market.mgv._provider.getBlockNumber(),
-      0,
+      undefined, // Start from best offer
       options
     );
   }
@@ -296,32 +296,27 @@ class Semibook implements Iterable<Market.Offer> {
 
       // Either the offer list is still empty or the cache is still insufficient.
       // Try to fetch more offers to complete the fold
-      let nextId = this.#offerCache.get(this.#worstInCache)?.next;
+      const nextId = this.#offerCache.get(this.#worstInCache)?.next;
 
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const nextOffers = await this.#fetchOfferListPrefix(
-          this.#lastReadBlockNumber,
-          nextId
-        );
-        for (const offer of nextOffers) {
-          // We try to insert all the fetched offers in case the cache is not at max size
-          this.#insertOffer(offer);
+      await this.#fetchOfferListPrefixUntil(
+        this.#lastReadBlockNumber,
+        nextId,
+        this.options.chunkSize,
+        (chunk) => {
+          for (const offer of chunk) {
+            // We try to insert all the fetched offers in case the cache is not at max size
+            this.#insertOffer(offer);
 
-          // Only apply op f stop condition is _not_ met
-          if (!stopCondition(accumulator)) {
-            accumulator = op(offer, accumulator);
+            // Only apply op f stop condition is _not_ met
+            if (!stopCondition(accumulator)) {
+              accumulator = op(offer, accumulator);
+            }
           }
+          return stopCondition(accumulator);
         }
-        if (stopCondition(accumulator)) {
-          return accumulator;
-        }
-        nextId = nextOffers[nextOffers.length - 1]?.next;
-        if (nextId === undefined) {
-          // No more offers (and there might not be any at all)
-          return accumulator;
-        }
-      }
+      );
+
+      return accumulator;
     });
   }
 
@@ -603,7 +598,7 @@ class Semibook implements Iterable<Market.Offer> {
     return offer;
   }
 
-  /* Provides the book with raw BigNumber values */
+  /** Fetches offers from the network */
   async #fetchOfferListPrefix(
     blockNumber: number,
     fromId?: number,
@@ -614,38 +609,49 @@ class Semibook implements Iterable<Market.Offer> {
       ...options,
     });
 
+    return await this.#fetchOfferListPrefixUntil(
+      blockNumber,
+      fromId,
+      opts.chunkSize,
+      (chunk, allFetched) => allFetched.length >= opts.maxOffers
+    );
+  }
+
+  /** Fetches offers from the network until a condition is met. */
+  async #fetchOfferListPrefixUntil(
+    blockNumber: number,
+    fromId: number,
+    chunkSize: number,
+    processChunk: (chunk: Market.Offer[], allFetched: Market.Offer[]) => boolean // Should return `true` when fetching should stop
+  ): Promise<Market.Offer[]> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
       this.ba
     );
-    // save total number of offers we want
-    let maxOffersLeft = opts.maxOffers;
 
-    let nextId = fromId ?? 0;
-
+    let chunk: Market.Offer[];
     const result: Market.Offer[] = [];
     do {
       const [_nextId, offerIds, offers, details] =
         await this.market.mgv.readerContract.offerList(
           outbound_tkn.address,
           inbound_tkn.address,
-          nextId,
-          opts.chunkSize,
+          this.#idToRawId(fromId),
+          chunkSize,
           { blockTag: blockNumber }
         );
 
-      for (const [index, offerId] of offerIds.entries()) {
-        result.push(
-          this.#rawOfferToOffer({
-            id: offerId,
-            ...offers[index],
-            ...details[index],
-          })
-        );
-      }
+      chunk = offerIds.map((offerId, index) =>
+        this.#rawOfferToOffer({
+          id: offerId,
+          ...offers[index],
+          ...details[index],
+        })
+      );
 
-      nextId = this.#rawIdToId(_nextId);
-      maxOffersLeft = maxOffersLeft - opts.chunkSize;
-    } while (maxOffersLeft > 0 && nextId !== 0);
+      result.push(...chunk);
+
+      fromId = this.#rawIdToId(_nextId);
+    } while (!processChunk(chunk, result) && fromId !== undefined);
 
     return result;
   }
