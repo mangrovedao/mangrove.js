@@ -31,7 +31,7 @@ namespace LiquidityProvider {
    *  offer order.
    */
 
-  type OptParams = { gasreq?: number; gasprice?: number };
+  type OptParams = { gasreq?: number; gasprice?: number; fund?: Bigish };
 
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
@@ -107,6 +107,7 @@ class LiquidityProvider {
     gives: Big;
     gasreq?: number;
     gasprice?: number;
+    fund?: Bigish;
   } {
     let wants, gives, price;
     // deduce price from wants&gives, or deduce wants&gives from volume&price
@@ -126,13 +127,26 @@ class LiquidityProvider {
     }
     const gasreq = p.gasreq;
     const gasprice = p.gasprice;
-    return { wants, gives, price, gasreq, gasprice };
+    const fund = p.fund;
+
+    return { wants, gives, price, gasreq, gasprice, fund };
+  }
+
+  #optValueToPayableOverride(
+    overrides: ethers.Overrides,
+    fund?: Bigish
+  ): ethers.PayableOverrides {
+    if (fund) {
+      return { value: this.mgv.toUnits(fund, 18), ...overrides };
+    } else {
+      return overrides;
+    }
   }
 
   /** Post a new ask */
   newAsk(
     p: LiquidityProvider.OfferParams,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.providers.Log }> {
     return this.newOffer({ ba: "asks", ...p }, overrides);
   }
@@ -140,7 +154,7 @@ class LiquidityProvider {
   /** Post a new bid */
   newBid(
     p: LiquidityProvider.OfferParams,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.providers.Log }> {
     return this.newOffer({ ba: "bids", ...p }, overrides);
   }
@@ -204,9 +218,9 @@ class LiquidityProvider {
 
   async newOffer(
     p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {}
   ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
-    const { wants, gives, price, gasreq, gasprice } =
+    const { wants, gives, price, gasreq, gasprice, fund } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
@@ -218,7 +232,7 @@ class LiquidityProvider {
       gasreq ? gasreq : await this.#gasreq(),
       gasprice ? gasprice : 0,
       pivot ?? 0,
-      overrides
+      this.#optValueToPayableOverride(overrides, fund)
     );
 
     logger.debug(`Post new offer`, {
@@ -237,6 +251,8 @@ class LiquidityProvider {
   }
 
   /** Update an existing ask */
+  /** e.g `updateAsk(42,{price:0.2, volume:1000, gasreq:100000, fund:0.01})`*/
+  /** to change volume and price of the offer, and update its gas requirement and fund 0.01 ether to maker balance*/
   updateAsk(
     id: number,
     p: LiquidityProvider.OfferParams,
@@ -270,11 +286,9 @@ class LiquidityProvider {
         `No offer in ${p} with id ${id} owned by this maker contract.`
       );
     }
-
-    const { wants, gives, price, gasreq, gasprice } =
+    const { wants, gives, price, gasreq, gasprice, fund } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-
     const resp = await this.#proxy().contract.updateOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -284,7 +298,7 @@ class LiquidityProvider {
       gasprice ? gasprice : offer.gasprice,
       (await this.market.getPivotId(p.ba, price)) ?? 0,
       id,
-      overrides
+      this.#optValueToPayableOverride(overrides, fund)
     );
 
     logger.debug(`Update offer`, {

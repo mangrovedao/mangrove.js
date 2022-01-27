@@ -1,7 +1,7 @@
 import { logger } from "./util/logger";
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
-import { TradeParams, Bigish, typechain } from "./types";
+import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
@@ -39,6 +39,12 @@ namespace Market {
     | ({ name: "OfferSuccess" } & TCM.OfferSuccessEvent)
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
+
+  export type TradeParams = { slippage?: number } & (
+    | { volume: Bigish; price: Bigish | null }
+    | { total: Bigish; price: Bigish | null }
+    | { wants: Bigish; gives: Bigish; fillWants?: boolean }
+  );
 
   export type BookOptions = {
     maxOffers?: number;
@@ -109,6 +115,11 @@ namespace Market {
   export type MarketBook = { asks: Offer[]; bids: Offer[] };
 
   export type Book = { asks: Semibook; bids: Semibook };
+
+  export type VolumeEstimate = {
+    estimatedVolume: Big;
+    givenResidue: Big;
+  };
 }
 
 /**
@@ -348,8 +359,9 @@ class Market {
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: buy `wants` tokens for a max average price of `price`, or
-   * - `{wants,gives}`: accept implicit max average price of `gives/wants`
+   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be true.
+   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
+   * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
@@ -364,10 +376,26 @@ class Market {
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
-  buy(params: TradeParams): Promise<Market.OrderResult> {
-    const _wants = "price" in params ? Big(params.volume) : Big(params.wants);
-    let _gives =
-      "price" in params ? _wants.mul(params.price) : Big(params.gives);
+  buy(params: Market.TradeParams): Promise<Market.OrderResult> {
+    let _wants, _gives, fillWants;
+    if ("price" in params) {
+      if ("volume" in params) {
+        _wants = Big(params.volume);
+        _gives =
+          params.price === null
+            ? Big(2).pow(256).minus(1)
+            : _wants.mul(params.price);
+        fillWants = true;
+      } else {
+        _gives = Big(params.total);
+        _wants = params.price === null ? 0 : _gives.div(params.price);
+        fillWants = false;
+      }
+    } else {
+      _wants = Big(params.wants);
+      _gives = Big(params.gives);
+      fillWants = "fillWants" in params ? params.fillWants : true;
+    }
 
     const slippage = validateSlippage(params.slippage);
 
@@ -376,14 +404,15 @@ class Market {
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(_gives);
 
-    return this.#marketOrder({ gives, wants, orderType: "buy" });
+    return this.#marketOrder({ gives, wants, orderType: "buy", fillWants });
   }
 
   /**
    * Market sell order. Will attempt to sell base token for quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: sell `gives` tokens for a min average of `price`
-   * - `{wants,gives}`: accept implicit min average price of `gives/wants`.
+   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
+   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`. Set `price` to null. `fillWants` will be true.
+   * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
@@ -398,10 +427,26 @@ class Market {
    * market.sell({volume: 100, price: 1})
    * ```
    */
-  sell(params: TradeParams): Promise<Market.OrderResult> {
-    const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
-    let _wants =
-      "price" in params ? _gives.mul(params.price) : Big(params.wants);
+  sell(params: Market.TradeParams): Promise<Market.OrderResult> {
+    let _wants, _gives, fillWants;
+    if ("price" in params) {
+      if ("volume" in params) {
+        _gives = Big(params.volume);
+        _wants = params.price === null ? 0 : _gives.mul(params.price);
+        fillWants = false;
+      } else {
+        _wants = Big(params.total);
+        _gives =
+          params.price === null
+            ? Big(2).pow(256).minus(1)
+            : _wants.div(params.price);
+        fillWants = true;
+      }
+    } else {
+      _wants = Big(params.wants);
+      _gives = Big(params.gives);
+      fillWants = "fillWants" in params ? params.fillWants : false;
+    }
 
     const slippage = validateSlippage(params.slippage);
 
@@ -410,16 +455,16 @@ class Market {
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
 
-    return this.#marketOrder({ wants, gives, orderType: "sell" });
+    return this.#marketOrder({ wants, gives, orderType: "sell", fillWants });
   }
 
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
-   * with contract function argument `fillWants` set to true.
    *
    * If `orderType` is `"sell"`, the quote/base market will be used,
-   * with contract function argument `fillWants` set to false.
+   *
+   * `fillWants` defines whether the market order stops immediately once `wants` tokens have been purchased or whether it tries to keep going until `gives` tokens have been spent.
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
@@ -430,15 +475,15 @@ class Market {
     wants,
     gives,
     orderType,
+    fillWants,
   }: {
     wants: ethers.BigNumber;
     gives: ethers.BigNumber;
     orderType: "buy" | "sell";
+    fillWants: boolean;
   }): Promise<Market.OrderResult> {
-    const [outboundTkn, inboundTkn, fillWants] =
-      orderType === "buy"
-        ? [this.base, this.quote, true]
-        : [this.quote, this.base, false];
+    const [outboundTkn, inboundTkn] =
+      orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
 
     logger.debug("Creating market order", {
       contextInfo: "market.marketOrder",
@@ -513,36 +558,19 @@ class Market {
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    * */
-  estimateVolume(params: {
+  async estimateVolume(params: {
     given: Bigish;
     what: "base" | "quote";
     to: "buy" | "sell";
-  }): { estimatedVolume: Big; givenResidue: Big } {
-    const dict = {
-      base: {
-        buy: { offers: "asks", drainer: "gives", filler: "wants" },
-        sell: { offers: "bids", drainer: "wants", filler: "gives" },
-      },
-      quote: {
-        buy: { offers: "bids", drainer: "gives", filler: "wants" },
-        sell: { offers: "asks", drainer: "wants", filler: "gives" },
-      },
-    } as const;
-
-    const data = dict[params.what][params.to];
-
-    const offers = this.book()[data.offers];
-    let draining = Big(params.given);
-    let filling = Big(0);
-    for (const o of offers) {
-      const _drainer = o[data.drainer];
-      const drainer = draining.gt(_drainer) ? _drainer : draining;
-      const filler = o[data.filler].times(drainer).div(_drainer);
-      draining = draining.minus(drainer);
-      filling = filling.plus(filler);
-      if (draining.eq(0)) break;
+  }): Promise<Market.VolumeEstimate> {
+    if (
+      (params.what === "base" && params.to === "buy") ||
+      (params.what === "quote" && params.to === "sell")
+    ) {
+      return await this.#asksSemibook.estimateVolume(params);
+    } else {
+      return await this.#bidsSemibook.estimateVolume(params);
     }
-    return { estimatedVolume: filling, givenResidue: draining };
   }
 
   /**

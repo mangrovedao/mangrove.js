@@ -176,8 +176,11 @@ describe("SimpleMaker", () => {
 
       it("pushes a new offer", async () => {
         const provision = await onchain_lp.computeAskProvision({});
-        await onchain_lp.fundMangrove(provision);
-        const { id: ofrId } = await onchain_lp.newAsk({ wants: 10, gives: 10 });
+        const { id: ofrId } = await onchain_lp.newAsk({
+          wants: 10,
+          gives: 10,
+          fund: provision,
+        });
         const asks = onchain_lp.asks();
         assert.strictEqual(
           asks.length,
@@ -196,10 +199,10 @@ describe("SimpleMaker", () => {
 
       it("cancels offer", async () => {
         const provision = await onchain_lp.computeBidProvision({});
-        await onchain_lp.fundMangrove(provision);
         const { id: ofrId } = await onchain_lp.newBid({
           wants: 10,
           gives: 20,
+          fund: provision,
         });
 
         await onchain_lp.cancelBid(ofrId);
@@ -209,13 +212,12 @@ describe("SimpleMaker", () => {
       });
 
       it("updates offer", async () => {
-        let provision = await onchain_lp.computeAskProvision({});
-        await onchain_lp.fundMangrove(provision);
         const { id: ofrId } = await onchain_lp.newAsk({
           wants: 10,
           gives: 20,
+          fund: await onchain_lp.computeAskProvision({}),
         });
-        provision = await onchain_lp.computeAskProvision({ id: ofrId });
+        const provision = await onchain_lp.computeAskProvision({ id: ofrId });
         assert.strictEqual(
           provision.toNumber(),
           0,
