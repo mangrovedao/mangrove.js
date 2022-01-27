@@ -45,6 +45,18 @@ namespace Market {
   );
 
   /**
+   * Specification of how much volume to (potentially) trade on the market.
+   *
+   * `{given:100, what:"base", to:"buy"}` means buying 100 base tokens.
+   *
+   * `{given:10, what:"quote", to:"sell"})` means selling 10 quote tokens.
+   */
+  export type VolumeParams = Semibook.VolumeParams & {
+    /** Whether `given` is the market's base or quote. */
+    what: "base" | "quote";
+  };
+
+  /**
    * Options that control how the book cache behaves.
    */
   export type BookOptions = {
@@ -64,6 +76,10 @@ namespace Market {
      * `maxOffers` and `desiredPrice` are mutually exclusive.
      */
     desiredPrice?: Bigish;
+    /**
+     * The volume that is expected to be used in trades on the market.
+     */
+    desiredVolume?: VolumeParams;
   };
 
   export type Offer = {
@@ -214,12 +230,34 @@ class Market {
   }
 
   async #initialize(opts: Market.BookOptions = bookOptsDefault): Promise<void> {
+    const semibookDesiredVolume =
+      opts.desiredVolume === undefined
+        ? undefined
+        : { given: opts.desiredVolume.given, to: opts.desiredVolume.to };
+    const isVolumeDesiredForAsks =
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "buy") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "sell"));
+    const isVolumeDesiredForBids =
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "sell") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "buy"));
+
     const getSemibookOpts: (ba: "bids" | "asks") => Semibook.Options = (
       ba
     ) => ({
       maxOffers: opts.maxOffers,
       chunkSize: opts.chunkSize,
       desiredPrice: opts.desiredPrice,
+      desiredVolume:
+        (ba === "asks" && isVolumeDesiredForAsks) ||
+        (ba === "bids" && isVolumeDesiredForBids)
+          ? semibookDesiredVolume
+          : undefined,
     });
 
     const asksSemibookPromise = Semibook.connect(
@@ -565,11 +603,9 @@ class Market {
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    * */
-  async estimateVolume(params: {
-    given: Bigish;
-    what: "base" | "quote";
-    to: "buy" | "sell";
-  }): Promise<Market.VolumeEstimate> {
+  async estimateVolume(
+    params: Market.VolumeParams
+  ): Promise<Market.VolumeEstimate> {
     if (
       (params.what === "base" && params.to === "buy") ||
       (params.what === "quote" && params.to === "sell")

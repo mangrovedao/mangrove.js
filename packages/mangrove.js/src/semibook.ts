@@ -20,6 +20,20 @@ namespace Semibook {
   export type EventListener = (e: Event) => void;
 
   /**
+   * Specification of how much volume to (potentially) trade on the semibook.
+   *
+   * `{given:100, to:"buy"}` means buying 100 base tokens.
+   *
+   * `{given:10, to:"sell"})` means selling 10 quote tokens.
+   */
+  export type VolumeParams = {
+    /** Amount of token to trade. */
+    given: Bigish;
+    /** Whether `given` is base to be bought or quote to be sold. */
+    to: "buy" | "sell";
+  };
+
+  /**
    * Options that control how the book cache behaves.
    *
    * `maxOffers` and `desiredPrice` are mutually exclusive.
@@ -40,6 +54,10 @@ namespace Semibook {
      * This can be useful in order to ensure a good pivot is readily available.
      */
     desiredPrice?: Bigish;
+    /**
+     * The volume that is expected to be used in trades on the market.
+     */
+    desiredVolume?: VolumeParams;
   };
 }
 
@@ -228,27 +246,27 @@ class Semibook implements Iterable<Market.Offer> {
    * The returned `givenResidue` is how much of the given token that cannot be
    * traded due to insufficient volume on the book.
    */
-  async estimateVolume(params: {
-    given: Bigish;
-    to: "buy" | "sell";
-  }): Promise<Market.VolumeEstimate> {
-    const dict = {
+  async estimateVolume(
+    params: Semibook.VolumeParams
+  ): Promise<Market.VolumeEstimate> {
+    const TRADE_OPERATION_FILLER_DRAINER_DICT = {
       buy: { drainer: "gives", filler: "wants" },
       sell: { drainer: "wants", filler: "gives" },
     } as const;
-    const data = dict[params.to];
+
+    const { drainer, filler } = TRADE_OPERATION_FILLER_DRAINER_DICT[params.to];
 
     return await this.#foldLeftUntil(
       { estimatedVolume: Big(0), givenResidue: Big(params.given) },
       (accumulator) => accumulator.givenResidue.eq(0),
       (offer, accumulator) => {
-        const offerDrainerVolume = offer[data.drainer];
+        const offerDrainerVolume = offer[drainer];
         const offerVolumeDrained = accumulator.givenResidue.gt(
           offerDrainerVolume
         )
           ? offerDrainerVolume
           : accumulator.givenResidue;
-        const offerFillerVolume = offer[data.filler];
+        const offerFillerVolume = offer[filler];
         const offerPercentageUsed = offerVolumeDrained.div(offerDrainerVolume);
         const offerVolumeFilled = offerFillerVolume.times(offerPercentageUsed);
         accumulator.givenResidue =
@@ -648,27 +666,41 @@ class Semibook implements Iterable<Market.Offer> {
     fromId?: number,
     options?: Semibook.Options
   ): Promise<Market.Offer[]> {
-    const opts = this.#setDefaultsAndValidateOptions(options ?? this.options);
+    options = this.#setDefaultsAndValidateOptions(options ?? this.options);
 
-    if (opts.desiredPrice !== undefined) {
+    if (options.desiredPrice !== undefined) {
       return await this.#fetchOfferListPrefixUntil(
         blockNumber,
         fromId,
-        opts.chunkSize,
+        options.chunkSize,
         (chunk) =>
           chunk.length === 0
             ? true
             : this.isPriceBetter(
-                opts.desiredPrice,
+                options.desiredPrice,
                 chunk[chunk.length - 1].price
               )
+      );
+    } else if (options.desiredVolume !== undefined) {
+      const filler = options.desiredVolume.to === "buy" ? "gives" : "wants";
+      let volume = Big(0);
+      return await this.#fetchOfferListPrefixUntil(
+        blockNumber,
+        fromId,
+        options.chunkSize,
+        (chunk) => {
+          chunk.forEach((offer) => {
+            volume = volume.plus(offer[filler]);
+          });
+          return volume.gte(options.desiredVolume.given);
+        }
       );
     } else {
       return await this.#fetchOfferListPrefixUntil(
         blockNumber,
         fromId,
-        opts.chunkSize,
-        (chunk, allFetched) => allFetched.length >= opts.maxOffers
+        options.chunkSize,
+        (chunk, allFetched) => allFetched.length >= options.maxOffers
       );
     }
   }
@@ -795,10 +827,17 @@ class Semibook implements Iterable<Market.Offer> {
   #setDefaultsAndValidateOptions(options: Semibook.Options): Semibook.Options {
     const result = Object.assign({}, options);
 
-    if (options.maxOffers !== undefined && options.desiredPrice !== undefined) {
-      throw Error("Only one of maxOffers and desiredPrice can be specified");
+    const countCacheContentOptions =
+      (options.maxOffers !== undefined ? 1 : 0) +
+      (options.desiredPrice !== undefined ? 1 : 0) +
+      (options.desiredVolume !== undefined ? 1 : 0);
+    if (countCacheContentOptions > 1) {
+      throw Error(
+        "Only one of maxOffers, desiredPrice, and desiredVolume can be specified"
+      );
     }
-    if (options.maxOffers < 0) {
+
+    if (options.maxOffers !== undefined && options.maxOffers < 0) {
       throw Error("Semibook options.maxOffers must be >= 0");
     }
 
