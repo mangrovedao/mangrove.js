@@ -1,5 +1,7 @@
 # Next version
 
+- Improve logging: add file logging, allow applications using the package to configure logging using local `config` file.
+
 # 0.1.0 (January 2022)
 
 - `{Market|Semibook}.getPivotId` now fetches offers until a pivot can be determined
