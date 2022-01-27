@@ -1,7 +1,6 @@
 import { Big } from "big.js";
 import { ethers, BigNumber } from "ethers";
 import { Mangrove, Market } from ".";
-import { bookOptsDefault } from "./market";
 import { Bigish } from "./types";
 import { TypedEventFilter } from "./types/typechain/common";
 import { Mutex } from "async-mutex";
@@ -22,12 +21,25 @@ namespace Semibook {
 
   /**
    * Options that control how the book cache behaves.
+   *
+   * `maxOffers` and `desiredPrice` are mutually exclusive.
+   * If none of these are specfied, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
    */
   export type Options = {
-    /** The maximum number of offers to store in the cache. */
+    /** The maximum number of offers to store in the cache.
+     *
+     * `maxOffers` and `desiredPrice` are mutually exclusive.
+     */
     maxOffers?: number;
-    /** The number of offers to fetch in one call. Defaults to max(`maxOffers`, 1). */
+    /** The number of offers to fetch in one call.
+     *
+     * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
     chunkSize?: number;
+    /** The price that is expected to be used in calls to the market.
+     * The cache will initially contain all offers with this price or better.
+     * This can be useful in order to ensure a good pivot is readily available.
+     */
+    desiredPrice?: Bigish;
   };
 }
 
@@ -55,6 +67,8 @@ type RawOfferData = {
  */
 // TODO: Document invariants
 class Semibook implements Iterable<Market.Offer> {
+  static readonly DEFAULT_MAX_OFFERS = 50;
+
   readonly ba: "bids" | "asks";
   readonly market: Market;
   readonly options: Semibook.Options; // complete and validated
@@ -164,6 +178,12 @@ class Semibook implements Iterable<Market.Offer> {
     };
   }
 
+  /** Returns the number of offers in the cache.
+   */
+  size(): number {
+    return this.#offerCache.size;
+  }
+
   /** Given a price, find the id of the immediately-better offer in the
    * semibook. If there is no offer with a better price, `undefined` is returned.
    */
@@ -174,7 +194,6 @@ class Semibook implements Iterable<Market.Offer> {
     // We ignore the gasreq comparison because we may not
     // know the gasreq (could be picked by offer contract)
     const priceAsBig = Big(price);
-    const comparison = this.ba === "asks" ? "gt" : "lt";
     const result = await this.#foldLeftUntil(
       {
         pivotFound: false,
@@ -182,7 +201,7 @@ class Semibook implements Iterable<Market.Offer> {
       },
       (accumulator) => accumulator.pivotFound,
       (offer, accumulator) => {
-        if (offer.price[comparison](priceAsBig)) {
+        if (this.isPriceWorse(offer.price, priceAsBig)) {
           accumulator.pivotFound = true;
         } else {
           accumulator.pivotId = offer.id;
@@ -239,6 +258,24 @@ class Semibook implements Iterable<Market.Offer> {
         return accumulator;
       }
     );
+  }
+
+  /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
+   */
+  isPriceBetter(price: Bigish, referencePrice: Bigish): boolean {
+    const priceAsBig = Big(price);
+    const referencePriceAsBig = Big(referencePrice);
+    const priceComparison = this.ba === "asks" ? "lt" : "gt";
+    return priceAsBig[priceComparison](referencePriceAsBig);
+  }
+
+  /** Returns `true` if `price` is worse than `referencePrice`; Otherwise, `false` is returned.
+   */
+  isPriceWorse(price: Bigish, referencePrice: Bigish): boolean {
+    const priceAsBig = Big(price);
+    const referencePriceAsBig = Big(referencePrice);
+    const priceComparison = this.ba === "asks" ? "gt" : "lt";
+    return priceAsBig[priceComparison](referencePriceAsBig);
   }
 
   // Fold over offers until `stopCondition` is met.
@@ -564,8 +601,11 @@ class Semibook implements Iterable<Market.Offer> {
       nextOffer.prev = offer.id;
     }
 
-    // Evict worst offer if over max size
-    if (this.#offerCache.size > this.options.maxOffers) {
+    // If maxOffers option has been specified, evict worst offer if over max size
+    if (
+      this.options.maxOffers !== undefined &&
+      this.#offerCache.size > this.options.maxOffers
+    ) {
       const removedOffer = this.#removeOffer(this.#worstInCache);
       if (offer.id === removedOffer.id) {
         return false;
@@ -598,23 +638,39 @@ class Semibook implements Iterable<Market.Offer> {
     return offer;
   }
 
-  /** Fetches offers from the network */
+  /** Fetches offers from the network.
+   *
+   * If options are given, those are used instead of the options
+   * given when constructing the Semibook.
+   */
   async #fetchOfferListPrefix(
     blockNumber: number,
     fromId?: number,
     options?: Semibook.Options
   ): Promise<Market.Offer[]> {
-    const opts = this.#setDefaultsAndValidateOptions({
-      ...this.options,
-      ...options,
-    });
+    const opts = this.#setDefaultsAndValidateOptions(options ?? this.options);
 
-    return await this.#fetchOfferListPrefixUntil(
-      blockNumber,
-      fromId,
-      opts.chunkSize,
-      (chunk, allFetched) => allFetched.length >= opts.maxOffers
-    );
+    if (opts.desiredPrice !== undefined) {
+      return await this.#fetchOfferListPrefixUntil(
+        blockNumber,
+        fromId,
+        opts.chunkSize,
+        (chunk) =>
+          chunk.length === 0
+            ? true
+            : this.isPriceBetter(
+                opts.desiredPrice,
+                chunk[chunk.length - 1].price
+              )
+      );
+    } else {
+      return await this.#fetchOfferListPrefixUntil(
+        blockNumber,
+        fromId,
+        opts.chunkSize,
+        (chunk, allFetched) => allFetched.length >= opts.maxOffers
+      );
+    }
   }
 
   /** Fetches offers from the network until a condition is met. */
@@ -737,15 +793,20 @@ class Semibook implements Iterable<Market.Offer> {
   }
 
   #setDefaultsAndValidateOptions(options: Semibook.Options): Semibook.Options {
-    const result = { ...bookOptsDefault, ...options };
+    const result = Object.assign({}, options);
+
+    if (options.maxOffers !== undefined && options.desiredPrice !== undefined) {
+      throw Error("Only one of maxOffers and desiredPrice can be specified");
+    }
+    if (options.maxOffers < 0) {
+      throw Error("Semibook options.maxOffers must be >= 0");
+    }
+
     if (result.chunkSize === undefined) {
       result.chunkSize =
         result.maxOffers !== undefined && result.maxOffers > 0
           ? result.maxOffers
-          : bookOptsDefault.maxOffers;
-    }
-    if (options.maxOffers < 0) {
-      throw Error("Semibook options.maxOffers must be >= 0");
+          : Semibook.DEFAULT_MAX_OFFERS;
     }
     if (options.chunkSize <= 0) {
       throw Error("Semibook options.chunkSize must be > 0");

@@ -8,7 +8,6 @@ import Semibook from "./semibook";
 
 let canConstructMarket = false;
 
-const DEFAULT_MAX_OFFERS = 50;
 const MAX_MARKET_ORDER_GAS = 6500000;
 
 /* Note on big.js:
@@ -22,7 +21,7 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 export const bookOptsDefault: Market.BookOptions = {
-  maxOffers: DEFAULT_MAX_OFFERS,
+  maxOffers: Semibook.DEFAULT_MAX_OFFERS,
 };
 
 import type { Awaited } from "ts-essentials";
@@ -49,10 +48,22 @@ namespace Market {
    * Options that control how the book cache behaves.
    */
   export type BookOptions = {
-    /** The maximum number of offers to store in the cache. */
+    /** The maximum number of offers to store in the cache.
+     *
+     * `maxOffers` and `desiredPrice` are mutually exclusive.
+     */
     maxOffers?: number;
-    /** The number of offers to fetch in one call. Defaults to max(`maxOffers`, 1). */
+    /** The number of offers to fetch in one call.
+     *
+     * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
     chunkSize?: number;
+    /** The price that is expected to be used in calls to the market.
+     * The cache will initially contain all offers with this price or better.
+     * This can be useful in order to ensure a good pivot is readily available.
+     *
+     * `maxOffers` and `desiredPrice` are mutually exclusive.
+     */
+    desiredPrice?: Bigish;
   };
 
   export type Offer = {
@@ -203,19 +214,25 @@ class Market {
   }
 
   async #initialize(opts: Market.BookOptions = bookOptsDefault): Promise<void> {
-    opts = { ...bookOptsDefault, ...opts };
+    const getSemibookOpts: (ba: "bids" | "asks") => Semibook.Options = (
+      ba
+    ) => ({
+      maxOffers: opts.maxOffers,
+      chunkSize: opts.chunkSize,
+      desiredPrice: opts.desiredPrice,
+    });
 
     const asksSemibookPromise = Semibook.connect(
       this,
       "asks",
       (e) => this.#semibookCallback(e),
-      opts
+      getSemibookOpts("asks")
     );
     const bidsSemibookPromise = Semibook.connect(
       this,
       "bids",
       (e) => this.#semibookCallback(e),
-      opts
+      getSemibookOpts("bids")
     );
 
     this.#asksSemibook = await asksSemibookPromise;
@@ -297,7 +314,6 @@ class Market {
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
   ): Promise<Market.MarketBook> {
-    opts = { ...bookOptsDefault, ...opts };
     const asksPromise = this.#asksSemibook.requestOfferListPrefix(opts);
     const bidsPromise = this.#bidsSemibook.requestOfferListPrefix(opts);
     return {
