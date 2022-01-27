@@ -33,20 +33,19 @@ const stringifyData = (data) => {
 
 const defaultLogLevel = "error";
 
-const logLevel = config.has("logLevel")
-  ? config.get<string>("logLevel")
+const logLevel = config.MangroveJs.has("logLevel")
+  ? config.MangroveJs.get<string>("logLevel")
   : defaultLogLevel;
 
 const additionnalTransports = [];
 
-if (config.has("logFile")) {
-  const logFile = config.get<string>("logFile");
+if (config.MangroveJs.has("logFile")) {
+  const logFile = config.MangroveJs.get<string>("logFile");
   additionnalTransports.push(
     new transports.File({
       level: logLevel,
       filename: logFile,
       format: format.combine(
-        format.colorize(),
         format.splat(),
         format.timestamp(),
         consoleLogFormat

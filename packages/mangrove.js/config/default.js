@@ -1,6 +1,6 @@
 // Config file with defaults
 var config = {
-  logLevel: "debug",
+  logLevel: "info",
   // logFile: "logs/mangrove.log", // enable file logging
 };
 
