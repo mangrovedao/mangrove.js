@@ -45,8 +45,13 @@ namespace Market {
     | { wants: Bigish; gives: Bigish; fillWants?: boolean }
   );
 
+  /**
+   * Options that control how the book cache behaves.
+   */
   export type BookOptions = {
+    /** The maximum number of offers to store in the cache. */
     maxOffers?: number;
+    /** The number of offers to fetch in one call. Defaults to max(`maxOffers`, 1). */
     chunkSize?: number;
   };
 

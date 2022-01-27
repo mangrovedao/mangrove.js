@@ -19,6 +19,16 @@ namespace Semibook {
   };
 
   export type EventListener = (e: Event) => void;
+
+  /**
+   * Options that control how the book cache behaves.
+   */
+  export type Options = {
+    /** The maximum number of offers to store in the cache. */
+    maxOffers?: number;
+    /** The number of offers to fetch in one call. Defaults to max(`maxOffers`, 1). */
+    chunkSize?: number;
+  };
 }
 
 type RawOfferData = {
@@ -47,7 +57,7 @@ type RawOfferData = {
 class Semibook implements Iterable<Market.Offer> {
   readonly ba: "bids" | "asks";
   readonly market: Market;
-  readonly options: Market.BookOptions; // complete and validated
+  readonly options: Semibook.Options; // complete and validated
 
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
   #offer_gasbase: number;
@@ -68,7 +78,7 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: "bids" | "asks",
     eventListener: Semibook.EventListener,
-    options: Market.BookOptions
+    options: Semibook.Options
   ): Promise<Semibook> {
     canConstructSemibook = true;
     const semibook = new Semibook(market, ba, eventListener, options);
@@ -83,7 +93,7 @@ class Semibook implements Iterable<Market.Offer> {
   }
 
   async requestOfferListPrefix(
-    options: Market.BookOptions
+    options: Semibook.Options
   ): Promise<Market.Offer[]> {
     return await this.#fetchOfferListPrefix(
       await this.market.mgv._provider.getBlockNumber(),
@@ -332,7 +342,7 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: "bids" | "asks",
     eventListener: Semibook.EventListener,
-    options: Market.BookOptions
+    options: Semibook.Options
   ) {
     if (!canConstructSemibook) {
       throw Error(
@@ -597,7 +607,7 @@ class Semibook implements Iterable<Market.Offer> {
   async #fetchOfferListPrefix(
     blockNumber: number,
     fromId?: number,
-    options?: Market.BookOptions
+    options?: Semibook.Options
   ): Promise<Market.Offer[]> {
     const opts = this.#setDefaultsAndValidateOptions({
       ...this.options,
@@ -720,9 +730,7 @@ class Semibook implements Iterable<Market.Offer> {
     };
   }
 
-  #setDefaultsAndValidateOptions(
-    options: Market.BookOptions
-  ): Market.BookOptions {
+  #setDefaultsAndValidateOptions(options: Semibook.Options): Semibook.Options {
     const result = { ...bookOptsDefault, ...options };
     if (result.chunkSize === undefined) {
       result.chunkSize =
