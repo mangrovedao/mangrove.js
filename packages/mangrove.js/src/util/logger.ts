@@ -37,11 +37,11 @@ const logLevel = config.MangroveJs.has("logLevel")
   ? config.MangroveJs.get<string>("logLevel")
   : defaultLogLevel;
 
-const additionnalTransports = [];
+const additionalTransports = [];
 
 if (config.MangroveJs.has("logFile")) {
   const logFile = config.MangroveJs.get<string>("logFile");
-  additionnalTransports.push(
+  additionalTransports.push(
     new transports.File({
       level: logLevel,
       filename: logFile,
@@ -59,7 +59,7 @@ export { logdataProcessor };
 export const logger: BetterLogger = createLogger(
   consoleLogFormat,
   logLevel,
-  additionnalTransports
+  additionalTransports
 );
 
 export default logger;
