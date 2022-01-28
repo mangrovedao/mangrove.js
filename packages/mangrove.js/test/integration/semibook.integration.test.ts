@@ -132,257 +132,555 @@ describe("Semibook integration tests suite", () => {
     });
   });
 
-  (["buy", "sell"] as const).forEach((to) =>
-    describe(`estimateVolume({to: ${to}}) - cache tests`, () => {
-      it("returns all given as residue when cache and offer list is empty", async function () {
+  describe("estimateVolume", () => {
+    (["buy", "sell"] as const).forEach((to) =>
+      describe(`estimateVolume({to: ${to}}) - cache tests`, () => {
+        it("returns all given as residue when cache and offer list is empty", async function () {
+          const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+          const semibook = market.getSemibook("asks");
+          expect(await semibook.estimateVolume({ given: 1, to })).to.deep.equal(
+            {
+              estimatedVolume: Big(0),
+              givenResidue: Big(1),
+            }
+          );
+        });
+
+        it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
+          // Put one offer on asks
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+          // Load no offers in cache
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: { maxOffers: 0 },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(await semibook.estimateVolume({ given: 1, to })).to.deep.equal(
+            {
+              estimatedVolume: Big(1),
+              givenResidue: Big(0),
+            }
+          );
+        });
+
+        it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
+          // Put one offer on asks
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+          // Load 1 offer in cache
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: { maxOffers: 1 },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(await semibook.estimateVolume({ given: 2, to })).to.deep.equal(
+            {
+              estimatedVolume: Big(2),
+              givenResidue: Big(0),
+            }
+          );
+        });
+
+        it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
+          // Put one offer on asks
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+          // Load 1 offer in cache
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: { maxOffers: 1 },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(await semibook.estimateVolume({ given: 3, to })).to.deep.equal(
+            {
+              estimatedVolume: Big(2),
+              givenResidue: Big(1),
+            }
+          );
+        });
+      })
+    );
+
+    describe("estimateVolume({to: buy}) - calculation tests", () => {
+      it("returns zero when given is zero", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
-        expect(await semibook.estimateVolume({ given: 1, to })).to.deep.equal({
+        expect(
+          await semibook.estimateVolume({ given: 0, to: "buy" })
+        ).to.deep.equal({
           estimatedVolume: Big(0),
+          givenResidue: Big(0),
+        });
+      });
+
+      it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const semibook = market.getSemibook("asks");
+        expect(
+          await semibook.estimateVolume({ given: 2, to: "buy" })
+        ).to.deep.equal({
+          estimatedVolume: Big(2),
           givenResidue: Big(1),
         });
       });
 
-      it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
-        // Put one offer on asks
+      it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
         await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
 
-        // Load no offers in cache
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          bookOptions: { maxOffers: 0 },
-        });
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
-        expect(await semibook.estimateVolume({ given: 1, to })).to.deep.equal({
+        expect(
+          await semibook.estimateVolume({ given: 3, to: "buy" })
+        ).to.deep.equal({
+          estimatedVolume: Big(5),
+          givenResidue: Big(1),
+        });
+      });
+
+      it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const semibook = market.getSemibook("asks");
+        expect(
+          await semibook.estimateVolume({ given: 1, to: "buy" })
+        ).to.deep.equal({
+          estimatedVolume: Big(2),
+          givenResidue: Big(0),
+        });
+      });
+
+      it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const semibook = market.getSemibook("asks");
+        expect(
+          await semibook.estimateVolume({ given: 2, to: "buy" })
+        ).to.deep.equal({
+          estimatedVolume: Big(4),
+          givenResidue: Big(0),
+        });
+      });
+    });
+
+    describe("estimateVolume({to: sell}) - calculation tests", () => {
+      it("returns zero when given is zero", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const semibook = market.getSemibook("asks");
+        expect(
+          await semibook.estimateVolume({ given: 0, to: "sell" })
+        ).to.deep.equal({
+          estimatedVolume: Big(0),
+          givenResidue: Big(0),
+        });
+      });
+
+      it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const semibook = market.getSemibook("asks");
+        expect(
+          await semibook.estimateVolume({ given: 3, to: "sell" })
+        ).to.deep.equal({
+          estimatedVolume: Big(1),
+          givenResidue: Big(1),
+        });
+      });
+
+      it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const semibook = market.getSemibook("asks");
+        expect(
+          await semibook.estimateVolume({ given: 6, to: "sell" })
+        ).to.deep.equal({
+          estimatedVolume: Big(2),
+          givenResidue: Big(1),
+        });
+      });
+
+      it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const semibook = market.getSemibook("asks");
+        expect(
+          await semibook.estimateVolume({ given: 2, to: "sell" })
+        ).to.deep.equal({
           estimatedVolume: Big(1),
           givenResidue: Big(0),
         });
       });
 
-      it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
-        // Put one offer on asks
+      it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
         await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
 
-        // Load 1 offer in cache
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          bookOptions: { maxOffers: 1 },
-        });
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
-        expect(await semibook.estimateVolume({ given: 2, to })).to.deep.equal({
-          estimatedVolume: Big(2),
+        expect(
+          await semibook.estimateVolume({ given: 3, to: "sell" })
+        ).to.deep.equal({
+          estimatedVolume: Big(1.5),
           givenResidue: Big(0),
         });
-      });
-
-      it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
-        // Put one offer on asks
-        await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
-        );
-        await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
-        );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
-
-        // Load 1 offer in cache
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          bookOptions: { maxOffers: 1 },
-        });
-        const semibook = market.getSemibook("asks");
-        expect(await semibook.estimateVolume({ given: 3, to })).to.deep.equal({
-          estimatedVolume: Big(2),
-          givenResidue: Big(1),
-        });
-      });
-    })
-  );
-
-  describe("estimateVolume({to: buy}) - calculation tests", () => {
-    it("returns zero when given is zero", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
-
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 0, to: "buy" })
-      ).to.deep.equal({
-        estimatedVolume: Big(0),
-        givenResidue: Big(0),
-      });
-    });
-
-    it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
-
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 2, to: "buy" })
-      ).to.deep.equal({
-        estimatedVolume: Big(2),
-        givenResidue: Big(1),
-      });
-    });
-
-    it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
-
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 3, to: "buy" })
-      ).to.deep.equal({
-        estimatedVolume: Big(5),
-        givenResidue: Big(1),
-      });
-    });
-
-    it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
-
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 1, to: "buy" })
-      ).to.deep.equal({
-        estimatedVolume: Big(2),
-        givenResidue: Big(0),
-      });
-    });
-
-    it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
-
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 2, to: "buy" })
-      ).to.deep.equal({
-        estimatedVolume: Big(4),
-        givenResidue: Big(0),
       });
     });
   });
 
-  describe("estimateVolume({to: sell}) - calculation tests", () => {
-    it("returns zero when given is zero", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
+  describe("initialization options", () => {
+    describe("Option.desiredPrice", () => {
+      it("does not fail if offer list is empty", async function () {
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          bookOptions: {
+            desiredPrice: 1,
+            chunkSize: 1, // Fetch only 1 offer in each chunk
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(0);
+      });
 
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 0, to: "sell" })
-      ).to.deep.equal({
-        estimatedVolume: Big(0),
-        givenResidue: Big(0),
+      it("fetches all offers if all have a better price", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          bookOptions: {
+            desiredPrice: 3,
+            chunkSize: 1, // Fetch only 1 offer in each chunk
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(2);
+      });
+
+      it("fetches only one chunk if no offers have a better price", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          bookOptions: {
+            desiredPrice: 1,
+            chunkSize: 1, // Fetch only 1 offer in each chunk
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(1);
+      });
+
+      it("stops fetching when a chunk with a worse price has been fetched", async function () {
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
+        );
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "4" })
+        );
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          bookOptions: {
+            desiredPrice: 2,
+            chunkSize: 1, // Fetch only 1 offer in each chunk
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(3);
       });
     });
 
-    it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+    describe("Option.desiredVolume", () => {
+      describe("{to: buy}", () => {
+        it("does not fail if offer list is empty", async function () {
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 1,
+                what: "base",
+                to: "buy",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(0);
+        });
 
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 3, to: "sell" })
-      ).to.deep.equal({
-        estimatedVolume: Big(1),
-        givenResidue: Big(1),
+        it("fetches all offers if offer list has insufficient volume", async function () {
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 3,
+                what: "base",
+                to: "buy",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(2);
+        });
+
+        it("fetches only one chunk if it has sufficient volume", async function () {
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 1,
+                what: "base",
+                to: "buy",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(1);
+        });
+
+        it("stops fetching when sufficient volume has been fetched", async function () {
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "4" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 3,
+                what: "base",
+                to: "buy",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(3);
+        });
       });
-    });
 
-    it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+      describe("{to: sell}", () => {
+        it("does not fail if offer list is empty", async function () {
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 1,
+                what: "quote",
+                to: "sell",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(0);
+        });
 
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 6, to: "sell" })
-      ).to.deep.equal({
-        estimatedVolume: Big(2),
-        givenResidue: Big(1),
-      });
-    });
+        it("fetches all offers if offer list has insufficient volume", async function () {
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
 
-    it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 3,
+                what: "quote",
+                to: "sell",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(2);
+        });
 
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 2, to: "sell" })
-      ).to.deep.equal({
-        estimatedVolume: Big(1),
-        givenResidue: Big(0),
-      });
-    });
+        it("fetches only one chunk if it has sufficient volume", async function () {
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
 
-    it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
-      );
-      await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
-      );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 1,
+                what: "quote",
+                to: "sell",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(1);
+        });
 
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const semibook = market.getSemibook("asks");
-      expect(
-        await semibook.estimateVolume({ given: 3, to: "sell" })
-      ).to.deep.equal({
-        estimatedVolume: Big(1.5),
-        givenResidue: Big(0),
+        it("stops fetching when sufficient volume has been fetched", async function () {
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "4", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "3", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "1" })
+          );
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+          );
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            bookOptions: {
+              desiredVolume: {
+                given: 3,
+                what: "quote",
+                to: "sell",
+              },
+              chunkSize: 1, // Fetch only 1 offer in each chunk
+            },
+          });
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(3);
+        });
       });
     });
   });

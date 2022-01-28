@@ -4,11 +4,10 @@ import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
-import { Semibook, SemibookEvent } from "./semibook";
+import Semibook from "./semibook";
 
 let canConstructMarket = false;
 
-const DEFAULT_MAX_OFFERS = 50;
 const MAX_MARKET_ORDER_GAS = 6500000;
 
 /* Note on big.js:
@@ -22,7 +21,7 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 export const bookOptsDefault: Market.BookOptions = {
-  maxOffers: DEFAULT_MAX_OFFERS,
+  maxOffers: Semibook.DEFAULT_MAX_OFFERS,
 };
 
 import type { Awaited } from "ts-essentials";
@@ -45,9 +44,42 @@ namespace Market {
     | { wants: Bigish; gives: Bigish; fillWants?: boolean }
   );
 
+  /**
+   * Specification of how much volume to (potentially) trade on the market.
+   *
+   * `{given:100, what:"base", to:"buy"}` means buying 100 base tokens.
+   *
+   * `{given:10, what:"quote", to:"sell"})` means selling 10 quote tokens.
+   */
+  export type VolumeParams = Semibook.VolumeParams & {
+    /** Whether `given` is the market's base or quote. */
+    what: "base" | "quote";
+  };
+
+  /**
+   * Options that control how the book cache behaves.
+   */
   export type BookOptions = {
+    /** The maximum number of offers to store in the cache.
+     *
+     * `maxOffers` and `desiredPrice` are mutually exclusive.
+     */
     maxOffers?: number;
+    /** The number of offers to fetch in one call.
+     *
+     * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
     chunkSize?: number;
+    /** The price that is expected to be used in calls to the market.
+     * The cache will initially contain all offers with this price or better.
+     * This can be useful in order to ensure a good pivot is readily available.
+     *
+     * `maxOffers` and `desiredPrice` are mutually exclusive.
+     */
+    desiredPrice?: Bigish;
+    /**
+     * The volume that is expected to be used in trades on the market.
+     */
+    desiredVolume?: VolumeParams;
   };
 
   export type Offer = {
@@ -198,19 +230,47 @@ class Market {
   }
 
   async #initialize(opts: Market.BookOptions = bookOptsDefault): Promise<void> {
-    opts = { ...bookOptsDefault, ...opts };
+    const semibookDesiredVolume =
+      opts.desiredVolume === undefined
+        ? undefined
+        : { given: opts.desiredVolume.given, to: opts.desiredVolume.to };
+    const isVolumeDesiredForAsks =
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "buy") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "sell"));
+    const isVolumeDesiredForBids =
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "sell") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "buy"));
+
+    const getSemibookOpts: (ba: "bids" | "asks") => Semibook.Options = (
+      ba
+    ) => ({
+      maxOffers: opts.maxOffers,
+      chunkSize: opts.chunkSize,
+      desiredPrice: opts.desiredPrice,
+      desiredVolume:
+        (ba === "asks" && isVolumeDesiredForAsks) ||
+        (ba === "bids" && isVolumeDesiredForBids)
+          ? semibookDesiredVolume
+          : undefined,
+    });
 
     const asksSemibookPromise = Semibook.connect(
       this,
       "asks",
       (e) => this.#semibookCallback(e),
-      opts
+      getSemibookOpts("asks")
     );
     const bidsSemibookPromise = Semibook.connect(
       this,
       "bids",
       (e) => this.#semibookCallback(e),
-      opts
+      getSemibookOpts("bids")
     );
 
     this.#asksSemibook = await asksSemibookPromise;
@@ -224,7 +284,7 @@ class Market {
     cbArg,
     event,
     ethersLog: ethersLog,
-  }: SemibookEvent): void {
+  }: Semibook.Event): void {
     this.#updateBook(cbArg.ba);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
@@ -292,7 +352,6 @@ class Market {
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
   ): Promise<Market.MarketBook> {
-    opts = { ...bookOptsDefault, ...opts };
     const asksPromise = this.#asksSemibook.requestOfferListPrefix(opts);
     const bidsPromise = this.#bidsSemibook.requestOfferListPrefix(opts);
     return {
@@ -532,7 +591,7 @@ class Market {
   }
 
   /**
-   * Volume estimator, very crude (based on cached book).
+   * Volume estimator.
    *
    * if you say `estimateVolume({given:100,what:"base",to:"buy"})`,
    *
@@ -544,11 +603,9 @@ class Market {
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    * */
-  async estimateVolume(params: {
-    given: Bigish;
-    what: "base" | "quote";
-    to: "buy" | "sell";
-  }): Promise<Market.VolumeEstimate> {
+  async estimateVolume(
+    params: Market.VolumeParams
+  ): Promise<Market.VolumeEstimate> {
     if (
       (params.what === "base" && params.to === "buy") ||
       (params.what === "quote" && params.to === "sell")
