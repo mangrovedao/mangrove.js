@@ -81,6 +81,9 @@ export async function getProviderNetwork(
  * In addition, you can specify
  * - `options.forceReadOnly:boolean` to connect readonly to mangrove. If you don't specify a signer and the provider does not include a signer, you will connect in readonly mode.
  *
+ * IMPORTANT if both provider&signer are ethers objects, the signer will connect
+ * to the provider (so any signer info on the provider will be ignored).
+ *
  * When in readonly mode, all write operations will fail and msg.sender will be
  * 0x0000000000000000000000000000000000000001
  *
@@ -95,12 +98,6 @@ export async function _createSigner(
   signer: Signer;
 }> {
   let readOnly = false;
-  // Cannot give both a signer and provider. Instead, give a provider + signing info.
-  if (options.provider && options.signer) {
-    throw new Error(
-      "Cannot give both a provider and a signer. Try giving a privateKey or a mnemonic instead of a signer."
-    );
-  }
 
   if (options.signer && options.signer.provider) {
     return { readOnly, signer: options.signer };
@@ -142,7 +139,14 @@ export async function _createSigner(
 
   // Add an explicit signer
   if (options.signer) {
-    signer = options.signer;
+    try {
+      signer = options.signer.connect(provider);
+    } catch (e) {
+      console.warn(
+        "provided signer object is not able to reinstantiate on new provider info."
+      );
+      throw e;
+    }
     if (options.mnemonic || options.privateKey) {
       console.warn("options.signer overrides mnemonic and privateKey.");
     }
