@@ -258,7 +258,7 @@ TODO include transaction options (see here)[https://github.com/compound-finance/
 
 ## Package configuration
 
-mangrove.js uses `config` package for its configuration.
+mangrove.js uses the [node-config](https://github.com/lorenwest/node-config) package for configuration.
 
 It allows apps who requires `mangrove.js` to override default package configuration, by setting configuration in `MangroveJs` namespace.
 
