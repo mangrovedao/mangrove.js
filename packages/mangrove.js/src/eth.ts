@@ -5,7 +5,7 @@
 
 import { ethers } from "ethers";
 import { Provider, Signer } from "./types";
-import { logger } from "./util/logger";
+import { logger, logdataLimiter } from "./util/logger";
 
 export interface CreateSignerOptions {
   provider?: Provider | string;
@@ -106,7 +106,7 @@ export async function _createSigner(
   if (options.signer && options.signer.provider) {
     logger.debug("Uses provider from given signer", {
       contextInfo: "eth.signer",
-      data: { signer: options.signer },
+      data: logdataLimiter({ signer: options.signer }),
     });
     return { readOnly, signer: options.signer };
   }
