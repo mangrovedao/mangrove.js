@@ -3,7 +3,7 @@ import {
   BetterLogger,
   format,
   transports,
-  logdataProcessor,
+  logdataLimiter,
 } from "@mangrovedao/commonlib-js";
 import os from "os";
 import safeStringify from "fast-safe-stringify";
@@ -54,7 +54,7 @@ if (config.MangroveJs.has("logFile")) {
   );
 }
 
-export { logdataProcessor };
+export { logdataLimiter };
 
 export const logger: BetterLogger = createLogger(
   consoleLogFormat,

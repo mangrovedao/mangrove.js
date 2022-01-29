@@ -2,7 +2,7 @@ import { ErrorWithData } from "./errorWithData";
 import {
   BetterLogger,
   createLogger,
-  logdataProcessor,
+  logdataLimiter,
   format,
   transports,
 } from "./logger";
@@ -12,7 +12,7 @@ export {
   ErrorWithData,
   BetterLogger,
   createLogger,
-  logdataProcessor,
+  logdataLimiter,
   format,
   transports,
   sleep,

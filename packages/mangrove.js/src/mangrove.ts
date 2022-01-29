@@ -1,4 +1,4 @@
-import { logger, logdataProcessor } from "./util/logger";
+import { logger, logdataLimiter } from "./util/logger";
 import pick from "object.pick";
 import { addresses, decimals as loadedDecimals } from "./constants";
 import * as eth from "./eth";
@@ -95,7 +95,7 @@ class Mangrove {
 
     logger.debug("Initialize Mangrove", {
       contextInfo: "mangrove.base",
-      data: logdataProcessor({
+      data: logdataLimiter({
         signer: signer,
         network: network,
         readOnly: readOnly,

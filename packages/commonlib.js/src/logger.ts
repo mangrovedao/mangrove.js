@@ -7,7 +7,7 @@ import {
 import Transport from "winston-transport";
 import { ErrorWithData } from "./errorWithData";
 import { Format } from "logform";
-import safeStringify from "fast-safe-stringify";
+import truncate from "json-truncate";
 
 export type LogMetadata = {
   data?: Object;
@@ -56,11 +56,8 @@ export const createLogger = (
 };
 
 // This processor must be used when logging large objects, because of Winston memory consumption in that case
-export const logdataProcessor = (data: Object): string => {
-  return safeStringify(data, undefined, undefined, {
-    depthLimit: 3,
-    edgesLimit: undefined,
-  });
+export const logdataLimiter = (data: Object): string => {
+  return truncate(data, { maxDepth: 3, replace: "[Truncated]" });
 };
 
 export { format, transports };
