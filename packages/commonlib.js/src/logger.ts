@@ -21,7 +21,7 @@ export interface BetterLogger extends Logger {
 export const createLogger = (
   consoleFormatLogger: Format,
   logLevel: string,
-  additionnalTransports: Transport[] = []
+  additionalTransports: Transport[] = []
 ): BetterLogger => {
   const consoleTransport = new transports.Console({
     level: logLevel,
@@ -33,10 +33,10 @@ export const createLogger = (
       consoleFormatLogger
     ),
   });
-  additionnalTransports.push(consoleTransport);
+  additionalTransports.push(consoleTransport);
 
   const theLogger = winstonCreateLogger({
-    transports: additionnalTransports,
+    transports: additionalTransports,
   }) as BetterLogger;
 
   // Monkey patching Winston because it incorrectly logs `Error` instances even in 2021
