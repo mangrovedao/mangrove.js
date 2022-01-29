@@ -45,7 +45,7 @@ const mgv = await Mangrove.connect({
 ## Obtaining a market object
 
 ```js
-  // Connect to ETHUSDC market
+  // Connect to ETH-USDC market
   const market = mgv.market({ base: "ETH", quote: "USDC" });
 
   // Check allowance
