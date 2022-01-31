@@ -4,7 +4,7 @@ import ethers from "ethers";
 import { WebSocketProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { NonceManager } from "@ethersproject/experimental";
-import { Mangrove, Market } from "../..";
+import { Mangrove, Market, Semibook } from "../..";
 
 export const command = "retract <base> <quote>";
 export const aliases = [];
@@ -38,7 +38,7 @@ export async function handler(argv: Arguments): Promise<void> {
 
   console.log(`Retracting offers from address ${makerAddress}`);
 
-  const { asks, bids } = market.book();
+  const { asks, bids } = market.getBook();
 
   if (!argv.ba || argv.ba === "asks") {
     await retractAllFromOfferlist(
@@ -66,10 +66,11 @@ export async function handler(argv: Arguments): Promise<void> {
 async function retractAllFromOfferlist(
   market: Market,
   ba: "asks" | "bids",
-  offerList: Market.Offer[],
+  semibook: Semibook,
   makerAddress: string,
   deprovision: boolean
 ) {
+  const offerList = [...semibook];
   console.log(
     `Retracting from '${ba}' list...        (offer count: ${offerList.length})`
   );

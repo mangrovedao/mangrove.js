@@ -3,6 +3,8 @@ import { describe, beforeEach, afterEach, it } from "mocha";
 import { expect } from "chai";
 
 import { toWei } from "../util/helpers";
+import * as mgvTestUtil from "../util/mgvIntegrationTestUtil";
+const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import assert from "assert";
 import { Mangrove, Market } from "../..";
@@ -66,9 +68,9 @@ describe("Market integration tests suite", () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const pro1 = marketro.once((evt) => {
         assert.strictEqual(
-          marketro.book().asks.length,
+          marketro.getBook().asks.size(),
           1,
-          "book should have length 1 by now"
+          "book should have size 1 by now"
         );
       });
       await helpers.newOffer(mgv, market.base, market.quote, {
@@ -84,11 +86,14 @@ describe("Market integration tests suite", () => {
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    let latestBook: Market.MarketBook;
+    let latestAsks: Market.Offer[];
+    let latestBids: Market.Offer[];
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
       queue.put(evt);
-      latestBook = market.book();
+      const { asks, bids } = market.getBook();
+      latestAsks = [...asks];
+      latestBids = [...bids];
     };
     market.subscribe(cb);
 
@@ -142,14 +147,8 @@ describe("Market integration tests suite", () => {
       },
     ]);
 
-    assert.deepStrictEqual(
-      latestBook,
-      {
-        asks: [offer1],
-        bids: [offer2],
-      },
-      "book not correct"
-    );
+    assert.deepStrictEqual(latestAsks, [offer1], "asks semibook not correct");
+    assert.deepStrictEqual(latestBids, [offer2], "bids semibook not correct");
 
     market.sell({ wants: "1", gives: "1.3" });
 
@@ -183,9 +182,9 @@ describe("Market integration tests suite", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const pro1 = market.once((evt) => {
       assert.strictEqual(
-        market.book().asks.length,
+        market.getBook().asks.size(),
         1,
-        "book should have length 1 by now"
+        "book should have size 1 by now"
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
@@ -197,9 +196,9 @@ describe("Market integration tests suite", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const pro2 = market.once((evt) => {
       assert.strictEqual(
-        market.book().asks.length,
+        market.getBook().asks.size(),
         2,
-        "book should have length 2 by now"
+        "book should have size 2 by now"
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
@@ -211,9 +210,9 @@ describe("Market integration tests suite", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const pro3 = market.once((evt) => {
       assert.strictEqual(
-        market.book().asks.length,
+        market.getBook().asks.size(),
         3,
-        "book should have length 3 by now"
+        "book should have size 3 by now"
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
@@ -230,7 +229,7 @@ describe("Market integration tests suite", () => {
     const done = new Deferred();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     market.subscribe(async (evt) => {
-      if (market.book().asks.length === 2) {
+      if (market.getBook().asks.size() === 2) {
         const { estimatedVolume: estimated } = await market.estimateVolume({
           given: "2",
           what: "quote",
@@ -270,10 +269,12 @@ describe("Market integration tests suite", () => {
     /* fill orderbook with bids and asks */
     /* note that we are NOT testing mangrove.js's newOffer function
      * so we create offers through ethers.js generic API */
-    for (const ask of asks)
-      await helpers.newOffer(mgv, "TokenA", "TokenB", ask);
-    for (const bid of bids)
-      await helpers.newOffer(mgv, "TokenB", "TokenA", bid);
+    for (const ask of asks) {
+      await waitForTransaction(helpers.newOffer(mgv, "TokenA", "TokenB", ask));
+    }
+    for (const bid of bids) {
+      await waitForTransaction(helpers.newOffer(mgv, "TokenB", "TokenA", bid));
+    }
 
     /* Now we create the orderbook we expect to get back so we can compare them */
 
