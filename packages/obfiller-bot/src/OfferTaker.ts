@@ -93,13 +93,13 @@ export class OfferTaker {
   async #takeOfferOnBidsOrAsks(): Promise<void> {
     let ba: BA;
     let offerList: Offer[];
-    const book = this.#market.book();
+    const book = this.#market.getBook();
     if (random.float(0, 1) < this.#bidProbability) {
       ba = "bids";
-      offerList = book.bids;
+      offerList = [...book.bids];
     } else {
       ba = "asks";
-      offerList = book.asks;
+      offerList = [...book.asks];
     }
     if (offerList.length === 0) {
       logger.warn("Offer list is empty so not making a market order", {

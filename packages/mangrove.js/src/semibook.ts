@@ -59,6 +59,31 @@ namespace Semibook {
      */
     desiredVolume?: VolumeParams;
   };
+
+  /**
+   * An iterator over a semibook cache.
+   */
+  export interface CacheIterator extends IterableIterator<Market.Offer> {
+    /** Filter the offers in the cache using a predicate.
+     *
+     * @param predicate Function is a predicate, to test each element of the array.
+     *   Should return `true` if the element should be kept; otherwise `false` should be returned.
+     */
+    filter(predicate: (offer: Market.Offer) => boolean): CacheIterator;
+
+    /** Returns the value of the first element in the provided array that
+     * satisfies the provided predicate. If no values satisfy the testing function,
+     * `undefined` is returned.
+     *
+     * @param predicate Function is a predicate, to test each element of the array.
+     *  The firs offer that satisifies the predicate is returned;
+     *  otherwise `undefined` is returned.
+     */
+    find(predicate: (offer: Market.Offer) => boolean): Market.Offer;
+
+    /** Returns the elements in an array. */
+    toArray(): Market.Offer[];
+  }
 }
 
 type RawOfferData = {
@@ -119,7 +144,7 @@ class Semibook implements Iterable<Market.Offer> {
     return semibook;
   }
 
-  /* Stop listening to events from mangrove */
+  /** Stop listening to events from mangrove */
   disconnect(): void {
     this.market.mgv._provider.off("block", this.#blockEventCallback);
   }
@@ -181,25 +206,24 @@ class Semibook implements Iterable<Market.Offer> {
     );
   }
 
-  [Symbol.iterator](): Iterator<Market.Offer> {
-    let latest = this.#bestInCache;
-    return {
-      next: () => {
-        const value =
-          latest === undefined ? undefined : this.#offerCache.get(latest);
-        latest = value?.next;
-        return {
-          done: value === undefined,
-          value: value,
-        };
-      },
-    };
-  }
-
-  /** Returns the number of offers in the cache.
-   */
+  /** Returns the number of offers in the cache. */
   size(): number {
     return this.#offerCache.size;
+  }
+
+  /** Returns the id of the best offer in the cache */
+  getBestInCache(): number | undefined {
+    return this.#bestInCache;
+  }
+
+  /** Returns an iterator over the offers in the cache. */
+  [Symbol.iterator](): Semibook.CacheIterator {
+    return new CacheIterator(this.#offerCache, this.#bestInCache);
+  }
+
+  /** Convenience method for getting an iterator without having to call `[Symbol.iterator]()`. */
+  iter(): Semibook.CacheIterator {
+    return this[Symbol.iterator]();
   }
 
   /** Given a price, find the id of the immediately-better offer in the
@@ -851,6 +875,66 @@ class Semibook implements Iterable<Market.Offer> {
       throw Error("Semibook options.chunkSize must be > 0");
     }
     return result;
+  }
+}
+
+class CacheIterator implements Semibook.CacheIterator {
+  #offerCache: Map<number, Market.Offer>;
+  #latest: number;
+  #predicate: (offer: Market.Offer) => boolean;
+
+  constructor(
+    offerCache: Map<number, Market.Offer>,
+    bestInCache: number,
+    predicate: (offer: Market.Offer) => boolean = () => true
+  ) {
+    this.#offerCache = offerCache;
+    this.#latest = bestInCache;
+    this.#predicate = predicate;
+  }
+
+  [Symbol.iterator](): Semibook.CacheIterator {
+    return this;
+  }
+
+  next() {
+    let value: Market.Offer;
+    do {
+      value =
+        this.#latest === undefined
+          ? undefined
+          : this.#offerCache.get(this.#latest);
+      this.#latest = value?.next;
+    } while (
+      value !== undefined &&
+      this.#predicate !== undefined &&
+      !this.#predicate(value)
+    );
+    return {
+      done: value === undefined,
+      value: value,
+    };
+  }
+
+  filter(predicate: (offer: Market.Offer) => boolean): Semibook.CacheIterator {
+    return new CacheIterator(
+      this.#offerCache,
+      this.#latest,
+      (o) => this.#predicate(o) && predicate(o)
+    );
+  }
+
+  find(predicate: (offer: Market.Offer) => boolean): Market.Offer {
+    for (const element of this) {
+      if (predicate(element)) {
+        return element;
+      }
+    }
+    return undefined;
+  }
+
+  toArray(): Market.Offer[] {
+    return [...this];
   }
 }
 

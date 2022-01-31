@@ -1,6 +1,6 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
-import { Mangrove, Market } from "../..";
+import { Mangrove, Semibook } from "../..";
 
 export const command = "print <base> <quote>";
 export const aliases = [];
@@ -25,7 +25,7 @@ export async function handler(argv: Arguments): Promise<void> {
     quote: argv.quote,
     bookOptions: { maxOffers: argv.maxOffers },
   });
-  const { asks, bids } = market.book();
+  const { asks, bids } = market.getBook();
 
   console.group("MARKET");
   console.log("Base token\t", chalk.blue(`${argv.base}`));
@@ -47,8 +47,8 @@ export async function handler(argv: Arguments): Promise<void> {
   process.exit(0);
 }
 
-function printOfferList(ba: "asks" | "bids", offerList: Market.Offer[]) {
+function printOfferList(ba: "asks" | "bids", semibook: Semibook) {
   console.group(ba);
-  console.table(offerList);
+  console.table([...semibook]);
   console.groupEnd();
 }
