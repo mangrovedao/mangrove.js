@@ -209,7 +209,7 @@ await liquidity_provider.cancelBid(bidId);
 
 # More Code Examples
 
-See the docblock comments above each function definition or the official [mangrove.js Documentation](https://docs.mangrove.exchange/meta-topics/mangrove-api).
+See the docblock comments above each function definition or the official [mangrove.js Documentation](https://jsdocs.mangrove.exchange/).
 
 # Instance Creation
 

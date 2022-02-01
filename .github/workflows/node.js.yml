@@ -540,8 +540,78 @@ jobs:
       with:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
-  # ==== End job: mangrove.js ====
+
+    - name: Zip src (some of which is generated) for doc generation
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r mangrove-js-src.zip ${{env.working-directory}}/src
+
+    - name: Cache mangrove-js-src as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: mangrove-js-src.zip
+        path: mangrove-js-src.zip
+  # ==== End job: mangrove-js ====
+
+  # ==== Job: Build mangrove.js documentation ====
+  mangrove-js-doc:
+    needs: [security-guard, mangrove-js]
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/mangrove.js
+
+    defaults:
+      run:
+        working-directory: packages/mangrove.js
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v2
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
         
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == download and unzip artefacts ==
+    - name: Download cached mangrove-js-src artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: mangrove-js-src.zip
+
+    - name: Unzip mangrove-js-src artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq -o mangrove-js-src.zip
+
+    # == create and upload docs ==
+    - run: yarn run doc
+
+    - name: Archive documentation
+      uses: actions/upload-artifact@v2
+      with:
+        name: mangrove-js-documentation
+        path: ${{env.working-directory}}/docs/
+  # ==== End job mangrove-js-doc ====
+
   # ==== Job: Build and test cleaning-bot ====
   cleaning-bot:
     needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
