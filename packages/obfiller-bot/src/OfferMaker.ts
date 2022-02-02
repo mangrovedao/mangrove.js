@@ -101,13 +101,13 @@ export class OfferMaker {
   async #postNewOfferOnBidsOrAsks(): Promise<void> {
     let ba: BA;
     let offerList: Offer[];
-    const book = this.#market.book();
+    const book = this.#market.getBook();
     if (random.float(0, 1) < this.#bidProbability) {
       ba = "bids";
-      offerList = book.bids;
+      offerList = [...book.bids];
     } else {
       ba = "asks";
-      offerList = book.asks;
+      offerList = [...book.asks];
     }
     if (offerList.length === 0) {
       // FIXME this means no activity is generated if there are no offers already on the book
