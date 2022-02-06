@@ -205,10 +205,27 @@ describe("SimpleMaker", () => {
           fund: provision,
         });
 
-        await onchain_lp.cancelBid(ofrId);
+        let prov_before_cancel = await onchain_lp.balanceOnMangrove();
+        await onchain_lp.cancelBid(ofrId, true); // with deprovision
 
         const bids = onchain_lp.bids();
         assert.strictEqual(bids.length, 0, "offer should have been canceled");
+
+        let prov_after_cancel = await onchain_lp.balanceOnMangrove();
+        assert(
+          prov_after_cancel.gt(prov_before_cancel),
+          "Maker was not refunded"
+        );
+        // const offerInfo = await onchain_lp.market.offerInfo("bids", ofrId);
+        // const config = await onchain_lp.market.config();
+        // //console.log(offerInfo, config);
+        await onchain_lp.cancelBid(ofrId);
+        let prov_after_cancel2 = await onchain_lp.balanceOnMangrove();
+        assert.strictEqual(
+          prov_after_cancel2.toString(),
+          prov_after_cancel.toString(),
+          "Cancel twice should not provision maker"
+        );
       });
 
       it("updates offer", async () => {

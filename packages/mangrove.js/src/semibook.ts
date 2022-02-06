@@ -465,7 +465,7 @@ class Semibook implements Iterable<Market.Offer> {
   }
 
   // This modifies the cache so must be called in a context where #cacheLock is acquired
-  #handleBookEvent(ethersLog: ethers.providers.Log): Promise<void> {
+  #handleBookEvent(ethersLog: ethers.providers.Log): void {
     const event: Market.BookSubscriptionEvent =
       this.market.mgv.contract.interface.parseLog(ethersLog) as any;
 
