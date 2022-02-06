@@ -139,13 +139,6 @@ namespace Market {
         filter?: (...a: any[]) => boolean | Promise<boolean>;
       };
 
-  // FIXME: This name is misleading, since you're only getting prefixes of the offer lists.
-  // FIXME: Perhaps we should expose Semibook instead of arrays? Semibooks carry more information.
-  /**
-   * @deprecated This has been subsumed by the `Book` type
-   */
-  export type MarketBook = { asks: Offer[]; bids: Offer[] };
-
   export type Book = { asks: Semibook; bids: Semibook };
 
   export type VolumeEstimate = {
@@ -171,7 +164,6 @@ class Market {
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
-  #book: Market.MarketBook;
   #initClosure?: () => Promise<void>;
 
   static async connect(params: {
@@ -216,8 +208,6 @@ class Market {
 
     this.base = this.mgv.token(params.base);
     this.quote = this.mgv.token(params.quote);
-
-    this.#book = { asks: [], bids: [] };
   }
 
   initialize(): Promise<void> {
@@ -276,9 +266,6 @@ class Market {
 
     this.#asksSemibook = await asksSemibookPromise;
     this.#bidsSemibook = await bidsSemibookPromise;
-
-    this.#updateBook("asks");
-    this.#updateBook("bids");
   }
 
   async #semibookCallback({
@@ -286,7 +273,6 @@ class Market {
     event,
     ethersLog: ethersLog,
   }: Semibook.Event): Promise<void> {
-    this.#updateBook(cbArg.ba);
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
         let isFilterSatisfied: boolean;
@@ -312,39 +298,13 @@ class Market {
     }
   }
 
-  #updateBook(ba: "bids" | "asks"): void {
-    this.#book[ba] = Array.from(
-      ba === "asks" ? this.#asksSemibook : this.#bidsSemibook
-    );
-  }
-
   /**
-   * Return current book state of the form
-   * @example
-   * ```
-   * {
-   *   asks: [
-   *     {id: 3, price: 3700, volume: 4, ...},
-   *     {id: 56, price: 3701, volume: 7.12, ...}
-   *   ],
-   *   bids: [
-   *     {id: 811, price: 3600, volume: 1.23, ...},
-   *     {id: 80, price: 3550, volume: 1.11, ...}
-   *   ]
-   * }
-   * ```
-   *  Asks are standing offers to sell base and buy quote.
-   *  Bids are standing offers to buy base and sell quote.
-   *  All prices are in quote/base, all volumes are in base.
-   *  Order is from best to worse from taker perspective.
-   * @deprecated Subsumed by `getBook` which returns the more versatile `Book` type.
-   */
-  book(): Market.MarketBook {
-    return this.#book;
-  }
-
-  /**
-   * Return the semibooks of this market
+   * Return the semibooks of this market.
+   *
+   * Asks are standing offers to sell base and buy quote.
+   * Bids are standing offers to buy base and sell quote.
+   * All prices are in quote/base, all volumes are in base.
+   * Order is from best to worse from taker perspective.
    */
   getBook(): Market.Book {
     return {
@@ -362,7 +322,7 @@ class Market {
 
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
-  ): Promise<Market.MarketBook> {
+  ): Promise<{ asks: Market.Offer[]; bids: Market.Offer[] }> {
     const asksPromise = this.#asksSemibook.requestOfferListPrefix(opts);
     const bidsPromise = this.#bidsSemibook.requestOfferListPrefix(opts);
     return {
@@ -708,8 +668,8 @@ class Market {
       | "price"
     >
   ): void {
-    const offers = ba === "bids" ? this.#book.bids : this.#book.asks;
-    console.table(offers, filter);
+    const offers = ba === "bids" ? this.#asksSemibook : this.#bidsSemibook;
+    console.table([...offers], filter);
   }
 
   /**

@@ -82,16 +82,24 @@ class LiquidityProvider {
     return this.getMissingProvision("asks", opts);
   }
 
-  /** List all of the maker's asks */
+  /** List all of the maker's asks in the cache */
   asks(): Market.Offer[] {
     const address = this.logic ? this.logic.address : this.eoa;
-    return this.market.book().asks.filter((ofr) => ofr.maker === address);
+    return this.market
+      .getBook()
+      .asks.iter()
+      .filter((ofr) => ofr.maker === address)
+      .toArray();
   }
 
-  /** List all of the maker's bids */
+  /** List all of the maker's bids in the cache */
   bids(): Market.Offer[] {
     const address = this.logic ? this.logic.address : this.eoa;
-    return this.market.book().bids.filter((ofr) => ofr.maker === address);
+    return this.market
+      .getBook()
+      .bids.iter()
+      .filter((ofr) => ofr.maker === address)
+      .toArray();
   }
 
   /**
