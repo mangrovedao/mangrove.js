@@ -108,7 +108,7 @@ namespace Market {
 
   export type BookSubscriptionCbArgument = {
     ba: "asks" | "bids";
-    offer: Offer;
+    offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
     | { type: "OfferWrite" }
     | {

@@ -483,6 +483,7 @@ class Semibook implements Iterable<Market.Offer> {
         // cache, but may now enter the local cache due to its new price.
         const id = this.#rawIdToId(event.args.id);
         const prev = this.#rawIdToId(event.args.prev);
+        let expectOfferInsertionInCache = true;
         this.#removeOffer(id);
 
         /* After removing the offer (a noop if the offer was not in local cache), we reinsert it.
@@ -497,26 +498,27 @@ class Semibook implements Iterable<Market.Offer> {
         } else if (this.#offerCache.has(prev)) {
           next = this.#offerCache.get(prev).next;
         } else {
-          // offer.prev was not found, we are outside local OB copy. skip.
-          break;
+          // offer.prev was not found, we are outside local OB copy.
+          expectOfferInsertionInCache = false;
         }
 
-        offer = this.#rawOfferToOffer({
-          ...event.args,
-          offer_gasbase: BigNumber.from(this.#offer_gasbase),
-          next: this.#idToRawId(next),
-        });
+        if (expectOfferInsertionInCache) {
+          offer = this.#rawOfferToOffer({
+            ...event.args,
+            offer_gasbase: BigNumber.from(this.#offer_gasbase),
+            next: this.#idToRawId(next),
+          });
 
-        const wasInserted = this.#insertOffer(offer);
-        if (!wasInserted) {
-          // Offer did not fit in cache and was therefore not inserted
-          return;
+          if (!this.#insertOffer(offer)) {
+            // Offer was not inserted
+            expectOfferInsertionInCache = false;
+          }
         }
 
         this.#eventListener({
           cbArg: {
             type: event.name,
-            offer: offer,
+            offer: expectOfferInsertionInCache ? offer : undefined,
             ba: this.ba,
           },
           event,
@@ -528,60 +530,52 @@ class Semibook implements Iterable<Market.Offer> {
       case "OfferFail": {
         const id = this.#rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(id);
-        // Don't trigger an event about an offer outside of the local cache
-        if (removedOffer) {
-          this.#eventListener({
-            cbArg: {
-              type: event.name,
-              ba: this.ba,
-              taker: event.args.taker,
-              offer: removedOffer,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-              mgvData: event.args.mgvData,
-            },
-            event,
-            ethersLog: ethersLog,
-          });
-        }
+        this.#eventListener({
+          cbArg: {
+            type: event.name,
+            ba: this.ba,
+            taker: event.args.taker,
+            offer: removedOffer,
+            takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+            takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+            mgvData: event.args.mgvData,
+          },
+          event,
+          ethersLog: ethersLog,
+        });
         break;
       }
 
       case "OfferSuccess": {
         const id = this.#rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(id);
-        if (removedOffer) {
-          this.#eventListener({
-            cbArg: {
-              type: event.name,
-              ba: this.ba,
-              taker: event.args.taker,
-              offer: removedOffer,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-            },
-            event,
-            ethersLog: ethersLog,
-          });
-        }
+        this.#eventListener({
+          cbArg: {
+            type: event.name,
+            ba: this.ba,
+            taker: event.args.taker,
+            offer: removedOffer,
+            takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+            takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+          },
+          event,
+          ethersLog: ethersLog,
+        });
         break;
       }
 
       case "OfferRetract": {
         const id = this.#rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(id);
-        // Don't trigger an event about an offer outside of the local cache
-        if (removedOffer) {
-          this.#eventListener({
-            cbArg: {
-              type: event.name,
-              ba: this.ba,
-              offer: removedOffer,
-            },
-            event,
-            ethersLog: ethersLog,
-          });
-        }
+        this.#eventListener({
+          cbArg: {
+            type: event.name,
+            ba: this.ba,
+            offer: removedOffer,
+          },
+          event,
+          ethersLog: ethersLog,
+        });
         break;
       }
 
