@@ -82,6 +82,19 @@ class LiquidityProvider {
     return this.getMissingProvision("asks", opts);
   }
 
+  /** Given a price, find the id of the immediately-better offer in the
+   * semibook. If there is no offer with a better price, `undefined` is returned.
+   */
+  async getBidPivotId(price: Bigish): Promise<number | undefined> {
+    let book = this.market.getBook();
+    return book.bids.getPivotId(price);
+  }
+
+  async getAskPivotId(price: Bigish): Promise<number | undefined> {
+    let book = this.market.getBook();
+    return book.asks.getPivotId(price);
+  }
+
   /** List all of the maker's asks in the cache */
   asks(): Market.Offer[] {
     const address = this.logic ? this.logic.address : this.eoa;
