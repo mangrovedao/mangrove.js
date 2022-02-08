@@ -216,9 +216,6 @@ describe("SimpleMaker", () => {
           prov_after_cancel.gt(prov_before_cancel),
           "Maker was not refunded"
         );
-        // const offerInfo = await onchain_lp.market.offerInfo("bids", ofrId);
-        // const config = await onchain_lp.market.config();
-        // //console.log(offerInfo, config);
         await onchain_lp.cancelBid(ofrId);
         let prov_after_cancel2 = await onchain_lp.balanceOnMangrove();
         assert.strictEqual(
