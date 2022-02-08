@@ -910,8 +910,9 @@ class ThresholdBlockSubscriptions {
 
     // clear all past callbacks
     for (let i = prevLastSeen + 1; i <= n; i++) {
+      const { cbs: _cbs } = this.#get(i);
       this.#byBlock.delete(i);
-      for (const cb of cbs) {
+      for (const cb of _cbs) {
         cb(i);
       }
     }
