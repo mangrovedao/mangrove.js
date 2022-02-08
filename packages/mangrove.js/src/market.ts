@@ -147,6 +147,7 @@ namespace Market {
   };
 }
 
+// no unsubscribe yet
 /**
  * The Market class focuses on a Mangrove market.
  * On-chain, markets are implemented as two offer lists,
@@ -162,6 +163,7 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
+  #blockSubscriptions: ThresholdBlockSubscriptions;
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
   #initClosure?: () => Promise<void>;
@@ -204,6 +206,7 @@ class Market {
       );
     }
     this.#subscriptions = new Map();
+
     this.mgv = params.mgv;
 
     this.base = this.mgv.token(params.base);
@@ -254,21 +257,34 @@ class Market {
     const asksSemibookPromise = Semibook.connect(
       this,
       "asks",
-      (e) => this.#semibookCallback(e),
+      (e) => this.#semibookEventCallback(e),
+      (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("asks")
     );
     const bidsSemibookPromise = Semibook.connect(
       this,
       "bids",
-      (e) => this.#semibookCallback(e),
+      (e) => this.#semibookEventCallback(e),
+      (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("bids")
     );
 
     this.#asksSemibook = await asksSemibookPromise;
     this.#bidsSemibook = await bidsSemibookPromise;
+
+    // start block events from the last block seen by both semibooks
+    const lastBlock = Math.min(
+      this.#asksSemibook.lastReadBlockNumber(),
+      this.#bidsSemibook.lastReadBlockNumber()
+    );
+    this.#blockSubscriptions = new ThresholdBlockSubscriptions(lastBlock, 2);
   }
 
-  async #semibookCallback({
+  #semibookBlockCallback(n: number): void {
+    this.#blockSubscriptions.increaseCount(n);
+  }
+
+  async #semibookEventCallback({
     cbArg,
     event,
     ethersLog: ethersLog,
@@ -311,6 +327,11 @@ class Market {
       asks: this.#asksSemibook,
       bids: this.#bidsSemibook,
     };
+  }
+
+  /** Trigger `cb` after block `n` has been seen. */
+  afterBlock<T>(n: number, cb: (number) => T): Promise<T> {
+    return this.#blockSubscriptions.subscribe(n, cb);
   }
 
   /**
@@ -834,5 +855,73 @@ const validateSlippage = (slippage = 0) => {
   }
   return slippage;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace ThresholdBlockSubscriptions {
+  export type blockSubscription = {
+    seenCount: number;
+    cbs: Set<(n: number) => void>;
+  };
+}
+
+class ThresholdBlockSubscriptions {
+  #byBlock: Map<number, ThresholdBlockSubscriptions.blockSubscription>;
+  #lastSeen: number;
+  #seenThreshold: number;
+
+  constructor(lastSeen: number, seenThreshold: number) {
+    this.#seenThreshold = seenThreshold;
+    this.#lastSeen = lastSeen;
+    this.#byBlock = new Map();
+  }
+
+  #get(n: number): ThresholdBlockSubscriptions.blockSubscription {
+    return this.#byBlock.get(n) || { seenCount: 0, cbs: new Set() };
+  }
+
+  #set(n, seenCount, cbs) {
+    this.#byBlock.set(n, { seenCount, cbs });
+  }
+
+  // assumes increaseCount(n) is called monotonically in n
+  increaseCount(n: number): void {
+    // seeing an already-seen-enough block (should not occur)
+    if (n <= this.#lastSeen) {
+      return;
+    }
+
+    const { seenCount, cbs } = this.#get(n);
+
+    this.#set(n, seenCount + 1, cbs);
+
+    // havent seen the block enough times
+    if (seenCount + 1 < this.#seenThreshold) {
+      return;
+    }
+
+    const prevLastSeen = this.#lastSeen;
+    this.#lastSeen = n;
+
+    // clear all past callbacks
+    for (let i = prevLastSeen + 1; i <= n; i++) {
+      this.#byBlock.delete(i);
+      for (const cb of cbs) {
+        cb(i);
+      }
+    }
+  }
+
+  subscribe<T>(n: number, cb: (number) => T): Promise<T> {
+    if (this.#lastSeen >= n) {
+      return Promise.resolve(cb(n));
+    } else {
+      const { seenCount, cbs } = this.#get(n);
+      return new Promise((ok, ko) => {
+        const _cb = (n) => Promise.resolve(cb(n)).then(ok, ko);
+        this.#set(n, seenCount, cbs.add(_cb));
+      });
+    }
+  }
+}
 
 export default Market;

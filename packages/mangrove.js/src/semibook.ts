@@ -18,6 +18,7 @@ namespace Semibook {
   };
 
   export type EventListener = (e: Event) => void;
+  export type BlockListener = (n: number) => void;
 
   /**
    * Specification of how much volume to (potentially) trade on the semibook.
@@ -124,6 +125,7 @@ class Semibook implements Iterable<Market.Offer> {
   #blockEventCallback: Listener;
   #eventFilter: TypedEventFilter<any>;
   #eventListener: Semibook.EventListener;
+  #blockListener: Semibook.BlockListener;
 
   #cacheLock: Mutex; // Lock that must be acquired when modifying the cache to ensure consistency and to queue cache updating events.
   #offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
@@ -135,10 +137,17 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: "bids" | "asks",
     eventListener: Semibook.EventListener,
+    blockListener: Semibook.BlockListener,
     options: Semibook.Options
   ): Promise<Semibook> {
     canConstructSemibook = true;
-    const semibook = new Semibook(market, ba, eventListener, options);
+    const semibook = new Semibook(
+      market,
+      ba,
+      eventListener,
+      blockListener,
+      options
+    );
     canConstructSemibook = false;
     await semibook.#initialize();
     return semibook;
@@ -416,6 +425,7 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: "bids" | "asks",
     eventListener: Semibook.EventListener,
+    blockListener: Semibook.BlockListener,
     options: Semibook.Options
   ) {
     if (!canConstructSemibook) {
@@ -434,6 +444,7 @@ class Semibook implements Iterable<Market.Offer> {
     this.#blockEventCallback = (blockNumber: number) =>
       this.#handleBlockEvent(blockNumber);
     this.#eventListener = eventListener;
+    this.#blockListener = blockListener;
     this.#eventFilter = this.#createEventFilter();
 
     this.#offerCache = new Map();
@@ -471,6 +482,10 @@ class Semibook implements Iterable<Market.Offer> {
     });
   }
 
+  lastReadBlockNumber(): number {
+    return this.#lastReadBlockNumber;
+  }
+
   async #handleBlockEvent(blockNumber: number): Promise<void> {
     await this.#cacheLock.runExclusive(async () => {
       // During initialization events may queue up, even some for the
@@ -485,6 +500,7 @@ class Semibook implements Iterable<Market.Offer> {
       });
       logs.forEach((l) => this.#handleBookEvent(l));
       this.#lastReadBlockNumber = blockNumber;
+      this.#blockListener(this.#lastReadBlockNumber);
     });
   }
 
