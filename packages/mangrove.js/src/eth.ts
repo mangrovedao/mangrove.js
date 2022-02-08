@@ -81,8 +81,14 @@ export async function getProviderNetwork(
  * In addition, you can specify
  * - `options.forceReadOnly:boolean` to connect readonly to mangrove. If you don't specify a signer and the provider does not include a signer, you will connect in readonly mode.
  *
- * IMPORTANT if both provider&signer are ethers objects, the signer will connect
- * to the provider (so any signer info on the provider will be ignored).
+ * IMPORTANT if both provider&signer are ethers objects,
+ * - if the signer has its own provider, the provider argument will be ignored
+ * - otherwise, the signer will attempt to connect to the provider (so any signer info on the provider will be ignored).
+ *
+ * Note on intended meaning of signer/provider by ricmoo (ethers.js author
+ * Provider - read-only access
+ * Signer (without a provider) - write-only access
+ * Signer (with a provider) - read/write access
  *
  * When in readonly mode, all write operations will fail and msg.sender will be
  * 0x0000000000000000000000000000000000000001
