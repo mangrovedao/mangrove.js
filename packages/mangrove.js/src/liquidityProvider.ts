@@ -86,12 +86,12 @@ class LiquidityProvider {
    * semibook. If there is no offer with a better price, `undefined` is returned.
    */
   async getBidPivotId(price: Bigish): Promise<number | undefined> {
-    let book = this.market.getBook();
+    const book = this.market.getBook();
     return book.bids.getPivotId(price);
   }
 
   async getAskPivotId(price: Bigish): Promise<number | undefined> {
-    let book = this.market.getBook();
+    const book = this.market.getBook();
     return book.asks.getPivotId(price);
   }
 
@@ -157,6 +157,7 @@ class LiquidityProvider {
     fund?: Bigish
   ): ethers.PayableOverrides {
     if (fund) {
+      console.log("funding mangrove");
       return { value: this.mgv.toUnits(fund, 18), ...overrides };
     } else {
       return overrides;
