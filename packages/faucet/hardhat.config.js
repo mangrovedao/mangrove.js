@@ -16,7 +16,7 @@ module.exports = {
       gasMultiplier: 1,
       blockGasLimit: 7000000000,
       allowUnlimitedContractSize: true,
-      chainId: 80001, // change if deploying on another network than mumba
+      chainId: 31337, // change if deploying on another network than mumba
     },
     mumbai: {
       gasPrice: 30 * 10 ** 9,

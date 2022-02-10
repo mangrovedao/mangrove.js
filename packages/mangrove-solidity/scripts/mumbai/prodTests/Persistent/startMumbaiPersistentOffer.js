@@ -1,116 +1,113 @@
 const hre = require("hardhat");
-const helper = require("../helper");
-const lc = require("../../lib/libcommon");
-const { Mangrove } = require("../../../mangrove.js");
+const { Mangrove } = require("../../../../../mangrove.js");
 
 async function main() {
+  const provider = new ethers.providers.WebSocketProvider(
+    hre.network.config.url
+  );
   if (!process.env["MUMBAI_TESTER_PRIVATE_KEY"]) {
     console.error("No tester account defined");
   }
-
   const wallet = new ethers.Wallet(
     process.env["MUMBAI_TESTER_PRIVATE_KEY"],
-    helper.getProvider()
+    provider
   );
-
-  // if (!process.env["MUMBAI_DEPLOYER_PRIVATE_KEY"]) {
-  //   console.error("No tester account defined");
-  // }
-
-  // const walletDeployer = new ethers.Wallet(
-  //   process.env["MUMBAI_DEPLOYER_PRIVATE_KEY"],
-  //   helper.getProvider()
-  // );
-
-  const repostLogic = await hre.ethers.getContract("Reposting");
-
-  // const adminTx = await repostLogic.connect(walletDeployer).setAdmin(wallet.address);
-  // await adminTx.wait();
-
-  const MgvJS = await Mangrove.connect({
-    provider: hre.network.config.url,
+  const MgvAPI = await Mangrove.connect({
     signer: wallet,
   });
-  // const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
-  // const network = await Eth.getProviderNetwork(signer.provider);
 
-  const weth = MgvJS.token("WETH").contract;
-  const dai = MgvJS.token("DAI").contract;
-  const usdc = MgvJS.token("USDC").contract;
+  const repostLogic = MgvAPI.offerLogic(
+    (await hre.ethers.getContract("Reposting")).address
+  );
+  const admin = await repostLogic.getAdmin();
 
-  MgvJS._provider.pollingInterval = 250;
+  // if admin is still deployer, changing it to Mumbai tester
+  if (admin != wallet.address) {
+    console.log("* Setting new admin for Reposting offer");
+    if (!process.env["MUMBAI_DEPLOYER_PRIVATE_KEY"]) {
+      console.error("No tester account defined");
+    }
 
-  const tokenParams = [
-    [dai, "DAI", MgvJS.getDecimals("DAI"), 1],
-    [weth, "WETH", MgvJS.getDecimals("WETH"), 4287],
-    [usdc, "USDC", MgvJS.getDecimals("USDC"), 1],
+    const walletDeployer = new ethers.Wallet(
+      process.env["MUMBAI_DEPLOYER_PRIVATE_KEY"],
+      provider
+    );
+
+    // using walletDeployer signature to change admin
+    // NB `connect` has no side effect on `repostLogic`
+    const adminTx = await repostLogic
+      .connect(walletDeployer)
+      .setAdmin(wallet.address);
+    await adminTx.wait();
+  }
+
+  const markets = [
+    ["WETH", 4287, "USDC", 1],
+    ["WETH", 4287, "DAI", 1],
+    ["DAI", 1, "USDC", 1],
   ];
 
-  // const ofr_gasreq = ethers.BigNumber.from(200000);
-  // const ofr_gasprice = ethers.BigNumber.from(0);
-  // const ofr_pivot = ethers.BigNumber.from(0);
-
-  const fundTx = await MgvJS.fund(repostLogic.address, 1);
-  await fundTx.wait();
   const overrides = { gasLimit: 200000 };
-  const volume = 10000;
+  const volume = 1000;
+  const gasreq = 200000;
 
-  for (const [outbound_tkn, outName, outDecimals, outTknInUSD] of tokenParams) {
-    const tx = await repostLogic
-      .connect(wallet)
-      .approveMangrove(
-        outbound_tkn.address,
-        ethers.constants.MaxUint256,
-        overrides
-      );
-    await tx.wait();
+  for (const [base, baseInUSD, quote, quoteInUSD] of markets) {
+    // getting a liquidityProvider object to interact with Mangrove using Reposting offer.
+    const lp = await repostLogic.liquidityProvider({
+      base: base,
+      quote: quote,
+    });
 
-    for (const [inbound_tkn, inName, inDecimals, inTknInUSD] of tokenParams) {
-      if (outbound_tkn.address != inbound_tkn.address) {
-        const mkr = await MgvJS.MakerConnect({
-          address: repostLogic.address,
-          base: outName,
-          quote: inName,
-        });
+    const txFund1 = await repostLogic.fundMangrove(
+      await lp.computeAskProvision({ gasreq: gasreq })
+    );
+    const txFund2 = await repostLogic.fundMangrove(
+      await lp.computeBidProvision({ gasreq: gasreq })
+    );
+    await txFund1.wait();
+    await txFund2.wait();
 
-        const transferTx = await outbound_tkn.transfer(
-          repostLogic.address,
-          MgvJS.toUnits(volume / outTknInUSD, outName),
-          overrides
-        );
-        await transferTx.wait();
-        console.log(
-          `* Transferred ${
-            volume / outTknInUSD
-          } ${outName} to persistent offer logic`
-        );
-        // will hang if pivot ID not correctly evaluated
-        const { id: ofrId } = await mkr.newAsk(
-          {
-            wants: (volume + 10) / inTknInUSD,
-            gives: volume / outTknInUSD,
-          },
-          overrides
-        );
+    const txApp1 = await repostLogic.approveMangrove(base);
+    const txApp2 = await repostLogic.approveMangrove(quote);
+    await txApp1.wait();
+    await txApp2.wait();
 
-        console.log(
-          `* Posting new persistent offer ${ofrId} on (${outName},${inName}) Offer List`
-        );
-        const mgvContracts = await helper.getMangrove();
-        const badReader = MgvJS.readerContract;
-        const goodReader = mgvContracts.reader;
-        const book = await goodReader.offerList(
-          outbound_tkn.address,
-          inbound_tkn.address,
-          ethers.BigNumber.from(0),
-          ethers.BigNumber.from(5)
-        );
-        await lc.logOrderBook(book, outbound_tkn, inbound_tkn);
-        // const market = await MgvJS.market({ base: outName, quote: inName });
-        // const book = market.book();
-        // console.log(book);
-      }
-    }
+    await repostLogic.depositToken(base, volume / baseInUSD, overrides);
+    console.log(
+      `* Transferred ${volume / baseInUSD} ${base} to persistent offer logic`
+    );
+    await repostLogic.depositToken(quote, volume / quoteInUSD, overrides);
+    console.log(
+      `* Transferred ${volume / quoteInUSD} ${quote} to persistent offer logic`
+    );
+
+    // will hang if pivot ID not correctly evaluated
+    const { id: ofrId } = await lp.newAsk(
+      {
+        wants: (volume + 10) / quoteInUSD,
+        gives: volume / baseInUSD,
+        gasreq: gasreq,
+      },
+      overrides
+    );
+    const { id: ofrId_ } = await lp.newBid(
+      {
+        wants: (volume + 10) / baseInUSD,
+        gives: volume / quoteInUSD,
+        gasreq: gasreq,
+      },
+      overrides
+    );
+    const filter = [
+      `id`,
+      `gasreq`,
+      `offer_gasbase`,
+      `maker`,
+      `price`,
+      `volume`,
+    ];
+    await lp.market.consoleAsks(filter);
+    await lp.market.consoleBids(filter);
   }
 }
 main()

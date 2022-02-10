@@ -7,8 +7,6 @@ const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 
-import { sleep } from "@mangrovedao/commonlib-js";
-
 import { Mangrove, Market } from "@mangrovedao/mangrove.js";
 import * as mgvTestUtil from "@mangrovedao/mangrove.js/test/util/mgvIntegrationTestUtil";
 
@@ -58,9 +56,11 @@ describe("MarketCleaner integration tests", () => {
     await mgvTestUtil.setMgvGasPrice(50);
 
     balancesBefore = await mgvTestUtil.getBalances(accounts, testProvider);
+    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
   });
 
   afterEach(async function () {
+    mgvTestUtil.stopPollOfTransactionTracking();
     market.disconnect();
     mgv.disconnect();
 
@@ -72,7 +72,7 @@ describe("MarketCleaner integration tests", () => {
     it(`should clean offer failing to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
       await mgvTestUtil.postNewRevertingOffer(market, ba, maker);
-      await sleep(5000);
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
 
       const marketCleaner = new MarketCleaner(market, cleanerProvider);
 
@@ -93,6 +93,7 @@ describe("MarketCleaner integration tests", () => {
     it(`should not clean offer suceeding to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
       await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
 
       const marketCleaner = new MarketCleaner(market, cleanerProvider);
 

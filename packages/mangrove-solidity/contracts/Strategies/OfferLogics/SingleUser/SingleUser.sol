@@ -14,11 +14,15 @@ pragma abicoder v2;
 
 import "../MangroveOffer.sol";
 
-//import "hardhat/console.sol";
-
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
 abstract contract SingleUser is MangroveOffer {
-  receive() external payable {}
+  function balanceOnMangrove() external view returns (uint) {
+    return MGV.balanceOf(address(this));
+  }
+
+  function tokenBalance(address token) external view returns (uint) {
+    return IERC20(token).balanceOf(address(this));
+  }
 
   /// transfers token stored in `this` contract to some recipient address
   function redeemToken(address token, uint amount)
@@ -135,7 +139,6 @@ abstract contract SingleUser is MangroveOffer {
   ) public view override returns (uint) {
     return
       _getMissingProvision(
-        MGV,
         MGV.balanceOf(address(this)),
         outbound_tkn,
         inbound_tkn,
@@ -145,12 +148,10 @@ abstract contract SingleUser is MangroveOffer {
       );
   }
 
-  function __put__(uint /*amount*/, MgvLib.SingleOrder calldata)
-    internal
-    virtual
-    override
-    returns (uint)
-  {
+  function __put__(
+    uint, /*amount*/
+    MgvLib.SingleOrder calldata
+  ) internal virtual override returns (uint) {
     return 0;
   }
 

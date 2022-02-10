@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/mangrove.js",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
@@ -9,11 +9,12 @@
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc && yarn run write-test-deployment-file && yarn run copy-static-and-generated-assets && yarn run rollup",
+    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc --build src && yarn run make-cli-executable && yarn run write-test-deployment-file && yarn run copy-hardhat-addresses && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
     "get-mangrove-abis": "cp node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
-    "copy-static-and-generated-assets": "ts-node copyStaticAndGeneratedAssets.ts",
+    "make-cli-executable": "shx chmod u+x ./dist/nodejs/cli/mgv.js",
+    "copy-hardhat-addresses": "cp ./src/hardhatAddresses.json ./dist/nodejs/",
     "write-test-deployment-file": "ts-node writeTestDeploymentFiles.ts",
     "clean-this-package": "yarn run clean-typechain && rimraf dist",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
@@ -24,7 +25,8 @@
     "rollup": "rollup -c rollup.config.ts",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json",
-    "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\""
+    "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
+    "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts"
   },
   "files": [
     "dist/",
@@ -33,7 +35,7 @@
     "README.md"
   ],
   "bin": {
-    "mgv": "./cli/mgv.ts"
+    "mgv": "./dist/nodejs/cli/mgv.js"
   },
   "repository": {
     "type": "git",
@@ -57,11 +59,11 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.5.0",
+    "async-mutex": "^0.3.2",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
-    "ethers": "^5.4.6",
-    "typedoc": "^0.22.3"
+    "ethers": "^5.4.6"
   },
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
@@ -91,6 +93,7 @@
     "dir-compare": "^3.3.0",
     "docblock-parser": "^1.0.0",
     "eslint": "^7.9.0",
+    "eslint-config-prettier": "^8.3.0",
     "hardhat": "^2.6.1",
     "hardhat-deploy": "^0.9.1",
     "hardhat-deploy-ethers": "^0.3.0-beta.10",
@@ -105,9 +108,11 @@
     "rollup-plugin-terser": "^7.0.2",
     "seedrandom": "^3.0.5",
     "shelljs": "^0.8.4",
+    "shx": "^0.3.4",
     "ts-essentials": "^8.1.0",
     "ts-node": "^9.1.1",
     "typechain": "^6.0.2",
+    "typedoc": "^0.22.3",
     "typescript": "^4.4.0",
     "yargs": "^17.3.0"
   }

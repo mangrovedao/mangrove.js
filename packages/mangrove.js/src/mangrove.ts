@@ -1,14 +1,16 @@
-import { addresses, decimals as loadedDecimals } from "./constants";
+import {
+  addresses,
+  decimals as loadedDecimals,
+  displayedDecimals as loadedDisplayedDecimals,
+  defaultDisplayedDecimals,
+} from "./constants";
 import * as eth from "./eth";
-import Market from "./market";
-import Maker from "./maker";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
-import MgvToken from "./mgvtoken";
+import { LiquidityProvider, OfferLogic, MgvToken, Market } from ".";
 
 import Big from "big.js";
 import * as ethers from "ethers";
-import { TransactionResponse } from "@ethersproject/providers";
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
   Big.prototype.toString;
 
@@ -19,21 +21,21 @@ let canConstructMangrove = false;
 import type { Awaited } from "ts-essentials";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
-  export type rawConfig = Awaited<
+  export type RawConfig = Awaited<
     ReturnType<typechain.Mangrove["functions"]["configInfo"]>
   >;
 
-  export type localConfig = {
+  export type LocalConfig = {
     active: boolean;
     fee: number;
     density: Big;
     offer_gasbase: number;
     lock: boolean;
-    best: number;
-    last: number;
+    best: number | undefined;
+    last: number | undefined;
   };
 
-  export type globalConfig = {
+  export type GlobalConfig = {
     monitor: string;
     useOracle: boolean;
     notify: boolean;
@@ -156,29 +158,38 @@ class Mangrove {
     return await Market.connect({ ...params, mgv: this });
   }
 
-  async fundSelf(amount: Bigish): Promise<TransactionResponse> {
-    return this.fund(await this._signer.getAddress(), amount);
+  /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
+  offerLogic(logic: string): OfferLogic {
+    return new OfferLogic(this, logic);
   }
 
-  fund(address: string, amount: Bigish): Promise<TransactionResponse> {
-    return this.contract["fund(address)"](address, {
-      value: this.toUnits(amount, 18),
-    });
+  /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/
+  async liquidityProvider(
+    p:
+      | Market
+      | {
+          base: string;
+          quote: string;
+          bookOptions?: Market.BookOptions;
+        }
+  ): Promise<LiquidityProvider> {
+    const EOA = await this._signer.getAddress();
+    if (p instanceof Market) {
+      return new LiquidityProvider({
+        mgv: this,
+        eoa: EOA,
+        market: p,
+      });
+    } else {
+      return new LiquidityProvider({
+        mgv: this,
+        eoa: EOA,
+        market: await this.market(p),
+      });
+    }
   }
 
-  /* Get Maker object. 
-     Argument of the form `{base,quote}` where each is a string.
-     To set your own token, use `setDecimals` and `setAddress`.
-  */
-  async MakerConnect(params: {
-    address: string;
-    base: string;
-    quote: string;
-  }): Promise<Maker> {
-    return await Maker.connect({ ...params, mgv: this });
-  }
-
-  /* Return MgvToken instance tied to mangrove object. */
+  /* Return MgvToken instance tied. */
   token(name: string): MgvToken {
     return new MgvToken(name, this);
   }
@@ -199,6 +210,7 @@ class Mangrove {
 
   /**
    * Read decimals for `tokenName`.
+   * Decimals are a property of each token, written onchain.
    * To read decimals off the chain, use `fetchDecimals`.
    */
   getDecimals(tokenName: string): number {
@@ -206,10 +218,27 @@ class Mangrove {
   }
 
   /**
+   * Read displayed decimals for `tokenName`. Displayed decimals are a hint by
+   * mangrove.js to be used by consumers of the lib. To configure the default
+   * displayed decimals, modify constants.ts.
+   *
+   */
+  getDisplayedDecimals(tokenName: string): number {
+    return Mangrove.getDisplayedDecimals(tokenName);
+  }
+
+  /**
    * Set decimals for `tokenName`.
    */
   setDecimals(tokenName: string, decimals: number): void {
     Mangrove.setDecimals(tokenName, decimals);
+  }
+
+  /**
+   * Set displayed decimals for `tokenName`.
+   */
+  setDisplayedDecimals(tokenName: string, decimals: number): void {
+    Mangrove.setDisplayedDecimals(tokenName, decimals);
   }
 
   /**
@@ -267,17 +296,50 @@ class Mangrove {
     return Big(amount).div(Big(10).pow(decimals));
   }
 
-  /** Provision available at mangrove for address, in ethers */
-  async balanceOf(address: string): Promise<Big> {
-    const bal = await this.contract.balanceOf(address);
+  /** Provision available at mangrove for address given in argument, in ethers */
+  async balanceOf(
+    address: string,
+    overrides: ethers.Overrides = {}
+  ): Promise<Big> {
+    const bal = await this.contract.balanceOf(address, overrides);
     return this.fromUnits(bal, 18);
+  }
+
+  fundMangrove(
+    amount: Bigish,
+    overrides: ethers.Overrides = {},
+    maker?: string
+  ): Promise<ethers.ContractTransaction> {
+    const _overrides = { value: this.toUnits(amount, 18), ...overrides };
+    if (maker) {
+      //fund maker account
+      return this.contract["fund(address)"](maker, _overrides);
+    } else {
+      // fund signer's account
+      return this.contract["fund()"](_overrides);
+    }
+  }
+
+  withdraw(
+    amount: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.contract.withdraw(this.toUnits(amount, 18), overrides);
+  }
+
+  approveMangrove(
+    tokenName: string,
+    amount?: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.token(tokenName).approveMangrove(amount, overrides);
   }
 
   /**
    * Return global Mangrove config
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async config(): Promise<Mangrove.globalConfig> {
+  async config(): Promise<Mangrove.GlobalConfig> {
     const config = await this.contract.configInfo(
       ethers.constants.AddressZero,
       ethers.constants.AddressZero
@@ -290,14 +352,6 @@ class Mangrove {
       gasmax: config.global.gasmax.toNumber(),
       dead: config.global.dead,
     };
-  }
-
-  /**
-   *
-   */
-  prettyPrint(book: Market.MarketBook): void {
-    console.table(book.asks, ["maker", "gives", "volume", "price"]);
-    console.table(book.bids, ["maker", "wants", "volume", "price"]);
   }
 
   /* Static */
@@ -352,10 +406,24 @@ class Mangrove {
   }
 
   /**
+   * Read displayed decimals for `tokenName`.
+   */
+  static getDisplayedDecimals(tokenName: string): number {
+    return loadedDisplayedDecimals[tokenName] || defaultDisplayedDecimals;
+  }
+
+  /**
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
     loadedDecimals[tokenName] = dec;
+  }
+
+  /**
+   * Set displayed decimals for `tokenName`.
+   */
+  static setDisplayedDecimals(tokenName: string, dec: number): void {
+    loadedDisplayedDecimals[tokenName] = dec;
   }
 
   /**

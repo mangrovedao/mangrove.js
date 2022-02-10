@@ -1,102 +1,83 @@
 const hre = require("hardhat");
-const helper = require("../helper");
-const lc = require("../../lib/libcommon");
-const { Mangrove } = require("../../../mangrove.js/dist/nodejs/index.js");
-const chalk = require("chalk");
+const { Mangrove } = require("../../../../../mangrove.js");
 
 async function main() {
+  const provider = new ethers.providers.WebSocketProvider(
+    hre.network.config.url
+  );
   if (!process.env["MUMBAI_TESTER_PRIVATE_KEY"]) {
     console.error("No tester account defined");
   }
 
   const wallet = new ethers.Wallet(
     process.env["MUMBAI_TESTER_PRIVATE_KEY"],
-    helper.getProvider()
+    provider
   );
 
-  const offerProxy = await hre.ethers.getContract("OfferProxy");
-
-  // const adminTx = await repostLogic.connect(walletDeployer).setAdmin(wallet.address);
-  // await adminTx.wait();
-
-  const MgvJS = await Mangrove.connect({
-    provider: hre.network.config.url,
+  const MgvAPI = await Mangrove.connect({
     signer: wallet,
   });
 
-  // const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
-  // const network = await Eth.getProviderNetwork(signer.provider);
+  const logic = MgvAPI.offerLogic(
+    (await hre.ethers.getContract("OfferProxy")).address
+  );
 
-  const weth = MgvJS.token("WETH").contract;
-  const dai = MgvJS.token("DAI").contract;
-  const usdc = MgvJS.token("USDC").contract;
+  const aweth = MgvAPI.token("amWETH");
+  const adai = MgvAPI.token("amDAI");
+  const ausdc = MgvAPI.token("amUSDC");
 
-  MgvJS._provider.pollingInterval = 250;
+  const volume = 1000;
 
-  const tokenParams = [
-    [dai, "DAI", MgvJS.getDecimals("DAI"), 1],
-    [weth, "WETH", MgvJS.getDecimals("WETH"), 4287],
-    [usdc, "USDC", MgvJS.getDecimals("USDC"), 1],
+  for (aToken of [aweth, adai, ausdc]) {
+    const tx = await aToken.approve(logic.address);
+    await tx.wait();
+    console.log(`* Approving OfferProxy for ${aToken.name} transfer`);
+  }
+
+  const markets = [
+    ["WETH", 4300, "DAI", 1],
+    ["WETH", 4300, "USDC", 1],
+    ["DAI", 1, "USDC", 1],
   ];
 
-  // const ofr_gasreq = ethers.BigNumber.from(200000);
-  // const ofr_gasprice = ethers.BigNumber.from(0);
-  // const ofr_pivot = ethers.BigNumber.from(0);
+  for (const [base, baseInUSD, quote, quoteInUSD] of markets) {
+    //getting a liquidity provider API on the (base,quote) market
+    const lp = await logic.liquidityProvider({
+      base: base,
+      quote: quote,
+    });
+    // computing necessary provision to post a bid and a ask using offerProxy logic
+    const provAsk = await lp.computeAskProvision();
+    const provBid = await lp.computeBidProvision();
 
-  const overrides = { gasLimit: 200000 };
-  const gasreq = await offerProxy.OFR_GASREQ();
-  const volume = 1000;
-  const mgvContracts = await helper.getMangrove();
-  const badReader = MgvJS.readerContract;
-  const goodReader = mgvContracts.reader;
-  const aave = helper.getAave();
+    const fundTx = await lp.fundMangrove(provAsk.add(provBid));
+    await fundTx.wait();
 
-  for (const [outbound_tkn, outName, outDecimals, outTknInUSD] of tokenParams) {
-    await aave[outName]
-      .connect(wallet)
-      .approve(offerProxy.address, ethers.constants.MaxUint256);
-    console.log(
-      `* User`,
-      chalk.gray(`${wallet.address}`),
-      `approves OfferProxy`,
-      chalk.gray(`${offerProxy.address}`),
-      `for am-${outName} transfer`
+    // will hang if pivot ID not correctly evaluated
+    const { id: ofrId, pivot: pivot } = await lp.newAsk(
+      {
+        wants: (volume + 12) / quoteInUSD,
+        gives: volume / baseInUSD,
+      },
+      { gasLimit: 200000 }
     );
 
-    for (const [inbound_tkn, inName, inDecimals, inTknInUSD] of tokenParams) {
-      if (outbound_tkn.address != inbound_tkn.address) {
-        const mkr = await MgvJS.MakerConnect({
-          address: offerProxy.address,
-          base: outName,
-          quote: inName,
-        });
-        const fundTx = await mkr.fundMangrove(0.1);
-        await fundTx.wait();
+    console.log(
+      `* Posting new offer proxy ${ofrId} on (${base},${quote}) market using pivot ${pivot}`
+    );
+    const { id: ofrId_, pivot: pivot_ } = await lp.newBid(
+      {
+        wants: (volume + 13) / baseInUSD,
+        gives: volume / quoteInUSD,
+      },
+      { gasLimit: 200000 }
+    );
 
-        // will hang if pivot ID not correctly evaluated
-        const { id: ofrId } = await mkr.newAsk(
-          {
-            wants: (volume + 20) / inTknInUSD,
-            gives: volume / outTknInUSD,
-          },
-          overrides
-        );
-
-        console.log(
-          `* Posting new persistent offer ${ofrId} on (${outName},${inName}) Offer List`
-        );
-        const book = await goodReader.offerList(
-          outbound_tkn.address,
-          inbound_tkn.address,
-          ethers.BigNumber.from(0),
-          ethers.BigNumber.from(5)
-        );
-        await lc.logOrderBook(book, outbound_tkn, inbound_tkn);
-        // const market = await MgvJS.market({ base: outName, quote: inName });
-        // const book = market.book();
-        // console.log(book);
-      }
-    }
+    console.log(
+      `* Posting new offer proxy ${ofrId_} on (${base},${quote}) market using pivot ${pivot_}`
+    );
+    await lp.market.consoleAsks();
+    await lp.market.consoleBids();
   }
 }
 main()

@@ -148,12 +148,14 @@ contract Scenarii_Test is HasMgvEvents {
       quote
     );
     TestEvents.expectFrom(address(mgv));
+    emit OrderStart();
     emit OrderComplete(
       address(base),
       address(quote),
       address(taker),
       takerGot,
-      takerGave
+      takerGave,
+      0
     );
     TestEvents.stopExpecting();
 

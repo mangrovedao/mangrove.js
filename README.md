@@ -6,8 +6,9 @@ Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate 
 
 
 # Documentation
-If you are looking for the Mangrove developer documentation, you can find it [here](https://docs.mangrove.exchange).
+If you are looking for the Mangrove developer documentation, the main site to go to is [docs.mangrove.exchange](https://docs.mangrove.exchange).
 
+For the Mangrove contracts in `mangrove-solidity`, we extract a doc-site from the rich documentation in the contract files. This is published at [code.mangrove.exchange](https://code.mangrove.exchange).
 
 # Prerequisites
 You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Yarn 2 workspaces](https://yarnpkg.com/features/workspaces) to manage dependencies and run commands on multiple packages. You must also have [Node.js](https://nodejs.org/en/) 14.14+.
@@ -153,7 +154,6 @@ The repo root contains the following folders and files:
 ├── .github/         # GitHub related files, in particular CI configurations for GitHub Actions
 ├── .husky/          # Husky Git hooks, e.g. for auto formatting
 ├── .yarn/           # Yarn files
-├── docs/            # GitHub Pages site with documentation
 ├── packages/        # The actual Mangrove packages
 ├── .gitattributes   # Git attributes for the whole monorepo 
 ├── .gitignore       # Git ignore for the whole monorepo

@@ -8,6 +8,7 @@ class MgvToken {
   mgv: Mangrove;
   name: string;
   address: string;
+  displayedDecimals: number;
   decimals: number;
   contract: typechain.IERC20;
 
@@ -16,6 +17,7 @@ class MgvToken {
     this.name = name;
     this.address = this.mgv.getAddress(this.name);
     this.decimals = this.mgv.getDecimals(this.name);
+    this.displayedDecimals = this.mgv.getDisplayedDecimals(this.name);
     this.contract = typechain.IERC20__factory.connect(
       this.address,
       this.mgv._signer
@@ -25,8 +27,6 @@ class MgvToken {
   /**
    * Convert base/quote from internal amount to public amount.
    * Uses each token's `decimals` parameter.
-   *
-   * If `bq` is `"base"`, will convert the base, the quote otherwise.
    *
    * @example
    * ```
@@ -58,6 +58,23 @@ class MgvToken {
   }
 
   /**
+   * Convert human-readable amounts to a string with the given
+   * number of decimal places. Defaults to the token's decimals places.
+   *
+   * @example
+   * ```
+   * token.toFixed("10.123"); // "10.12"
+   * token.toFixed(token.fromUnits("1e7"));
+   * ```
+   */
+  toFixed(amount: Bigish, decimals?: number): string {
+    if (typeof decimals === "undefined") {
+      decimals = this.displayedDecimals;
+    }
+    return Big(amount).toFixed(decimals);
+  }
+
+  /**
    * Return allowance of `owner` given to `spender`.
    * If `owner` is not specified, defaults to current signer.
    * If `spender` is not specified, defaults to Mangrove instance.
@@ -78,21 +95,36 @@ class MgvToken {
   /**
    * Set approval for Mangrove on `amount`.
    */
-  approveMangrove(amountOPT?: Bigish): Promise<ethers.ContractTransaction> {
-    return this.approve(this.mgv._address, amountOPT);
+  approveMangrove(
+    amountOPT?: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.approve(this.mgv._address, amountOPT, overrides);
   }
   /**
    * Set approval for `spender` on `amount`.
    */
   approve(
     spender: string,
-    amount?: Bigish
+    amount?: Bigish,
+    overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     const _amount =
       typeof amount === "undefined"
         ? ethers.constants.MaxUint256
         : this.toUnits(amount);
-    return this.contract.approve(spender, _amount);
+    return this.contract.approve(spender, _amount, overrides);
+  }
+
+  /**
+   * Returns the balance of `account`.
+   */
+  async balanceOf(
+    account: string,
+    overrides: ethers.Overrides = {}
+  ): Promise<Big> {
+    const bal = await this.contract.balanceOf(account, overrides);
+    return this.mgv.fromUnits(bal, this.decimals);
   }
 }
 

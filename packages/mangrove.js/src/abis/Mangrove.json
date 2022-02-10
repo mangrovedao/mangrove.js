@@ -317,9 +317,21 @@
         "internalType": "uint256",
         "name": "takerGave",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "penalty",
+        "type": "uint256"
       }
     ],
     "name": "OrderComplete",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "OrderStart",
     "type": "event"
   },
   {

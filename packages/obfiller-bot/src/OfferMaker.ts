@@ -71,7 +71,6 @@ export class OfferMaker {
         balanceBase: await this.#market.base.contract.balanceOf(makerAddress),
         balanceQuote: await this.#market.quote.contract.balanceOf(makerAddress),
         marketConfig: await this.#market.config(),
-        rawMarketConfig: await this.#market.rawConfig(),
       },
     });
 
@@ -102,13 +101,13 @@ export class OfferMaker {
   async #postNewOfferOnBidsOrAsks(): Promise<void> {
     let ba: BA;
     let offerList: Offer[];
-    const book = this.#market.book();
+    const book = this.#market.getBook();
     if (random.float(0, 1) < this.#bidProbability) {
       ba = "bids";
-      offerList = book.bids;
+      offerList = [...book.bids];
     } else {
       ba = "asks";
-      offerList = book.asks;
+      offerList = [...book.asks];
     }
     if (offerList.length === 0) {
       // FIXME this means no activity is generated if there are no offers already on the book
@@ -159,7 +158,7 @@ export class OfferMaker {
       );
 
     if (totalLiquidityPublished.gt(this.#maxTotalLiquidityPublished)) {
-      logger.info(
+      logger.debug(
         "Total liquidity published exceeds max, retracting worst offer",
         {
           contextInfo: "maker",
@@ -175,12 +174,41 @@ export class OfferMaker {
       );
       // FIXME: Retract should be implemented in market.ts
       const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
-      await this.#market.mgv.contract.retractOffer(
-        outbound_tkn.address,
-        inbound_tkn.address,
-        myWorstOffer.id,
-        false
-      );
+      await this.#market.mgv.contract
+        .retractOffer(
+          outbound_tkn.address,
+          inbound_tkn.address,
+          myWorstOffer.id,
+          false
+        )
+        .then((tx) => tx.wait())
+        .then((txReceipt) => {
+          logger.info("Succesfully retracted offer", {
+            contextInfo: "maker",
+            base: this.#market.base.name,
+            quote: this.#market.quote.name,
+            ba: ba,
+            data: {
+              myWorstOffer,
+            },
+          });
+          logger.debug("Details for retraction", {
+            contextInfo: "maker",
+            data: { txReceipt },
+          });
+        })
+        .catch((e) =>
+          logger.error("Error occurred while retracting offer", {
+            contextInfo: "maker",
+            base: this.#market.base.name,
+            quote: this.#market.quote.name,
+            ba: ba,
+            data: {
+              reason: e,
+              myWorstOffer,
+            },
+          })
+        );
     }
   }
 
@@ -207,7 +235,7 @@ export class OfferMaker {
 
     const gives = quantity;
     const givesInUnits = outbound_tkn.toUnits(gives);
-    const wants = this.#market.getWantsForPrice(ba, gives, price);
+    const wants = Market.getWantsForPrice(ba, gives, price);
     const wantsInUnits = inbound_tkn.toUnits(wants);
 
     const baseTokenBalance = await this.#market.base.contract.balanceOf(
