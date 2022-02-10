@@ -81,6 +81,19 @@ describe("Market integration tests suite", () => {
     });
   });
 
+  it("listens to blocks", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const pro = market.afterBlock(1, (n) => {});
+    const lastBlock = await mgv._provider.getBlockNumber();
+    const pro2 = market.afterBlock(lastBlock + 1, (n) => {});
+    await helpers.newOffer(mgv, market.base, market.quote, {
+      wants: "1",
+      gives: "1.2",
+    });
+    await pro;
+    await pro2;
+  });
+
   it("subscribes", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 

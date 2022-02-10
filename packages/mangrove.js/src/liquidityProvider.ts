@@ -223,6 +223,7 @@ class LiquidityProvider {
     return this.logic ? await this.logic.getDefaultGasreq() : EOA_offer_gasreq;
   }
 
+  /* Returns an easy to use promise of a view of the new offer. You can also catch any error thrown if the transaction was rejected/replaced. */
   async newOffer(
     p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
     overrides: ethers.Overrides = {}
@@ -231,7 +232,8 @@ class LiquidityProvider {
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
-    const resp = await this.#proxy().contract.newOffer(
+
+    const txPromise = this.#proxy().contract.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
@@ -242,13 +244,14 @@ class LiquidityProvider {
       this.#optValueToPayableOverride(overrides, fund)
     );
 
-    return this.market.once(
+    return this.market.onceWithTxPromise(
+      txPromise,
       (cbArg, _event, ethersEvent) => ({
         id: cbArg.offer.id,
         event: ethersEvent,
         pivot: pivot,
       }),
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
+      (cbArg, evt, _ethersEvent) => evt.name === "OfferWrite"
     );
   }
 
@@ -291,7 +294,7 @@ class LiquidityProvider {
     const { wants, gives, price, gasreq, gasprice, fund } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-    const resp = await this.#proxy().contract.updateOffer(
+    const txPromise = this.#proxy().contract.updateOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
@@ -302,9 +305,11 @@ class LiquidityProvider {
       id,
       this.#optValueToPayableOverride(overrides, fund)
     );
-    return this.market.once(
+
+    return this.market.onceWithTxPromise(
+      txPromise,
       (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
+      (cbArg, evt, _ethersEvent) => evt.name === "OfferWrite"
     );
   }
 
@@ -334,7 +339,7 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    const resp = await this.#proxy().contract.retractOffer(
+    const txPromise = this.#proxy().contract.retractOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       id,
@@ -342,11 +347,12 @@ class LiquidityProvider {
       overrides
     );
 
-    return this.market.once(
+    return this.market.onceWithTxPromise(
+      txPromise,
       (/*cbArg, event, ethersEvent*/) => {
         /*empty*/
       },
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
+      (cbArg, evt, _ethersEvent) => evt.name === "OfferRetract"
     );
   }
   /** Get the current balance the liquidity provider has in Mangrove */
