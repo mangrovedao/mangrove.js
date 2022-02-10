@@ -657,7 +657,7 @@ class Market {
       | "price"
     >
   ): void {
-    const offers = ba === "bids" ? this.#asksSemibook : this.#bidsSemibook;
+    const offers = ba === "bids" ? this.#bidsSemibook : this.#asksSemibook;
     console.table([...offers], filter);
   }
 
