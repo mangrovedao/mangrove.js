@@ -71,7 +71,6 @@ class MgvToken {
     if (typeof decimals === "undefined") {
       decimals = this.displayedDecimals;
     }
-    console.log("decimals", decimals);
     return Big(amount).toFixed(decimals);
   }
 
