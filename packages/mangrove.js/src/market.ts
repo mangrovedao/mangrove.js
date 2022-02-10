@@ -6,6 +6,7 @@ import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
 import Semibook from "./semibook";
+import { Deferred } from "./util";
 
 let canConstructMarket = false;
 
@@ -109,7 +110,7 @@ namespace Market {
 
   export type BookSubscriptionCbArgument = {
     ba: "asks" | "bids";
-    offer: Offer;
+    offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
     | { type: "OfferWrite" }
     | {
@@ -129,22 +130,15 @@ namespace Market {
     ethersLog?: ethers.providers.Log
   ) => T;
   export type StorableMarketCallback = MarketCallback<any>;
-  export type MarketFilter = MarketCallback<boolean>;
+  export type MarketFilter = MarketCallback<boolean | Promise<boolean>>;
   export type SubscriptionParam =
     | { type: "multiple" }
     | {
         type: "once";
         ok: (...a: any[]) => any;
         ko: (...a: any[]) => any;
-        filter?: (...a: any[]) => boolean;
+        filter?: (...a: any[]) => boolean | Promise<boolean>;
       };
-
-  // FIXME: This name is misleading, since you're only getting prefixes of the offer lists.
-  // FIXME: Perhaps we should expose Semibook instead of arrays? Semibooks carry more information.
-  /**
-   * @deprecated This has been subsumed by the `Book` type
-   */
-  export type MarketBook = { asks: Offer[]; bids: Offer[] };
 
   export type Book = { asks: Semibook; bids: Semibook };
 
@@ -154,6 +148,7 @@ namespace Market {
   };
 }
 
+// no unsubscribe yet
 /**
  * The Market class focuses on a Mangrove market.
  * On-chain, markets are implemented as two offer lists,
@@ -169,9 +164,9 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
+  #blockSubscriptions: ThresholdBlockSubscriptions;
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
-  #book: Market.MarketBook;
   #initClosure?: () => Promise<void>;
 
   static async connect(params: {
@@ -212,12 +207,11 @@ class Market {
       );
     }
     this.#subscriptions = new Map();
+
     this.mgv = params.mgv;
 
     this.base = this.mgv.token(params.base);
     this.quote = this.mgv.token(params.quote);
-
-    this.#book = { asks: [], bids: [] };
   }
 
   initialize(): Promise<void> {
@@ -264,32 +258,51 @@ class Market {
     const asksSemibookPromise = Semibook.connect(
       this,
       "asks",
-      (e) => this.#semibookCallback(e),
+      (e) => this.#semibookEventCallback(e),
+      (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("asks")
     );
     const bidsSemibookPromise = Semibook.connect(
       this,
       "bids",
-      (e) => this.#semibookCallback(e),
+      (e) => this.#semibookEventCallback(e),
+      (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("bids")
     );
 
     this.#asksSemibook = await asksSemibookPromise;
     this.#bidsSemibook = await bidsSemibookPromise;
 
-    this.#updateBook("asks");
-    this.#updateBook("bids");
+    // start block events from the last block seen by both semibooks
+    const lastBlock = Math.min(
+      this.#asksSemibook.lastReadBlockNumber(),
+      this.#bidsSemibook.lastReadBlockNumber()
+    );
+    this.#blockSubscriptions = new ThresholdBlockSubscriptions(lastBlock, 2);
   }
 
-  #semibookCallback({
+  #semibookBlockCallback(n: number): void {
+    this.#blockSubscriptions.increaseCount(n);
+  }
+
+  async #semibookEventCallback({
     cbArg,
     event,
     ethersLog: ethersLog,
-  }: Semibook.Event): void {
-    this.#updateBook(cbArg.ba);
+  }: Semibook.Event): Promise<void> {
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
-        if (!("filter" in params) || params.filter(cbArg, event, ethersLog)) {
+        let isFilterSatisfied: boolean;
+        if (!("filter" in params)) {
+          isFilterSatisfied = true;
+        } else {
+          const filterResult = params.filter(cbArg, event, ethersLog);
+          isFilterSatisfied =
+            typeof filterResult === "boolean"
+              ? filterResult
+              : await filterResult;
+        }
+        if (isFilterSatisfied) {
           this.#subscriptions.delete(cb);
           Promise.resolve(cb(cbArg, event, ethersLog)).then(
             params.ok,
@@ -302,45 +315,24 @@ class Market {
     }
   }
 
-  #updateBook(ba: "bids" | "asks"): void {
-    this.#book[ba] = Array.from(
-      ba === "asks" ? this.#asksSemibook : this.#bidsSemibook
-    );
-  }
-
   /**
-   * Return current book state of the form
-   * @example
-   * ```
-   * {
-   *   asks: [
-   *     {id: 3, price: 3700, volume: 4, ...},
-   *     {id: 56, price: 3701, volume: 7.12, ...}
-   *   ],
-   *   bids: [
-   *     {id: 811, price: 3600, volume: 1.23, ...},
-   *     {id: 80, price: 3550, volume: 1.11, ...}
-   *   ]
-   * }
-   * ```
-   *  Asks are standing offers to sell base and buy quote.
-   *  Bids are standing offers to buy base and sell quote.
-   *  All prices are in quote/base, all volumes are in base.
-   *  Order is from best to worse from taker perspective.
-   * @deprecated Subsumed by `getBook` which returns the more versatile `Book` type.
-   */
-  book(): Market.MarketBook {
-    return this.#book;
-  }
-
-  /**
-   * Return the semibooks of this market
+   * Return the semibooks of this market.
+   *
+   * Asks are standing offers to sell base and buy quote.
+   * Bids are standing offers to buy base and sell quote.
+   * All prices are in quote/base, all volumes are in base.
+   * Order is from best to worse from taker perspective.
    */
   getBook(): Market.Book {
     return {
       asks: this.#asksSemibook,
       bids: this.#bidsSemibook,
     };
+  }
+
+  /** Trigger `cb` after block `n` has been seen. */
+  afterBlock<T>(n: number, cb: (number) => T): Promise<T> {
+    return this.#blockSubscriptions.subscribe(n, cb);
   }
 
   /**
@@ -352,7 +344,7 @@ class Market {
 
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
-  ): Promise<Market.MarketBook> {
+  ): Promise<{ asks: Market.Offer[]; bids: Market.Offer[] }> {
     const asksPromise = this.#asksSemibook.requestOfferListPrefix(opts);
     const bidsPromise = this.#bidsSemibook.requestOfferListPrefix(opts);
     return {
@@ -711,8 +703,8 @@ class Market {
       | "price"
     >
   ): void {
-    const offers = ba === "bids" ? this.#book.bids : this.#book.asks;
-    console.table(offers, filter);
+    const offers = ba === "bids" ? this.#asksSemibook : this.#bidsSemibook;
+    console.table([...offers], filter);
   }
 
   /**
@@ -767,6 +759,55 @@ class Market {
         params.filter = filter;
       }
       this.#subscriptions.set(cb as Market.StorableMarketCallback, params);
+    });
+  }
+
+  /** Await until mangrove.js has precessed an event that matches `filter` as
+   * part of the transaction generated by `tx`. The goal is to reuse the event
+   * processing facilities of market.ts as much as possible but still be
+   * tx-specific (and in particular fail if the tx fails).  Alternatively one
+   * could just use `await (await tx).wait(1)` but then you would not get the
+   * context provided by market.ts (current position of a new offer in the OB,
+   * for instance).
+   *
+   * Warning: if `txPromise` has already been `await`ed, its result may have
+   * already been processed by the semibook event loop, so the promise will
+   * never fulfill. */
+
+  onceWithTxPromise<T>(
+    txPromise: Promise<ethers.ContractTransaction>,
+    cb: Market.MarketCallback<T>,
+    filter?: Market.MarketFilter
+  ): Promise<T> {
+    return new Promise((ok, ko) => {
+      const txHashDeferred = new Deferred<string>();
+      const _filter = async (
+        cbArg: Market.BookSubscriptionCbArgument,
+        event: Market.BookSubscriptionEvent,
+        ethersEvent: ethers.ethers.providers.Log
+      ) => {
+        return (
+          filter(cbArg, event, ethersEvent) &&
+          (await txHashDeferred.promise) === ethersEvent.transactionHash
+        );
+      };
+      this.once(cb, _filter).then(ok, ko);
+
+      txPromise.then((resp) => {
+        // Warning: if the tx nor any with the same nonce is ever mined, the `once` and block callbacks will never be triggered and you will memory leak by queuing tasks.
+        txHashDeferred.resolve(resp.hash);
+        resp
+          .wait(1)
+          .then((recp) => {
+            this.afterBlock(recp.blockNumber, () => {
+              this.unsubscribe(cb);
+            });
+          })
+          .catch((e) => {
+            this.unsubscribe(cb);
+            ko(e);
+          });
+      });
     });
   }
 
@@ -839,5 +880,74 @@ const validateSlippage = (slippage = 0) => {
   }
   return slippage;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace ThresholdBlockSubscriptions {
+  export type blockSubscription = {
+    seenCount: number;
+    cbs: Set<(n: number) => void>;
+  };
+}
+
+class ThresholdBlockSubscriptions {
+  #byBlock: Map<number, ThresholdBlockSubscriptions.blockSubscription>;
+  #lastSeen: number;
+  #seenThreshold: number;
+
+  constructor(lastSeen: number, seenThreshold: number) {
+    this.#seenThreshold = seenThreshold;
+    this.#lastSeen = lastSeen;
+    this.#byBlock = new Map();
+  }
+
+  #get(n: number): ThresholdBlockSubscriptions.blockSubscription {
+    return this.#byBlock.get(n) || { seenCount: 0, cbs: new Set() };
+  }
+
+  #set(n, seenCount, cbs) {
+    this.#byBlock.set(n, { seenCount, cbs });
+  }
+
+  // assumes increaseCount(n) is called monotonically in n
+  increaseCount(n: number): void {
+    // seeing an already-seen-enough block (should not occur)
+    if (n <= this.#lastSeen) {
+      return;
+    }
+
+    const { seenCount, cbs } = this.#get(n);
+
+    this.#set(n, seenCount + 1, cbs);
+
+    // havent seen the block enough times
+    if (seenCount + 1 < this.#seenThreshold) {
+      return;
+    }
+
+    const prevLastSeen = this.#lastSeen;
+    this.#lastSeen = n;
+
+    // clear all past callbacks
+    for (let i = prevLastSeen + 1; i <= n; i++) {
+      const { cbs: _cbs } = this.#get(i);
+      this.#byBlock.delete(i);
+      for (const cb of _cbs) {
+        cb(i);
+      }
+    }
+  }
+
+  subscribe<T>(n: number, cb: (number) => T): Promise<T> {
+    if (this.#lastSeen >= n) {
+      return Promise.resolve(cb(n));
+    } else {
+      const { seenCount, cbs } = this.#get(n);
+      return new Promise((ok, ko) => {
+        const _cb = (n) => Promise.resolve(cb(n)).then(ok, ko);
+        this.#set(n, seenCount, cbs.add(_cb));
+      });
+    }
+  }
+}
 
 export default Market;

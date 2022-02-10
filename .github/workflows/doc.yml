@@ -15,7 +15,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-    - name: Download doc artefact from CI run
+    - name: Download mangrove-solidity doc artefact from CI run
       uses: dawidd6/action-download-artifact@v2
       with:
         github_token: ${{secrets.GITHUB_TOKEN}}      
@@ -25,6 +25,17 @@ jobs:
         event: push
         name: documentation
         path: docs
+
+    - name: Download mangrove.js doc artefact from CI run
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{secrets.GITHUB_TOKEN}}      
+        workflow: node.js.yml
+        workflow_conclusion: success
+        branch: master
+        event: push
+        name: mangrove-js-documentation
+        path: docs/mangrove-js
 
     - name: Deploy to GitHub Pages branch
       if: success()

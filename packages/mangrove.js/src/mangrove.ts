@@ -1,6 +1,11 @@
 import { logger, logdataLimiter } from "./util/logger";
 import pick from "object.pick";
-import { addresses, decimals as loadedDecimals } from "./constants";
+import {
+  addresses,
+  decimals as loadedDecimals,
+  displayedDecimals as loadedDisplayedDecimals,
+  defaultDisplayedDecimals,
+} from "./constants";
 import * as eth from "./eth";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
@@ -225,6 +230,7 @@ class Mangrove {
 
   /**
    * Read decimals for `tokenName`.
+   * Decimals are a property of each token, written onchain.
    * To read decimals off the chain, use `fetchDecimals`.
    */
   getDecimals(tokenName: string): number {
@@ -232,10 +238,27 @@ class Mangrove {
   }
 
   /**
+   * Read displayed decimals for `tokenName`. Displayed decimals are a hint by
+   * mangrove.js to be used by consumers of the lib. To configure the default
+   * displayed decimals, modify constants.ts.
+   *
+   */
+  getDisplayedDecimals(tokenName: string): number {
+    return Mangrove.getDisplayedDecimals(tokenName);
+  }
+
+  /**
    * Set decimals for `tokenName`.
    */
   setDecimals(tokenName: string, decimals: number): void {
     Mangrove.setDecimals(tokenName, decimals);
+  }
+
+  /**
+   * Set displayed decimals for `tokenName`.
+   */
+  setDisplayedDecimals(tokenName: string, decimals: number): void {
+    Mangrove.setDisplayedDecimals(tokenName, decimals);
   }
 
   /**
@@ -403,10 +426,24 @@ class Mangrove {
   }
 
   /**
+   * Read displayed decimals for `tokenName`.
+   */
+  static getDisplayedDecimals(tokenName: string): number {
+    return loadedDisplayedDecimals[tokenName] || defaultDisplayedDecimals;
+  }
+
+  /**
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
     loadedDecimals[tokenName] = dec;
+  }
+
+  /**
+   * Set displayed decimals for `tokenName`.
+   */
+  static setDisplayedDecimals(tokenName: string, dec: number): void {
+    loadedDisplayedDecimals[tokenName] = dec;
   }
 
   /**
