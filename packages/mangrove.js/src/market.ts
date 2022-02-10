@@ -754,7 +754,12 @@ class Market {
    * tx-specific (and in particular fail if the tx fails).  Alternatively one
    * could just use `await (await tx).wait(1)` but then you would not get the
    * context provided by market.ts (current position of a new offer in the OB,
-   * for instance). */
+   * for instance).
+   *
+   * Warning: if `txPromise` has already been `await`ed, its result may have
+   * already been processed by the semibook event loop, so the promise will
+   * never fulfill. */
+
   onceWithTxPromise<T>(
     txPromise: Promise<ethers.ContractTransaction>,
     cb: Market.MarketCallback<T>,
