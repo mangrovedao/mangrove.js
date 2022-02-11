@@ -211,7 +211,12 @@ await liquidity_provider.cancelBid(bidId);
 
 See the docblock comments above each function definition or the official [mangrove.js Documentation](https://jsdocs.mangrove.exchange/).
 
-# Instance Creation
+# Instance Creation (Ethereum provider and signer)
+
+See `examples` directory for instance creation examples.
+
+Mangrove SDK initialization requires an Ethereum provider and an Ethereum signer.
+They can be provided and configured in various ways, some of which are described below.
 
 The following are valid Ethereum providers for initialization of the SDK.
 
@@ -233,6 +238,19 @@ mgv = await Mangrove.connect('https://mainnet.infura.io/v3/_your_project_id_', {
 mgv = await Mangrove.connect('mainnet' {
   mnemonic: 'clutch captain shoe...', // preferably with environment variable
 });
+
+// Init with a custom ethers.js provider, for example a WebSocketProvider (server side)
+provider = new ethers.providers.WebSocketProvider('wss://polygon-mumbai.g.alchemy.com/v2/_your_project_id_');
+signer = new ethers.Wallet('0x_your_private_key_', provider);
+mgv = await Mangrove.connect({signer: signer});
+
+// Init with a EIP-1193 provider object (server side)
+provider = new Web3.providers.WebsocketProvider('wss://polygon-mumbai.g.alchemy.com/v2/_your_project_id_');
+mgv = await Mangrove.connect({
+  provider: provider,
+  privateKey: '0x_your_private_key_'
+});
+
 ```
 
 ## Constants and Contract Addresses
