@@ -1,24 +1,35 @@
 {
-    "private": true,
-    "name": "mangrove-monorepo",
-    "workspaces": {
-        "packages": [
-            "packages/*"
-        ]
-    },
-    "scripts": {
-        "postinstall": "husky install",
-        "heroku-postbuild": "pinst --disable && yarn build",
-        "heroku-cleanup": "pinst --enable",
-        "build": "yarn install && yarn workspaces foreach --topological-dev run build-this-package",
-        "clean": "yarn workspaces foreach --topological-dev run clean-this-package",
-        "test": "yarn workspaces foreach --topological-dev run test"
-    },
-    "devDependencies": {
-        "husky": "^7.0.2"
-    },
-    "dependencies": {
-        "pinst": "^2.1.6"
-    },
-    "packageManager": "yarn@3.1.0"
+  "private": true,
+  "name": "mangrove-monorepo",
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "scripts": {
+    "postinstall": "husky install",
+    "heroku-postbuild": "pinst --disable && yarn build",
+    "heroku-cleanup": "pinst --enable",
+    "build": "yarn install && yarn workspaces foreach --topological-dev run build-this-package",
+    "clean": "yarn workspaces foreach --topological-dev run clean-this-package",
+    "test": "yarn workspaces foreach --topological-dev run test",
+    "semantic-release": "semantic-release"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "^8.0.3",
+    "husky": "^7.0.2",
+    "semantic-release": "^18.0.1",
+    "semantic-release-monorepo": "^7.0.5"
+  },
+  "dependencies": {
+    "pinst": "^2.1.6"
+  },
+  "packageManager": "yarn@3.1.0",
+  "version": "0.0.0-development",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akettal/mangrove.git"
+  }
 }

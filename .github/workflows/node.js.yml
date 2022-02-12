@@ -540,6 +540,10 @@ jobs:
       with:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
+    - name: Release
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: npx semantic-release
   # ==== End job: mangrove.js ====
         
   # ==== Job: Build and test cleaning-bot ====

@@ -1,0 +1,33 @@
+{
+  "branches": ["master"],
+  "extends": "semantic-release-monorepo",
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        preset: "angular"
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        preset: "angular"
+      }
+    ],
+    '@semantic-release/npm',
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md"],
+        "message": "${nextRelease.version} CHANGELOG [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    "@semantic-release/github"
+  ]
+}
