@@ -34,4 +34,11 @@ describe("MGV Token integration tests suite", () => {
     const allowance2 = await usdc.allowance();
     assert.deepStrictEqual(allowance2, Big(100), "allowance should be 100");
   });
+
+  it("converts", async function () {
+    const usdc = mgv.token("USDC");
+    assert.strictEqual(usdc.toFixed("10.3213"), "10.32");
+    const weth = mgv.token("WETH");
+    assert.strictEqual(weth.toFixed("10.3213"), "10.321");
+  });
 });
