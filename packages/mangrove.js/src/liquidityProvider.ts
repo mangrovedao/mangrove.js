@@ -1,3 +1,4 @@
+import { logger } from "./util/logger";
 import * as ethers from "ethers";
 import { EOA_offer_gasreq } from "./constants";
 
@@ -258,6 +259,11 @@ class LiquidityProvider {
       this.#optValueToPayableOverride(overrides, fund)
     );
 
+    logger.debug(`Post new offer`, {
+      contextInfo: "mangrove.maker",
+      data: { params: p, overrides: overrides },
+    });
+
     return this.market.onceWithTxPromise(
       txPromise,
       (cbArg, _event, ethersEvent) => ({
@@ -320,6 +326,11 @@ class LiquidityProvider {
       this.#optValueToPayableOverride(overrides, fund)
     );
 
+    logger.debug(`Update offer`, {
+      contextInfo: "mangrove.maker",
+      data: { id: id, params: p, overrides: overrides },
+    });
+
     return this.market.onceWithTxPromise(
       txPromise,
       (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
@@ -360,6 +371,11 @@ class LiquidityProvider {
       deprovision,
       overrides
     );
+
+    logger.debug(`Cancel offer`, {
+      contextInfo: "mangrove.maker",
+      data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
+    });
 
     return this.market.onceWithTxPromise(
       txPromise,
@@ -424,6 +440,11 @@ class LiquidityProvider {
     }
     const balance = await this.balanceOnMangrove();
     const currentOfferProvision = lockedProvision.add(balance);
+    logger.debug(`Get missing provision`, {
+      contextInfo: "mangrove.maker",
+      data: { ba: ba, opts: opts },
+    });
+
     return currentOfferProvision.gte(bounty)
       ? new Big(0)
       : bounty.sub(currentOfferProvision);
