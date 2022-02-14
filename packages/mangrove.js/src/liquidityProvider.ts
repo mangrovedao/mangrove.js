@@ -82,6 +82,19 @@ class LiquidityProvider {
     return this.getMissingProvision("asks", opts);
   }
 
+  /** Given a price, find the id of the immediately-better offer in the
+   * semibook. If there is no offer with a better price, `undefined` is returned.
+   */
+  async getBidPivotId(price: Bigish): Promise<number | undefined> {
+    const book = this.market.getBook();
+    return book.bids.getPivotId(price);
+  }
+
+  async getAskPivotId(price: Bigish): Promise<number | undefined> {
+    const book = this.market.getBook();
+    return book.asks.getPivotId(price);
+  }
+
   /** List all of the maker's asks in the cache */
   asks(): Market.Offer[] {
     const address = this.logic ? this.logic.address : this.eoa;
@@ -144,6 +157,7 @@ class LiquidityProvider {
     fund?: Bigish
   ): ethers.PayableOverrides {
     if (fund) {
+      console.log("funding mangrove");
       return { value: this.mgv.toUnits(fund, 18), ...overrides };
     } else {
       return overrides;
@@ -251,7 +265,7 @@ class LiquidityProvider {
         event: ethersEvent,
         pivot: pivot,
       }),
-      (cbArg, evt, _ethersEvent) => evt.name === "OfferWrite"
+      (_cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
     );
   }
 
@@ -309,7 +323,7 @@ class LiquidityProvider {
     return this.market.onceWithTxPromise(
       txPromise,
       (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
-      (cbArg, evt, _ethersEvent) => evt.name === "OfferWrite"
+      (cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
     );
   }
 
@@ -352,7 +366,7 @@ class LiquidityProvider {
       (/*cbArg, event, ethersEvent*/) => {
         /*empty*/
       },
-      (cbArg, evt, _ethersEvent) => evt.name === "OfferRetract"
+      (cbArg, evt /* _ethersEvent*/) => evt.name === "OfferRetract"
     );
   }
   /** Get the current balance the liquidity provider has in Mangrove */
