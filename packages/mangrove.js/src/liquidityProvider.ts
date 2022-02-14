@@ -265,7 +265,7 @@ class LiquidityProvider {
         event: ethersEvent,
         pivot: pivot,
       }),
-      (cbArg, evt, _ethersEvent) => evt.name === "OfferWrite"
+      (_cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
     );
   }
 
@@ -323,7 +323,7 @@ class LiquidityProvider {
     return this.market.onceWithTxPromise(
       txPromise,
       (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
-      (cbArg, evt, _ethersEvent) => evt.name === "OfferWrite"
+      (cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
     );
   }
 
@@ -366,7 +366,7 @@ class LiquidityProvider {
       (/*cbArg, event, ethersEvent*/) => {
         /*empty*/
       },
-      (cbArg, evt, _ethersEvent) => evt.name === "OfferRetract"
+      (cbArg, evt /* _ethersEvent*/) => evt.name === "OfferRetract"
     );
   }
   /** Get the current balance the liquidity provider has in Mangrove */
