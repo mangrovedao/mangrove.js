@@ -11,4 +11,8 @@ module.exports = {
     "no-empty": ["error", { allowEmptyCatch: true }],
     "@typescript-eslint/no-explicit-any": "off",
   },
+  env: {
+    browser: true,
+    node: true,
+  },
 };

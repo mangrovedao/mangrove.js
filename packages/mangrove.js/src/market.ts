@@ -1,3 +1,4 @@
+import { logger } from "./util/logger";
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
 import { Bigish, typechain } from "./types";
@@ -535,6 +536,15 @@ class Market {
     const [outboundTkn, inboundTkn] =
       orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
 
+    logger.debug("Creating market order", {
+      contextInfo: "market.marketOrder",
+      data: {
+        outboundTkn: outboundTkn.name,
+        inboundTkn: inboundTkn.name,
+        fillWants: fillWants,
+      },
+    });
+
     const gasLimit = await this.estimateGas(orderType, wants);
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
@@ -548,6 +558,10 @@ class Market {
 
     let result: ethers.Event | undefined;
     //last OrderComplete is ours!
+    logger.debug("Market order raw receipt", {
+      contextInfo: "market.marketOrder",
+      data: { receipt: receipt },
+    });
     for (const evt of receipt.events) {
       if (evt.event === "OrderComplete") {
         if ((evt as OrderCompleteEvent).args.taker === receipt.from) {

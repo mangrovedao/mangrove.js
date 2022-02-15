@@ -448,7 +448,7 @@ jobs:
 
   # ==== Job: Build and test mangrove.js ====
   mangrove-js:
-    needs: [security-guard, mangrove-solidity, hardhat-utils]
+    needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils]
 
     runs-on: ubuntu-latest
 
@@ -484,7 +484,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
-        
+
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
@@ -498,6 +498,16 @@ jobs:
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq mangrove-solidity-out.zip
+
+    - name: Download cached commonlib.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: commonlib-out.zip
+
+    - name: Unzip commonlib.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq commonlib-out.zip
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
