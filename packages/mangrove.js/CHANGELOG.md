@@ -1,5 +1,11 @@
 # Next version
 
+- New `Market` options:
+  - `desiredPrice`: allows one to specify a price point of interest. This will cause the cache to initially load all offers with this price or better.
+  - `desiredVolume`: allows one to specify a volume of interest. This will cause the cache to initially load at least this volume (if available). The option uses the same specification as for `estimateVolume`: `desiredVolume: { given: 1, what: "base", to: "buy" }` will cause the asks semibook to be initialized with a volume of at least 1 base token.
+- New `Market` subscription: `market.afterBlock(n,callback)` will trigger `callback` after the market events for block `n` have been processed. If the block has already been processed, `callback` will be triggered at the next event loop.
+- Improve logging: add file logging, allow applications using the package to configure logging using local `config` file.
+
 # 0.1.0 (January 2022)
 
 - `{Market|Semibook}.getPivotId` now fetches offers until a pivot can be determined
@@ -8,6 +14,7 @@
 - the above classes subsume and replace the old `Maker` class.
 - `MgvToken` implements `balanceOf`
 - Add experimental CLI: `mgv`. See README.md for instructions
+- You can do `market.buy({total: 100, price:null})` on a BAT/DAI market to buy BAT by spending 100 DAI, no (real) price limit. You can also specify a limit average price, and also specify a `total` in quote token on `Market#sell`.
 
 # 0.0.9 (January 2022)
 

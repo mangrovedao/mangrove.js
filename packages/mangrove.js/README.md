@@ -45,7 +45,7 @@ const mgv = await Mangrove.connect({
 ## Obtaining a market object
 
 ```js
-  // Connect to ETHUSDC market
+  // Connect to ETH-USDC market
   const market = mgv.market({ base: "ETH", quote: "USDC" });
 
   // Check allowance
@@ -209,9 +209,14 @@ await liquidity_provider.cancelBid(bidId);
 
 # More Code Examples
 
-See the docblock comments above each function definition or the official [mangrove.js Documentation](https://docs.mangrove.exchange/meta-topics/mangrove-api).
+See the docblock comments above each function definition or the official [mangrove.js Documentation](https://jsdocs.mangrove.exchange/).
 
-# Instance Creation
+# Instance Creation (Ethereum provider and signer)
+
+See `examples` directory for instance creation examples.
+
+Mangrove SDK initialization requires an Ethereum provider and an Ethereum signer.
+They can be provided and configured in various ways, some of which are described below.
 
 The following are valid Ethereum providers for initialization of the SDK.
 
@@ -242,6 +247,18 @@ mgv = await Mangrove.connect({
     password: 'wallet_password' // preferably with environment variable
   }
 });
+
+// Init with a custom ethers.js provider, for example a WebSocketProvider (server side)
+provider = new ethers.providers.WebSocketProvider('wss://polygon-mumbai.g.alchemy.com/v2/_your_project_id_');
+signer = new ethers.Wallet('0x_your_private_key_', provider);
+mgv = await Mangrove.connect({signer: signer});
+
+// Init with a EIP-1193 provider object (server side)
+provider = new Web3.providers.WebsocketProvider('wss://polygon-mumbai.g.alchemy.com/v2/_your_project_id_');
+mgv = await Mangrove.connect({
+  provider: provider,
+  privateKey: '0x_your_private_key_'
+});
 ```
 
 ## Constants and Contract Addresses
@@ -265,7 +282,37 @@ The precision used when dividing is 20 decimal places.
 
 TODO include transaction options (see here)[https://github.com/compound-finance/compound-js#transaction-options]
 
-## Test
+## Package configuration
+
+mangrove.js uses the [node-config](https://github.com/lorenwest/node-config) package for configuration.
+
+It allows apps who requires `mangrove.js` to override default package configuration, by setting configuration in `MangroveJs` namespace.
+
+Example of app configuration (`config/default.js`):
+
+```javascript
+var config = {
+  ...
+
+  MangroveJs: {
+    logLevel: "info",
+    ...
+  }
+};
+module.exports = config;
+```
+
+## Logging
+
+Console logging is enabled by default.
+
+Logging can be configured with the following directives (see [Package
+configuration](#package-configuration)).
+
+- `logLevel`: set logging level;
+- `logFile`: enable file logging.
+
+## Tests
 
 Tests are available in `./test/integration/*.integration.test.js`. Methods are tested using an in-process local chain using [Hardhat](https://hardhat.org/). For free archive node access, get a provider URL from [Alchemy](http://alchemy.com/).
 

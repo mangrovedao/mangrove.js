@@ -1,3 +1,4 @@
+import { logger } from "./util/logger";
 import * as ethers from "ethers";
 import { EOA_offer_gasreq } from "./constants";
 
@@ -30,7 +31,7 @@ namespace LiquidityProvider {
    *  offer order.
    */
 
-  type OptParams = { gasreq?: number; gasprice?: number };
+  type OptParams = { gasreq?: number; gasprice?: number; fund?: Bigish };
 
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
@@ -82,16 +83,37 @@ class LiquidityProvider {
     return this.getMissingProvision("asks", opts);
   }
 
-  /** List all of the maker's asks */
-  asks(): Market.Offer[] {
-    const address = this.logic ? this.logic.address : this.eoa;
-    return this.market.book().asks.filter((ofr) => ofr.maker === address);
+  /** Given a price, find the id of the immediately-better offer in the
+   * semibook. If there is no offer with a better price, `undefined` is returned.
+   */
+  async getBidPivotId(price: Bigish): Promise<number | undefined> {
+    const book = this.market.getBook();
+    return book.bids.getPivotId(price);
   }
 
-  /** List all of the maker's bids */
+  async getAskPivotId(price: Bigish): Promise<number | undefined> {
+    const book = this.market.getBook();
+    return book.asks.getPivotId(price);
+  }
+
+  /** List all of the maker's asks in the cache */
+  asks(): Market.Offer[] {
+    const address = this.logic ? this.logic.address : this.eoa;
+    return this.market
+      .getBook()
+      .asks.iter()
+      .filter((ofr) => ofr.maker === address)
+      .toArray();
+  }
+
+  /** List all of the maker's bids in the cache */
   bids(): Market.Offer[] {
     const address = this.logic ? this.logic.address : this.eoa;
-    return this.market.book().bids.filter((ofr) => ofr.maker === address);
+    return this.market
+      .getBook()
+      .bids.iter()
+      .filter((ofr) => ofr.maker === address)
+      .toArray();
   }
 
   /**
@@ -106,6 +128,7 @@ class LiquidityProvider {
     gives: Big;
     gasreq?: number;
     gasprice?: number;
+    fund?: Bigish;
   } {
     let wants, gives, price;
     // deduce price from wants&gives, or deduce wants&gives from volume&price
@@ -125,13 +148,27 @@ class LiquidityProvider {
     }
     const gasreq = p.gasreq;
     const gasprice = p.gasprice;
-    return { wants, gives, price, gasreq, gasprice };
+    const fund = p.fund;
+
+    return { wants, gives, price, gasreq, gasprice, fund };
+  }
+
+  #optValueToPayableOverride(
+    overrides: ethers.Overrides,
+    fund?: Bigish
+  ): ethers.PayableOverrides {
+    if (fund) {
+      console.log("funding mangrove");
+      return { value: this.mgv.toUnits(fund, 18), ...overrides };
+    } else {
+      return overrides;
+    }
   }
 
   /** Post a new ask */
   newAsk(
     p: LiquidityProvider.OfferParams,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.providers.Log }> {
     return this.newOffer({ ba: "asks", ...p }, overrides);
   }
@@ -139,7 +176,7 @@ class LiquidityProvider {
   /** Post a new bid */
   newBid(
     p: LiquidityProvider.OfferParams,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.providers.Log }> {
     return this.newOffer({ ba: "bids", ...p }, overrides);
   }
@@ -201,15 +238,17 @@ class LiquidityProvider {
     return this.logic ? await this.logic.getDefaultGasreq() : EOA_offer_gasreq;
   }
 
+  /* Returns an easy to use promise of a view of the new offer. You can also catch any error thrown if the transaction was rejected/replaced. */
   async newOffer(
     p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
-    overrides: ethers.PayableOverrides = {}
+    overrides: ethers.Overrides = {}
   ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
-    const { wants, gives, price, gasreq, gasprice } =
+    const { wants, gives, price, gasreq, gasprice, fund } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
-    const resp = await this.#proxy().contract.newOffer(
+
+    const txPromise = this.#proxy().contract.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
@@ -217,20 +256,28 @@ class LiquidityProvider {
       gasreq ? gasreq : await this.#gasreq(),
       gasprice ? gasprice : 0,
       pivot ?? 0,
-      overrides
+      this.#optValueToPayableOverride(overrides, fund)
     );
 
-    return this.market.once(
+    logger.debug(`Post new offer`, {
+      contextInfo: "mangrove.maker",
+      data: { params: p, overrides: overrides },
+    });
+
+    return this.market.onceWithTxPromise(
+      txPromise,
       (cbArg, _event, ethersEvent) => ({
         id: cbArg.offer.id,
         event: ethersEvent,
         pivot: pivot,
       }),
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
+      (_cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
     );
   }
 
   /** Update an existing ask */
+  /** e.g `updateAsk(42,{price:0.2, volume:1000, gasreq:100000, fund:0.01})`*/
+  /** to change volume and price of the offer, and update its gas requirement and fund 0.01 ether to maker balance*/
   updateAsk(
     id: number,
     p: LiquidityProvider.OfferParams,
@@ -264,12 +311,10 @@ class LiquidityProvider {
         `No offer in ${p} with id ${id} owned by this maker contract.`
       );
     }
-
-    const { wants, gives, price, gasreq, gasprice } =
+    const { wants, gives, price, gasreq, gasprice, fund } =
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-
-    const resp = await this.#proxy().contract.updateOffer(
+    const txPromise = this.#proxy().contract.updateOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
@@ -278,12 +323,18 @@ class LiquidityProvider {
       gasprice ? gasprice : offer.gasprice,
       (await this.market.getPivotId(p.ba, price)) ?? 0,
       id,
-      overrides
+      this.#optValueToPayableOverride(overrides, fund)
     );
 
-    return this.market.once(
+    logger.debug(`Update offer`, {
+      contextInfo: "mangrove.maker",
+      data: { id: id, params: p, overrides: overrides },
+    });
+
+    return this.market.onceWithTxPromise(
+      txPromise,
       (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
+      (cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
     );
   }
 
@@ -313,7 +364,7 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    const resp = await this.#proxy().contract.retractOffer(
+    const txPromise = this.#proxy().contract.retractOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       id,
@@ -321,11 +372,17 @@ class LiquidityProvider {
       overrides
     );
 
-    return this.market.once(
+    logger.debug(`Cancel offer`, {
+      contextInfo: "mangrove.maker",
+      data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
+    });
+
+    return this.market.onceWithTxPromise(
+      txPromise,
       (/*cbArg, event, ethersEvent*/) => {
         /*empty*/
       },
-      (_cbArg, _event, ethersEvent) => resp.hash === ethersEvent.transactionHash
+      (cbArg, evt /* _ethersEvent*/) => evt.name === "OfferRetract"
     );
   }
   /** Get the current balance the liquidity provider has in Mangrove */
@@ -383,6 +440,11 @@ class LiquidityProvider {
     }
     const balance = await this.balanceOnMangrove();
     const currentOfferProvision = lockedProvision.add(balance);
+    logger.debug(`Get missing provision`, {
+      contextInfo: "mangrove.maker",
+      data: { ba: ba, opts: opts },
+    });
+
     return currentOfferProvision.gte(bounty)
       ? new Big(0)
       : bounty.sub(currentOfferProvision);

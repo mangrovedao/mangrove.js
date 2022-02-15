@@ -5,6 +5,7 @@
 
 import { ethers } from "ethers";
 import { Provider, Signer } from "./types";
+import { logger, logdataLimiter } from "./util/logger";
 import fs from "fs";
 
 interface JsonWalletOptions {
@@ -88,6 +89,15 @@ export async function getProviderNetwork(
  * In addition, you can specify
  * - `options.forceReadOnly:boolean` to connect readonly to mangrove. If you don't specify a signer and the provider does not include a signer, you will connect in readonly mode.
  *
+ * IMPORTANT if both provider&signer are ethers objects,
+ * - if the signer has its own provider, the provider argument will be ignored
+ * - otherwise, the signer will attempt to connect to the provider (so any signer info on the provider will be ignored).
+ *
+ * Note on intended meaning of signer/provider by ricmoo (ethers.js author
+ * Provider - read-only access
+ * Signer (without a provider) - write-only access
+ * Signer (with a provider) - read/write access
+ *
  * When in readonly mode, all write operations will fail and msg.sender will be
  * 0x0000000000000000000000000000000000000001
  *
@@ -102,14 +112,12 @@ export async function _createSigner(
   signer: Signer;
 }> {
   let readOnly = false;
-  // Cannot give both a signer and provider. Instead, give a provider + signing info.
-  if (options.provider && options.signer) {
-    throw new Error(
-      "Cannot give both a provider and a signer. Try giving a privateKey or a mnemonic instead of a signer."
-    );
-  }
 
   if (options.signer && options.signer.provider) {
+    logger.debug("Uses provider from given signer", {
+      contextInfo: "eth.signer",
+      data: logdataLimiter({ signer: options.signer }),
+    });
     return { readOnly, signer: options.signer };
   }
 
@@ -121,12 +129,20 @@ export async function _createSigner(
 
   // Create an ethers provider, web3s can sign
   if (typeof provider === "string") {
+    logger.debug("Uses given provider", {
+      contextInfo: "eth.signer",
+      data: { signer: options.signer },
+    });
     if (isADefaultProvider) {
       provider = ethers.getDefaultProvider(provider);
     } else {
       provider = new ethers.providers.JsonRpcProvider(provider);
     }
   } else {
+    logger.debug("Uses ethers' Web3Provider created from given provider", {
+      contextInfo: "eth.signer",
+      data: { signer: options.signer },
+    });
     provider = new ethers.providers.Web3Provider(provider);
   }
 
@@ -136,6 +152,10 @@ export async function _createSigner(
   ) {
     signer = provider.getSigner(options.signerIndex || 0);
     await signer.getAddress().catch(() => {
+      logger.warn("Cannot use signer retrieved from provider.getSigner", {
+        contextInfo: "eth.signer",
+        data: { signer: signer },
+      });
       signer = undefined;
     });
   }
@@ -147,22 +167,39 @@ export async function _createSigner(
       !!options.signer ||
       !!options.jsonWallet)
   ) {
-    console.warn("Signer info provided will override default signer.");
+    logger.warn("Signer info provided will override default signer", {
+      contextInfo: "eth.signer",
+      data: { signer: signer },
+    });
   }
 
   // Add an explicit signer
   if (options.signer) {
-    signer = options.signer;
+    try {
+      signer = options.signer.connect(provider);
+    } catch (e) {
+      console.warn(
+        "provided signer object is not able to reinstantiate on new provider info."
+      );
+      throw e;
+    }
     if (options.mnemonic || options.privateKey) {
-      console.warn("options.signer overrides mnemonic and privateKey.");
+      logger.warn("options.signer overrides mnemonic and privateKey", {
+        contextInfo: "eth.signer",
+        data: { signer: options.signer },
+      });
     }
   } else if (options.privateKey) {
     signer = new ethers.Wallet(options.privateKey, provider);
     if (options.signerIndex) {
-      console.warn("options.signerIndex not applicable to private keys");
+      logger.warn("options.signerIndex not applicable to private keys", {
+        contextInfo: "eth.signer",
+      });
     }
     if (options.mnemonic) {
-      console.warn("options.privateKey overrides mnemonic.");
+      logger.warn("options.signerIndex not applicable to private keys", {
+        contextInfo: "eth.signer",
+      });
     }
   } else if (options.mnemonic) {
     signer = new ethers.Wallet(
@@ -170,8 +207,11 @@ export async function _createSigner(
       provider
     );
     if (options.signerIndex) {
-      console.warn(
-        "options.signerIndex not applicable to mnemonic, use options.path instead."
+      logger.warn(
+        "options.signerIndex not applicable to mnemonic, use options.path instead.",
+        {
+          contextInfo: "eth.signer",
+        }
       );
     }
   } else if (options.jsonWallet) {
@@ -184,8 +224,11 @@ export async function _createSigner(
       provider
     );
   } else if (!signer) {
-    console.warn(
-      "No signing info provided or forceReadOnly is true: only read methods will work."
+    logger.warn(
+      "No signing info provided or forceReadOnly is true: only read methods will work.",
+      {
+        contextInfo: "eth.signer",
+      }
     );
     readOnly = true;
     signer = new ethers.VoidSigner(

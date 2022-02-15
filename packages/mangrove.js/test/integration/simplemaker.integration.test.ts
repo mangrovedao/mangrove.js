@@ -176,8 +176,11 @@ describe("SimpleMaker", () => {
 
       it("pushes a new offer", async () => {
         const provision = await onchain_lp.computeAskProvision({});
-        await onchain_lp.fundMangrove(provision);
-        const { id: ofrId } = await onchain_lp.newAsk({ wants: 10, gives: 10 });
+        const { id: ofrId } = await onchain_lp.newAsk({
+          wants: 10,
+          gives: 10,
+          fund: provision,
+        });
         const asks = onchain_lp.asks();
         assert.strictEqual(
           asks.length,
@@ -196,26 +199,39 @@ describe("SimpleMaker", () => {
 
       it("cancels offer", async () => {
         const provision = await onchain_lp.computeBidProvision({});
-        await onchain_lp.fundMangrove(provision);
         const { id: ofrId } = await onchain_lp.newBid({
           wants: 10,
           gives: 20,
+          fund: provision,
         });
 
-        await onchain_lp.cancelBid(ofrId);
+        let prov_before_cancel = await onchain_lp.balanceOnMangrove();
+        await onchain_lp.cancelBid(ofrId, true); // with deprovision
 
         const bids = onchain_lp.bids();
         assert.strictEqual(bids.length, 0, "offer should have been canceled");
+
+        let prov_after_cancel = await onchain_lp.balanceOnMangrove();
+        assert(
+          prov_after_cancel.gt(prov_before_cancel),
+          "Maker was not refunded"
+        );
+        await onchain_lp.cancelBid(ofrId);
+        let prov_after_cancel2 = await onchain_lp.balanceOnMangrove();
+        assert.strictEqual(
+          prov_after_cancel2.toString(),
+          prov_after_cancel.toString(),
+          "Cancel twice should not provision maker"
+        );
       });
 
       it("updates offer", async () => {
-        let provision = await onchain_lp.computeAskProvision({});
-        await onchain_lp.fundMangrove(provision);
         const { id: ofrId } = await onchain_lp.newAsk({
           wants: 10,
           gives: 20,
+          fund: await onchain_lp.computeAskProvision({}),
         });
-        provision = await onchain_lp.computeAskProvision({ id: ofrId });
+        const provision = await onchain_lp.computeAskProvision({ id: ofrId });
         assert.strictEqual(
           provision.toNumber(),
           0,

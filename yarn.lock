@@ -1066,6 +1066,8 @@ __metadata:
     dotenv-flow: ^3.2.0
     eslint: ^7.32.0
     eslint-config-prettier: ^8.3.0
+    fast-safe-stringify: ^2.1.1
+    json-truncate: ^3.0.0
     lint-staged: ^11.1.2
     mocha: ^9.1.1
     mocha-multi-reporters: ^1.5.1
@@ -1096,7 +1098,7 @@ __metadata:
     ethers: ^5.4.6
     fs: ^0.0.1-security
     hardhat: ^2.4.1
-    hardhat-abi-exporter: ^2.3.0
+    hardhat-abi-exporter: ^2.8.0
     hardhat-deploy: ^0.9.4
     hardhat-deploy-ethers: ^0.3.0-beta.10
     lint-staged: ^10.5.1
@@ -1161,7 +1163,7 @@ __metadata:
     ethers: ^5.4.6
     fs: ^0.0.1-security
     hardhat: ^2.4.1
-    hardhat-abi-exporter: ^2.3.0
+    hardhat-abi-exporter: ^2.8.0
     hardhat-deploy: ^0.9.4
     hardhat-deploy-ethers: ^0.3.0-beta.10
     lint-staged: ^10.5.1
@@ -1169,7 +1171,7 @@ __metadata:
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
     prettier: ^2.4.1
-    prettier-plugin-solidity: ^1.0.0-beta.3
+    prettier-plugin-solidity: ^1.0.0-beta.19
     rimraf: ^3.0.2
     shelljs: ^0.8.4
     solcco: ">=1.0.11"
@@ -1188,6 +1190,7 @@ __metadata:
     "@ethersproject/experimental": ^5.5.0
     "@ethersproject/hardware-wallets": ^5.0.0
     "@ethersproject/providers": ^5.0.0
+    "@mangrovedao/commonlib-js": "workspace:*"
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@nomiclabs/hardhat-ethers": ^2.0.2
@@ -1216,6 +1219,7 @@ __metadata:
     eslint: ^7.9.0
     eslint-config-prettier: ^8.3.0
     ethers: ^5.4.6
+    fast-safe-stringify: ^2.1.1
     hardhat: ^2.6.1
     hardhat-deploy: ^0.9.1
     hardhat-deploy-ethers: ^0.3.0-beta.10
@@ -1224,6 +1228,7 @@ __metadata:
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
     nyc: ^15.1.0
+    object.pick: ^1.3.0
     prettier: ^2.4.1
     rimraf: ^3.0.2
     rollup: ^2.57.0
@@ -1624,6 +1629,15 @@ __metadata:
   dependencies:
     antlr4ts: ^0.5.0-alpha.4
   checksum: fe92710e53b2bb9e8423129ca2984c08723f575eda2e4f83a8e883a741436e5ca0bd36826c10ec553bd72d6fe6abd5178ee291baafdf0bb71eb56ca91e383804
+  languageName: node
+  linkType: hard
+
+"@solidity-parser/parser@npm:^0.14.1":
+  version: 0.14.1
+  resolution: "@solidity-parser/parser@npm:0.14.1"
+  dependencies:
+    antlr4ts: ^0.5.0-alpha.4
+  checksum: 616df6c31007710f2a99f8022fa5917968bbe83293cdc0154ba378aad405c0fc0b7af45cf2c99d159ff0b24b67c7a9bc01f80178d086c705682f2f8c7f771137
   languageName: node
   linkType: hard
 
@@ -2291,7 +2305,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ansi-colors@npm:4.1.1, ansi-colors@npm:^4.1.1":
+"ansi-colors@npm:4.1.1, ansi-colors@npm:^4.1.0, ansi-colors@npm:^4.1.1":
   version: 4.1.1
   resolution: "ansi-colors@npm:4.1.1"
   checksum: 138d04a51076cb085da0a7e2d000c5c0bb09f6e772ed5c65c53cb118d37f6c5f1637506d7155fb5f330f0abcf6f12fa2e489ac3f8cdab9da393bf1bb4f9a32b0
@@ -3631,6 +3645,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"delete-empty@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "delete-empty@npm:3.0.0"
+  dependencies:
+    ansi-colors: ^4.1.0
+    minimist: ^1.2.0
+    path-starts-with: ^2.0.0
+    rimraf: ^2.6.2
+  bin:
+    delete-empty: bin/cli.js
+  checksum: 1e2b030346683f49b12460b91d7e1793fc61e9aa0be152a1b31317363632e92426be270f8d635b89d3915ae7da753dcfa6e3bd200f62edf21eaa876ef4443fd2
+  languageName: node
+  linkType: hard
+
 "depd@npm:^1.1.2, depd@npm:~1.1.2":
   version: 1.1.2
   resolution: "depd@npm:1.1.2"
@@ -3761,6 +3789,13 @@ __metadata:
     minimalistic-assert: ^1.0.1
     minimalistic-crypto-utils: ^1.0.1
   checksum: d56d21fd04e97869f7ffcc92e18903b9f67f2d4637a23c860492fbbff5a3155fd9ca0184ce0c865dd6eb2487d234ce9551335c021c376cd2d3b7cb749c7d10f4
+  languageName: node
+  linkType: hard
+
+"emoji-regex@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "emoji-regex@npm:10.0.0"
+  checksum: 9a2e0ad35b84d8ce92777126d122196ff319f64de596e0ca8560298f94eec64b9be26f5b799bb47e2ad3e8791691817f3aec4e3c507e58d5b94a6adeea271921
   languageName: node
   linkType: hard
 
@@ -4998,12 +5033,15 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"hardhat-abi-exporter@npm:^2.3.0":
-  version: 2.3.1
-  resolution: "hardhat-abi-exporter@npm:2.3.1"
+"hardhat-abi-exporter@npm:^2.8.0":
+  version: 2.8.0
+  resolution: "hardhat-abi-exporter@npm:2.8.0"
+  dependencies:
+    "@ethersproject/abi": ^5.5.0
+    delete-empty: ^3.0.0
   peerDependencies:
     hardhat: ^2.0.0
-  checksum: 8c6a96485f64c6deaa1caeef5c863913915c2f3c98ae61137a00892a5b81e2778e99ca45bc25f25afd96ece1e2209d6cf97425205092d9ca9b92a35d0c625597
+  checksum: d8657b0d4ed55e1de0a18d8e70b8de38cf1f8c85e4162cdfe499b74d75f17992359c0c621d1b920f5a666eed2bd26c0a63d8c18ba60d1660f49c9fed378afe62
   languageName: node
   linkType: hard
 
@@ -5774,6 +5812,13 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
+"isobject@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "isobject@npm:3.0.1"
+  checksum: db85c4c970ce30693676487cca0e61da2ca34e8d4967c2e1309143ff910c207133a969f9e4ddb2dc6aba670aabce4e0e307146c310350b298e74a31f7d464703
+  languageName: node
+  linkType: hard
+
 "istanbul-lib-coverage@npm:^3.0.0, istanbul-lib-coverage@npm:^3.0.0-alpha.1":
   version: 3.2.0
   resolution: "istanbul-lib-coverage@npm:3.2.0"
@@ -5961,6 +6006,13 @@ fsevents@~2.1.1:
   version: 1.0.1
   resolution: "json-stable-stringify-without-jsonify@npm:1.0.1"
   checksum: cff44156ddce9c67c44386ad5cddf91925fe06b1d217f2da9c4910d01f358c6e3989c4d5a02683c7a5667f9727ff05831f7aa8ae66c8ff691c556f0884d49215
+  languageName: node
+  linkType: hard
+
+"json-truncate@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "json-truncate@npm:3.0.0"
+  checksum: 15c6ce4ff848cbeb64d219e9154ee27adb978bf93a5256bb5463ddcd2ef63e240505d8d8d891939d4fce107bd3a4e193135badffacc4341cc9c150a92784a8b9
   languageName: node
   linkType: hard
 
@@ -7525,6 +7577,15 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
+"object.pick@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "object.pick@npm:1.3.0"
+  dependencies:
+    isobject: ^3.0.1
+  checksum: 77fb6eed57c67adf75e9901187e37af39f052ef601cb4480386436561357eb9e459e820762f01fd02c5c1b42ece839ad393717a6d1850d848ee11fbabb3e580a
+  languageName: node
+  linkType: hard
+
 "obliterator@npm:^2.0.0":
   version: 2.0.0
   resolution: "obliterator@npm:2.0.0"
@@ -7785,6 +7846,13 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
+"path-starts-with@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "path-starts-with@npm:2.0.0"
+  checksum: c780e5feb53f37a0cc78c446181aac2d1e4554e5693bbc4ad03c99157b9411ade26a3503dcd5b3b8f0fd56d36daa60ce5a8c24d66b54a400c812fe11eb5bcab9
+  languageName: node
+  linkType: hard
+
 "path-type@npm:^3.0.0":
   version: 3.0.0
   resolution: "path-type@npm:3.0.0"
@@ -7952,6 +8020,22 @@ fsevents@~2.1.1:
     typescript: ^3.9.3
     vue-eslint-parser: ~7.1.0
   checksum: a745ae6d2d05ab8d596be6885f79dc0fd486d9e15408be2c7696fa87cec93f4f7d91afeae31d414260301402164f9e5e689b538795413aeaaa456e01df9184eb
+  languageName: node
+  linkType: hard
+
+"prettier-plugin-solidity@npm:^1.0.0-beta.19":
+  version: 1.0.0-dev.21
+  resolution: "prettier-plugin-solidity@npm:1.0.0-dev.21"
+  dependencies:
+    "@solidity-parser/parser": ^0.14.1
+    emoji-regex: ^10.0.0
+    escape-string-regexp: ^4.0.0
+    semver: ^7.3.5
+    solidity-comments-extractor: ^0.0.7
+    string-width: ^4.2.3
+  peerDependencies:
+    prettier: ^2.3.0
+  checksum: 3c43bb7404c380091310e59be718ec0161d268e4674e5e658723f7a7bc9b0f541df9816a8e7bd93b9e73a289f1e13ea1eab58027d4ee51d25460ea6e63c0c99e
   languageName: node
   linkType: hard
 
@@ -8379,7 +8463,7 @@ resolve@1.17.0:
   languageName: node
   linkType: hard
 
-"rimraf@npm:^2.2.8":
+"rimraf@npm:^2.2.8, rimraf@npm:^2.6.2":
   version: 2.7.1
   resolution: "rimraf@npm:2.7.1"
   dependencies:

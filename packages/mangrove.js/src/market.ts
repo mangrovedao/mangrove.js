@@ -1,14 +1,15 @@
+import { logger } from "./util/logger";
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
-import { TradeParams, Bigish, typechain } from "./types";
+import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
-import { Semibook, SemibookEvent } from "./semibook";
+import Semibook from "./semibook";
+import { Deferred } from "./util";
 
 let canConstructMarket = false;
 
-const DEFAULT_MAX_OFFERS = 50;
 const MAX_MARKET_ORDER_GAS = 6500000;
 
 /* Note on big.js:
@@ -22,7 +23,7 @@ Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
 export const bookOptsDefault: Market.BookOptions = {
-  maxOffers: DEFAULT_MAX_OFFERS,
+  maxOffers: Semibook.DEFAULT_MAX_OFFERS,
 };
 
 import type { Awaited } from "ts-essentials";
@@ -39,9 +40,48 @@ namespace Market {
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
+  export type TradeParams = { slippage?: number } & (
+    | { volume: Bigish; price: Bigish | null }
+    | { total: Bigish; price: Bigish | null }
+    | { wants: Bigish; gives: Bigish; fillWants?: boolean }
+  );
+
+  /**
+   * Specification of how much volume to (potentially) trade on the market.
+   *
+   * `{given:100, what:"base", to:"buy"}` means buying 100 base tokens.
+   *
+   * `{given:10, what:"quote", to:"sell"})` means selling 10 quote tokens.
+   */
+  export type VolumeParams = Semibook.VolumeParams & {
+    /** Whether `given` is the market's base or quote. */
+    what: "base" | "quote";
+  };
+
+  /**
+   * Options that control how the book cache behaves.
+   */
   export type BookOptions = {
+    /** The maximum number of offers to store in the cache.
+     *
+     * `maxOffers` and `desiredPrice` are mutually exclusive.
+     */
     maxOffers?: number;
+    /** The number of offers to fetch in one call.
+     *
+     * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
     chunkSize?: number;
+    /** The price that is expected to be used in calls to the market.
+     * The cache will initially contain all offers with this price or better.
+     * This can be useful in order to ensure a good pivot is readily available.
+     *
+     * `maxOffers` and `desiredPrice` are mutually exclusive.
+     */
+    desiredPrice?: Bigish;
+    /**
+     * The volume that is expected to be used in trades on the market.
+     */
+    desiredVolume?: VolumeParams;
   };
 
   export type Offer = {
@@ -70,7 +110,7 @@ namespace Market {
 
   export type BookSubscriptionCbArgument = {
     ba: "asks" | "bids";
-    offer: Offer;
+    offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
     | { type: "OfferWrite" }
     | {
@@ -90,26 +130,25 @@ namespace Market {
     ethersLog?: ethers.providers.Log
   ) => T;
   export type StorableMarketCallback = MarketCallback<any>;
-  export type MarketFilter = MarketCallback<boolean>;
+  export type MarketFilter = MarketCallback<boolean | Promise<boolean>>;
   export type SubscriptionParam =
     | { type: "multiple" }
     | {
         type: "once";
         ok: (...a: any[]) => any;
         ko: (...a: any[]) => any;
-        filter?: (...a: any[]) => boolean;
+        filter?: (...a: any[]) => boolean | Promise<boolean>;
       };
 
-  // FIXME: This name is misleading, since you're only getting prefixes of the offer lists.
-  // FIXME: Perhaps we should expose Semibook instead of arrays? Semibooks carry more information.
-  /**
-   * @deprecated This has been subsumed by the `Book` type
-   */
-  export type MarketBook = { asks: Offer[]; bids: Offer[] };
-
   export type Book = { asks: Semibook; bids: Semibook };
+
+  export type VolumeEstimate = {
+    estimatedVolume: Big;
+    givenResidue: Big;
+  };
 }
 
+// no unsubscribe yet
 /**
  * The Market class focuses on a Mangrove market.
  * On-chain, markets are implemented as two offer lists,
@@ -125,9 +164,9 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
+  #blockSubscriptions: ThresholdBlockSubscriptions;
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
-  #book: Market.MarketBook;
   #initClosure?: () => Promise<void>;
 
   static async connect(params: {
@@ -168,12 +207,11 @@ class Market {
       );
     }
     this.#subscriptions = new Map();
+
     this.mgv = params.mgv;
 
     this.base = this.mgv.token(params.base);
     this.quote = this.mgv.token(params.quote);
-
-    this.#book = { asks: [], bids: [] };
   }
 
   initialize(): Promise<void> {
@@ -187,37 +225,84 @@ class Market {
   }
 
   async #initialize(opts: Market.BookOptions = bookOptsDefault): Promise<void> {
-    opts = { ...bookOptsDefault, ...opts };
+    const semibookDesiredVolume =
+      opts.desiredVolume === undefined
+        ? undefined
+        : { given: opts.desiredVolume.given, to: opts.desiredVolume.to };
+    const isVolumeDesiredForAsks =
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "buy") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "sell"));
+    const isVolumeDesiredForBids =
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "sell") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "buy"));
+
+    const getSemibookOpts: (ba: "bids" | "asks") => Semibook.Options = (
+      ba
+    ) => ({
+      maxOffers: opts.maxOffers,
+      chunkSize: opts.chunkSize,
+      desiredPrice: opts.desiredPrice,
+      desiredVolume:
+        (ba === "asks" && isVolumeDesiredForAsks) ||
+        (ba === "bids" && isVolumeDesiredForBids)
+          ? semibookDesiredVolume
+          : undefined,
+    });
 
     const asksSemibookPromise = Semibook.connect(
       this,
       "asks",
-      (e) => this.#semibookCallback(e),
-      opts
+      (e) => this.#semibookEventCallback(e),
+      (n) => this.#semibookBlockCallback(n),
+      getSemibookOpts("asks")
     );
     const bidsSemibookPromise = Semibook.connect(
       this,
       "bids",
-      (e) => this.#semibookCallback(e),
-      opts
+      (e) => this.#semibookEventCallback(e),
+      (n) => this.#semibookBlockCallback(n),
+      getSemibookOpts("bids")
     );
 
     this.#asksSemibook = await asksSemibookPromise;
     this.#bidsSemibook = await bidsSemibookPromise;
 
-    this.#updateBook("asks");
-    this.#updateBook("bids");
+    // start block events from the last block seen by both semibooks
+    const lastBlock = Math.min(
+      this.#asksSemibook.lastReadBlockNumber(),
+      this.#bidsSemibook.lastReadBlockNumber()
+    );
+    this.#blockSubscriptions = new ThresholdBlockSubscriptions(lastBlock, 2);
   }
 
-  #semibookCallback({
+  #semibookBlockCallback(n: number): void {
+    this.#blockSubscriptions.increaseCount(n);
+  }
+
+  async #semibookEventCallback({
     cbArg,
     event,
     ethersLog: ethersLog,
-  }: SemibookEvent): void {
-    this.#updateBook(cbArg.ba);
+  }: Semibook.Event): Promise<void> {
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
-        if (!("filter" in params) || params.filter(cbArg, event, ethersLog)) {
+        let isFilterSatisfied: boolean;
+        if (!("filter" in params)) {
+          isFilterSatisfied = true;
+        } else {
+          const filterResult = params.filter(cbArg, event, ethersLog);
+          isFilterSatisfied =
+            typeof filterResult === "boolean"
+              ? filterResult
+              : await filterResult;
+        }
+        if (isFilterSatisfied) {
           this.#subscriptions.delete(cb);
           Promise.resolve(cb(cbArg, event, ethersLog)).then(
             params.ok,
@@ -230,45 +315,24 @@ class Market {
     }
   }
 
-  #updateBook(ba: "bids" | "asks"): void {
-    this.#book[ba] = Array.from(
-      ba === "asks" ? this.#asksSemibook : this.#bidsSemibook
-    );
-  }
-
   /**
-   * Return current book state of the form
-   * @example
-   * ```
-   * {
-   *   asks: [
-   *     {id: 3, price: 3700, volume: 4, ...},
-   *     {id: 56, price: 3701, volume: 7.12, ...}
-   *   ],
-   *   bids: [
-   *     {id: 811, price: 3600, volume: 1.23, ...},
-   *     {id: 80, price: 3550, volume: 1.11, ...}
-   *   ]
-   * }
-   * ```
-   *  Asks are standing offers to sell base and buy quote.
-   *  Bids are standing offers to buy base and sell quote.
-   *  All prices are in quote/base, all volumes are in base.
-   *  Order is from best to worse from taker perspective.
-   * @deprecated Subsumed by `getBook` which returns the more versatile `Book` type.
-   */
-  book(): Market.MarketBook {
-    return this.#book;
-  }
-
-  /**
-   * Return the semibooks of this market
+   * Return the semibooks of this market.
+   *
+   * Asks are standing offers to sell base and buy quote.
+   * Bids are standing offers to buy base and sell quote.
+   * All prices are in quote/base, all volumes are in base.
+   * Order is from best to worse from taker perspective.
    */
   getBook(): Market.Book {
     return {
       asks: this.#asksSemibook,
       bids: this.#bidsSemibook,
     };
+  }
+
+  /** Trigger `cb` after block `n` has been seen. */
+  afterBlock<T>(n: number, cb: (number) => T): Promise<T> {
+    return this.#blockSubscriptions.subscribe(n, cb);
   }
 
   /**
@@ -280,8 +344,7 @@ class Market {
 
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
-  ): Promise<Market.MarketBook> {
-    opts = { ...bookOptsDefault, ...opts };
+  ): Promise<{ asks: Market.Offer[]; bids: Market.Offer[] }> {
     const asksPromise = this.#asksSemibook.requestOfferListPrefix(opts);
     const bidsPromise = this.#bidsSemibook.requestOfferListPrefix(opts);
     return {
@@ -347,8 +410,9 @@ class Market {
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: buy `wants` tokens for a max average price of `price`, or
-   * - `{wants,gives}`: accept implicit max average price of `gives/wants`
+   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be true.
+   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
+   * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
@@ -363,10 +427,26 @@ class Market {
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
-  buy(params: TradeParams): Promise<Market.OrderResult> {
-    const _wants = "price" in params ? Big(params.volume) : Big(params.wants);
-    let _gives =
-      "price" in params ? _wants.mul(params.price) : Big(params.gives);
+  buy(params: Market.TradeParams): Promise<Market.OrderResult> {
+    let _wants, _gives, fillWants;
+    if ("price" in params) {
+      if ("volume" in params) {
+        _wants = Big(params.volume);
+        _gives =
+          params.price === null
+            ? Big(2).pow(256).minus(1)
+            : _wants.mul(params.price);
+        fillWants = true;
+      } else {
+        _gives = Big(params.total);
+        _wants = params.price === null ? 0 : _gives.div(params.price);
+        fillWants = false;
+      }
+    } else {
+      _wants = Big(params.wants);
+      _gives = Big(params.gives);
+      fillWants = "fillWants" in params ? params.fillWants : true;
+    }
 
     const slippage = validateSlippage(params.slippage);
 
@@ -375,14 +455,15 @@ class Market {
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(_gives);
 
-    return this.#marketOrder({ gives, wants, orderType: "buy" });
+    return this.#marketOrder({ gives, wants, orderType: "buy", fillWants });
   }
 
   /**
    * Market sell order. Will attempt to sell base token for quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: sell `gives` tokens for a min average of `price`
-   * - `{wants,gives}`: accept implicit min average price of `gives/wants`.
+   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
+   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`. Set `price` to null. `fillWants` will be true.
+   * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
@@ -397,10 +478,26 @@ class Market {
    * market.sell({volume: 100, price: 1})
    * ```
    */
-  sell(params: TradeParams): Promise<Market.OrderResult> {
-    const _gives = "price" in params ? Big(params.volume) : Big(params.gives);
-    let _wants =
-      "price" in params ? _gives.mul(params.price) : Big(params.wants);
+  sell(params: Market.TradeParams): Promise<Market.OrderResult> {
+    let _wants, _gives, fillWants;
+    if ("price" in params) {
+      if ("volume" in params) {
+        _gives = Big(params.volume);
+        _wants = params.price === null ? 0 : _gives.mul(params.price);
+        fillWants = false;
+      } else {
+        _wants = Big(params.total);
+        _gives =
+          params.price === null
+            ? Big(2).pow(256).minus(1)
+            : _wants.div(params.price);
+        fillWants = true;
+      }
+    } else {
+      _wants = Big(params.wants);
+      _gives = Big(params.gives);
+      fillWants = "fillWants" in params ? params.fillWants : false;
+    }
 
     const slippage = validateSlippage(params.slippage);
 
@@ -409,16 +506,16 @@ class Market {
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
 
-    return this.#marketOrder({ wants, gives, orderType: "sell" });
+    return this.#marketOrder({ wants, gives, orderType: "sell", fillWants });
   }
 
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
-   * with contract function argument `fillWants` set to true.
    *
    * If `orderType` is `"sell"`, the quote/base market will be used,
-   * with contract function argument `fillWants` set to false.
+   *
+   * `fillWants` defines whether the market order stops immediately once `wants` tokens have been purchased or whether it tries to keep going until `gives` tokens have been spent.
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
    *
@@ -429,15 +526,24 @@ class Market {
     wants,
     gives,
     orderType,
+    fillWants,
   }: {
     wants: ethers.BigNumber;
     gives: ethers.BigNumber;
     orderType: "buy" | "sell";
+    fillWants: boolean;
   }): Promise<Market.OrderResult> {
-    const [outboundTkn, inboundTkn, fillWants] =
-      orderType === "buy"
-        ? [this.base, this.quote, true]
-        : [this.quote, this.base, false];
+    const [outboundTkn, inboundTkn] =
+      orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
+
+    logger.debug("Creating market order", {
+      contextInfo: "market.marketOrder",
+      data: {
+        outboundTkn: outboundTkn.name,
+        inboundTkn: inboundTkn.name,
+        fillWants: fillWants,
+      },
+    });
 
     const gasLimit = await this.estimateGas(orderType, wants);
     const response = await this.mgv.contract.marketOrder(
@@ -452,6 +558,10 @@ class Market {
 
     let result: ethers.Event | undefined;
     //last OrderComplete is ours!
+    logger.debug("Market order raw receipt", {
+      contextInfo: "market.marketOrder",
+      data: { receipt: receipt },
+    });
     for (const evt of receipt.events) {
       if (evt.event === "OrderComplete") {
         if ((evt as OrderCompleteEvent).args.taker === receipt.from) {
@@ -487,7 +597,7 @@ class Market {
   }
 
   /**
-   * Volume estimator, very crude (based on cached book).
+   * Volume estimator.
    *
    * if you say `estimateVolume({given:100,what:"base",to:"buy"})`,
    *
@@ -499,36 +609,17 @@ class Market {
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    * */
-  estimateVolume(params: {
-    given: Bigish;
-    what: "base" | "quote";
-    to: "buy" | "sell";
-  }): { estimatedVolume: Big; givenResidue: Big } {
-    const dict = {
-      base: {
-        buy: { offers: "asks", drainer: "gives", filler: "wants" },
-        sell: { offers: "bids", drainer: "wants", filler: "gives" },
-      },
-      quote: {
-        buy: { offers: "bids", drainer: "gives", filler: "wants" },
-        sell: { offers: "asks", drainer: "wants", filler: "gives" },
-      },
-    } as const;
-
-    const data = dict[params.what][params.to];
-
-    const offers = this.book()[data.offers];
-    let draining = Big(params.given);
-    let filling = Big(0);
-    for (const o of offers) {
-      const _drainer = o[data.drainer];
-      const drainer = draining.gt(_drainer) ? _drainer : draining;
-      const filler = o[data.filler].times(drainer).div(_drainer);
-      draining = draining.minus(drainer);
-      filling = filling.plus(filler);
-      if (draining.eq(0)) break;
+  async estimateVolume(
+    params: Market.VolumeParams
+  ): Promise<Market.VolumeEstimate> {
+    if (
+      (params.what === "base" && params.to === "buy") ||
+      (params.what === "quote" && params.to === "sell")
+    ) {
+      return await this.#asksSemibook.estimateVolume(params);
+    } else {
+      return await this.#bidsSemibook.estimateVolume(params);
     }
-    return { estimatedVolume: filling, givenResidue: draining };
   }
 
   /**
@@ -612,8 +703,8 @@ class Market {
       | "price"
     >
   ): void {
-    const offers = ba === "bids" ? this.#book.bids : this.#book.asks;
-    console.table(offers, filter);
+    const offers = ba === "bids" ? this.#bidsSemibook : this.#asksSemibook;
+    console.table([...offers], filter);
   }
 
   /**
@@ -668,6 +759,55 @@ class Market {
         params.filter = filter;
       }
       this.#subscriptions.set(cb as Market.StorableMarketCallback, params);
+    });
+  }
+
+  /** Await until mangrove.js has precessed an event that matches `filter` as
+   * part of the transaction generated by `tx`. The goal is to reuse the event
+   * processing facilities of market.ts as much as possible but still be
+   * tx-specific (and in particular fail if the tx fails).  Alternatively one
+   * could just use `await (await tx).wait(1)` but then you would not get the
+   * context provided by market.ts (current position of a new offer in the OB,
+   * for instance).
+   *
+   * Warning: if `txPromise` has already been `await`ed, its result may have
+   * already been processed by the semibook event loop, so the promise will
+   * never fulfill. */
+
+  onceWithTxPromise<T>(
+    txPromise: Promise<ethers.ContractTransaction>,
+    cb: Market.MarketCallback<T>,
+    filter?: Market.MarketFilter
+  ): Promise<T> {
+    return new Promise((ok, ko) => {
+      const txHashDeferred = new Deferred<string>();
+      const _filter = async (
+        cbArg: Market.BookSubscriptionCbArgument,
+        event: Market.BookSubscriptionEvent,
+        ethersEvent: ethers.ethers.providers.Log
+      ) => {
+        return (
+          filter(cbArg, event, ethersEvent) &&
+          (await txHashDeferred.promise) === ethersEvent.transactionHash
+        );
+      };
+      this.once(cb, _filter).then(ok, ko);
+
+      txPromise.then((resp) => {
+        // Warning: if the tx nor any with the same nonce is ever mined, the `once` and block callbacks will never be triggered and you will memory leak by queuing tasks.
+        txHashDeferred.resolve(resp.hash);
+        resp
+          .wait(1)
+          .then((recp) => {
+            this.afterBlock(recp.blockNumber, () => {
+              this.unsubscribe(cb);
+            });
+          })
+          .catch((e) => {
+            this.unsubscribe(cb);
+            ko(e);
+          });
+      });
     });
   }
 
@@ -740,5 +880,74 @@ const validateSlippage = (slippage = 0) => {
   }
   return slippage;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace ThresholdBlockSubscriptions {
+  export type blockSubscription = {
+    seenCount: number;
+    cbs: Set<(n: number) => void>;
+  };
+}
+
+class ThresholdBlockSubscriptions {
+  #byBlock: Map<number, ThresholdBlockSubscriptions.blockSubscription>;
+  #lastSeen: number;
+  #seenThreshold: number;
+
+  constructor(lastSeen: number, seenThreshold: number) {
+    this.#seenThreshold = seenThreshold;
+    this.#lastSeen = lastSeen;
+    this.#byBlock = new Map();
+  }
+
+  #get(n: number): ThresholdBlockSubscriptions.blockSubscription {
+    return this.#byBlock.get(n) || { seenCount: 0, cbs: new Set() };
+  }
+
+  #set(n, seenCount, cbs) {
+    this.#byBlock.set(n, { seenCount, cbs });
+  }
+
+  // assumes increaseCount(n) is called monotonically in n
+  increaseCount(n: number): void {
+    // seeing an already-seen-enough block (should not occur)
+    if (n <= this.#lastSeen) {
+      return;
+    }
+
+    const { seenCount, cbs } = this.#get(n);
+
+    this.#set(n, seenCount + 1, cbs);
+
+    // havent seen the block enough times
+    if (seenCount + 1 < this.#seenThreshold) {
+      return;
+    }
+
+    const prevLastSeen = this.#lastSeen;
+    this.#lastSeen = n;
+
+    // clear all past callbacks
+    for (let i = prevLastSeen + 1; i <= n; i++) {
+      const { cbs: _cbs } = this.#get(i);
+      this.#byBlock.delete(i);
+      for (const cb of _cbs) {
+        cb(i);
+      }
+    }
+  }
+
+  subscribe<T>(n: number, cb: (number) => T): Promise<T> {
+    if (this.#lastSeen >= n) {
+      return Promise.resolve(cb(n));
+    } else {
+      const { seenCount, cbs } = this.#get(n);
+      return new Promise((ok, ko) => {
+        const _cb = (n) => Promise.resolve(cb(n)).then(ok, ko);
+        this.#set(n, seenCount, cbs.add(_cb));
+      });
+    }
+  }
+}
 
 export default Market;

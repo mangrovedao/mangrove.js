@@ -1,5 +1,5 @@
 import { logger } from "./util/logger";
-import { Market } from "@mangrovedao/mangrove.js";
+import { Market, Semibook } from "@mangrovedao/mangrove.js";
 import { Provider } from "@ethersproject/providers";
 import { BigNumber, BigNumberish } from "ethers";
 
@@ -88,24 +88,24 @@ export class MarketCleaner {
       // TODO I think this is not quite EIP-1559 terminology - should fix
       const gasPrice = await this.#estimateGasPrice(this.#provider);
 
-      const { asks, bids } = this.#market.book();
+      const { asks, bids } = this.#market.getBook();
       logger.info("Order book retrieved", {
         base: this.#market.base.name,
         quote: this.#market.quote.name,
         contextInfo: contextInfo,
         data: {
-          asksCount: asks.length,
-          bidsCount: bids.length,
+          asksCount: asks.size(),
+          bidsCount: bids.size(),
         },
       });
 
-      const asksCleaningPromise = this.#cleanOfferList(
+      const asksCleaningPromise = this.#cleanSemibook(
         asks,
         "asks",
         gasPrice,
         contextInfo
       );
-      const bidsCleaningPromise = this.#cleanOfferList(
+      const bidsCleaningPromise = this.#cleanSemibook(
         bids,
         "bids",
         gasPrice,
@@ -117,14 +117,14 @@ export class MarketCleaner {
     }
   }
 
-  async #cleanOfferList(
-    offerList: Market.Offer[],
+  async #cleanSemibook(
+    semibook: Semibook,
     ba: BA,
     gasPrice: BigNumber,
     contextInfo?: string
   ): Promise<PromiseSettledResult<void>[]> {
     const cleaningPromises: Promise<void>[] = [];
-    for (const offer of offerList) {
+    for (const offer of semibook) {
       cleaningPromises.push(this.#cleanOffer(offer, ba, gasPrice, contextInfo));
     }
     return Promise.allSettled(cleaningPromises);
