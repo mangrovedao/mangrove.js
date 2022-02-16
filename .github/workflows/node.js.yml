@@ -565,7 +565,7 @@ jobs:
 
   # ==== Job: Build mangrove.js documentation ====
   mangrove-js-doc:
-    needs: [security-guard, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-js]
 
     runs-on: ubuntu-latest
 
@@ -611,6 +611,16 @@ jobs:
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq -o mangrove-js-src.zip
+
+    - name: Download cached commonlib.js artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: commonlib-out.zip
+
+    - name: Unzip commonlib.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq commonlib-out.zip
 
     # == create and upload docs ==
     - run: yarn run doc
