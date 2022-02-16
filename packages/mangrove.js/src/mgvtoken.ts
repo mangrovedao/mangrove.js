@@ -124,7 +124,18 @@ class MgvToken {
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
     const bal = await this.contract.balanceOf(account, overrides);
-    return this.mgv.fromUnits(bal, this.decimals);
+    return this.fromUnits(bal);
+  }
+
+  /**
+   * Transfers `value` amount of tokens to address `to`
+   */
+  async transfer(
+    to: string,
+    value: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.contract.transfer(to, this.toUnits(value), overrides);
   }
 }
 
