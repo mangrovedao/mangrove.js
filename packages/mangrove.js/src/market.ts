@@ -32,7 +32,12 @@ import * as TCM from "./types/typechain/Mangrove";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
   export type MgvReader = typechain.MgvReader;
-  export type OrderResult = { got: Big; gave: Big; penalty: Big };
+  export type OrderResult = {
+    got: Big;
+    gave: Big;
+    partialFill: boolean;
+    penalty: Big;
+  };
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
     | ({ name: "OfferFail" } & TCM.OfferFailEvent)
@@ -574,9 +579,12 @@ class Market {
     }
     const got_bq = orderType === "buy" ? "base" : "quote";
     const gave_bq = orderType === "buy" ? "quote" : "base";
+    const takerGot: BigNumber = result.args.takerGot;
+    const takerGave: BigNumber = result.args.takerGave;
     return {
-      got: this[got_bq].fromUnits(result.args.takerGot),
-      gave: this[gave_bq].fromUnits(result.args.takerGave),
+      got: this[got_bq].fromUnits(takerGot),
+      gave: this[gave_bq].fromUnits(takerGave),
+      partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
       penalty: this.mgv.fromUnits(result.args.penalty, 18),
     };
   }

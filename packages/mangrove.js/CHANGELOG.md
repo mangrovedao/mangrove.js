@@ -5,6 +5,7 @@
   - `desiredVolume`: allows one to specify a volume of interest. This will cause the cache to initially load at least this volume (if available). The option uses the same specification as for `estimateVolume`: `desiredVolume: { given: 1, what: "base", to: "buy" }` will cause the asks semibook to be initialized with a volume of at least 1 base token.
 - New `Market` subscription: `market.afterBlock(n,callback)` will trigger `callback` after the market events for block `n` have been processed. If the block has already been processed, `callback` will be triggered at the next event loop.
 - Improve logging: add file logging, allow applications using the package to configure logging using local `config` file.
+- New `partialFill` flag in `OrderResult`: This flag will be true if the order was only partially filled.
 
 # 0.1.0 (January 2022)
 
