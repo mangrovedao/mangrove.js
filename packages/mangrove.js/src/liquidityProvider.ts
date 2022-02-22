@@ -39,16 +39,9 @@ namespace LiquidityProvider {
 }
 
 /**
- * The Maker class connects to a Maker contract.
+ * The LiquidityProvider class connects an offerLogic (or an EOA) to a market.
  * It posts onchain offers.
- *
- * Maker initialization needs to store the network name, so you cannot
- * directly use the constructor. Instead of `new Maker(...)`, do
- *
- * `await Maker.connect(...)`
- */
-// Maker.withdrawDeposit()
-// Maker.deposit(n)
+ * */
 class LiquidityProvider {
   mgv: Mangrove; // API abstraction of the Mangrove ethers.js contract
   logic?: OfferLogic; // API abstraction of the underlying offer logic ethers.js contract

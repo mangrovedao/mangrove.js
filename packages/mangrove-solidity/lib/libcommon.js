@@ -459,7 +459,14 @@ async function newOffer(
   return offerId;
 }
 
-async function marketOrder(mgv, base_sym, quote_sym, wants, gives) {
+async function marketOrder(
+  mgv,
+  base_sym,
+  quote_sym,
+  wants,
+  gives,
+  failOK = false
+) {
   const base = await getContract(base_sym);
   const quote = await getContract(quote_sym);
 
@@ -470,7 +477,11 @@ async function marketOrder(mgv, base_sym, quote_sym, wants, gives) {
     gives, // giving quote
     true
   );
-  assert(takerGot.gt(0), `market order failed (${ethers.utils.formatEther(bounty)} gas refund)`);
+
+  assert(
+    failOK || takerGot.gt(0),
+    `market order failed (${ethers.utils.formatEther(bounty)} gas refund)`
+  );
 
   const moTx = await mgv.marketOrder(
     base.address,
@@ -517,6 +528,13 @@ async function snipeSuccess(
       ],
     ], // max gas
     true //fillwants
+  );
+
+  console.log(
+    successes,
+    ethers.utils.formatEther(takerGot),
+    ethers.utils.formatEther(takerGave),
+    ethers.utils.formatEther(bounty)
   );
 
   assert(successes.eq(1), "Snipe failed");
@@ -786,7 +804,6 @@ function listenOfferLogic(logic) {
     console.log(outTkn, inTkn, offerId);
     stopListeners([logic]);
   });
-
 }
 
 async function logOrderBook(
