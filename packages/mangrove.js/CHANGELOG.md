@@ -8,6 +8,7 @@
 - New `Market` subscription: `market.afterBlock(n,callback)` will trigger `callback` after the market events for block `n` have been processed. If the block has already been processed, `callback` will be triggered at the next event loop.
 - Improve logging: add file logging, allow applications using the package to configure logging using local `config` file.
 - New `partialFill` flag in `OrderResult`: This flag will be true if the order was only partially filled.
+- New `Market` convenience estimator methods `estimateVolumeTo{Spend,Receive}`.
 
 # 0.1.0 (January 2022)
 

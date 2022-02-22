@@ -62,6 +62,7 @@ namespace Market {
     /** Whether `given` is the market's base or quote. */
     what: "base" | "quote";
   };
+  export type DirectionalVolumeParams = Semibook;
 
   /**
    * Options that control how the book cache behaves.
@@ -629,6 +630,22 @@ class Market {
       return await this.#bidsSemibook.estimateVolume(params);
     }
   }
+
+  /* Convenience method: estimate volume to be received given an amount of base/quote you are ready to spend. */
+  async estimateVolumeToReceive(
+    params: Omit<Market.VolumeParams, "to">
+  ): Promise<Market.VolumeEstimate> {
+    return this.estimateVolume({ ...params, to: "sell" });
+  }
+
+  /* Convenience method: estimate volume to be spent given an amount of base/quote you want to receive. */
+  async estimateVolumeToSpend(
+    params: Omit<Market.VolumeParams, "to">
+  ): Promise<Market.VolumeEstimate> {
+    return this.estimateVolume({ ...params, to: "buy" });
+  }
+
+  /* Convenience method to estimate volume */
 
   /**
    * Return config local to a market.
