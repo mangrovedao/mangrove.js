@@ -1,5 +1,7 @@
 # Next version
 
+# 0.2.0 (February 2022)
+
 - New `Market` options:
   - `desiredPrice`: allows one to specify a price point of interest. This will cause the cache to initially load all offers with this price or better.
   - `desiredVolume`: allows one to specify a volume of interest. This will cause the cache to initially load at least this volume (if available). The option uses the same specification as for `estimateVolume`: `desiredVolume: { given: 1, what: "base", to: "buy" }` will cause the asks semibook to be initialized with a volume of at least 1 base token.
