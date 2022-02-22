@@ -6,6 +6,12 @@
 import { ethers } from "ethers";
 import { Provider, Signer } from "./types";
 import { logger, logdataLimiter } from "./util/logger";
+import fs from "fs";
+
+interface JsonWalletOptions {
+  path: string;
+  password: string;
+}
 
 export interface CreateSignerOptions {
   provider?: Provider | string;
@@ -14,6 +20,7 @@ export interface CreateSignerOptions {
   path?: string;
   signer?: any;
   signerIndex?: number;
+  jsonWallet?: JsonWalletOptions;
   forceReadOnly?: boolean;
 }
 
@@ -155,7 +162,10 @@ export async function _createSigner(
 
   if (
     signer &&
-    (!!options.privateKey || !!options.mnemonic || !!options.signer)
+    (!!options.privateKey ||
+      !!options.mnemonic ||
+      !!options.signer ||
+      !!options.jsonWallet)
   ) {
     logger.warn("Signer info provided will override default signer", {
       contextInfo: "eth.signer",
@@ -204,6 +214,15 @@ export async function _createSigner(
         }
       );
     }
+  } else if (options.jsonWallet) {
+    const jsonWalletFile = fs.readFileSync(options.jsonWallet.path, "utf8");
+    signer = new ethers.Wallet(
+      await ethers.Wallet.fromEncryptedJson(
+        jsonWalletFile,
+        options.jsonWallet.password
+      ),
+      provider
+    );
   } else if (!signer) {
     logger.warn(
       "No signing info provided or forceReadOnly is true: only read methods will work.",

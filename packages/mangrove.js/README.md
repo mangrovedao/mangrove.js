@@ -239,6 +239,15 @@ mgv = await Mangrove.connect('mainnet' {
   mnemonic: 'clutch captain shoe...', // preferably with environment variable
 });
 
+// Init with a keystore file (json wallet)
+mgv = await Mangrove.connect({
+  provider: 'https://mainnet.infura.io/v3/_your_project_id_',
+  jsonWallet: {
+    path: 'path/to/UTC--created_date_time--address',
+    password: 'wallet_password' // preferably with environment variable
+  }
+});
+
 // Init with a custom ethers.js provider, for example a WebSocketProvider (server side)
 provider = new ethers.providers.WebSocketProvider('wss://polygon-mumbai.g.alchemy.com/v2/_your_project_id_');
 signer = new ethers.Wallet('0x_your_private_key_', provider);
@@ -250,7 +259,6 @@ mgv = await Mangrove.connect({
   provider: provider,
   privateKey: '0x_your_private_key_'
 });
-
 ```
 
 ## Constants and Contract Addresses
