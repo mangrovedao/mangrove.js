@@ -21,12 +21,6 @@ abstract contract MultiUser is MangroveOffer {
   mapping(address => uint) public mgvBalance; // owner => WEI balance on mangrove
   mapping(address => mapping(address => uint)) public tokenBalanceOf; // erc20 => owner => balance on `this`
 
-  MgvReader immutable reader;
-
-  constructor(address _reader) {
-    reader = MgvReader(_reader);
-  }
-
   // Offer management
   event NewOffer(
     address indexed outbound_tkn,
@@ -44,6 +38,7 @@ abstract contract MultiUser is MangroveOffer {
   }
 
   function offerOwners(
+    address reader,
     address outbound_tkn,
     address inbound_tkn,
     uint fromId,
@@ -62,7 +57,12 @@ abstract contract MultiUser is MangroveOffer {
       offerIds, /*offers*/ /*offerDetails*/
       ,
 
-    ) = reader.offerList(outbound_tkn, inbound_tkn, fromId, maxOffers);
+    ) = MgvReader(reader).offerList(
+      outbound_tkn,
+      inbound_tkn,
+      fromId,
+      maxOffers
+    );
     __offerOwners = new address[](offerIds.length);
     for (uint i = 0; i < offerIds.length; i++) {
       __offerOwners[i] = ownerOf(outbound_tkn, inbound_tkn, offerIds[i]);
@@ -74,10 +74,7 @@ abstract contract MultiUser is MangroveOffer {
   }
 
   function debitOnMgv(address owner, uint amount) internal {
-    require(
-      mgvBalance[owner] >= amount,
-      "MultiOwner/debitOnMgv/insufficient"
-    );
+    require(mgvBalance[owner] >= amount, "MultiOwner/debitOnMgv/insufficient");
     mgvBalance[owner] -= amount;
   }
 
@@ -94,6 +91,9 @@ abstract contract MultiUser is MangroveOffer {
     address owner,
     uint amount
   ) internal {
+    if (amount == 0) {
+      return;
+    }
     require(
       tokenBalanceOf[token][owner] >= amount,
       "MultiOwner/debitToken/insufficient"
@@ -111,13 +111,18 @@ abstract contract MultiUser is MangroveOffer {
     success = _transferToken(token, msg.sender, amount);
   }
 
-  function transferToken(
-    address token,
-    address owner,
-    uint amount
-  ) internal returns (bool success) {
-    debitToken(token, owner, amount);
-    success = _transferToken(token, owner, amount);
+  function depositToken(address token, uint amount)
+    external
+    override
+    returns (bool success)
+  {
+    uint balBefore = IERC20(token).balanceOf(address(this));
+    success = _transferTokenFrom(token, msg.sender, amount);
+    require(
+      IERC20(token).balanceOf(address(this)) - balBefore == amount,
+      "MultiUser/transferFail"
+    );
+    creditToken(token, msg.sender, amount);
   }
 
   function addOwner(
@@ -281,7 +286,7 @@ abstract contract MultiUser is MangroveOffer {
     uint provision // dangerous to use msg.value in a internal call
   ) internal {
     require(
-      caller == ownerOf(outbound_tkn, inbound_tkn, offerId), 
+      caller == ownerOf(outbound_tkn, inbound_tkn, offerId),
       "mgvOffer/MultiOwner/unauthorized"
     );
     uint weiBalanceBefore = MGV.balanceOf(address(this));
@@ -311,7 +316,13 @@ abstract contract MultiUser is MangroveOffer {
     uint offerId,
     bool deprovision // if set to `true`, `this` contract will receive the remaining provision (in WEI) associated to `offerId`.
   ) external override returns (uint received) {
-    received = retractOfferInternal(outbound_tkn,inbound_tkn,offerId,deprovision,msg.sender);
+    received = retractOfferInternal(
+      outbound_tkn,
+      inbound_tkn,
+      offerId,
+      deprovision,
+      msg.sender
+    );
   }
 
   function retractOfferInternal(

@@ -16,6 +16,7 @@ export const addresses = {
     amWETH: "0x7aE20397Ca327721F013BB9e140C707F82871b56",
     amDAI: "0x639cB7b21ee2161DF9c882483C9D55c90c20Ca3e",
     amUSDC: "0x2271e3Fef9e15046d09E1d78a8FF038c691E9Cf9",
+    addressProvider: "0x178113104fEcbcD7fF8669a0150721e231F0FD4B", // AAVE address provider
   },
 };
 

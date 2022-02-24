@@ -14,37 +14,58 @@ pragma abicoder v2;
 import "../AaveLender.sol";
 import "../Persistent.sol";
 
-contract OfferProxy is MultiUserAaveLender, MultiUserPersistent {
-  constructor(address _addressesProvider, address payable _MGV)
-    AaveModule(_addressesProvider, 0)
-    MangroveOffer(_MGV)
-  {
-    setGasreq(800_000); // Offer proxy requires AAVE interactions
-  }
+contract OasisLike is MultiUserPersistent {
+  constructor(address payable _MGV) MangroveOffer(_MGV) {}
 
+  // overrides MultiUser.__put__ in order to transfer all inbound tokens to owner
   function __put__(uint amount, MgvLib.SingleOrder calldata order)
     internal
-    override(MultiUser, MultiUserAaveLender)
+    override
     returns (uint missing)
   {
-    // puts amount inbound_tkn on AAVE
-    missing = MultiUserAaveLender.__put__(amount, order);
+    // transfers the deposited tokens to owner
+    address owner = ownerOf(
+      order.outbound_tkn,
+      order.inbound_tkn,
+      order.offerId
+    );
+    if (IERC20(order.inbound_tkn).transfer(owner, amount)) {
+      return 0;
+    } else {
+      return amount;
+    }
   }
 
   function __get__(uint amount, MgvLib.SingleOrder calldata order)
     internal
-    override(MultiUser, MultiUserAaveLender)
+    override
     returns (uint)
   {
-    // gets tokens from AAVE's owner deposit -- will transfer aTokens from owner first
-    return MultiUserAaveLender.__get__(amount, order);
+    // tries to get funds from `this` balance if any
+    amount = super.__get__(amount, order);
+    // if not enough, tries to fetch missing amount into owner's wallet
+    address owner = ownerOf(
+      order.outbound_tkn,
+      order.inbound_tkn,
+      order.offerId
+    );
+    try
+      IERC20(order.outbound_tkn).transferFrom(owner, address(this), amount)
+    returns (bool success) {
+      if (success) {
+        return 0;
+      } else {
+        return amount;
+      }
+    } catch {
+      return amount;
+    }
   }
 
   function __posthookSuccess__(MgvLib.SingleOrder calldata order)
     internal
-    override(MangroveOffer, MultiUserPersistent)
+    override
   {
-    // reposting residual if possible
-    MultiUserPersistent.__posthookSuccess__(order);
+    super.__posthookSuccess__(order);
   }
 }
