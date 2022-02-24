@@ -137,14 +137,14 @@ class OfferLogic {
   }
 
   /**Deposits `amount` tokens on the contract accounts */
+  /**NB depositor must approve contract for token transfer */
   depositToken(
     tokenName: string,
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const tk = this.mgv.token(tokenName);
-    return tk.contract.transfer(
-      this.contract.address,
+    return this.contract.depositToken(
+      this.mgv.token(tokenName).address,
       this.mgv.toUnits(amount, tokenName),
       overrides
     );
