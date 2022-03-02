@@ -1,7 +1,4 @@
 {
   "logLevel": "error",
-  "markets": [["WETH", "DAI"]],
-  "MangroveJs": {
-    "logLevel": "info"
-  }
+  "markets": [["WETH", "DAI"]]
 }

@@ -1,7 +1,4 @@
 // Config file with defaults
-var config = {
-  logLevel: "info",
-  // logFile: "logs/mangrove.log", // enable file logging
-};
+var config = {};
 
 module.exports = config;

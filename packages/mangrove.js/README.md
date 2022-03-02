@@ -282,37 +282,7 @@ The precision used when dividing is 20 decimal places.
 
 TODO include transaction options (see here)[https://github.com/compound-finance/compound-js#transaction-options]
 
-## Package configuration
-
-mangrove.js uses the [node-config](https://github.com/lorenwest/node-config) package for configuration.
-
-It allows apps who requires `mangrove.js` to override default package configuration, by setting configuration in `MangroveJs` namespace.
-
-Example of app configuration (`config/default.js`):
-
-```javascript
-var config = {
-  ...
-
-  MangroveJs: {
-    logLevel: "info",
-    ...
-  }
-};
-module.exports = config;
-```
-
-## Logging
-
-Console logging is enabled by default.
-
-Logging can be configured with the following directives (see [Package
-configuration](#package-configuration)).
-
-- `logLevel`: set logging level;
-- `logFile`: enable file logging.
-
-## Tests
+## Test
 
 Tests are available in `./test/integration/*.integration.test.js`. Methods are tested using an in-process local chain using [Hardhat](https://hardhat.org/). For free archive node access, get a provider URL from [Alchemy](http://alchemy.com/).
 
