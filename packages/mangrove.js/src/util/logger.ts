@@ -15,7 +15,7 @@
 // } from "@mangrovedao/commonlib-js";
 // import os from "os";
 import safeStringify from "fast-safe-stringify";
-import config from "./config";
+// import config from "./config";
 
 // const consoleLogFormat = format.printf(
 //   ({ level, message, timestamp, ...metadata }) => {
@@ -41,9 +41,11 @@ const stringifyData = (data) => {
 
 const defaultLogLevel = "error";
 
-const logLevel = config.MangroveJs.has("logLevel")
-  ? config.MangroveJs.get<string>("logLevel")
-  : defaultLogLevel;
+// FIXME : The config module is not compatible with browser
+// const logLevel = config.MangroveJs.has("logLevel")
+//   ? config.MangroveJs.get<string>("logLevel")
+//   : defaultLogLevel;
+const logLevel = defaultLogLevel;
 
 const additionalTransports = [];
 
