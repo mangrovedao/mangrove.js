@@ -4,6 +4,7 @@
 
 - The new logging has been stunted: It only logs to the console and without timestamps
   - This is a temporary workaround to issue #220
+- Fix: Underestimation by estimateGas() when takerWants was low (issue #89).
 
 # 0.2.0 (February 2022)
 
