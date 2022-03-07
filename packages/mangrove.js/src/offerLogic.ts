@@ -50,16 +50,30 @@ type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 // OfferLogic.deposit(n)
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.SimpleMaker; /** Would be great to have a generic type for all contracts in the typechain */
+  contract:
+    | typechain.SimpleMaker
+    | typechain.MultiMaker; /** Would be great to have a generic type for all contracts in the typechain */
   address: string;
+  isMultiMaker: boolean;
 
-  constructor(mgv: Mangrove, logic: string, signer?: SignerOrProvider) {
+  constructor(
+    mgv: Mangrove,
+    logic: string,
+    multiMaker: boolean,
+    signer?: SignerOrProvider
+  ) {
     this.mgv = mgv;
     this.address = logic;
-    this.contract = typechain.SimpleMaker__factory.connect(
-      logic,
-      signer ? signer : this.mgv._signer
-    );
+    this.isMultiMaker = multiMaker;
+    this.contract = multiMaker
+      ? typechain.MultiMaker__factory.connect(
+          logic,
+          signer ? signer : this.mgv._signer
+        )
+      : typechain.SimpleMaker__factory.connect(
+          logic,
+          signer ? signer : this.mgv._signer
+        );
   }
   /**
    * @note Deploys a fresh MangroveOffer contract
@@ -101,7 +115,7 @@ class OfferLogic {
     );
   }
 
-  /** Get the current balance the contract has in Mangrove */
+  /** Get the current balance the LP has on Mangrove */
   async balanceOnMangrove(overrides: ethers.Overrides = {}): Promise<Big> {
     const balance = await this.contract.balanceOnMangrove(overrides);
     return this.mgv.fromUnits(balance, 18);
@@ -111,11 +125,19 @@ class OfferLogic {
     tokenName: string,
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
-    const bal = await this.contract.tokenBalance(
-      this.mgv.getAddress(tokenName),
-      overrides
-    );
-    return this.mgv.fromUnits(bal, this.mgv.getDecimals(tokenName));
+    let bal: Big;
+    if (this.isMultiMaker) {
+      bal = this.mgv.fromUnits(
+        await this.contract.tokenBalance(
+          this.mgv.getAddress(tokenName),
+          overrides
+        ),
+        tokenName
+      );
+    } else {
+      bal = await this.mgv.token(tokenName).balanceOf(this.address, overrides);
+    }
+    return bal;
   }
 
   /** Redeems `amount` tokens from the contract's account */
@@ -132,8 +154,8 @@ class OfferLogic {
   }
 
   // returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
-  connect(sOp: SignerOrProvider): OfferLogic {
-    return new OfferLogic(this.mgv, this.contract.address, sOp);
+  connect(sOp: SignerOrProvider, isMulti: boolean): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.address, isMulti, sOp);
   }
 
   /**Deposits `amount` tokens on the contract accounts */
@@ -143,11 +165,17 @@ class OfferLogic {
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    return this.contract.depositToken(
-      this.mgv.token(tokenName).address,
-      this.mgv.toUnits(amount, tokenName),
-      overrides
-    );
+    if (this.isMultiMaker) {
+      return this.contract.depositToken(
+        this.mgv.token(tokenName).address,
+        this.mgv.toUnits(amount, tokenName),
+        overrides
+      );
+    } else {
+      this.mgv
+        .token(tokenName)
+        .transfer(this.contract.address, amount, overrides);
+    }
   }
 
   /** Fund the current contract balance with ethers sent from current signer. */

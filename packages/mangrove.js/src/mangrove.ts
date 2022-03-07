@@ -179,8 +179,8 @@ class Mangrove {
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(logic: string): OfferLogic {
-    return new OfferLogic(this, logic);
+  offerLogic(logic: string, multiMaker: boolean): OfferLogic {
+    return new OfferLogic(this, logic, multiMaker);
   }
 
   /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/

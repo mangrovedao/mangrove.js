@@ -30,7 +30,7 @@ describe("SimpleMaker", () => {
       // @ts-ignore
       mgv._provider.pollingInterval = 250;
       const mkr_address = await OfferLogic.deploy(mgv, "SimpleMaker");
-      const logic = mgv.offerLogic(mkr_address);
+      const logic = mgv.offerLogic(mkr_address, false);
       const lp = await logic.liquidityProvider({
         base: "TokenA",
         quote: "TokenB",
@@ -62,7 +62,7 @@ describe("SimpleMaker", () => {
       mgv._provider.pollingInterval = 250;
 
       const mkr_address = await OfferLogic.deploy(mgv, "SimpleMaker");
-      const logic = mgv.offerLogic(mkr_address);
+      const logic = mgv.offerLogic(mkr_address, false);
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
