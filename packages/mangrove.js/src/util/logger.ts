@@ -14,7 +14,7 @@
 //   logdataLimiter,
 // } from "@mangrovedao/commonlib-js";
 // import os from "os";
-import safeStringify from "fast-safe-stringify";
+import inspect from "object-inspect";
 // import config from "./config";
 
 // const consoleLogFormat = format.printf(
@@ -36,18 +36,18 @@ import safeStringify from "fast-safe-stringify";
 
 const stringifyData = (data) => {
   if (typeof data == "string") return data;
-  else return safeStringify(data);
+  else return inspect(data);
 };
 
-const defaultLogLevel = "error";
+// const defaultLogLevel = "error";
 
 // FIXME : The config module is not compatible with browser
 // const logLevel = config.MangroveJs.has("logLevel")
 //   ? config.MangroveJs.get<string>("logLevel")
 //   : defaultLogLevel;
-const logLevel = defaultLogLevel;
+// const logLevel = defaultLogLevel;
 
-const additionalTransports = [];
+// const additionalTransports = [];
 
 // if (config.MangroveJs.has("logFile")) {
 //   const logFile = config.MangroveJs.get<string>("logFile");
@@ -65,20 +65,16 @@ const additionalTransports = [];
 // }
 
 // FIXME: Temporary copy until issue #220 is fixed
-export const logdataLimiter = (data: Object): string => {
-  return safeStringify(data, undefined, undefined, {
-    depthLimit: 3,
-    edgesLimit: Number.MAX_SAFE_INTEGER,
-  });
+export const logdataLimiter = (data: Record<string, any>): any => {
+  return inspect(data, { maxStringLength: 1000 });
 };
-// export { logdataLimiter };
 
 // FIXME: Temporary dumb implementation until issue #220 is fixed
 export const logger = {
-  debug: (msg, data) => {
+  debug: (msg: unknown, data: unknown): void => {
     console.log(msg + " " + stringifyData(data));
   },
-  warn: (msg, data) => {
+  warn: (msg: unknown, data: unknown): void => {
     console.warn(msg + " " + stringifyData(data));
   },
 };
