@@ -591,18 +591,17 @@ class Market {
   }
 
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
-    const rawConfig =
+    const {
+      local: { density, offer_gasbase },
+    } =
       bs === "buy"
         ? await this.#asksSemibook.getRawConfig()
         : await this.#bidsSemibook.getRawConfig();
-    const estimation = rawConfig.local.offer_gasbase.add(
-      volume.div(rawConfig.local.density)
-    );
-    if (estimation.gt(MAX_MARKET_ORDER_GAS)) {
-      return BigNumber.from(MAX_MARKET_ORDER_GAS);
-    } else {
-      return estimation;
-    }
+    const maxMarketOrgerGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
+    const estimation = density.isZero()
+      ? maxMarketOrgerGas
+      : offer_gasbase.add(volume.div(density));
+    return estimation.gt(MAX_MARKET_ORDER_GAS) ? maxMarketOrgerGas : estimation;
   }
 
   /**
