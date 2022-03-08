@@ -187,7 +187,11 @@ class OfferLogic {
       value: this.mgv.toUnits(amount, 18),
       ...overrides,
     };
-    return this.contract.fundMangrove(overrides_);
+    if (this.isMultiMaker) {
+      return this.contract.fundMangrove(overrides_);
+    } else {
+      this.mgv.fundMangrove(amount, overrides);
+    }
   }
 
   setDefaultGasreq(
