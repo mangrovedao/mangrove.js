@@ -1,5 +1,7 @@
 # Next version
 
+- Following the removing of the new logging feature, a node-only dependency (`config`) has been removed to keep compatibility with browser environment
+
 # 0.3.1 (March 2022)
 
 - The new logging has been stunted: It only logs to the console and without timestamps
