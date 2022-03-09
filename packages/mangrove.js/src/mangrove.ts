@@ -179,8 +179,8 @@ class Mangrove {
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(logic: string, multiMaker: boolean): OfferLogic {
-    return new OfferLogic(this, logic, multiMaker);
+  offerLogic(logic: string, multiMaker?: boolean): OfferLogic {
+    return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
   }
 
   /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/
@@ -327,17 +327,11 @@ class Mangrove {
 
   fundMangrove(
     amount: Bigish,
-    overrides: ethers.Overrides = {},
-    maker?: string
+    maker: string,
+    overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     const _overrides = { value: this.toUnits(amount, 18), ...overrides };
-    if (maker) {
-      //fund maker account
-      return this.contract["fund(address)"](maker, _overrides);
-    } else {
-      // fund signer's account
-      return this.contract["fund()"](_overrides);
-    }
+    return this.contract["fund(address)"](maker, _overrides);
   }
 
   withdraw(

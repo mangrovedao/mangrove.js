@@ -208,7 +208,11 @@ class LiquidityProvider {
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.#proxy().fundMangrove(amount, overrides);
+    if (this.eoa) {
+      return this.mgv.fundMangrove(amount, this.eoa, overrides);
+    } else {
+      return this.logic.fundMangrove(amount, overrides);
+    }
   }
 
   /* Create a new offer, let mangrove decide the gasprice. Return a promise fulfilled when mangrove.js has received the tx and updated itself. The tx returns the new offer id.
@@ -402,7 +406,7 @@ class LiquidityProvider {
     }
   }
 
-  withdraw(
+  withdrawFromMangrove(
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
