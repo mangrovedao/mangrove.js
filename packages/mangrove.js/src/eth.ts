@@ -141,7 +141,7 @@ export async function _createSigner(
   } else {
     logger.debug("Uses ethers' Web3Provider created from given provider", {
       contextInfo: "eth.signer",
-      data: { signer: options.signer },
+      data: { provider: provider },
     });
     provider = new ethers.providers.Web3Provider(provider);
   }
