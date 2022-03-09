@@ -597,11 +597,14 @@ class Market {
       bs === "buy"
         ? await this.#asksSemibook.getRawConfig()
         : await this.#bidsSemibook.getRawConfig();
-    const maxMarketOrgerGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
+    const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
     const estimation = density.isZero()
-      ? maxMarketOrgerGas
+      ? maxMarketOrderGas
       : offer_gasbase.add(volume.div(density));
-    return estimation.gt(MAX_MARKET_ORDER_GAS) ? maxMarketOrgerGas : estimation;
+
+    if (estimation.lt(maxMarketOrderGas)) return estimation;
+
+    return maxMarketOrderGas;
   }
 
   /**
