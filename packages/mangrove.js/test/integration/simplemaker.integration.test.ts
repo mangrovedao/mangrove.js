@@ -30,7 +30,7 @@ describe("SimpleMaker", () => {
       // @ts-ignore
       mgv._provider.pollingInterval = 250;
       const mkr_address = await OfferLogic.deploy(mgv, "SimpleMaker");
-      const logic = mgv.offerLogic(mkr_address);
+      const logic = mgv.offerLogic(mkr_address, false);
       const lp = await logic.liquidityProvider({
         base: "TokenA",
         quote: "TokenB",
@@ -62,7 +62,7 @@ describe("SimpleMaker", () => {
       mgv._provider.pollingInterval = 250;
 
       const mkr_address = await OfferLogic.deploy(mgv, "SimpleMaker");
-      const logic = mgv.offerLogic(mkr_address);
+      const logic = mgv.offerLogic(mkr_address, false);
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
@@ -162,9 +162,11 @@ describe("SimpleMaker", () => {
       it("withdraws", async () => {
         const getBal = async () =>
           mgv._provider.getBalance(await mgv._signer.getAddress());
-        await w(onchain_lp.fundMangrove(10));
+        let tx = await onchain_lp.fundMangrove(10);
+        await tx.wait();
         const oldBal = await getBal();
-        const receipt = await w(onchain_lp.withdraw(10));
+        tx = await onchain_lp.withdrawFromMangrove(10);
+        const receipt = await tx.wait();
         const txcost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
         const diff = mgv.fromUnits(
           (await getBal()).sub(oldBal).add(txcost),
