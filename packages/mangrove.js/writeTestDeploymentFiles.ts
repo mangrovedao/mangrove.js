@@ -1,6 +1,6 @@
 const getParams = require("@mangrovedao/mangrove-solidity/lib/testDeploymentParams");
 const fs = require("fs");
-const JSON_FILE = "./src/hardhatAddresses.json";
+const JSON_FILE = "./src/constants/hardhatAddresses.json";
 
 const mn = async () => {
   const params = await getParams();
