@@ -433,8 +433,11 @@ class Market {
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
-  buy(params: Market.TradeParams): Promise<Market.OrderResult> {
-    let _wants, _gives, fillWants;
+  buy(
+    params: Market.TradeParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<Market.OrderResult> {
+    let _wants: Big, _gives: Big, fillWants: boolean;
     if ("price" in params) {
       if ("volume" in params) {
         _wants = Big(params.volume);
@@ -445,7 +448,7 @@ class Market {
         fillWants = true;
       } else {
         _gives = Big(params.total);
-        _wants = params.price === null ? 0 : _gives.div(params.price);
+        _wants = params.price === null ? Big(0) : _gives.div(params.price);
         fillWants = false;
       }
     } else {
@@ -461,7 +464,10 @@ class Market {
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(_gives);
 
-    return this.#marketOrder({ gives, wants, orderType: "buy", fillWants });
+    return this.#marketOrder(
+      { gives, wants, orderType: "buy", fillWants },
+      overrides
+    );
   }
 
   /**
@@ -484,7 +490,10 @@ class Market {
    * market.sell({volume: 100, price: 1})
    * ```
    */
-  sell(params: Market.TradeParams): Promise<Market.OrderResult> {
+  sell(
+    params: Market.TradeParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<Market.OrderResult> {
     let _wants, _gives, fillWants;
     if ("price" in params) {
       if ("volume" in params) {
@@ -512,7 +521,10 @@ class Market {
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
 
-    return this.#marketOrder({ wants, gives, orderType: "sell", fillWants });
+    return this.#marketOrder(
+      { wants, gives, orderType: "sell", fillWants },
+      overrides
+    );
   }
 
   /**
@@ -528,17 +540,20 @@ class Market {
    * Returns a promise for market order result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
    */
-  async #marketOrder({
-    wants,
-    gives,
-    orderType,
-    fillWants,
-  }: {
-    wants: ethers.BigNumber;
-    gives: ethers.BigNumber;
-    orderType: "buy" | "sell";
-    fillWants: boolean;
-  }): Promise<Market.OrderResult> {
+  async #marketOrder(
+    {
+      wants,
+      gives,
+      orderType,
+      fillWants,
+    }: {
+      wants: ethers.BigNumber;
+      gives: ethers.BigNumber;
+      orderType: "buy" | "sell";
+      fillWants: boolean;
+    },
+    overrides: ethers.Overrides
+  ): Promise<Market.OrderResult> {
     const [outboundTkn, inboundTkn] =
       orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
 
@@ -550,15 +565,17 @@ class Market {
         fillWants: fillWants,
       },
     });
-
-    const gasLimit = await this.estimateGas(orderType, wants);
+    // user defined gasLimit overrides estimates
+    if (!overrides.gasLimit) {
+      overrides.gasLimit = await this.estimateGas(orderType, wants);
+    }
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
       wants,
       gives,
       fillWants,
-      { gasLimit }
+      overrides
     );
     const receipt = await response.wait();
 
