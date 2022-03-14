@@ -1,5 +1,9 @@
 # Next version
 
+# 0.3.4 (March 2022)
+
+- Chain-related constants are now in JSON files instead of TypeScript files and thus easily machine readable for other tools
+
 # 0.3.3 (March 2022)
 
 - Following the removing of the new logging feature, a node-only dependency (`config`) has been removed to keep compatibility with browser environment

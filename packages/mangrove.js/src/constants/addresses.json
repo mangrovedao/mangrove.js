@@ -1,0 +1,20 @@
+{
+  "mainnet": {},
+  "rinkeby": {},
+  "goerli": {},
+  "kovan": {},
+  "ropsten": {},
+  "maticmum": {
+    "Mangrove": "0x6f531931A7EaefB95307CcD93a348e4C27F62DCF",
+    "MgvCleaner": "0x44deC8A22DAea93D3F2519702954000B459B4F1B",
+    "MgvReader": "0x2f9bb88571E9B27e8291B1a9dBD376C755C87d49",
+    "MgvOracle": "0x6735091776a7dEf7058b2ec8Bea721F7cc503f50",
+    "DAI": "0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F",
+    "USDC": "0x2058A9D7613eEE744279e3856Ef0eAda5FCbaA7e",
+    "WETH": "0x3C68CE8504087f89c640D02d133646d98e64ddd9",
+    "amWETH": "0x7aE20397Ca327721F013BB9e140C707F82871b56",
+    "amDAI": "0x639cB7b21ee2161DF9c882483C9D55c90c20Ca3e",
+    "amUSDC": "0x2271e3Fef9e15046d09E1d78a8FF038c691E9Cf9",
+    "addressProvider": "0x178113104fEcbcD7fF8669a0150721e231F0FD4B"
+  }
+}
