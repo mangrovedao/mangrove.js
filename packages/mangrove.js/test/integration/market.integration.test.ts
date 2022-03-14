@@ -12,6 +12,7 @@ import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
 import { Deferred } from "../../src/util";
+import { BigNumber } from "ethers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -354,7 +355,49 @@ describe("Market integration tests suite", () => {
     );
   });
 
-  it("does market buy", async function () {
-    // TODO
+  it("max gasreq returns a BigNumber, even if the book is empty", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const gasEstimate = await market.estimateGas("buy", BigNumber.from(1));
+
+    // we need to use BigNumber.isBigNumber() function to test variable type
+    expect(
+      BigNumber.isBigNumber(gasEstimate),
+      `market.estimateGas() returned a value that is not a BigNumber. Value was: '${gasEstimate}'.`
+    ).to.be.true;
+  });
+
+  it("max gasreq is added to gas estimates", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    const emptyBookAsksEstimate = await market.estimateGas(
+      "buy",
+      BigNumber.from(1)
+    );
+
+    /* create asks */
+    const askGasReq = 10000;
+    const asks = [
+      { id: 1, wants: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
+    ];
+
+    for (const ask of asks) {
+      await waitForTransaction(
+        helpers.newOffer(mgv, market.base, market.quote, ask)
+      );
+    }
+
+    // wait for offer(s) to figure in market
+    const done = new Deferred();
+    market.subscribe(async () => {
+      if (market.getBook().asks.size() >= 1) {
+        const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
+        expect(asksEstimate.toNumber()).to.be.equal(
+          emptyBookAsksEstimate.add(askGasReq).toNumber()
+        );
+        done.resolve();
+      }
+    });
+
+    await done.promise;
   });
 });
