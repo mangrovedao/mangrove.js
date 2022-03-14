@@ -136,11 +136,13 @@ class OfferLogic {
   /** Redeems `amount` tokens from the contract's account */
   redeemToken(
     tokenName: string,
+    recipient: string,
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
     return this.contract.redeemToken(
       this.mgv.getAddress(tokenName),
+      recipient,
       this.mgv.toUnits(amount, tokenName),
       overrides
     );
