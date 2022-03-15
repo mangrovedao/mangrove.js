@@ -1,5 +1,7 @@
 # Next version
 
+- Fix: Underestimation by estimateGas() when takerWants was low (issue #89).
+
 # 0.3.4 (March 2022)
 
 - Chain-related constants are now in JSON files instead of TypeScript files and thus easily machine readable for other tools

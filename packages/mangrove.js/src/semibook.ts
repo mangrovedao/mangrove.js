@@ -329,6 +329,32 @@ class Semibook implements Iterable<Market.Offer> {
     return priceAsBig[priceComparison](referencePriceAsBig);
   }
 
+  async getMaxGasReq(): Promise<number | undefined> {
+    // TODO: The implementation of the following predicate is work-in-progress
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const countOfferForMaxGasPredicate = (_o: Market.Offer) => true;
+
+    const result = await this.#foldLeftUntil(
+      { maxGasReq: undefined as number },
+      () => {
+        return false;
+      },
+      (cur, acc) => {
+        if (countOfferForMaxGasPredicate(cur)) {
+          if (acc.maxGasReq === undefined) {
+            acc.maxGasReq = cur.gasreq;
+          } else {
+            acc.maxGasReq = Math.max(cur.gasreq, acc.maxGasReq);
+          }
+        }
+
+        return acc;
+      }
+    );
+
+    return result.maxGasReq;
+  }
+
   // Fold over offers until `stopCondition` is met.
   // If cache is insufficient, fetch more offers in batches until `stopCondition` is met.
   // All fetched offers are inserted in the cache if there is room.

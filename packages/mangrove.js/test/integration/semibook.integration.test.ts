@@ -684,4 +684,86 @@ describe("Semibook integration tests suite", () => {
       });
     });
   });
+
+  describe("getMaxGasReq", () => {
+    it("returns `undefined` when the semibook is empty", async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const semibook = market.getSemibook("asks");
+      expect(await semibook.getMaxGasReq()).to.be.undefined;
+    });
+
+    it("finds max gasreq on both asks and bids side of market", async function () {
+      const base = "TokenA";
+      const quote = "TokenB";
+
+      const expectedAsksMaxGasReq = 10_011;
+      const expectedBidsMaxGasReq = 10_022;
+
+      /* create bids and asks */
+      const asks = [
+        {
+          id: 1,
+          wants: "1",
+          gives: "1",
+          gasreq: expectedAsksMaxGasReq - 100,
+          gasprice: 1,
+        },
+        {
+          id: 2,
+          wants: "1.2",
+          gives: "1",
+          gasreq: expectedAsksMaxGasReq,
+          gasprice: 3,
+        },
+        {
+          id: 3,
+          wants: "1",
+          gives: "1.2",
+          gasreq: expectedAsksMaxGasReq - 2,
+          gasprice: 21,
+        },
+      ];
+
+      const bids = [
+        {
+          id: 1,
+          wants: "0.99",
+          gives: "1",
+          gasreq: expectedBidsMaxGasReq - 7,
+          gasprice: 11,
+        },
+        {
+          id: 2,
+          wants: "1",
+          gives: "1.43",
+          gasreq: expectedBidsMaxGasReq - 10,
+          gasprice: 7,
+        },
+        {
+          id: 3,
+          wants: "1.11",
+          gives: "1",
+          gasreq: expectedBidsMaxGasReq,
+          gasprice: 30,
+        },
+      ];
+
+      for (const ask of asks) {
+        await waitForTransaction(newOffer(mgv, base, quote, ask));
+      }
+      for (const bid of bids) {
+        await waitForTransaction(newOffer(mgv, quote, base, bid));
+      }
+
+      // wait for offer(s) to be recorded in OB
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+
+      const market = await mgv.market({ base: base, quote: quote });
+      const actualAsksMaxGasReq = await market.getBook().asks.getMaxGasReq();
+      const actualBidsMaxGasReq = await market.getBook().bids.getMaxGasReq();
+
+      expect(actualAsksMaxGasReq).to.be.equal(expectedAsksMaxGasReq);
+      expect(actualBidsMaxGasReq).to.be.equal(expectedBidsMaxGasReq);
+    });
+  });
 });
