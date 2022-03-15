@@ -168,7 +168,7 @@
       "name": "MGV",
       "outputs": [
         {
-          "internalType": "contract Mangrove",
+          "internalType": "contract IMangrove",
           "name": "",
           "type": "address"
         }
@@ -221,43 +221,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "balanceOnMangrove",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "depositToken",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "success",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "address",
@@ -286,35 +249,6 @@
         }
       ],
       "name": "getMissingProvision",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "outbound_tkn",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "inbound_tkn",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        }
-      ],
-      "name": "giveAtDensity",
       "outputs": [
         {
           "internalType": "uint256",
@@ -525,6 +459,11 @@
           "type": "address"
         },
         {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        },
+        {
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
@@ -605,25 +544,6 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "token",
-          "type": "address"
-        }
-      ],
-      "name": "tokenBalance",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
           "name": "outbound_tkn",
           "type": "address"
         },
@@ -671,7 +591,7 @@
     {
       "inputs": [
         {
-          "internalType": "address",
+          "internalType": "address payable",
           "name": "receiver",
           "type": "address"
         },
