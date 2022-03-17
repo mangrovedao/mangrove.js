@@ -1,5 +1,7 @@
 # Next version
 
+# 0.3.5 (March 2022)
+
 - Fix: Include root `tsconfig.json` which is referenced from `src/tsconfig.json` (this was causing issues with Vite)
 - Fix: Underestimation by estimateGas() when takerWants was low (issue #89).
 
