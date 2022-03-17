@@ -31,7 +31,8 @@
     "dist/",
     "src/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "tsconfig.json"
   ],
   "bin": {
     "mgv": "./dist/nodejs/cli/mgv.js"
