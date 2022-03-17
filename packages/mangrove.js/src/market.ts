@@ -831,8 +831,9 @@ class Market {
         event: Market.BookSubscriptionEvent,
         ethersEvent: ethers.ethers.providers.Log
       ) => {
-        const match =
+        const goodTx =
           (await txHashDeferred.promise) === ethersEvent.transactionHash;
+        const match = filter(cbArg, event, ethersEvent) && goodTx;
         someMatch = someMatch || match;
         return match;
       };
