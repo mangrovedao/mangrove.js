@@ -1,5 +1,10 @@
 # Next version
 
+# 0.3.5 (March 2022)
+
+- Fix: Include root `tsconfig.json` which is referenced from `src/tsconfig.json` (this was causing issues with Vite)
+- Fix: Underestimation by estimateGas() when takerWants was low (issue #89).
+
 # 0.3.4 (March 2022)
 
 - Chain-related constants are now in JSON files instead of TypeScript files and thus easily machine readable for other tools
