@@ -5,7 +5,6 @@ import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
-import { Mutex } from "async-mutex";
 import Semibook from "./semibook";
 import { Deferred } from "./util";
 
@@ -826,20 +825,23 @@ class Market {
   ): Promise<T> {
     return new Promise((ok, ko) => {
       const txHashDeferred = new Deferred<string>();
-      let mutex = new Mutex();
+      const filterPromises = [];
       let someMatch = false;
       const _filter = async (
         cbArg: Market.BookSubscriptionCbArgument,
         event: Market.BookSubscriptionEvent,
         ethersEvent: ethers.ethers.providers.Log
-      ) =>
-        mutex.runExclusive(async () => {
+      ) => {
+        const promise = (async () => {
           const goodTx =
             (await txHashDeferred.promise) === ethersEvent.transactionHash;
           const match = filter(cbArg, event, ethersEvent) && goodTx;
           someMatch = someMatch || match;
           return match;
-        });
+        })();
+        filterPromises.push(promise);
+        return promise;
+      };
       this.once(cb, _filter).then(ok, (e) =>
         ko({ revert: false, exception: e })
       );
@@ -854,7 +856,7 @@ class Market {
             this.afterBlock(recp.blockNumber, async () => {
               this.unsubscribe(cb);
               // only check if someMatch after the filters have executed:
-              await mutex.waitForUnlock();
+              await Promise.all(filterPromises);
               if (!someMatch) {
                 ko({
                   revert: false,
