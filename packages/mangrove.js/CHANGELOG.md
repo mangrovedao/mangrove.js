@@ -1,5 +1,9 @@
 # Next version
 
+# 0.3.6 (March 2022)
+
+- Update address to newly deployed Mangrove core contracts (they now match the mangrove.js ABI files)
+
 # 0.3.5 (March 2022)
 
 - Fix: Include root `tsconfig.json` which is referenced from `src/tsconfig.json` (this was causing issues with Vite)
