@@ -1,8 +1,12 @@
 # Next version
 
-# 0.3.6 (March 2022)
+# 0.3.7 (March 2022)
 
 - Update address to newly deployed Mangrove core contracts (they now match the mangrove.js ABI files)
+
+# 0.3.6 (March 2022)
+
+This version number was inadvertently skipped.
 
 # 0.3.5 (March 2022)
 
