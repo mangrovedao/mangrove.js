@@ -37,6 +37,7 @@ namespace Market {
     gave: Big;
     partialFill: boolean;
     penalty: Big;
+    txReceipt: ethers.ContractReceipt;
   };
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
@@ -604,6 +605,7 @@ class Market {
       gave: this[gave_bq].fromUnits(takerGave),
       partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
       penalty: this.mgv.fromUnits(result.args.penalty, 18),
+      txReceipt: receipt,
     };
   }
 

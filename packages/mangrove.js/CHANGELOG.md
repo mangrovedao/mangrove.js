@@ -1,5 +1,7 @@
 # Next version
 
+- `Market.OrderResult` now contains the raw `ethers.ContractReceipt`.
+
 # 0.3.7 (March 2022)
 
 - Update address to newly deployed Mangrove core contracts (they now match the mangrove.js ABI files)
