@@ -1,5 +1,7 @@
 # Next version
 
+# 0.3.8 (March 2022)
+
 - `Market.OrderResult` now contains the raw `ethers.ContractReceipt`.
 
 # 0.3.7 (March 2022)
