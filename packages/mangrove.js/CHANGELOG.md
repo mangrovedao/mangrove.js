@@ -1,5 +1,18 @@
 # Next version
 
+- `Market.OrderResult` now contains the raw `ethers.ContractReceipt`.
+
+# 0.3.7 (March 2022)
+
+- Update address to newly deployed Mangrove core contracts (they now match the mangrove.js ABI files)
+
+# 0.3.6 (March 2022)
+
+This version number was inadvertently skipped.
+
+# 0.3.5 (March 2022)
+
+- Fix: Include root `tsconfig.json` which is referenced from `src/tsconfig.json` (this was causing issues with Vite)
 - Fix: Underestimation by estimateGas() when takerWants was low (issue #89).
 
 # 0.3.4 (March 2022)
