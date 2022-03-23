@@ -827,17 +827,26 @@ class Market {
   ): Promise<T> {
     return new Promise((ok, ko) => {
       const txHashDeferred = new Deferred<string>();
+      const filterPromises = [];
+      let someMatch = false;
       const _filter = async (
         cbArg: Market.BookSubscriptionCbArgument,
         event: Market.BookSubscriptionEvent,
         ethersEvent: ethers.ethers.providers.Log
       ) => {
-        return (
-          filter(cbArg, event, ethersEvent) &&
-          (await txHashDeferred.promise) === ethersEvent.transactionHash
-        );
+        const promise = (async () => {
+          const goodTx =
+            (await txHashDeferred.promise) === ethersEvent.transactionHash;
+          const match = filter(cbArg, event, ethersEvent) && goodTx;
+          someMatch = someMatch || match;
+          return match;
+        })();
+        filterPromises.push(promise);
+        return promise;
       };
-      this.once(cb, _filter).then(ok, ko);
+      this.once(cb, _filter).then(ok, (e) =>
+        ko({ revert: false, exception: e })
+      );
 
       txPromise.then((resp) => {
         // Warning: if the tx nor any with the same nonce is ever mined,
@@ -846,13 +855,21 @@ class Market {
         resp
           .wait(1)
           .then((recp) => {
-            this.afterBlock(recp.blockNumber, () => {
+            this.afterBlock(recp.blockNumber, async () => {
               this.unsubscribe(cb);
+              // only check if someMatch after the filters have executed:
+              await Promise.all(filterPromises);
+              if (!someMatch) {
+                ko({
+                  revert: false,
+                  exception: "tx mined but filter never returned true",
+                });
+              }
             });
           })
           .catch((e) => {
             this.unsubscribe(cb);
-            ko(e);
+            ko({ revert: true, exception: e });
           });
       });
     });
