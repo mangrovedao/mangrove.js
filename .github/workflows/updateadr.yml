@@ -1,0 +1,48 @@
+name: Check and update deployment addresses in mangrove.js
+
+# run on master to detect and create PR's to fix any discrepancy between deployment addresses for
+# core contracts in mangrove-solidity and mangrove.js
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [master]
+    types:
+      - completed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - run: npm ci
+        working-directory: ./.github/scripts
+
+      - name: Check and update deployment addresses in mangrove.js
+        run: node write-addresses-json.js --deployment $GITHUB_WORKSPACE/packages/mangrove-solidity/deployments/mumbai --chainkey maticmum --output $GITHUB_WORKSPACE/packages/mangrove.js/src/constants/addresses.json --debug
+        working-directory: ./.github/scripts
+
+      - name: Create commit and PR, if there are changes
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: 'Update deployment addresses in mangrove.js'
+          title: 'Update deployment addresses in mangrove.js'
+          add-paths: 'packages/mangrove.js/src/constants/addresses.json'
+          delete-branch: true
+          assignees: 'dontrolle'
+
+      # Use this step instead, to simply commit and push changes directly to master
+      # - name: Commit and push any changes to deployment addresses
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     default_author: github_actions
+      #     message: 'Update deployment addresses in mangrove.js'
+      #     push: true 
+      #     add: 'packages/mangrove.js/src/constants/addresses.json'
