@@ -23,9 +23,11 @@ jobs:
           node-version: '14'
 
       - run: npm ci
+        working-directory: ./.github/scripts
 
       - name: Check and update deployment addresses in mangrove.js
-        run: node ./.github/scripts/write-addresses-json.js --deployment $GITHUB_WORKSPACE/packages/mangrove-solidity/deployments/mumbai --chainkey maticmum --output $GITHUB_WORKSPACE/packages/mangrove.js/src/constants/addresses.json --debug
+        run: node write-addresses-json.js --deployment $GITHUB_WORKSPACE/packages/mangrove-solidity/deployments/mumbai --chainkey maticmum --output $GITHUB_WORKSPACE/packages/mangrove.js/src/constants/addresses.json --debug
+        working-directory: ./.github/scripts
 
       - name: Create commit and PR, if there are changes
         uses: peter-evans/create-pull-request@v4
