@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "marked": "^4.0.12",
     "minimist": "^1.2.6"
   }
 }
