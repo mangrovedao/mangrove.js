@@ -10,15 +10,15 @@ class MgvToken {
   address: string;
   displayedDecimals: number;
   decimals: number;
-  contract: typechain.IERC20;
-
+  // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
+  contract: typechain.MintableERC20BLWithDecimals;
   constructor(name: string, mgv: Mangrove) {
     this.mgv = mgv;
     this.name = name;
     this.address = this.mgv.getAddress(this.name);
     this.decimals = this.mgv.getDecimals(this.name);
     this.displayedDecimals = this.mgv.getDisplayedDecimals(this.name);
-    this.contract = typechain.IERC20__factory.connect(
+    this.contract = typechain.MintableERC20BLWithDecimals__factory.connect(
       this.address,
       this.mgv._signer
     );
