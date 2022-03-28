@@ -262,23 +262,20 @@ class Market {
           : undefined,
     });
 
-    const asksSemibookPromise = Semibook.connect(
+    this.#asksSemibook = await Semibook.connect(
       this,
       "asks",
       (e) => this.#semibookEventCallback(e),
       (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("asks")
     );
-    const bidsSemibookPromise = Semibook.connect(
+    this.#bidsSemibook = await Semibook.connect(
       this,
       "bids",
       (e) => this.#semibookEventCallback(e),
       (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("bids")
     );
-
-    this.#asksSemibook = await asksSemibookPromise;
-    this.#bidsSemibook = await bidsSemibookPromise;
 
     // start block events from the last block seen by both semibooks
     const lastBlock = Math.min(
