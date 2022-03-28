@@ -34,6 +34,7 @@ jobs:
         with:
           commit-message: 'Update deployment addresses in mangrove.js'
           title: 'Update deployment addresses in mangrove.js'
+          body: 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action as a result of changes in ${{ github.sha }}.'
           add-paths: 'packages/mangrove.js/src/constants/addresses.json'
           delete-branch: true
           assignees: 'dontrolle'
