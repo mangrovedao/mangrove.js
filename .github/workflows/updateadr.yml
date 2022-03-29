@@ -38,6 +38,14 @@ jobs:
           add-paths: 'packages/mangrove.js/src/constants/addresses.json'
           delete-branch: true
           assignees: 'dontrolle'
+          labels: automated pr
+
+      - name: Create repository dispatch for mangrove-docs address update
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.REPO_PUBLIC_ACCESS_TOKEN }}
+          repository: mangrovedao/mangrove-docs
+          event-type: update-addresses
 
       # Use this step instead, to simply commit and push changes directly to master
       # - name: Commit and push any changes to deployment addresses
