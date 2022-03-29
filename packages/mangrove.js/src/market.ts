@@ -262,29 +262,31 @@ class Market {
           : undefined,
     });
 
-    const asksSemibookPromise = Semibook.connect(
+    const asksPromise = Semibook.connect(
       this,
       "asks",
       (e) => this.#semibookEventCallback(e),
       (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("asks")
     );
-    const bidsSemibookPromise = Semibook.connect(
+    const bidsPromise = Semibook.connect(
       this,
       "bids",
       (e) => this.#semibookEventCallback(e),
       (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("bids")
     );
-
-    this.#asksSemibook = await asksSemibookPromise;
-    this.#bidsSemibook = await bidsSemibookPromise;
+    this.#asksSemibook = await asksPromise;
+    this.#bidsSemibook = await bidsPromise;
 
     // start block events from the last block seen by both semibooks
     const lastBlock = Math.min(
       this.#asksSemibook.lastReadBlockNumber(),
       this.#bidsSemibook.lastReadBlockNumber()
     );
+    if (!lastBlock) {
+      throw Error("Could not retrieve last block number");
+    }
     this.#blockSubscriptions = new ThresholdBlockSubscriptions(lastBlock, 2);
   }
 
