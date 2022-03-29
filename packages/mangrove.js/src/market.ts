@@ -291,7 +291,9 @@ class Market {
   }
 
   #semibookBlockCallback(n: number): void {
-    this.#blockSubscriptions.increaseCount(n);
+    if (this.#blockSubscriptions) {
+      this.#blockSubscriptions.increaseCount(n);
+    }
   }
 
   async #semibookEventCallback({
