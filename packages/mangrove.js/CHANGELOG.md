@@ -1,5 +1,15 @@
 # Next version
 
+# 0.5.0 (March 2022)
+
+- `addresses.json` points to AAVE-v3 compatible ERC20 addresses on network `maticmum`
+- `offerLogic` class is now compatible with multi-makers logics
+- ethers.js overrides can now be added to API functions that produce signed transactions
+- `mgvToken.contract` accept a wider class of ERC20 (e.g. minting, blacklisting...) for ethers.js calls.
+- some bugfixes for various hanging issues
+
+# 0.4.0 (Skipped)
+
 # 0.3.8 (March 2022)
 
 - `Market.OrderResult` now contains the raw `ethers.ContractReceipt`.
