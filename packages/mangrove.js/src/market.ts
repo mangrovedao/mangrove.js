@@ -291,6 +291,8 @@ class Market {
   }
 
   #semibookBlockCallback(n: number): void {
+    // This callback may be called by the semibooks before initialization is complete,
+    // so #blockSubscriptions may not have been initialized yet.
     if (this.#blockSubscriptions) {
       this.#blockSubscriptions.increaseCount(n);
     }
