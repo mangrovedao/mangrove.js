@@ -19,13 +19,17 @@ Example:
   node write-addresses-json.js --deployment ../../packages/mangrove-solidity/deployments/mumbai --chainkey maticmum --output ../../packages/mangrove.js/src/constants/addresses.json 
 */
 
-const path = require('path');
-const fs = require('fs')
+import fs from 'fs';
+import minimist from 'minimist';
+import { readContractAddresses } from "./address-handling.js";
+
+// define relevant contracts
+const coreContracts = [ "Mangrove", "MgvCleaner", "MgvReader", "MgvOracle" ];
 
 // read args - and do minimal sanity checking
 const stringArgs = ['deployment', 'chainkey', 'output'];
 
-const args = require("minimist")(
+const args = minimist(
   process.argv.slice(2), {
     string: stringArgs, 
     boolean: ["debug"], 
@@ -60,30 +64,8 @@ const deploymentFolder = args['deployment'];
 const chainkey = args['chainkey'];
 const outputFile = args['output'];
 
-// define relevant contracts
-const contractAddressesToOutput = [ "Mangrove", "MgvCleaner", "MgvReader", "MgvOracle" ];
-
-// read deployment addresses for relevant contracts
-function getAddr(contract, jsonPath) {
-  try {
-    const filePath = path.join(deploymentFolder, contract + ".json"); 
-    const deployJson = require(filePath);
-    const address = deployJson[jsonPath];
-    if(debug){
-      console.debug(`Found address '${address}' for contract ${contract} in file ${filePath}.`)
-    }
-    return address;
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
-  }
-}
-
-const contractAddresses = contractAddressesToOutput.reduce(
-  (prev, contract) => { 
-    return {...prev, [contract]: getAddr(contract, "address") } 
-  }, 
-  {});
+// read deployment addresses for core contracts
+const contractAddresses = readContractAddresses(deploymentFolder, coreContracts);
 
 // read outputFile, if present
 let oldAddresses = {};
@@ -92,7 +74,7 @@ if (fs.existsSync(outputFile)) {
     console.debug(`Found existing file at ${outputFile}. File will be updated.`);
   }
 
-  oldAddresses = require(outputFile);
+  oldAddresses = JSON.parse(fs.readFileSync(outputFile, 'utf8'));
 }
 else {
   if(debug){
