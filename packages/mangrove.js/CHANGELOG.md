@@ -1,5 +1,10 @@
 # Next version
 
+# 0.5.1 (March 2022)
+
+- `addresses.json` points to AAVE-v3 dApp addresses
+- correcting issue [#203](https://github.com/mangrovedao/mangrove/issues/203)
+
 # 0.5.0 (March 2022)
 
 - `addresses.json` points to AAVE-v3 compatible ERC20 addresses on network `maticmum`
