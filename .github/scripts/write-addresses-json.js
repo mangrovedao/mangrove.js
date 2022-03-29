@@ -91,7 +91,7 @@ const newChainAddresses = Object.assign(oldAddresses[chainkey] ?? {}, contractAd
 const newAddresses = Object.assign(oldAddresses, {[chainkey] : newChainAddresses});
 
 if(debug){
-  console.debug(`Constructed the following content, which will be written to file at ${outputFile}.}`)
+  console.debug(`Constructed the following content, which will be written to file at ${outputFile}:`)
   console.dir(newAddresses);
 }
 
