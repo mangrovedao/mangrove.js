@@ -10,11 +10,6 @@
         "lambda": 10,
         "maxQuantity": 10,
         "maxTotalLiquidityPublished": 1
-      },
-      "takerConfig": {
-        "takeRate": 0.1,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
       }
     }
   ]

@@ -1,14 +1,10 @@
-A simple order book filling bot for the Mangrove to generate activity on a market by posting and taking offers at random.
+A simple order book filling bot for the Mangrove to generate activity on a market by posting offers at random.
 
-FIXME write the rest of the README...
+FIXME: write the rest of the README...
 
 # Strategy
 
-The following cleaning strategy is used:
-
-- To identify offers that will fail (and thus yield a bounty) the bot simulates sniping of individual offers using `STATICCALL`.
-- Snipes with `takerGives = 0` are used for simplicity. Thus, offers that only fail for non-zero trades will not be cleaned. A more sophisticated implementation might use flashloans or similar to clean such offers.
-- Profitability of cleaning is currently not taken into account, i.e. any failing offer will be cleaned even though the gas costs may outweigh the bounty.
+TODO
 
 # Installation
 
@@ -17,7 +13,7 @@ First, clone the repo and install the prerequisites for the monorepo described i
 Next, run the following commands:
 
 ```shell
-$ cd <Mangrove monorepo>/packages/cleaning-bot
+$ cd <Mangrove monorepo>/packages/bot-maker-noise
 $ yarn install   # Sets up the Mangrove monorepo and install dependencies
 $ yarn build     # Builds the cleaning bot and its dependencies
 ```
@@ -48,10 +44,9 @@ $ yarn start
 
 # Configuration
 
-Two aspects of the bot can be configured:
+TODO: Document configuration
 
-1. The log level
-2. The Mangrove markets to clean.
+...
 
 These are configured in configuration files, stored in the `src/config` folder. The file [default.json](src/config/default.json) contains all supported configuration options and their defaults. The file [test.json](src/config/test.json) contains the configuration overrides used in tests.
 

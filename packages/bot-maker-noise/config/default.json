@@ -25,11 +25,6 @@
         "lambda": 10,
         "maxQuantity": 10,
         "maxTotalLiquidityPublished": 100
-      },
-      "takerConfig": {
-        "takeRate": 0.0275,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
       }
     },
     {
@@ -41,11 +36,6 @@
         "lambda": 10,
         "maxQuantity": 10,
         "maxTotalLiquidityPublished": 100
-      },
-      "takerConfig": {
-        "takeRate": 0.0275,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
       }
     },
     {
@@ -57,11 +47,6 @@
         "lambda": 0.03,
         "maxQuantity": 10,
         "maxTotalLiquidityPublished": 100
-      },
-      "takerConfig": {
-        "takeRate": 0.0275,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
       }
     }
   ]

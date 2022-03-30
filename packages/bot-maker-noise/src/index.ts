@@ -1,5 +1,5 @@
 /**
- * A simple order book filling bot for the Mangrove to generate activity on a market by posting and taking offers at random.
+ * A simple order book filling bot for the Mangrove to generate activity on a market by posting offers at random.
  * @module
  */
 
@@ -16,7 +16,6 @@ import { Wallet } from "@ethersproject/wallet";
 
 import { OfferMaker } from "./OfferMaker";
 import { MarketConfig } from "./MarketConfig";
-import { OfferTaker } from "./OfferTaker";
 import { TokenConfig } from "./TokenConfig";
 
 import http from "http";
@@ -26,12 +25,11 @@ import serveStatic from "serve-static";
 type TokenPair = { token1: string; token2: string };
 
 const main = async () => {
-  logger.info("Starting Order Book Filler bot...", { contextInfo: "init" });
+  logger.info("Starting Noise Maker bot...", { contextInfo: "init" });
 
   if (!process.env["ETHEREUM_NODE_URL"]) {
     throw new Error("No URL for a node has been provided in ETHEREUM_NODE_URL");
   }
-  // FIXME should we use separate keys for maker and taker?
   if (!process.env["PRIVATE_KEY"]) {
     throw new Error("No private key provided in PRIVATE_KEY");
   }
@@ -65,7 +63,7 @@ const main = async () => {
     "init"
   );
 
-  await startMakersAndTakersForMarkets(mgv, signer.address);
+  await startMakersForMarkets(mgv, signer.address);
 };
 
 function getTokenConfigsOrThrow(): TokenConfig[] {
@@ -142,10 +140,9 @@ async function approveMangroveForToken(
   }
 }
 
-async function startMakersAndTakersForMarkets(mgv: Mangrove, address: string) {
+async function startMakersForMarkets(mgv: Mangrove, address: string) {
   const marketConfigs = getMarketConfigsOrThrow();
   const offerMakerMap = new Map<TokenPair, OfferMaker>();
-  const offerTakerMap = new Map<TokenPair, OfferTaker>();
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -163,14 +160,6 @@ async function startMakersAndTakersForMarkets(mgv: Mangrove, address: string) {
     );
     offerMakerMap.set(tokenPair, offerMaker);
     offerMaker.start();
-
-    const offerTaker = new OfferTaker(
-      market,
-      address,
-      marketConfig.takerConfig
-    );
-    offerTakerMap.set(tokenPair, offerTaker);
-    offerTaker.start();
   }
 }
 
