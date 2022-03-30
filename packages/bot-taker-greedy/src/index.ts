@@ -1,5 +1,5 @@
 /**
- * A simple order book filling bot for the Mangrove to generate activity on a market by posting and taking offers at random.
+ * A simple, greedy taker bot for the Mangrove to generate activity on a market by taking offers at random.
  * @module
  */
 
@@ -9,12 +9,10 @@ import { logger } from "./util/logger";
 
 import Mangrove, { MgvToken } from "@mangrovedao/mangrove.js";
 
-import { ethers } from "ethers";
 import { WebSocketProvider, Provider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
-import { OfferMaker } from "./OfferMaker";
 import { MarketConfig } from "./MarketConfig";
 import { OfferTaker } from "./OfferTaker";
 import { TokenConfig } from "./TokenConfig";
@@ -26,12 +24,11 @@ import serveStatic from "serve-static";
 type TokenPair = { token1: string; token2: string };
 
 const main = async () => {
-  logger.info("Starting Order Book Filler bot...", { contextInfo: "init" });
+  logger.info("Starting Greedy Taker bot...", { contextInfo: "init" });
 
   if (!process.env["ETHEREUM_NODE_URL"]) {
     throw new Error("No URL for a node has been provided in ETHEREUM_NODE_URL");
   }
-  // FIXME should we use separate keys for maker and taker?
   if (!process.env["PRIVATE_KEY"]) {
     throw new Error("No private key provided in PRIVATE_KEY");
   }
@@ -52,8 +49,6 @@ const main = async () => {
 
   await exitIfMangroveIsKilled(mgv, "init");
 
-  await provisionMakerOnMangrove(mgv, signer.address, "init");
-
   const tokenConfigs = getTokenConfigsOrThrow();
 
   await approveMangroveForTokens(mgv, tokenConfigs, "init");
@@ -65,7 +60,7 @@ const main = async () => {
     "init"
   );
 
-  await startMakersAndTakersForMarkets(mgv, signer.address);
+  await startTakersForMarkets(mgv, signer.address);
 };
 
 function getTokenConfigsOrThrow(): TokenConfig[] {
@@ -142,9 +137,8 @@ async function approveMangroveForToken(
   }
 }
 
-async function startMakersAndTakersForMarkets(mgv: Mangrove, address: string) {
+async function startTakersForMarkets(mgv: Mangrove, address: string) {
   const marketConfigs = getMarketConfigsOrThrow();
-  const offerMakerMap = new Map<TokenPair, OfferMaker>();
   const offerTakerMap = new Map<TokenPair, OfferTaker>();
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
@@ -155,14 +149,6 @@ async function startMakersAndTakersForMarkets(mgv: Mangrove, address: string) {
       base: tokenPair.token1,
       quote: tokenPair.token2,
     });
-
-    const offerMaker = new OfferMaker(
-      market,
-      address,
-      marketConfig.makerConfig
-    );
-    offerMakerMap.set(tokenPair, offerMaker);
-    offerMaker.start();
 
     const offerTaker = new OfferTaker(
       market,
@@ -198,63 +184,6 @@ async function exitIfMangroveIsKilled(
   if (globalConfig.dead) {
     logger.warn("Mangrove is dead, stopping the bot", { contextInfo });
     process.exit();
-  }
-}
-
-async function provisionMakerOnMangrove(
-  mgv: Mangrove,
-  makerAddress: string,
-  contextInfo: string
-) {
-  logger.debug("Provisioning maker", { contextInfo: contextInfo });
-
-  const targetProvision = ethers.utils.parseEther(
-    config.get<number>("makerTargetProvision").toString()
-  );
-  const currentProvision = await mgv.contract.balanceOf(makerAddress);
-  if (currentProvision.lt(targetProvision)) {
-    const deltaProvision = targetProvision.sub(currentProvision);
-    await mgv.contract["fund()"]({ value: deltaProvision })
-      .then((tx) => tx.wait())
-      .then((txReceipt) => {
-        logger.info("Successfully provisioned maker", {
-          contextInfo,
-          data: {
-            oldProvision: ethers.utils.formatEther(currentProvision),
-            targetProvision: ethers.utils.formatEther(targetProvision),
-            deltaProvision: ethers.utils.formatEther(deltaProvision),
-          },
-        });
-        logger.debug("Details for provision transaction", {
-          contextInfo: contextInfo,
-          data: { txReceipt },
-        });
-      })
-      .catch((e) => {
-        logger.error("Provisioning of maker failed", {
-          contextInfo: contextInfo,
-          data: {
-            reason: e,
-            oldProvision: ethers.utils.formatEther(currentProvision),
-            targetProvision: ethers.utils.formatEther(targetProvision),
-            deltaProvision: ethers.utils.formatEther(deltaProvision),
-          },
-        });
-        throw e;
-      });
-  } else {
-    logger.info(
-      `Maker is already sufficiently provisioned: ${ethers.utils.formatEther(
-        currentProvision
-      )} native token (Eth/MATIC/...)`,
-      {
-        contextInfo: contextInfo,
-        data: {
-          currentProvision: ethers.utils.formatEther(currentProvision),
-          targetProvision: ethers.utils.formatEther(targetProvision),
-        },
-      }
-    );
   }
 }
 
