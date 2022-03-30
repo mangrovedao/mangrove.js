@@ -21,7 +21,8 @@ const COMPONENT_MANGROVE_JS = "mangrove.js";
 const COMPONENT_MANGROVE_CONFIGURATION = "config";
 const COMPONENT_DAPP = "dApp";
 const COMPONENT_BOT_CLEANER = "bot:cleaner";
-const COMPONENT_BOT_OBFILLER = "bot:obfiller";
+const COMPONENT_BOT_MAKER_NOISE = "bot:maker-noise";
+const COMPONENT_BOT_TAKER_GREEDY = "bot:taker-greedy";
 const COMPONENT_BOT_UPDATEGAS = "bot:updategas";
 
 const CONTRACT_MANGROVE = "Mangrove";
@@ -37,7 +38,8 @@ const CONTRACTS = [
 
 const DAPP_URL = "https://testnet.mangrove.exchange";
 const CLEANING_BOT_URL = "https://mangrove-cleaning-bot.herokuapp.com";
-const OB_FILLER_BOT_URL = "https://mangrove-obfiller-bot.herokuapp.com";
+const NOISE_MAKER_BOT_URL = "https://mangrove-bot-maker-noise.herokuapp.com";
+const GREEDY_TAKER_BOT_URL = "https://mangrove-bot-taker-greedy.herokuapp.com";
 const UPDATE_GAS_BOT_URL = "https://mangrove-updategas-bot.herokuapp.com";
 
 type ComponentName = string;
@@ -91,9 +93,13 @@ export async function handler(argv: Arguments): Promise<void> {
     COMPONENT_BOT_CLEANER,
     CLEANING_BOT_URL
   );
-  const obFillerBotEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
-    COMPONENT_BOT_OBFILLER,
-    OB_FILLER_BOT_URL
+  const noiseMakerBotEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
+    COMPONENT_BOT_MAKER_NOISE,
+    NOISE_MAKER_BOT_URL
+  );
+  const greedyTakerBotEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
+    COMPONENT_BOT_TAKER_GREEDY,
+    GREEDY_TAKER_BOT_URL
   );
   const updateGasBotEnvironmentInfoPromise = getMangroveJsAppEnvironmentInfo(
     COMPONENT_BOT_UPDATEGAS,
@@ -105,7 +111,10 @@ export async function handler(argv: Arguments): Promise<void> {
   const mangroveConfigurationInfo = await mangroveConfigurationInfoPromise;
   const dAppEnvironmentInfo = await dAppEnvironmentInfoPromise;
   const cleanerBotEnvironmentInfo = await cleanerBotEnvironmentInfoPromise;
-  const obFillerBotEnvironmentInfo = await obFillerBotEnvironmentInfoPromise;
+  const noiseMakerBotEnvironmentInfo =
+    await noiseMakerBotEnvironmentInfoPromise;
+  const greedyTakerBotEnvironmentInfo =
+    await greedyTakerBotEnvironmentInfoPromise;
   const updateGasBotEnvironmentInfo = await updateGasBotEnvironmentInfoPromise;
 
   const {
@@ -118,7 +127,8 @@ export async function handler(argv: Arguments): Promise<void> {
     mangroveConfigurationInfo.info,
     dAppEnvironmentInfo.info,
     cleanerBotEnvironmentInfo.info,
-    obFillerBotEnvironmentInfo.info,
+    noiseMakerBotEnvironmentInfo.info,
+    greedyTakerBotEnvironmentInfo.info,
     updateGasBotEnvironmentInfo.info
   );
 
@@ -129,7 +139,8 @@ export async function handler(argv: Arguments): Promise<void> {
     ...mangroveConfigurationInfo.notes,
     ...dAppEnvironmentInfo.notes,
     ...cleanerBotEnvironmentInfo.notes,
-    ...obFillerBotEnvironmentInfo.notes,
+    ...noiseMakerBotEnvironmentInfo.notes,
+    ...greedyTakerBotEnvironmentInfo.notes,
     ...updateGasBotEnvironmentInfo.notes,
   ];
   const warnings = [
@@ -139,7 +150,8 @@ export async function handler(argv: Arguments): Promise<void> {
     ...mangroveConfigurationInfo.warnings,
     ...dAppEnvironmentInfo.warnings,
     ...cleanerBotEnvironmentInfo.warnings,
-    ...obFillerBotEnvironmentInfo.warnings,
+    ...noiseMakerBotEnvironmentInfo.warnings,
+    ...greedyTakerBotEnvironmentInfo.warnings,
     ...updateGasBotEnvironmentInfo.warnings,
   ];
 
@@ -155,7 +167,8 @@ export async function handler(argv: Arguments): Promise<void> {
           mangroveConfigurationInfo: mangroveConfigurationInfo.info,
           dAppEnvironmentInfo: dAppEnvironmentInfo.info,
           cleanerBotEnvironmentInfo: cleanerBotEnvironmentInfo.info,
-          obFillerBotEnvironmentInfo: obFillerBotEnvironmentInfo.info,
+          noiseMakerBotEnvironmentInfo: noiseMakerBotEnvironmentInfo.info,
+          greedyTakerBotEnvironmentInfo: greedyTakerBotEnvironmentInfo.info,
           updateGasBotEnvironmentInfo: updateGasBotEnvironmentInfo.info,
         },
         jsonStringifyReplacer,
@@ -199,7 +212,8 @@ function analyzeEnvironment(
   mangroveConfInfo: MangroveConfigurationInfo,
   dAppEnvironmentInfo: MangroveJsAppEnvironmentInfo,
   cleanerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
-  obFillerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
+  noiseMakerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
+  greedyTakerBotEnvironmentInfo: MangroveJsAppEnvironmentInfo,
   updateGasBotEnvironmentInfo: MangroveJsAppEnvironmentInfo
 ): {
   notes: Note[];
@@ -246,14 +260,23 @@ function analyzeEnvironment(
   notes = [...notes, ...cleanerBotNotes];
   warnings = [...warnings, ...cleanerBotWarnings];
 
-  const { notes: obFillerBotNotes, warnings: obFillerBotWarnings } =
+  const { notes: noiseMakerBotNotes, warnings: noiseMakerBotWarnings } =
     analyzeMangroveJsApp(
-      COMPONENT_BOT_OBFILLER,
-      obFillerBotEnvironmentInfo,
+      COMPONENT_BOT_MAKER_NOISE,
+      noiseMakerBotEnvironmentInfo,
       mangroveJsEnvInfo
     );
-  notes = [...notes, ...obFillerBotNotes];
-  warnings = [...warnings, ...obFillerBotWarnings];
+  notes = [...notes, ...noiseMakerBotNotes];
+  warnings = [...warnings, ...noiseMakerBotWarnings];
+
+  const { notes: greedyTakerBotNotes, warnings: greedyTakerBotWarnings } =
+    analyzeMangroveJsApp(
+      COMPONENT_BOT_TAKER_GREEDY,
+      greedyTakerBotEnvironmentInfo,
+      mangroveJsEnvInfo
+    );
+  notes = [...notes, ...greedyTakerBotNotes];
+  warnings = [...warnings, ...greedyTakerBotWarnings];
 
   const { notes: updateGasBotNotes, warnings: updateGasBotWarnings } =
     analyzeMangroveJsApp(

@@ -686,7 +686,7 @@ class Semibook implements Iterable<Market.Offer> {
       this.#offerCache.size > this.options.maxOffers
     ) {
       const removedOffer = this.#removeOffer(this.#worstInCache);
-      if (offer.id === removedOffer.id) {
+      if (offer.id === removedOffer?.id) {
         return false;
       }
     }

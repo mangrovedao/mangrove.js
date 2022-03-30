@@ -1,1 +1,0 @@
-web: yarn workspace @mangrovedao/obfiller-bot start

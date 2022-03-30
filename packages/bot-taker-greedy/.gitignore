@@ -1,0 +1,6 @@
+.DS_Store
+node_modules/
+build/
+static/environmentInformation.json
+.env.local
+.env.*.local
