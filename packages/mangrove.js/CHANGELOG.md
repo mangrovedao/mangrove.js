@@ -1,5 +1,8 @@
 # Next version
 
+- `Mangrove.offerLogic` now accepts the name of a predeployed multi user logic (`offerProxy` or `oasisLike` in this version)
+- Adding deployed addresses for `offerProxy` and `oasisLike` in `addresses.json`
+
 # 0.5.1 (March 2022)
 
 - `addresses.json` points to AAVE-v3 dApp addresses

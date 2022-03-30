@@ -180,7 +180,17 @@ class Mangrove {
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
   offerLogic(logic: string, multiMaker?: boolean): OfferLogic {
-    return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
+    if (ethers.utils.isAddress(logic)) {
+      return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
+    } else {
+      // loading a multi maker predeployed logic
+      const address: string = this.getAddress(logic);
+      if (address) {
+        return new OfferLogic(this, address, true);
+      } else {
+        throw Error(`Cannot find ${logic} on network ${this._network.name}`);
+      }
+    }
   }
 
   /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/
