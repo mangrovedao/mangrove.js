@@ -15,11 +15,10 @@ on:
 env:
   NODE_ENV: test
   working-directory: packages/mangrove-solidity
-  # Ternary-esque expression hack: The first two lines are the condition,
-  # the 3rd line is the value if `true`, the 4th line is the value if `false`.
+  # Ternary-esque expression hack: The first line is the condition,
+  # the 2nd line is the value if `true`, the 3rd line is the value if `false`.
   GIT_REF_TO_TEST: >
-                   ${{  (   (   github.event_name != 'pull_request_target'
-                             || github.event.pull_request.head.repo.full_name == github.repository)
+                   ${{  (   github.event_name != 'pull_request_target'
                          && github.ref )
                       || format('refs/pull/{0}/merge', github.event.number) }}
 
@@ -88,6 +87,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -160,6 +160,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -233,6 +234,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -332,6 +334,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -384,6 +387,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -471,6 +475,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -584,6 +589,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -657,6 +663,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -762,6 +769,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -867,6 +875,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -972,6 +981,7 @@ jobs:
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
