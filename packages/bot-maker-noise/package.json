@@ -1,5 +1,5 @@
 {
-  "name": "@mangrovedao/obfiller-bot",
+  "name": "@mangrovedao/bot-maker-noise",
   "version": "0.0.1",
   "author": "Mangrove DAO",
   "description": "A simple order book filler bot for testing Mangrove",
