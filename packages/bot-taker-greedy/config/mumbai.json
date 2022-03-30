@@ -19,13 +19,6 @@
     {
       "baseToken": "DAI",
       "quoteToken": "USDC",
-      "makerConfig": {
-        "offerRate": 0.005,
-        "bidProbability": 0.5,
-        "lambda": 0.03,
-        "maxQuantity": 10,
-        "maxTotalLiquidityPublished": 50
-      },
       "takerConfig": {
         "takeRate": 0.0275,
         "bidProbability": 0.5,

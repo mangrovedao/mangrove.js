@@ -1,1 +1,1 @@
-web: yarn workspace @mangrovedao/obfiller-bot start
+web: yarn workspace @mangrovedao/bot-taker-greedy start
