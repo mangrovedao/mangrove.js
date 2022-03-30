@@ -22,7 +22,7 @@
   "dependencies": {
     "@mangrovedao/mangrove-solidity": "workspace:*",
     "ethers": "^5.4.7",
-    "hardhat": "^2.6.5",
+    "hardhat": "^2.9.2",
     "mocha": "^9.1.2"
   },
   "devDependencies": {
