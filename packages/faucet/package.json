@@ -15,7 +15,7 @@
     "test:solidity": "cross-env NODE_ENV=test NODE_APP_INSTANCE=solidity hardhat test-solidity"
   },
   "lint-staged": {
-    "*.{js,css,md,sol}": "prettier --write --ignore-unknown"
+    "*.{js,css,md,sol,json}": "prettier --write --ignore-unknown"
   },
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.1",
