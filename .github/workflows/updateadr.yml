@@ -27,7 +27,7 @@ jobs:
 
       - name: Check and update deployment addresses in mangrove.js
         run: npx ts-node write-addresses-json.js --deployment $GITHUB_WORKSPACE/packages/mangrove-solidity/deployments/mumbai --chainkey maticmum --output $GITHUB_WORKSPACE/packages/mangrove.js/src/constants/addresses.json --debug
-        working-directory: /.github/scripts/src
+        working-directory: ./.github/scripts/src
 
       - name: Run prettier on addresses.json
         run: npx prettier --write src/constants/addresses.json
