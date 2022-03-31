@@ -7,6 +7,8 @@ import random from "random";
 import Big from "big.js";
 import { MakerConfig } from "./MarketConfig";
 import assert from "assert";
+import { Semibook } from "@mangrovedao/mangrove.js";
+import { fetchJson } from "ethers/lib/utils";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
@@ -101,18 +103,26 @@ export class OfferMaker {
   async #postNewOfferOnBidsOrAsks(): Promise<void> {
     let ba: BA;
     let offerList: Offer[];
+    let otherSemibook: Semibook;
     const book = this.#market.getBook();
     if (random.float(0, 1) < this.#bidProbability) {
       ba = "bids";
       offerList = [...book.bids];
+      otherSemibook = book.asks;
     } else {
       ba = "asks";
       offerList = [...book.asks];
+      otherSemibook = book.bids;
     }
-    if (offerList.length === 0) {
-      // FIXME this means no activity is generated if there are no offers already on the book
+
+    const referencePrice = await this.#getReferencePrice(
+      ba,
+      offerList,
+      otherSemibook
+    );
+    if (referencePrice === undefined) {
       logger.warn(
-        "Offer list is empty so will not generate an offer as no reference price is available",
+        `Unable to determine reference price, so not posthing an offer`,
         {
           contextInfo: "maker",
           base: this.#market.base.name,
@@ -123,33 +133,106 @@ export class OfferMaker {
       return;
     }
 
-    logger.debug("Best offer on book", {
-      contextInfo: "maker",
-      base: this.#market.base.name,
-      quote: this.#market.quote.name,
-      ba: ba,
-      data: { bestOffer: offerList[0] },
-    });
-
     await this.#retractWorstOfferIfTotalLiquidityPublishedExceedsMax(
       ba,
       offerList
     );
 
-    const price = this.#choosePriceFromExp(
-      ba,
-      offerList[0].price,
-      this.#lambda
-    );
+    const price = this.#choosePriceFromExp(ba, referencePrice, this.#lambda);
     const quantity = Big(random.float(1, this.#maxQuantity));
     await this.#postOffer(ba, quantity, price);
+  }
+
+  async #getReferencePrice(
+    ba: BA,
+    offerList: Offer[],
+    otherSemibook: Semibook
+  ): Promise<Big | undefined> {
+    let bestOffer: Offer | undefined = undefined;
+    if (offerList.length > 0) {
+      bestOffer = offerList[0];
+      logger.debug("Best offer on book", {
+        contextInfo: "maker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        ba: ba,
+        data: { bestOffer: bestOffer },
+      });
+
+      return bestOffer.price;
+    }
+
+    // Check whether the other side of the book has an offer that can be used as reference
+    const bestOfferInOtherSemibook: Offer | undefined = otherSemibook
+      .iter()
+      .next().value;
+    if (bestOfferInOtherSemibook !== undefined) {
+      logger.debug(
+        "Offer list is empty so will use best offer on other side of book as price reference",
+        {
+          contextInfo: "maker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
+          data: { bestOfferOnOtherSideOfBook: bestOfferInOtherSemibook },
+        }
+      );
+
+      return bestOfferInOtherSemibook.price;
+    }
+
+    const cryptoCompareUrl = `https://min-api.cryptocompare.com/data/price?fsym=${
+      this.#market.base.name
+    }&tsyms=${this.#market.quote.name}`;
+    try {
+      const json = await fetchJson(cryptoCompareUrl);
+      if (json[this.#market.quote.name] !== undefined) {
+        const referencePrice = new Big(json[this.#market.quote.name]);
+        logger.info("Using external price reference as order book is empty", {
+          contextInfo: "maker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
+          data: {
+            referencePrice,
+            cryptoCompareUrl,
+          },
+        });
+        return referencePrice;
+      }
+
+      logger.warn(
+        `Response did not contain a ${this.#market.quote.name} field`,
+        {
+          contextInfo: "maker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
+          data: { cryptoCompareUrl, responseJson: json },
+        }
+      );
+
+      return;
+    } catch (e) {
+      logger.error(`Error encountered while fetching external price`, {
+        contextInfo: "maker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        ba: ba,
+        data: {
+          reason: e,
+          cryptoCompareUrl,
+        },
+      });
+      return;
+    }
   }
 
   async #retractWorstOfferIfTotalLiquidityPublishedExceedsMax(
     ba: BA,
     offerList: Offer[]
   ): Promise<void> {
-    assert(offerList.length > 0);
+    if (offerList.length === 0) return;
     const [totalLiquidityPublished, myWorstOffer] = offerList
       .filter((o) => o.maker === this.#makerAddress)
       .reduce<[Big, Offer]>(
