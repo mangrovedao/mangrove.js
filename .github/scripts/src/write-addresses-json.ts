@@ -16,12 +16,12 @@ Args:
 
 Example:
 
-  node write-addresses-json.js --deployment ../../packages/mangrove-solidity/deployments/mumbai --chainkey maticmum --output ../../packages/mangrove.js/src/constants/addresses.json 
+  ts-node write-addresses-json --deployment ../../../packages/mangrove-solidity/deployments/mumbai --chainkey maticmum --output ../../../packages/mangrove.js/src/constants/addresses.json 
 */
 
 import fs from 'fs';
 import minimist from 'minimist';
-import { readContractAddresses } from "./address-handling.js";
+import * as addressHandling from "./address-handling";
 
 // define relevant contracts
 const coreContracts = [ "Mangrove", "MgvCleaner", "MgvReader", "MgvOracle" ];
@@ -60,15 +60,15 @@ if(error){
   process.exit(1);
 }
 
-const deploymentFolder = args['deployment'];
-const chainkey = args['chainkey'];
-const outputFile = args['output'];
+const deploymentFolder: string = args['deployment'];
+const chainkey: string = args['chainkey'];
+const outputFile: string = args['output'];
 
 // read deployment addresses for core contracts
-const contractAddresses = readContractAddresses(deploymentFolder, coreContracts);
+const contractAddresses = addressHandling.readContractAddresses(deploymentFolder, coreContracts);
 
 // read outputFile, if present
-let oldAddresses = {};
+let oldAddresses: Record<string, {}> = {};
 if (fs.existsSync(outputFile)) {
   if(debug){
     console.debug(`Found existing file at ${outputFile}. File will be updated.`);
