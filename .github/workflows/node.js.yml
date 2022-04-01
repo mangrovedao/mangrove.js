@@ -21,7 +21,7 @@ env:
                    ${{  (   github.event_name != 'pull_request_target'
                          && github.ref )
                       || format('refs/pull/{0}/merge', github.event.number) }}
-
+  NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN: ${{ github.ref_name == 'master' && github.event_name != 'pull_request_target' }}
 jobs:
   # ==== Job: Security guard ====
   # The security guard job only allows workflows triggered by external PR's to continue
@@ -136,6 +136,16 @@ jobs:
       with:
         name: commonlib-out.zip
         path: commonlib-out.zip
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: commonlib-js ====
 
   # ==== Job: Build and test faucet ====
@@ -210,6 +220,16 @@ jobs:
       with:
         name: faucet-out.zip
         path: faucet-out.zip
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job faucet ====
 
   # ==== Job: Build and test Mangrove Core
@@ -314,6 +334,16 @@ jobs:
       with:
         name: mangrove-solidity-out.zip
         path: mangrove-solidity-out.zip
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job mangrove-solidity ====
 
   # ==== Job: Build Mangrove documentation ====
@@ -360,6 +390,16 @@ jobs:
       with:
         name: documentation
         path: ${{env.working-directory}}/doc/
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job mangrove-solidity-doc ====
 
   # ==== Job: Build and test hardhat-utils ====
@@ -448,6 +488,16 @@ jobs:
     #   with:
     #     name: hardhat-utils-out.zip
     #     path: hardhat-utils-out.zip
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: hardhat-utils ====
 
   # ==== Job: Build and test mangrove.js ====
@@ -566,6 +616,16 @@ jobs:
       with:
         name: mangrove-js-src.zip
         path: mangrove-js-src.zip
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: mangrove-js ====
 
   # ==== Job: Build mangrove.js documentation ====
@@ -636,6 +696,16 @@ jobs:
       with:
         name: mangrove-js-documentation
         path: ${{env.working-directory}}/docs/
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job mangrove-js-doc ====
 
   # ==== Job: Build and test cleaning-bot ====
@@ -742,6 +812,16 @@ jobs:
         name: Cleaning Bot - Tests                   # Name of the check run which will be created
         path: packages/cleaning-bot/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: cleaning-bot ====        
 
   # ==== Job: Build and test updategas-bot ====
@@ -848,6 +928,16 @@ jobs:
         name: Update Gas Bot - Tests                   # Name of the check run which will be created
         path: packages/updategas-bot/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: updategas-bot ====
           
   # ==== Job: Build and test bot-maker-noise ====
@@ -954,6 +1044,16 @@ jobs:
         name: Noise Maker Bot - Tests                                # Name of the check run which will be created
         path: packages/bot-maker-noise/integration-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-maker-noise ====        
           
   # ==== Job: Build and test bot-taker-greedy ====
@@ -1060,6 +1160,16 @@ jobs:
         name: Greedy Taker Bot - Tests                                # Name of the check run which will be created
         path: packages/bot-taker-greedy/integration-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-taker-greedy ====        
 
   # ==== Job: Build and test template-bot ====
@@ -1166,4 +1276,14 @@ jobs:
         name: Template Bot - Tests                   # Name of the check run which will be created
         path: packages/template-bot/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: template-bot ====
