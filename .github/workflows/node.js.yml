@@ -97,7 +97,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -180,7 +180,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -264,7 +264,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -374,7 +374,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -437,7 +437,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -535,7 +535,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -659,7 +659,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -743,7 +743,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -859,7 +859,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -975,7 +975,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -1091,7 +1091,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -1207,7 +1207,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3.1.0
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
