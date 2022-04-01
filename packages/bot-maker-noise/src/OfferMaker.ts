@@ -140,7 +140,7 @@ export class OfferMaker {
 
     const price = this.#choosePriceFromExp(ba, referencePrice, this.#lambda);
     const quantity = Big(random.float(1, this.#maxQuantity));
-    await this.#postOffer(ba, quantity, price);
+    await this.#postOffer(ba, quantity, price, referencePrice);
   }
 
   async #getReferencePrice(
@@ -309,6 +309,7 @@ export class OfferMaker {
     ba: BA,
     quantity: Big,
     price: Big,
+    referencePrice: Big,
     gasReq: BigNumberish = 100_000,
     gasPrice: BigNumberish = 1
   ): Promise<void> {
@@ -378,6 +379,7 @@ export class OfferMaker {
             wantsInUnits: wantsInUnits.toString(),
             gasReq,
             gasPrice,
+            referencePrice: referencePrice.toString(),
           },
         });
         logger.debug("Details for posted offer", {
@@ -389,7 +391,7 @@ export class OfferMaker {
         });
       })
       .catch((e) => {
-        logger.warn("Post of offer failed", {
+        logger.error("Post of offer failed", {
           contextInfo: "maker",
           base: this.#market.base.name,
           quote: this.#market.quote.name,
@@ -408,6 +410,9 @@ export class OfferMaker {
             gasPrice,
           },
         });
+        // ethers.js seems to get stuck when this happens, so we rethrow the exception
+        // to force the app to quit and allow the runtime to restart it
+        throw e;
       });
   }
 }
