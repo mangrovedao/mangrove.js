@@ -281,7 +281,9 @@ async function logTokenBalance(
 }
 
 process.on("unhandledRejection", function (reason, promise) {
-  logger.warn("Unhandled Rejection", { data: reason });
+  logger.error("Unhandled Rejection", { data: reason });
+  // The bot seems to hang on unhandled rejections, so exit and allow the app platform to restart the bot
+  process.exit(1); // TODO Add exit codes
 });
 
 main().catch((e) => {
