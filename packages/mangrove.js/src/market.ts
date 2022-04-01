@@ -948,7 +948,7 @@ class Market {
     price: Big
   ): { gives: Big; wants: Big } {
     const gives = ba === "asks" ? volume : volume.mul(price);
-    const wants = ba === "bids" ? volume.mul(price) : volume;
+    const wants = ba === "asks" ? volume.mul(price) : volume;
     return {
       gives,
       wants,
