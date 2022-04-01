@@ -941,14 +941,14 @@ class Market {
     return ba === "asks" ? wants.div(price) : wants.mul(price);
   }
 
-  /** Determine gives and wants from a volume (in quote) and a price depending on whether you're working with bids or asks. */
+  /** Determine gives and wants from a volume (in base) and a price depending on whether you're working with bids or asks. */
   static getGivesWantsForVolumeAtPrice(
     ba: "asks" | "bids",
     volume: Big,
     price: Big
   ): { gives: Big; wants: Big } {
-    const gives = ba === "asks" ? volume.div(price) : volume;
-    const wants = ba === "bids" ? volume : volume.div(price);
+    const gives = ba === "asks" ? volume : volume.mul(price);
+    const wants = ba === "bids" ? volume.mul(price) : volume;
     return {
       gives,
       wants,
