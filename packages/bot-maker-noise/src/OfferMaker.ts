@@ -140,7 +140,7 @@ export class OfferMaker {
 
     const price = this.#choosePriceFromExp(ba, referencePrice, this.#lambda);
     const quantity = Big(random.float(1, this.#maxQuantity));
-    await this.#postOffer(ba, quantity, price);
+    await this.#postOffer(ba, quantity, price, referencePrice);
   }
 
   async #getReferencePrice(
@@ -309,6 +309,7 @@ export class OfferMaker {
     ba: BA,
     quantity: Big,
     price: Big,
+    referencePrice: Big,
     gasReq: BigNumberish = 100_000,
     gasPrice: BigNumberish = 1
   ): Promise<void> {
@@ -378,6 +379,7 @@ export class OfferMaker {
             wantsInUnits: wantsInUnits.toString(),
             gasReq,
             gasPrice,
+            referencePrice: referencePrice.toString(),
           },
         });
         logger.debug("Details for posted offer", {
