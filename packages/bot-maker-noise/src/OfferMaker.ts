@@ -138,7 +138,7 @@ export class OfferMaker {
       offerList
     );
 
-    const price = this.#choosePriceFromExp(ba, referencePrice, this.#lambda);
+    const price = this.#choosePrice(ba, referencePrice, this.#lambda);
     const quantity = Big(random.float(1, this.#maxQuantity));
     await this.#postOffer(ba, quantity, price, referencePrice);
   }
@@ -295,7 +295,7 @@ export class OfferMaker {
     }
   }
 
-  #choosePriceFromExp(ba: BA, referencePrice: Big, lambda: Big): Big {
+  #choosePrice(ba: BA, referencePrice: Big, lambda: Big): Big {
     const u = random.float(0, 1) - 0.5;
     const plug = lambda.mul(u);
 
@@ -317,9 +317,12 @@ export class OfferMaker {
     const priceInUnits = inbound_tkn.toUnits(price);
     const quantityInUnits = outbound_tkn.toUnits(quantity);
 
-    const gives = quantity;
+    const { gives, wants } = Market.getGivesWantsForVolumeAtPrice(
+      ba,
+      quantity,
+      price
+    );
     const givesInUnits = outbound_tkn.toUnits(gives);
-    const wants = Market.getWantsForPrice(ba, gives, price);
     const wantsInUnits = inbound_tkn.toUnits(wants);
 
     const baseTokenBalance = await this.#market.base.contract.balanceOf(
