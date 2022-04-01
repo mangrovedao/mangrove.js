@@ -391,7 +391,7 @@ export class OfferMaker {
         });
       })
       .catch((e) => {
-        logger.warn("Post of offer failed", {
+        logger.error("Post of offer failed", {
           contextInfo: "maker",
           base: this.#market.base.name,
           quote: this.#market.quote.name,
@@ -410,6 +410,9 @@ export class OfferMaker {
             gasPrice,
           },
         });
+        // ethers.js seems to get stuck when this happens, so we rethrow the exception
+        // to force the app to quit and allow the runtime to restart it
+        throw e;
       });
   }
 }
