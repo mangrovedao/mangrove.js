@@ -1,10 +1,16 @@
-A simple, greedy taker bot for the Mangrove to generate activity on a market by taking offers at random.
+A simple, greedy taker bot for the Mangrove to generate activity on a market by taking offers that are better than an external price signal.
 
 FIXME: write the rest of the README...
 
 # Strategy
 
 TODO: Describe strategy
+Every X seconds do:
+
+1. Get the external price signal
+2. For both asks and bids:
+   a. calculate the total volume of offers with prices that are better than the external price
+   b. send a market order for the volume calculated in a.
 
 # Installation
 
@@ -46,7 +52,7 @@ $ yarn start
 
 TODO: Describe configuration options
 
-These are configured in configuration files, stored in the `src/config` folder. The file [default.json](src/config/default.json) contains all supported configuration options and their defaults. The file [test.json](src/config/test.json) contains the configuration overrides used in tests.
+These are configured in configuration files, stored in the `config` folder. The file [default.json](config/default.json) contains all supported configuration options and their defaults.
 
 The bot uses [node-config](https://github.com/lorenwest/node-config) for reading configurations. Please refer to its documentation for more details.
 

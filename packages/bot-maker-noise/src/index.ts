@@ -86,9 +86,13 @@ async function approveMangroveForTokens(
   tokenConfigs: TokenConfig[],
   contextInfo: string
 ) {
+  const approvalPromises = [];
   for (const tokenConfig of tokenConfigs) {
-    await approveMangroveForToken(mgv, tokenConfig, contextInfo);
+    approvalPromises.push(
+      approveMangroveForToken(mgv, tokenConfig, contextInfo)
+    );
   }
+  Promise.all(approvalPromises);
 }
 
 async function approveMangroveForToken(

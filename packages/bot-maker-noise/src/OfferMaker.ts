@@ -64,15 +64,22 @@ export class OfferMaker {
    */
   public async start(): Promise<void> {
     this.#running = true;
-    const makerAddress = await this.#market.mgv._signer.getAddress();
+
+    const balanceBasePromise = this.#market.base.contract.balanceOf(
+      this.#makerAddress
+    );
+    const balanceQuotePromise = this.#market.quote.contract.balanceOf(
+      this.#makerAddress
+    );
+    const marketConfigPromise = this.#market.config();
     logger.info("Starting offer maker", {
       contextInfo: "maker start",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
       data: {
-        balanceBase: await this.#market.base.contract.balanceOf(makerAddress),
-        balanceQuote: await this.#market.quote.contract.balanceOf(makerAddress),
-        marketConfig: await this.#market.config(),
+        balanceBase: await balanceBasePromise,
+        balanceQuote: await balanceQuotePromise,
+        marketConfig: await marketConfigPromise,
       },
     });
 
@@ -325,12 +332,14 @@ export class OfferMaker {
     const givesInUnits = outbound_tkn.toUnits(gives);
     const wantsInUnits = inbound_tkn.toUnits(wants);
 
-    const baseTokenBalance = await this.#market.base.contract.balanceOf(
+    const baseTokenBalancePromise = this.#market.base.contract.balanceOf(
       this.#makerAddress
     );
-    const quoteTokenBalance = await this.#market.quote.contract.balanceOf(
+    const quoteTokenBalancePromise = this.#market.quote.contract.balanceOf(
       this.#makerAddress
     );
+    const baseTokenBalance = await baseTokenBalancePromise;
+    const quoteTokenBalance = await quoteTokenBalancePromise;
 
     logger.debug("Posting offer", {
       contextInfo: "maker",

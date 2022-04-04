@@ -1,11 +1,9 @@
 import { logger } from "./util/logger";
 import { sleep } from "@mangrovedao/commonlib-js";
-import Market from "@mangrovedao/mangrove.js/dist/nodejs/market";
-type Offer = Market.Offer;
-import { BigNumberish } from "ethers";
-import random from "random";
-import Big from "big.js";
+import { Market } from "@mangrovedao/mangrove.js";
 import { TakerConfig } from "./MarketConfig";
+import { fetchJson } from "ethers/lib/utils";
+import Big from "big.js";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
@@ -14,16 +12,14 @@ export type BA = "bids" | "asks";
 
 /**
  * An offer taker for a single Mangrove market which takes offers
- * at times following a Poisson distribution.
+ * whenever their price is better than an external price signal.
  */
 export class OfferTaker {
   #market: Market;
   #takerAddress: string;
-  #bidProbability: number;
-  #maxQuantity: number;
+  #takerConfig: TakerConfig;
+  #cryptoCompareUrl: string;
   #running: boolean;
-  #takeRate: number;
-  #takeTimeRng: () => number;
 
   /**
    * Constructs an offer taker for the given Mangrove market.
@@ -34,13 +30,12 @@ export class OfferTaker {
   constructor(market: Market, takerAddress: string, takerConfig: TakerConfig) {
     this.#market = market;
     this.#takerAddress = takerAddress;
-    this.#bidProbability = takerConfig.bidProbability;
-    this.#maxQuantity = takerConfig.maxQuantity;
+    this.#takerConfig = takerConfig;
+    this.#cryptoCompareUrl = `https://min-api.cryptocompare.com/data/price?fsym=${
+      this.#market.base.name
+    }&tsyms=${this.#market.quote.name}`;
 
     this.#running = false;
-
-    this.#takeRate = takerConfig.takeRate / 1_000; // Converting the rate to mean # of offers per millisecond
-    this.#takeTimeRng = random.uniform(0, 1);
 
     logger.info("Initalized offer taker", {
       contextInfo: "taker init",
@@ -49,6 +44,13 @@ export class OfferTaker {
       data: { takerConfig: takerConfig },
     });
   }
+
+  // FIXME: Algorithm:
+  // Every X seconds do:
+  //   1. Get the external price signal
+  //   2. For both asks and bids:
+  //      a. calculate the total volume of offers with prices that are better than the external price
+  //      b. send a market order for the volume calculated in a.
 
   /**
    * Start creating offers.
@@ -64,23 +66,20 @@ export class OfferTaker {
       quote: this.#market.quote.name,
     });
 
-    this.#takerAddress = await this.#market.mgv._signer.getAddress();
-
     while (this.#running === true) {
-      const delayInMilliseconds = this.#getNextTimeDelay();
-      logger.debug(`Sleeping for ${delayInMilliseconds}ms`, {
-        contextInfo: "taker",
-        base: this.#market.base.name,
-        quote: this.#market.quote.name,
-        data: { delayInMilliseconds },
-      });
+      const delayInMilliseconds = this.#takerConfig.sleepTimeMilliseconds;
+      logger.debug(
+        `Sleeping for ${this.#takerConfig.sleepTimeMilliseconds}ms`,
+        {
+          contextInfo: "taker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          data: { delayInMilliseconds },
+        }
+      );
       await sleep(delayInMilliseconds);
-      await this.#takeOfferOnBidsOrAsks();
+      await this.#tradeIfPricesAreBetterThanExternalSignal();
     }
-  }
-
-  #getNextTimeDelay(): number {
-    return -Math.log(1 - this.#takeTimeRng()) / this.#takeRate;
   }
 
   /**
@@ -90,131 +89,181 @@ export class OfferTaker {
     this.#running = false;
   }
 
-  async #takeOfferOnBidsOrAsks(): Promise<void> {
-    let ba: BA;
-    let offerList: Offer[];
-    const book = this.#market.getBook();
-    if (random.float(0, 1) < this.#bidProbability) {
-      ba = "bids";
-      offerList = [...book.bids];
-    } else {
-      ba = "asks";
-      offerList = [...book.asks];
-    }
-    if (offerList.length === 0) {
-      logger.warn("Offer list is empty so not making a market order", {
-        contextInfo: "taker",
-        base: this.#market.base.name,
-        quote: this.#market.quote.name,
-        ba: ba,
-      });
+  async #tradeIfPricesAreBetterThanExternalSignal(): Promise<void> {
+    const baseTokenBalancePromise = this.#market.base.contract.balanceOf(
+      this.#takerAddress
+    );
+    const quoteTokenBalancePromise = this.#market.quote.contract.balanceOf(
+      this.#takerAddress
+    );
+    const externalPrice = await this.#getExternalPrice();
+
+    if (externalPrice === undefined) {
+      logger.info(
+        "No external price found, so not buying anything at this time",
+        {
+          contextInfo: "taker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+        }
+      );
       return;
     }
-    const price = offerList[0].price;
-    const quantity = Big(random.float(1, this.#maxQuantity));
-    await this.#postMarketOrder(ba, quantity, price);
-  }
 
-  async #postMarketOrder(
-    ba: BA,
-    quantity: Big,
-    price: Big,
-    gasReq: BigNumberish = 100_000,
-    gasPrice: BigNumberish = 1
-  ): Promise<void> {
-    const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
-    const priceInUnits = inbound_tkn.toUnits(price);
-    const quantityInUnits = outbound_tkn.toUnits(quantity);
+    const baseTokenBalance = await baseTokenBalancePromise;
+    const quoteTokenBalance = await quoteTokenBalancePromise;
 
-    const wants = quantity;
-    const wantsInUnits = inbound_tkn.toUnits(wants);
-    const gives = Market.getGivesForPrice(ba, wants, price);
-    const givesInUnits = outbound_tkn.toUnits(gives);
-
-    const baseTokenBalance = await this.#market.base.contract.balanceOf(
-      this.#takerAddress
-    );
-    const quoteTokenBalance = await this.#market.quote.contract.balanceOf(
-      this.#takerAddress
-    );
-
-    logger.debug("Posting market order", {
+    logger.debug("Token balances", {
       contextInfo: "taker",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
-      ba: ba,
       data: {
-        quantity,
-        quantityInUnits: quantityInUnits.toString(),
-        price,
-        priceInUnits: priceInUnits.toString(),
-        gives,
-        givesInUnits: givesInUnits.toString(),
-        wants,
-        wantsInUnits: wantsInUnits.toString(),
-        gasReq,
-        gasPrice,
         baseTokenBalance: this.#market.base.fromUnits(baseTokenBalance),
         quoteTokenBalance: this.#market.quote.fromUnits(quoteTokenBalance),
       },
     });
 
-    await this.#market.mgv.contract
-      .marketOrder(
-        outbound_tkn.address,
-        inbound_tkn.address,
-        wantsInUnits,
-        givesInUnits,
-        true
-      )
-      .then((tx) => tx.wait())
-      .then((txReceipt) => {
-        logger.info("Successfully completed market order", {
-          contextInfo: "taker",
-          base: this.#market.base.name,
-          quote: this.#market.quote.name,
-          ba: ba,
-          data: {
-            quantity,
-            quantityInUnits: quantityInUnits.toString(),
-            price,
-            priceInUnits: priceInUnits.toString(),
-            gives,
-            givesInUnits: givesInUnits.toString(),
-            wants,
-            wantsInUnits: wantsInUnits.toString(),
-            gasReq,
-            gasPrice,
-          },
-        });
-        logger.debug("Details for market order", {
-          contextInfo: "taker",
-          base: this.#market.base.name,
-          quote: this.#market.quote.name,
-          ba: ba,
-          data: { txReceipt },
-        });
-      })
-      .catch((e) => {
-        logger.warn("Post of market order failed", {
-          contextInfo: "taker",
-          base: this.#market.base.name,
-          quote: this.#market.quote.name,
-          ba: ba,
-          data: {
-            reason: e,
-            quantity,
-            quantityInUnits: quantityInUnits.toString(),
-            price,
-            priceInUnits: priceInUnits.toString(),
-            gives,
-            givesInUnits: givesInUnits.toString(),
-            wants,
-            wantsInUnits: wantsInUnits.toString(),
-            gasReq,
-            gasPrice,
-          },
-        });
+    const asksTradePromise =
+      this.#tradeOnSemibookIfPricesAreBetterThanExternalSignal(
+        "asks",
+        externalPrice
+      );
+    const bidsTradePromise =
+      this.#tradeOnSemibookIfPricesAreBetterThanExternalSignal(
+        "bids",
+        externalPrice
+      );
+    await asksTradePromise;
+    await bidsTradePromise;
+  }
+
+  async #getExternalPrice(): Promise<Big | undefined> {
+    try {
+      logger.debug("Fetching external price", {
+        contextInfo: "taker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        data: {
+          cryptoCompareUrl: this.#cryptoCompareUrl,
+        },
       });
+
+      const json = await fetchJson(this.#cryptoCompareUrl);
+      if (json[this.#market.quote.name] !== undefined) {
+        const externalPrice = new Big(json[this.#market.quote.name]);
+        logger.info("Received external price", {
+          contextInfo: "taker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          data: {
+            externalPrice: externalPrice,
+            cryptoCompareUrl: this.#cryptoCompareUrl,
+          },
+        });
+        return externalPrice;
+      }
+
+      logger.warn(
+        `Response did not contain a ${this.#market.quote.name} field`,
+        {
+          contextInfo: "taker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          data: {
+            cryptoCompareUrl: this.#cryptoCompareUrl,
+            responseJson: json,
+          },
+        }
+      );
+
+      return;
+    } catch (e) {
+      logger.error(`Error encountered while fetching external price`, {
+        contextInfo: "taker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        data: {
+          reason: e,
+          cryptoCompareUrl: this.#cryptoCompareUrl,
+        },
+      });
+      // ethers.js seems to get stuck when this happens, so we rethrow the exception
+      // to force the app to quit and allow the runtime to restart it
+      throw e;
+    }
+  }
+
+  async #tradeOnSemibookIfPricesAreBetterThanExternalSignal(
+    ba: BA,
+    externalPrice: Big
+  ): Promise<void> {
+    const semibook = this.#market.getSemibook(ba);
+    // FIXME: Can we use the cache instead/more?
+    const offers = await semibook.requestOfferListPrefix({
+      desiredPrice: externalPrice,
+    });
+    const [priceComparison, quoteSideOfOffers, buyOrSell]: [
+      "lt" | "gt",
+      "wants" | "gives",
+      "buy" | "sell"
+    ] = ba === "asks" ? ["lt", "wants", "buy"] : ["gt", "gives", "sell"];
+
+    const offersWithBetterThanExternalPrice = offers.filter((o) =>
+      o.price[priceComparison](externalPrice)
+    );
+    if (offersWithBetterThanExternalPrice.length <= 0) return;
+
+    const total = offersWithBetterThanExternalPrice.reduce(
+      (v, o) => v.add(o[quoteSideOfOffers]),
+      Big(0)
+    );
+
+    logger.debug(`Posting ${buyOrSell} market order`, {
+      contextInfo: "taker",
+      base: this.#market.base.name,
+      quote: this.#market.quote.name,
+      ba,
+      data: {
+        total: total.toString(),
+        price: externalPrice.toString(),
+        numberOfAsksWithBetterPrice: offersWithBetterThanExternalPrice.length,
+      },
+    });
+    try {
+      const result = await this.#market[buyOrSell](
+        { total: total, price: externalPrice },
+        {}
+      );
+      logger.info(`Successfully completed ${buyOrSell} order`, {
+        contextInfo: "taker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        ba,
+        data: {
+          total: total.toString(),
+          price: externalPrice.toString(),
+          numberOfAsksWithBetterPrice: offersWithBetterThanExternalPrice.length,
+          buyResult: {
+            gave: result.gave.toString(),
+            got: result.got.toString(),
+            partialFill: result.partialFill,
+            penalty: result.penalty.toString(),
+          },
+        },
+      });
+    } catch (e) {
+      logger.error(`Error occurred while ${buyOrSell}ing`, {
+        contextInfo: "taker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        ba,
+        data: {
+          reason: e,
+        },
+      });
+      // ethers.js seems to get stuck when this happens, so we rethrow the exception
+      // to force the app to quit and allow the runtime to restart it
+      throw e;
+    }
   }
 }
