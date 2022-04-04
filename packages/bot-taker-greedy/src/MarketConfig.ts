@@ -1,8 +1,6 @@
 export type TakerConfig = {
   targetAllowance: number;
-  takeRate: number;
-  bidProbability: number;
-  maxQuantity: number;
+  sleepTimeMilliseconds: number;
 };
 
 export type MarketConfig = {

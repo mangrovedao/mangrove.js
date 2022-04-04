@@ -1,6 +1,5 @@
 {
   "logLevel": "info",
-  "makerTargetProvision": "0.5",
   "tokens": [
     {
       "name": "WETH",
@@ -20,27 +19,21 @@
       "baseToken": "WETH",
       "quoteToken": "DAI",
       "takerConfig": {
-        "takeRate": 0.0275,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
+        "sleepTimeMilliseconds": 30000
       }
     },
     {
       "baseToken": "WETH",
       "quoteToken": "USDC",
       "takerConfig": {
-        "takeRate": 0.0275,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
+        "sleepTimeMilliseconds": 30000
       }
     },
     {
       "baseToken": "DAI",
       "quoteToken": "USDC",
       "takerConfig": {
-        "takeRate": 0.0275,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
+        "sleepTimeMilliseconds": 30000
       }
     }
   ]

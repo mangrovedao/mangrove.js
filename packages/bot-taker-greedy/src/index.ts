@@ -83,9 +83,13 @@ async function approveMangroveForTokens(
   tokenConfigs: TokenConfig[],
   contextInfo: string
 ) {
+  const approvalPromises = [];
   for (const tokenConfig of tokenConfigs) {
-    await approveMangroveForToken(mgv, tokenConfig, contextInfo);
+    approvalPromises.push(
+      approveMangroveForToken(mgv, tokenConfig, contextInfo)
+    );
   }
+  Promise.all(approvalPromises);
 }
 
 async function approveMangroveForToken(
@@ -222,6 +226,8 @@ async function logTokenBalance(
 
 process.on("unhandledRejection", function (reason, promise) {
   logger.warn("Unhandled Rejection", { data: reason });
+  // The bot seems to hang on unhandled rejections, so exit and allow the app platform to restart the bot
+  process.exit(1); // TODO Add exit codes
 });
 
 main().catch((e) => {
