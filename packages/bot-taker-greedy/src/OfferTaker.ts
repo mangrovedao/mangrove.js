@@ -45,13 +45,6 @@ export class OfferTaker {
     });
   }
 
-  // FIXME: Algorithm:
-  // Every X seconds do:
-  //   1. Get the external price signal
-  //   2. For both asks and bids:
-  //      a. calculate the total volume of offers with prices that are better than the external price
-  //      b. send a market order for the volume calculated in a.
-
   /**
    * Start creating offers.
    */
