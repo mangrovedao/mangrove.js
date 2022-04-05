@@ -1,5 +1,7 @@
 # Next version
 
+# 0.5.2 (April 2022)
+
 - `Mangrove.offerLogic` now accepts the name of a predeployed multi user logic (`offerProxy` or `oasisLike` in this version)
 - Adding deployed addresses for `offerProxy` and `oasisLike` in `addresses.json`
 - New `Market.getGivesWantsForVolumeAtPrice` method that converts a volume (in base tokens) and a price to appropriate gives and wants for either bids or asks.
