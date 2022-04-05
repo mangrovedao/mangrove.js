@@ -58,6 +58,16 @@ Here's an example configuration file with instances of all possible configuratio
 ```json
 {
   "logLevel": "debug",
+  "tokens": [
+    {
+      "name": "WETH",
+      "targetAllowance": 1e20
+    },
+    {
+      "name": "DAI",
+      "targetAllowance": 100000000000000
+    }
+  ],
   "markets": [
     {
       "baseToken": "WETH",
@@ -75,6 +85,9 @@ Here's an example configuration file with instances of all possible configuratio
 ```
 
 - `logLevel`: Sets the logging level - the bot employs the [winston](https://github.com/winstonjs/winston) logger, and it's default log-levels.
+- `tokens`: A list of per-token configuration.
+  - `name`: The symbol of the token.
+  - `targetAllowance`: The allowance that Mangrove should be approved to transfer on behalf of the bot. On startup, this is checked and an approval tx sent if the current approval is too low.
 - `markets`: A list of per-market configurations. The bot will post offers to each of the markets listed here.
   - `baseToken`: The symbol of the base token.
   - `quoteToken`: The symbol of the quote token.
