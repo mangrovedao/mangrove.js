@@ -6,7 +6,6 @@ import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
 import { MakerConfig } from "./MarketConfig";
-import assert from "assert";
 import { Semibook } from "@mangrovedao/mangrove.js";
 import { fetchJson } from "ethers/lib/utils";
 Big.DP = 20; // precision when dividing
@@ -167,25 +166,6 @@ export class OfferMaker {
       });
 
       return bestOffer.price;
-    }
-
-    // Check whether the other side of the book has an offer that can be used as reference
-    const bestOfferInOtherSemibook: Offer | undefined = otherSemibook
-      .iter()
-      .next().value;
-    if (bestOfferInOtherSemibook !== undefined) {
-      logger.debug(
-        "Offer list is empty so will use best offer on other side of book as price reference",
-        {
-          contextInfo: "maker",
-          base: this.#market.base.name,
-          quote: this.#market.quote.name,
-          ba: ba,
-          data: { bestOfferOnOtherSideOfBook: bestOfferInOtherSemibook },
-        }
-      );
-
-      return bestOfferInOtherSemibook.price;
     }
 
     const cryptoCompareUrl = `https://min-api.cryptocompare.com/data/price?fsym=${
