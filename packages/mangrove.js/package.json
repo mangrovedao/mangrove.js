@@ -112,7 +112,7 @@
     "seedrandom": "^3.0.5",
     "shelljs": "^0.8.4",
     "shx": "^0.3.4",
-    "ts-essentials": "^8.1.0",
+    "ts-essentials": "^9.1.2",
     "ts-node": "^9.1.1",
     "typechain": "^6.0.2",
     "typedoc": "^0.22.3",
