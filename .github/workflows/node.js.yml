@@ -83,7 +83,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -166,7 +166,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -250,7 +250,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -360,7 +360,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -423,7 +423,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -521,7 +521,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -645,7 +645,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -729,7 +729,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -845,7 +845,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -961,7 +961,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -1077,7 +1077,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -1193,7 +1193,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
