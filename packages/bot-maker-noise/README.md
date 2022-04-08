@@ -7,11 +7,10 @@ The bot post new offers on configured markets at a configurable, stochastic rate
 1. Randomly chooses to post an ask or a bid based on a configurable distribution
 2. The bot will retract its worst offer before posting a new one, **if** the total volume it has offered is above a configurable threshold. This limits the amount of simultaneus offers on the book.
 3. Choose a reference prices as follows:
-4. if the chosen offer list (asks/bids) is non-empty, use the best price as reference
-5. if the offer list is empty, but the opposite offer list is not, use the best price on that list as reference
-6. as a fallback, look up the price on CryptoCompare.com and use that as reference
-7. Choose a random price from a configurable, uniform distribution centered around the reference price.
-8. Choose a random quantity between 1 and a configurable max quantity.
+   1. if the chosen offer list (asks/bids) is non-empty, use the best price as reference
+   2. as a fallback, look up the price on CryptoCompare.com and use that as reference
+4. Choose a random price from a configurable, uniform distribution centered around the reference price.
+5. Choose a random quantity between 1 and a configurable max quantity.
 
 # Installation
 
@@ -58,6 +57,16 @@ Here's an example configuration file with instances of all possible configuratio
 ```json
 {
   "logLevel": "debug",
+  "tokens": [
+    {
+      "name": "WETH",
+      "targetAllowance": 1e20
+    },
+    {
+      "name": "DAI",
+      "targetAllowance": 100000000000000
+    }
+  ],
   "markets": [
     {
       "baseToken": "WETH",
@@ -75,6 +84,9 @@ Here's an example configuration file with instances of all possible configuratio
 ```
 
 - `logLevel`: Sets the logging level - the bot employs the [winston](https://github.com/winstonjs/winston) logger, and it's default log-levels.
+- `tokens`: A list of per-token configuration.
+  - `name`: The symbol of the token.
+  - `targetAllowance`: The allowance that Mangrove should be approved to transfer on behalf of the bot. On startup, this is checked and an approval tx sent if the current approval is too low.
 - `markets`: A list of per-market configurations. The bot will post offers to each of the markets listed here.
   - `baseToken`: The symbol of the base token.
   - `quoteToken`: The symbol of the quote token.

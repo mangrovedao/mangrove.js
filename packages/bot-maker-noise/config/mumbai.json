@@ -4,7 +4,7 @@
   "tokens": [
     {
       "name": "WETH",
-      "targetAllowance": 1000
+      "targetAllowance": 1e9
     },
     {
       "name": "DAI",

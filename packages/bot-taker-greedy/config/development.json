@@ -5,9 +5,7 @@
       "baseToken": "WETH",
       "quoteToken": "DAI",
       "takerConfig": {
-        "takeRate": 0.1,
-        "bidProbability": 0.5,
-        "maxQuantity": 1
+        "sleepTimeMilliseconds": 30000
       }
     }
   ]

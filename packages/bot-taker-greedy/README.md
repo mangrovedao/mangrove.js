@@ -1,10 +1,13 @@
-A simple, greedy taker bot for the Mangrove to generate activity on a market by taking offers at random.
-
-FIXME: write the rest of the README...
+A simple, greedy taker bot for the Mangrove to generate activity on a market by taking offers that are better than an external price signal.
 
 # Strategy
 
-TODO: Describe strategy
+Every X milliseconds the bot:
+
+1. Gets the external price signal
+2. For both asks and bids:
+   a. calculate the total volume of offers with prices that are better than the external price
+   b. if the total volume calculated in a. is non-zero then send a market order for that volume.
 
 # Installation
 
@@ -44,9 +47,46 @@ $ yarn start
 
 # Configuration
 
-TODO: Describe configuration options
+The bot has a number of configurable settings (which are currently read and used at startup, so bot needs to be restarted to change configuration).
 
-These are configured in configuration files, stored in the `src/config` folder. The file [default.json](src/config/default.json) contains all supported configuration options and their defaults. The file [test.json](src/config/test.json) contains the configuration overrides used in tests.
+Here's an example configuration file with instances of all possible configuration values:
+
+```json
+{
+  "logLevel": "debug",
+  "tokens": [
+    {
+      "name": "WETH",
+      "targetAllowance": 1e20
+    },
+    {
+      "name": "DAI",
+      "targetAllowance": 100000000000000
+    }
+  ],
+  "markets": [
+    {
+      "baseToken": "WETH",
+      "quoteToken": "DAI",
+      "takerConfig": {
+        "sleepTimeMilliseconds": 30000
+      }
+    }
+  ]
+}
+```
+
+- `logLevel`: Sets the logging level - the bot employs the [winston](https://github.com/winstonjs/winston) logger, and it's default log-levels.
+- `tokens`: A list of per-token configuration.
+  - `name`: The symbol of the token.
+  - `targetAllowance`: The allowance that Mangrove should be approved to transfer on behalf of the bot. On startup, this is checked and an approval tx sent if the current approval is too low.
+- `markets`: A list of per-market configurations. The bot will take offers from each of the markets listed here.
+  - `baseToken`: The symbol of the base token.
+  - `quoteToken`: The symbol of the quote token.
+  - `takerConfig`: Configuration of the taker on this market:
+    - `sleepTimeMilliseconds`: The number of milliseconds the bot should sleep in between checking the market.
+
+Configuration files are stored in the `config` folder. The file [default.json](config/default.json) contains all supported configuration options and their defaults.
 
 The bot uses [node-config](https://github.com/lorenwest/node-config) for reading configurations. Please refer to its documentation for more details.
 
