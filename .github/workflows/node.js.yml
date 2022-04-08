@@ -35,7 +35,7 @@ jobs:
           !(   github.event_name != 'pull_request_target'
             || github.event.pull_request.head.repo.full_name == github.repository
             || contains(github.event.pull_request.labels.*.name, 'external PR') )
-      uses: peter-evans/create-or-update-comment@v1
+      uses: peter-evans/create-or-update-comment@v2
       with:
         issue-number: ${{ github.event.pull_request.number }}
         body: >
