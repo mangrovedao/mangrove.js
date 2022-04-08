@@ -132,7 +132,7 @@ jobs:
         args: zip -qq -r commonlib-out.zip ${{env.working-directory}}/dist
 
     - name: Cache commonlib.js output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: commonlib-out.zip
         path: commonlib-out.zip
@@ -216,7 +216,7 @@ jobs:
         args: zip -qq -r faucet-out.zip ${{env.working-directory}}/artifacts ${{env.working-directory}}/dist
 
     - name: Cache faucet output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: faucet-out.zip
         path: faucet-out.zip
@@ -330,7 +330,7 @@ jobs:
         args: zip -qq -r mangrove-solidity-out.zip ${{env.working-directory}}/artifacts ${{env.working-directory}}/dist
 
     - name: Cache mangrove-solidity output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-solidity-out.zip
         path: mangrove-solidity-out.zip
@@ -386,7 +386,7 @@ jobs:
     - run: yarn run doc
 
     - name: Archive documentation
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: documentation
         path: ${{env.working-directory}}/doc/
@@ -484,7 +484,7 @@ jobs:
     #     args: zip -qq -r hardhat-utils-out.zip ${{env.working-directory}}/dist
 
     # - name: Cache hardhat-utils output as artifact
-    #   uses: actions/upload-artifact@v2
+    #   uses: actions/upload-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
     #     path: hardhat-utils-out.zip
@@ -601,7 +601,7 @@ jobs:
         args: zip -qq -r mangrove-js-out.zip ${{env.working-directory}}/dist
 
     - name: Cache mangrove-js output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
@@ -612,7 +612,7 @@ jobs:
         args: zip -qq -r mangrove-js-src.zip ${{env.working-directory}}/src
 
     - name: Cache mangrove-js-src as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-js-src.zip
         path: mangrove-js-src.zip
@@ -692,7 +692,7 @@ jobs:
     - run: yarn run doc
 
     - name: Archive documentation
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-js-documentation
         path: ${{env.working-directory}}/docs/
