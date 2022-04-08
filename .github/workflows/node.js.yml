@@ -447,7 +447,7 @@ jobs:
 
     # == download artefact ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -545,7 +545,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -555,7 +555,7 @@ jobs:
         args: unzip -qq mangrove-solidity-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -566,7 +566,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -669,7 +669,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-js-src artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-src.zip
 
@@ -679,7 +679,7 @@ jobs:
         args: unzip -qq -o mangrove-js-src.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -753,7 +753,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -764,7 +764,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -774,7 +774,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -784,7 +784,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -869,7 +869,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -880,7 +880,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -890,7 +890,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -900,7 +900,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -985,7 +985,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -996,7 +996,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -1006,7 +1006,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -1016,7 +1016,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -1101,7 +1101,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -1112,7 +1112,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -1122,7 +1122,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -1132,7 +1132,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -1217,7 +1217,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -1228,7 +1228,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -1238,7 +1238,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -1248,7 +1248,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
