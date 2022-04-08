@@ -43,7 +43,7 @@
     "ethers": "^5.4.7",
     "fast-safe-stringify": "^2.1.1",
     "finalhandler": "^1.1.2",
-    "serve-static": "^1.14.2",
+    "serve-static": "^1.15.0",
     "toad-scheduler": "^1.6.0"
   },
   "devDependencies": {
