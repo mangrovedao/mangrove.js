@@ -35,7 +35,7 @@ jobs:
           !(   github.event_name != 'pull_request_target'
             || github.event.pull_request.head.repo.full_name == github.repository
             || contains(github.event.pull_request.labels.*.name, 'external PR') )
-      uses: peter-evans/create-or-update-comment@v1
+      uses: peter-evans/create-or-update-comment@v2
       with:
         issue-number: ${{ github.event.pull_request.number }}
         body: >
@@ -57,7 +57,7 @@ jobs:
           !(   github.event_name != 'pull_request_target'
             || github.event.pull_request.head.repo.full_name == github.repository
             || contains(github.event.pull_request.labels.*.name, 'safe to test') )
-      uses: actions/github-script@v3
+      uses: actions/github-script@v6
       with:
         script: core.setFailed('External PR must be marked \'safe to test\' for CI to run')
   # ==== End job: Security guard ====
@@ -83,7 +83,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -97,7 +97,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -132,7 +132,7 @@ jobs:
         args: zip -qq -r commonlib-out.zip ${{env.working-directory}}/dist
 
     - name: Cache commonlib.js output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: commonlib-out.zip
         path: commonlib-out.zip
@@ -166,7 +166,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -180,7 +180,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -216,7 +216,7 @@ jobs:
         args: zip -qq -r faucet-out.zip ${{env.working-directory}}/artifacts ${{env.working-directory}}/dist
 
     - name: Cache faucet output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: faucet-out.zip
         path: faucet-out.zip
@@ -250,7 +250,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -264,7 +264,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -330,7 +330,7 @@ jobs:
         args: zip -qq -r mangrove-solidity-out.zip ${{env.working-directory}}/artifacts ${{env.working-directory}}/dist
 
     - name: Cache mangrove-solidity output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-solidity-out.zip
         path: mangrove-solidity-out.zip
@@ -360,7 +360,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -374,7 +374,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -386,7 +386,7 @@ jobs:
     - run: yarn run doc
 
     - name: Archive documentation
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: documentation
         path: ${{env.working-directory}}/doc/
@@ -423,7 +423,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -437,7 +437,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -447,7 +447,7 @@ jobs:
 
     # == download artefact ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -484,7 +484,7 @@ jobs:
     #     args: zip -qq -r hardhat-utils-out.zip ${{env.working-directory}}/dist
 
     # - name: Cache hardhat-utils output as artifact
-    #   uses: actions/upload-artifact@v2
+    #   uses: actions/upload-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
     #     path: hardhat-utils-out.zip
@@ -521,7 +521,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -535,7 +535,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -545,7 +545,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -555,7 +555,7 @@ jobs:
         args: unzip -qq mangrove-solidity-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -566,7 +566,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -601,7 +601,7 @@ jobs:
         args: zip -qq -r mangrove-js-out.zip ${{env.working-directory}}/dist
 
     - name: Cache mangrove-js output as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
@@ -612,7 +612,7 @@ jobs:
         args: zip -qq -r mangrove-js-src.zip ${{env.working-directory}}/src
 
     - name: Cache mangrove-js-src as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-js-src.zip
         path: mangrove-js-src.zip
@@ -645,7 +645,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -659,7 +659,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -669,7 +669,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-js-src artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-src.zip
 
@@ -679,7 +679,7 @@ jobs:
         args: unzip -qq -o mangrove-js-src.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -692,7 +692,7 @@ jobs:
     - run: yarn run doc
 
     - name: Archive documentation
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: mangrove-js-documentation
         path: ${{env.working-directory}}/docs/
@@ -729,7 +729,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -743,7 +743,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -753,7 +753,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -764,7 +764,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -774,7 +774,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -784,7 +784,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -845,7 +845,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -859,7 +859,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -869,7 +869,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -880,7 +880,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -890,7 +890,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -900,7 +900,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -961,7 +961,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -975,7 +975,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -985,7 +985,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -996,7 +996,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -1006,7 +1006,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -1016,7 +1016,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -1077,7 +1077,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -1091,7 +1091,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -1101,7 +1101,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -1112,7 +1112,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -1122,7 +1122,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -1132,7 +1132,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
@@ -1193,7 +1193,7 @@ jobs:
 
     # == Git checkout ==
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       # Workaround for https://github.com/npm/cli/issues/2610
       with:
         persist-credentials: false
@@ -1207,7 +1207,7 @@ jobs:
 
     # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
@@ -1217,7 +1217,7 @@ jobs:
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-solidity-out.zip
 
@@ -1228,7 +1228,7 @@ jobs:
 
     # NOTE: Uncomment the following two steps, if/when hardhat-utils has build artefacts -->
     # - name: Download cached hardhat-utils artifact
-    #   uses: actions/download-artifact@v2
+    #   uses: actions/download-artifact@v3
     #   with:
     #     name: hardhat-utils-out.zip
 
@@ -1238,7 +1238,7 @@ jobs:
     #     args: unzip -qq hardhat-utils-out.zip
 
     - name: Download cached mangrove-js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: mangrove-js-out.zip
 
@@ -1248,7 +1248,7 @@ jobs:
         args: unzip -qq mangrove-js-out.zip
 
     - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: commonlib-out.zip
 
