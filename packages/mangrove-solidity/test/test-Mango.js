@@ -2,8 +2,6 @@ const { assert } = require("chai");
 //const { parseToken } = require("ethers/lib/utils");
 const { ethers } = require("hardhat");
 const lc = require("../lib/libcommon.js");
-const chalk = require("chalk");
-//const { Mangrove } = require("../../mangrove.js");
 
 async function checkOB(msg, mgv, outb, inb, bigNumbers, t) {
   for (const i in bigNumbers) {
@@ -27,7 +25,6 @@ async function checkOB(msg, mgv, outb, inb, bigNumbers, t) {
 describe("Running tests...", function () {
   this.timeout(200_000); // Deployment is slow so timeout is increased
   let mgv = null;
-  let reader = null;
   let usdc = null;
   let wEth = null;
   let maker = null;
@@ -102,7 +99,6 @@ describe("Running tests...", function () {
     for (let i = 0; i < 2; i++) {
       const receipt = await makerContract.initialize(
         4,
-        false,
         slice * i, // from
         slice * (i + 1), // to
         [pivotIds, pivotIds],
@@ -114,12 +110,12 @@ describe("Running tests...", function () {
     }
   });
   it("Market orders", async function () {
-    let book = await reader.offerList(usdc.address, wEth.address, 0, NSLOTS);
-    console.log("===bids===");
-    await lc.logOrderBook(book, usdc, wEth);
-    book = await reader.offerList(wEth.address, usdc.address, 0, NSLOTS);
-    console.log("===asks===");
-    await lc.logOrderBook(book, wEth, usdc);
+    // let book = await reader.offerList(usdc.address, wEth.address, 0, NSLOTS);
+    // console.log("===bids===");
+    // await lc.logOrderBook(book, usdc, wEth);
+    // book = await reader.offerList(wEth.address, usdc.address, 0, NSLOTS);
+    // console.log("===asks===");
+    // await lc.logOrderBook(book, wEth, usdc);
 
     await makerContract.approveMangrove(
       wEth.address,
@@ -286,13 +282,242 @@ describe("Running tests...", function () {
       asks,
       [0, 0, 0, 6, 1, 2, 3, 4, 5, 7]
     );
+  });
 
-    // book = await reader.offerList(usdc.address, wEth.address, 0, NSLOTS);
-    // console.log("===bids===");
-    // await lc.logOrderBook(book, usdc, wEth);
-    // book = await reader.offerList(wEth.address, usdc.address, 0, NSLOTS);
-    // console.log("===asks===");
-    // await lc.logOrderBook(book, wEth, usdc);
+  it("Test partial fill", async function () {
+    // scenario:
+    // - set density so high that offer can no longer be updated
+    // - run a market order and check that bid is not updated after ask is being consumed
+    // - verify takerGave is pending
+    // - put back the density and run another market order
+
+    let tx = await mgv.setDensity(
+      wEth.address,
+      usdc.address,
+      ethers.utils.parseUnits("1", 18)
+    );
+    await tx.wait();
+
+    let density = (await mgv.configInfo(wEth.address, usdc.address)).local
+      .density;
+    lc.assertEqualBN(
+      ethers.utils.parseUnits("1", 18),
+      density,
+      "Density was not correctly set"
+    );
+
+    [takerGot, takerGave, bounty] = await lc.marketOrder(
+      mgv.connect(taker),
+      "USDC", // outbound
+      "WETH", // inbound
+      ethers.utils.parseUnits("0.01", 6), // wants
+      ethers.utils.parseEther("1"), // gives
+      true
+    );
+
+    let best = await mgv.best(wEth.address, usdc.address);
+    let offerInfo = await mgv.offerInfo(wEth.address, usdc.address, best);
+    let old_gives = offerInfo.offer.gives;
+
+    let [pendingBase] = await makerContract.get_pending();
+
+    lc.assertEqualBN(
+      pendingBase,
+      takerGave,
+      "Taker liquidity should be pending"
+    );
+
+    // tx = await mgv.setDensity(wEth.address, usdc.address, 100);
+    // await tx.wait();
+
+    [takerGot, takerGave, bounty] = await lc.marketOrder(
+      mgv.connect(taker),
+      "USDC", // outbound
+      "WETH", // inbound
+      ethers.utils.parseUnits("0.01", 6), // wants
+      ethers.utils.parseEther("1"), // gives
+      true
+    );
+
+    let [pendingBase_] = await makerContract.get_pending();
+    lc.assertEqualBN(
+      pendingBase_,
+      pendingBase.add(takerGave),
+      "Missing pending base"
+    );
+
+    tx = await mgv.setDensity(wEth.address, usdc.address, 100);
+    await tx.wait();
+
+    [takerGot, takerGave, bounty] = await lc.marketOrder(
+      mgv.connect(taker),
+      "USDC", // outbound
+      "WETH", // inbound
+      ethers.utils.parseUnits("0.01", 6), // wants
+      ethers.utils.parseEther("1"), // gives
+      true
+    );
+    let [pendingBase__] = await makerContract.get_pending();
+    lc.assertEqualBN(pendingBase__, 0, "There should be no more pending base");
+
+    best = await mgv.best(wEth.address, usdc.address);
+    offerInfo = await mgv.offerInfo(wEth.address, usdc.address, best);
+
+    lc.assertEqualBN(
+      offerInfo.offer.gives,
+      old_gives.add(pendingBase_.add(takerGave)),
+      "Incorrect given amount"
+    );
+  });
+
+  it("Test residual", async function () {
+    let tx = await mgv.setDensity(
+      usdc.address,
+      wEth.address,
+      ethers.utils.parseUnits("1", 6)
+    );
+    await tx.wait();
+    tx = await mgv.setDensity(
+      wEth.address,
+      usdc.address,
+      ethers.utils.parseUnits("1", 18)
+    );
+    await tx.wait();
+
+    // market order will take the following best offer
+    let best = await mgv.best(usdc.address, wEth.address);
+    let offerInfo = await mgv.offerInfo(usdc.address, wEth.address, best);
+
+    [takerGot, takerGave, bounty] = await lc.marketOrder(
+      mgv.connect(taker),
+      "USDC", // outbound
+      "WETH", // inbound
+      ethers.utils.parseUnits("100", 6), // wants
+      ethers.utils.parseEther("1"), // gives
+      true
+    );
+    // because density reqs are so high on both semi order book, best will not be able to self repost
+    // and residual will be added to USDC (quote) pending pool
+    // and what taker gave will not be added in the dual offer and added to the WETH (base) pending pool
+
+    let [pendingBase, pendingQuote] = await makerContract.get_pending();
+
+    lc.assertEqualBN(
+      takerGave,
+      pendingBase,
+      "TakerGave was not added to pending base pool"
+    );
+    lc.assertEqualBN(
+      offerInfo.offer.gives.sub(ethers.utils.parseUnits("100", 6)),
+      pendingQuote,
+      "Residual was not added to pending quote pool"
+    );
+
+    // second market order should produce the same effect (best has changed because old best was not able to repost)
+    best = await mgv.best(usdc.address, wEth.address);
+    offerInfo = await mgv.offerInfo(usdc.address, wEth.address, best);
+
+    [takerGot, takerGave, bounty] = await lc.marketOrder(
+      mgv.connect(taker),
+      "USDC", // outbound
+      "WETH", // inbound
+      ethers.utils.parseUnits("100", 6), // wants
+      ethers.utils.parseEther("1"), // gives
+      true
+    );
+
+    let [pendingBase_, pendingQuote_] = await makerContract.get_pending();
+    lc.assertEqualBN(
+      pendingBase.add(takerGave),
+      pendingBase_,
+      "TakerGave was not added to pending base pool"
+    );
+    lc.assertEqualBN(
+      offerInfo.offer.gives
+        .sub(ethers.utils.parseUnits("100", 6))
+        .add(pendingQuote),
+      pendingQuote_,
+      "Residual was not added to pending quote pool"
+    );
+
+    // putting density back to normal
+    tx = await mgv.setDensity(usdc.address, wEth.address, 100);
+    await tx.wait();
+    tx = await mgv.setDensity(wEth.address, usdc.address, 100);
+    await tx.wait();
+
+    // Offer 3 and 4 were unable to repost so they should be out of the book
+    let [bids, asks] = await makerContract.get_offers(false);
+    await checkOB(
+      "OB bids",
+      mgv,
+      usdc.address,
+      wEth.address,
+      bids,
+      [2, -3, -4, -5, -6, 0, 0, -8, -7, -1]
+    );
+    await checkOB(
+      "OB asks",
+      mgv,
+      wEth.address,
+      usdc.address,
+      asks,
+      [0, 0, 0, 6, 1, 2, 3, 4, 5, 7]
+    );
+
+    // this market order should produce the following observables:
+    // - offer 2 is now going to repost its residual which will be augmented with the content of the USDC pending pool
+    // - the dual offer of offer 2 will be created with id 8 and will offer takerGave + the content of the WETH pending pool
+    // - both pending pools should be empty
+
+    let oldOffer2 = (await mgv.offerInfo(usdc.address, wEth.address, 2)).offer;
+
+    [takerGot, takerGave, bounty] = await lc.marketOrder(
+      mgv.connect(taker),
+      "USDC", // outbound
+      "WETH", // inbound
+      ethers.utils.parseUnits("100", 6), // wants
+      ethers.utils.parseEther("1"), // gives
+      true
+    );
+
+    [bids, asks] = await makerContract.get_offers(false);
+    await checkOB(
+      "OB bids",
+      mgv,
+      usdc.address,
+      wEth.address,
+      bids,
+      [2, -3, -4, -5, -6, 0, 0, -8, -7, -1]
+    );
+    await checkOB(
+      "OB asks",
+      mgv,
+      wEth.address,
+      usdc.address,
+      asks,
+      [0, 8, 0, 6, 1, 2, 3, 4, 5, 7]
+    );
+
+    let [pendingBase__, pendingQuote__] = await makerContract.get_pending();
+    lc.assertEqualBN(pendingBase__, 0, "Pending base pool should be empty");
+    lc.assertEqualBN(pendingQuote__, 0, "Pending quote pool should be empty");
+    best = await mgv.best(wEth.address, usdc.address);
+    let offer8 = (await mgv.offerInfo(wEth.address, usdc.address, best)).offer;
+    assert(best == 8, "Best offer on WETH,USDC offer list should be #8");
+
+    lc.assertEqualBN(
+      offer8.gives,
+      takerGave.add(pendingBase_),
+      "Incorrect offer gives"
+    );
+
+    let offer2 = (await mgv.offerInfo(usdc.address, wEth.address, 2)).offer;
+    lc.assertEqualBN(
+      offer2.gives,
+      pendingQuote_.add(oldOffer2.gives.sub(ethers.utils.parseUnits("100", 6))),
+      "Incorrect offer gives"
+    );
   });
 
   it("Test kill", async function () {
@@ -320,40 +545,4 @@ describe("Running tests...", function () {
       [-2, -3, -4, -5, -6, 0, 0, -8, -7, -1]
     );
   });
-
-  // it("Testing boundaries", async function () {
-  //   const filter_bidMax = makerContract.filters.BidAtMaxPosition();
-  //   let correct = false;
-  //   makerContract.on(
-  //     filter_bidMax,
-  //     async (outbound_tkn, inbound_tkn, offerId, event) => {
-  //       console.log(`${offerId} is Bidding at max position!`);
-  //       correct = true;
-  //     }
-  //   );
-  //   const filter_AskMin = makerContract.filters.AskAtMinPosition();
-  //   makerContract.on(
-  //     filter_AskMin,
-  //     async (outbound_tkn, inbound_tkn, offerId, event) => {
-  //       console.log(`${offerId} is asking at min position!`);
-  //       await lc.marketOrder(
-  //         mgv.connect(taker),
-  //         "WETH", // outbound
-  //         "USDC", // inbound
-  //         ethers.utils.parseEther("3"), // wants
-  //         ethers.utils.parseUnits("10000", 6) // gives
-  //       );
-  //     }
-  //   );
-  //   await lc.marketOrder(
-  //     mgv.connect(taker),
-  //     "USDC", // outbound
-  //     "WETH", // inbound
-  //     ethers.utils.parseUnits("4000", 6), // wants
-  //     ethers.utils.parseEther("2.0") // gives
-  //   );
-  //   await lc.sleep(10000);
-  //   assert(correct,"Event not caught");
-  //   lc.stopListeners([makerContract]);
-  // });
 });
