@@ -5,7 +5,8 @@
       "baseToken": "WETH",
       "quoteToken": "DAI",
       "takerConfig": {
-        "sleepTimeMilliseconds": 30000
+        "sleepTimeMilliseconds": 30000,
+        "offerCountCap": 5
       }
     }
   ]

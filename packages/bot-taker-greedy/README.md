@@ -69,7 +69,8 @@ Here's an example configuration file with instances of all possible configuratio
       "baseToken": "WETH",
       "quoteToken": "DAI",
       "takerConfig": {
-        "sleepTimeMilliseconds": 30000
+        "sleepTimeMilliseconds": 30000,
+        "offerCountCap": 5
       }
     }
   ]
@@ -85,6 +86,7 @@ Here's an example configuration file with instances of all possible configuratio
   - `quoteToken`: The symbol of the quote token.
   - `takerConfig`: Configuration of the taker on this market:
     - `sleepTimeMilliseconds`: The number of milliseconds the bot should sleep in between checking the market.
+    - `offerCountCap`: The max number of offers the bot should attempt to take.
 
 Configuration files are stored in the `config` folder. The file [default.json](config/default.json) contains all supported configuration options and their defaults.
 

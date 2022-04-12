@@ -19,21 +19,24 @@
       "baseToken": "WETH",
       "quoteToken": "DAI",
       "takerConfig": {
-        "sleepTimeMilliseconds": 30000
+        "sleepTimeMilliseconds": 30000,
+        "offerCountCap": 5
       }
     },
     {
       "baseToken": "WETH",
       "quoteToken": "USDC",
       "takerConfig": {
-        "sleepTimeMilliseconds": 30000
+        "sleepTimeMilliseconds": 30000,
+        "offerCountCap": 5
       }
     },
     {
       "baseToken": "DAI",
       "quoteToken": "USDC",
       "takerConfig": {
-        "sleepTimeMilliseconds": 30000
+        "sleepTimeMilliseconds": 30000,
+        "offerCountCap": 5
       }
     }
   ]
