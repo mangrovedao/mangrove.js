@@ -19,7 +19,8 @@
       "baseToken": "DAI",
       "quoteToken": "USDC",
       "takerConfig": {
-        "sleepTimeMilliseconds": 30000
+        "sleepTimeMilliseconds": 30000,
+        "offerCountCap": 5
       }
     }
   ]

@@ -206,10 +206,9 @@ export class OfferTaker {
     );
     if (offersWithBetterThanExternalPrice.length <= 0) return;
 
-    const total = offersWithBetterThanExternalPrice.reduce(
-      (v, o) => v.add(o[quoteSideOfOffers]),
-      Big(0)
-    );
+    const total = offersWithBetterThanExternalPrice
+      .slice(0, this.#takerConfig.offerCountCap - 1)
+      .reduce((v, o) => v.add(o[quoteSideOfOffers]), Big(0));
 
     logger.debug(`Posting ${buyOrSell} market order`, {
       contextInfo: "taker",
@@ -220,6 +219,7 @@ export class OfferTaker {
         total: total.toString(),
         price: externalPrice.toString(),
         numberOfAsksWithBetterPrice: offersWithBetterThanExternalPrice.length,
+        offerCountCap: this.#takerConfig.offerCountCap,
       },
     });
     try {
