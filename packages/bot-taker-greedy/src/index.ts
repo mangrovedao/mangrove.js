@@ -141,9 +141,13 @@ async function approveMangroveForToken(
   }
 }
 
-async function startTakersForMarkets(mgv: Mangrove, address: string) {
+async function startTakersForMarkets(
+  mgv: Mangrove,
+  address: string
+): Promise<void[]> {
   const marketConfigs = getMarketConfigsOrThrow();
   const offerTakerMap = new Map<TokenPair, OfferTaker>();
+  const takerRunningPromises = [];
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -160,8 +164,10 @@ async function startTakersForMarkets(mgv: Mangrove, address: string) {
       marketConfig.takerConfig
     );
     offerTakerMap.set(tokenPair, offerTaker);
-    offerTaker.start();
+    takerRunningPromises.push(offerTaker.start());
   }
+
+  return Promise.all(takerRunningPromises);
 }
 
 function getMarketConfigsOrThrow(): MarketConfig[] {
