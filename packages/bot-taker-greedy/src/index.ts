@@ -224,18 +224,6 @@ async function logTokenBalance(
   });
 }
 
-process.on("unhandledRejection", function (reason, promise) {
-  logger.warn("Unhandled Rejection", { data: reason });
-  // The bot seems to hang on unhandled rejections, so exit and allow the app platform to restart the bot
-  process.exit(1); // TODO Add exit codes
-});
-
-main().catch((e) => {
-  logger.exception(e);
-  // TODO Consider doing graceful shutdown of takers and makers
-  process.exit(1); // TODO Add exit codes
-});
-
 // The node http server is used solely to serve static information files for environment management
 const staticBasePath = "./static";
 
@@ -247,3 +235,25 @@ const server = http.createServer(function (req, res) {
 });
 
 server.listen(process.env.PORT || 8080);
+
+// Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection", { data: reason });
+  server.close(() => process.exit(1));
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error(`Uncaught Exception: ${err.message}`);
+  server.close(() => process.exit(1));
+});
+
+main()
+  .then(() => {
+    logger.info("main returned, shutting down");
+    server.close(() => process.exit(0));
+  })
+  .catch((e) => {
+    logger.exception(e);
+    // TODO Consider doing graceful shutdown of takers and makers
+    server.close(() => process.exit(1));
+  });
