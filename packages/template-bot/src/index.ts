@@ -17,8 +17,15 @@ import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 
+enum ExitCode {
+  Normal = 0,
+  UncaughtException = 1,
+  UnhandledRejection = 2,
+  ExceptionInMain = 3,
+}
+
 const main = async () => {
-  logger.info("Starting template-updater bot...");
+  logger.info("Starting template bot...");
 
   // read and use env config
   if (!process.env["ETHEREUM_NODE_URL"]) {
@@ -42,19 +49,6 @@ const main = async () => {
   const templateBot = new TemplateBot(mgv);
 };
 
-function logErrorAndExit(err: Error) {
-  logger.exception(err);
-  process.exit(1);
-}
-
-process.on("unhandledRejection", function (reason, promise) {
-  logger.warn("Unhandled Rejection", { data: reason });
-});
-
-main().catch((e) => {
-  logErrorAndExit(e);
-});
-
 // The node http server is used solely to serve static information files for environment management
 const staticBasePath = "./static";
 
@@ -66,3 +60,24 @@ const server = http.createServer(function (req, res) {
 });
 
 server.listen(process.env.PORT || 8080);
+
+function stopAndExit(exitStatusCode: number) {
+  // TODO: Stop MarketMakers gracefully
+  server.close(() => process.exit(exitStatusCode));
+}
+
+// Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection", { data: reason });
+  stopAndExit(ExitCode.UnhandledRejection);
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error(`Uncaught Exception: ${err.message}`);
+  stopAndExit(ExitCode.UncaughtException);
+});
+
+main().catch((e) => {
+  logger.exception(e);
+  stopAndExit(ExitCode.ExceptionInMain);
+});
