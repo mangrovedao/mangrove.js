@@ -708,18 +708,18 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job mangrove-js-doc ====
 
-  # ==== Job: Build and test cleaning-bot ====
-  cleaning-bot:
+  # ==== Job: Build and test bot-cleaning ====
+  bot-cleaning:
     needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
 
     runs-on: ubuntu-latest
 
     env:
-      working-directory: packages/cleaning-bot
+      working-directory: packages/bot-cleaning
 
     defaults:
       run:
-        working-directory: packages/cleaning-bot
+        working-directory: packages/bot-cleaning
 
     strategy:
       matrix:
@@ -810,7 +810,7 @@ jobs:
       if: ${{ env.cleaning_bot_built && (success() || failure()) }}
       with:
         name: Cleaning Bot - Tests                   # Name of the check run which will be created
-        path: packages/cleaning-bot/integration-tests-report.json # Path to test results
+        path: packages/bot-cleaning/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
     - name: Report Failure to Slack
@@ -822,7 +822,7 @@ jobs:
         footer: '<{run_url}|View Run>'
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job: cleaning-bot ====        
+  # ==== End job: bot-cleaning ====        
 
   # ==== Job: Build and test updategas-bot ====
   updategas-bot:

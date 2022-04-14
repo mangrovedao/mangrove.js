@@ -1,5 +1,5 @@
 {
-  "name": "@mangrovedao/cleaning-bot",
+  "name": "@mangrovedao/bot-cleaning",
   "version": "0.0.1",
   "author": "Mangrove DAO",
   "description": "A simple order book cleaning bot for Mangrove",
