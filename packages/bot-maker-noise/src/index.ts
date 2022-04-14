@@ -22,6 +22,14 @@ import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 
+enum ExitCode {
+  Normal = 0,
+  UncaughtException = 1,
+  UnhandledRejection = 2,
+  ExceptionInMain = 3,
+  MangroveIsKilled = 4,
+}
+
 type TokenPair = { token1: string; token2: string };
 
 const main = async () => {
@@ -144,9 +152,13 @@ async function approveMangroveForToken(
   }
 }
 
-async function startMakersForMarkets(mgv: Mangrove, address: string) {
+async function startMakersForMarkets(
+  mgv: Mangrove,
+  address: string
+): Promise<void[]> {
   const marketConfigs = getMarketConfigsOrThrow();
   const offerMakerMap = new Map<TokenPair, OfferMaker>();
+  const makerRunningPromises = [];
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -163,8 +175,10 @@ async function startMakersForMarkets(mgv: Mangrove, address: string) {
       marketConfig.makerConfig
     );
     offerMakerMap.set(tokenPair, offerMaker);
-    offerMaker.start();
+    makerRunningPromises.push(offerMaker.start());
   }
+
+  return Promise.all(makerRunningPromises);
 }
 
 function getMarketConfigsOrThrow(): MarketConfig[] {
@@ -180,18 +194,6 @@ function getMarketConfigsOrThrow(): MarketConfig[] {
   }
   // FIXME Validate that the market configs are actually MarketConfig's
   return marketsConfig;
-}
-
-async function exitIfMangroveIsKilled(
-  mgv: Mangrove,
-  contextInfo: string
-): Promise<void> {
-  const globalConfig = await mgv.config();
-  // FIXME maybe this should be a property/method on Mangrove.
-  if (globalConfig.dead) {
-    logger.warn("Mangrove is dead, stopping the bot", { contextInfo });
-    process.exit();
-  }
 }
 
 async function provisionMakerOnMangrove(
@@ -284,17 +286,17 @@ async function logTokenBalance(
   });
 }
 
-process.on("unhandledRejection", function (reason, promise) {
-  logger.error("Unhandled Rejection", { data: reason });
-  // The bot seems to hang on unhandled rejections, so exit and allow the app platform to restart the bot
-  process.exit(1); // TODO Add exit codes
-});
-
-main().catch((e) => {
-  logger.exception(e);
-  // TODO Consider doing graceful shutdown of takers and makers
-  process.exit(1); // TODO Add exit codes
-});
+async function exitIfMangroveIsKilled(
+  mgv: Mangrove,
+  contextInfo: string
+): Promise<void> {
+  const globalConfig = await mgv.config();
+  // FIXME maybe this should be a property/method on Mangrove.
+  if (globalConfig.dead) {
+    logger.warn("Mangrove is dead, stopping the bot", { contextInfo });
+    stopAndExit(ExitCode.MangroveIsKilled);
+  }
+}
 
 // The node http server is used solely to serve static information files for environment management
 const staticBasePath = "./static";
@@ -307,3 +309,29 @@ const server = http.createServer(function (req, res) {
 });
 
 server.listen(process.env.PORT || 8080);
+
+function stopAndExit(exitStatusCode: number) {
+  // TODO: Stop MarketMakers gracefully
+  server.close(() => process.exit(exitStatusCode));
+}
+
+// Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection", { data: reason });
+  stopAndExit(ExitCode.UnhandledRejection);
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error(`Uncaught Exception: ${err.message}`);
+  stopAndExit(ExitCode.UncaughtException);
+});
+
+main()
+  .then(() => {
+    logger.info("main returned, shutting down");
+    stopAndExit(ExitCode.Normal);
+  })
+  .catch((e) => {
+    logger.exception(e);
+    stopAndExit(ExitCode.ExceptionInMain);
+  });

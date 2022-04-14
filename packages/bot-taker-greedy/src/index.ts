@@ -21,6 +21,14 @@ import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 
+enum ExitCode {
+  Normal = 0,
+  UncaughtException = 1,
+  UnhandledRejection = 2,
+  ExceptionInMain = 3,
+  MangroveIsKilled = 4,
+}
+
 type TokenPair = { token1: string; token2: string };
 
 const main = async () => {
@@ -185,18 +193,6 @@ function getMarketConfigsOrThrow(): MarketConfig[] {
   return marketsConfig;
 }
 
-async function exitIfMangroveIsKilled(
-  mgv: Mangrove,
-  contextInfo: string
-): Promise<void> {
-  const globalConfig = await mgv.config();
-  // FIXME maybe this should be a property/method on Mangrove.
-  if (globalConfig.dead) {
-    logger.warn("Mangrove is dead, stopping the bot", { contextInfo });
-    process.exit();
-  }
-}
-
 async function logTokenBalances(
   mgv: Mangrove,
   address: string,
@@ -230,6 +226,18 @@ async function logTokenBalance(
   });
 }
 
+async function exitIfMangroveIsKilled(
+  mgv: Mangrove,
+  contextInfo: string
+): Promise<void> {
+  const globalConfig = await mgv.config();
+  // FIXME maybe this should be a property/method on Mangrove.
+  if (globalConfig.dead) {
+    logger.warn("Mangrove is dead, stopping the bot", { contextInfo });
+    stopAndExit(ExitCode.MangroveIsKilled);
+  }
+}
+
 // The node http server is used solely to serve static information files for environment management
 const staticBasePath = "./static";
 
@@ -242,24 +250,28 @@ const server = http.createServer(function (req, res) {
 
 server.listen(process.env.PORT || 8080);
 
+function stopAndExit(exitStatusCode: number) {
+  // TODO: Stop MarketTakers gracefully
+  server.close(() => process.exit(exitStatusCode));
+}
+
 // Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
 process.on("unhandledRejection", (reason) => {
   logger.error("Unhandled Rejection", { data: reason });
-  server.close(() => process.exit(1));
+  stopAndExit(ExitCode.UnhandledRejection);
 });
 
 process.on("uncaughtException", (err) => {
   logger.error(`Uncaught Exception: ${err.message}`);
-  server.close(() => process.exit(1));
+  stopAndExit(ExitCode.UncaughtException);
 });
 
 main()
   .then(() => {
     logger.info("main returned, shutting down");
-    server.close(() => process.exit(0));
+    stopAndExit(ExitCode.Normal);
   })
   .catch((e) => {
     logger.exception(e);
-    // TODO Consider doing graceful shutdown of takers and makers
-    server.close(() => process.exit(1));
+    stopAndExit(ExitCode.ExceptionInMain);
   });

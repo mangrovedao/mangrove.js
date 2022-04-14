@@ -20,6 +20,15 @@ import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 
+enum ExitCode {
+  Normal = 0,
+  UncaughtException = 1,
+  UnhandledRejection = 2,
+  ExceptionInMain = 3,
+  MangroveIsKilled = 4,
+  ErrorInAsyncTask = 5,
+}
+
 type BotConfig = {
   markets: [string, string][];
   runEveryXMinutes: number;
@@ -95,7 +104,8 @@ const main = async () => {
       await Promise.allSettled(cleaningPromises);
     },
     (err: Error) => {
-      logErrorAndExit(err);
+      logger.error(err);
+      stopAndExit(ExitCode.ErrorInAsyncTask);
     }
   );
 
@@ -109,6 +119,7 @@ const main = async () => {
 
   scheduler.addSimpleIntervalJob(job);
 };
+
 // FIXME test that the validations are working
 function getAndValidateConfig(): BotConfig {
   let runEveryXMinutes = -1;
@@ -164,24 +175,9 @@ async function exitIfMangroveIsKilled(
   // FIXME maybe this should be a property/method on Mangrove.
   if (globalConfig.dead) {
     logger.warn("Mangrove is dead, stopping the bot", { contextInfo });
-    process.exit();
+    stopAndExit(ExitCode.MangroveIsKilled);
   }
 }
-
-function logErrorAndExit(err: Error) {
-  logger.exception(err);
-  scheduler.stop();
-  process.exit(1); // TODO Consider adding exit codes
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-process.on("unhandledRejection", function (reason, promise) {
-  logger.warn("Unhandled Rejection", { data: reason });
-});
-
-main().catch((e) => {
-  logErrorAndExit(e);
-});
 
 // The node http server is used solely to serve static information files for environment management
 const staticBasePath = "./static";
@@ -194,3 +190,24 @@ const server = http.createServer(function (req, res) {
 });
 
 server.listen(process.env.PORT || 8080);
+
+function stopAndExit(exitStatusCode: number) {
+  scheduler.stop();
+  server.close(() => process.exit(exitStatusCode));
+}
+
+// Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection", { data: reason });
+  stopAndExit(ExitCode.UnhandledRejection);
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error(`Uncaught Exception: ${err.message}`);
+  stopAndExit(ExitCode.UncaughtException);
+});
+
+main().catch((e) => {
+  logger.exception(e);
+  stopAndExit(ExitCode.ExceptionInMain);
+});

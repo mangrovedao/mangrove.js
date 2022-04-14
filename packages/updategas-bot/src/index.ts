@@ -18,6 +18,15 @@ import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 
+enum ExitCode {
+  Normal = 0,
+  UncaughtException = 1,
+  UnhandledRejection = 2,
+  ExceptionInMain = 3,
+  MangroveIsKilled = 4,
+  ErrorInAsyncTask = 5,
+}
+
 type OracleConfig = {
   acceptableGasGapToOracle: number;
   runEveryXHours: number;
@@ -72,7 +81,8 @@ const main = async () => {
       await gasUpdater.checkSetGasprice();
     },
     (err: Error) => {
-      logErrorAndExit(err);
+      logger.error(err);
+      stopAndExit(ExitCode.ErrorInAsyncTask);
     }
   );
 
@@ -184,23 +194,9 @@ async function exitIfMangroveIsKilled(
     logger.warn(
       `Mangrove is dead at block number ${blockNumber}. Stopping the bot.`
     );
-    process.exit();
+    stopAndExit(ExitCode.MangroveIsKilled);
   }
 }
-
-function logErrorAndExit(err: Error) {
-  logger.exception(err);
-  scheduler.stop();
-  process.exit(1);
-}
-
-process.on("unhandledRejection", function (reason, promise) {
-  logger.warn("Unhandled Rejection", { data: reason });
-});
-
-main().catch((e) => {
-  logErrorAndExit(e);
-});
 
 // The node http server is used solely to serve static information files for environment management
 const staticBasePath = "./static";
@@ -213,3 +209,24 @@ const server = http.createServer(function (req, res) {
 });
 
 server.listen(process.env.PORT || 8080);
+
+function stopAndExit(exitStatusCode: number) {
+  scheduler.stop();
+  server.close(() => process.exit(exitStatusCode));
+}
+
+// Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection", { data: reason });
+  stopAndExit(ExitCode.UnhandledRejection);
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error(`Uncaught Exception: ${err.message}`);
+  stopAndExit(ExitCode.UncaughtException);
+});
+
+main().catch((e) => {
+  logger.exception(e);
+  stopAndExit(ExitCode.ExceptionInMain);
+});
