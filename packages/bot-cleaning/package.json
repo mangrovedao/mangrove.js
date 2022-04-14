@@ -1,8 +1,8 @@
 {
-  "name": "@mangrovedao/updategas-bot",
+  "name": "@mangrovedao/bot-cleaning",
   "version": "0.0.1",
   "author": "Mangrove DAO",
-  "description": "A simple gas-update bot for Mangrove",
+  "description": "A simple order book cleaning bot for Mangrove",
   "license": "BSD-2-Clause",
   "main": "build/index.js",
   "keywords": [
@@ -36,7 +36,6 @@
     "@types/big.js": "^6.1.2",
     "@types/finalhandler": "^1.1.1",
     "@types/serve-static": "^1.13.10",
-    "axios": "^0.24.0",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
@@ -52,7 +51,7 @@
     "@mangrovedao/hardhat-utils": "workspace:*",
     "@mangrovedao/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
-    "@types/chai": "^4.2.21",
+    "@types/chai": "^4.2.22",
     "@types/chai-as-promised": "^7.1.4",
     "@types/config": "^0.0.39",
     "@types/dotenv-flow": "^3.2.0",
