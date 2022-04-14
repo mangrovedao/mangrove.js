@@ -824,18 +824,18 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-cleaning ====        
 
-  # ==== Job: Build and test updategas-bot ====
-  updategas-bot:
+  # ==== Job: Build and test bot-updategas ====
+  bot-updategas:
     needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
 
     runs-on: ubuntu-latest
 
     env:
-      working-directory: packages/updategas-bot
+      working-directory: packages/bot-updategas
 
     defaults:
       run:
-        working-directory: packages/updategas-bot
+        working-directory: packages/bot-updategas
 
     strategy:
       matrix:
@@ -926,7 +926,7 @@ jobs:
       if: ${{ env.updategas_bot_built && (success() || failure()) }}
       with:
         name: Update Gas Bot - Tests                   # Name of the check run which will be created
-        path: packages/updategas-bot/integration-tests-report.json # Path to test results
+        path: packages/bot-updategas/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
     - name: Report Failure to Slack
@@ -938,7 +938,7 @@ jobs:
         footer: '<{run_url}|View Run>'
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job: updategas-bot ====
+  # ==== End job: bot-updategas ====
           
   # ==== Job: Build and test bot-maker-noise ====
   bot-maker-noise:

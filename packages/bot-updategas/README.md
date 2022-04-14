@@ -11,7 +11,7 @@ First, clone the repo and install the prerequisites for the monorepo described i
 Next, run the following commands:
 
 ```shell
-$ cd <Mangrove monorepo>/packages/updategas-bot
+$ cd <Mangrove monorepo>/packages/bot-updategas
 $ yarn install   # Sets up the Mangrove monorepo and installs dependencies
 $ yarn build     # Builds the gas update bot and its dependencies
 ```
