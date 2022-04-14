@@ -10,7 +10,7 @@ To use this template, do something akin to the following
 - The `config` folder contains basic configuration stubs with a `logLevel` is already defined. Extend as needed.
   - The folder also contains configuration to override the `logLevel` with an environment variable. Extend as needed.
 - Add the new bot to the CI build (with tests as needed).
-- Update this `README.md` file - include at least the following sections, and search for `template-bot` and update accordingly for your bot.
+- Update this `README.md` file - include at least the following sections, and search for `bot-template` and update accordingly for your bot.
 - In updating the source code, tests, configuration and documentation you may look for `TODO`'s here and there, which have been placed in spots, where addition and updates are needed.
 
 # Installation
@@ -20,7 +20,7 @@ First, clone the repo and install the prerequisites for the monorepo described i
 Next, run the following commands:
 
 ```shell
-$ cd <Mangrove monorepo>/packages/template-bot
+$ cd <Mangrove monorepo>/packages/bot-template
 $ yarn install   # Sets up the Mangrove monorepo and installs dependencies
 $ yarn build     # Builds the bot and its dependencies
 ```

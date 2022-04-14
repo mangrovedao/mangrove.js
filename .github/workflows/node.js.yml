@@ -1172,18 +1172,18 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-taker-greedy ====        
 
-  # ==== Job: Build and test template-bot ====
-  template-bot:
+  # ==== Job: Build and test bot-template ====
+  bot-template:
     needs: [security-guard, commonlib-js, mangrove-solidity, hardhat-utils, mangrove-js]
 
     runs-on: ubuntu-latest
 
     env:
-      working-directory: packages/template-bot
+      working-directory: packages/bot-template
 
     defaults:
       run:
-        working-directory: packages/template-bot
+        working-directory: packages/bot-template
 
     strategy:
       matrix:
@@ -1274,7 +1274,7 @@ jobs:
       if: ${{ env.template_bot_built && (success() || failure()) }}
       with:
         name: Template Bot - Tests                   # Name of the check run which will be created
-        path: packages/template-bot/integration-tests-report.json # Path to test results
+        path: packages/bot-template/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
     - name: Report Failure to Slack
@@ -1286,4 +1286,4 @@ jobs:
         footer: '<{run_url}|View Run>'
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job: template-bot ====
+  # ==== End job: bot-template ====
