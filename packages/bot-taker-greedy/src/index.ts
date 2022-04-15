@@ -158,9 +158,8 @@ async function startTakersForMarkets(
   mgv: Mangrove,
   address: string,
   scheduler: ToadScheduler
-): Promise<void[]> {
+): Promise<void> {
   const marketConfigs = getMarketConfigsOrThrow();
-  const takerRunningPromises = [];
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -178,10 +177,8 @@ async function startTakersForMarkets(
       scheduler
     );
     offerTakerMap.set(tokenPair, offerTaker);
-    takerRunningPromises.push(offerTaker.start());
+    offerTaker.start();
   }
-
-  return Promise.all(takerRunningPromises);
 }
 
 function getMarketConfigsOrThrow(): MarketConfig[] {
@@ -277,12 +274,7 @@ process.on("uncaughtException", (err) => {
   stopAndExit(ExitCode.UncaughtException);
 });
 
-main()
-  .then(() => {
-    logger.info("main returned, shutting down");
-    stopAndExit(ExitCode.Normal);
-  })
-  .catch((e) => {
-    logger.exception(e);
-    stopAndExit(ExitCode.ExceptionInMain);
-  });
+main().catch((e) => {
+  logger.exception(e);
+  stopAndExit(ExitCode.ExceptionInMain);
+});
