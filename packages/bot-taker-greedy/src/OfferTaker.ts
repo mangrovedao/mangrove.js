@@ -54,7 +54,7 @@ export class OfferTaker {
   /**
    * Start creating offers.
    */
-  public async start(): Promise<void> {
+  public start(): void {
     if (this.#job) {
       this.#job.start();
       return;
