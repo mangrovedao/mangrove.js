@@ -3,6 +3,7 @@ import { sleep } from "@mangrovedao/commonlib-js";
 import { Market } from "@mangrovedao/mangrove.js";
 import { TakerConfig } from "./MarketConfig";
 import { fetchJson } from "ethers/lib/utils";
+import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
 import Big from "big.js";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
@@ -19,7 +20,8 @@ export class OfferTaker {
   #takerAddress: string;
   #takerConfig: TakerConfig;
   #cryptoCompareUrl: string;
-  #running: boolean;
+  #scheduler: ToadScheduler;
+  #job?: SimpleIntervalJob;
 
   /**
    * Constructs an offer taker for the given Mangrove market.
@@ -27,15 +29,19 @@ export class OfferTaker {
    * @param takerAddress The address of the EOA used by this taker.
    * @param takerConfig The parameters to use for this market.
    */
-  constructor(market: Market, takerAddress: string, takerConfig: TakerConfig) {
+  constructor(
+    market: Market,
+    takerAddress: string,
+    takerConfig: TakerConfig,
+    scheduler: ToadScheduler
+  ) {
     this.#market = market;
     this.#takerAddress = takerAddress;
     this.#takerConfig = takerConfig;
     this.#cryptoCompareUrl = `https://min-api.cryptocompare.com/data/price?fsym=${
       this.#market.base.name
     }&tsyms=${this.#market.quote.name}`;
-
-    this.#running = false;
+    this.#scheduler = scheduler;
 
     logger.info("Initalized offer taker", {
       contextInfo: "taker init",
@@ -49,37 +55,48 @@ export class OfferTaker {
    * Start creating offers.
    */
   public async start(): Promise<void> {
-    if (this.#running) {
+    if (this.#job) {
+      this.#job.start();
       return;
     }
-    this.#running = true;
     logger.info("Starting offer taker", {
       contextInfo: "taker start",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
     });
 
-    while (this.#running === true) {
-      const delayInMilliseconds = this.#takerConfig.sleepTimeMilliseconds;
-      logger.debug(
-        `Sleeping for ${this.#takerConfig.sleepTimeMilliseconds}ms`,
-        {
-          contextInfo: "taker",
+    const task = new AsyncTask(
+      `offer taker task ${this.#market.base.name}-${this.#market.quote.name}`,
+      async () => {
+        await this.#tradeIfPricesAreBetterThanExternalSignal();
+      },
+      (err: Error) => {
+        logger.error("encountered error during task", {
+          contextInfo: "taker task",
           base: this.#market.base.name,
           quote: this.#market.quote.name,
-          data: { delayInMilliseconds },
-        }
-      );
-      await sleep(delayInMilliseconds);
-      await this.#tradeIfPricesAreBetterThanExternalSignal();
-    }
+          data: {
+            reason: err,
+          },
+        });
+        throw err;
+      }
+    );
+    this.#job = new SimpleIntervalJob(
+      {
+        milliseconds: this.#takerConfig.sleepTimeMilliseconds,
+        runImmediately: true,
+      },
+      task
+    );
+    this.#scheduler.addSimpleIntervalJob(this.#job);
   }
 
   /**
    * Stop creating offers.
    */
   public stop(): void {
-    this.#running = false;
+    this.#job?.stop();
   }
 
   async #tradeIfPricesAreBetterThanExternalSignal(): Promise<void> {

@@ -21,6 +21,8 @@ import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 
+import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
+
 enum ExitCode {
   Normal = 0,
   UncaughtException = 1,
@@ -30,6 +32,9 @@ enum ExitCode {
 }
 
 type TokenPair = { token1: string; token2: string };
+const offerTakerMap = new Map<TokenPair, OfferTaker>();
+
+const scheduler = new ToadScheduler();
 
 const main = async () => {
   logger.info("Starting Greedy Taker bot...", { contextInfo: "init" });
@@ -68,7 +73,7 @@ const main = async () => {
     "init"
   );
 
-  await startTakersForMarkets(mgv, signer.address);
+  await startTakersForMarkets(mgv, signer.address, scheduler);
 };
 
 function getTokenConfigsOrThrow(): TokenConfig[] {
@@ -151,10 +156,10 @@ async function approveMangroveForToken(
 
 async function startTakersForMarkets(
   mgv: Mangrove,
-  address: string
+  address: string,
+  scheduler: ToadScheduler
 ): Promise<void[]> {
   const marketConfigs = getMarketConfigsOrThrow();
-  const offerTakerMap = new Map<TokenPair, OfferTaker>();
   const takerRunningPromises = [];
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
@@ -169,7 +174,8 @@ async function startTakersForMarkets(
     const offerTaker = new OfferTaker(
       market,
       address,
-      marketConfig.takerConfig
+      marketConfig.takerConfig,
+      scheduler
     );
     offerTakerMap.set(tokenPair, offerTaker);
     takerRunningPromises.push(offerTaker.start());
@@ -251,8 +257,13 @@ const server = http.createServer(function (req, res) {
 server.listen(process.env.PORT || 8080);
 
 function stopAndExit(exitStatusCode: number) {
-  // TODO: Stop MarketTakers gracefully
-  server.close(() => process.exit(exitStatusCode));
+  // Stop MarketTakers gracefully
+  process.exitCode = exitStatusCode;
+  scheduler.stop();
+  for (const offerTaker of offerTakerMap.values()) {
+    offerTaker.stop();
+  }
+  server.close();
 }
 
 // Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
