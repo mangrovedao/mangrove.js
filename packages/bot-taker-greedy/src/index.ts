@@ -21,7 +21,7 @@ import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 
-import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
+import { ToadScheduler } from "toad-scheduler";
 
 enum ExitCode {
   Normal = 0,
@@ -255,6 +255,7 @@ server.listen(process.env.PORT || 8080);
 
 function stopAndExit(exitStatusCode: number) {
   // Stop MarketTakers gracefully
+  logger.info("Stopping and exiting", { data: { exitCode: exitStatusCode } });
   process.exitCode = exitStatusCode;
   scheduler.stop();
   for (const offerTaker of offerTakerMap.values()) {

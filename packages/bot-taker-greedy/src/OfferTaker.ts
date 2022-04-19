@@ -1,5 +1,4 @@
 import { logger } from "./util/logger";
-import { sleep } from "@mangrovedao/commonlib-js";
 import { Market } from "@mangrovedao/mangrove.js";
 import { TakerConfig } from "./MarketConfig";
 import { fetchJson } from "ethers/lib/utils";
@@ -55,15 +54,15 @@ export class OfferTaker {
    * Start creating offers.
    */
   public start(): void {
-    if (this.#job) {
-      this.#job.start();
-      return;
-    }
     logger.info("Starting offer taker", {
       contextInfo: "taker start",
       base: this.#market.base.name,
       quote: this.#market.quote.name,
     });
+    if (this.#job) {
+      this.#job.start();
+      return;
+    }
 
     const task = new AsyncTask(
       `offer taker task ${this.#market.base.name}-${this.#market.quote.name}`,
