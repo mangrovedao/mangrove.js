@@ -1,13 +1,11 @@
 import { logger } from "./util/logger";
-import { sleep } from "@mangrovedao/commonlib-js";
-import Market from "@mangrovedao/mangrove.js/dist/nodejs/market";
-type Offer = Market.Offer;
+import { Market } from "@mangrovedao/mangrove.js";
 import { BigNumberish } from "ethers";
 import random from "random";
 import Big from "big.js";
 import { MakerConfig } from "./MarketConfig";
-import { Semibook } from "@mangrovedao/mangrove.js";
 import { fetchJson } from "ethers/lib/utils";
+import { clearTimeout, setTimeout } from "timers";
 Big.DP = 20; // precision when dividing
 Big.RM = Big.roundHalfUp; // round to nearest
 
@@ -27,9 +25,9 @@ export class OfferMaker {
   #lambda: Big;
   #maxQuantity: number;
   #maxTotalLiquidityPublished: number;
-  #running: boolean;
   #offerRate: number;
   #offerTimeRng: () => number;
+  #timeout?: NodeJS.Timeout;
 
   /**
    * Constructs an offer maker for the given Mangrove market.
@@ -44,8 +42,6 @@ export class OfferMaker {
     this.#lambda = Big(makerConfig.lambda);
     this.#maxQuantity = makerConfig.maxQuantity;
     this.#maxTotalLiquidityPublished = makerConfig.maxTotalLiquidityPublished;
-
-    this.#running = false;
 
     this.#offerRate = makerConfig.offerRate / 1_000; // Converting the rate to mean # of offers per millisecond
     this.#offerTimeRng = random.uniform(0, 1);
@@ -62,8 +58,6 @@ export class OfferMaker {
    * Start creating offers.
    */
   public async start(): Promise<void> {
-    this.#running = true;
-
     const balanceBasePromise = this.#market.base.contract.balanceOf(
       this.#makerAddress
     );
@@ -81,18 +75,23 @@ export class OfferMaker {
         marketConfig: await marketConfigPromise,
       },
     });
+    this.#run();
+  }
 
-    while (this.#running === true) {
-      const delayInMilliseconds = this.#getNextTimeDelay();
-      logger.debug(`Sleeping for ${delayInMilliseconds}ms`, {
-        contextInfo: "maker",
-        base: this.#market.base.name,
-        quote: this.#market.quote.name,
-        data: { delayInMilliseconds },
-      });
-      await sleep(delayInMilliseconds);
+  async #run(): Promise<void> {
+    // Only post offers after a timeout, ie not on the first invocation
+    if (this.#timeout !== undefined) {
       await this.#postNewOfferOnBidsOrAsks();
     }
+
+    const delayInMilliseconds = this.#getNextTimeDelay();
+    logger.debug(`Sleeping for ${delayInMilliseconds}ms`, {
+      contextInfo: "maker",
+      base: this.#market.base.name,
+      quote: this.#market.quote.name,
+      data: { delayInMilliseconds },
+    });
+    this.#timeout = setTimeout(this.#run.bind(this), delayInMilliseconds);
   }
 
   #getNextTimeDelay(): number {
@@ -103,29 +102,25 @@ export class OfferMaker {
    * Stop creating offers.
    */
   public stop(): void {
-    this.#running = false;
+    if (this.#timeout !== undefined) {
+      clearTimeout(this.#timeout);
+      this.#timeout = undefined;
+    }
   }
 
   async #postNewOfferOnBidsOrAsks(): Promise<void> {
     let ba: BA;
-    let offerList: Offer[];
-    let otherSemibook: Semibook;
+    let offerList: Market.Offer[];
     const book = this.#market.getBook();
     if (random.float(0, 1) < this.#bidProbability) {
       ba = "bids";
       offerList = [...book.bids];
-      otherSemibook = book.asks;
     } else {
       ba = "asks";
       offerList = [...book.asks];
-      otherSemibook = book.bids;
     }
 
-    const referencePrice = await this.#getReferencePrice(
-      ba,
-      offerList,
-      otherSemibook
-    );
+    const referencePrice = await this.#getReferencePrice(ba, offerList);
     if (referencePrice === undefined) {
       logger.warn(
         `Unable to determine reference price, so not posthing an offer`,
@@ -151,10 +146,9 @@ export class OfferMaker {
 
   async #getReferencePrice(
     ba: BA,
-    offerList: Offer[],
-    otherSemibook: Semibook
+    offerList: Market.Offer[]
   ): Promise<Big | undefined> {
-    let bestOffer: Offer | undefined = undefined;
+    let bestOffer: Market.Offer | undefined = undefined;
     if (offerList.length > 0) {
       bestOffer = offerList[0];
       logger.debug("Best offer on book", {
@@ -172,6 +166,15 @@ export class OfferMaker {
       this.#market.base.name
     }&tsyms=${this.#market.quote.name}`;
     try {
+      logger.debug("Getting external price reference", {
+        contextInfo: "maker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        ba: ba,
+        data: {
+          cryptoCompareUrl,
+        },
+      });
       const json = await fetchJson(cryptoCompareUrl);
       if (json[this.#market.quote.name] !== undefined) {
         const referencePrice = new Big(json[this.#market.quote.name]);
@@ -217,12 +220,12 @@ export class OfferMaker {
 
   async #retractWorstOfferIfTotalLiquidityPublishedExceedsMax(
     ba: BA,
-    offerList: Offer[]
+    offerList: Market.Offer[]
   ): Promise<void> {
     if (offerList.length === 0) return;
     const [totalLiquidityPublished, myWorstOffer] = offerList
       .filter((o) => o.maker === this.#makerAddress)
-      .reduce<[Big, Offer]>(
+      .reduce<[Big, Market.Offer]>(
         ([t], o) => [t.add(o.volume), o],
         [Big(0), offerList[0]]
       );
