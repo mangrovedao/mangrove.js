@@ -42,7 +42,8 @@ jobs:
       - name: Commit and push yarn.lock
         uses: EndBug/add-and-commit@v9
         with:
-          default_author: user_info
+          author_name: dontrolle
+          author_email: troels@mangrove.exchange
           committer_name: github-actions[bot]
           committer_email: github-actions@github.com
           # [dependabot skip] ensures that any rebases made by dependabot will be 
