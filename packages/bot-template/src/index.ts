@@ -61,9 +61,13 @@ const server = http.createServer(function (req, res) {
 
 server.listen(process.env.PORT || 8080);
 
+// Stop gracefully and rely on NodeJS shutting down when no more work is scheduled.
+// This allows any logging to be processed before exiting (which isn't guaranteed
+// if `process.exit` is called).
 function stopAndExit(exitStatusCode: number) {
-  // TODO: Stop MarketMakers gracefully
-  server.close(() => process.exit(exitStatusCode));
+  logger.info("Stopping and exiting", { data: { exitCode: exitStatusCode } });
+  process.exitCode = exitStatusCode;
+  server.close();
 }
 
 // Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
