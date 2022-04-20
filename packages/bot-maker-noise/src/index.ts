@@ -31,6 +31,7 @@ enum ExitCode {
 }
 
 type TokenPair = { token1: string; token2: string };
+const offerMakerMap = new Map<TokenPair, OfferMaker>();
 
 const main = async () => {
   logger.info("Starting Noise Maker bot...", { contextInfo: "init" });
@@ -155,10 +156,8 @@ async function approveMangroveForToken(
 async function startMakersForMarkets(
   mgv: Mangrove,
   address: string
-): Promise<void[]> {
+): Promise<void> {
   const marketConfigs = getMarketConfigsOrThrow();
-  const offerMakerMap = new Map<TokenPair, OfferMaker>();
-  const makerRunningPromises = [];
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -175,10 +174,8 @@ async function startMakersForMarkets(
       marketConfig.makerConfig
     );
     offerMakerMap.set(tokenPair, offerMaker);
-    makerRunningPromises.push(offerMaker.start());
+    offerMaker.start();
   }
-
-  return Promise.all(makerRunningPromises);
 }
 
 function getMarketConfigsOrThrow(): MarketConfig[] {
@@ -311,8 +308,13 @@ const server = http.createServer(function (req, res) {
 server.listen(process.env.PORT || 8080);
 
 function stopAndExit(exitStatusCode: number) {
-  // TODO: Stop MarketMakers gracefully
-  server.close(() => process.exit(exitStatusCode));
+  // Stop OfferMakers gracefully
+  logger.info("Stopping and exiting", { data: { exitCode: exitStatusCode } });
+  process.exitCode = exitStatusCode;
+  for (const offerMaker of offerMakerMap.values()) {
+    offerMaker.stop();
+  }
+  server.close();
 }
 
 // Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
@@ -326,12 +328,7 @@ process.on("uncaughtException", (err) => {
   stopAndExit(ExitCode.UncaughtException);
 });
 
-main()
-  .then(() => {
-    logger.info("main returned, shutting down");
-    stopAndExit(ExitCode.Normal);
-  })
-  .catch((e) => {
-    logger.exception(e);
-    stopAndExit(ExitCode.ExceptionInMain);
-  });
+main().catch((e) => {
+  logger.exception(e);
+  stopAndExit(ExitCode.ExceptionInMain);
+});
