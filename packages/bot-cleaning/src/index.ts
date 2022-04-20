@@ -192,8 +192,11 @@ const server = http.createServer(function (req, res) {
 server.listen(process.env.PORT || 8080);
 
 function stopAndExit(exitStatusCode: number) {
+  // Stop gracefully
+  logger.info("Stopping and exiting", { data: { exitCode: exitStatusCode } });
+  process.exitCode = exitStatusCode;
   scheduler.stop();
-  server.close(() => process.exit(exitStatusCode));
+  server.close();
 }
 
 // Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
