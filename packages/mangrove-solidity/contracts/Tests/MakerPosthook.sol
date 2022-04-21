@@ -58,7 +58,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
   {
     require(msg.sender == address(mgv));
     if (makerRevert) {
-      tradeRevert("NOK");
+      revert("NOK");
     }
     if (abort) {
       return "NOK";
@@ -536,11 +536,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
   ) external {
     called = true;
     (, P.Local.t cfg) = mgv.config(order.outbound_tkn, order.inbound_tkn);
-    TestEvents.eq(
-      cfg.best(),
-      ofr,
-      "Incorrect best offer id in posthook"
-    );
+    TestEvents.eq(cfg.best(), ofr, "Incorrect best offer id in posthook");
   }
 
   function best_in_posthook_is_correct_test() public {
@@ -592,11 +588,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
   ) external {
     called = true;
     (, P.Local.t cfg) = mgv.config(order.outbound_tkn, order.inbound_tkn);
-    TestEvents.eq(
-      cfg.last(),
-      ofr,
-      "Incorrect last offer id in posthook"
-    );
+    TestEvents.eq(cfg.last(), ofr, "Incorrect last offer id in posthook");
   }
 
   function lastId_in_posthook_is_correct_test() public {
