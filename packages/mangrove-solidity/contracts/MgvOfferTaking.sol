@@ -605,7 +605,6 @@ abstract contract MgvOfferTaking is MgvHasOffers {
         /* Note that in the `if`s, the literals are bytes32 (stack values), while as revert arguments, they are strings (memory pointers). */
         if (
           mgvData == "mgv/makerRevert" ||
-          mgvData == "mgv/makerAbort" ||
           mgvData == "mgv/makerTransferFail" ||
           mgvData == "mgv/makerReceiveFail"
         ) {
@@ -683,12 +682,6 @@ abstract contract MgvOfferTaking is MgvHasOffers {
 
       if (!callSuccess) {
         innerRevert([bytes32("mgv/makerRevert"), bytes32(gasused), makerData]);
-      }
-
-      /* Successful execution must have a returndata that begins with `bytes32("")`.
-       */
-      if (makerData != "") {
-        innerRevert([bytes32("mgv/makerAbort"), bytes32(gasused), makerData]);
       }
 
       bool transferSuccess = transferTokenFrom(
