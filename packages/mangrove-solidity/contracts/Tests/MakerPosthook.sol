@@ -27,7 +27,6 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
   bytes4 posthook_bytes;
   uint _gasprice = 50; // will cover for a gasprice of 50 gwei/gas uint
   uint weiBalMaker;
-  bool abort = false;
   bool willFail = false;
   bool makerRevert = false;
   bool called;
@@ -63,9 +62,6 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
     if (makerRevert) {
       revert(sExecuteRevertData);
     }
-    if (abort) {
-      return executeReturnData;
-    }
     emit Execute(
       msg.sender,
       trade.outbound_tkn,
@@ -74,8 +70,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
       trade.wants,
       trade.gives
     );
-    //MakerTrade.returnWithData("OK");
-    return "";
+    return executeReturnData;
   }
 
   function renew_offer_at_posthook(
@@ -131,7 +126,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
     called = true;
     uint bal = mgv.balanceOf(address(this));
     mgv.retractOffer(base, quote, ofr, true);
-    if (abort) {
+    if (makerRevert) {
       TestEvents.eq(
         bal,
         mgv.balanceOf(address(this)),
@@ -148,7 +143,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
     bool success = (result.mgvData == "mgv/tradeSuccess");
     TestEvents.eq(
       success,
-      !(abort || makerRevert || willFail),
+      !(makerRevert || willFail),
       "incorrect success flag"
     );
     if (makerRevert) {
@@ -156,12 +151,6 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
         result.mgvData,
         "mgv/makerRevert",
         "mgvData should be makerRevert"
-      );
-    } else if (abort) {
-      TestEvents.eq(
-        result.mgvData,
-        "mgv/makerAbort",
-        "mgvData should be makerAbort"
       );
     } else {
       TestEvents.eq(
@@ -309,7 +298,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
     posthook_bytes = this.renew_offer_at_posthook.selector;
 
     ofr = mgv.newOffer(base, quote, 1 ether, 1 ether, gasreq, _gasprice, 0);
-    abort = true;
+    makerRevert = true;
 
     bool success = tkr.take(ofr, 2 ether);
     TestEvents.check(!success, "Snipe should fail");
@@ -352,7 +341,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
     uint balMaker = baseT.balanceOf(address(this));
     uint balTaker = quoteT.balanceOf(address(tkr));
     ofr = mgv.newOffer(base, quote, 1 ether, 1 ether, gasreq, _gasprice, 0);
-    abort = true;
+    makerRevert = true;
     bool success = tkr.take(ofr, 1 ether);
     TestEvents.check(!success, "Snipe should fail");
     TestEvents.eq(
@@ -373,7 +362,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
       address(tkr),
       1 ether,
       1 ether,
-      "mgv/makerAbort"
+      "mgv/makerRevert"
     );
   }
 
@@ -382,7 +371,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
     uint balMaker = baseT.balanceOf(address(this));
     uint balTaker = quoteT.balanceOf(address(tkr));
     ofr = mgv.newOffer(base, quote, 1 ether, 1 ether, gasreq, _gasprice, 0);
-    abort = true;
+    makerRevert = true;
 
     bool success = tkr.take(ofr, 1 ether);
     TestEvents.check(!success, "Snipe should fail");
@@ -404,7 +393,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
       address(tkr),
       1 ether,
       1 ether,
-      "mgv/makerAbort"
+      "mgv/makerRevert"
     );
   }
 
@@ -531,7 +520,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
       weiBalMaker - mkr_provision, // maker has provision for his gasprice
       "Incorrect maker balance before take"
     );
-    abort = true;
+    makerRevert = true;
     bool success = tkr.take(ofr, 2 ether);
     TestEvents.check(!success, "Snipe should fail");
     uint penalty = weiBalMaker - mgv.balanceOf(address(this));
@@ -548,7 +537,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
       address(tkr),
       1 ether,
       1 ether,
-      "mgv/makerAbort"
+      "mgv/makerRevert"
     );
     emit OfferRetract(base, quote, ofr);
     emit Credit(address(this), mkr_provision - penalty);
@@ -652,7 +641,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
       weiBalMaker - mkr_provision, // maker has provision for his gasprice
       "Incorrect maker balance before take"
     );
-    abort = true; // maker should fail
+    makerRevert = true; // maker should fail
     bool success = tkr.take(ofr, 2 ether);
     TestEvents.check(called, "PostHook not called");
 
@@ -672,7 +661,7 @@ contract MakerPosthook_Test is IMaker, HasMgvEvents {
       address(tkr),
       1 ether,
       1 ether,
-      "mgv/makerAbort"
+      "mgv/makerRevert"
     );
     emit OfferRetract(base, quote, ofr);
     emit Credit(address(this), refund);

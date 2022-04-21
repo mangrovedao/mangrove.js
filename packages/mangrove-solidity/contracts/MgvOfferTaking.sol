@@ -188,7 +188,6 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       * `"mgv/tradeSuccess"`: offer execution succeeded. Will appear in `OrderResult`.
       * `"mgv/notEnoughGasForMakerTrade"`: cannot give maker close enough to `gasreq`. Triggers a revert of the entire order.
       * `"mgv/makerRevert"`: execution of `makerExecute` reverted. Will appear in `OrderResult`.
-      * `"mgv/makerAbort"`: execution of `makerExecute` returned normally, but returndata did not start with 32 bytes of 0s. Will appear in `OrderResult`.
       * `"mgv/makerTransferFail"`: maker could not send outbound_tkn tokens. Will appear in `OrderResult`.
       * `"mgv/makerReceiveFail"`: maker could not receive inbound_tkn tokens. Will appear in `OrderResult`.
       * `"mgv/takerTransferFail"`: taker could not send inbound_tkn tokens. Triggers a revert of the entire order.
@@ -683,7 +682,6 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       if (!callSuccess) {
         innerRevert([bytes32("mgv/makerRevert"), bytes32(gasused), makerData]);
       }
-
       bool transferSuccess = transferTokenFrom(
         sor.outbound_tkn,
         maker,
@@ -752,7 +750,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
     bytes32 mgvData
   ) internal returns (uint gasused) {
     unchecked {
-      /* At this point, mgvData can only be `"mgv/tradeSuccess"`, `"mgv/makerAbort"`, `"mgv/makerRevert"`, `"mgv/makerTransferFail"` or `"mgv/makerReceiveFail"` */
+      /* At this point, mgvData can only be `"mgv/tradeSuccess"`, `"mgv/makerRevert"`, `"mgv/makerTransferFail"` or `"mgv/makerReceiveFail"` */
       bytes memory cd = abi.encodeWithSelector(
         IMaker.makerPosthook.selector,
         sor,
