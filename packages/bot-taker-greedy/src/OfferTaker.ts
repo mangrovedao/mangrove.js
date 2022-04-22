@@ -221,14 +221,19 @@ export class OfferTaker {
       o.price[priceComparison](externalPrice)
     );
     if (offersWithBetterThanExternalPrice.length <= 0) {
-      logger.debug(`No offer better than external price`, {
+      const blockNumber = await this.#market.mgv._provider.getBlockNumber();
+      const block = await this.#market.mgv._provider.getBlock(blockNumber);
+
+      logger.debug("No offer better than external price", {
         contextInfo: "taker",
         base: this.#market.base.name,
         quote: this.#market.quote.name,
         ba,
         data: {
-          offers: offers[0].price,
+          bestFetchedPrice: offers[0]?.price,
           externalPrice: externalPrice,
+          blockNumber: blockNumber,
+          blockHash: block.hash,
         },
       });
       return;
