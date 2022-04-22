@@ -99,12 +99,12 @@ export class OfferTaker {
   }
 
   async #tradeIfPricesAreBetterThanExternalSignal(): Promise<void> {
-    const baseTokenBalancePromise = this.#market.base.contract.balanceOf(
-      this.#takerAddress
-    );
-    const quoteTokenBalancePromise = this.#market.quote.contract.balanceOf(
-      this.#takerAddress
-    );
+    // const baseTokenBalancePromise = this.#market.base.contract.balanceOf(
+    //   this.#takerAddress
+    // );
+    // const quoteTokenBalancePromise = this.#market.quote.contract.balanceOf(
+    //   this.#takerAddress
+    // );
     const externalPrice = await this.#getExternalPrice();
 
     if (externalPrice === undefined) {
@@ -119,18 +119,18 @@ export class OfferTaker {
       return;
     }
 
-    const baseTokenBalance = await baseTokenBalancePromise;
-    const quoteTokenBalance = await quoteTokenBalancePromise;
+    // const baseTokenBalance = await baseTokenBalancePromise;
+    // const quoteTokenBalance = await quoteTokenBalancePromise;
 
-    logger.debug("Token balances", {
-      contextInfo: "taker",
-      base: this.#market.base.name,
-      quote: this.#market.quote.name,
-      data: {
-        baseTokenBalance: this.#market.base.fromUnits(baseTokenBalance),
-        quoteTokenBalance: this.#market.quote.fromUnits(quoteTokenBalance),
-      },
-    });
+    // logger.debug("Token balances", {
+    //   contextInfo: "taker",
+    //   base: this.#market.base.name,
+    //   quote: this.#market.quote.name,
+    //   data: {
+    //     baseTokenBalance: this.#market.base.fromUnits(baseTokenBalance),
+    //     quoteTokenBalance: this.#market.quote.fromUnits(quoteTokenBalance),
+    //   },
+    // });
 
     const asksTradePromise =
       this.#tradeOnSemibookIfPricesAreBetterThanExternalSignal(
