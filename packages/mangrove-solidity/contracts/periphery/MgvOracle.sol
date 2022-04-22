@@ -25,6 +25,8 @@ import "../MgvLib.sol";
  * a given sender to update the gas price and density which the oracle
  * reports to Mangrove. */
 contract MgvOracle is IMgvMonitor {
+  event SetGasprice(uint gasPrice);
+
   address governance;
   address mutator;
 
@@ -80,9 +82,12 @@ contract MgvOracle is IMgvMonitor {
     );
 
     lastReceivedGasPrice = gasPrice;
+    emit SetGasprice(gasPrice);
   }
 
-  function setDensity(uint /*density*/) private view {
+  function setDensity(
+    uint /*density*/
+  ) private view {
     // governance or mutator are allowed to update the density
     require(
       msg.sender == governance || msg.sender == mutator,
@@ -92,12 +97,10 @@ contract MgvOracle is IMgvMonitor {
     //NOTE: Not implemented, so not made external yet
   }
 
-  function read(address /*outbound_tkn*/, address /*inbound_tkn*/)
-    external
-    view
-    override
-    returns (uint gasprice, uint density)
-  {
+  function read(
+    address, /*outbound_tkn*/
+    address /*inbound_tkn*/
+  ) external view override returns (uint gasprice, uint density) {
     return (lastReceivedGasPrice, lastReceivedDensity);
   }
 }
