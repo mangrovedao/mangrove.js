@@ -220,7 +220,19 @@ export class OfferTaker {
     const offersWithBetterThanExternalPrice = offers.filter((o) =>
       o.price[priceComparison](externalPrice)
     );
-    if (offersWithBetterThanExternalPrice.length <= 0) return;
+    if (offersWithBetterThanExternalPrice.length <= 0) {
+      logger.debug(`No offer better than external price`, {
+        contextInfo: "taker",
+        base: this.#market.base.name,
+        quote: this.#market.quote.name,
+        ba,
+        data: {
+          offers: offers[0].price,
+          externalPrice: externalPrice,
+        },
+      });
+      return;
+    }
 
     const total = offersWithBetterThanExternalPrice
       .slice(0, this.#takerConfig.offerCountCap - 1)
