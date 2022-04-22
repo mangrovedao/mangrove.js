@@ -168,6 +168,8 @@ async function startTakersForMarkets(
     const market = await mgv.market({
       base: tokenPair.token1,
       quote: tokenPair.token2,
+      // FIXME: Re-enable the cache when OfferTaker can make use of it
+      bookOptions: { maxOffers: 0 },
     });
 
     const offerTaker = new OfferTaker(
