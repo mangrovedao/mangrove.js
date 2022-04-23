@@ -9,7 +9,7 @@ import { logger } from "./util/logger";
 
 import Mangrove, { MgvToken } from "@mangrovedao/mangrove.js";
 
-import { WebSocketProvider, Provider } from "@ethersproject/providers";
+import { Provider, getDefaultProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
@@ -45,7 +45,7 @@ const main = async () => {
   if (!process.env["PRIVATE_KEY"]) {
     throw new Error("No private key provided in PRIVATE_KEY");
   }
-  const provider = new WebSocketProvider(process.env["ETHEREUM_NODE_URL"]);
+  const provider = getDefaultProvider(process.env["ETHEREUM_NODE_URL"]);
   const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
   // We will probably be waiting for multiple tx's at the same time
   // (e.g. for different markets), so we must keep track of nonces.
