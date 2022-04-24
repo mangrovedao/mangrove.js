@@ -1,5 +1,7 @@
 # Next version
 
+- Adding address and other constants for test MGV token on Mumbai
+
 # 0.5.2 (April 2022)
 
 - `Mangrove.offerLogic` now accepts the name of a predeployed multi user logic (`offerProxy` or `oasisLike` in this version)
