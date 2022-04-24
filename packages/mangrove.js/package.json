@@ -1,11 +1,12 @@
 {
   "name": "@mangrovedao/mangrove.js",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
   "main": "dist/nodejs/index.js",
   "scripts": {
+    "package-version": "echo $npm_package_version",
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
@@ -18,9 +19,6 @@
     "clean-this-package": "yarn run clean-typechain && rimraf dist",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
     "clean-typechain": "rimraf \"src/types/typechain/*\" || exit 0",
-    "publish_patch": "npm version patch && npm publish --access public",
-    "publish_minor": "npm version minor && npm publish --access public",
-    "publish_major": "npm version major && npm publish --access public",
     "rollup": "rollup -c rollup.config.ts",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json",
