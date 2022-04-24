@@ -1,5 +1,7 @@
 # Next version
 
+# 0.5.3 (April 2022)
+
 - Adding address and other constants for test MGV token on Mumbai
 
 # 0.5.2 (April 2022)
