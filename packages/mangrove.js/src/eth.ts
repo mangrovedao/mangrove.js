@@ -123,7 +123,6 @@ export async function _createSigner(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let provider: any = options.provider;
-  const isADefaultProvider = !!ethers.providers.getNetwork(provider.toString());
 
   let signer: Signer;
 
@@ -133,11 +132,7 @@ export async function _createSigner(
       contextInfo: "eth.signer",
       data: { signer: options.signer },
     });
-    if (isADefaultProvider) {
-      provider = ethers.getDefaultProvider(provider);
-    } else {
-      provider = new ethers.providers.JsonRpcProvider(provider);
-    }
+    provider = ethers.getDefaultProvider(provider);
   } else {
     logger.debug("Uses ethers' Web3Provider created from given provider", {
       contextInfo: "eth.signer",

@@ -29,7 +29,7 @@ let market: Market;
 
 describe("MarketCleaner integration tests", () => {
   before(async function () {
-    testProvider = new ethers.providers.JsonRpcProvider(
+    testProvider = ethers.getDefaultProvider(
       this.test?.parent?.parent?.ctx.providerUrl
     );
   });
