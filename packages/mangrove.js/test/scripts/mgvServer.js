@@ -27,7 +27,7 @@ const main = async (opts) => {
 
   hre.config.networks.hardhat.loggingEnabled = opts.logging;
 
-  const provider = new hre.ethers.providers.JsonRpcProvider(
+  const provider = new hre.ethers.getDefaultProvider(
     `http://${host.name}:${host.port}`
   );
 

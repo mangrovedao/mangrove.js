@@ -6,7 +6,8 @@
 // Set up hardhat
 const hre = require("hardhat");
 const hardhatUtils = require("../../hardhat-utils");
-const JsonRpcProvider = require("@ethersproject/providers").JsonRpcProvider;
+const getDefaultProvider =
+  require("@ethersproject/providers").getDefaultProvider;
 
 const ethers = hre.ethers;
 

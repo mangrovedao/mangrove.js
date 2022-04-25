@@ -15,7 +15,7 @@ const main = async () => {
     provider: hre.network.provider,
   });
 
-  const provider = new hre.ethers.providers.JsonRpcProvider(
+  const provider = new hre.ethers.getDefaultProvider(
     `http://${host.name}:${host.port}`
   );
 

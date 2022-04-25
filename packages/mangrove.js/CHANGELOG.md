@@ -1,5 +1,7 @@
 # Next version
 
+- Add support for WebSocket URL's in `Mangrove.connect`
+
 # 0.5.3 (April 2022)
 
 - Adding address and other constants for test MGV token on Mumbai

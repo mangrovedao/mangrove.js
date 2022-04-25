@@ -1,7 +1,7 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
 import ethers from "ethers";
-import { WebSocketProvider } from "@ethersproject/providers";
+import { getDefaultProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { NonceManager } from "@ethersproject/experimental";
 import { Mangrove, Market, Semibook } from "../..";
@@ -24,7 +24,7 @@ export const builder = (yargs) => {
 type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
 
 export async function handler(argv: Arguments): Promise<void> {
-  const provider = new WebSocketProvider(argv.nodeUrl);
+  const provider = getDefaultProvider(argv.nodeUrl);
   const wallet = new Wallet(argv.privateKey, provider);
   const nonceManager = new NonceManager(wallet);
   const mangrove = await Mangrove.connect({ signer: nonceManager });

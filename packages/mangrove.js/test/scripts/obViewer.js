@@ -26,7 +26,7 @@ const main = async () => {
     await mgvServer(opts);
   }
 
-  const provider = new hre.ethers.providers.JsonRpcProvider(_url);
+  const provider = new hre.ethers.getDefaultProvider(_url);
 
   const { Mangrove } = require("../../src");
 
