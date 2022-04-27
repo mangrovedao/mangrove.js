@@ -8,8 +8,8 @@ const mn = async () => {
   for (const { name, address } of params) {
     hardhatAddresses[name] = address;
   }
-  const json = JSON.stringify(hardhatAddresses);
-  fs.writeFileSync(JSON_FILE, json);
+  const json = JSON.stringify(hardhatAddresses, null, 2);
+  fs.writeFileSync(JSON_FILE, json + "\n");
 };
 
 mn().catch((e) => {
