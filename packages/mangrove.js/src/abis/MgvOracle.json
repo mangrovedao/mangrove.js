@@ -16,6 +16,32 @@
     "type": "constructor"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "density",
+        "type": "uint256"
+      }
+    ],
+    "name": "SetDensity",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "gasPrice",
+        "type": "uint256"
+      }
+    ],
+    "name": "SetGasprice",
+    "type": "event"
+  },
+  {
     "inputs": [
       {
         "components": [
