@@ -91,7 +91,7 @@
     "chai-as-promised": "^7.1.1",
     "chalk": "^4.1.2",
     "cross-env": "^7.0.3",
-    "dir-compare": "^3.3.0",
+    "dir-compare": "^4.0.0",
     "docblock-parser": "^1.0.0",
     "eslint": "^8.14.0",
     "eslint-config-prettier": "^8.5.0",
