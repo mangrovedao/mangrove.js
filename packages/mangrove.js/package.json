@@ -93,7 +93,7 @@
     "cross-env": "^7.0.3",
     "dir-compare": "^3.3.0",
     "docblock-parser": "^1.0.0",
-    "eslint": "^7.9.0",
+    "eslint": "^8.14.0",
     "eslint-config-prettier": "^8.5.0",
     "hardhat": "^2.9.2",
     "hardhat-deploy": "^0.9.1",
