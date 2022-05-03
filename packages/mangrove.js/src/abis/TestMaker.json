@@ -869,6 +869,19 @@
         "type": "bool"
       }
     ],
+    "name": "shouldRepost",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "should",
+        "type": "bool"
+      }
+    ],
     "name": "shouldRevert",
     "outputs": [],
     "stateMutability": "nonpayable",
