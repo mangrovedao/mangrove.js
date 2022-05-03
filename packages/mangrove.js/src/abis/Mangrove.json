@@ -360,6 +360,12 @@
         "internalType": "uint256",
         "name": "offerId",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "posthookData",
+        "type": "bytes32"
       }
     ],
     "name": "PosthookFail",
