@@ -1,5 +1,7 @@
 # Next version
 
+# 0.5.4 (May 2022)
+
 - Add support for WebSocket URL's in `Mangrove.connect`
 - Added two separate features for displaying prices with appropriate numbers of decimals:
   - `Mangrove.{get|set}DisplayedPriceDecimals` gets/set the number of decimals to display for a given token when displayed as a price (the default is 6)
