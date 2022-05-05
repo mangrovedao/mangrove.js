@@ -36,7 +36,7 @@
     "@types/big.js": "^6.1.2",
     "@types/finalhandler": "^1.1.1",
     "@types/serve-static": "^1.13.10",
-    "axios": "^0.24.0",
+    "axios": "^0.27.2",
     "big.js": "^6.1.1",
     "config": "^3.3.6",
     "dotenv-flow": "^3.2.0",
