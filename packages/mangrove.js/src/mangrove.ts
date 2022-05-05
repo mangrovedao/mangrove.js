@@ -5,6 +5,8 @@ import {
   decimals as loadedDecimals,
   displayedDecimals as loadedDisplayedDecimals,
   defaultDisplayedDecimals,
+  displayedPriceDecimals as loadedDisplayedPriceDecimals,
+  defaultDisplayedPriceDecimals,
 } from "./constants";
 import * as eth from "./eth";
 import { typechain, Provider, Signer } from "./types";
@@ -446,6 +448,15 @@ class Mangrove {
   }
 
   /**
+   * Read displayed decimals for `tokenName` when displayed as a price.
+   */
+  static getDisplayedPriceDecimals(tokenName: string): number {
+    return (
+      loadedDisplayedPriceDecimals[tokenName] || defaultDisplayedPriceDecimals
+    );
+  }
+
+  /**
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
@@ -457,6 +468,13 @@ class Mangrove {
    */
   static setDisplayedDecimals(tokenName: string, dec: number): void {
     loadedDisplayedDecimals[tokenName] = dec;
+  }
+
+  /**
+   * Set displayed decimals for `tokenName` when displayed as a price.
+   */
+  static setDisplayedPriceDecimals(tokenName: string, dec: number): void {
+    loadedDisplayedPriceDecimals[tokenName] = dec;
   }
 
   /**

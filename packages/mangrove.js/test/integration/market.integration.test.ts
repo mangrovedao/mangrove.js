@@ -401,3 +401,92 @@ describe("Market integration tests suite", () => {
     await done.promise;
   });
 });
+
+describe("Market unit tests suite", () => {
+  describe("getDisplayDecimalsForPriceDifferences", () => {
+    function makeOfferWithPrice(price: number) {
+      return {
+        id: 0,
+        prev: undefined,
+        next: undefined,
+        gasprice: 1,
+        maker: "",
+        gasreq: 1,
+        offer_gasbase: 1,
+        wants: Big(1),
+        gives: Big(1),
+        volume: Big(1),
+        price: Big(price),
+      };
+    }
+
+    function makeOffersWithPrices(...prices: number[]): Market.Offer[] {
+      return prices.map(makeOfferWithPrice);
+    }
+
+    it("returns no decimals for empty list", async function () {
+      const offers = makeOffersWithPrices();
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
+    });
+
+    it("returns no decimals for list with one offer", async function () {
+      const offers = makeOffersWithPrices(1);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
+    });
+
+    it("returns no decimals for list with offers with same price", async function () {
+      const offers = makeOffersWithPrices(1, 1);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
+    });
+
+    it("returns no decimals when price differences are integers", async function () {
+      const offers = makeOffersWithPrices(1, 2);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
+    });
+
+    it("returns one decimal when difference is 0.1", async function () {
+      const offers = makeOffersWithPrices(1, 1.1);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
+    });
+
+    it("returns one decimal when difference is 0.9999999", async function () {
+      const offers = makeOffersWithPrices(1, 1.9999999);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
+    });
+
+    it("returns one decimal when difference is -0.1", async function () {
+      const offers = makeOffersWithPrices(1, 0.9);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
+    });
+
+    it("returns one decimal when difference is -0.9999999", async function () {
+      const offers = makeOffersWithPrices(1, 0.1111111);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
+    });
+
+    it("returns 7 decimals when difference is 1e-7", async function () {
+      const offers = makeOffersWithPrices(1, 1 + 1e-7);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
+    });
+
+    it("returns 7 decimals when difference is 9e-7", async function () {
+      const offers = makeOffersWithPrices(1, 1 + 9e-7);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
+    });
+
+    it("returns 7 decimals when difference is 9e-7", async function () {
+      const offers = makeOffersWithPrices(1, 1 + 9e-7);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
+    });
+
+    it("returns the decimals for the first difference when that is smallest", async function () {
+      const offers = makeOffersWithPrices(1.19, 1.2, 1.3);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(2);
+    });
+
+    it("returns the decimals for the last difference when that is smallest", async function () {
+      const offers = makeOffersWithPrices(1.1, 1.3, 1.31);
+      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(2);
+    });
+  });
+});

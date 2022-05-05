@@ -323,6 +323,12 @@
         "internalType": "uint256",
         "name": "penalty",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "feePaid",
+        "type": "uint256"
       }
     ],
     "name": "OrderComplete",
@@ -354,6 +360,12 @@
         "internalType": "uint256",
         "name": "offerId",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "posthookData",
+        "type": "bytes32"
       }
     ],
     "name": "PosthookFail",
@@ -1063,6 +1075,11 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1116,6 +1133,11 @@
       {
         "internalType": "uint256",
         "name": "bounty",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "feePaid",
         "type": "uint256"
       }
     ],
@@ -1617,6 +1639,11 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1670,6 +1697,11 @@
       {
         "internalType": "uint256",
         "name": "bounty",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "feePaid",
         "type": "uint256"
       }
     ],

@@ -1060,6 +1060,43 @@ class Market {
       wants,
     };
   }
+
+  /** Determine the first decimal place where the smallest price difference between neighboring offers in the order book cache is visible. */
+  getDisplayDecimalsForPriceDifferences(): number {
+    return Market.getDisplayDecimalsForPriceDifferences([
+      ...this.#asksSemibook,
+      ...[...this.#bidsSemibook].slice().reverse(),
+    ]);
+  }
+
+  /** Determine the first decimal place where the smallest price difference between neighboring offers is visible. */
+  static getDisplayDecimalsForPriceDifferences(offers: Market.Offer[]): number {
+    if (offers.length <= 1) {
+      return 0;
+    }
+
+    const absPriceDiffs = new Array<Big>(offers.length - 1);
+    offers.slice(1).reduce((prevPrice, o, i) => {
+      absPriceDiffs[i] = prevPrice.sub(o.price).abs();
+      return o.price;
+    }, offers[0].price);
+
+    const minBig = (b1: Big, b2: Big): Big => {
+      if (b1 === undefined) {
+        return b2;
+      } else if (b2 === undefined) {
+        return b1;
+      }
+      return b1.lt(b2) ? b1 : b2;
+    };
+    const minAbsPriceDiff = absPriceDiffs
+      .filter((d) => !d.eq(0))
+      .reduce(minBig, undefined);
+
+    return minAbsPriceDiff === undefined
+      ? 0
+      : -Math.floor(Math.log10(minAbsPriceDiff.toNumber()));
+  }
 }
 
 const validateSlippage = (slippage = 0) => {

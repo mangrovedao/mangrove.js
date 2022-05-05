@@ -1,7 +1,16 @@
 # 0.6.0 (May 2022)
 
-- Add support for resting limit orders via `MangroveOrder` satellite contract
+- Add support for resting limit orders using `MangroveOrder` contract.
+# 0.5.5 (May 2022)
+
+- Fix `Mangrove.getDisplayedPriceDecimals`: It was mistakenly using the configuration for `Mangrove.getDisplayedDecimals` instead of its own configuration.
+
+# 0.5.4 (May 2022)
+
 - Add support for WebSocket URL's in `Mangrove.connect`
+- Added two separate features for displaying prices with appropriate numbers of decimals:
+  - `Mangrove.{get|set}DisplayedPriceDecimals` gets/set the number of decimals to display for a given token when displayed as a price (the default is 6)
+  - `Market.getDisplayDecimalsForPriceDifferences` computes the number of decimals to display in order for the smallest price difference to be visible.
 
 # 0.5.3 (April 2022)
 

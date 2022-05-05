@@ -12,6 +12,10 @@ on:
     paths-ignore: 
       - '**.md'
 
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   NODE_ENV: test
   working-directory: packages/mangrove-solidity
@@ -80,7 +84,6 @@ jobs:
         node-version: [14.x]
 
     steps:
-
     # == Git checkout ==
     - name: Checkout
       uses: actions/checkout@v3
