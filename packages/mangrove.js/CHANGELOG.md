@@ -1,5 +1,6 @@
-# Next version
+# 0.6.0 (May 2022)
 
+- Add support for resting limit orders via `MangroveOrder` satellite contract
 - Add support for WebSocket URL's in `Mangrove.connect`
 
 # 0.5.3 (April 2022)

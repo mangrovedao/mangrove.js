@@ -5,6 +5,7 @@ import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
+import { OrderSummaryEvent } from "./types/typechain/MangroveOrder";
 import Semibook from "./semibook";
 import { Deferred } from "./util";
 
@@ -37,6 +38,7 @@ namespace Market {
     gave: Big;
     partialFill: boolean;
     penalty: Big;
+    offerId?: number;
     txReceipt: ethers.ContractReceipt;
   };
   export type BookSubscriptionEvent =
@@ -46,11 +48,20 @@ namespace Market {
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
-  export type TradeParams = { slippage?: number } & (
+  export type TradeParams =
     | { volume: Bigish; price: Bigish | null }
     | { total: Bigish; price: Bigish | null }
-    | { wants: Bigish; gives: Bigish; fillWants?: boolean }
-  );
+    | { wants: Bigish; gives: Bigish; fillWants?: boolean };
+
+  export type OptTradeParams = {
+    slippage?: number;
+    restingOrder?: boolean;
+    partialFillNotAllowed?: boolean;
+    retryNumber?: number;
+    gasForMarketOrder?: number;
+    blocksToLiveForRestingOrder?: number;
+    provision?: Bigish;
+  };
 
   /**
    * Specification of how much volume to (potentially) trade on the market.
@@ -442,6 +453,7 @@ class Market {
    */
   buy(
     params: Market.TradeParams,
+    opt: Market.OptTradeParams = {},
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
     let _wants: Big, _gives: Big, fillWants: boolean;
@@ -464,13 +476,18 @@ class Market {
       fillWants = "fillWants" in params ? params.fillWants : true;
     }
 
-    const slippage = validateSlippage(params.slippage);
+    const slippage = validateSlippage(opt.slippage);
 
     _gives = _gives.mul(100 + slippage).div(100);
 
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(_gives);
-
+    if (opt.restingOrder) {
+      return this.#restingOrder(
+        { gives, wants, orderType: "buy", fillWants, opt },
+        overrides
+      );
+    }
     return this.#marketOrder(
       { gives, wants, orderType: "buy", fillWants },
       overrides
@@ -499,6 +516,7 @@ class Market {
    */
   sell(
     params: Market.TradeParams,
+    opt: Market.OptTradeParams = {},
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
     let _wants, _gives, fillWants;
@@ -521,13 +539,18 @@ class Market {
       fillWants = "fillWants" in params ? params.fillWants : false;
     }
 
-    const slippage = validateSlippage(params.slippage);
+    const slippage = validateSlippage(opt.slippage);
 
     _wants = _wants.mul(100 - slippage).div(100);
 
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
-
+    if (opt.restingOrder) {
+      return this.#restingOrder(
+        { gives, wants, orderType: "buy", fillWants, opt },
+        overrides
+      );
+    }
     return this.#marketOrder(
       { wants, gives, orderType: "sell", fillWants },
       overrides
@@ -611,6 +634,89 @@ class Market {
       gave: this[gave_bq].fromUnits(takerGave),
       partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
       penalty: this.mgv.fromUnits(result.args.penalty, 18),
+      txReceipt: receipt,
+    };
+  }
+
+  async #restingOrder(
+    {
+      wants,
+      gives,
+      orderType,
+      fillWants,
+      opt,
+    }: {
+      wants: ethers.BigNumber;
+      gives: ethers.BigNumber;
+      orderType: "buy" | "sell";
+      fillWants: boolean;
+      opt: Market.OptTradeParams;
+    },
+    overrides: ethers.Overrides
+  ) {
+    let overrides_: ethers.PayableOverrides;
+    if (opt.provision) {
+      overrides_ = { ...overrides, value: this.mgv.toUnits(opt.provision, 18) };
+    } else {
+      overrides_ = overrides;
+    }
+    // user defined gasLimit overrides estimates
+    overrides_.gasLimit = overrides_.gasLimit
+      ? overrides_.gasLimit
+      : await this.estimateGas(orderType, wants);
+
+    const response = await this.mgv.orderContract.take(
+      {
+        base: this.base.address,
+        quote: this.quote.address,
+        partialFillNotAllowed: opt.partialFillNotAllowed
+          ? opt.partialFillNotAllowed
+          : false,
+        selling: orderType === "sell",
+        wants: wants,
+        gives: gives,
+        restingOrder: opt.restingOrder ? opt.restingOrder : false,
+        retryNumber: opt.retryNumber ? opt.retryNumber : 0,
+        gasForMarketOrder: opt.gasForMarketOrder ? opt.gasForMarketOrder : 0,
+        blocksToLiveForRestingOrder: opt.blocksToLiveForRestingOrder
+          ? opt.blocksToLiveForRestingOrder
+          : 0,
+      },
+      overrides_
+    );
+    const receipt = await response.wait();
+
+    let result: ethers.Event | undefined;
+    //last OrderComplete is ours!
+    logger.debug("Resting order raw receipt", {
+      contextInfo: "market.restingOrder",
+      data: { receipt: receipt },
+    });
+    // check last `OrderComplete` event emitted by `MangroveOrder`
+    for (const evt of receipt.events) {
+      if (
+        evt.event === "OrderResult" &&
+        evt.address === this.mgv.orderContract.address
+      ) {
+        if ((evt as OrderSummaryEvent).args.taker === receipt.from) {
+          result = evt;
+        }
+      }
+    }
+    if (!result) {
+      throw Error("resting order went wrong");
+    }
+    // if resting order was not posted, maker_result is still undefined.
+    const got_bq = orderType === "buy" ? "base" : "quote";
+    const gave_bq = orderType === "buy" ? "quote" : "base";
+    const takerGot: BigNumber = result.args.takerGot;
+    const takerGave: BigNumber = result.args.takerGave;
+    return {
+      got: this[got_bq].fromUnits(takerGot),
+      gave: this[gave_bq].fromUnits(takerGave),
+      partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
+      penalty: this.mgv.fromUnits(result.args.penalty, 18),
+      offerId: result.args.restingOrderId,
       txReceipt: receipt,
     };
   }
