@@ -2,7 +2,7 @@ import addressesPerNetwork from "./constants/addresses.json";
 import hardhatAddresses from "./constants/hardhatAddresses.json";
 import tokenDecimals from "./constants/tokenDecimals.json";
 import tokenDisplayedDecimals from "./constants/tokenDisplayedDecimals.json";
-import tokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedDecimals.json";
+import tokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedAsPriceDecimals.json";
 
 export const addresses = {
   ...addressesPerNetwork,
