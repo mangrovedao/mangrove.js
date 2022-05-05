@@ -12,6 +12,10 @@ on:
     paths-ignore: 
       - '**.md'
 
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_ENV: test
   working-directory: packages/mangrove-solidity
