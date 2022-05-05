@@ -84,9 +84,6 @@ jobs:
         node-version: [14.x]
 
     steps:
-    # temp for debug
-    - run: echo "$GITHUB_CONTEXT"
-
     # == Git checkout ==
     - name: Checkout
       uses: actions/checkout@v3
