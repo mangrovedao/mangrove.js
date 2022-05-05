@@ -1,5 +1,9 @@
 # Next version
 
+# 0.5.5 (May 2022)
+
+- Fix `Mangrove.getDisplayedPriceDecimals`: It was mistakenly using the configuration for `Mangrove.getDisplayedDecimals` instead of its own configuration.
+
 # 0.5.4 (May 2022)
 
 - Add support for WebSocket URL's in `Mangrove.connect`
