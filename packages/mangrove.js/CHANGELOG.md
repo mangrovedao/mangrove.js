@@ -1,3 +1,5 @@
+# Next version
+
 # 0.6.0 (May 2022)
 
 - Add support for resting limit orders using `MangroveOrder` contract.
