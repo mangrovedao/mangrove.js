@@ -48,19 +48,21 @@ namespace Market {
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
-  export type TradeParams =
+  export type TradeParams = {
+    slippage?: number;
+    restingOrder?: RestingOrderParams;
+  } & (
     | { volume: Bigish; price: Bigish | null }
     | { total: Bigish; price: Bigish | null }
-    | { wants: Bigish; gives: Bigish; fillWants?: boolean };
+    | { wants: Bigish; gives: Bigish; fillWants?: boolean }
+  );
 
-  export type OptTradeParams = {
-    slippage?: number;
-    restingOrder?: boolean;
+  export type RestingOrderParams = {
     partialFillNotAllowed?: boolean;
     retryNumber?: number;
     gasForMarketOrder?: number;
     blocksToLiveForRestingOrder?: number;
-    provision?: Bigish;
+    provision: Bigish;
   };
 
   /**
@@ -453,7 +455,6 @@ class Market {
    */
   buy(
     params: Market.TradeParams,
-    opt: Market.OptTradeParams = {},
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
     let _wants: Big, _gives: Big, fillWants: boolean;
@@ -476,22 +477,29 @@ class Market {
       fillWants = "fillWants" in params ? params.fillWants : true;
     }
 
-    const slippage = validateSlippage(opt.slippage);
+    const slippage = validateSlippage(params.slippage);
 
     _gives = _gives.mul(100 + slippage).div(100);
 
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(_gives);
-    if (opt.restingOrder) {
+    if (params.restingOrder) {
       return this.#restingOrder(
-        { gives, wants, orderType: "buy", fillWants, opt },
+        {
+          gives,
+          wants,
+          orderType: "buy",
+          fillWants,
+          params: params.restingOrder,
+        },
+        overrides
+      );
+    } else {
+      return this.#marketOrder(
+        { gives, wants, orderType: "buy", fillWants },
         overrides
       );
     }
-    return this.#marketOrder(
-      { gives, wants, orderType: "buy", fillWants },
-      overrides
-    );
   }
 
   /**
@@ -516,7 +524,6 @@ class Market {
    */
   sell(
     params: Market.TradeParams,
-    opt: Market.OptTradeParams = {},
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
     let _wants, _gives, fillWants;
@@ -539,22 +546,29 @@ class Market {
       fillWants = "fillWants" in params ? params.fillWants : false;
     }
 
-    const slippage = validateSlippage(opt.slippage);
+    const slippage = validateSlippage(params.slippage);
 
     _wants = _wants.mul(100 - slippage).div(100);
 
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
-    if (opt.restingOrder) {
+    if (params.restingOrder) {
       return this.#restingOrder(
-        { gives, wants, orderType: "buy", fillWants, opt },
+        {
+          gives,
+          wants,
+          orderType: "sell",
+          fillWants,
+          params: params.restingOrder,
+        },
+        overrides
+      );
+    } else {
+      return this.#marketOrder(
+        { wants, gives, orderType: "sell", fillWants },
         overrides
       );
     }
-    return this.#marketOrder(
-      { wants, gives, orderType: "sell", fillWants },
-      overrides
-    );
   }
 
   /**
@@ -644,22 +658,21 @@ class Market {
       gives,
       orderType,
       fillWants,
-      opt,
+      params,
     }: {
       wants: ethers.BigNumber;
       gives: ethers.BigNumber;
       orderType: "buy" | "sell";
       fillWants: boolean;
-      opt: Market.OptTradeParams;
+      params: Market.RestingOrderParams;
     },
     overrides: ethers.Overrides
   ) {
-    let overrides_: ethers.PayableOverrides;
-    if (opt.provision) {
-      overrides_ = { ...overrides, value: this.mgv.toUnits(opt.provision, 18) };
-    } else {
-      overrides_ = overrides;
-    }
+    const overrides_ = {
+      ...overrides,
+      value: this.mgv.toUnits(params.provision, 18),
+    };
+
     // user defined gasLimit overrides estimates
     overrides_.gasLimit = overrides_.gasLimit
       ? overrides_.gasLimit
@@ -669,17 +682,19 @@ class Market {
       {
         base: this.base.address,
         quote: this.quote.address,
-        partialFillNotAllowed: opt.partialFillNotAllowed
-          ? opt.partialFillNotAllowed
+        partialFillNotAllowed: params.partialFillNotAllowed
+          ? params.partialFillNotAllowed
           : false,
         selling: orderType === "sell",
         wants: wants,
         gives: gives,
-        restingOrder: opt.restingOrder ? opt.restingOrder : false,
-        retryNumber: opt.retryNumber ? opt.retryNumber : 0,
-        gasForMarketOrder: opt.gasForMarketOrder ? opt.gasForMarketOrder : 0,
-        blocksToLiveForRestingOrder: opt.blocksToLiveForRestingOrder
-          ? opt.blocksToLiveForRestingOrder
+        restingOrder: true,
+        retryNumber: params.retryNumber ? params.retryNumber : 0,
+        gasForMarketOrder: params.gasForMarketOrder
+          ? params.gasForMarketOrder
+          : 0,
+        blocksToLiveForRestingOrder: params.blocksToLiveForRestingOrder
+          ? params.blocksToLiveForRestingOrder
           : 0,
       },
       overrides_
