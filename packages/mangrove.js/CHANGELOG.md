@@ -1,5 +1,9 @@
 # Next version
 
+# 0.5.7 (May 2022)
+
+- Update addresses (really this time) to newly deployed Mangrove core contracts (they now match the mangrove.js ABI files)
+
 # 0.5.6 (May 2022)
 
 - Update addresses to newly deployed Mangrove core contracts (they now match the mangrove.js ABI files)
