@@ -5,6 +5,7 @@ import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import { OrderCompleteEvent } from "./types/typechain/Mangrove";
+import { OrderSummaryEvent } from "./types/typechain/MangroveOrder";
 import Semibook from "./semibook";
 import { Deferred } from "./util";
 
@@ -37,6 +38,7 @@ namespace Market {
     gave: Big;
     partialFill: boolean;
     penalty: Big;
+    offerId?: number;
     txReceipt: ethers.ContractReceipt;
   };
   export type BookSubscriptionEvent =
@@ -46,11 +48,22 @@ namespace Market {
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
-  export type TradeParams = { slippage?: number } & (
+  export type TradeParams = {
+    slippage?: number;
+    restingOrder?: RestingOrderParams;
+  } & (
     | { volume: Bigish; price: Bigish | null }
     | { total: Bigish; price: Bigish | null }
     | { wants: Bigish; gives: Bigish; fillWants?: boolean }
   );
+
+  export type RestingOrderParams = {
+    partialFillNotAllowed?: boolean;
+    retryNumber?: number;
+    gasForMarketOrder?: number;
+    blocksToLiveForRestingOrder?: number;
+    provision: Bigish;
+  };
 
   /**
    * Specification of how much volume to (potentially) trade on the market.
@@ -470,11 +483,23 @@ class Market {
 
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(_gives);
-
-    return this.#marketOrder(
-      { gives, wants, orderType: "buy", fillWants },
-      overrides
-    );
+    if (params.restingOrder) {
+      return this.#restingOrder(
+        {
+          gives,
+          wants,
+          orderType: "buy",
+          fillWants,
+          params: params.restingOrder,
+        },
+        overrides
+      );
+    } else {
+      return this.#marketOrder(
+        { gives, wants, orderType: "buy", fillWants },
+        overrides
+      );
+    }
   }
 
   /**
@@ -527,11 +552,23 @@ class Market {
 
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(_wants);
-
-    return this.#marketOrder(
-      { wants, gives, orderType: "sell", fillWants },
-      overrides
-    );
+    if (params.restingOrder) {
+      return this.#restingOrder(
+        {
+          gives,
+          wants,
+          orderType: "sell",
+          fillWants,
+          params: params.restingOrder,
+        },
+        overrides
+      );
+    } else {
+      return this.#marketOrder(
+        { wants, gives, orderType: "sell", fillWants },
+        overrides
+      );
+    }
   }
 
   /**
@@ -611,6 +648,90 @@ class Market {
       gave: this[gave_bq].fromUnits(takerGave),
       partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
       penalty: this.mgv.fromUnits(result.args.penalty, 18),
+      txReceipt: receipt,
+    };
+  }
+
+  async #restingOrder(
+    {
+      wants,
+      gives,
+      orderType,
+      fillWants,
+      params,
+    }: {
+      wants: ethers.BigNumber;
+      gives: ethers.BigNumber;
+      orderType: "buy" | "sell";
+      fillWants: boolean;
+      params: Market.RestingOrderParams;
+    },
+    overrides: ethers.Overrides
+  ) {
+    const overrides_ = {
+      ...overrides,
+      value: this.mgv.toUnits(params.provision, 18),
+    };
+
+    // user defined gasLimit overrides estimates
+    overrides_.gasLimit = overrides_.gasLimit
+      ? overrides_.gasLimit
+      : await this.estimateGas(orderType, wants);
+
+    const response = await this.mgv.orderContract.take(
+      {
+        base: this.base.address,
+        quote: this.quote.address,
+        partialFillNotAllowed: params.partialFillNotAllowed
+          ? params.partialFillNotAllowed
+          : false,
+        selling: orderType === "sell",
+        wants: wants,
+        gives: gives,
+        restingOrder: true,
+        retryNumber: params.retryNumber ? params.retryNumber : 0,
+        gasForMarketOrder: params.gasForMarketOrder
+          ? params.gasForMarketOrder
+          : 0,
+        blocksToLiveForRestingOrder: params.blocksToLiveForRestingOrder
+          ? params.blocksToLiveForRestingOrder
+          : 0,
+      },
+      overrides_
+    );
+    const receipt = await response.wait();
+
+    let result: ethers.Event | undefined;
+    //last OrderComplete is ours!
+    logger.debug("Resting order raw receipt", {
+      contextInfo: "market.restingOrder",
+      data: { receipt: receipt },
+    });
+    // check last `OrderComplete` event emitted by `MangroveOrder`
+    for (const evt of receipt.events) {
+      if (
+        evt.event === "OrderResult" &&
+        evt.address === this.mgv.orderContract.address
+      ) {
+        if ((evt as OrderSummaryEvent).args.taker === receipt.from) {
+          result = evt;
+        }
+      }
+    }
+    if (!result) {
+      throw Error("resting order went wrong");
+    }
+    // if resting order was not posted, maker_result is still undefined.
+    const got_bq = orderType === "buy" ? "base" : "quote";
+    const gave_bq = orderType === "buy" ? "quote" : "base";
+    const takerGot: BigNumber = result.args.takerGot;
+    const takerGave: BigNumber = result.args.takerGave;
+    return {
+      got: this[got_bq].fromUnits(takerGot),
+      gave: this[gave_bq].fromUnits(takerGave),
+      partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
+      penalty: this.mgv.fromUnits(result.args.penalty, 18),
+      offerId: result.args.restingOrderId,
       txReceipt: receipt,
     };
   }
