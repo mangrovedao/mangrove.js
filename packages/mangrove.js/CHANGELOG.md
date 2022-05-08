@@ -1,5 +1,9 @@
 # Next version
 
+# 0.6.1 (May 2022)
+
+- Update with latest Mumbai address for `MangroveOrder` which uses the latest Mangrove.
+
 # 0.6.0 (May 2022)
 
 - Add support for resting limit orders using `MangroveOrder` contract.
