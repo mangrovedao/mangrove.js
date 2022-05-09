@@ -710,7 +710,7 @@ class Market {
     // check last `OrderComplete` event emitted by `MangroveOrder`
     for (const evt of receipt.events) {
       if (
-        evt.event === "OrderResult" &&
+        evt.event === "OrderSummary" &&
         evt.address === this.mgv.orderContract.address
       ) {
         if ((evt as OrderSummaryEvent).args.taker === receipt.from) {
