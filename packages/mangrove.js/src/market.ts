@@ -635,7 +635,7 @@ class Market {
       data: { receipt: receipt },
     });
     for (const evt of receipt.events) {
-      if (evt.event === "OrderComplete") {
+      if (evt.event === "OrderComplete" && evt.address === this.mgv._address) {
         if ((evt as OrderCompleteEvent).args.taker === receipt.from) {
           result = evt;
         }
