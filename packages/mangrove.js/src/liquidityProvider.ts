@@ -155,7 +155,6 @@ class LiquidityProvider {
     fund?: Bigish
   ): ethers.PayableOverrides {
     if (fund) {
-      console.log("funding mangrove");
       return { value: this.mgv.toUnits(fund, 18), ...overrides };
     } else {
       return overrides;
