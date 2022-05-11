@@ -5,7 +5,6 @@ import { expect } from "chai";
 import { toWei } from "../util/helpers";
 import * as mgvTestUtil from "../util/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
-import * as TCM from "../../src/types/typechain/Mangrove";
 
 import assert from "assert";
 import { Mangrove, Market } from "../..";
@@ -14,7 +13,6 @@ import * as helpers from "../util/helpers";
 import { Big } from "big.js";
 import { Deferred } from "../../src/util";
 import { BigNumber } from "ethers";
-import semibook from "../../dist/nodejs/semibook";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
