@@ -16,8 +16,8 @@ class MgvToken {
     this.mgv = mgv;
     this.name = name;
     this.address = this.mgv.getAddress(this.name);
-    this.decimals = this.mgv.getDecimals(this.name);
-    this.displayedDecimals = this.mgv.getDisplayedDecimals(this.name);
+    this.decimals = Mangrove.getDecimals(this.name);
+    this.displayedDecimals = Mangrove.getDisplayedDecimals(this.name);
     this.contract = typechain.MintableERC20BLWithDecimals__factory.connect(
       this.address,
       this.mgv._signer
