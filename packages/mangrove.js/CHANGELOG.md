@@ -1,5 +1,7 @@
 # Next version
 
+- Remove instance aliases for stateful static methods in `Mangrove` as the scope of these was misleading: setting a value on one instance would affect all others. The removed methods are: `{get,set}Decimals`, `{get,set}DisplayedDecimals`, and `fetchDecimals`.
+
 # 0.6.1 (May 2022)
 
 - Update with latest Mumbai address for `MangroveOrder` which uses the latest Mangrove.
