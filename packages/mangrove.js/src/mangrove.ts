@@ -195,7 +195,7 @@ class Mangrove {
       return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
     } else {
       // loading a multi maker predeployed logic
-      const address: string = this.getAddress(logic);
+      const address: string = Mangrove.getAddress(logic, this._network.name);
       if (address) {
         return new OfferLogic(this, address, true);
       } else {
@@ -237,6 +237,8 @@ class Mangrove {
 
   /**
    * Read a contract address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getAddress(name: string): string {
     return Mangrove.getAddress(name, this._network.name || "mainnet");
@@ -244,49 +246,11 @@ class Mangrove {
 
   /**
    * Set a contract address on the current network.
+   *
+   * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.
    */
   setAddress(name: string, address: string): void {
     Mangrove.setAddress(name, address, this._network.name || "mainnet");
-  }
-
-  /**
-   * Read decimals for `tokenName`.
-   * Decimals are a property of each token, written onchain.
-   * To read decimals off the chain, use `fetchDecimals`.
-   */
-  getDecimals(tokenName: string): number {
-    return Mangrove.getDecimals(tokenName);
-  }
-
-  /**
-   * Read displayed decimals for `tokenName`. Displayed decimals are a hint by
-   * mangrove.js to be used by consumers of the lib. To configure the default
-   * displayed decimals, modify constants.ts.
-   *
-   */
-  getDisplayedDecimals(tokenName: string): number {
-    return Mangrove.getDisplayedDecimals(tokenName);
-  }
-
-  /**
-   * Set decimals for `tokenName`.
-   */
-  setDecimals(tokenName: string, decimals: number): void {
-    Mangrove.setDecimals(tokenName, decimals);
-  }
-
-  /**
-   * Set displayed decimals for `tokenName`.
-   */
-  setDisplayedDecimals(tokenName: string, decimals: number): void {
-    Mangrove.setDisplayedDecimals(tokenName, decimals);
-  }
-
-  /**
-   * Read chain for decimals of `tokenName` on current network and save them.
-   */
-  async fetchDecimals(tokenName: string): Promise<number> {
-    return Mangrove.fetchDecimals(tokenName, this._provider);
   }
 
   /** Convert public token amount to internal token representation.
@@ -305,7 +269,7 @@ class Mangrove {
     if (typeof nameOrDecimals === "number") {
       decimals = nameOrDecimals;
     } else {
-      decimals = this.getDecimals(nameOrDecimals);
+      decimals = Mangrove.getDecimals(nameOrDecimals);
     }
     return ethers.BigNumber.from(Big(10).pow(decimals).mul(amount).toFixed(0));
   }
@@ -329,7 +293,7 @@ class Mangrove {
     if (typeof nameOrDecimals === "number") {
       decimals = nameOrDecimals;
     } else {
-      decimals = this.getDecimals(nameOrDecimals);
+      decimals = Mangrove.getDecimals(nameOrDecimals);
     }
     if (amount instanceof ethers.BigNumber) {
       amount = amount.toString();
