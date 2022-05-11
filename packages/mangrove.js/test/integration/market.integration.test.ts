@@ -5,6 +5,7 @@ import { expect } from "chai";
 import { toWei } from "../util/helpers";
 import * as mgvTestUtil from "../util/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
+import * as TCM from "../../src/types/typechain/Mangrove";
 
 import assert from "assert";
 import { Mangrove, Market } from "../..";
@@ -13,6 +14,7 @@ import * as helpers from "../util/helpers";
 import { Big } from "big.js";
 import { Deferred } from "../../src/util";
 import { BigNumber } from "ethers";
+import semibook from "../../dist/nodejs/semibook";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -170,6 +172,49 @@ describe("Market integration tests suite", () => {
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
     //TODO test offerRetract, offerfail, setGasbase
+  });
+
+  it("returns a parsed mgvData with OfferFail", async function () {
+    const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
+
+    // setup market and listener for events from market
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    const cb = (evt: Market.BookSubscriptionCbArgument) => {
+      queue.put(evt);
+    };
+    market.subscribe(cb);
+
+    // post a failing offer from TestMaker
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+
+    // Note: the "as const" is necessary, else TS insists that 'asks' should be widened as a string, which doesn't match the type - I view this as a failing of the TS type-checker
+    const newFailingOffer = {
+      market,
+      ba: "asks" as const,
+      maker,
+      shouldFail: true,
+    };
+
+    await mgvTestUtil.postNewOffer(newFailingOffer);
+
+    // make sure the offer tx has been gen'ed and the OfferWrite has been logged
+    await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+    const events = [await queue.get()];
+    expect(events).to.have.lengthOf(1);
+
+    // make a buy, which we expect to provoke an OfferFail
+    await market.buy({ wants: "1", gives: "1.5" });
+    const offerEvent = await queue.get();
+
+    assert.strictEqual(offerEvent.type, "OfferFail");
+    assert.strictEqual(offerEvent.ba, "asks");
+
+    if (offerEvent.type === "OfferFail") {
+      // the TestMaker is currently engineered to not transfer the money
+      // in the case when ShouldFail is set, so we expect the following error message
+      assert.strictEqual(offerEvent.mgvData, "mgv/makerTransferFail");
+    }
   });
 
   it("gets config", async function () {
