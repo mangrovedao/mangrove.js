@@ -1,6 +1,7 @@
 # Next version
 
 - Remove instance aliases for stateful static methods in `Mangrove` as the scope of these was misleading: setting a value on one instance would affect all others. The removed methods are: `{get,set}Decimals`, `{get,set}DisplayedDecimals`, and `fetchDecimals`.
+- Disable logging by default. It can be turned on by calling `enableLogging()` in `util/logger`. This is a temporary workaround to prevent unwanted logging to the console until issue #220 is fixed.
 
 # 0.6.1 (May 2022)
 

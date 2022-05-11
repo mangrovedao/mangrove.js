@@ -19,13 +19,26 @@ export const logdataLimiter = (data: Record<string, any>): any => {
   return inspect(data, { maxStringLength: 1000 });
 };
 
+// FIXME: Temporary dumb toggle until issue #220 is fixed
+let loggingEnabled = false;
+export function enableLogging(): void {
+  loggingEnabled = true;
+}
+export function disableLogging(): void {
+  loggingEnabled = false;
+}
+
 // FIXME: Temporary dumb implementation until issue #220 is fixed
 export const logger = {
   debug: (msg: unknown, data: unknown): void => {
-    console.log(msg + " " + stringifyData(data));
+    if (loggingEnabled) {
+      console.log(msg + " " + stringifyData(data));
+    }
   },
   warn: (msg: unknown, data: unknown): void => {
-    console.warn(msg + " " + stringifyData(data));
+    if (loggingEnabled) {
+      console.warn(msg + " " + stringifyData(data));
+    }
   },
 };
 
