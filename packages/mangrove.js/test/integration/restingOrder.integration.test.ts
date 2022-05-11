@@ -2,11 +2,12 @@
 import { afterEach, beforeEach, describe, it } from "mocha";
 const chalk = require("chalk");
 
-import { utils } from "ethers";
-const { ethers } = require("hardhat");
+import { ethers, utils } from "ethers";
+const hre = require("hardhat");
+//const { ethers } = require("hardhat");
 
 import assert from "assert";
-import { Mangrove, OfferLogic, LiquidityProvider, Market } from "../../src";
+import { Mangrove, LiquidityProvider, Market } from "../../src";
 
 import { Big } from "big.js";
 
@@ -14,13 +15,6 @@ import { Big } from "big.js";
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
   return `<Big>${this.toString()}`; // previously just Big.prototype.toString;
 };
-
-// advance block numbers
-async function mineNBlocks(n: number) {
-  for (let index = 0; index < n; index++) {
-    await ethers.provider.send("evm_mine", []);
-  }
-}
 
 describe("RestingOrder", () => {
   let mgv: Mangrove;
@@ -53,7 +47,7 @@ describe("RestingOrder", () => {
   });
 
   describe("Resting order integration tests suite", () => {
-    let orderContract = null;
+    let orderContractAsLP: LiquidityProvider = null;
     /* Make sure tx has been mined so we can read the result off the chain */
     const w = async (r) => (await r).wait(1);
 
@@ -73,9 +67,9 @@ describe("RestingOrder", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
-      orderContract = await logic.liquidityProvider(market);
-      await w(orderContract.approveMangrove("TokenA"));
-      await w(orderContract.approveMangrove("TokenB"));
+      orderContractAsLP = await logic.liquidityProvider(market);
+      await w(orderContractAsLP.approveMangrove("TokenA"));
+      await w(orderContractAsLP.approveMangrove("TokenB"));
 
       // minting As and Bs for test runner
       const me = await mgv._signer.getAddress();
@@ -83,8 +77,8 @@ describe("RestingOrder", () => {
         mgv.token("TokenA").contract.mint(me, utils.parseUnits("100", 18))
       );
       // depositing tokens on the strat (approve and deposit)
-      await w(mgv.token("TokenA").approve(orderContract.logic.address));
-      await w(orderContract.logic.depositToken("TokenA", 50));
+      await w(mgv.token("TokenA").approve(orderContractAsLP.logic.address));
+      await w(orderContractAsLP.logic.depositToken("TokenA", 50));
 
       await w(
         mgv.token("TokenB").contract.mint(me, utils.parseUnits("100", 18))
@@ -93,19 +87,19 @@ describe("RestingOrder", () => {
       // `me` proposes asks on Mangrove so should approve base
       await w(mgv.token("TokenA").approveMangrove());
 
-      const provision = await orderContract.computeAskProvision();
+      const provision = await orderContractAsLP.computeAskProvision();
       // fills Asks semi book
-      await orderContract.newAsk({
+      await orderContractAsLP.newAsk({
         wants: 10, //tokenB
         gives: 10, //tokenA
         fund: provision,
       });
-      await orderContract.newAsk({
+      await orderContractAsLP.newAsk({
         wants: 10,
         gives: 9,
         fund: provision,
       });
-      await orderContract.newAsk({
+      await orderContractAsLP.newAsk({
         wants: 10,
         gives: 8,
         fund: provision,
@@ -113,15 +107,16 @@ describe("RestingOrder", () => {
     });
 
     it("simple resting order", async () => {
-      const provision = await orderContract.computeBidProvision();
+      const provision = await orderContractAsLP.computeBidProvision();
       // `me` buying base so should approve orderContract for quote
-      await w(mgv.token("TokenB").approve(orderContract.logic.address));
+      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
 
-      const orderResult: Market.OrderResult = await orderContract.market.buy({
-        wants: 20, // tokenA
-        gives: 20, // tokenB
-        restingOrder: { provision: provision },
-      });
+      const orderResult: Market.OrderResult =
+        await orderContractAsLP.market.buy({
+          wants: 20, // tokenA
+          gives: 20, // tokenB
+          restingOrder: { provision: provision },
+        });
       assert(orderResult.got.eq(10), "Taker received an incorrect amount");
       assert(orderResult.gave.eq(10), "Taker gave an incorrect amount");
       assert(orderResult.offerId > 0, "Resting order was not posted");
@@ -133,11 +128,16 @@ describe("RestingOrder", () => {
     });
 
     it("resting order with deadline", async () => {
-      const orderContractAsLP: LiquidityProvider = orderContract;
+      // dirty trick to advance blocks as automine will do so every time a signed tx is sent
+      const advanceBlocks = async (blocks: number) => {
+        for (let i = 0; i < blocks; i++) {
+          await orderContractAsLP.approveMangrove("TokenA");
+        }
+      };
       const provision = await orderContractAsLP.computeBidProvision();
-      const market: Market = orderContract.market;
+      const market: Market = orderContractAsLP.market;
       // `me` buying base so should approve orderContract for quote
-      await w(mgv.token("TokenB").approve(orderContract.logic.address));
+      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
 
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
@@ -151,7 +151,6 @@ describe("RestingOrder", () => {
         mgv.token("TokenA").address,
         orderResult.offerId
       );
-      console.log(ttl.toString());
 
       // taking resting offer
 
@@ -161,12 +160,13 @@ describe("RestingOrder", () => {
       const result = await market.sell({ wants: 5, gives: 5 });
       assert(result.got.eq(5), "Sell order went wrong");
       assert(
-        await orderContract.market.isLive("bids", orderResult.offerId),
+        await orderContractAsLP.market.isLive("bids", orderResult.offerId),
         "Residual should still be in the book"
       );
-      mineNBlocks(6);
+      await advanceBlocks(6);
+
       assert(
-        (await mgv._provider.getBlockNumber()) > ttl.toNumber(),
+        ttl.lt(await mgv._provider.getBlockNumber()),
         "Block number is incorrect"
       );
       const result_ = await market.sell({ wants: 5, gives: 5 });
