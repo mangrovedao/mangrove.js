@@ -605,7 +605,7 @@ class Semibook implements Iterable<Market.Offer> {
             offer: removedOffer,
             takerWants: outbound_tkn.fromUnits(event.args.takerWants),
             takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-            mgvData: event.args.mgvData,
+            mgvData: ethers.utils.parseBytes32String(event.args.mgvData),
           },
           event,
           ethersLog: ethersLog,
