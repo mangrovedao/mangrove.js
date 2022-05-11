@@ -185,16 +185,7 @@ describe("Market integration tests suite", () => {
 
     // post a failing offer from TestMaker
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-
-    // Note: the "as const" is necessary, else TS insists that 'asks' should be widened as a string, which doesn't match the type - I view this as a failing of the TS type-checker
-    const newFailingOffer = {
-      market,
-      ba: "asks" as const,
-      maker,
-      shouldFail: true,
-    };
-
-    await mgvTestUtil.postNewOffer(newFailingOffer);
+    await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
     await mgvTestUtil.eventsForLastTxHaveBeenGenerated;

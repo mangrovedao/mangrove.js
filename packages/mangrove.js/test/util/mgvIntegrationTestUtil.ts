@@ -330,6 +330,14 @@ export const postNewSucceedingOffer = async (
   await postNewOffer({ market, ba, maker });
 };
 
+export const postNewFailingOffer = async (
+  market: Market,
+  ba: BA,
+  maker: Account
+): Promise<void> => {
+  await postNewOffer({ market, ba, maker, shouldFail: true });
+};
+
 export const setMgvGasPrice = async (
   gasPrice: ethers.BigNumberish
 ): Promise<void> => {
