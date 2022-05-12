@@ -188,23 +188,10 @@ class LiquidityProvider {
 
   approveMangrove(
     tokenName: string,
-    amount?: Bigish,
+    arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.#proxy().approveMangrove(tokenName, amount, overrides);
-  }
-
-  approveMangroveForBase(
-    amount?: Bigish,
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.approveMangrove(this.market.base.name, amount, overrides);
-  }
-  approveMangroveForQuote(
-    amount?: Bigish,
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.approveMangrove(this.market.quote.name, amount, overrides);
+    return this.#proxy().approveMangrove(tokenName, arg, overrides);
   }
 
   fundMangrove(
@@ -234,6 +221,7 @@ class LiquidityProvider {
   #proxy(): Mangrove | OfferLogic {
     return this.logic ? this.logic : this.mgv;
   }
+
   async #gasreq(): Promise<number> {
     return this.logic ? await this.logic.getDefaultGasreq() : EOA_offer_gasreq;
   }

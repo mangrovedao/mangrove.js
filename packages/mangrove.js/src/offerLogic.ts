@@ -95,10 +95,18 @@ class OfferLogic {
    */
   approveMangrove(
     tokenName: string,
+    arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
+    let amount_: ethers.BigNumber;
+    if (arg.amount) {
+      amount_ = this.mgv.toUnits(arg.amount, 18);
+    } else {
+      amount_ = ethers.constants.MaxUint256;
+    }
     return this.contract.approveMangrove(
       this.mgv.getAddress(tokenName),
+      amount_,
       overrides
     );
   }

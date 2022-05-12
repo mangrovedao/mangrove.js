@@ -328,10 +328,10 @@ class Mangrove {
 
   approveMangrove(
     tokenName: string,
-    amount?: Bigish,
+    arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.token(tokenName).approveMangrove(amount, overrides);
+    return this.token(tokenName).approveMangrove(arg, overrides);
   }
 
   /**

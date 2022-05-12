@@ -1,8 +1,8 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
-const chalk = require("chalk");
+import chalk from "chalk";
 
-import { ethers, utils } from "ethers";
+import { utils } from "ethers";
 const hre = require("hardhat");
 //const { ethers } = require("hardhat");
 
@@ -40,6 +40,7 @@ describe("RestingOrder", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
+
       //check that contract responds
       const gasreq = await lp.logic.contract.OFR_GASREQ();
       assert(gasreq.gt(0), "Cannot talk to resting order contract");
@@ -53,8 +54,10 @@ describe("RestingOrder", () => {
 
     beforeEach(async function () {
       //set mgv object
+
       mgv = await Mangrove.connect({
         provider: "http://localhost:8546",
+        signer: (await hre.ethers.getNamedSigners()).deployer,
       });
 
       //shorten polling for faster tests
@@ -67,7 +70,9 @@ describe("RestingOrder", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
+
       orderContractAsLP = await logic.liquidityProvider(market);
+
       await w(orderContractAsLP.approveMangrove("TokenA"));
       await w(orderContractAsLP.approveMangrove("TokenB"));
 
@@ -77,7 +82,11 @@ describe("RestingOrder", () => {
         mgv.token("TokenA").contract.mint(me, utils.parseUnits("100", 18))
       );
       // depositing tokens on the strat (approve and deposit)
-      await w(mgv.token("TokenA").approve(orderContractAsLP.logic.address));
+      await w(
+        mgv
+          .token("TokenA")
+          .approve({ spender: orderContractAsLP.logic.address })
+      );
       await w(orderContractAsLP.logic.depositToken("TokenA", 50));
 
       await w(
@@ -109,7 +118,11 @@ describe("RestingOrder", () => {
     it("simple resting order", async () => {
       const provision = await orderContractAsLP.computeBidProvision();
       // `me` buying base so should approve orderContract for quote
-      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
+      await w(
+        mgv
+          .token("TokenB")
+          .approve({ spender: orderContractAsLP.logic.address })
+      );
 
       const orderResult: Market.OrderResult =
         await orderContractAsLP.market.buy({
@@ -131,13 +144,17 @@ describe("RestingOrder", () => {
       // dirty trick to advance blocks as automine will do so every time a signed tx is sent
       const advanceBlocks = async (blocks: number) => {
         for (let i = 0; i < blocks; i++) {
-          await orderContractAsLP.approveMangrove("TokenA");
+          await hre.network.provider.send("hardhat_mine", ["0x100"]);
         }
       };
       const provision = await orderContractAsLP.computeBidProvision();
       const market: Market = orderContractAsLP.market;
       // `me` buying base so should approve orderContract for quote
-      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
+      await w(
+        mgv
+          .token("TokenB")
+          .approve({ spender: orderContractAsLP.logic.address })
+      );
 
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
