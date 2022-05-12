@@ -63,16 +63,20 @@ class LiquidityProvider {
 
   computeOfferProvision(
     ba: "bids" | "asks",
-    opts: { id?: number; gasreq?: number }
+    opts: { id?: number; gasreq?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision(ba, opts);
   }
 
-  computeBidProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
+  computeBidProvision(
+    opts: { id?: number; gasreq?: number } = {}
+  ): Promise<Big> {
     return this.getMissingProvision("bids", opts);
   }
 
-  computeAskProvision(opts: { id?: number; gasreq?: number }): Promise<Big> {
+  computeAskProvision(
+    opts: { id?: number; gasreq?: number } = {}
+  ): Promise<Big> {
     return this.getMissingProvision("asks", opts);
   }
 
@@ -151,7 +155,6 @@ class LiquidityProvider {
     fund?: Bigish
   ): ethers.PayableOverrides {
     if (fund) {
-      console.log("funding mangrove");
       return { value: this.mgv.toUnits(fund, 18), ...overrides };
     } else {
       return overrides;
@@ -185,23 +188,10 @@ class LiquidityProvider {
 
   approveMangrove(
     tokenName: string,
-    amount?: Bigish,
+    arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.#proxy().approveMangrove(tokenName, amount, overrides);
-  }
-
-  approveMangroveForBase(
-    amount?: Bigish,
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.approveMangrove(this.market.base.name, amount, overrides);
-  }
-  approveMangroveForQuote(
-    amount?: Bigish,
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.approveMangrove(this.market.quote.name, amount, overrides);
+    return this.#proxy().approveMangrove(tokenName, arg, overrides);
   }
 
   fundMangrove(
@@ -231,6 +221,7 @@ class LiquidityProvider {
   #proxy(): Mangrove | OfferLogic {
     return this.logic ? this.logic : this.mgv;
   }
+
   async #gasreq(): Promise<number> {
     return this.logic ? await this.logic.getDefaultGasreq() : EOA_offer_gasreq;
   }

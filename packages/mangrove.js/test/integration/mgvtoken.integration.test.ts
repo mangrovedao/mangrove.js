@@ -29,7 +29,7 @@ describe("MGV Token integration tests suite", () => {
     const usdc = mgv.token("USDC");
     const allowance1 = await usdc.allowance();
     assert.deepStrictEqual(allowance1, Big(0), "allowance should start at 0");
-    const resp = await usdc.approveMangrove(100);
+    const resp = await usdc.approveMangrove({ amount: 100 });
     await resp.wait(1);
     const allowance2 = await usdc.allowance();
     assert.deepStrictEqual(allowance2, Big(100), "allowance should be 100");

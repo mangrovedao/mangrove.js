@@ -88,7 +88,13 @@ describe("SimpleMaker", () => {
 
         const overridesTest = { gasLimit: 100000 };
         // test specified approve amount
-        await w(onchain_lp.approveMangrove("TokenB", 10 ** 9, overridesTest));
+        await w(
+          onchain_lp.approveMangrove(
+            "TokenB",
+            { amount: 10 ** 9 },
+            overridesTest
+          )
+        );
         allowanceForLogic /*:Big*/ = await onchain_lp.mangroveAllowance(
           "TokenB"
         );
@@ -98,7 +104,7 @@ describe("SimpleMaker", () => {
           "allowance should be 1 billion"
         );
         // test default approve amount
-        await w(onchain_lp.approveMangrove("TokenB"));
+        await w(onchain_lp.logic.approveMangrove("TokenB"));
         allowanceForLogic /*:Big*/ = await onchain_lp.mangroveAllowance(
           "TokenB"
         );
@@ -119,7 +125,11 @@ describe("SimpleMaker", () => {
 
         const overridesTest = { gasLimit: 100000 };
         // test specified approve amount
-        await w(eoa_lp.approveMangrove("TokenB", 10 ** 9, overridesTest));
+        await w(
+          mgv
+            .token("TokenB")
+            .approveMangrove({ amount: 10 ** 9 }, overridesTest)
+        );
         allowanceForEOA /*:Big*/ = await eoa_lp.mangroveAllowance("TokenB");
         assert.strictEqual(
           allowanceForEOA.toNumber(),
@@ -127,7 +137,7 @@ describe("SimpleMaker", () => {
           "allowance should be 1 billion"
         );
         // test default approve amount
-        await w(eoa_lp.approveMangrove("TokenB"));
+        await w(mgv.token("TokenB").approveMangrove());
         allowanceForEOA /*:Big*/ = await eoa_lp.mangroveAllowance("TokenB");
         assert.strictEqual(
           mgv.toUnits(allowanceForEOA, 18).toString(),
@@ -155,7 +165,7 @@ describe("SimpleMaker", () => {
 
     describe("After setup", () => {
       beforeEach(async () => {
-        await eoa_lp.approveMangrove("TokenB", 10 ** 9);
+        await mgv.token("TokenB").approveMangrove();
         //await logic.fundMangrove(10);
       });
 
