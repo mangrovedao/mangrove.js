@@ -225,17 +225,25 @@ mgv = await Mangrove.connect(window.ethereum); // web browser
 
 mgv = await Mangrove.connect('http://127.0.0.1:8545'); // HTTP provider
 
-mgv = await Mangrove.connect(); // Uses Ethers.js fallback mainnet (for testing only)
-
 mgv = await Mangrove.connect('rinkeby'); // Uses Ethers.js fallback (for testing only)
 
 // Init with private key (server side)
-mgv = await Mangrove.connect('https://mainnet.infura.io/v3/_your_project_id_', {
+/* Note that if you provide BOTH provider and signer info,
+   any connection info on the signer will be ignored, and any credentials on the provider will be ignored. */
+mgv = await Mangrove.connect({
+  provider: 'https://mainnet.infura.io/v3/_your_project_id_',
   privateKey: '0x_your_private_key_', // preferably with environment variable
 });
 
+// Init with a signer and a provider in e.g. hardhat:
+mgv = await Mangrove.connect({
+  provider: 'https://mainnet.infura.io/v3/_your_project_id_',
+  signer: await hre.ethers.getSigners()[0];
+});
+
 // Init with HD mnemonic (server side)
-mgv = await Mangrove.connect('mainnet' {
+mgv = await Mangrove.connect({
+  provider: 'mainnet',
   mnemonic: 'clutch captain shoe...', // preferably with environment variable
 });
 
@@ -259,6 +267,38 @@ mgv = await Mangrove.connect({
   provider: provider,
   privateKey: '0x_your_private_key_'
 });
+```
+
+Here is the type of the argument to connect: `string | CreateSignerOption`, where a string indicates a URL, and:
+
+```typescript
+/* privateKey, mnemonic, signer, jsonWallet *will override*
+   any credentials stored in provider object */
+export interface CreateSignerOptions {
+  // object or URL
+  provider?: Provider | string;
+  // optional in addition to provider object: gets signer number `signerIndex` of the provider
+  signerIndex?: number;
+  // raw privkey without 0x prefix
+  privateKey?: string;
+  // BIP39 mnemonic
+  mnemonic?: string;
+  // optional in addition to mnemonic: BIP44 path
+  path?: string;
+  // signer object
+  signer?: any;
+  // json wallet access information
+  jsonWallet?: JsonWalletOptions;
+  // if constructor finds no signer, it will throw unless this option is set to true.
+  forceReadOnly?: boolean;
+}
+
+interface JsonWalletOptions {
+  // local path to json wallet file
+  path: string;
+  // json wallet password
+  password: string;
+}
 ```
 
 ## Constants and Contract Addresses

@@ -9,18 +9,30 @@ import { logger, logdataLimiter } from "./util/logger";
 import fs from "fs";
 
 interface JsonWalletOptions {
+  // local path to json wallet file
   path: string;
+  // json wallet password
   password: string;
 }
 
+/* privateKey, mnemonic, signer, jsonWallet *will override*
+   any credentials stored in provider object */
 export interface CreateSignerOptions {
+  // object or URL
   provider?: Provider | string;
-  privateKey?: string;
-  mnemonic?: string;
-  path?: string;
-  signer?: any;
+  // optional in addition to provider object: gets signer number `signerIndex` of the provider
   signerIndex?: number;
+  // raw privkey without 0x prefix
+  privateKey?: string;
+  // BIP39 mnemonic
+  mnemonic?: string;
+  // optional in addition to mnemonic: BIP44 path
+  path?: string;
+  // signer object
+  signer?: any;
+  // json wallet access information
   jsonWallet?: JsonWalletOptions;
+  // if constructor finds no signer, it will throw unless this option is set to true.
   forceReadOnly?: boolean;
 }
 
@@ -85,7 +97,7 @@ export async function getProviderNetwork(
  * - `options.signer`, if you want to contruct the Signer yourself
  * - `options.provider`, then you can specify `options.signerIndex` to get the nth account, or
  * - `options.privateKey`, or
- * - `options.mnemonic`, then you can specify the derivation with `options.path`.
+ * - `options.mnemonic`, then you can specify the BIP44 derivation path with `options.path`.
  * In addition, you can specify
  * - `options.forceReadOnly:boolean` to connect readonly to mangrove. If you don't specify a signer and the provider does not include a signer, you will connect in readonly mode.
  *
