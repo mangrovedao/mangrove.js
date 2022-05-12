@@ -59,7 +59,7 @@ class Mangrove {
   readerContract: typechain.MgvReader;
   cleanerContract: typechain.MgvCleaner;
   oracleContract: typechain.MgvOracle;
-  orderContract: typechain.MangroveOrder;
+  orderContract: typechain.MangroveOrderEnriched;
   static typechain = typechain;
 
   /**
@@ -162,10 +162,10 @@ class Mangrove {
       this._signer
     );
     const orderAddress = Mangrove.getAddress(
-      "MangroveOrder",
+      "MangroveOrderEnriched",
       this._network.name
     );
-    this.orderContract = typechain.MangroveOrder__factory.connect(
+    this.orderContract = typechain.MangroveOrderEnriched__factory.connect(
       orderAddress,
       this._signer
     );
