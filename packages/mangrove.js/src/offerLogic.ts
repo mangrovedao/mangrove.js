@@ -111,28 +111,38 @@ class OfferLogic {
     );
   }
 
-  /** Get the current balance the LP has on Mangrove */
-  async balanceOnMangrove(overrides: ethers.Overrides = {}): Promise<Big> {
+  /** Get the current balance an LP has on Mangrove */
+  /** If owner fee is not provided, then the balance of the contract is queried */
+  async balanceOnMangrove(
+    owner: string = this.address,
+    overrides: ethers.Overrides = {}
+  ): Promise<Big> {
     if (this.isMultiMaker) {
-      const rawBalance = await this.contract.balanceOnMangrove(overrides);
+      const rawBalance = await this.contract.balanceOnMangrove(
+        owner,
+        overrides
+      );
       return this.mgv.fromUnits(rawBalance, 18);
     } else {
-      return this.mgv.balanceOf(this.address, overrides);
+      return this.mgv.balanceOf(owner, overrides);
     }
   }
 
   async tokenBalance(
-    tokenName: string,
+    args: { tokenName: string; owner?: string },
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
     if (this.isMultiMaker) {
       const rawBalance = await this.contract.tokenBalance(
-        this.mgv.getAddress(tokenName),
+        this.mgv.getAddress(args.tokenName),
+        args.owner ? args.owner : this.address,
         overrides
       );
-      return this.mgv.fromUnits(rawBalance, tokenName);
+      return this.mgv.fromUnits(rawBalance, args.tokenName);
     } else {
-      return this.mgv.token(tokenName).balanceOf(this.address, overrides);
+      return this.mgv
+        .token(args.tokenName)
+        .balanceOf(args.owner ? args.owner : this.address, overrides);
     }
   }
 
