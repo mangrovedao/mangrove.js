@@ -2,8 +2,6 @@ import { logger } from "./util/logger";
 import Mangrove from "@mangrovedao/mangrove.js";
 import Big from "big.js";
 import get from "axios";
-Big.DP = 20; // precision when dividing
-Big.RM = Big.roundHalfUp; // round to nearest
 
 /**
  * Configuration for an external oracle JSON REST endpoint.

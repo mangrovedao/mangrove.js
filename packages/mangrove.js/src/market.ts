@@ -20,8 +20,6 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
-Big.DP = 20; // precision when dividing
-Big.RM = Big.roundHalfUp; // round to nearest
 
 export const bookOptsDefault: Market.BookOptions = {
   maxOffers: Semibook.DEFAULT_MAX_OFFERS,
