@@ -82,11 +82,7 @@ describe("RestingOrder", () => {
         mgv.token("TokenA").contract.mint(me, utils.parseUnits("100", 18))
       );
       // depositing tokens on the strat (approve and deposit)
-      await w(
-        mgv
-          .token("TokenA")
-          .approve({ spender: orderContractAsLP.logic.address })
-      );
+      await w(mgv.token("TokenA").approve(orderContractAsLP.logic.address));
       await w(orderContractAsLP.logic.depositToken("TokenA", 50));
 
       await w(
@@ -118,11 +114,7 @@ describe("RestingOrder", () => {
     it("simple resting order", async () => {
       const provision = await orderContractAsLP.computeBidProvision();
       // `me` buying base so should approve orderContract for quote
-      await w(
-        mgv
-          .token("TokenB")
-          .approve({ spender: orderContractAsLP.logic.address })
-      );
+      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
 
       const orderResult: Market.OrderResult =
         await orderContractAsLP.market.buy({
@@ -150,11 +142,7 @@ describe("RestingOrder", () => {
       const provision = await orderContractAsLP.computeBidProvision();
       const market: Market = orderContractAsLP.market;
       // `me` buying base so should approve orderContract for quote
-      await w(
-        mgv
-          .token("TokenB")
-          .approve({ spender: orderContractAsLP.logic.address })
-      );
+      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
 
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
