@@ -15,8 +15,6 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 */
 import Big from "big.js";
 import { OfferLogic } from ".";
-Big.DP = 20; // precision when dividing
-Big.RM = Big.roundHalfUp; // round to nearest
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
