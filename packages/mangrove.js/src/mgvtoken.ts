@@ -99,20 +99,21 @@ class MgvToken {
     arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.approve({ ...arg, spender: this.mgv._address }, overrides);
+    return this.approve(this.mgv._address, arg, overrides);
   }
 
   /**
    * Set approval for `spender` on `amount`.
    */
   approve(
-    arg: { spender: string; amount?: Bigish },
+    spender: string,
+    arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     const _amount = arg.amount
       ? this.toUnits(arg.amount)
       : ethers.constants.MaxUint256;
-    return this.contract.approve(arg.spender, _amount, overrides);
+    return this.contract.approve(spender, _amount, overrides);
   }
 
   /**

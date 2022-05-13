@@ -374,26 +374,31 @@ class LiquidityProvider {
     );
   }
   /** Get the current balance the liquidity provider has in Mangrove */
-  balanceOnMangrove(overrides: ethers.Overrides = {}): Promise<Big> {
-    if (this.logic) {
-      // if liquidity provider has a logic, then one should ask its contract what is the balance of signer (could be multiple users)
-      return this.logic.balanceOnMangrove(overrides);
-    } else {
-      // if liquidity provider has no logic, balance is the balanceOf(signer)
-      return this.mgv.balanceOf(this.eoa, overrides);
-    }
-  }
-
-  tokenBalance(
-    tokenName: string,
+  balanceOnMangrove(
+    arg: { owner?: string } = {},
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
     if (this.logic) {
       // if liquidity provider has a logic, then one should ask its contract what is the balance of signer (could be multiple users)
-      return this.logic.tokenBalance(tokenName, overrides);
+      return this.logic.balanceOnMangrove(arg.owner, overrides);
+    } else {
+      // if liquidity provider has no logic, balance is the balanceOf(signer)
+      const owner = arg.owner ? arg.owner : this.eoa;
+      return this.mgv.balanceOf(owner, overrides);
+    }
+  }
+
+  tokenBalance(
+    args: { tokenName: string; owner?: string },
+    overrides: ethers.Overrides = {}
+  ): Promise<Big> {
+    if (this.logic) {
+      // if liquidity provider has a logic, then one should ask its contract what is the balance of signer (could be multiple users)
+      return this.logic.tokenBalance(args, overrides);
     } else {
       // if liquidity provider has no logic, balance is the token.balanceOf(signer)
-      return this.mgv.token(tokenName).balanceOf(this.eoa, overrides);
+      const owner = args.owner ? args.owner : this.eoa;
+      return this.mgv.token(args.tokenName).balanceOf(owner, overrides);
     }
   }
 
