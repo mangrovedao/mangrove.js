@@ -1,5 +1,9 @@
 # Next version
 
+# 0.6.3 (May 2022)
+
+- Update with latest Mumbai address for `MangroveOrderEnriched` (formerly known as `MangroveOrder`), which uses the latest Mangrove.
+
 # 0.6.2 (May 2022)
 
 - `approveMangrove` on `OfferLogic` instance may use an optional value `{amount:value}`. Note it is now a signed transaction that must be emitted by the admin of the underlying logic.
