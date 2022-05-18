@@ -14,6 +14,10 @@ import { Bigish } from "./types";
 import { LiquidityProvider, OfferLogic, MgvToken, Market } from ".";
 
 import Big from "big.js";
+// Configure big.js global constructor
+Big.DP = 20; // precision when dividing
+Big.RM = Big.roundHalfUp; // round to nearest
+
 import * as ethers from "ethers";
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
   Big.prototype.toString;

@@ -4,8 +4,6 @@ import { TakerConfig } from "./MarketConfig";
 import { fetchJson } from "ethers/lib/utils";
 import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
 import Big from "big.js";
-Big.DP = 20; // precision when dividing
-Big.RM = Big.roundHalfUp; // round to nearest
 
 // FIXME Move to mangrove.js
 export type BA = "bids" | "asks";
