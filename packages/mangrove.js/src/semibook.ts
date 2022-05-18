@@ -586,6 +586,7 @@ class Semibook implements Iterable<Market.Offer> {
           cbArg: {
             type: event.name,
             offer: expectOfferInsertionInCache ? offer : undefined,
+            offerId: id,
             ba: this.ba,
           },
           event,
@@ -603,6 +604,7 @@ class Semibook implements Iterable<Market.Offer> {
             ba: this.ba,
             taker: event.args.taker,
             offer: removedOffer,
+            offerId: id,
             takerWants: outbound_tkn.fromUnits(event.args.takerWants),
             takerGives: inbound_tkn.fromUnits(event.args.takerGives),
             mgvData: ethers.utils.parseBytes32String(event.args.mgvData),
@@ -622,6 +624,7 @@ class Semibook implements Iterable<Market.Offer> {
             ba: this.ba,
             taker: event.args.taker,
             offer: removedOffer,
+            offerId: id,
             takerWants: outbound_tkn.fromUnits(event.args.takerWants),
             takerGives: inbound_tkn.fromUnits(event.args.takerGives),
           },
@@ -638,6 +641,7 @@ class Semibook implements Iterable<Market.Offer> {
           cbArg: {
             type: event.name,
             ba: this.ba,
+            offerId: id,
             offer: removedOffer,
           },
           event,
