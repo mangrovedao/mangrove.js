@@ -253,7 +253,7 @@ class LiquidityProvider {
     return this.market.onceWithTxPromise(
       txPromise,
       (cbArg, _event, ethersEvent) => ({
-        id: cbArg.offer.id,
+        id: cbArg.offerId,
         event: ethersEvent,
         pivot: pivot,
       }),
