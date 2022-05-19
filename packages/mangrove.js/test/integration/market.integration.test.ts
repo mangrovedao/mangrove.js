@@ -152,11 +152,13 @@ describe("Market integration tests suite", () => {
       {
         type: "OfferWrite",
         ba: "asks",
+        offerId: 1,
         offer: offer1,
       },
       {
         type: "OfferWrite",
         ba: "bids",
+        offerId: 1,
         offer: offer2,
       },
     ]);

@@ -128,6 +128,7 @@ namespace Market {
 
   export type BookSubscriptionCbArgument = {
     ba: "asks" | "bids";
+    offerId: number;
     offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
     | { type: "OfferWrite" }
@@ -482,15 +483,20 @@ class Market {
 
     const slippage = validateSlippage(params.slippage);
 
-    _gives = _gives.mul(100 + slippage).div(100);
-
+    const __gives = _gives.mul(100 + slippage).div(100);
     const wants = this.base.toUnits(_wants);
-    const gives = this.quote.toUnits(_gives);
+    const gives = this.quote.toUnits(__gives);
+
     if (params.restingOrder) {
+      const makerWants = wants;
+      const makerGives = this.quote.toUnits(_gives);
+
       return this.#restingOrder(
         {
           gives,
+          makerGives,
           wants,
+          makerWants,
           orderType: "buy",
           fillWants,
           params: params.restingOrder,
@@ -551,15 +557,19 @@ class Market {
 
     const slippage = validateSlippage(params.slippage);
 
-    _wants = _wants.mul(100 - slippage).div(100);
-
+    const __wants = _wants.mul(100 - slippage).div(100);
     const gives = this.base.toUnits(_gives);
-    const wants = this.quote.toUnits(_wants);
+    const wants = this.quote.toUnits(__wants);
+
     if (params.restingOrder) {
+      const makerGives = gives;
+      const makerWants = this.quote.toUnits(_wants);
       return this.#restingOrder(
         {
           gives,
+          makerGives,
           wants,
+          makerWants,
           orderType: "sell",
           fillWants,
           params: params.restingOrder,
@@ -659,13 +669,17 @@ class Market {
   async #restingOrder(
     {
       wants,
+      makerWants,
       gives,
+      makerGives,
       orderType,
       fillWants,
       params,
     }: {
       wants: ethers.BigNumber;
+      makerWants: ethers.BigNumber;
       gives: ethers.BigNumber;
+      makerGives: ethers.BigNumber;
       orderType: "buy" | "sell";
       fillWants: boolean;
       params: Market.RestingOrderParams;
@@ -691,7 +705,9 @@ class Market {
           : false,
         selling: orderType === "sell",
         wants: wants,
+        makerWants: makerWants,
         gives: gives,
+        makerGives: makerGives,
         restingOrder: true,
         retryNumber: params.retryNumber ? params.retryNumber : 0,
         gasForMarketOrder: params.gasForMarketOrder

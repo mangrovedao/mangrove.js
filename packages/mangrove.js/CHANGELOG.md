@@ -1,5 +1,7 @@
 # Next version
 
+- Resting Limit Orders now post residual a the taker price before slippage
+
 # 0.6.3 (May 2022)
 
 - Update with latest Mumbai address for `MangroveOrderEnriched` (formerly known as `MangroveOrder`), which uses the latest Mangrove.
