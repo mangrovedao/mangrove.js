@@ -76,7 +76,7 @@ const main = async () => {
         return -1;
       });
 
-      logger.verbose(`Scheduled bot task running on block ${blockNumber}...`);
+      logger.debug(`Scheduled bot task running on block ${blockNumber}...`);
       await exitIfMangroveIsKilled(mgv, blockNumber);
       await gasUpdater.checkSetGasprice();
     },
@@ -232,6 +232,6 @@ process.on("uncaughtException", (err) => {
 });
 
 main().catch((e) => {
-  logger.exception(e);
+  logger.error(e);
   stopAndExit(ExitCode.ExceptionInMain);
 });

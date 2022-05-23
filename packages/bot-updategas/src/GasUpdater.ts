@@ -103,12 +103,12 @@ export class GasUpdater {
         );
 
       if (shouldUpdateGasPrice) {
-        logger.verbose(`Determined gas price update needed. `, {
+        logger.debug(`Determined gas price update needed. `, {
           data: newGasPrice,
         });
         await this.#updateMangroveGasPrice(newGasPrice);
       } else {
-        logger.verbose(`Determined gas price update not needed.`);
+        logger.debug(`Determined gas price update not needed.`);
       }
     } else {
       const url = this.#oracleURL;

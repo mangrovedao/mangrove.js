@@ -278,6 +278,6 @@ process.on("uncaughtException", (err) => {
 });
 
 main().catch((e) => {
-  logger.exception(e);
+  logger.error(e);
   stopAndExit(ExitCode.ExceptionInMain);
 });
