@@ -1743,7 +1743,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/commonlib-js@workspace:*, @mangrovedao/commonlib-js@workspace:packages/commonlib.js":
+"@mangrovedao/commonlib-js@0.0.2, @mangrovedao/commonlib-js@workspace:*, @mangrovedao/commonlib-js@workspace:packages/commonlib.js":
   version: 0.0.0-use.local
   resolution: "@mangrovedao/commonlib-js@workspace:packages/commonlib.js"
   dependencies:
@@ -1884,6 +1884,7 @@ __metadata:
     "@ethersproject/experimental": ^5.6.1
     "@ethersproject/hardware-wallets": ^5.6.0
     "@ethersproject/providers": ^5.6.4
+    "@mangrovedao/commonlib-js": 0.0.2
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@nomiclabs/hardhat-ethers": ^2.0.5
