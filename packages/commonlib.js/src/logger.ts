@@ -40,7 +40,6 @@ const levelConfig = {
 export const createLogger = (
   consoleFormatLogger: Format,
   logLevel: string
-  //additionalTransports: Transport[] = []
 ): CommonLogger => {
   /* Expose winston-style interface to the logger */
   // generate fresh logger

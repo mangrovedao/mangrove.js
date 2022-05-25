@@ -53,11 +53,6 @@ config.hardhat = {
         enabled: true,
         runs: 20000,
       },
-      outputSelection: {
-        "*": {
-          "*": ["storageLayout"],
-        },
-      },
     },
   },
   paths: {
