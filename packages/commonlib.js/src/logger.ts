@@ -93,8 +93,12 @@ export const createLogger = (
       }
     };
   };
-  // update logging methods
-  logger.setLevel(logger.getLevel());
+  // simultaneously set logger level as low as possible & apply new methodFactory.
+  const logLevelNum = (levels as any)[logLevel.toLowerCase()];
+  if (logLevelNum === undefined) {
+    throw Error(`Unknown logLevel: ${logLevel}`);
+  }
+  logger.setLevel(logLevelNum);
   return logger as CommonLogger;
 };
 
