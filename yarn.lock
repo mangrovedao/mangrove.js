@@ -1484,7 +1484,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.1
     "@ethersproject/hardware-wallets": ^5.6.0
-    "@mangrovedao/commonlib-js": "workspace:*"
+    "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1537,7 +1537,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.1
     "@ethersproject/hardware-wallets": ^5.6.0
-    "@mangrovedao/commonlib-js": "workspace:*"
+    "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1590,7 +1590,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.1
     "@ethersproject/hardware-wallets": ^5.6.0
-    "@mangrovedao/commonlib-js": "workspace:*"
+    "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1644,7 +1644,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.1
     "@ethersproject/hardware-wallets": ^5.6.0
-    "@mangrovedao/commonlib-js": "workspace:*"
+    "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1696,7 +1696,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.1
     "@ethersproject/hardware-wallets": ^5.6.0
-    "@mangrovedao/commonlib-js": "workspace:*"
+    "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1743,9 +1743,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/commonlib-js@0.0.2, @mangrovedao/commonlib-js@workspace:*, @mangrovedao/commonlib-js@workspace:packages/commonlib.js":
+"@mangrovedao/commonlib.js@workspace:*, @mangrovedao/commonlib.js@workspace:packages/commonlib.js":
   version: 0.0.0-use.local
-  resolution: "@mangrovedao/commonlib-js@workspace:packages/commonlib.js"
+  resolution: "@mangrovedao/commonlib.js@workspace:packages/commonlib.js"
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
     "@types/config": ^0.0.41
@@ -1884,7 +1884,7 @@ __metadata:
     "@ethersproject/experimental": ^5.6.1
     "@ethersproject/hardware-wallets": ^5.6.0
     "@ethersproject/providers": ^5.6.4
-    "@mangrovedao/commonlib-js": 0.0.2
+    "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/hardhat-utils": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@nomiclabs/hardhat-ethers": ^2.0.5

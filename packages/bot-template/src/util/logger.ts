@@ -1,10 +1,10 @@
-import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib-js";
+import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib.js";
 import os from "os";
 import safeStringify from "fast-safe-stringify";
 import config from "./config";
 
 /* NOTE:
- * This is a basic usage and setup of a console logger from @mangrovedao/commonlib-js
+ * This is a basic usage and setup of a console logger from @mangrovedao/commonlib.js
  * Extend at your leisure; see other bots for examples.
  */
 

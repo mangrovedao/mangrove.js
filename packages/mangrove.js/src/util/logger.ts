@@ -1,5 +1,5 @@
 import inspect from "object-inspect";
-import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib-js";
+import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib.js";
 import os from "os";
 
 const stringifyData = (data) => {
