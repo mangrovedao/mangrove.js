@@ -7,13 +7,7 @@ const stringifyData = (data) => {
   else return inspect(data);
 };
 
-// FIXME: Temporary copy until issue #220 is fixed
-export const logdataLimiter = (data: Record<string, any>): any => {
-  return inspect(data, { maxStringLength: 1000 });
-};
-
-// FIXME: Temporary dumb toggle until issue #220 is fixed
-let loggingEnabled = true;
+let loggingEnabled = false;
 export function enableLogging(): void {
   loggingEnabled = true;
 }
