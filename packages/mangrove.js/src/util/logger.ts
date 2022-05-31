@@ -1,5 +1,10 @@
 import inspect from "object-inspect";
-import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib.js";
+import {
+  createLogger,
+  CommonLogger,
+  format,
+  logdataLimiter,
+} from "@mangrovedao/commonlib.js";
 import os from "os";
 
 const stringifyData = (data) => {
@@ -15,9 +20,9 @@ export function disableLogging(): void {
   loggingEnabled = false;
 }
 
-const consoleLogFormat = format.printf(
-  ({ level, message, timestamp, ...metadata }) => {
-    console.log("in there");
+const consoleLogFormat = format.combine(
+  format((info) => loggingEnabled && info)(),
+  format.printf(({ level, message, timestamp, ...metadata }) => {
     let msg = `${timestamp} [${level}] `;
     if (metadata.contextInfo !== undefined) {
       msg += `[${metadata.contextInfo}] `;
@@ -30,10 +35,11 @@ const consoleLogFormat = format.printf(
       msg += `${os.EOL}${metadata.stack}`;
     }
     return msg;
-  }
+  })
 );
 
 const logLevel = "debug";
 export const logger: CommonLogger = createLogger(consoleLogFormat, logLevel);
 
 export default logger;
+export { logdataLimiter };
