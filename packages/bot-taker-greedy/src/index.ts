@@ -4,7 +4,7 @@
  */
 
 import config from "./util/config";
-import { ErrorWithData } from "@mangrovedao/commonlib-js";
+import { ErrorWithData } from "@mangrovedao/commonlib.js";
 import { logger } from "./util/logger";
 
 import Mangrove, { MgvToken } from "@mangrovedao/mangrove.js";
@@ -278,6 +278,6 @@ process.on("uncaughtException", (err) => {
 });
 
 main().catch((e) => {
-  logger.exception(e);
+  logger.error(e);
   stopAndExit(ExitCode.ExceptionInMain);
 });

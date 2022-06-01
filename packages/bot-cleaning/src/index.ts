@@ -94,7 +94,7 @@ const main = async () => {
       });
       const contextInfo = `block#=${blockNumber}`;
 
-      logger.verbose("Scheduled bot task running...", { contextInfo });
+      logger.trace("Scheduled bot task running...", { contextInfo });
       await exitIfMangroveIsKilled(mgv, contextInfo);
 
       const cleaningPromises = [];
@@ -211,6 +211,6 @@ process.on("uncaughtException", (err) => {
 });
 
 main().catch((e) => {
-  logger.exception(e);
+  logger.error(e);
   stopAndExit(ExitCode.ExceptionInMain);
 });

@@ -1,25 +1,17 @@
-// FIXME: The logger has been stunted by removing the dependency to commonlib.js
-//        as a temporary workaround for issue #220 and issue #226.
-//        To avoid reverting a merge commit and the burden of maintaining that old feature branch,
-//        we have opted to keep most of the logging code but only support simplified logging to console.
-//
-//        For references on why we want to avoid revert merge commits:
-//          Long (Linus): https://github.com/git/git/blob/master/Documentation/howto/revert-a-faulty-merge.txt
-//          Short: https://www.datree.io/resources/git-undo-merge
-
 import inspect from "object-inspect";
+import {
+  createLogger,
+  CommonLogger,
+  format,
+  logdataLimiter,
+} from "@mangrovedao/commonlib.js";
+import os from "os";
 
 const stringifyData = (data) => {
   if (typeof data == "string") return data;
   else return inspect(data);
 };
 
-// FIXME: Temporary copy until issue #220 is fixed
-export const logdataLimiter = (data: Record<string, any>): any => {
-  return inspect(data, { maxStringLength: 1000 });
-};
-
-// FIXME: Temporary dumb toggle until issue #220 is fixed
 let loggingEnabled = false;
 export function enableLogging(): void {
   loggingEnabled = true;
@@ -28,18 +20,26 @@ export function disableLogging(): void {
   loggingEnabled = false;
 }
 
-// FIXME: Temporary dumb implementation until issue #220 is fixed
-export const logger = {
-  debug: (msg: unknown, data: unknown): void => {
-    if (loggingEnabled) {
-      console.log(msg + " " + stringifyData(data));
+const consoleLogFormat = format.combine(
+  format((info) => loggingEnabled && info)(),
+  format.printf(({ level, message, timestamp, ...metadata }) => {
+    let msg = `${timestamp} [${level}] `;
+    if (metadata.contextInfo !== undefined) {
+      msg += `[${metadata.contextInfo}] `;
     }
-  },
-  warn: (msg: unknown, data: unknown): void => {
-    if (loggingEnabled) {
-      console.warn(msg + " " + stringifyData(data));
+    msg += message;
+    if (metadata.data !== undefined) {
+      msg += ` | data: ${stringifyData(metadata.data)}`;
     }
-  },
-};
+    if (metadata.stack !== undefined) {
+      msg += `${os.EOL}${metadata.stack}`;
+    }
+    return msg;
+  })
+);
+
+const logLevel = "debug";
+export const logger: CommonLogger = createLogger(consoleLogFormat, logLevel);
 
 export default logger;
+export { logdataLimiter };

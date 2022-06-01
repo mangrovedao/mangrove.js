@@ -77,7 +77,7 @@ Here's an example configuration file with instances of all possible configuratio
 }
 ```
 
-- `logLevel`: Sets the logging level - the bot employs the [winston](https://github.com/winstonjs/winston) logger, and it's default log-levels.
+- `logLevel`: Sets the logging level - the bot employs @mangrovedao/commonlib.js, and it's default log-levels.
 - `tokens`: A list of per-token configuration.
   - `name`: The symbol of the token.
   - `targetAllowance`: The allowance that Mangrove should be approved to transfer on behalf of the bot. On startup, this is checked and an approval tx sent if the current approval is too low.
@@ -96,4 +96,4 @@ It is possible to override parts of the configuration with environment variables
 
 # Logging
 
-The bot logs to `console.log` using [Winston](https://github.com/winstonjs/winston). More transports can be added by editing [src/util/logger.ts](src/util/logger.ts); Please refer to the Winston documentation for details.
+The bot logs to `console.log` using [@mangrovedao/commonlib.js].

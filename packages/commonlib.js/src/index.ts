@@ -1,19 +1,12 @@
 import { ErrorWithData } from "./errorWithData";
-import {
-  BetterLogger,
-  createLogger,
-  logdataLimiter,
-  format,
-  transports,
-} from "./logger";
+import { CommonLogger, createLogger, logdataLimiter, format } from "./logger";
 import { sleep } from "./promiseUtil";
 
 export {
   ErrorWithData,
-  BetterLogger,
+  CommonLogger,
   createLogger,
   logdataLimiter,
   format,
-  transports,
   sleep,
 };
