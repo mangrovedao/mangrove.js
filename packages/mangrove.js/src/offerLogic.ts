@@ -247,7 +247,7 @@ class OfferLogic {
         gives: outbound_tkn.toUnits(gives),
         gasreq: gasreq ? gasreq : await this.contract.OFR_GASREQ(),
         gasprice: gasprice ? gasprice : 0,
-        pivotId: pivot,
+        pivotId: pivot ? pivot : 0,
       },
       overrides
     );
@@ -275,6 +275,22 @@ class OfferLogic {
         pivotId: pivot,
       },
       offerId,
+      overrides
+    );
+  }
+
+  cancelOffer(
+    outbound_tkn: MgvToken,
+    inbound_tkn: MgvToken,
+    id: number,
+    deprovision: boolean,
+    overrides: ethers.Overrides
+  ): Promise<TransactionResponse> {
+    return this.contract.retractOffer(
+      outbound_tkn.address,
+      inbound_tkn.address,
+      id,
+      deprovision,
       overrides
     );
   }

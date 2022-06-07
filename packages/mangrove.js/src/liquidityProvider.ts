@@ -388,13 +388,24 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    const txPromise = this.#proxy().contract.retractOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      id,
-      deprovision,
-      overrides
-    );
+    let txPromise = null;
+    if (this.logic) {
+      txPromise = this.logic.cancelOffer(
+        outbound_tkn,
+        inbound_tkn,
+        id,
+        deprovision,
+        overrides
+      );
+    } else {
+      txPromise = this.mgv.contract.retractOffer(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        id,
+        deprovision,
+        overrides
+      );
+    }
 
     logger.debug(`Cancel offer`, {
       contextInfo: "mangrove.maker",
