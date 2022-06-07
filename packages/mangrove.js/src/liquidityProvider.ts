@@ -205,7 +205,9 @@ class LiquidityProvider {
     arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.#proxy().approveMangrove(tokenName, arg, overrides);
+    return this.logic
+      ? this.logic.approveMangrove(tokenName, arg, overrides)
+      : this.mgv.token(tokenName).approve(this.mgv._address, arg);
   }
 
   fundMangrove(
