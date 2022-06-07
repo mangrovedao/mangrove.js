@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 
-// IERC20.sol
+// IEIP20.sol
 
 // This is free and unencumbered software released into the public domain.
 

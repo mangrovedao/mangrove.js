@@ -124,7 +124,7 @@ abstract contract SingleUser is MangroveOffer {
       );
   }
 
-  // default `__put__` hook for `SingleUser` strats: received tokens are juste stored in `this` contract balance of `inbound` tokens.
+  // default `__put__` hook for `SingleUser` strats: received tokens are just stored in `this` contract balance of `inbound` tokens.
   function __put__(
     uint, /*amount*/
     ML.SingleOrder calldata
