@@ -1,10 +1,10 @@
-import { createLogger, BetterLogger, format } from "@mangrovedao/commonlib-js";
+import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib.js";
 import os from "os";
 import safeStringify from "fast-safe-stringify";
 import config from "./config";
 
 /* NOTE:
- * This is a basic usage and setup of a console logger from @mangrovedao/commonlib-js
+ * This is a basic usage and setup of a console logger from @mangrovedao/commonlib.js
  * Extend at your leisure; see other bots for examples.
  */
 
@@ -23,6 +23,6 @@ const consoleLogFormat = format.printf(
 );
 
 const logLevel = config.get<string>("logLevel");
-export const logger: BetterLogger = createLogger(consoleLogFormat, logLevel);
+export const logger: CommonLogger = createLogger(consoleLogFormat, logLevel);
 
 export default logger;

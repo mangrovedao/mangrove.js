@@ -1,12 +1,4 @@
-This is a package template for a bot for the Mangrove DEX.
-
-- The `src` folder includes extremely minimal code for an `index.ts` file (startup code), and a `TemplateBot.ts` file with a `TemplateBot` class. Update those as needed.
-- The `test` folder includes stub test code for integration tests as well as `mocha` configuration to use the test-reporter that we use. Update as needed.
-- The `config` folder contains basic configuration stubs with a `logLevel` is already defined. Extend as needed.
-  - The folder also contains configuration to override the `logLevel` with an environment variable. Extend as needed.
-- Add the new bot to the CI build (with tests as needed).
-- Update this `README.md` file - include at least the following sections, and search for `template-bot` and update accordingly for your bot.
-- In updating the source code, tests, configuration and documentation you may look for `TODO`'s here and there, which have been placed in spots, where addition and updates are needed.
+This is a simple arbitrage bot for a Mangrove order book.
 
 # Installation
 
@@ -46,21 +38,4 @@ $ yarn start
 
 ## Configuration
 
-The bot has a number of configurable settings.
-
-Here's an example configuration file with instances of all possible configuration values:
-
-```json
-{
-  "logLevel": "info"
-}
-```
-
-- `logLevel`: Sets the logging level - the bot employs the [winston](https://github.com/winstonjs/winston) logger, and it's default log-levels.
-- TODO: Add other configuration options here.
-
-It is possible to override parts of the configuration with environment variables. This is controlled by [./config/custom-environment-variables.json](./config/custom-environment-variables.json). The structure of this file mirrors the configuration structure but with names of environment variables in the places where these can override a part of the configuration.
-
 # Logging
-
-The bot logs to `console.log` using [Winston](https://github.com/winstonjs/winston). More transports can be added by editing [src/util/logger.ts](src/util/logger.ts); Please refer to the Winston documentation for details.

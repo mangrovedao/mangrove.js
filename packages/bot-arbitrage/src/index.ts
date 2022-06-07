@@ -78,7 +78,7 @@ const main = async () => {
 };
 
 function logErrorAndExit(err: Error) {
-  logger.exception(err);
+  logger.error(err);
   process.exit(1);
 }
 process.on("unhandledRejection", function (reason, promise) {
