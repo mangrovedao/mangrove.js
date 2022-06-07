@@ -7,7 +7,7 @@
 import { logger } from "./util/logger";
 import { BotArbitrage } from "./BotArbitrage";
 
-import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
+import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
 
@@ -17,7 +17,6 @@ const mgvAbi =
   require("../../mangrove-solidity/artifacts/contracts/Mangrove.sol/Mangrove.json").abi;
 
 import { ethers } from "ethers";
-import { PricesAggregator } from "./PricesAggregator";
 
 const main = async () => {
   logger.info("Starting arbitrage bot...");
