@@ -34,7 +34,6 @@ const main = async () => {
   );
 
   for (const ns of defs.struct_defs) {
-    console.log(ns);
     await run_process(
       PRE('MgvType.pre.sol'),
       POST(defs.filename(ns)),
