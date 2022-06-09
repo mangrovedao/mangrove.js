@@ -21,22 +21,6 @@ const levels = {
   silent: 5,
 };
 
-const invertedLevels = Object.fromEntries(
-  Object.entries(levels).map((a) => a.reverse())
-);
-
-const levelConfig = {
-  levels,
-  invertedLevels,
-  colors: {
-    trace: "cyan",
-    debug: "blue",
-    info: "green",
-    warn: "yellow",
-    error: "red",
-  },
-};
-
 export const createLogger = (
   consoleFormatLogger: Format,
   logLevel: string
@@ -81,8 +65,8 @@ export const createLogger = (
       // send log info to formatter
       const formatted = thisFormat.transform({
         // convert to logLevel string, since that is what logform expects
-        level: levelConfig.invertedLevels[logLevel],
-        [LEVEL]: levelConfig.invertedLevels[logLevel],
+        level: methodName,
+        [LEVEL]: methodName,
         message,
         ...metadata,
       });

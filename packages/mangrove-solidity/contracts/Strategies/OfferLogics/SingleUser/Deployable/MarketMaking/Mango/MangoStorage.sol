@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:	BSD-2-Clause
 
-// Mango.sol
+// MangoStorage.sol
 
 // Copyright (c) 2021 Giry SAS. All rights reserved.
 
@@ -12,87 +12,56 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-contract MangoStorage {
+import "contracts/Strategies/interfaces/ISourcer.sol";
+
+library MangoStorage {
   /** Strat specific events */
 
-  // emitted when strat has reached max amount of Bids and needs rebalancing (should shift of x>0 positions in order to have bid prices that are better for the taker)
-  event BidAtMaxPosition(address quote, address base, uint offerId);
+  struct Layout {
+    uint[] asks;
+    uint[] bids;
+    // amount of base (resp quote) tokens that failed to be published on the Market
+    uint pending_base;
+    uint pending_quote;
+    // offerId -> index in ASKS/BIDS maps
+    mapping(uint => uint) index_of_bid; // bidId -> index
+    mapping(uint => uint) index_of_ask; // askId -> index
+    // Price shift is in number of price increments (or decrements when shift < 0) since deployment of the strat.
+    // e.g. for arithmetic progression, `shift = -3` indicates that Pmin is now (`QUOTE_0` - 3*`delta`)/`BASE_0`
+    int shift;
+    // parameter for price progression
+    // NB for arithmetic progression, price(i+1) = price(i) + delta/`BASE_0`
+    uint delta; // quote increment
+    // triggers `__boundariesReached__` whenever amounts of bids/asks is below `min_buffer`
+    uint min_buffer;
+    // puts the strat into a (cancellable) state where it reneges on all incoming taker orders.
+    // NB reneged offers are removed from Mangrove's OB
+    bool paused;
+    // Base and quote token treasuries
+    ISourcer liquidity_sourcer;
+  }
 
-  // emitted when strat has reached max amount of Asks and needs rebalancing (should shift of x<0 positions in order to have ask prices that are better for the taker)
-  event AskAtMinPosition(address quote, address base, uint offerId);
+  function get_storage() internal pure returns (Layout storage st) {
+    bytes32 storagePosition = keccak256("Mangrove.MangoStorage.Layout");
+    assembly {
+      st.slot := storagePosition
+    }
+  }
 
-  // emitted when init function has been called and AMM becomes active
-  event Initialized(uint from, uint to);
+  function revertWithData(bytes memory retdata) internal pure {
+    if (retdata.length == 0) {
+      revert("MangoStorage/revertNoReason");
+    }
+    assembly {
+      revert(add(retdata, 32), mload(retdata))
+    }
+  }
 
-  /** Immutable fields */
-  // total number of Asks (resp. Bids)
-  uint16 public immutable NSLOTS;
-
-  // initial min price given by `QUOTE_0/BASE_0`
-  uint96 immutable BASE_0;
-  uint96 immutable QUOTE_0;
-
-  address public immutable BASE;
-  address public immutable QUOTE;
-
-  /** Mutable fields */
-  // Asks and bids offer Ids are stored in `ASKS` and `BIDS` arrays respectively.
-  uint[] ASKS;
-  uint[] BIDS;
-
-  uint PENDING_BASE;
-  uint PENDING_QUOTE;
-
-  mapping(uint => uint) index_of_bid; // bidId -> index
-  mapping(uint => uint) index_of_ask; // askId -> index
-
-  // Price shift is in number of price increments (or decrements when current_shift < 0) since deployment of the strat.
-  // e.g. for arithmetic progression, `current_shift = -3` indicates that Pmin is now (`QUOTE_0` - 3*`current_delta`)/`BASE_0`
-  int current_shift;
-
-  // parameter for price progression
-  // NB for arithmetic progression, price(i+1) = price(i) + current_delta/`BASE_0`
-  uint current_delta; // quote increment
-
-  // triggers `__boundariesReached__` whenever amounts of bids/asks is below `current_min_buffer`
-  uint current_min_buffer;
-
-  // puts the strat into a (cancellable) state where it reneges on all incoming taker orders.
-  // NB reneged offers are removed from Mangrove's OB
-  bool paused = false;
-
-  // Base and quote token treasuries
-  // default is `this` for both
-  address current_base_treasury;
-  address current_quote_treasury;
-
-  constructor(
-    address base,
-    address quote,
-    uint base_0,
-    uint quote_0,
-    uint nslots,
+  function quote_price_jumps(
     uint delta,
-    address deployer
-  ) {
-    // sanity check
-    require(
-      nslots > 0 &&
-        uint16(nslots) == nslots &&
-        uint96(base_0) == base_0 &&
-        uint96(quote_0) == quote_0,
-      "Mango/constructor/invalidArguments"
-    );
-    BASE = base;
-    QUOTE = quote;
-    NSLOTS = uint16(nslots);
-    ASKS = new uint[](nslots);
-    BIDS = new uint[](nslots);
-    BASE_0 = uint96(base_0);
-    QUOTE_0 = uint96(quote_0);
-    current_delta = delta;
-    current_min_buffer = 1;
-    current_quote_treasury = deployer;
-    current_base_treasury = deployer;
+    uint position,
+    uint quote_min
+  ) internal pure returns (uint) {
+    return delta * position + quote_min;
   }
 }

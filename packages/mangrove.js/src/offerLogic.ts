@@ -14,6 +14,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
+import MgvToken from "./mgvtoken";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 // namespace OL {
@@ -145,13 +146,13 @@ class OfferLogic {
   }
 
   /** Redeems `amount` tokens from the contract's account */
-  redeemToken(
+  withdrawToken(
     tokenName: string,
     recipient: string,
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    return this.contract.redeemToken(
+    return this.contract.withdrawToken(
       this.mgv.getAddress(tokenName),
       recipient,
       this.mgv.toUnits(amount, tokenName),
@@ -226,6 +227,72 @@ class OfferLogic {
 
   getAdmin(): Promise<string> {
     return this.contract.admin();
+  }
+
+  async newOffer(
+    outbound_tkn: MgvToken,
+    inbound_tkn: MgvToken,
+    wants: Bigish,
+    gives: Bigish,
+    gasreq: number,
+    gasprice: number,
+    pivot: number,
+    overrides: ethers.PayableOverrides
+  ): Promise<TransactionResponse> {
+    return this.contract.newOffer(
+      {
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
+        wants: inbound_tkn.toUnits(wants),
+        gives: outbound_tkn.toUnits(gives),
+        gasreq: gasreq ? gasreq : await this.contract.OFR_GASREQ(),
+        gasprice: gasprice ? gasprice : 0,
+        pivotId: pivot ? pivot : 0,
+      },
+      overrides
+    );
+  }
+
+  async updateOffer(
+    outbound_tkn: MgvToken,
+    inbound_tkn: MgvToken,
+    wants: Bigish,
+    gives: Bigish,
+    gasreq: number,
+    gasprice: number,
+    pivot: number,
+    offerId: number,
+    overrides: ethers.PayableOverrides
+  ): Promise<TransactionResponse> {
+    return this.contract.updateOffer(
+      {
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
+        wants: inbound_tkn.toUnits(wants),
+        gives: outbound_tkn.toUnits(gives),
+        gasreq: gasreq ? gasreq : await this.contract.OFR_GASREQ(),
+        gasprice: gasprice ? gasprice : 0,
+        pivotId: pivot,
+      },
+      offerId,
+      overrides
+    );
+  }
+
+  cancelOffer(
+    outbound_tkn: MgvToken,
+    inbound_tkn: MgvToken,
+    id: number,
+    deprovision: boolean,
+    overrides: ethers.Overrides
+  ): Promise<TransactionResponse> {
+    return this.contract.retractOffer(
+      outbound_tkn.address,
+      inbound_tkn.address,
+      id,
+      deprovision,
+      overrides
+    );
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
