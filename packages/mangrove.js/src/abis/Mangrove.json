@@ -748,12 +748,12 @@
     "name": "config",
     "outputs": [
       {
-        "internalType": "Global.t",
+        "internalType": "t",
         "name": "_global",
         "type": "uint256"
       },
       {
-        "internalType": "Local.t",
+        "internalType": "t",
         "name": "_local",
         "type": "uint256"
       }
@@ -897,7 +897,7 @@
             "type": "uint256"
           },
           {
-            "internalType": "Offer.t",
+            "internalType": "t",
             "name": "offer",
             "type": "uint256"
           },
@@ -912,17 +912,17 @@
             "type": "uint256"
           },
           {
-            "internalType": "OfferDetail.t",
+            "internalType": "t",
             "name": "offerDetail",
             "type": "uint256"
           },
           {
-            "internalType": "Global.t",
+            "internalType": "t",
             "name": "global",
             "type": "uint256"
           },
           {
-            "internalType": "Local.t",
+            "internalType": "t",
             "name": "local",
             "type": "uint256"
           }
@@ -984,7 +984,7 @@
   {
     "inputs": [
       {
-        "internalType": "Offer.t",
+        "internalType": "t",
         "name": "offer",
         "type": "uint256"
       }
@@ -1233,7 +1233,7 @@
     "name": "offerDetails",
     "outputs": [
       {
-        "internalType": "OfferDetail.t",
+        "internalType": "t",
         "name": "",
         "type": "uint256"
       }
@@ -1340,7 +1340,7 @@
     "name": "offers",
     "outputs": [
       {
-        "internalType": "Offer.t",
+        "internalType": "t",
         "name": "",
         "type": "uint256"
       }
