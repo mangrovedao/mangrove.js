@@ -4,7 +4,6 @@ import { BigNumber } from "ethers"; // syntactic sugar
 import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
-import { OrderCompleteEvent } from "./types/typechain/Mangrove";
 import { OrderSummaryEvent } from "./types/typechain/MangroveOrder";
 import Semibook from "./semibook";
 import { Deferred } from "./util";
@@ -31,13 +30,29 @@ import * as TCM from "./types/typechain/Mangrove";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
   export type MgvReader = typechain.MgvReader;
-  export type OrderResult = {
+  export type Failure = {
+    offerId: number;
+    reason: string;
+    FailToDeliver: Big;
+    volumeGiven: Big;
+  };
+  export type Success = {
+    offerId: number;
+    got: Big;
+    gave: Big;
+  };
+  export type Summary = {
     got: Big;
     gave: Big;
     partialFill: boolean;
     penalty: Big;
-    offerId?: number;
+    offerId?: number; // id of resting order if any
+  };
+  export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
+    summary: Summary;
+    successes: Success[];
+    failures: Failure[];
   };
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
@@ -584,6 +599,59 @@ class Market {
     }
   }
 
+  #resultOfEvent(
+    evt: ethers.Event,
+    got_bq: "base" | "quote",
+    gave_bq: "base" | "quote",
+    fillWants: boolean,
+    result: Market.OrderResult
+  ): Market.OrderResult {
+    switch (evt.event) {
+      case "OrderComplete": {
+        result.summary = {
+          got: this[got_bq].fromUnits(evt.args.takerGot),
+          gave: this[gave_bq].fromUnits(evt.args.takerGave),
+          partialFill: fillWants
+            ? evt.args.takerGot.lt(evt.args.wants)
+            : evt.args.takerGave.lt(evt.args.gives),
+          penalty: this.mgv.fromUnits(evt.args.penalty, 18),
+        };
+        return result;
+      }
+      case "OfferSuccess": {
+        result.successes.push({
+          offerId: evt.args.id.toNumber(),
+          got: this[gave_bq].fromUnits(evt.args.takerGave),
+          gave: this[got_bq].fromUnits(evt.args.takerGot),
+        });
+        return result;
+      }
+      case "OfferFail": {
+        result.failures.push({
+          offerId: evt.args.id.toNumber(),
+          reason: evt.args.mgvData,
+          FailToDeliver: this[got_bq].fromUnits(evt.args.takerGot),
+          volumeGiven: this[gave_bq].fromUnits(evt.args.takerGave),
+        });
+        return result;
+      }
+      case "OrderSummary": {
+        result.summary = {
+          got: this[got_bq].fromUnits(evt.args.takerGot),
+          gave: this[gave_bq].fromUnits(evt.args.takerGave),
+          partialFill: fillWants
+            ? evt.args.takerGot.lt(evt.args.wants)
+            : evt.args.takerGave.lt(evt.args.gives),
+          penalty: this.mgv.fromUnits(evt.args.penalty, 18),
+          offerId: evt.args.restingOrderId.toNumber(),
+        };
+        return result;
+      }
+      default: {
+        return result;
+      }
+    }
+  }
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
@@ -636,34 +704,31 @@ class Market {
     );
     const receipt = await response.wait();
 
-    let result: ethers.Event | undefined;
+    let result: Market.OrderResult = {
+      txReceipt: receipt,
+      summary: undefined,
+      successes: [],
+      failures: [],
+    };
     //last OrderComplete is ours!
     logger.debug("Market order raw receipt", {
       contextInfo: "market.marketOrder",
       data: { receipt: receipt },
     });
-    for (const evt of receipt.events) {
-      if (evt.event === "OrderComplete" && evt.address === this.mgv._address) {
-        if ((evt as OrderCompleteEvent).args.taker === receipt.from) {
-          result = evt;
-        }
-      }
-    }
-    if (!result) {
-      throw Error("market order went wrong");
-    }
     const got_bq = orderType === "buy" ? "base" : "quote";
     const gave_bq = orderType === "buy" ? "quote" : "base";
-    const takerGot: BigNumber = result.args.takerGot;
-    const takerGave: BigNumber = result.args.takerGave;
-    const orderResult = {
-      got: this[got_bq].fromUnits(takerGot),
-      gave: this[gave_bq].fromUnits(takerGave),
-      partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
-      penalty: this.mgv.fromUnits(result.args.penalty, 18),
-      txReceipt: receipt,
-    };
-    return orderResult;
+    for (const evt of receipt.events) {
+      if (
+        evt.address === this.mgv._address &&
+        evt.args.taker === receipt.from
+      ) {
+        result = this.#resultOfEvent(evt, got_bq, gave_bq, fillWants, result);
+      }
+    }
+    if (!result.summary) {
+      throw Error("market order went wrong");
+    }
+    return result;
   }
 
   async #restingOrder(
@@ -721,7 +786,14 @@ class Market {
     );
     const receipt = await response.wait();
 
-    let result: ethers.Event | undefined;
+    let result: Market.OrderResult = {
+      txReceipt: receipt,
+      summary: undefined,
+      successes: [],
+      failures: [],
+    };
+    const got_bq = orderType === "buy" ? "base" : "quote";
+    const gave_bq = orderType === "buy" ? "quote" : "base";
     //last OrderComplete is ours!
     logger.debug("Resting order raw receipt", {
       contextInfo: "market.restingOrder",
@@ -730,30 +802,17 @@ class Market {
     // check last `OrderComplete` event emitted by `MangroveOrder`
     for (const evt of receipt.events) {
       if (
-        evt.event === "OrderSummary" &&
-        evt.address === this.mgv.orderContract.address
+        evt.address === this.mgv.orderContract.address &&
+        (evt as OrderSummaryEvent).args.taker === receipt.from
       ) {
-        if ((evt as OrderSummaryEvent).args.taker === receipt.from) {
-          result = evt;
-        }
+        result = this.#resultOfEvent(evt, got_bq, gave_bq, fillWants, result);
       }
     }
-    if (!result) {
+    if (!result.summary) {
       throw Error("resting order went wrong");
     }
-    // if resting order was not posted, maker_result is still undefined.
-    const got_bq = orderType === "buy" ? "base" : "quote";
-    const gave_bq = orderType === "buy" ? "quote" : "base";
-    const takerGot: BigNumber = result.args.takerGot;
-    const takerGave: BigNumber = result.args.takerGave;
-    return {
-      got: this[got_bq].fromUnits(takerGot),
-      gave: this[gave_bq].fromUnits(takerGave),
-      partialFill: fillWants ? takerGot.lt(wants) : takerGave.lt(gives),
-      penalty: this.mgv.fromUnits(result.args.penalty, 18),
-      offerId: result.args.restingOrderId.toNumber(),
-      txReceipt: receipt,
-    };
+    // if resting order was not posted, result.summary is still undefined.
+    return result;
   }
 
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
