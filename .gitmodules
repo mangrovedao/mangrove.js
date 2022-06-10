@@ -1,0 +1,3 @@
+[submodule "packages/mangrove-solidity/foundry_lib/forge-std"]
+	path = packages/mangrove-solidity/foundry_lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
