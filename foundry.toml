@@ -4,5 +4,5 @@ src='packages/mangrove-solidity/contracts'
 test='packages/mangrove-solidity/foundry_test'
 out='packages/mangrove-solidity/foundry_out'
 libs=['packages/mangrove-solidity/foundry_lib']
-remappings=['hardhat/=packages/mangrove-solidity/foundry_lib/forge-std/src','@mangrovedao/hardhat-test-solidity/=packages/mangrove-solidity/node_modules/@mangrovedao/hardhat-test-solidity/']
+remappings=['hardhat/=packages/mangrove-solidity/foundry_lib/forge-std/src','@mangrovedao/hardhat-test-solidity/=packages/mangrove-solidity/node_modules/@mangrovedao/hardhat-test-solidity/','src/=packages/mangrove-solidity/contracts','test/=packages/mangrove-solidity/foundry_test']
 cache_path='packages/mangrove-solidity/foundry_cache'
