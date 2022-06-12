@@ -181,8 +181,8 @@ export const getTokens = (
   outboundToken: MgvToken;
 } => {
   return {
-    inboundToken: ba === "asks" ? market.base : market.quote,
-    outboundToken: ba === "asks" ? market.quote : market.base,
+    inboundToken: ba === "asks" ? market.quote : market.base,
+    outboundToken: ba === "asks" ? market.base : market.quote,
   };
 };
 
@@ -291,6 +291,20 @@ export const postNewOffer = async ({
   const { inboundToken, outboundToken } = getTokens(market, ba);
 
   await waitForTransaction(
+    maker.connectedContracts.testMaker.approveMgv(
+      outboundToken.address,
+      ethers.constants.MaxUint256
+    )
+  );
+
+  await waitForTransaction(
+    outboundToken.contract.mint(
+      maker.connectedContracts.testMaker.address,
+      10000000
+    )
+  );
+
+  await waitForTransaction(
     maker.connectedContracts.testMaker.shouldFail(shouldFail)
   );
   await waitForTransaction(
@@ -303,7 +317,7 @@ export const postNewOffer = async ({
   await waitForTransaction(
     maker.connectedContracts.testMaker[
       "newOffer(address,address,uint256,uint256,uint256,uint256)"
-    ](inboundToken.address, outboundToken.address, wants, gives, gasreq, 1)
+    ](outboundToken.address, inboundToken.address, wants, gives, gasreq, 1)
   ); // (base address, quote address, wants, gives, gasreq, pivotId)
 };
 
