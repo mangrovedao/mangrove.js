@@ -604,46 +604,52 @@ class Market {
     got_bq: "base" | "quote",
     gave_bq: "base" | "quote",
     fillWants: boolean,
+    takerWants: ethers.BigNumber,
+    takerGives: ethers.BigNumber,
     result: Market.OrderResult
   ): Market.OrderResult {
     switch (evt.event) {
       case "OrderComplete": {
+        const event = evt as TCM.OrderCompleteEvent;
         result.summary = {
-          got: this[got_bq].fromUnits(evt.args.takerGot),
-          gave: this[gave_bq].fromUnits(evt.args.takerGave),
+          got: this[got_bq].fromUnits(event.args.takerGot),
+          gave: this[gave_bq].fromUnits(event.args.takerGave),
           partialFill: fillWants
-            ? evt.args.takerGot.lt(evt.args.wants)
-            : evt.args.takerGave.lt(evt.args.gives),
-          penalty: this.mgv.fromUnits(evt.args.penalty, 18),
+            ? event.args.takerGot.lt(takerWants)
+            : event.args.takerGave.lt(takerGives),
+          penalty: this.mgv.fromUnits(event.args.penalty, 18),
         };
         return result;
       }
       case "OfferSuccess": {
+        const event = evt as TCM.OfferSuccessEvent;
         result.successes.push({
-          offerId: evt.args.id.toNumber(),
-          got: this[gave_bq].fromUnits(evt.args.takerGave),
-          gave: this[got_bq].fromUnits(evt.args.takerGot),
+          offerId: event.args.id.toNumber(),
+          got: this[gave_bq].fromUnits(event.args.takerWants),
+          gave: this[got_bq].fromUnits(event.args.takerGives),
         });
         return result;
       }
       case "OfferFail": {
+        const event = evt as TCM.OfferFailEvent;
         result.failures.push({
-          offerId: evt.args.id.toNumber(),
-          reason: evt.args.mgvData,
-          FailToDeliver: this[got_bq].fromUnits(evt.args.takerGot),
-          volumeGiven: this[gave_bq].fromUnits(evt.args.takerGave),
+          offerId: event.args.id.toNumber(),
+          reason: event.args.mgvData,
+          FailToDeliver: this[got_bq].fromUnits(event.args.takerWants),
+          volumeGiven: this[gave_bq].fromUnits(event.args.takerGives),
         });
         return result;
       }
       case "OrderSummary": {
+        const event = evt as OrderSummaryEvent;
         result.summary = {
-          got: this[got_bq].fromUnits(evt.args.takerGot),
-          gave: this[gave_bq].fromUnits(evt.args.takerGave),
+          got: this[got_bq].fromUnits(event.args.takerGot),
+          gave: this[gave_bq].fromUnits(event.args.takerGave),
           partialFill: fillWants
-            ? evt.args.takerGot.lt(evt.args.wants)
-            : evt.args.takerGave.lt(evt.args.gives),
-          penalty: this.mgv.fromUnits(evt.args.penalty, 18),
-          offerId: evt.args.restingOrderId.toNumber(),
+            ? event.args.takerGot.lt(takerWants)
+            : event.args.takerGave.lt(takerGives),
+          penalty: this.mgv.fromUnits(event.args.penalty, 18),
+          offerId: event.args.restingOrderId.toNumber(),
         };
         return result;
       }
@@ -720,9 +726,17 @@ class Market {
     for (const evt of receipt.events) {
       if (
         evt.address === this.mgv._address &&
-        evt.args.taker === receipt.from
+        (!evt.args.taker || receipt.from === evt.args.taker)
       ) {
-        result = this.#resultOfEvent(evt, got_bq, gave_bq, fillWants, result);
+        result = this.#resultOfEvent(
+          evt,
+          got_bq,
+          gave_bq,
+          fillWants,
+          wants,
+          gives,
+          result
+        );
       }
     }
     if (!result.summary) {
@@ -803,9 +817,17 @@ class Market {
     for (const evt of receipt.events) {
       if (
         evt.address === this.mgv.orderContract.address &&
-        (evt as OrderSummaryEvent).args.taker === receipt.from
+        (!evt.args.taker || receipt.from === evt.args.taker)
       ) {
-        result = this.#resultOfEvent(evt, got_bq, gave_bq, fillWants, result);
+        result = this.#resultOfEvent(
+          evt,
+          got_bq,
+          gave_bq,
+          fillWants,
+          wants,
+          gives,
+          result
+        );
       }
     }
     if (!result.summary) {
