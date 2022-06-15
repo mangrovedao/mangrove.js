@@ -1,8 +1,4 @@
 import { ethers, BigNumberish } from "ethers";
-import { parseEther } from "ethers/lib/utils";
-import { logger } from "./util/logger";
-
-// TODO: Change and rename this class to match your needs.
 
 type SolSnipeOrder = {
   outbound_tkn: string;

@@ -81,7 +81,7 @@ contract MgvRepostingCleaner is Ownable{
       msg.sender
     );
 
-    require(bounty != 0, "mgvRepostingCleanerBot/cleanByOrder/noBounty");
+    require(bounty != 0, "mgvRepostingCleanerBot/clean/noBountyError");
 
     // Fails & reposts itself.
     while(mangrove.isLive(offer) && bounty != 0){
@@ -98,6 +98,8 @@ contract MgvRepostingCleaner is Ownable{
         order.fillWants,
         msg.sender
       );
+
+      require(successes == 0, "mgvRepostingCleanerBot/clean/snipeSuccessError");
     }
 
     // Fails but does not repost itself
