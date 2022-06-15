@@ -159,14 +159,6 @@ class LiquidityProvider {
     }
   }
 
-  #proxy(): ethers.Contract {
-    if (this.eoa) {
-      return this.mgv.contract;
-    } else {
-      return this.logic.contract;
-    }
-  }
-
   async #gasreq(): Promise<number> {
     if (this.eoa) {
       return EOA_offer_gasreq;
