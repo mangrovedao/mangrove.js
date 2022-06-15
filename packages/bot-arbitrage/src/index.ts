@@ -6,17 +6,17 @@
 
 // import { logger } from "./util/logger";
 import { BotArbitrage } from "./BotArbitrage";
-
 import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
 import { Wallet } from "@ethersproject/wallet";
+import { ethers } from "ethers";
+import dotenvFlow from "dotenv-flow";
+dotenvFlow.config();
 
 const mgvMultiOrderAbi =
   require("../artifacts/contracts/MgvMultiOrder.sol/MgvMultiOrder.json").abi;
 const mgvAbi =
   require("../../mangrove-solidity/artifacts/contracts/Mangrove.sol/Mangrove.json").abi;
-
-import { ethers } from "ethers";
 
 const main = async () => {
   console.log("Starting arbitrage bot...");

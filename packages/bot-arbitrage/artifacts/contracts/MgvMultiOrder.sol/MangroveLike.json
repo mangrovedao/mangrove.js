@@ -1,0 +1,65 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MangroveLike",
+  "sourceName": "contracts/MgvMultiOrder.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256[4][]",
+          "name": "targets",
+          "type": "uint256[4][]"
+        },
+        {
+          "internalType": "bool",
+          "name": "fillWants",
+          "type": "bool"
+        },
+        {
+          "internalType": "address",
+          "name": "taker",
+          "type": "address"
+        }
+      ],
+      "name": "snipesFor",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "successes",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "takerGot",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "takerGave",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "bounty",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5061019b806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c8063b2b1205714610030575b600080fd5b61005161003e3660046100ae565b6000806000809650965096509692505050565b60408051948552602085019390935291830152606082015260800160405180910390f35b803573ffffffffffffffffffffffffffffffffffffffff8116811461009957600080fd5b919050565b8035801515811461009957600080fd5b60008060008060008060a087890312156100c757600080fd5b6100d087610075565b95506100de60208801610075565b9450604087013567ffffffffffffffff808211156100fb57600080fd5b818901915089601f83011261010f57600080fd5b81358181111561011e57600080fd5b8a60208260071b850101111561013357600080fd5b60208301965080955050505061014b6060880161009e565b915061015960808801610075565b9050929550929550929556fea26469706673582212206882b0abcc51c1452c42421848dbb86f9200cb84c2b71dd9f1d338d66a1709ce64736f6c634300080a0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c8063b2b1205714610030575b600080fd5b61005161003e3660046100ae565b6000806000809650965096509692505050565b60408051948552602085019390935291830152606082015260800160405180910390f35b803573ffffffffffffffffffffffffffffffffffffffff8116811461009957600080fd5b919050565b8035801515811461009957600080fd5b60008060008060008060a087890312156100c757600080fd5b6100d087610075565b95506100de60208801610075565b9450604087013567ffffffffffffffff808211156100fb57600080fd5b818901915089601f83011261010f57600080fd5b81358181111561011e57600080fd5b8a60208260071b850101111561013357600080fd5b60208301965080955050505061014b6060880161009e565b915061015960808801610075565b9050929550929550929556fea26469706673582212206882b0abcc51c1452c42421848dbb86f9200cb84c2b71dd9f1d338d66a1709ce64736f6c634300080a0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
