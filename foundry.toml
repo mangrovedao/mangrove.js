@@ -4,6 +4,9 @@ src='packages/mangrove-solidity/contracts'
 test='packages/mangrove-solidity/foundry_test'
 out='packages/mangrove-solidity/foundry_out'
 libs=['packages/mangrove-solidity/foundry_lib']
-remappings=['hardhat/=packages/mangrove-solidity/foundry_lib/forge-std/src','@mangrovedao/hardhat-test-solidity/=packages/mangrove-solidity/node_modules/@mangrovedao/hardhat-test-solidity/','mgv_src/=packages/mangrove-solidity/contracts','mgv_test/=packages/mangrove-solidity/foundry_test']
 cache_path='packages/mangrove-solidity/foundry_cache'
 solc_version="0.8.14"
+# The remappings are in remappings.txt so vscode solidity ext. can read them
+# The first lines are the manual remappings
+# The other lines are a copy/paste of the inferred mappings shown by `forge config` (inferred from imported libs)
+# You should update remappings.txt whenever a lib change impacts remappings
