@@ -1,4 +1,4 @@
-import { logger } from "./util/logger";
+// import { logger } from "./util/logger";
 import { BigNumber, BigNumberish, ethers } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { WebSocketProvider } from "@ethersproject/providers";
@@ -46,11 +46,14 @@ export class BotArbitrage {
     this.#askIdsBlacklist = [];
     this.#bidIdsBlacklist = [];
 
-    logger.info("Initialized arbitrage bot", {
-      contextInfo: "arbitrage init",
-      base: this.#outboundTokenAddress,
-      quote: this.#inboundTokenAddress,
-    });
+    // logger.info("Initialized arbitrage bot", {
+    //   contextInfo: "arbitrage init",
+    //   base: this.#outboundTokenAddress,
+    //   quote: this.#inboundTokenAddress,
+    // });
+    console.log("Initialized arbitrage bot on market:");
+    console.log("out: ", this.#outboundTokenAddress);
+    console.log("in:  ", this.#inboundTokenAddress);
   }
 
   public async start(): Promise<void> {

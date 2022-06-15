@@ -4,7 +4,7 @@
  * @module
  */
 
-import { logger } from "./util/logger";
+// import { logger } from "./util/logger";
 import { BotArbitrage } from "./BotArbitrage";
 
 import { WebSocketProvider } from "@ethersproject/providers";
@@ -19,7 +19,7 @@ const mgvAbi =
 import { ethers } from "ethers";
 
 const main = async () => {
-  logger.info("Starting arbitrage bot...");
+  console.log("Starting arbitrage bot...");
 
   if (!process.env["ETHEREUM_NODE_URL"])
     throw new Error("No URL for a node has been provided in ETHEREUM_NODE_URL");
@@ -77,12 +77,13 @@ const main = async () => {
 };
 
 function logErrorAndExit(err: Error) {
-  logger.error(err);
+  console.error(err);
   process.exit(1);
 }
 process.on("unhandledRejection", function (reason, promise) {
-  logger.warn("Unhandled Rejection", { data: promise });
+  console.warn("Unhandled Rejection:");
   console.warn(reason);
+  console.warn(promise);
 });
 
 main()

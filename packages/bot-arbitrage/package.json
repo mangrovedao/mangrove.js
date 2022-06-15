@@ -14,7 +14,7 @@
     "precommit": "lint-staged",
     "prepack": "yarn build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "build-this-package": "tsc && yarn run write-env-info-file",
+    "build-this-package": "hardhat compile && tsc && yarn run write-env-info-file",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "clean-this-package": "rimraf build",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
