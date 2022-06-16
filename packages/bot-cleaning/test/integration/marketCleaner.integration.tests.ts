@@ -102,12 +102,17 @@ describe("MarketCleaner integration tests", () => {
 
       // Assert
       return Promise.all([
-        expect(market.requestBook())
+        expect(
+          market.requestBook(),
+          "there should be exactly one element in `ba`"
+        )
           .to.eventually.have.property(ba)
           .which.has.lengthOf(1),
-        expect(testProvider.getBalance(cleaner.address)).to.eventually.satisfy(
-          (balanceAfter: ethers.BigNumber) =>
-            balanceAfter.eq(balancesBefore.get(cleaner.name)?.ether || -1)
+        expect(
+          testProvider.getBalance(cleaner.address),
+          "the balance of the cleaner changed, it should not"
+        ).to.eventually.satisfy((balanceAfter: ethers.BigNumber) =>
+          balanceAfter.eq(balancesBefore.get(cleaner.name)?.ether || -1)
         ),
       ]);
     });
