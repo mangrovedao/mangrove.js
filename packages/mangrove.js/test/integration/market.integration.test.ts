@@ -12,7 +12,7 @@ import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
 import { Deferred } from "../../src/util";
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -174,7 +174,7 @@ describe("Market integration tests suite", () => {
     //TODO test offerRetract, offerfail, setGasbase
   });
 
-  it("returns a parsed mgvData with OfferFail", async function () {
+  it("returns correct data when taking offers", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
     // setup market and listener for events from market
@@ -195,7 +195,15 @@ describe("Market integration tests suite", () => {
     expect(events).to.have.lengthOf(1);
 
     // make a buy, which we expect to provoke an OfferFail
-    await market.buy({ wants: "1", gives: "1.5" });
+    const result = await market.buy({ wants: "1", gives: "1.5" });
+    expect(result.failures).to.have.lengthOf(1);
+    expect(utils.parseBytes32String(result.failures[0].reason)).to.be.equal(
+      "mgv/makerTransferFail"
+    );
+    expect(result.successes).to.have.lengthOf(0);
+    expect(result.summary.penalty.toNumber()).to.be.greaterThan(0);
+    //expect(result.failures[0].offerId).to.be.equal(1);
+
     const offerEvent = await queue.get();
 
     assert.strictEqual(offerEvent.type, "OfferFail");
@@ -206,6 +214,16 @@ describe("Market integration tests suite", () => {
       // in the case when ShouldFail is set, so we expect the following error message
       assert.strictEqual(offerEvent.mgvData, "mgv/makerTransferFail");
     }
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+
+    await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
+    const result_ = await market.buy({ wants: "1", gives: "1.5" });
+    expect(result_.failures).to.have.lengthOf(0);
+    expect(result_.successes).to.have.lengthOf(1);
+    expect(result_.successes[0].got.toNumber()).to.be.greaterThan(0);
+    expect(result_.successes[0].gave.toNumber()).to.be.greaterThan(0);
+    expect(result_.successes[0].offerId).to.be.equal(2);
   });
 
   it("gets config", async function () {
