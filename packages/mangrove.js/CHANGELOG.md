@@ -1,5 +1,9 @@
 # next version
 
+-
+
+# 0.7.0 (June 2022)
+
 - (breaks backwards comp) `buy` and `sell` function in `Market.ts` class now returns additional information for market order introspection.
 
 # 0.6.4 (May 2022)
