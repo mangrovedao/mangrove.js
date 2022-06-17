@@ -122,14 +122,17 @@ describe("RestingOrder", () => {
           gives: 20, // tokenB
           restingOrder: { provision: provision },
         });
-      assert(orderResult.got.eq(10), "Taker received an incorrect amount");
-      assert(orderResult.gave.eq(10), "Taker gave an incorrect amount");
-      assert(orderResult.offerId > 0, "Resting order was not posted");
       assert(
-        orderResult.partialFill,
+        orderResult.summary.got.eq(10),
+        "Taker received an incorrect amount"
+      );
+      assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
+      assert(orderResult.summary.offerId > 0, "Resting order was not posted");
+      assert(
+        orderResult.summary.partialFill,
         "Order should have been partially filled"
       );
-      assert(orderResult.penalty.eq(0), "No offer should have failed");
+      assert(orderResult.summary.penalty.eq(0), "No offer should have failed");
     });
 
     it("resting order with deadline", async () => {
@@ -150,11 +153,11 @@ describe("RestingOrder", () => {
         restingOrder: { provision: provision, blocksToLiveForRestingOrder: 5 },
       });
 
-      assert(orderResult.offerId > 0, "Resting order was not posted");
+      assert(orderResult.summary.offerId > 0, "Resting order was not posted");
       const ttl = await mgv.orderContract.expiring(
         mgv.token("TokenB").address,
         mgv.token("TokenA").address,
-        orderResult.offerId
+        orderResult.summary.offerId
       );
 
       // taking resting offer
@@ -163,9 +166,12 @@ describe("RestingOrder", () => {
       await w(mgv.token("TokenA").approveMangrove());
 
       const result = await market.sell({ wants: 5, gives: 5 });
-      assert(result.got.eq(5), "Sell order went wrong");
+      assert(result.summary.got.eq(5), "Sell order went wrong");
       assert(
-        await orderContractAsLP.market.isLive("bids", orderResult.offerId),
+        await orderContractAsLP.market.isLive(
+          "bids",
+          orderResult.summary.offerId
+        ),
         "Residual should still be in the book"
       );
       await advanceBlocks(6);
@@ -175,7 +181,7 @@ describe("RestingOrder", () => {
         "Block number is incorrect"
       );
       const result_ = await market.sell({ wants: 5, gives: 5 });
-      assert(result_.penalty.gt(0), "Order should have reneged");
+      assert(result_.summary.penalty.gt(0), "Order should have reneged");
     });
   });
 });

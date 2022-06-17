@@ -268,10 +268,10 @@ export class OfferTaker {
           price: externalPrice.toString(),
           numberOfAsksWithBetterPrice: offersWithBetterThanExternalPrice.length,
           buyResult: {
-            gave: result.gave.toString(),
-            got: result.got.toString(),
-            partialFill: result.partialFill,
-            penalty: result.penalty.toString(),
+            gave: result.summary.gave.toString(),
+            got: result.summary.got.toString(),
+            partialFill: result.summary.partialFill,
+            penalty: result.summary.penalty.toString(),
           },
         },
       });

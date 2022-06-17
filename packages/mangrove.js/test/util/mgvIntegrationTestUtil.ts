@@ -1,5 +1,5 @@
 // Utility functions for writing integration tests against Mangrove.
-import { ContractTransaction, ethers } from "ethers";
+import { BigNumber, ContractTransaction, ethers } from "ethers";
 import { Market, MgvToken } from "../..";
 import * as typechain from "../../dist/nodejs/types/typechain";
 import "hardhat-deploy-ethers/dist/src/type-extensions";
@@ -30,22 +30,28 @@ export type BA = "bids" | "asks";
 
 export const bidsAsks: BA[] = ["bids", "asks"];
 
+export type AddressAndSigner = { address: string; signer: string };
+
 export type Addresses = {
-  mangrove: string;
-  testMaker: string;
-  tokenA: string;
-  tokenB: string;
+  mangrove: AddressAndSigner;
+  testMaker: AddressAndSigner;
+  tokenA: AddressAndSigner;
+  tokenB: AddressAndSigner;
 };
 
 let addresses: Addresses;
 
 export const getAddresses = async (): Promise<Addresses> => {
   if (!addresses) {
+    const mg = await hardhatEthers.getContract("Mangrove");
+    const tm = await hardhatEthers.getContract("TestMaker");
+    const ta = await hardhatEthers.getContract("TokenA");
+    const tb = await hardhatEthers.getContract("TokenB");
     addresses = {
-      mangrove: (await hardhatEthers.getContract("Mangrove")).address,
-      testMaker: (await hardhatEthers.getContract("TestMaker")).address,
-      tokenA: (await hardhatEthers.getContract("TokenA")).address,
-      tokenB: (await hardhatEthers.getContract("TokenB")).address,
+      mangrove: { address: mg.address, signer: await mg.signer.getAddress() },
+      testMaker: { address: tm.address, signer: await tm.signer.getAddress() },
+      tokenA: { address: ta.address, signer: await ta.signer.getAddress() },
+      tokenB: { address: tb.address, signer: await tb.signer.getAddress() },
     };
   }
   return addresses;
@@ -70,17 +76,20 @@ export const getContracts = async (
 ): Promise<Contracts> => {
   const addresses = await getAddresses();
   return {
-    mangrove: typechain.Mangrove__factory.connect(addresses.mangrove, signer),
+    mangrove: typechain.Mangrove__factory.connect(
+      addresses.mangrove.address,
+      signer
+    ),
     testMaker: typechain.TestMaker__factory.connect(
-      addresses.testMaker,
+      addresses.testMaker.address,
       signer
     ),
     tokenA: typechain.TestTokenWithDecimals__factory.connect(
-      addresses.tokenA,
+      addresses.tokenA.address,
       signer
     ),
     tokenB: typechain.TestTokenWithDecimals__factory.connect(
-      addresses.tokenB,
+      addresses.tokenB.address,
       signer
     ),
   };
@@ -181,8 +190,8 @@ export const getTokens = (
   outboundToken: MgvToken;
 } => {
   return {
-    inboundToken: ba === "asks" ? market.base : market.quote,
-    outboundToken: ba === "asks" ? market.quote : market.base,
+    inboundToken: ba === "asks" ? market.quote : market.base,
+    outboundToken: ba === "asks" ? market.base : market.quote,
   };
 };
 
@@ -290,6 +299,21 @@ export const postNewOffer = async ({
 }: NewOffer): Promise<void> => {
   const { inboundToken, outboundToken } = getTokens(market, ba);
 
+  // we start by making sure that Mangrove is approved (for infinite fund withdrawal)
+  // and that we have funds (going below the minting limit for ERC20's)
+  await waitForTransaction(
+    maker.connectedContracts.testMaker.approveMgv(
+      outboundToken.address,
+      ethers.constants.MaxUint256
+    )
+  );
+
+  await rawMint(
+    outboundToken,
+    maker.connectedContracts.testMaker.address,
+    BigNumber.from(gives).mul(2)
+  );
+
   await waitForTransaction(
     maker.connectedContracts.testMaker.shouldFail(shouldFail)
   );
@@ -303,7 +327,7 @@ export const postNewOffer = async ({
   await waitForTransaction(
     maker.connectedContracts.testMaker[
       "newOffer(address,address,uint256,uint256,uint256,uint256)"
-    ](inboundToken.address, outboundToken.address, wants, gives, gasreq, 1)
+    ](outboundToken.address, inboundToken.address, wants, gives, gasreq, 1)
   ); // (base address, quote address, wants, gives, gasreq, pivotId)
 };
 
@@ -347,33 +371,35 @@ export const setMgvGasPrice = async (
   );
 };
 
-export const mint = async (
+const rawMint = async (
   token: MgvToken,
-  receiver: Account,
-  amount: number
+  receiverAddress: string,
+  internalAmount: ethers.BigNumberish
 ): Promise<void> => {
   const deployer = await getAccount(AccountName.Deployer);
   switch (token.name) {
     case "TokenA":
       await waitForTransaction(
-        deployer.connectedContracts.tokenA.mint(
-          receiver.address,
-          token.toUnits(amount)
-        )
+        deployer.connectedContracts.tokenA.mint(receiverAddress, internalAmount)
       );
 
       break;
 
     case "TokenB":
       await waitForTransaction(
-        deployer.connectedContracts.tokenB.mint(
-          receiver.address,
-          token.toUnits(amount)
-        )
+        deployer.connectedContracts.tokenB.mint(receiverAddress, internalAmount)
       );
 
       break;
   }
+};
+
+export const mint = async (
+  token: MgvToken,
+  receiver: Account,
+  amount: number
+): Promise<void> => {
+  await rawMint(token, receiver.address, token.toUnits(amount));
 };
 
 export const approveMgv = async (
@@ -382,7 +408,7 @@ export const approveMgv = async (
   amount: number
 ): Promise<void> => {
   const addresses = await getAddresses();
-  await approve(token, owner, addresses.mangrove, amount);
+  await approve(token, owner, addresses.mangrove.address, amount);
 };
 
 export const approve = async (
