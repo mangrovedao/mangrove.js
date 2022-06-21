@@ -30,6 +30,6 @@
     "eslint-config-prettier": "^8.5.0",
     "lint-staged": "^12.4.1",
     "prettier": "2.7.1",
-    "prettier-eslint": "^13.0.0"
+    "prettier-eslint": "^15.0.1"
   }
 }
