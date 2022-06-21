@@ -1,6 +1,8 @@
 # next version
 
--
+# 0.7.1 (June 2022)
+
+- new deployment of `MangroveOrder` contract
 
 # 0.7.0 (June 2022)
 
