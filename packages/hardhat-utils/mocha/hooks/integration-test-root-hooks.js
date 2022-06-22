@@ -89,6 +89,8 @@ exports.mochaHooks = {
   async afterAll() {
     if (server) {
       await server.close();
+      // we add the following logging to help debug test hangs
+      console.log("Hardhat server closed");
     }
   },
 };
