@@ -1680,7 +1680,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.0
     chai: ^4.3.4
     chai-as-promised: ^7.1.1
     config: ^3.3.7
@@ -1733,7 +1733,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.0
     chai: ^4.3.4
     chai-as-promised: ^7.1.1
     config: ^3.3.7
@@ -1786,7 +1786,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.0
     chai: ^4.3.4
     chai-as-promised: ^7.1.1
     config: ^3.3.7
@@ -1840,7 +1840,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.0
     chai: ^4.3.4
     chai-as-promised: ^7.1.1
     config: ^3.3.7
@@ -1893,7 +1893,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
     axios: ^0.27.2
-    big.js: ^6.1.1
+    big.js: ^6.2.0
     chai: ^4.3.4
     chai-as-promised: ^7.1.1
     config: ^3.3.7
@@ -2082,7 +2082,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
     async-mutex: ^0.3.2
-    big.js: ^6.1.1
+    big.js: ^6.2.0
     chai: ^4.3.4
     chai-as-promised: ^7.1.1
     chalk: ^5.0.1
@@ -3338,10 +3338,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"big.js@npm:^6.1.1":
-  version: 6.1.1
-  resolution: "big.js@npm:6.1.1"
-  checksum: ba5db278e7d6700d7f92b7421e851bb65b6336d90b882869696c50574623c6be31f81500c3195fb1b391045163ffe62745e1c2bc30b35cb15e1b3e3ed135266b
+"big.js@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "big.js@npm:6.2.0"
+  checksum: 42bcbf0be703c4ae8669c969d0e108f9e1730f20e85bd779e31f7a92d28f6b3e87de96e25ef8657edc0b5dc945a0f66c184ec2654276b86f49e4e9ba025f131a
   languageName: node
   linkType: hard
 
