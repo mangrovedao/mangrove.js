@@ -1,0 +1,7 @@
+{
+  "markets": [
+    { "base": "WETH", "quote": "DAI" },
+    { "base": "WETH", "quote": "USDC" },
+    { "base": "DAI", "quote": "USDC" }
+  ]
+}
