@@ -14,7 +14,7 @@ import { Wallet } from "@ethersproject/wallet";
 import { ethers } from "ethers";
 import dotenvFlow from "dotenv-flow";
 import { Mangrove } from "@mangrovedao/mangrove.js";
-import markets from "../config/markets.json";
+import markets from "./markets.json";
 dotenvFlow.config();
 
 const mgvMultiOrderAbi =
