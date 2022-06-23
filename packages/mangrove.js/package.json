@@ -98,7 +98,7 @@
     "eslint-config-prettier": "^8.5.0",
     "hardhat": "^2.9.9",
     "hardhat-deploy": "^0.11.10",
-    "hardhat-deploy-ethers": "^0.3.0-beta.10",
+    "hardhat-deploy-ethers": "^0.3.0-beta.13",
     "lint-staged": "^13.0.2",
     "minimist": "^1.2.6",
     "mocha": "^10.0.0",
