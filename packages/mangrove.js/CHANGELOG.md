@@ -1,5 +1,7 @@
 # next version
 
+- Bug fix: Deploy maker contract with the simple maker abi requires an additional argument.
+
 # 0.7.1 (June 2022)
 
 - new deployment of `MangroveOrder` contract
