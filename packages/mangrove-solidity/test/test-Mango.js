@@ -99,10 +99,10 @@ describe("Running tests...", function () {
     await router.deployed();
     tx = await router.bind(makerContract.address);
     await tx.wait();
-    tx = await makerContract.set_liquidity_router(
+    tx = await makerContract.set_router(
       router.address,
       maker.address, // reserve is maker EOA
-      await makerContract.OFR_GASREQ()
+      await makerContract.ofr_gasreq()
     );
     await tx.wait();
 
@@ -112,13 +112,13 @@ describe("Running tests...", function () {
     txs[i++] = await wEth
       .connect(maker)
       .approve(
-        await makerContract.liquidity_router(),
+        await makerContract.router(),
         ethers.constants.MaxUint256
       );
     txs[i++] = await usdc
       .connect(maker)
       .approve(
-        await makerContract.liquidity_router(),
+        await makerContract.router(),
         ethers.constants.MaxUint256
       );
     await lc.synch(txs);
@@ -129,11 +129,11 @@ describe("Running tests...", function () {
       ["WETH", "17.0", maker.address],
       ["USDC", "50000", maker.address],
     ]);
-    //await makerContract.setGasreq(ethers.BigNumber.from(500000));
+    //await makerContract.set_gasreq(ethers.BigNumber.from(500000));
     const prov = await makerContract.getMissingProvision(
       wEth.address,
       usdc.address,
-      await makerContract.OFR_GASREQ(),
+      await makerContract.ofr_gasreq(),
       0,
       0
     );

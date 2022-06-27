@@ -42,7 +42,7 @@ describe("RestingOrder", () => {
       });
 
       //check that contract responds
-      const gasreq = await lp.logic.contract.OFR_GASREQ();
+      const gasreq = await lp.logic.contract.ofr_gasreq();
       assert(gasreq.gt(0), "Cannot talk to resting order contract");
     });
   });

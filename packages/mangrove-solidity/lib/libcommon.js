@@ -460,7 +460,7 @@ async function newOffer(
     inbound_tkn: quote.address,
     wants: wants,
     gives: gives,
-    gasreq: await contract.OFR_GASREQ(), // use offer gasreq
+    gasreq: await contract.ofr_gasreq(), // use offer gasreq
     gasprice: 0, // use mangrove gasprice
     pivotId: 0, // use best as pivot
   });

@@ -130,7 +130,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
           inbound_tkn: outbound_tkn,
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
           gives: tko.makerGives - res.takerGave,
-          gasreq: OFR_GASREQ(),
+          gasreq: ofr_gasreq(),
           gasprice: 0,
           pivotId: 0
         }), // offer should be best in the book

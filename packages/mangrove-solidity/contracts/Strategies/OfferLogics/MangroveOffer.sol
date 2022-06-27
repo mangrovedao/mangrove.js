@@ -25,6 +25,7 @@ import "../interfaces/IEIP20.sol";
 
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
 abstract contract MangroveOffer is AccessControlled, IOfferLogic {
+
   // immutable does not impact storage layout
   IMangrove public immutable MGV;
   // `this` contract entypoint is `makerExecute` or `makerPosthook` if `msg.sender == address(MGV)`
@@ -43,11 +44,11 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
 
   constructor(IMangrove _mgv) AccessControlled(msg.sender) {
     MGV = _mgv;
-    MOS.get_storage().OFR_GASREQ = 80_000;
+    MOS.get_storage().ofr_gasreq = 80_000;
   }
 
-  function OFR_GASREQ() public view returns (uint) {
-    return MOS.get_storage().OFR_GASREQ;
+  function ofr_gasreq() public view returns (uint) {
+    return MOS.get_storage().ofr_gasreq;
   }
 
   /////// Mandatory callback functions
@@ -101,9 +102,59 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   }
 
   // sets default gasreq for `new/updateOffer`
-  function setGasreq(uint gasreq) public override mgvOrAdmin {
+  function set_gasreq(uint gasreq) public override mgvOrAdmin {
     require(uint24(gasreq) == gasreq, "mgvOffer/gasreq/overflow");
-    MOS.get_storage().OFR_GASREQ = gasreq;
+    MOS.get_storage().ofr_gasreq = gasreq;
+    emit SetGasreq(gasreq);
+  }
+
+  /** Sets the account from which base (resp. quote) tokens need to be fetched or put during trade execution*/
+  /** */
+  /** NB Router might need further approval to work as intended*/
+  function set_router(AbstractRouter router, uint gasreq)
+    public override
+    mgvOrAdmin
+  {
+    require (address(router) != address(0), "mgvOffer/set_router/0xRouter");
+    MOS.get_storage().router = router;
+    set_gasreq(gasreq);
+    emit SetRouter(router);
+  }
+
+  function set_router(AbstractRouter router)
+    public override
+    mgvOrAdmin
+  {
+    require (address(router) != address(0), "mgvOffer/set_router/0xRouter");
+    MOS.get_storage().router = router;
+    emit SetRouter(router);
+  }
+
+  function router() public view returns (AbstractRouter) {
+    AbstractRouter router = MOS.get_storage().router;
+    require(address(router) != address(0), "mgvOffer/0xRouter");
+    return router;
+  }
+
+  function has_router() external view returns (bool) {
+    return address(router) != address(0);
+  }
+
+  function pull(IEIP20 outbound_tkn, uint amount, address reserve) internal returns (uint) {
+    if (reserve == address(this)) {
+      return 0; // nothing to pull from
+    } else {
+      // letting specific router pull the funds from reserve
+      return router().pull(outbound_tkn, amount, reserve);
+    }
+  }
+  
+  function flush(IEIP20[] tokens, address reserve) internal {
+    if (reserve == address(this)) {
+      return; // nothing to flush to
+    } else {
+      router().flush(tokens, reserve);
+    }
   }
 
   /// `this` contract needs to approve Mangrove to let it perform outbound token transfer at the end of the `makerExecute` function
@@ -164,16 +215,9 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     proceed = true;
   }
 
-  ////// Customizable post-hooks.
-
-  // Override this post-hook to implement what `this` contract should do when called back after a successfully executed order.
-  function __posthookSuccess__(ML.SingleOrder calldata order)
-    internal
-    virtual
-    returns (bool success)
-  {
-    order; // shh
-    success = true;
+  //utils
+  function $(IEIP20 token) internal pure returns (address) {
+    return address(token);
   }
 
   // Override this post-hook to implement fallback behavior when Taker Order's execution failed unexpectedly. Information from Mangrove is accessible in `result.mgvData` for logging purpose.
@@ -186,18 +230,15 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return true;
   }
 
-  //utils
-  function $(IEIP20 token) internal pure returns (address) {
-    return address(token);
-  }
+  function __posthookSuccess__(ML.SingleOrder calldata order);
 
   // returns missing provision to repost `offerId` at given `gasreq` and `gasprice`
   // if `offerId` is not in the Order Book, will simply return how much is needed to post
-  function _getMissingProvision(
+  function getMissingProvision(
     uint balance, // offer owner balance on Mangrove
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,
-    uint gasreq, // give > type(uint24).max to use `this.OFR_GASREQ()`
+    uint gasreq, // give > type(uint24).max to use `this.ofr_gasreq()`
     uint gasprice, // give 0 to use Mangrove's gasprice
     uint offerId // set this to 0 if one is not reposting an offer
   ) internal view returns (uint) {
@@ -217,7 +258,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       _gp = gasprice;
     }
     if (gasreq > type(uint24).max) {
-      gasreq = OFR_GASREQ();
+      gasreq = ofr_gasreq();
     }
     uint bounty = (gasreq + localData.offer_gasbase()) * _gp * 10**9; // in WEI
     // if `offerId` is not in the OfferList, all returned values will be 0

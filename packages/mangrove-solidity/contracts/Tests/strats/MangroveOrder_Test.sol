@@ -374,7 +374,7 @@ contract MangroveOrder_Test is HasMgvEvents {
     uint prov = mgvOrder.getMissingProvision(
       quote,
       base,
-      mgvOrder.OFR_GASREQ(),
+      mgvOrder.ofr_gasreq(),
       0,
       0
     );

@@ -13,8 +13,8 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 import "./MangoStorage.sol";
 import "./MangoImplementation.sol";
-import "../../../Persistent.sol";
-import "../Routers/AbstractRouter.sol";
+import "contracts/Strategies/OfferLogics/SingleUser/Persistent.sol";
+import "contracts/Strategies/Routers/AbstractRouter.sol";
 
 /** Discrete automated market making strat */
 /** This AMM is headless (no price model) and market makes on `NSLOTS` price ranges*/
@@ -29,7 +29,7 @@ import "../Routers/AbstractRouter.sol";
 contract Mango is Persistent {
   // emitted when init function has been called and AMM becomes active
   event Initialized(uint from, uint to);
-  event SetLiquidityRouter(AbstractRouter);
+ 
 
   address private immutable IMPLEMENTATION;
 
@@ -48,7 +48,7 @@ contract Mango is Persistent {
     uint nslots,
     uint price_incr,
     address deployer
-  ) MangroveOffer(mgv) {
+  ) SingleUser(mgv, address(this), address(0)) {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     // sanity check
     require(
@@ -59,10 +59,7 @@ contract Mango is Persistent {
         uint96(quote_0) == quote_0,
       "Mango/constructor/invalidArguments"
     );
-    // require(
-    //   address(liquidity_router) != address(0),
-    //   "Mango/constructor/0xLiquiditySource"
-    // );
+    
     NSLOTS = nslots;
 
     // implementation should have correct immutables
@@ -86,7 +83,7 @@ contract Mango is Persistent {
     mStr.min_buffer = 1;
 
     // setting inherited storage
-    setGasreq(400_000); // dry run OK with 200_000
+    set_gasreq(400_000); // dry run OK with 200_000
     // approve Mangrove to pull funds during trade in order to pay takers
     approveMangrove(quote, type(uint).max);
     approveMangrove(base, type(uint).max);
@@ -123,26 +120,6 @@ contract Mango is Persistent {
     } else {
       emit Initialized({from: from, to: to});
     }
-  }
-
-  /** Sets the account from which base (resp. quote) tokens need to be fetched or put during trade execution*/
-  /** */
-  /** NB Router might need further approval to work as intended*/
-  function set_liquidity_router(
-    AbstractRouter router,
-    address reserve,
-    uint gasreq
-  ) external onlyAdmin {
-    MangoStorage.get_storage().liquidity_router = router;
-    MangoStorage.get_storage().reserve = reserve;
-    BASE.approve(address(router), type(uint).max);
-    QUOTE.approve(address(router), type(uint).max);
-    setGasreq(gasreq);
-    emit SetLiquidityRouter(router);
-  }
-
-  function liquidity_router() public view returns (AbstractRouter) {
-    return MangoStorage.get_storage().liquidity_router;
   }
 
   function reset_pending() external onlyAdmin {

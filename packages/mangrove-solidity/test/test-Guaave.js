@@ -82,11 +82,11 @@ describe("Running tests...", function () {
       )
     ).connect(maker);
 
-    //await makerContract.setGasreq(ethers.BigNumber.from(500000));
+    //await makerContract.set_gasreq(ethers.BigNumber.from(500000));
     const prov = await makerContract.getMissingProvision(
       wEth.address,
       usdc.address,
-      await makerContract.OFR_GASREQ(),
+      await makerContract.ofr_gasreq(),
       0,
       0
     );
@@ -111,7 +111,7 @@ describe("Running tests...", function () {
 
     let txs = [];
     let i = 0;
-    txs[i++] = await makerContract.set_liquidity_router(
+    txs[i++] = await makerContract.set_router(
       router.address, // telling Mango which router it should call
       router.address, // telling Mango to use the router itself as reserve
       800000

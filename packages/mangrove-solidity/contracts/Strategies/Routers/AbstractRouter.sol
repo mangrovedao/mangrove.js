@@ -30,27 +30,29 @@ abstract contract AbstractRouter is AccessControlled {
   // or the Maker contract (to minimize transfer costs)
   function pull(
     IEIP20 token,
+    address reserve,
     uint amount,
-    address reserve
+    bool strict
   ) external onlyMakers returns (uint pulled) {
-    pulled = __pull__(token, amount, reserve);
+    pulled = __pull__(token, reserve, amount, strict);
   }
 
   function __pull__(
     IEIP20 token,
+    address reserve,
     uint amount,
-    address reserve
+    bool strict
   ) internal virtual returns (uint);
 
   // deposits `amount` of `token`s into reserve
-  function flush(IEIP20[] calldata tokens, address reserve)
+  function push(IEIP20[] calldata tokens, address reserve, uint amount)
     external
     onlyMakers
   {
-    __flush__(tokens, reserve);
+    __push__(tokens, reserve, amount);
   }
 
-  function __flush__(IEIP20[] calldata tokens, address reserve)
+  function __push__(IEIP20[] calldata tokens, address reserve, uint amount)
     internal
     virtual;
 

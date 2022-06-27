@@ -206,7 +206,7 @@ class OfferLogic {
     amount: number,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const tx = this.contract.setGasreq(
+    const tx = this.contract.set_gasreq(
       ethers.BigNumber.from(amount),
       overrides
     );
@@ -214,7 +214,7 @@ class OfferLogic {
   }
 
   async getDefaultGasreq(): Promise<number> {
-    const gr = await this.contract.OFR_GASREQ();
+    const gr = await this.contract.ofr_gasreq();
     return gr.toNumber();
   }
 
@@ -245,7 +245,7 @@ class OfferLogic {
         inbound_tkn: inbound_tkn.address,
         wants: inbound_tkn.toUnits(wants),
         gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq ? gasreq : await this.contract.OFR_GASREQ(),
+        gasreq: gasreq ? gasreq : await this.contract.ofr_gasreq(),
         gasprice: gasprice ? gasprice : 0,
         pivotId: pivot ? pivot : 0,
       },
@@ -270,7 +270,7 @@ class OfferLogic {
         inbound_tkn: inbound_tkn.address,
         wants: inbound_tkn.toUnits(wants),
         gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq ? gasreq : await this.contract.OFR_GASREQ(),
+        gasreq: gasreq ? gasreq : await this.contract.ofr_gasreq(),
         gasprice: gasprice ? gasprice : 0,
         pivotId: pivot,
       },

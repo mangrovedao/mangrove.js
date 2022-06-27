@@ -78,12 +78,12 @@ contract MangoImplementation is Persistent {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     // making sure a router has been defined between deployment and initialization
     require(
-      address(mStr.liquidity_router) != address(0),
+      address(router()) != address(0),
       "Mango/initialize/0xRouter"
     );
     /** Initializing Asks and Bids */
     /** NB we assume Mangrove is already provisioned for posting NSLOTS asks and NSLOTS bids*/
-    /** NB cannot post newOffer with infinite gasreq since fallback OFR_GASREQ is not defined yet (and default is likely wrong) */
+    /** NB cannot post newOffer with infinite gasreq since fallback ofr_gasreq is not defined yet (and default is likely wrong) */
     require(to > from, "Mango/initialize/invalidSlice");
     require(
       tokenAmounts.length == NSLOTS &&
@@ -211,7 +211,7 @@ contract MangoImplementation is Persistent {
   {
     // pulled might be lower or higher than amount
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
-    uint pulled = mStr.liquidity_router.pull(
+    uint pulled = router().pull(
       IEIP20(order.outbound_tkn),
       amount,
       mStr.reserve
@@ -242,7 +242,7 @@ contract MangoImplementation is Persistent {
           inbound_tkn: $(QUOTE),
           wants: wants,
           gives: gives,
-          gasreq: OFR_GASREQ(),
+          gasreq: ofr_gasreq(),
           gasprice: 0,
           pivotId: pivotId
         })
@@ -264,7 +264,7 @@ contract MangoImplementation is Persistent {
           inbound_tkn: $(QUOTE),
           wants: wants,
           gives: gives,
-          gasreq: OFR_GASREQ(),
+          gasreq: ofr_gasreq(),
           gasprice: 0,
           pivotId: pivotId,
           offerId: mStr.asks[index]
@@ -306,7 +306,7 @@ contract MangoImplementation is Persistent {
           inbound_tkn: $(BASE),
           wants: wants,
           gives: gives,
-          gasreq: OFR_GASREQ(),
+          gasreq: ofr_gasreq(),
           gasprice: 0,
           pivotId: pivotId
         })
@@ -327,7 +327,7 @@ contract MangoImplementation is Persistent {
           inbound_tkn: $(BASE),
           wants: wants,
           gives: gives,
-          gasreq: OFR_GASREQ(),
+          gasreq: ofr_gasreq(),
           gasprice: 0,
           pivotId: pivotId,
           offerId: mStr.bids[index]
@@ -630,7 +630,7 @@ contract MangoImplementation is Persistent {
 
     // tells liquidity router to handle locally stored liquidity (liquidity from the taker and possibly liquidity brought locally during `__get__` function).
     // this will throw if router is 0x
-    mStr.liquidity_router.flush(tokens, mStr.reserve);
+    router().flush(tokens, mStr.reserve);
 
     // reposting residual of offer using override `__newWants__` and `__newGives__` for new price
     if (order.outbound_tkn == $(BASE)) {

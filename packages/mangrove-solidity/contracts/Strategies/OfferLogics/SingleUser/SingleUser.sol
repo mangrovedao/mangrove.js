@@ -18,6 +18,19 @@ import "../../utils/TransferLib.sol";
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
 abstract contract SingleUser is MangroveOffer {
   /// transfers token stored in `this` contract to some recipient address
+  address immutable RESERVE;
+
+  constructor(IMangrove _mgv, address _reserve, address _router) MangroveOffer(_mgv) {
+    // (_reserve != 0x)
+    require(_reserve != address(0), "SingleUser/0xReserve");
+  
+    // _router == 0x ==> _reserve == this
+    require(_router != address(0) || _reserve == address(this), "SingleUser/NoRouterForReserve");
+    RESERVE = _reserve;
+    if (_router != address(0)) {
+      set_router(AbstractRouter(_router));
+    }
+  }
 
   function withdrawToken(
     IEIP20 token,
@@ -108,39 +121,26 @@ abstract contract SingleUser is MangroveOffer {
       );
   }
 
-  function getMissingProvision(
-    IEIP20 outbound_tkn,
-    IEIP20 inbound_tkn,
-    uint gasreq,
-    uint gasprice,
-    uint offerId
-  ) public view override returns (uint) {
-    return
-      _getMissingProvision(
-        MGV.balanceOf(address(this)), // current provision of offer maker is simply the current provision of `this` contract on Mangrove
-        outbound_tkn,
-        inbound_tkn,
-        gasreq,
-        gasprice,
-        offerId
-      );
-  }
-
-  // default `__put__` hook for `SingleUser` strats: received tokens are juste stored in `this` contract balance of `inbound` tokens.
   function __put__(
     uint, /*amount*/
     ML.SingleOrder calldata
-  ) internal virtual override returns (uint) {
+  ) internal virtual override returns (uint missing) {
+    // singleUser contract do not need to do anything specific with incoming funds during trade
     return 0;
   }
 
-  // default `__get__` hook for `SingleUser` strats: promised liquidity is obtained from `this` contract balance of `outbound` tokens
+  // default `__get__` hook for `SingleUser` is to pull liquidity from immutable `RESERVE`
+  // letting router handle the specifics if any
   function __get__(uint amount, ML.SingleOrder calldata order)
     internal
     virtual
     override
-    returns (uint)
+    returns (uint missing)
   {
+    // pulling liquidity from reserve
+    // depending on the router, this may result in pulling more liquidity than required
+    pull(order.outbound_tkn, amount, RESERVE);
+
     uint balance = IEIP20(order.outbound_tkn).balanceOf(address(this));
     if (balance >= amount) {
       return 0;
@@ -148,4 +148,21 @@ abstract contract SingleUser is MangroveOffer {
       return (amount - balance);
     }
   }
+
+  ////// Customizable post-hooks.
+
+  // Override this post-hook to implement what `this` contract should do when called back after a successfully executed order.
+  // In this posthook, contract will flush its liquidity towards the reserve (noop if reserve is this contract)
+  function __posthookSuccess__(ML.SingleOrder calldata order)
+    internal
+    virtual
+    returns (bool success)
+  {
+    IEIP20[] tokens = new IEIP20[](2);
+    tokens[0] = order.outbound_tkn; // flushing outbound tokens if this contract pulled more liquidity than required during `makerExecute`
+    tokens[1] = order.inbound_tkn; // flushing liquidity brought by taker
+    flush(tokens, RESERVE);
+    success = true;
+  }
+  
 }

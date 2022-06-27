@@ -42,7 +42,7 @@ describe("SimpleMaker", () => {
       //   quote: "TokenB",
       // });
       //check that contract responds
-      await lp.logic.contract.OFR_GASREQ();
+      await lp.logic.contract.ofr_gasreq();
     });
   });
 
@@ -268,7 +268,7 @@ describe("SimpleMaker", () => {
         await onchain_lp.logic.setDefaultGasreq(50000);
         assert.strictEqual(
           50000,
-          (await onchain_lp.logic.contract.OFR_GASREQ()).toNumber(),
+          (await onchain_lp.logic.contract.ofr_gasreq()).toNumber(),
           "Offer default gasreq not updated"
         );
       });
