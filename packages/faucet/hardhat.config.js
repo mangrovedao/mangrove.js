@@ -60,4 +60,14 @@ module.exports = {
       default: 4,
     },
   },
+  mocha: {
+    // Use multiple reporters to output to both stdout and a json file
+    reporter: "mocha-multi-reporters",
+    reporterOptions: {
+      reporterEnabled: "spec, @espendk/json-file-reporter",
+      espendkJsonFileReporterReporterOptions: {
+        output: "solidity-mocha-test-report.json",
+      },
+    },
+  },
 };
