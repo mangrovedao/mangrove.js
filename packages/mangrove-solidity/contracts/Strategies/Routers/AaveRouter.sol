@@ -46,6 +46,7 @@ contract AaveRouter is AbstractRouter, AaveV3Module {
     uint amount_ = balance(token, reserve);
     amount_ = amount < amount_ ? amount : amount_;
     // transfer below is a noop (almost 0 gas) if reserve == address(this)
+    // needs to temporarily deposit tokens to `this` in order to be able to redeem to maker contract
     TransferLib.transferTokenFrom(
       overlying(token),
       reserve,

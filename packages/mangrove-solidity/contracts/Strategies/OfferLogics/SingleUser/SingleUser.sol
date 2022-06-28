@@ -32,14 +32,63 @@ abstract contract SingleUser is MangroveOffer {
     }
   }
 
+
+  function has_router() external view returns (bool) {
+    return address(MOS.get_storage().router) != address(0);
+  }
+
   function withdrawToken(
     IEIP20 token,
     address receiver,
     uint amount
   ) external override onlyAdmin returns (bool success) {
     require(receiver != address(0), "SingleUser/withdrawToken/0xReceiver");
-    return TransferLib.transferToken(IEIP20(token), receiver, amount);
+    AbstractRouter _router = MOS.get_storage().router;
+    if (address(_router)==address(0)) {
+      return TransferLib.transferToken(IEIP20(token), receiver, amount);
+    } else {
+      _router.withdrawToken(token, RESERVE, receiver, amount);
+    }
   }
+
+  function pull(IEIP20 outbound_tkn, uint amount, bool strict) internal returns (uint) {
+    AbstractRouter _router = MOS.get_storage().router;
+    if (address(_router)==address(0)) {
+      return 0; // nothing to do
+    } else {
+      // letting specific router pull the funds from reserve
+      return _router.pull(outbound_tkn, RESERVE, amount, strict);
+    }
+  }
+  
+  function push(IEIP20 token, uint amount) internal {
+    AbstractRouter _router = MOS.get_storage().router;
+    if (address(_router)==address(0)) {
+      return; // nothing to do
+    } else {
+      // noop if reserve == address(this)
+      _router.push(token, RESERVE, amount);
+    }
+  }
+
+  function tokenBalance(IEIP20 token) internal returns (uint) {
+    AbstractRouter _router = MOS.get_storage().router;
+    if (address(_router)==address(0)) {
+      return token.balanceOf(RESERVE);
+    } else {
+      return _router.tokenBalance(token, RESERVE);
+    }
+  }
+
+  function flush(IEIP20[] calldata tokens) internal {
+    AbstractRouter _router = MOS.get_storage().router;
+    if (address(_router)==address(0)) {
+      return; // nothing to do
+    } else {
+      _router.flush(tokens, RESERVE);
+    }
+  }
+
 
   /// withdraws ETH from the bounty vault of the Mangrove.
   /// ETH are sent to `receiver`
@@ -161,6 +210,7 @@ abstract contract SingleUser is MangroveOffer {
     IEIP20[] tokens = new IEIP20[](2);
     tokens[0] = order.outbound_tkn; // flushing outbound tokens if this contract pulled more liquidity than required during `makerExecute`
     tokens[1] = order.inbound_tkn; // flushing liquidity brought by taker
+    // sends all tokens to the reserve (noop if RESERVE == address(this))
     flush(tokens, RESERVE);
     success = true;
   }

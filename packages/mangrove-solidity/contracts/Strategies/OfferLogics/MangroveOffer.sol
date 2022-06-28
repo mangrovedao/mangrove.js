@@ -111,50 +111,21 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /** Sets the account from which base (resp. quote) tokens need to be fetched or put during trade execution*/
   /** */
   /** NB Router might need further approval to work as intended*/
-  function set_router(AbstractRouter router, uint gasreq)
+  function set_router(AbstractRouter router_, uint gasreq)
     public override
     mgvOrAdmin
   {
-    require (address(router) != address(0), "mgvOffer/set_router/0xRouter");
-    MOS.get_storage().router = router;
+    require (address(router_) != address(0), "mgvOffer/set_router/0xRouter");
+    gasreq = gasreq == 0 ? ofr_gasreq() : gasreq;
+    MOS.get_storage().router = router_;
     set_gasreq(gasreq);
-    emit SetRouter(router);
-  }
-
-  function set_router(AbstractRouter router)
-    public override
-    mgvOrAdmin
-  {
-    require (address(router) != address(0), "mgvOffer/set_router/0xRouter");
-    MOS.get_storage().router = router;
-    emit SetRouter(router);
+    emit SetRouter(router_);
   }
 
   function router() public view returns (AbstractRouter) {
-    AbstractRouter router = MOS.get_storage().router;
-    require(address(router) != address(0), "mgvOffer/0xRouter");
-    return router;
-  }
-
-  function has_router() external view returns (bool) {
-    return address(router) != address(0);
-  }
-
-  function pull(IEIP20 outbound_tkn, uint amount, address reserve) internal returns (uint) {
-    if (reserve == address(this)) {
-      return 0; // nothing to pull from
-    } else {
-      // letting specific router pull the funds from reserve
-      return router().pull(outbound_tkn, amount, reserve);
-    }
-  }
-  
-  function flush(IEIP20[] tokens, address reserve) internal {
-    if (reserve == address(this)) {
-      return; // nothing to flush to
-    } else {
-      router().flush(tokens, reserve);
-    }
+    AbstractRouter router_ = MOS.get_storage().router;
+    require(address(router_) != address(0), "mgvOffer/0xRouter");
+    return router_;
   }
 
   /// `this` contract needs to approve Mangrove to let it perform outbound token transfer at the end of the `makerExecute` function
@@ -230,18 +201,20 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return true;
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order);
+  function __posthookSuccess__(ML.SingleOrder calldata order) internal virtual returns (bool) {
+    order;
+    return true;
+  }
 
   // returns missing provision to repost `offerId` at given `gasreq` and `gasprice`
   // if `offerId` is not in the Order Book, will simply return how much is needed to post
   function getMissingProvision(
-    uint balance, // offer owner balance on Mangrove
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,
     uint gasreq, // give > type(uint24).max to use `this.ofr_gasreq()`
     uint gasprice, // give 0 to use Mangrove's gasprice
     uint offerId // set this to 0 if one is not reposting an offer
-  ) internal view returns (uint) {
+  ) public view returns (uint) {
     (P.Global.t globalData, P.Local.t localData) = MGV.config(
       $(outbound_tkn),
       $(inbound_tkn)
@@ -266,7 +239,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       offerDetailData.offer_gasbase()) *
       offerDetailData.gasprice() *
       10**9;
-    uint currentProvision = currentProvisionLocked + balance;
+    uint currentProvision = currentProvisionLocked + MGV.balanceOf(address(this));
     return (currentProvision >= bounty ? 0 : bounty - currentProvision);
   }
 }

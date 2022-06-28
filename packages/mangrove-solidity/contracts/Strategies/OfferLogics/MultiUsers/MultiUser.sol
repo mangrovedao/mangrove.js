@@ -19,13 +19,13 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => address)))
     internal _offerOwners; // outbound_tkn => inbound_tkn => offerId => ownerAddress
 
-  constructor(IMangrove _mgv, address _router) MangroveOffer(_mgv) {
-    require(_router != address(0), "MultiUser/0xRouter");
-    set_router(_router);
+  constructor(IMangrove _mgv, AbstractRouter _router) MangroveOffer(_mgv) {
+    require(address(_router) != address(0), "MultiUser/0xRouter");
+    set_router(_router, 0);
   }
 
-  /// @params offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
-  /// @return an array of the same length where the address at position i is the owner of `offerIds[i]`
+  /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
+  /// @return __offerOwners an array of the same length where the address at position i is the owner of `offerIds[i]`
   function offerOwners(
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,
@@ -159,7 +159,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     IEIP20 inbound_tkn,
     uint offerId,
     bool deprovision,
-    address caller
+    address payable caller
   ) internal returns (uint received) {
     require(
       _offerOwners[outbound_tkn][inbound_tkn][offerId] == caller,
@@ -201,7 +201,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     IEIP20 outTkn = IEIP20(order.outbound_tkn);
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
     address owner = ownerOf(outTkn, inTkn, order.offerId);
-    uint ownerBalance = router().balance(outTkn, owner);
+    uint ownerBalance = router().tokenBalance(outTkn, owner);
     (uint missing, uint amount_) = amount > ownerBalance 
     ? (amount - ownerBalance, ownerBalance) 
     : (0, amount);

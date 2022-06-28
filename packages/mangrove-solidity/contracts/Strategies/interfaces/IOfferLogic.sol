@@ -55,7 +55,7 @@ interface IOfferLogic is IMaker {
 
   // changing liqudity router of the logic
   function set_router(AbstractRouter router, uint gasreq) external;
-
+  
   function withdrawToken(
     IEIP20 token,
     address receiver,

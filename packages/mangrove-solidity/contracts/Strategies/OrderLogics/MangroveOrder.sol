@@ -20,7 +20,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
   // `blockToLive[token1][token2][offerId]` gives block number beyond which the offer should renege on trade.
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => uint))) public expiring;
 
-  constructor(IMangrove _MGV, address deployer) MangroveOffer(_MGV) {
+  constructor(IMangrove _MGV, AbstractRouter _router, address deployer) MultiUserPersistent(_MGV, _router) {
     if (deployer != msg.sender) {
       setAdmin(deployer);
     }
@@ -159,7 +159,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
 
       if (res.offerId == 0) {
         // unable to post resting order
-        // reverting because partial fill is not an option
+        // reverting when partial fill is not an option
         require(!tko.partialFillNotAllowed, "mgvOrder/mo/noPartialFill");
         // sending partial fill to taker --when partial fill is allowed
         require(
@@ -180,9 +180,9 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
         return res;
       } else {
         // offer was successfully posted
-        // crediting offer owner's balance with amount of offered tokens (transfered from caller at the begining of this function)
-        // NB `inbount_tkn` should now be outbound token for the resting order
-        creditToken(inbound_tkn, msg.sender, tko.gives - res.takerGave);
+        // crediting caller's balance with amount of offered tokens (transfered from caller at the begining of this function)
+        // NB `inbount_tkn` is now the outbound token for the resting order
+        push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
 
         // setting a time to live for the resting order
         if (tko.blocksToLiveForRestingOrder > 0) {
@@ -222,65 +222,50 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
     }
   }
 
-  // default __get__ method inherited from `MultiUser` is to fetch liquidity from `this` contract
-  // we do not want to change this since `creditToken`, during the `take` function that created the resting order, will allow one to fulfill any incoming order
-  // However, default __put__ method would deposit tokens in this contract, instead we want forward received liquidity to offer owner
-
-  function __put__(uint amount, ML.SingleOrder calldata order)
-    internal
-    virtual
-    override
-    returns (uint)
-  {
-    address owner = ownerOf(
-      IEIP20(order.outbound_tkn),
-      IEIP20(order.inbound_tkn),
-      order.offerId
-    );
-    // IEIP20(order.inbound_tkn).transfer(owner, amount);
-    // return 0;
-    return
-      TransferLib.transferToken(IEIP20(order.inbound_tkn), owner, amount)
-        ? 0
-        : amount;
-  }
-
   // we need to make sure that if offer is taken and not reposted (because of insufficient provision or density) then remaining provision and outbound tokens are sent back to owner
 
   function redeemAll(ML.SingleOrder calldata order, address owner)
     internal
-    returns (bool)
+    returns (bool success)
   {
     IEIP20 outTkn = IEIP20(order.outbound_tkn);
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
     // Resting order was not reposted, sending out/in tokens to original taker
     // balOut was increased during `take` function and is now possibly empty
-    uint balOut = tokenBalanceOf[outTkn][owner];
-    if (!TransferLib.transferToken(outTkn, owner, balOut)) {
+    AbstractRouter router_ = router();
+    success = true;
+
+    if(!router_.withdrawToken({
+      token:outTkn, 
+      reserve:owner, 
+      to:owner, 
+      amount:router_.tokenBalance(outTkn, owner)
+      })
+    ) {
       emit LogIncident(
         outTkn,
         inTkn,
         order.offerId,
         "mgvOrder/redeemAll/transferOut"
       );
-      return false;
+      success = false;
     }
-    // should not move `debitToken` before the above transfer that does not revert when failing
-    // offer owner might still recover tokens later using `withdrawToken` external call
-    debitToken(outTkn, owner, balOut);
-    // balIn contains the amount of tokens that was received during the trade that triggered this posthook
-    uint balIn = tokenBalanceOf[inTkn][owner];
-    if (!TransferLib.transferToken(inTkn, owner, balIn)) {
+
+    if(!router_.withdrawToken({
+      token:inTkn, 
+      reserve:owner, 
+      to:owner, 
+      amount:router_.tokenBalance(inTkn, owner)
+      })
+    ) {
       emit LogIncident(
         outTkn,
         inTkn,
         order.offerId,
         "mgvOrder/redeemAll/transferIn"
       );
-      return false;
+      success = false;
     }
-    debitToken(inTkn, owner, balIn);
-    return true;
   }
 
   function __posthookSuccess__(ML.SingleOrder calldata order)

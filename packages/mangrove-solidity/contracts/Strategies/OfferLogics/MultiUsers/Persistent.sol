@@ -16,6 +16,8 @@ import "./MultiUser.sol";
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
 abstract contract MultiUserPersistent is MultiUser {
 
+  constructor(IMangrove _mgv, AbstractRouter _router) MultiUser(_mgv, _router) {}
+  
   function __residualWants__(ML.SingleOrder calldata order)
     internal
     virtual
@@ -32,6 +34,8 @@ abstract contract MultiUserPersistent is MultiUser {
     return order.offer.gives() - order.wants;
   }
 
+  ///@dev posthook takes care of reposting offer residual
+  ///@param order is a reminder of the taker order that was processed during `makerExecute` 
   function __posthookSuccess__(ML.SingleOrder calldata order)
     internal
     virtual
@@ -44,8 +48,7 @@ abstract contract MultiUserPersistent is MultiUser {
       // gas saving
       return true;
     }
-    try
-      MGV.updateOffer(
+    try MGV.updateOffer(
         order.outbound_tkn,
         order.inbound_tkn,
         new_wants,
@@ -59,6 +62,7 @@ abstract contract MultiUserPersistent is MultiUser {
       return true;
     } catch {
       // density could be too low, or offer provision be insufficient
+      // offer is retracted and freed provision is returned to offer owner
       retractOfferInternal(
         IEIP20(order.outbound_tkn),
         IEIP20(order.inbound_tkn),
@@ -70,6 +74,7 @@ abstract contract MultiUserPersistent is MultiUser {
           order.offerId
         )
       );
+      // signalling that offer could not repost itself
       return false;
     }
   }

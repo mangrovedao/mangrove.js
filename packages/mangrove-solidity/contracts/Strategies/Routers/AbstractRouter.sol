@@ -45,23 +45,37 @@ abstract contract AbstractRouter is AccessControlled {
   ) internal virtual returns (uint);
 
   // deposits `amount` of `token`s into reserve
-  function push(IEIP20[] calldata tokens, address reserve, uint amount)
+  function push(IEIP20 token, address reserve, uint amount)
     external
     onlyMakers
   {
-    __push__(tokens, reserve, amount);
+    __push__(token, reserve, amount);
   }
 
-  function __push__(IEIP20[] calldata tokens, address reserve, uint amount)
+  function __push__(IEIP20 token, address reserve, uint amount)
     internal
     virtual;
 
+  function flush(IEIP20[] calldata tokens, address reserve) external onlyMakers {
+    for (uint i = 0; i < tokens.length; i++) {
+      __push__(tokens[i], reserve, tokens[i].balanceOf(msg.sender));
+    }
+  }
+
   // checks amount of `token`s available in the liquidity source
-  function balance(IEIP20 token, address reserve)
+  function tokenBalance(IEIP20 token, address reserve)
     external
     view
     virtual
     returns (uint);
+
+  function withdrawToken(IEIP20 token, address reserve, address to, uint amount) 
+  external onlyMakers returns (bool) {
+    return __withdrawToken__(token, reserve, to,amount);
+  }
+
+  function __withdrawToken__(IEIP20 token, address reserve, address to, uint amount) 
+  internal virtual returns (bool);
 
   // connect a maker contract to this router
   function bind(address maker) external onlyAdmin {
