@@ -157,6 +157,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      working-directory: packages/faucet
+
     defaults:
       run:
         working-directory: ${{env.working-directory}}
