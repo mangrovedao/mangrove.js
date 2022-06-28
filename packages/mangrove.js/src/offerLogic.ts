@@ -74,7 +74,7 @@ class OfferLogic {
   static async deploy(mgv: Mangrove, contractName: string): Promise<string> {
     const contract = await new typechain[`${contractName}__factory`](
       mgv._signer
-    ).deploy(mgv._address);
+    ).deploy(mgv._address, await mgv._signer.getAddress());
     return contract.address;
   }
 
