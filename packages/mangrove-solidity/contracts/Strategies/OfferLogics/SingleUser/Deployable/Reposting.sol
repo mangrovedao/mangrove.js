@@ -18,7 +18,7 @@ import "contracts/Strategies/Routers/SimpleRouter.sol";
 /* Simply inherits Persistent and is deployable. No additional internal logic. */
 contract Reposting is Persistent {
   constructor(IMangrove _MGV, address deployer) 
-  SingleUser(_MGV, new SimpleRouter(deployer), address(this)) {
+  SingleUser(_MGV, address(this), new SimpleRouter(deployer)) {
     if (deployer != msg.sender) {
       setAdmin(deployer);
     }

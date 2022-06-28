@@ -23,10 +23,13 @@ contract SimpleRouter is AbstractRouter {
   // requires approval of `reserve`
   function __pull__(
     IEIP20 token,
+    address reserve,
+    address maker,
     uint amount,
-    address reserve
+    bool strict
   ) internal virtual override returns (uint pulled) {
-    if (TransferLib.transferTokenFrom(token, reserve, msg.sender, amount)) {
+    strict; // this pull strategy is only strict
+    if (TransferLib.transferTokenFrom(token, reserve, maker, amount)) {
       return amount;
     } else {
       return 0;
@@ -34,21 +37,23 @@ contract SimpleRouter is AbstractRouter {
   }
 
   // requires approval of Maker
-  function __flush__(IEIP20[] calldata tokens, address reserve)
+  function __push__(IEIP20 token, address reserve, address maker, uint amount)
     internal
     virtual
     override
   {
-    for (uint i = 0; i < tokens.length; i++) {
-      uint amount = tokens[i].balanceOf(msg.sender);
-      require(
-        TransferLib.transferTokenFrom(tokens[i], msg.sender, reserve, amount),
-        "SimpleRouter/flush/transferFail"
-      );
-    }
+    require(
+      TransferLib.transferTokenFrom(token, maker, reserve, amount),
+      "SimpleRouter/flush/transferFail"
+    );
   }
 
-  function balance(IEIP20 token, address reserve)
+  function __withdrawToken__(IEIP20 token, address reserve, address to, uint amount) 
+  internal virtual override returns (bool) {
+    return TransferLib.transferTokenFrom(token, reserve, to, amount);
+  }
+
+  function reserveBalance(IEIP20 token, address reserve)
     external
     view
     override

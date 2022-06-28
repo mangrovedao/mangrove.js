@@ -20,15 +20,16 @@ abstract contract SingleUser is MangroveOffer {
   /// transfers token stored in `this` contract to some recipient address
   address immutable RESERVE;
 
-  constructor(IMangrove _mgv, address _reserve, address _router) MangroveOffer(_mgv) {
+  constructor(IMangrove _mgv, address _reserve, AbstractRouter _router) MangroveOffer(_mgv) {
+    address $router = address(router);
     // (_reserve != 0x)
     require(_reserve != address(0), "SingleUser/0xReserve");
   
     // _router == 0x ==> _reserve == this
-    require(_router != address(0) || _reserve == address(this), "SingleUser/NoRouterForReserve");
+    require($router != address(0) || _reserve == address(this), "SingleUser/NoRouterForReserve");
     RESERVE = _reserve;
-    if (_router != address(0)) {
-      set_router(AbstractRouter(_router));
+    if ($router != $(0)) {
+      set_router(_router, ofr_gasreq());
     }
   }
 
@@ -53,7 +54,7 @@ abstract contract SingleUser is MangroveOffer {
 
   function pull(IEIP20 outbound_tkn, uint amount, bool strict) internal returns (uint) {
     AbstractRouter _router = MOS.get_storage().router;
-    if (address(_router)==address(0)) {
+    if (address(_router) == address(0)) {
       return 0; // nothing to do
     } else {
       // letting specific router pull the funds from reserve
@@ -73,16 +74,15 @@ abstract contract SingleUser is MangroveOffer {
 
   function tokenBalance(IEIP20 token) internal returns (uint) {
     AbstractRouter _router = MOS.get_storage().router;
-    if (address(_router)==address(0)) {
-      return token.balanceOf(RESERVE);
-    } else {
-      return _router.tokenBalance(token, RESERVE);
-    }
+    uint balance = token.balanceOf(RESERVE);
+    return address(_router) == address(0) 
+    ? balance : balance + _router.reserveBalance(token, RESERVE);
+    
   }
 
-  function flush(IEIP20[] calldata tokens) internal {
+  function flush(IEIP20[] memory tokens) internal {
     AbstractRouter _router = MOS.get_storage().router;
-    if (address(_router)==address(0)) {
+    if (address(_router) == address(0)) {
       return; // nothing to do
     } else {
       _router.flush(tokens, RESERVE);
@@ -188,13 +188,11 @@ abstract contract SingleUser is MangroveOffer {
   {
     // pulling liquidity from reserve
     // depending on the router, this may result in pulling more liquidity than required
-    pull(order.outbound_tkn, amount, RESERVE);
-
-    uint balance = IEIP20(order.outbound_tkn).balanceOf(address(this));
-    if (balance >= amount) {
-      return 0;
+    uint pulled = pull(IEIP20(order.outbound_tkn), amount, false);
+    if (pulled < amount) {
+      return amount - pulled;
     } else {
-      return (amount - balance);
+      return 0;
     }
   }
 
@@ -207,11 +205,11 @@ abstract contract SingleUser is MangroveOffer {
     virtual
     returns (bool success)
   {
-    IEIP20[] tokens = new IEIP20[](2);
-    tokens[0] = order.outbound_tkn; // flushing outbound tokens if this contract pulled more liquidity than required during `makerExecute`
-    tokens[1] = order.inbound_tkn; // flushing liquidity brought by taker
+    IEIP20[] memory tokens = new IEIP20[](2);
+    tokens[0] = IEIP20(order.outbound_tkn); // flushing outbound tokens if this contract pulled more liquidity than required during `makerExecute`
+    tokens[1] = IEIP20(order.inbound_tkn); // flushing liquidity brought by taker
     // sends all tokens to the reserve (noop if RESERVE == address(this))
-    flush(tokens, RESERVE);
+    flush(tokens);
     success = true;
   }
   

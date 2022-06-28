@@ -18,7 +18,7 @@ import "contracts/Strategies/Routers/SimpleRouter.sol";
 /* Simply inherits SingleUser and is deployable. No internal logic. */
 contract SimpleMaker is SingleUser {
   constructor(IMangrove _MGV, address deployer) 
-  SingleUser(_MGV, new SimpleRouter(deployer), address(this)) {
+  SingleUser(_MGV, address(this), new SimpleRouter(deployer)) {
     // if contract is deployed with static address, then one must set admin to something else than msg.sender
     if (deployer != msg.sender) {
       setAdmin(deployer);

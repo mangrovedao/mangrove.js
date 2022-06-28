@@ -48,6 +48,10 @@ abstract contract Persistent is SingleUser {
     override
     returns (bool)
   {
+    // flushing inbound and remaining outbound tokens to reserve
+    super.__posthookSuccess__(order);
+
+    // now trying to repost residual
     uint new_gives = __residualGives__(order);
     // Density check would be too gas costly.
     // We only treat the special case of `gives==0` (total fill).

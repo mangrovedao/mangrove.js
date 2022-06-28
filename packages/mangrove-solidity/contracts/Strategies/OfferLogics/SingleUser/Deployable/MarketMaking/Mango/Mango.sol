@@ -48,7 +48,7 @@ contract Mango is Persistent {
     uint nslots,
     uint price_incr,
     address deployer
-  ) SingleUser(mgv, address(this), address(0)) {
+  ) SingleUser(mgv, address(this), AbstractRouter(address(0))) {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     // sanity check
     require(
@@ -144,29 +144,6 @@ contract Mango is Persistent {
   function pending() external view onlyAdmin returns (uint[2] memory) {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     return [mStr.pending_base, mStr.pending_quote];
-  }
-
-  /** __put__ is default SingleUser.__put__*/
-
-  /** Fetches required tokens from the corresponding source*/
-  function __get__(uint amount, ML.SingleOrder calldata order)
-    internal
-    virtual
-    override
-    returns (uint)
-  {
-    (bool success, bytes memory retdata) = IMPLEMENTATION.delegatecall(
-      abi.encodeWithSelector(
-        MangoImplementation.$__get__.selector,
-        amount,
-        order
-      )
-    );
-    if (!success) {
-      MangoStorage.revertWithData(retdata);
-    } else {
-      return abi.decode(retdata, (uint));
-    }
   }
 
   // with ba=0:bids only, ba=1: asks only ba>1 all

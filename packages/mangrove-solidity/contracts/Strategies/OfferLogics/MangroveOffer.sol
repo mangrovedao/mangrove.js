@@ -116,7 +116,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     mgvOrAdmin
   {
     require (address(router_) != address(0), "mgvOffer/set_router/0xRouter");
-    gasreq = gasreq == 0 ? ofr_gasreq() : gasreq;
+    gasreq = gasreq == type(uint).max ? ofr_gasreq() : gasreq;
     MOS.get_storage().router = router_;
     set_gasreq(gasreq);
     emit SetRouter(router_);

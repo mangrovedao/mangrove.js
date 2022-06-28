@@ -139,6 +139,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   }
 
   // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove. Function call will throw if `this` contract is not the owner of `offerId`.
+  ///@dev if msg.sender cannot receive funds it will loose the released provision
   function retractOffer(
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,
@@ -150,7 +151,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       inbound_tkn,
       offerId,
       deprovision,
-      msg.sender
+      payable(msg.sender)
     );
   }
 
@@ -201,7 +202,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     IEIP20 outTkn = IEIP20(order.outbound_tkn);
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
     address owner = ownerOf(outTkn, inTkn, order.offerId);
-    uint ownerBalance = router().tokenBalance(outTkn, owner);
+    uint ownerBalance = router().reserveBalance(outTkn, owner);
     (uint missing, uint amount_) = amount > ownerBalance 
     ? (amount - ownerBalance, ownerBalance) 
     : (0, amount);

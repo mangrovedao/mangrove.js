@@ -15,12 +15,14 @@ pragma abicoder v2;
 import "contracts/Strategies/utils/TransferLib.sol";
 import "../OfferLogics/MultiUsers/Persistent.sol";
 import "../interfaces/IOrderLogic.sol";
+import "contracts/Strategies/Routers/SimpleRouter.sol";
 
 contract MangroveOrder is MultiUserPersistent, IOrderLogic {
   // `blockToLive[token1][token2][offerId]` gives block number beyond which the offer should renege on trade.
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => uint))) public expiring;
 
-  constructor(IMangrove _MGV, AbstractRouter _router, address deployer) MultiUserPersistent(_MGV, _router) {
+  constructor(IMangrove _MGV, address deployer) 
+  MultiUserPersistent(_MGV, new SimpleRouter(deployer)) {
     if (deployer != msg.sender) {
       setAdmin(deployer);
     }
@@ -68,13 +70,16 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
     (IEIP20 outbound_tkn, IEIP20 inbound_tkn) = tko.selling
       ? (tko.quote, tko.base)
       : (tko.base, tko.quote);
+    // pulling directly from msg.sender would require caller to approve `this` in addition to the `this.router()`  
+    // so pulling funds from taker's reserve (note this can be the taker's wallet depending on the router)
+    uint pulled = router().pull(
+      inbound_tkn,
+      msg.sender,
+      tko.gives,
+      true
+    );
     require(
-      TransferLib.transferTokenFrom(
-        inbound_tkn,
-        msg.sender,
-        address(this),
-        tko.gives
-      ),
+      pulled == tko.gives,
       "mgvOrder/mo/transferInFail"
     );
     // passing an iterated market order with the transfered funds
@@ -105,12 +110,9 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       "mgvOrder/mo/noPartialFill"
     );
 
-    // sending received tokens to taker
+    // sending received tokens to taker's reserve
     if (res.takerGot > 0) {
-      require(
-        TransferLib.transferToken(outbound_tkn, msg.sender, res.takerGot),
-        "mgvOrder/mo/transferOutFail"
-      );
+      router().push(outbound_tkn, msg.sender, res.takerGot);
     }
 
     // at this points the following invariants hold:
@@ -182,7 +184,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
         // offer was successfully posted
         // crediting caller's balance with amount of offered tokens (transfered from caller at the begining of this function)
         // NB `inbount_tkn` is now the outbound token for the resting order
-        push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
+        router().push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
 
         // setting a time to live for the resting order
         if (tko.blocksToLiveForRestingOrder > 0) {
@@ -239,7 +241,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       token:outTkn, 
       reserve:owner, 
       to:owner, 
-      amount:router_.tokenBalance(outTkn, owner)
+      amount:router_.reserveBalance(outTkn, owner)
       })
     ) {
       emit LogIncident(
@@ -255,7 +257,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       token:inTkn, 
       reserve:owner, 
       to:owner, 
-      amount:router_.tokenBalance(inTkn, owner)
+      amount:router_.reserveBalance(inTkn, owner)
       })
     ) {
       emit LogIncident(
@@ -278,34 +280,16 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
 
     // trying to repost offer remainder
-    if (super.__posthookSuccess__(order)) {
+    if (MultiUserPersistent.__posthookSuccess__(order)) {
       // if `success` then offer residual was reposted and nothing needs to be done
       // else we need to send the remaining outbounds tokens to owner and their remaining provision on mangrove (offer was deprovisioned in super call)
       return true;
     }
     address owner = ownerOf(outTkn, inTkn, order.offerId);
     // returning all inbound/outbound tokens that belong to the original taker to their balance
-    if (!redeemAll(order, owner)) {
-      return false;
-    }
-    // returning remaining WEIs
-    // NB because offer was not reposted, it has already been deprovisioned during `super.__posthookSuccess__`
-    // NB `_withdrawFromMangrove` performs a call and might be subject to reentrancy.
-    debitOnMgv(owner, mgvBalance[owner]);
-    // NB cannot revert here otherwise user will not be able to collect automatically in/out tokens (above transfers)
-    // if the caller of this contract is not an EOA, funds would be lost.
-    if (!_withdrawFromMangrove(payable(owner), mgvBalance[owner])) {
-      // this code might be reached if `owner` is not an EOA and has no `receive` or `fallback` payable method.
-      // in this case the provision is lost and one should not revert, to the risk of being unable to recover in/out tokens transfered earlier
-      emit LogIncident(
-        outTkn,
-        inTkn,
-        order.offerId,
-        "mgvOrder/posthook/transferWei"
-      );
-      return false;
-    }
-    return true;
+    // ignoring return value because nothing can be done (and logging was already emitted)
+    redeemAll(order, owner);
+    return false;
   }
 
   // in case of an offer with a blocks-to-live option enabled, resting order might renege on trade

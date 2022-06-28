@@ -82,16 +82,15 @@ contract MangroveOrder_Test is HasMgvEvents {
     mgvOrder.approveMangrove(base, type(uint).max);
     mgvOrder.approveMangrove(quote, type(uint).max);
 
-    //adding provision on Mangrove for `mgvOrder` in order to fake having already multiple users
-    mgv.fund{value: 1 ether}(address(mgvOrder));
 
     // `this` contract will act as `MgvOrder` user
     tkb.mint(address(this), 10 ether);
     tka.mint(address(this), 10 ether);
 
-    // user approves `mgvOrder` to pull quote or base when doing a market order
-    quote.approve(address(mgvOrder), 10 ether);
-    base.approve(address(mgvOrder), 10 ether);
+    // user approves `mgvOrder.router()` in order to be able to pull quote or base when doing a market order and when executing a resting order
+    address liquidity_router = address(mgvOrder.router());
+    quote.approve(liquidity_router, 10 ether);
+    base.approve(liquidity_router, 10 ether);
 
     // `sellTkr` will take resting offer
     sellTkr = TakerSetup.setup(mgv, $quote, $base);
@@ -375,8 +374,8 @@ contract MangroveOrder_Test is HasMgvEvents {
       quote,
       base,
       mgvOrder.ofr_gasreq(),
-      0,
-      0
+      0, // posting at mangrove's gasprice
+      0 
     );
     TestEvents.eq(
       mgvOrder.balanceOnMangrove(address(this)),

@@ -55,7 +55,12 @@ contract MangoImplementation is Persistent {
     uint96 base_0,
     uint96 quote_0,
     uint nslots
-  ) MangroveOffer(mgv) {
+  ) 
+  SingleUser(
+    mgv, 
+    address(this) /*any value but 0x works*/, 
+    AbstractRouter(address(0)) /* router*/
+    ) {
     // setting immutable fields to match those of `Mango`
     BASE = base;
     QUOTE = quote;
@@ -201,26 +206,6 @@ contract MangoImplementation is Persistent {
         !liveOnly)
         ? mStr.asks[index_of_position(i)]
         : 0;
-    }
-  }
-
-  function $__get__(uint amount, ML.SingleOrder calldata order)
-    external
-    delegated
-    returns (uint)
-  {
-    // pulled might be lower or higher than amount
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
-    uint pulled = router().pull(
-      IEIP20(order.outbound_tkn),
-      amount,
-      mStr.reserve
-    );
-    if (pulled > amount) {
-      return 0; //nothing is missing
-    } else {
-      // still needs to get liquidity using `SingleUser.__get__()`
-      return super.__get__(amount - pulled, order);
     }
   }
 
@@ -628,14 +613,10 @@ contract MangoImplementation is Persistent {
     tokens[0] = BASE;
     tokens[1] = QUOTE;
 
-    // tells liquidity router to handle locally stored liquidity (liquidity from the taker and possibly liquidity brought locally during `__get__` function).
-    // this will throw if router is 0x
-    router().flush(tokens, mStr.reserve);
-
     // reposting residual of offer using override `__newWants__` and `__newGives__` for new price
     if (order.outbound_tkn == $(BASE)) {
       // order is an Ask
-      //// Reposting Offer Residual (if any)
+      //// Reposting Offer residual 
       if (!super.__posthookSuccess__(order)) {
         // residual could not be reposted --either below density or Mango went out of provision on Mangrove
         mStr.pending_base = __residualGives__(order); // this includes previous `pending_base`
