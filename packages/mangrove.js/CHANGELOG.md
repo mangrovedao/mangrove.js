@@ -1,6 +1,11 @@
 # next version
 
+- Update ABI's and addresses for `MangroveOrder` and `MangroveOrderEnriched`
+
+# 0.8.0 (June 2022)
+
 - Bug fix: Deploy maker contract with the simple maker abi requires an additional argument.
+- New deployment of `MangroveOrder` contract with the Mangrove address added to relevant events
 
 # 0.7.1 (June 2022)
 
