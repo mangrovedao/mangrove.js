@@ -79,7 +79,7 @@
     "@rollup/plugin-commonjs": "^22.0.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.3.0",
-    "@typechain/ethers-v5": "^8.0.2",
+    "@typechain/ethers-v5": "^10.1.0",
     "@types/big.js": "^6.1.3",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^9.1.1",
@@ -114,7 +114,7 @@
     "shx": "^0.3.4",
     "ts-essentials": "^9.1.2",
     "ts-node": "^10.7.0",
-    "typechain": "^6.0.2",
+    "typechain": "^8.1.0",
     "typedoc": "^0.22.17",
     "typescript": "^4.4.0",
     "yargs": "^17.3.0"
