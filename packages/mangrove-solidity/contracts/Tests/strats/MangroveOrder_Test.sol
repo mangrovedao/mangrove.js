@@ -84,7 +84,6 @@ contract MangroveOrder_Test is HasMgvEvents {
     mgvOrder.approveMangrove(base, type(uint).max);
     mgvOrder.approveMangrove(quote, type(uint).max);
 
-
     // `this` contract will act as `MgvOrder` user
     tkb.mint(address(this), 10 ether);
     tka.mint(address(this), 10 ether);
@@ -155,7 +154,9 @@ contract MangroveOrder_Test is HasMgvEvents {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    IOrderLogic.TakerOrderResult memory res = mgvOrder.take(buyOrder);
+    IOrderLogic.TakerOrderResult memory res = mgvOrder.take{value: 0.1 ether}(
+      buyOrder
+    );
     TestEvents.eq(
       res.takerGot,
       netBuy(1 ether),
@@ -189,7 +190,7 @@ contract MangroveOrder_Test is HasMgvEvents {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    try mgvOrder.take(buyOrder) {
+    try mgvOrder.take{value: 0.1 ether}(buyOrder) {
       TestEvents.fail("Partial fill should revert");
     } catch Error(string memory reason) {
       TestEvents.eq(
@@ -271,7 +272,7 @@ contract MangroveOrder_Test is HasMgvEvents {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    try mgvOrder.take(buyOrder) {
+    try mgvOrder.take{value: 0.1 ether}(buyOrder) {
       TestEvents.fail("Maker order should have failed.");
     } catch Error(string memory reason) {
       TestEvents.eq(
@@ -300,7 +301,9 @@ contract MangroveOrder_Test is HasMgvEvents {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    IOrderLogic.TakerOrderResult memory res = mgvOrder.take(buyOrder);
+    IOrderLogic.TakerOrderResult memory res = mgvOrder.take{value: 0.1 ether}(
+      buyOrder
+    );
     TestEvents.eq(
       quote.balanceOf(address(this)),
       balQuoteBefore - res.takerGave,
@@ -330,7 +333,9 @@ contract MangroveOrder_Test is HasMgvEvents {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    IOrderLogic.TakerOrderResult memory res = mgvOrder.take(buyOrder);
+    IOrderLogic.TakerOrderResult memory res = mgvOrder.take{value: 0.1 ether}(
+      buyOrder
+    );
     res; // ssh
     TestEvents.eq(address(this).balance, balWeiBefore, "incorrect wei balance");
   }
@@ -372,13 +377,6 @@ contract MangroveOrder_Test is HasMgvEvents {
     );
 
     // checking `mgvOrder` mappings
-    uint prov = mgvOrder.getMissingProvision(
-      quote,
-      base,
-      mgvOrder.ofr_gasreq(),
-      0, // posting at mangrove's gasprice
-      0 
-    );
     TestEvents.eq(
       mgv.balanceOf(address(mgvOrder)),
       0,
@@ -428,7 +426,10 @@ contract MangroveOrder_Test is HasMgvEvents {
       buyOrder
     );
     uint oldLocalBaseBal = base.balanceOf(address(this));
-    uint oldRemoteQuoteBal = mgvOrder.router().reserveBalance(quote, address(this)); // quote balance of test runner
+    uint oldRemoteQuoteBal = mgvOrder.router().reserveBalance(
+      quote,
+      address(this)
+    ); // quote balance of test runner
 
     // TestUtils.logOfferBook(mgv,$base,$quote,4);
     // TestUtils.logOfferBook(mgv,$quote,$base,4);
@@ -485,7 +486,10 @@ contract MangroveOrder_Test is HasMgvEvents {
       buyOrder
     );
     // test runner quote balance on the gateway
-    uint balQuoteRemote = mgvOrder.router().reserveBalance(quote, address(this));
+    uint balQuoteRemote = mgvOrder.router().reserveBalance(
+      quote,
+      address(this)
+    );
     uint balQuoteLocal = quote.balanceOf(address(this));
 
     // increasing density on mangrove so that resting offer can no longer repost
@@ -526,9 +530,11 @@ contract MangroveOrder_Test is HasMgvEvents {
     IOrderLogic.TakerOrderResult memory res = mgvOrder.take{value: 0.1 ether}(
       buyOrder
     );
-    uint userWeiBalanceOld = mgvOrder.router().reserveNativeBalance(address(this));
+    uint userWeiBalanceOld = mgvOrder.router().reserveNativeBalance(
+      address(this)
+    );
     uint credited = mgvOrder.retractOffer(quote, base, res.offerId, true);
-    
+
     TestEvents.eq(
       mgvOrder.router().reserveNativeBalance(address(this)),
       userWeiBalanceOld + credited,

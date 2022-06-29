@@ -71,22 +71,38 @@ contract AaveRouter is AbstractRouter, AaveV3Module {
   }
 
   // Liquidity : MAKER --> `onBehalf`
-  function __push__(IEIP20 token, address reserve, address maker, uint amount)
+  function __push__(
+    IEIP20 token,
+    address reserve,
+    address maker,
+    uint amount
+  ) internal virtual override {
+    require(
+      TransferLib.transferTokenFrom(token, maker, address(this), amount),
+      "AaveRouter/push/transferFail"
+    );
+    // repay and supply `onBehalf`
+    repayThenDeposit(token, reserve, amount);
+  }
+
+  // this fonction is called immediately after a payable function has received funds
+  function __push_native__(address reserve, uint amount)
     internal
     virtual
     override
+    returns (bool success)
   {
-    require(
-      TransferLib.transferTokenFrom(
-        token,
-        maker,
-        address(this),
-        amount
-      ),
-      "AaveRouter/push/transferFail"
-    );
-      // repay and supply `onBehalf`
-      repayThenDeposit(token, reserve, amount);
+    (success, ) = reserve.call{value: amount}("");
+    require(success, "mgvOrder/mo/refundFail");
+  }
+
+  function reserveNativeBalance(address reserve)
+    public
+    view
+    override
+    returns (uint)
+  {
+    return reserve.balance;
   }
 
   // returns 0 if redeem failed (amount > balance).
@@ -101,16 +117,19 @@ contract AaveRouter is AbstractRouter, AaveV3Module {
     require(
       TransferLib.transferTokenFrom(
         overlying(token),
-        reserve, 
-        address(this), 
+        reserve,
+        address(this),
         amount
       ),
       "AaveRouter/supply/transferFromFail"
     );
-    require (_redeem(token, amount, to) == amount, "AaveRouter/withdrawToken/Fail");
+    require(
+      _redeem(token, amount, to) == amount,
+      "AaveRouter/withdrawToken/Fail"
+    );
     return true;
   }
-  
+
   // Admin function to manage position on AAVE
   function borrow(
     IEIP20 token,
@@ -119,7 +138,7 @@ contract AaveRouter is AbstractRouter, AaveV3Module {
     address to
   ) external onlyAdmin {
     // NB if `reserve` != this, it must approve this router for increasing overlying debt token
-      _borrow(token, amount, reserve);
+    _borrow(token, amount, reserve);
     require(
       TransferLib.transferToken(token, to, amount),
       "AaveRouter/borrow/transferFail"

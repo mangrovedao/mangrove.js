@@ -19,8 +19,9 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
   // `blockToLive[token1][token2][offerId]` gives block number beyond which the offer should renege on trade.
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => uint))) public expiring;
 
-  constructor(IMangrove _MGV, address deployer) 
-  MultiUserPersistent(_MGV, new SimpleRouter(deployer)) {
+  constructor(IMangrove _MGV, address deployer)
+    MultiUserPersistent(_MGV, new SimpleRouter(deployer))
+  {
     if (deployer != msg.sender) {
       setAdmin(deployer);
     }
@@ -68,18 +69,10 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
     (IEIP20 outbound_tkn, IEIP20 inbound_tkn) = tko.selling
       ? (tko.quote, tko.base)
       : (tko.base, tko.quote);
-    // pulling directly from msg.sender would require caller to approve `this` in addition to the `this.router()`  
+    // pulling directly from msg.sender would require caller to approve `this` in addition to the `this.router()`
     // so pulling funds from taker's reserve (note this can be the taker's wallet depending on the router)
-    uint pulled = router().pull(
-      inbound_tkn,
-      msg.sender,
-      tko.gives,
-      true
-    );
-    require(
-      pulled == tko.gives,
-      "mgvOrder/mo/transferInFail"
-    );
+    uint pulled = router().pull(inbound_tkn, msg.sender, tko.gives, true);
+    require(pulled == tko.gives, "mgvOrder/mo/transferInFail");
     // passing an iterated market order with the transfered funds
     for (uint i = 0; i < tko.retryNumber + 1; i++) {
       if (tko.gasForMarketOrder != 0 && gasleft() < tko.gasForMarketOrder) {
@@ -200,7 +193,11 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
 
       // transfering potential bounty and msg.value back to the taker
       if (msg.value + res.bounty > 0) {
-        require(router().push_native{value:msg.value + res.bounty}(msg.sender) , "mgvOrder/mo/refundFail");
+        // NB this calls gives reentrancy power to caller
+        require(
+          router().push_native{value: msg.value + res.bounty}(msg.sender),
+          "mgvOrder/mo/refundFail"
+        );
       }
       emit OrderSummary({
         mangrove: MGV,
@@ -217,7 +214,8 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
     }
   }
 
-  // we need to make sure that if offer is taken and not reposted (because of insufficient provision or density) then remaining provision and outbound tokens are sent back to owner
+  // we need to make sure that if offer is taken and not reposted (because of insufficient provision or density)
+  // then remaining provision and outbound tokens are sent back to owner
 
   function redeemAll(ML.SingleOrder calldata order, address owner)
     internal
@@ -227,14 +225,15 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
     // Resting order was not reposted, sending out/in tokens to original taker
     // balOut was increased during `take` function and is now possibly empty
-    AbstractRouter router_ = router();
+    AbstractRouter _router = router();
     success = true;
 
-    if(!router_.withdrawToken({
-      token:outTkn, 
-      reserve:owner, 
-      to:owner, 
-      amount:router_.reserveBalance(outTkn, owner)
+    if (
+      !_router.withdrawToken({
+        token: outTkn,
+        reserve: owner,
+        recipient: owner,
+        amount: _router.reserveBalance(outTkn, owner)
       })
     ) {
       emit LogIncident(
@@ -247,11 +246,12 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       success = false;
     }
 
-    if(!router_.withdrawToken({
-      token:inTkn, 
-      reserve:owner, 
-      to:owner, 
-      amount:router_.reserveBalance(inTkn, owner)
+    if (
+      !_router.withdrawToken({
+        token: inTkn,
+        reserve: owner,
+        recipient: owner,
+        amount: _router.reserveBalance(inTkn, owner)
       })
     ) {
       emit LogIncident(

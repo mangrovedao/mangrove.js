@@ -20,19 +20,25 @@ abstract contract SingleUser is MangroveOffer {
   /// transfers token stored in `this` contract to some recipient address
   address immutable RESERVE;
 
-  constructor(IMangrove _mgv, address _reserve, AbstractRouter _router) MangroveOffer(_mgv) {
+  constructor(
+    IMangrove _mgv,
+    address _reserve,
+    AbstractRouter _router
+  ) MangroveOffer(_mgv) {
     address $router = address(_router);
     // (_reserve != 0x)
     require(_reserve != address(0), "SingleUser/0xReserve");
-  
+
     // _router == 0x ==> _reserve == this
-    require($router != address(0) || _reserve == address(this), "SingleUser/NoRouterForReserve");
+    require(
+      $router != address(0) || _reserve == address(this),
+      "SingleUser/NoRouterForReserve"
+    );
     RESERVE = _reserve;
     if ($router != address(0)) {
       set_router(_router, ofr_gasreq());
     }
   }
-
 
   function has_router() external view returns (bool) {
     return address(MOS.get_storage().router) != address(0);
@@ -45,14 +51,18 @@ abstract contract SingleUser is MangroveOffer {
   ) external override onlyAdmin returns (bool success) {
     require(receiver != address(0), "SingleUser/withdrawToken/0xReceiver");
     AbstractRouter _router = MOS.get_storage().router;
-    if (address(_router)==address(0)) {
+    if (address(_router) == address(0)) {
       return TransferLib.transferToken(IEIP20(token), receiver, amount);
     } else {
       _router.withdrawToken(token, RESERVE, receiver, amount);
     }
   }
 
-  function pull(IEIP20 outbound_tkn, uint amount, bool strict) internal returns (uint) {
+  function pull(
+    IEIP20 outbound_tkn,
+    uint amount,
+    bool strict
+  ) internal returns (uint) {
     AbstractRouter _router = MOS.get_storage().router;
     if (address(_router) == address(0)) {
       return 0; // nothing to do
@@ -61,10 +71,10 @@ abstract contract SingleUser is MangroveOffer {
       return _router.pull(outbound_tkn, RESERVE, amount, strict);
     }
   }
-  
+
   function push(IEIP20 token, uint amount) internal {
     AbstractRouter _router = MOS.get_storage().router;
-    if (address(_router)==address(0)) {
+    if (address(_router) == address(0)) {
       return; // nothing to do
     } else {
       // noop if reserve == address(this)
@@ -72,12 +82,13 @@ abstract contract SingleUser is MangroveOffer {
     }
   }
 
-  function tokenBalance(IEIP20 token) internal returns (uint) {
+  function tokenBalance(IEIP20 token) internal view returns (uint) {
     AbstractRouter _router = MOS.get_storage().router;
     uint balance = token.balanceOf(RESERVE);
-    return address(_router) == address(0) 
-    ? balance : balance + _router.reserveBalance(token, RESERVE);
-    
+    return
+      address(_router) == address(0)
+        ? balance
+        : balance + _router.reserveBalance(token, RESERVE);
   }
 
   function flush(IEIP20[] memory tokens) internal {
@@ -200,5 +211,4 @@ abstract contract SingleUser is MangroveOffer {
     flush(tokens);
     success = true;
   }
-  
 }

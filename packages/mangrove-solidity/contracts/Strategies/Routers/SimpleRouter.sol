@@ -37,27 +37,46 @@ contract SimpleRouter is AbstractRouter {
   }
 
   // requires approval of Maker
-  function __push__(IEIP20 token, address reserve, address maker, uint amount)
-    internal
-    virtual
-    override
-  {
+  function __push__(
+    IEIP20 token,
+    address reserve,
+    address maker,
+    uint amount
+  ) internal virtual override {
     require(
       TransferLib.transferTokenFrom(token, maker, reserve, amount),
       "SimpleRouter/flush/transferFail"
     );
   }
 
-  // this fonction is called immediately after a payable function has received funds
-  function __push_native__(address reserve, uint amount) 
-  internal override virtual returns (bool success) {
+  /// this fonction is called immediately after a payable function has received funds
+  /// NB this function should not be called when `reserve` is not tx.origin as this would give the possibility to an arbitrary
+  /// contract to make the tx fail (in addition to potential reentrancy risks)
+  function __push_native__(address reserve, uint amount)
+    internal
+    virtual
+    override
+    returns (bool success)
+  {
     (success, ) = reserve.call{value: amount}("");
     require(success, "mgvOrder/mo/refundFail");
   }
 
+  function reserveNativeBalance(address reserve)
+    public
+    view
+    override
+    returns (uint)
+  {
+    return reserve.balance;
+  }
 
-  function __withdrawToken__(IEIP20 token, address reserve, address to, uint amount) 
-  internal virtual override returns (bool) {
+  function __withdrawToken__(
+    IEIP20 token,
+    address reserve,
+    address to,
+    uint amount
+  ) internal virtual override returns (bool) {
     return TransferLib.transferTokenFrom(token, reserve, to, amount);
   }
 

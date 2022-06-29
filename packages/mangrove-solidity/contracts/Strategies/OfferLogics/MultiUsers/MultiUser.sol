@@ -67,7 +67,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
 
   // Calls new offer on Mangrove. If successful the function will update `_offerOwners` mapping `caller` to returned `offerId`
   // This call will revert if `newOffer` reverts on Mangrove or if `caller` does not have the provisions to cover for the bounty.
-  // We assume here this function is called with the correct provision, 
+  // We assume here this function is called with the correct provision,
   // otherwise Mangrove will throw (since `this` contract has no free wei on Mangrove as there is no `fundMangrove` function)
   // so owners have to provision at the moment of posting the offer using a well chosen gasprice
   function newOfferInternal(
@@ -75,7 +75,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     address caller,
     uint provision
   ) internal returns (uint offerId) {
-    require(provision > 0 , "Multi/UnprovisionedOffer");
+    require(provision > 0, "Multi/UnprovisionedOffer");
 
     uint gasreq = (mko.gasreq > type(uint24).max) ? ofr_gasreq() : mko.gasreq;
     // this call could revert if this contract does not have the provision to cover the bounty
@@ -172,13 +172,26 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       offerId,
       deprovision
     );
-    require(router().push_native{value:received}(caller), "Multi/retractOffer/transferFail");
+    // NB depending on router's implementation, this call might give reentrancy power to caller
+    require(
+      router().push_native{value: received}(caller),
+      "Multi/retractOffer/transferFail"
+    );
   }
 
-  // put received inbound tokens on offer owner account
-  // if nothing is done at that stage then it could still be done in the posthook but it cannot be a flush 
+  function withdrawToken(
+    IEIP20 token,
+    address receiver,
+    uint amount
+  ) external override onlyAdmin returns (bool success) {
+    require(receiver != address(0), "MultiUser/withdrawToken/0xReceiver");
+    return router().withdrawToken(token, msg.sender, receiver, amount);
+  }
+
+  // put received inbound tokens on offer owner reserve
+  // if nothing is done at that stage then it could still be done in the posthook but it cannot be a flush
   // since `this` contract balance would have the accumulated takers inbound tokens
-  // here we make sure nothing remains unassigned after a trade 
+  // here we make sure nothing remains unassigned after a trade
   function __put__(uint amount, ML.SingleOrder calldata order)
     internal
     virtual
@@ -192,7 +205,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     return 0;
   }
 
-  // get outbound tokens from offer owner account
+  // get outbound tokens from offer owner reserve
   function __get__(uint amount, ML.SingleOrder calldata order)
     internal
     virtual
@@ -203,8 +216,41 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
     address owner = ownerOf(outTkn, inTkn, order.offerId);
     // telling router one is requiring `amount` of `outTkn` for `owner`.
-    // because `pull` is strict, `pulled <= amount` (cannot be greater) 
+    // because `pull` is strict, `pulled <= amount` (cannot be greater)
     uint pulled = router().pull(outTkn, owner, amount, true);
     return amount - pulled;
+  }
+
+  // if offer failed to execute or reneged Mangrove has deprovisioned it
+  // the wei balance of `this` contract is now positive
+  function __posthookFallback__(
+    ML.SingleOrder calldata order,
+    ML.OrderResult calldata result
+  ) internal virtual override returns (bool success) {
+    result; // ssh
+    IEIP20 outTkn = IEIP20(order.outbound_tkn);
+    IEIP20 inTkn = IEIP20(order.inbound_tkn);
+    address owner = ownerOf(outTkn, inTkn, order.offerId);
+    // first one withdraws all free weis from Mangrove
+    // NB if several offers of `this` contract have failed during the market order, the balance will contain cumulated free provision
+    uint balWei = MGV.balanceOf(address(this));
+    // computing an under approximation of returned provision
+    (P.Global.t global, ) = MGV.config(order.outbound_tkn, order.inbound_tkn);
+    uint gaspriceInWei = global.gasprice() * 10**9;
+    uint approxReturnedProvision = (order.offerDetail.gasreq() - gasleft()) *
+      gaspriceInWei;
+    if (balWei > approxReturnedProvision) {
+      // NB depending on router's implementation, this call might give reentrancy power to caller
+      router().push_native{value: approxReturnedProvision}(owner);
+      success = true;
+    } else {
+      emit LogIncident(
+        MGV,
+        outTkn,
+        inTkn,
+        order.offerId,
+        "MultiUser/posthookFallback/panic"
+      );
+    }
   }
 }

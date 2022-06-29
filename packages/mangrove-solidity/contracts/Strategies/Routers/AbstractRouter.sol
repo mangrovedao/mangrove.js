@@ -22,7 +22,7 @@ abstract contract AbstractRouter is AccessControlled {
     require(makers[msg.sender], "Router/unauthorized");
     _;
   }
-   modifier makersOrAdmin() {
+  modifier makersOrAdmin() {
     require(msg.sender == admin() || makers[msg.sender], "Router/unauthorized");
     _;
   }
@@ -39,13 +39,14 @@ abstract contract AbstractRouter is AccessControlled {
     bool strict
   ) external onlyMakers returns (uint pulled) {
     pulled = __pull__({
-      token: token, 
-      reserve: reserve,  
-      maker: msg.sender, 
-      amount: amount, 
+      token: token,
+      reserve: reserve,
+      maker: msg.sender,
+      amount: amount,
       strict: strict
     });
   }
+
   function __pull__(
     IEIP20 token,
     address reserve,
@@ -55,31 +56,49 @@ abstract contract AbstractRouter is AccessControlled {
   ) internal virtual returns (uint);
 
   // deposits `amount` of `token`s into reserve
-  function push(IEIP20 token, address reserve, uint amount)
-    external
-    onlyMakers
-  {
+  function push(
+    IEIP20 token,
+    address reserve,
+    uint amount
+  ) external onlyMakers {
     __push__({
-      token: token, 
+      token: token,
       reserve: reserve,
-      maker: msg.sender, 
+      maker: msg.sender,
       amount: amount
     });
   }
-  function __push__(IEIP20 token, address reserve, address maker, uint amount)
-    internal
-    virtual;
 
-  function flush(IEIP20[] calldata tokens, address reserve) external onlyMakers {
+  function __push__(
+    IEIP20 token,
+    address reserve,
+    address maker,
+    uint amount
+  ) internal virtual;
+
+  function flush(IEIP20[] calldata tokens, address reserve)
+    external
+    onlyMakers
+  {
     for (uint i = 0; i < tokens.length; i++) {
       __push__(tokens[i], reserve, msg.sender, tokens[i].balanceOf(msg.sender));
     }
   }
 
-  function push_native(address reserve) external payable onlyMakers returns (bool) {
+  /// pushes native token according to `reserve` policy
+  function push_native(address reserve)
+    external
+    payable
+    onlyMakers
+    returns (bool)
+  {
     return __push_native__(reserve, msg.value);
   }
-  function __push_native__(address reserve, uint amount) internal virtual returns (bool);
+
+  function __push_native__(address reserve, uint amount)
+    internal
+    virtual
+    returns (bool);
 
   // checks amount of `token`s available in the liquidity source
   function reserveBalance(IEIP20 token, address reserve)
@@ -87,20 +106,29 @@ abstract contract AbstractRouter is AccessControlled {
     view
     virtual
     returns (uint);
-  
+
   function reserveNativeBalance(address reserve)
-    external
+    public
     view
     virtual
     returns (uint);
 
-  function withdrawToken(IEIP20 token, address reserve, address to, uint amount) 
-  public makersOrAdmin returns (bool) {
-    return __withdrawToken__(token, reserve, to, amount);
+  // withdraws `amount` of reserve tokens and sends them to `recipient`
+  function withdrawToken(
+    IEIP20 token,
+    address reserve,
+    address recipient,
+    uint amount
+  ) public makersOrAdmin returns (bool) {
+    return __withdrawToken__(token, reserve, recipient, amount);
   }
 
-  function __withdrawToken__(IEIP20 token, address reserve, address to, uint amount) 
-  internal virtual returns (bool);
+  function __withdrawToken__(
+    IEIP20 token,
+    address reserve,
+    address to,
+    uint amount
+  ) internal virtual returns (bool);
 
   // connect a maker contract to this router
   function bind(address maker) public makersOrAdmin {
