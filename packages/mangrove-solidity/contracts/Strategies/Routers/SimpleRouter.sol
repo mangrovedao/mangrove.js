@@ -48,6 +48,14 @@ contract SimpleRouter is AbstractRouter {
     );
   }
 
+  // this fonction is called immediately after a payable function has received funds
+  function __push_native__(address reserve, uint amount) 
+  internal override virtual returns (bool success) {
+    (success, ) = reserve.call{value: amount}("");
+    require(success, "mgvOrder/mo/refundFail");
+  }
+
+
   function __withdrawToken__(IEIP20 token, address reserve, address to, uint amount) 
   internal virtual override returns (bool) {
     return TransferLib.transferTokenFrom(token, reserve, to, amount);

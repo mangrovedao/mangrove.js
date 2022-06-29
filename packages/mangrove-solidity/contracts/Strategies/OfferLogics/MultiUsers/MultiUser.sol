@@ -160,7 +160,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     IEIP20 inbound_tkn,
     uint offerId,
     bool deprovision,
-    address payable caller
+    address caller
   ) internal returns (uint received) {
     require(
       _offerOwners[outbound_tkn][inbound_tkn][offerId] == caller,
@@ -172,7 +172,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       offerId,
       deprovision
     );
-    require(caller.send(received), "Multi/retractOffer/transferFail");
+    require(router().push_native{value:received}(caller), "Multi/retractOffer/transferFail");
   }
 
   // put received inbound tokens on offer owner account
@@ -202,11 +202,9 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     IEIP20 outTkn = IEIP20(order.outbound_tkn);
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
     address owner = ownerOf(outTkn, inTkn, order.offerId);
-    uint ownerBalance = router().reserveBalance(outTkn, owner);
-    (uint missing, uint amount_) = amount > ownerBalance 
-    ? (amount - ownerBalance, ownerBalance) 
-    : (0, amount);
-    uint pulled = router().pull(order.outbound_tkn, owner, amount_, true);
-    return (amount - pulled);
+    // telling router one is requiring `amount` of `outTkn` for `owner`.
+    // because `pull` is strict, `pulled <= amount` (cannot be greater) 
+    uint pulled = router().pull(outTkn, owner, amount, true);
+    return amount - pulled;
   }
 }

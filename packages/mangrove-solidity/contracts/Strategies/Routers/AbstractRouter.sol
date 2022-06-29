@@ -76,10 +76,19 @@ abstract contract AbstractRouter is AccessControlled {
     }
   }
 
-  function push_native()
+  function push_native(address reserve) external payable onlyMakers returns (bool) {
+    return __push_native__(reserve, msg.value);
+  }
+  function __push_native__(address reserve, uint amount) internal virtual returns (bool);
 
   // checks amount of `token`s available in the liquidity source
   function reserveBalance(IEIP20 token, address reserve)
+    external
+    view
+    virtual
+    returns (uint);
+  
+  function reserveNativeBalance(address reserve)
     external
     view
     virtual

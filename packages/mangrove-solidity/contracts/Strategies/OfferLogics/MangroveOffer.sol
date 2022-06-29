@@ -139,8 +139,9 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   }
 
   /// withdraws ETH from the bounty vault of the Mangrove.
-  function _withdrawFromMangrove(address payable receiver, uint amount)
-    internal
+  function withdrawFromMangrove(address payable receiver, uint amount)
+    public
+    mgvOrAdmin
     returns (bool noRevert)
   {
     require(MGV.withdraw(amount), "mgvOffer/withdraw/transferFail");

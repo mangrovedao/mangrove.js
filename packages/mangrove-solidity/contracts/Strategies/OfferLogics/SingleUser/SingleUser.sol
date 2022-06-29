@@ -21,14 +21,14 @@ abstract contract SingleUser is MangroveOffer {
   address immutable RESERVE;
 
   constructor(IMangrove _mgv, address _reserve, AbstractRouter _router) MangroveOffer(_mgv) {
-    address $router = address(router);
+    address $router = address(_router);
     // (_reserve != 0x)
     require(_reserve != address(0), "SingleUser/0xReserve");
   
     // _router == 0x ==> _reserve == this
     require($router != address(0) || _reserve == address(this), "SingleUser/NoRouterForReserve");
     RESERVE = _reserve;
-    if ($router != $(0)) {
+    if ($router != address(0)) {
       set_router(_router, ofr_gasreq());
     }
   }
@@ -87,19 +87,6 @@ abstract contract SingleUser is MangroveOffer {
     } else {
       _router.flush(tokens, RESERVE);
     }
-  }
-
-
-  /// withdraws ETH from the bounty vault of the Mangrove.
-  /// ETH are sent to `receiver`
-  function withdrawFromMangrove(address payable receiver, uint amount)
-    external
-    override
-    onlyAdmin
-    returns (bool)
-  {
-    require(receiver != address(0), "SingleUser/withdrawMGV/0xReceiver");
-    return _withdrawFromMangrove(receiver, amount);
   }
 
   // Posting a new offer on the (`outbound_tkn,inbound_tkn`) Offer List of Mangrove.
@@ -203,6 +190,7 @@ abstract contract SingleUser is MangroveOffer {
   function __posthookSuccess__(ML.SingleOrder calldata order)
     internal
     virtual
+    override
     returns (bool success)
   {
     IEIP20[] memory tokens = new IEIP20[](2);

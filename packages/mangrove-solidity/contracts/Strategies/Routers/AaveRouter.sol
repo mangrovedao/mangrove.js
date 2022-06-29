@@ -76,8 +76,6 @@ contract AaveRouter is AbstractRouter, AaveV3Module {
     virtual
     override
   {
-    // checking how much tokens are stored on MAKER's balance as a consequence of __put__
-    uint amount = token.balanceOf(maker);
     require(
       TransferLib.transferTokenFrom(
         token,
@@ -98,7 +96,7 @@ contract AaveRouter is AbstractRouter, AaveV3Module {
     address reserve,
     address to,
     uint amount
-  ) internal returns (uint) {
+  ) internal override returns (bool) {
     // note there is no possible redeem on behalf
     require(
       TransferLib.transferTokenFrom(
@@ -109,7 +107,8 @@ contract AaveRouter is AbstractRouter, AaveV3Module {
       ),
       "AaveRouter/supply/transferFromFail"
     );
-    return _redeem(token, amount, to);
+    require (_redeem(token, amount, to) == amount, "AaveRouter/withdrawToken/Fail");
+    return true;
   }
   
   // Admin function to manage position on AAVE

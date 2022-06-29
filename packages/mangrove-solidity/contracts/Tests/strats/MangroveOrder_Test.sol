@@ -380,9 +380,9 @@ contract MangroveOrder_Test is HasMgvEvents {
       0 
     );
     TestEvents.eq(
-      mgvOrder.balanceOnMangrove(address(this)),
-      0.1 ether - prov,
-      "Incorrect user balance on mangrove"
+      mgv.balanceOf(address(mgvOrder)),
+      0,
+      "MangroveOrder should not have free wei"
     );
     TestEvents.eq(
       mgvOrder.ownerOf(quote, base, res.offerId),
@@ -390,7 +390,7 @@ contract MangroveOrder_Test is HasMgvEvents {
       "Invalid offer owner"
     );
     TestEvents.eq(
-      mgvOrder.tokenBalance(quote, address(this)),
+      mgvOrder.router().reserveBalance(quote, address(this)),
       0.13 ether,
       "Invalid offer owner"
     );
@@ -428,7 +428,7 @@ contract MangroveOrder_Test is HasMgvEvents {
       buyOrder
     );
     uint oldLocalBaseBal = base.balanceOf(address(this));
-    uint oldRemoteQuoteBal = mgvOrder.tokenBalance(quote, address(this)); // quote balance of test runner
+    uint oldRemoteQuoteBal = mgvOrder.router().reserveBalance(quote, address(this)); // quote balance of test runner
 
     // TestUtils.logOfferBook(mgv,$base,$quote,4);
     // TestUtils.logOfferBook(mgv,$quote,$base,4);
@@ -451,7 +451,7 @@ contract MangroveOrder_Test is HasMgvEvents {
     );
 
     TestEvents.eq(
-      mgvOrder.tokenBalance(quote, address(this)),
+      mgvOrder.router().reserveBalance(quote, address(this)),
       oldRemoteQuoteBal - (sellTkrGot + fee),
       "Incorrect token balance on mgvOrder"
     );
@@ -485,7 +485,7 @@ contract MangroveOrder_Test is HasMgvEvents {
       buyOrder
     );
     // test runner quote balance on the gateway
-    uint balQuoteRemote = mgvOrder.tokenBalance(quote, address(this));
+    uint balQuoteRemote = mgvOrder.router().reserveBalance(quote, address(this));
     uint balQuoteLocal = quote.balanceOf(address(this));
 
     // increasing density on mangrove so that resting offer can no longer repost
@@ -501,12 +501,8 @@ contract MangroveOrder_Test is HasMgvEvents {
       "Quote was not transfered to user"
     );
     TestEvents.check(
-      mgvOrder.tokenBalance(quote, address(this)) == 0,
+      mgvOrder.router().reserveBalance(quote, address(this)) == 0,
       "Inconsistent token balance"
-    );
-    TestEvents.check(
-      mgvOrder.balanceOnMangrove(address(this)) == 0,
-      "Inconsistent wei balance"
     );
     TestEvents.expectFrom(address(mgv));
     emit OfferRetract($quote, $base, res.offerId);
@@ -530,24 +526,12 @@ contract MangroveOrder_Test is HasMgvEvents {
     IOrderLogic.TakerOrderResult memory res = mgvOrder.take{value: 0.1 ether}(
       buyOrder
     );
-    uint userWeiOnMangroveOld = mgvOrder.balanceOnMangrove(address(this));
-    uint userWeiBalanceLocalOld = address(this).balance;
+    uint userWeiBalanceOld = mgvOrder.router().reserveNativeBalance(address(this));
     uint credited = mgvOrder.retractOffer(quote, base, res.offerId, true);
+    
     TestEvents.eq(
-      mgvOrder.balanceOnMangrove(address(this)),
-      userWeiOnMangroveOld + credited,
-      "Incorrect wei balance after retract"
-    );
-    TestEvents.check(
-      mgvOrder.withdrawFromMangrove(
-        payable(this),
-        mgvOrder.balanceOnMangrove(address(this))
-      ),
-      "Withdraw failed"
-    );
-    TestEvents.eq(
-      address(this).balance,
-      userWeiBalanceLocalOld + userWeiOnMangroveOld + credited,
+      mgvOrder.router().reserveNativeBalance(address(this)),
+      userWeiBalanceOld + credited,
       "Incorrect provision received"
     );
   }
