@@ -238,7 +238,7 @@ contract MangoImplementation is Persistent {
       } catch (bytes memory reason) {
         // `newOffer` can fail when Mango is underprovisioned or if `offer.gives` is below density
         if (keccak256(reason) == keccak256("mgv/insufficientProvision")) {
-          emit LogIncident(BASE, QUOTE, 0, "Mango/newAsk/outOfProvision");
+          emit LogIncident(MGV, BASE, QUOTE, 0, "Mango/newAsk/outOfProvision");
         }
         return gives;
       }
@@ -262,6 +262,7 @@ contract MangoImplementation is Persistent {
         // it may also fail because there is not enough provision on Mangrove (this is Not OK so we log)
         if (keccak256(reason) == keccak256("mgv/insufficientProvision")) {
           emit LogIncident(
+            MGV,
             BASE,
             QUOTE,
             mStr.asks[index],
@@ -301,7 +302,7 @@ contract MangoImplementation is Persistent {
         return 0;
       } catch (bytes memory reason) {
         if (keccak256(reason) == keccak256("mgv/insufficientProvision")) {
-          emit LogIncident(QUOTE, BASE, 0, "Mango/newBid/outOfProvision");
+          emit LogIncident(MGV, QUOTE, BASE, 0, "Mango/newBid/outOfProvision");
         }
         return gives;
       }
@@ -322,6 +323,7 @@ contract MangoImplementation is Persistent {
       } catch (bytes memory reason) {
         if (keccak256(reason) == keccak256("mgv/insufficientProvision")) {
           emit LogIncident(
+            MGV,
             QUOTE,
             BASE,
             mStr.bids[index],

@@ -19,6 +19,7 @@ interface IOfferLogicMulti is IOfferLogic {
   /** Multi offer specific Events */
   // Offer management
   event NewOwnedOffer(
+    IMangrove mangrove,
     IEIP20 indexed outbound_tkn,
     IEIP20 indexed inbound_tkn,
     uint indexed offerId,

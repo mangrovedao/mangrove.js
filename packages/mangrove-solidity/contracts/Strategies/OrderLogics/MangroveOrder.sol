@@ -149,6 +149,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       });
 
       emit OrderSummary({
+        mangrove: MGV,
         base: tko.base,
         quote: tko.quote,
         selling: tko.selling,
@@ -211,6 +212,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
         require(noRevert, "mgvOrder/mo/refundFail");
       }
       emit OrderSummary({
+        mangrove: MGV,
         base: tko.base,
         quote: tko.quote,
         selling: tko.selling,
@@ -245,6 +247,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       })
     ) {
       emit LogIncident(
+        MGV,
         outTkn,
         inTkn,
         order.offerId,
@@ -261,6 +264,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       })
     ) {
       emit LogIncident(
+        MGV,
         outTkn,
         inTkn,
         order.offerId,
