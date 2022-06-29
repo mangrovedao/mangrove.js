@@ -63,6 +63,8 @@ class Mangrove {
   readerContract: typechain.MgvReader;
   cleanerContract: typechain.MgvCleaner;
   oracleContract: typechain.MgvOracle;
+  // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
+  // orderContract: typechain.MangroveOrder;
   orderContract: typechain.MangroveOrderEnriched;
   static typechain = typechain;
 
@@ -165,10 +167,13 @@ class Mangrove {
       oracleAddress,
       this._signer
     );
+    // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
     const orderAddress = Mangrove.getAddress(
+      // "MangroveOrder",
       "MangroveOrderEnriched",
       this._network.name
     );
+    // this.orderContract = typechain.MangroveOrder__factory.connect(
     this.orderContract = typechain.MangroveOrderEnriched__factory.connect(
       orderAddress,
       this._signer
