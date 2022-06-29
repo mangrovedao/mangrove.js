@@ -1,5 +1,7 @@
 # next version
 
+# 0.8.1 (June 2022)
+
 - Update ABI's and addresses for `MangroveOrder` and `MangroveOrderEnriched`
 
 # 0.8.0 (June 2022)
