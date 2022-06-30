@@ -25,6 +25,7 @@ export class BotArbitrage {
   #inboundTokenSymbol: string;
   #askIdsBlacklist: BigNumber[];
   #bidIdsBlacklist: BigNumber[];
+  #lastBlockRun: number;
   /**
    * Constructs the bot.
    * @param mgvContract Mangrove ethers.js contract object
@@ -51,6 +52,7 @@ export class BotArbitrage {
     this.#inboundTokenSymbol = inboundTokenSymbol;
     this.#askIdsBlacklist = [];
     this.#bidIdsBlacklist = [];
+    this.#lastBlockRun = 0;
 
     logger.info("Initialized arbitrage bot", {
       base: this.#outboundTokenSymbol,
@@ -61,7 +63,6 @@ export class BotArbitrage {
   public async start(): Promise<void> {
     this.#blocksSubscriber.on("block", async () => {
       const blockNumber = await this.#blocksSubscriber.getBlockNumber();
-
       const [bestAskId, bestBidId, bestAsk, bestBid] =
         await this.#getOpportunity();
 
@@ -72,8 +73,13 @@ export class BotArbitrage {
         !(
           this.#askIdsBlacklist.includes(bestAskId) ||
           this.#bidIdsBlacklist.includes(bestBidId)
-        )
+        ) &&
+        //Arbitrary solution to bypass the 2s blocktime issue where
+        //the bot would identify twice the same opportunity and try
+        //to execute it twice.
+        blockNumber - this.#lastBlockRun > 1
       ) {
+        this.#lastBlockRun = blockNumber;
         this.#blackListOffers(
           BigNumber.from(bestAskId),
           BigNumber.from(bestBidId)
@@ -94,7 +100,7 @@ export class BotArbitrage {
           await this.#multiOrderProxyContract.twoOrders(buyOrder, sellOrder, {
             gasLimit: MAX_GAS_LIMIT,
           })
-        ).wait(3);
+        ).wait();
 
         this.#logArbitrage(tx);
 
@@ -296,15 +302,6 @@ export class BotArbitrage {
       ];
       return params;
     }
-  }
-
-  async #arbitrageExecution(
-    buyOrder: SolSnipeOrder,
-    sellOrder: SolSnipeOrder
-  ): Promise<TransactionResponse> {
-    return this.#multiOrderProxyContract.twoOrders(buyOrder, sellOrder, {
-      gasLimit: MAX_GAS_LIMIT,
-    });
   }
 
   #logArbitrage(tx: ethers.providers.TransactionReceipt) {
