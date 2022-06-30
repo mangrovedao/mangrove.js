@@ -1,4 +1,4 @@
-// import { logger } from "./util/logger";
+import { logger } from "./util/logger";
 import { BigNumber, BigNumberish, ethers } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { WebSocketProvider } from "@ethersproject/providers";
@@ -20,7 +20,9 @@ export class BotArbitrage {
   #multiOrderProxyContract: ethers.Contract;
   #blocksSubscriber: WebSocketProvider;
   #outboundTokenAddress: string;
+  #outboundTokenSymbol: string;
   #inboundTokenAddress: string;
+  #inboundTokenSymbol: string;
   #askIdsBlacklist: BigNumber[];
   #bidIdsBlacklist: BigNumber[];
   /**
@@ -36,28 +38,30 @@ export class BotArbitrage {
     multiOrderProxyContract: ethers.Contract,
     blocksSubscriber: WebSocketProvider,
     outboundTokenAddress: string,
-    inboundTokenAddress: string
+    outboundTokenSymbol: string,
+    inboundTokenAddress: string,
+    inboundTokenSymbol: string
   ) {
     this.#mgvContract = mgvContract;
     this.#multiOrderProxyContract = multiOrderProxyContract;
     this.#blocksSubscriber = blocksSubscriber;
     this.#outboundTokenAddress = outboundTokenAddress;
+    this.#outboundTokenSymbol = outboundTokenSymbol;
     this.#inboundTokenAddress = inboundTokenAddress;
+    this.#inboundTokenSymbol = inboundTokenSymbol;
     this.#askIdsBlacklist = [];
     this.#bidIdsBlacklist = [];
 
-    // logger.info("Initialized arbitrage bot", {
-    //   contextInfo: "arbitrage init",
-    //   base: this.#outboundTokenAddress,
-    //   quote: this.#inboundTokenAddress,
-    // });
-    console.log("Initialized arbitrage bot on market:");
-    console.log("out: ", this.#outboundTokenAddress);
-    console.log("in:  ", this.#inboundTokenAddress);
+    logger.info("Initialized arbitrage bot", {
+      base: this.#outboundTokenSymbol,
+      quote: this.#inboundTokenSymbol,
+    });
   }
 
   public async start(): Promise<void> {
     this.#blocksSubscriber.on("block", async () => {
+      const blockNumber = await this.#blocksSubscriber.getBlockNumber();
+
       const [bestAskId, bestBidId, bestAsk, bestBid] =
         await this.#getOpportunity();
 
@@ -75,7 +79,9 @@ export class BotArbitrage {
           BigNumber.from(bestBidId)
         );
 
-        this.#logOpportunity(bestAsk, bestBid);
+        await this.#logBlacklist(blockNumber, 0);
+
+        await this.#logOpportunity(blockNumber, bestAsk, bestBid);
 
         const [buyOrder, sellOrder] = this.#createArbOrders(
           bestAskId,
@@ -85,14 +91,39 @@ export class BotArbitrage {
         );
 
         const tx = await (
-          await this.#arbitrageExecution(buyOrder, sellOrder)
-        ).wait();
+          await this.#multiOrderProxyContract.twoOrders(buyOrder, sellOrder, {
+            gasLimit: MAX_GAS_LIMIT,
+          })
+        ).wait(3);
+
+        this.#logArbitrage(tx);
 
         this.#unBlackListOffers(bestAskId, bestBidId);
 
-        this.#logArbitrage(tx);
+        await this.#logBlacklist(blockNumber, 1);
       }
     });
+  }
+
+  async #logBlacklist(blockNumber: number, addOrRm: Number) {
+    if (addOrRm == 0) {
+      //something added to blacklist
+      logger.debug(`Ask blacklist addition at block ${blockNumber}`, {
+        data: this.#askIdsBlacklist,
+      });
+      logger.debug(`Bid blacklist addition at block ${blockNumber}`, {
+        data: this.#bidIdsBlacklist,
+      });
+    }
+    if (addOrRm == 1) {
+      //something removed from blacklist
+      logger.debug(`Ask blacklist removal at block ${blockNumber}`, {
+        data: this.#askIdsBlacklist,
+      });
+      logger.debug(`Bid blacklist removal at block ${blockNumber}`, {
+        data: this.#bidIdsBlacklist,
+      });
+    }
   }
 
   #blackListOffers(askId: BigNumber, bidId: BigNumber) {
@@ -150,6 +181,29 @@ export class BotArbitrage {
     bestAsk = bestAsk.offer;
     bestBid = bestBid.offer;
 
+    if (
+      BigNumber.from(bestAsk.gives).eq(0) ||
+      BigNumber.from(bestBid.wants).eq(0) ||
+      BigNumber.from(bestAsk.wants).eq(0) ||
+      BigNumber.from(bestBid.gives).eq(0)
+    ) {
+      logger.error("Got null price", {
+        base: this.#outboundTokenAddress,
+        quote: this.#inboundTokenAddress,
+        askGives: bestAsk.gives,
+        askWants: bestAsk.wants,
+        bidGives: bestBid.gives,
+        bidWants: bestBid.wants,
+        askId: bestAskId,
+        bidId: bestBidId,
+      });
+      return [
+        BigNumber.from(-1),
+        BigNumber.from(-1),
+        BigNumber.from(-1),
+        BigNumber.from(-1),
+      ];
+    }
     const bestAskPrice: BigNumber = BigNumber.from(bestAsk.wants).div(
       BigNumber.from(bestAsk.gives)
     );
@@ -248,30 +302,59 @@ export class BotArbitrage {
     buyOrder: SolSnipeOrder,
     sellOrder: SolSnipeOrder
   ): Promise<TransactionResponse> {
-    const tx = await this.#multiOrderProxyContract.twoOrders(
-      buyOrder,
-      sellOrder,
-      {
-        gasLimit: MAX_GAS_LIMIT,
-      }
-    );
-    return tx;
+    return this.#multiOrderProxyContract.twoOrders(buyOrder, sellOrder, {
+      gasLimit: MAX_GAS_LIMIT,
+    });
   }
 
   #logArbitrage(tx: ethers.providers.TransactionReceipt) {
     if (tx.status == 1) {
-      console.log("Arbitrage successful: ", tx.transactionHash);
+      logger.info(`Arbitrage successful:`, {
+        base: this.#outboundTokenSymbol,
+        quote: this.#inboundTokenSymbol,
+        data: tx.transactionHash,
+      });
+      logger.debug(`Arbitrage successful:`, {
+        base: this.#outboundTokenSymbol,
+        quote: this.#inboundTokenSymbol,
+        data: tx,
+      });
     } else {
-      console.log("Arbitrage failed: ", tx.transactionHash);
+      logger.error(`Arbitrage failed:`, {
+        base: this.#outboundTokenSymbol,
+        quote: this.#inboundTokenSymbol,
+        data: tx,
+      });
     }
   }
 
-  #logOpportunity(bestAsk: any, bestBid: any) {
-    console.log("Opportunity found:\nBest Ask:");
-    console.log("wants: ", BigNumber.from(bestAsk.wants).toString());
-    console.log("gives: ", BigNumber.from(bestAsk.gives).toString());
-    console.log("Best Bid:");
-    console.log("wants: ", BigNumber.from(bestBid.wants).toString());
-    console.log("gives: ", BigNumber.from(bestBid.gives).toString());
+  async #logOpportunity(blockNumber: number, bestAsk: any, bestBid: any) {
+    logger.info("Found opportunity:", {
+      base: this.#outboundTokenSymbol,
+      quote: this.#inboundTokenSymbol,
+      data: blockNumber,
+    });
+    logger.info("Ask:", {
+      base: this.#outboundTokenSymbol,
+      quote: this.#inboundTokenSymbol,
+      offer: bestAsk,
+    });
+    logger.info("Bid:", {
+      base: this.#outboundTokenSymbol,
+      quote: this.#inboundTokenSymbol,
+      offer: bestBid,
+    });
+    // console.log("Opportunity found:\nBest Ask:");
+    // console.log("wants: ", BigNumber.from(bestAsk.wants).toString());
+    // console.log("gives: ", BigNumber.from(bestAsk.gives).toString());
+    // console.log("Best Bid:");
+    // console.log("wants: ", BigNumber.from(bestBid.wants).toString());
+    // console.log("gives: ", BigNumber.from(bestBid.gives).toString());
+  }
+
+  stop() {
+    this.#blocksSubscriber.removeAllListeners();
+    this.#mgvContract.removeAllListeners();
+    this.#multiOrderProxyContract.removeAllListeners();
   }
 }

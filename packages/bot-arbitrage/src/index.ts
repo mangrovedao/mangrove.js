@@ -7,6 +7,7 @@
 import http from "http";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
+import { logger } from "./util/logger";
 import { BotArbitrage } from "./BotArbitrage";
 import { WebSocketProvider } from "@ethersproject/providers";
 import { NonceManager } from "@ethersproject/experimental";
@@ -22,8 +23,18 @@ const mgvMultiOrderAbi =
 const mgvAbi =
   require("../../mangrove-solidity/artifacts/contracts/Mangrove.sol/Mangrove.json").abi;
 
+enum ExitCode {
+  Normal = 0,
+  UncaughtException = 1,
+  UnhandledRejection = 2,
+  ExceptionInMain = 3,
+  MangroveIsKilled = 4,
+}
+
+let runningBots: BotArbitrage[] = [];
+
 const main = async () => {
-  console.log("Starting arbitrage bot...");
+  logger.info("Starting arbitrage bots...", { data: markets.markets });
 
   if (!process.env["ETHEREUM_NODE_URL"])
     throw new Error("No URL for a node has been provided in ETHEREUM_NODE_URL");
@@ -39,8 +50,6 @@ const main = async () => {
   const MULTI_ADDRESS = process.env["MULTI_ORDER_CONTRACT_ADDRESS"];
 
   const mgv = await Mangrove.connect(process.env["ETHEREUM_NODE_URL"]);
-
-  let runningBots = [];
 
   // outbound = base
   // inbound = quote
@@ -71,12 +80,15 @@ const main = async () => {
         mgvMultiOrderContract,
         blocksSubscriber,
         base,
-        quote
+        mkt.base,
+        quote,
+        mkt.quote
       );
       simpleArbitrageBot.start();
       runningBots.push(simpleArbitrageBot);
     } catch (error) {
-      console.error(error);
+      logger.error("Error starting bots for market", { market: mkt });
+      stopAndExit(ExitCode.ExceptionInMain);
     } finally {
     }
   });
@@ -95,18 +107,32 @@ const server = http.createServer(function (req, res) {
 
 server.listen(process.env.PORT || 8080);
 
-function logErrorAndExit(err: Error) {
-  console.error(err);
-  process.exit(1);
-}
 process.on("unhandledRejection", function (reason, promise) {
-  console.warn("Unhandled Rejection:");
-  console.warn(reason);
-  console.warn(promise);
+  logger.error("Unhandled Rejection", { data: reason });
+  // logger.error("Unhandled Rejection", { data: promise });
+  console.error(reason);
+  stopAndExit(ExitCode.UnhandledRejection);
 });
+
+process.on("uncaughtException", (err) => {
+  logger.error(`Uncaught Exception: ${err.message}`);
+  stopAndExit(ExitCode.UncaughtException);
+});
+
+function stopAndExit(exitStatusCode: number) {
+  // Stop BotArbitrage(s) gracefully
+  logger.info("Stopping and exiting", { data: { exitCode: exitStatusCode } });
+  process.exitCode = exitStatusCode;
+  for (let i = 0; i < runningBots.length; i++) {
+    runningBots[i].stop();
+  }
+  server.close();
+  process.exit(process.exitCode);
+}
 
 main()
   // .then(process.exit(0))
   .catch((e) => {
-    logErrorAndExit(e);
+    logger.error(e);
+    stopAndExit(ExitCode.ExceptionInMain);
   });
