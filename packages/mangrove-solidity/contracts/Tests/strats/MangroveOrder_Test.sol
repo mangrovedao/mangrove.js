@@ -78,7 +78,7 @@ contract MangroveOrder_Test is HasMgvEvents {
     // to prevent test runner (taker) from receiving fees!
     mgv.setVault(address(mgv));
 
-    mgvOrder = new MgvOrder(IMangrove(payable(mgv)), address(this));
+    mgvOrder = new MgvOrder(IMangrove(payable(mgv)), address(this)); // this contract is admin of MgvOrder and its router
 
     // mgvOrder needs to approve mangrove for outbound token transfer
     mgvOrder.approveMangrove(base, type(uint).max);

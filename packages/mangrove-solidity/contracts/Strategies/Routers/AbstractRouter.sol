@@ -16,6 +16,8 @@ pragma abicoder v2;
 import "contracts/Strategies/interfaces/IEIP20.sol";
 import "contracts/Strategies/utils/AccessControlled.sol";
 
+import "hardhat/console.sol";
+
 abstract contract AbstractRouter is AccessControlled {
   mapping(address => bool) public makers;
   modifier onlyMakers() {
@@ -29,7 +31,7 @@ abstract contract AbstractRouter is AccessControlled {
 
   constructor(address deployer) AccessControlled(deployer) {}
 
-  // gets `amount` of `token`s from reserve
+  // pulls `amount` of `token`s from reserve to maker contract's balance
   // `reserve` is typically an EOA (for nice UX), the router contract itself (to minimize fragmentation when router is bound to several makers)
   // or the Maker contract (to minimize transfer costs)
   function pull(
@@ -55,7 +57,7 @@ abstract contract AbstractRouter is AccessControlled {
     bool strict
   ) internal virtual returns (uint);
 
-  // deposits `amount` of `token`s into reserve
+  // pushes `amount` of `token`s from maker contract to reserve
   function push(
     IEIP20 token,
     address reserve,
@@ -132,6 +134,8 @@ abstract contract AbstractRouter is AccessControlled {
 
   // connect a maker contract to this router
   function bind(address maker) public makersOrAdmin {
+    console.log(msg.sender);
+    console.log(admin());
     makers[maker] = true;
   }
 

@@ -20,10 +20,13 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => uint))) public expiring;
 
   constructor(IMangrove _MGV, address deployer)
-    MultiUserPersistent(_MGV, new SimpleRouter(deployer))
+    MultiUserPersistent(_MGV, new SimpleRouter(address(this)))
   {
+    console.log("here");
+    router().bind(address(this));
     if (deployer != msg.sender) {
       setAdmin(deployer);
+      router().setAdmin(deployer);
     }
   }
 

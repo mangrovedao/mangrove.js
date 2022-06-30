@@ -37,7 +37,6 @@ interface IOfferLogic is IMaker {
   // Logging change in default gasreq
   event SetGasreq(uint);
 
-
   // Offer logic default gas required --value is used in update and new offer if maxUint is given
   function ofr_gasreq() external returns (uint);
 
@@ -56,7 +55,8 @@ interface IOfferLogic is IMaker {
 
   // changing liqudity router of the logic
   function set_router(AbstractRouter router, uint gasreq) external;
-  
+
+  // withdraw `amount` `token` form the contract's (owner) reserve and sends them to `receiver`'s balance
   function withdrawToken(
     IEIP20 token,
     address receiver,
@@ -65,9 +65,8 @@ interface IOfferLogic is IMaker {
 
   function approveMangrove(IEIP20 outbound_tkn, uint amount) external;
 
-  function withdrawFromMangrove(address payable receiver, uint amount)
-    external
-    returns (bool noRevert);
+  // pulls available free wei from Mangrove balance to `this`
+  function withdrawFromMangrove(uint amount) external;
 
   struct MakerOrder {
     IEIP20 outbound_tkn; // address of the ERC20 contract managing outbound tokens

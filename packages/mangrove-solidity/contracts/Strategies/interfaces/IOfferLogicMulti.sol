@@ -26,6 +26,20 @@ interface IOfferLogicMulti is IOfferLogic {
     address owner
   );
 
+  // user provision on Mangrove has increased
+  event CreditMgvUser(
+    IMangrove indexed mangrove,
+    address indexed user,
+    uint amount
+  );
+
+  // user provision on Mangrove has decreased
+  event DebitMgvUser(
+    IMangrove indexed mangrove,
+    address indexed user,
+    uint amount
+  );
+
   function offerOwners(
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,

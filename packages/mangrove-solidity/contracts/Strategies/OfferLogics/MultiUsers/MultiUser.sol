@@ -16,8 +16,13 @@ import "../../../periphery/MgvReader.sol";
 import "../../interfaces/IOfferLogicMulti.sol";
 
 abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
-  mapping(IEIP20 => mapping(IEIP20 => mapping(uint => address)))
-    internal _offerOwners; // outbound_tkn => inbound_tkn => offerId => ownerAddress
+  struct OfferData {
+    address owner;
+    uint96 wei_balance;
+  }
+
+  mapping(IEIP20 => mapping(IEIP20 => mapping(uint => OfferData)))
+    internal offerData; // outbound_tkn => inbound_tkn => offerId => OfferData
 
   constructor(IMangrove _mgv, AbstractRouter _router) MangroveOffer(_mgv) {
     require(address(_router) != address(0), "MultiUser/0xRouter");
@@ -25,15 +30,15 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   }
 
   /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
-  /// @return __offerOwners an array of the same length where the address at position i is the owner of `offerIds[i]`
+  /// @return _offerOwners an array of the same length where the address at position i is the owner of `offerIds[i]`
   function offerOwners(
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,
     uint[] calldata offerIds
-  ) public view override returns (address[] memory __offerOwners) {
-    __offerOwners = new address[](offerIds.length);
+  ) public view override returns (address[] memory _offerOwners) {
+    _offerOwners = new address[](offerIds.length);
     for (uint i = 0; i < offerIds.length; i++) {
-      __offerOwners[i] = ownerOf(outbound_tkn, inbound_tkn, offerIds[i]);
+      _offerOwners[i] = ownerOf(outbound_tkn, inbound_tkn, offerIds[i]);
     }
   }
 
@@ -43,8 +48,33 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     uint offerId,
     address owner
   ) internal {
-    _offerOwners[outbound_tkn][inbound_tkn][offerId] = owner;
+    offerData[outbound_tkn][inbound_tkn][offerId] = OfferData({
+      owner: owner,
+      wei_balance: uint96(0)
+    });
     emit NewOwnedOffer(MGV, outbound_tkn, inbound_tkn, offerId, owner);
+  }
+
+  function derive_gasprice(
+    IEIP20 outTkn,
+    IEIP20 inTkn,
+    uint gasreq,
+    uint provision
+  ) internal view returns (uint gasprice) {
+    (P.Global.t global, P.Local.t local) = MGV.config(
+      address(outTkn),
+      address(inTkn)
+    );
+    uint num = (local.offer_gasbase() + gasreq) * 10**9;
+    // pre-check to avoir underflow
+    require(provision >= num, "MultiUser/derive_gasprice/NotEnoughProvision");
+    unchecked {
+      gasprice = provision / num;
+    }
+    require(
+      gasprice >= global.gasprice(),
+      "MultiUser/derive_gasprice/NotEnoughProvision"
+    );
   }
 
   function ownerOf(
@@ -52,7 +82,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     IEIP20 inbound_tkn,
     uint offerId
   ) public view override returns (address owner) {
-    owner = _offerOwners[outbound_tkn][inbound_tkn][offerId];
+    owner = offerData[outbound_tkn][inbound_tkn][offerId].owner;
     require(owner != address(0), "multiUser/unkownOffer");
   }
 
@@ -65,19 +95,19 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     offerId = newOfferInternal(mko, msg.sender, msg.value);
   }
 
-  // Calls new offer on Mangrove. If successful the function will update `_offerOwners` mapping `caller` to returned `offerId`
-  // This call will revert if `newOffer` reverts on Mangrove or if `caller` does not have the provisions to cover for the bounty.
-  // We assume here this function is called with the correct provision,
-  // otherwise Mangrove will throw (since `this` contract has no free wei on Mangrove as there is no `fundMangrove` function)
-  // so owners have to provision at the moment of posting the offer using a well chosen gasprice
   function newOfferInternal(
     MakerOrder memory mko,
     address caller,
     uint provision
   ) internal returns (uint offerId) {
-    require(provision > 0, "Multi/UnprovisionedOffer");
-
     uint gasreq = (mko.gasreq > type(uint24).max) ? ofr_gasreq() : mko.gasreq;
+    uint gasprice = derive_gasprice(
+      mko.outbound_tkn,
+      mko.inbound_tkn,
+      gasreq,
+      provision
+    );
+
     // this call could revert if this contract does not have the provision to cover the bounty
     offerId = MGV.newOffer{value: provision}(
       $(mko.outbound_tkn),
@@ -85,7 +115,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       mko.wants,
       mko.gives,
       gasreq,
-      mko.gasprice,
+      gasprice,
       mko.pivotId
     );
     //setting owner of offerId
@@ -106,27 +136,39 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     require(offerId_ > 0, reason);
   }
 
-  // Calls update offer on Mangrove. If successful the function will take care of maintaining `mgvBalance` for offer owner.
-  // This call does not revert if `updateOffer` fails on Mangrove, due for instance to low density or incorrect `wants`/`gives`.
-  // It will however revert if user does not have the provision to cover the bounty (in case of gas increase).
-  // When offer failed to be updated, the returned value is always 0 and the revert message. Otherwise it is equal to `offerId` and the empty string.
+  // mko.gasprice is ignored because it needs to be derived from free WEIs
+  // not adapting gasprice to free WEIs would allow a user to submit an `new/updateOffer` underprovisioned for the announced gasprice
+  // Mangrove would then erroneously take missing WEIs in `this` contract free balance (possibly coming from uncollected deprovisioned offers after a fail).
   function updateOfferInternal(
     MakerOrder memory mko,
     uint offerId,
     address caller,
     uint provision // dangerous to use msg.value in a internal call
   ) internal returns (uint, string memory) {
-    require(
-      caller == ownerOf(mko.outbound_tkn, mko.inbound_tkn, offerId),
-      "Multi/updateOffer/unauthorized"
+    OfferData memory od = offerData[mko.outbound_tkn][mko.inbound_tkn][offerId];
+    require(caller == od.owner, "Multi/updateOffer/unauthorized");
+    // if `od.free_wei` > 0 then `this` contract has a free wei balance >= `od.free_wei`.
+    // Gasprice must take this into account because Mangrove will pull into available WEIs if gasprice requires it.
+    mko.gasreq = (mko.gasreq > type(uint24).max) ? ofr_gasreq() : mko.gasreq;
+    mko.gasprice = derive_gasprice(
+      mko.outbound_tkn,
+      mko.inbound_tkn,
+      mko.gasreq,
+      provision + od.wei_balance
     );
+    if (od.wei_balance > 0) {
+      offerData[mko.outbound_tkn][mko.inbound_tkn][offerId] = OfferData({
+        owner: od.owner,
+        wei_balance: 0
+      });
+    }
     try
       MGV.updateOffer{value: provision}(
         $(mko.outbound_tkn),
         $(mko.inbound_tkn),
         mko.wants,
         mko.gives,
-        (mko.gasreq > type(uint24).max) ? ofr_gasreq() : mko.gasreq,
+        mko.gasreq,
         mko.gasprice,
         mko.pivotId,
         offerId
@@ -162,21 +204,31 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     bool deprovision,
     address caller
   ) internal returns (uint received) {
-    require(
-      _offerOwners[outbound_tkn][inbound_tkn][offerId] == caller,
-      "Multi/retractOffer/unauthorized"
-    );
-    received = MGV.retractOffer(
-      $(outbound_tkn),
-      $(inbound_tkn),
-      offerId,
-      deprovision
-    );
-    // NB depending on router's implementation, this call might give reentrancy power to caller
-    require(
-      router().push_native{value: received}(caller),
-      "Multi/retractOffer/transferFail"
-    );
+    OfferData memory od = offerData[outbound_tkn][inbound_tkn][offerId];
+    require(od.owner == caller, "Multi/retractOffer/unauthorized");
+
+    if (od.wei_balance > 0) {
+      // offer was already retracted and deprovisioned by Mangrove after a trade failure
+      received = deprovision ? od.wei_balance : 0;
+    } else {
+      received = MGV.retractOffer(
+        $(outbound_tkn),
+        $(inbound_tkn),
+        offerId,
+        deprovision
+      );
+    }
+    if (received > 0) {
+      // pulling free wei from Mangrove to `this`
+      withdrawFromMangrove(received);
+      // resetting pending returned provision
+      offerData[outbound_tkn][inbound_tkn][offerId] = OfferData({
+        owner: od.owner,
+        wei_balance: 0
+      });
+      // letting router decide what it should do with owner's free wei
+      router().push_native{value: received}(caller);
+    }
   }
 
   function withdrawToken(
@@ -222,7 +274,9 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   }
 
   // if offer failed to execute or reneged Mangrove has deprovisioned it
-  // the wei balance of `this` contract is now positive
+  // the wei balance of `this` contract on Mangrove is now positive
+  // this fallback returns an under approx of the provision that has been returned to this contract
+  // being under approx implies `this` contract will accumulate a small amount of wei over time
   function __posthookFallback__(
     ML.SingleOrder calldata order,
     ML.OrderResult calldata result
@@ -230,27 +284,21 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     result; // ssh
     IEIP20 outTkn = IEIP20(order.outbound_tkn);
     IEIP20 inTkn = IEIP20(order.inbound_tkn);
-    address owner = ownerOf(outTkn, inTkn, order.offerId);
+    OfferData memory od = offerData[outTkn][inTkn][order.offerId];
     // first one withdraws all free weis from Mangrove
     // NB if several offers of `this` contract have failed during the market order, the balance will contain cumulated free provision
-    uint balWei = MGV.balanceOf(address(this));
+    // noop if the balance of `this` is empty on Mangrove so will perform this call only once per market order
+    withdrawFromMangrove(type(uint).max);
+
     // computing an under approximation of returned provision
     (P.Global.t global, ) = MGV.config(order.outbound_tkn, order.inbound_tkn);
     uint gaspriceInWei = global.gasprice() * 10**9;
     uint approxReturnedProvision = (order.offerDetail.gasreq() - gasleft()) *
       gaspriceInWei;
-    if (balWei > approxReturnedProvision) {
-      // NB depending on router's implementation, this call might give reentrancy power to caller
-      router().push_native{value: approxReturnedProvision}(owner);
-      success = true;
-    } else {
-      emit LogIncident(
-        MGV,
-        outTkn,
-        inTkn,
-        order.offerId,
-        "MultiUser/posthookFallback/panic"
-      );
-    }
+    offerData[outTkn][inTkn][order.offerId] = OfferData({
+      owner: od.owner,
+      wei_balance: uint96(approxReturnedProvision) // previous wei_balance is always 0 here: if offer failed in the past, `updateOffer` did reuse it
+    });
+    success = true;
   }
 }
