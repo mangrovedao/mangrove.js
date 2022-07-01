@@ -271,11 +271,12 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     }
   }
 
+  // NB anyone can call but msg.sender will only be able to withdraw from its reserve
   function withdrawToken(
     IEIP20 token,
     address receiver,
     uint amount
-  ) external override onlyAdmin returns (bool success) {
+  ) external override returns (bool success) {
     require(receiver != address(0), "MultiUser/withdrawToken/0xReceiver");
     return router().withdrawToken(token, msg.sender, receiver, amount);
   }

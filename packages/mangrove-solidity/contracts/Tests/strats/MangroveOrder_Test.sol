@@ -276,12 +276,12 @@ contract MangroveOrder_Test is HasMgvEvents {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    try mgvOrder.take{value: 0.1 ether}(buyOrder) {
+    try mgvOrder.take{value: 0.0001 ether}(buyOrder) {
       TestEvents.fail("Maker order should have failed.");
     } catch Error(string memory reason) {
       TestEvents.eq(
         reason,
-        "Multi/debitOnMgv/insufficient",
+        "MultiUser/newOffer/NotEnoughProvision",
         "Unexpected revert reason"
       );
     }
@@ -353,12 +353,18 @@ contract MangroveOrder_Test is HasMgvEvents {
       wants: 2 ether,
       gives: 0.26 ether, // with 2% slippage
       makerWants: 2 ether,
-      makerGives: 0.2548 ether, //without 2% slippage
+      makerGives: 0.2548 ether, // without 2% slippage
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      blocksToLiveForRestingOrder: 0 // NA
     });
+    uint balquoteBefore = mgvOrder.router().reserveBalance(
+      quote,
+      address(this)
+    );
+    uint balbaseBefore = mgvOrder.router().reserveBalance(quote, address(this));
+
     IOrderLogic.TakerOrderResult memory res = mgvOrder.take{value: 0.1 ether}(
       buyOrder
     );
@@ -393,8 +399,13 @@ contract MangroveOrder_Test is HasMgvEvents {
     );
     TestEvents.eq(
       mgvOrder.router().reserveBalance(quote, address(this)),
-      0.13 ether,
-      "Invalid offer owner"
+      balquoteBefore - res.takerGave,
+      "Invalid quote balance"
+    );
+    TestEvents.eq(
+      mgvOrder.router().reserveBalance(base, address(this)),
+      balbaseBefore + res.takerGot,
+      "Invalid quote balance"
     );
     TestEvents.expectFrom(address(mgvOrder));
     emit OrderSummary(
