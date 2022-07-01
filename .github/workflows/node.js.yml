@@ -308,13 +308,15 @@ jobs:
     - name: Mangrove Solidity Tests
       run: yarn run test:solidity
 
-    - name: Mangrove Solidity Test Report
-      uses: dorny/test-reporter@v1
-      if: ${{ env.mangrove_built && (success() || failure()) }}
-      with:
-        name: Solidity Tests                  # Name of the check run which will be created
-        path: ${{env.working-directory}}/solidity-mocha-test-report.json # Path to test results
-        reporter: mocha-json                  # Format of test results
+    # NOTE: uncomment once you can manage forge test 
+    # outputs in gh actions
+    # - name: Mangrove Solidity Test Report
+    #   uses: dorny/test-reporter@v1
+    #   if: ${{ env.mangrove_built && (success() || failure()) }}
+    #   with:
+    #     name: Solidity Tests                  # Name of the check run which will be created
+    #     path: ${{env.working-directory}}/solidity-mocha-test-report.json # Path to test results
+    #     reporter: mocha-json                  # Format of test results
 
     # NOTE: Etherium mainnet tests disabled for now, while we focus on Polygon
     # 
