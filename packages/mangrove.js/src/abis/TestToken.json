@@ -3,19 +3,24 @@
     {
       "inputs": [
         {
-          "internalType": "contract AbstractMangrove",
-          "name": "mgv",
+          "internalType": "address",
+          "name": "admin",
           "type": "address"
         },
         {
-          "internalType": "contract IERC20",
-          "name": "base",
-          "type": "address"
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
         },
         {
-          "internalType": "contract IERC20",
-          "name": "quote",
-          "type": "address"
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "_decimals",
+          "type": "uint8"
         }
       ],
       "stateMutability": "nonpayable",
@@ -25,43 +30,50 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
-          "name": "mgv",
+          "name": "owner",
           "type": "address"
         },
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
-          "name": "base",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "quote",
+          "name": "spender",
           "type": "address"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "offerId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "takerWants",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "takerGives",
+          "name": "value",
           "type": "uint256"
         }
       ],
-      "name": "Execute",
+      "name": "Approval",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
       "type": "event"
     },
     {
@@ -429,6 +441,38 @@
       "type": "event"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "$",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "DOMAIN_SEPARATOR",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "IS_SCRIPT",
       "outputs": [
@@ -455,10 +499,79 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "__decimals",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
-          "internalType": "contract IERC20",
-          "name": "token",
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "_blacklisted",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        }
+      ],
+      "name": "addAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
           "type": "address"
         },
         {
@@ -467,7 +580,63 @@
           "type": "uint256"
         }
       ],
-      "name": "approveMgv",
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "blacklists",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "burn",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -542,6 +711,43 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "subtractedValue",
+          "type": "uint256"
+        }
+      ],
+      "name": "decreaseAllowance",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "string",
@@ -581,19 +787,6 @@
           "type": "address"
         }
       ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes32",
-          "name": "mgvData",
-          "type": "bytes32"
-        }
-      ],
-      "name": "expect",
-      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -686,101 +879,21 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "mgv",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "base",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "quote",
+          "name": "spender",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "offerId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "takerWants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "takerGives",
+          "name": "addedValue",
           "type": "uint256"
         }
       ],
-      "name": "logExecute",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "outbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "inbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "offerId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "offer",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "wants",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gives",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "offerDetail",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "global",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "local",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct MgvLib.SingleOrder",
-          "name": "order",
-          "type": "tuple"
-        }
-      ],
-      "name": "makerExecute",
+      "name": "increaseAllowance",
       "outputs": [
         {
-          "internalType": "bytes32",
+          "internalType": "bool",
           "name": "",
-          "type": "bytes32"
+          "type": "bool"
         }
       ],
       "stateMutability": "nonpayable",
@@ -789,83 +902,69 @@
     {
       "inputs": [
         {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "outbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "inbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "offerId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "offer",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "wants",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gives",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "offerDetail",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "global",
-              "type": "uint256"
-            },
-            {
-              "internalType": "t",
-              "name": "local",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct MgvLib.SingleOrder",
-          "name": "order",
-          "type": "tuple"
-        },
-        {
-          "components": [
-            {
-              "internalType": "bytes32",
-              "name": "makerData",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "mgvData",
-              "type": "bytes32"
-            }
-          ],
-          "internalType": "struct MgvLib.OrderResult",
-          "name": "result",
-          "type": "tuple"
+          "internalType": "int256[]",
+          "name": "ints",
+          "type": "int256[]"
         }
       ],
-      "name": "makerPosthook",
+      "name": "logary",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "uints",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "logary",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "mint",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [],
-      "name": "mgvBalance",
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "nonces",
       "outputs": [
         {
           "internalType": "uint256",
@@ -880,260 +979,41 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "base",
+          "name": "owner",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "quote",
+          "name": "spender",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "wants",
+          "name": "value",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "gives",
+          "name": "deadline",
           "type": "uint256"
         },
         {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
+          "internalType": "uint8",
+          "name": "v",
+          "type": "uint8"
         },
         {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
+          "internalType": "bytes32",
+          "name": "r",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "s",
+          "type": "bytes32"
         }
       ],
-      "name": "newOffer",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "wants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gives",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
-        }
-      ],
-      "name": "newOffer",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "wants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gives",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasprice",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
-        }
-      ],
-      "name": "newOffer",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "wants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gives",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "newOfferWithFunding",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "wants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gives",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasprice",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "newOfferWithFunding",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "base",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "quote",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "wants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gives",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "newOfferWithFunding",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "provisionMgv",
+      "name": "permit",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -1141,38 +1021,13 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "offerId",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
         }
       ],
-      "name": "retractOffer",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "offerId",
-          "type": "uint256"
-        }
-      ],
-      "name": "retractOfferWithDeprovision",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
+      "name": "removeAdmin",
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1185,71 +1040,6 @@
         }
       ],
       "name": "rewind",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bool",
-          "name": "should",
-          "type": "bool"
-        }
-      ],
-      "name": "setShouldFailHook",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bool",
-          "name": "should",
-          "type": "bool"
-        }
-      ],
-      "name": "shouldAbort",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bool",
-          "name": "should",
-          "type": "bool"
-        }
-      ],
-      "name": "shouldFail",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bool",
-          "name": "should",
-          "type": "bool"
-        }
-      ],
-      "name": "shouldRepost",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bool",
-          "name": "should",
-          "type": "bool"
-        }
-      ],
-      "name": "shouldRevert",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -1340,6 +1130,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -1363,10 +1166,47 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
-          "internalType": "contract IERC20",
-          "name": "token",
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
           "type": "address"
         },
         {
@@ -1380,79 +1220,14 @@
           "type": "uint256"
         }
       ],
-      "name": "transferToken",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
+      "name": "transferFrom",
+      "outputs": [
         {
-          "internalType": "uint256",
-          "name": "wants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gives",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "offerId",
-          "type": "uint256"
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
-      "name": "updateOffer",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "wants",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gives",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gasreq",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "pivotId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "offerId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "updateOfferWithFunding",
-      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1472,25 +1247,15 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
         }
       ],
-      "name": "withdrawMgv",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
+      "name": "whitelists",
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-    },
-    {
-      "stateMutability": "payable",
-      "type": "receive"
     }
   ]
 }
