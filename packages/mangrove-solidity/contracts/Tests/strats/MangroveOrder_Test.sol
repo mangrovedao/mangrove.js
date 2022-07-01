@@ -80,9 +80,13 @@ contract MangroveOrder_Test is HasMgvEvents {
 
     mgvOrder = new MgvOrder(IMangrove(payable(mgv)), address(this)); // this contract is admin of MgvOrder and its router
 
-    // mgvOrder needs to approve mangrove for outbound token transfer
+    // mgvOrder needs to approve mangrove for inbound & outbound token transfer (inbound when acting as a taker, outbound when matched as a maker)
     mgvOrder.approveMangrove(base, type(uint).max);
     mgvOrder.approveMangrove(quote, type(uint).max);
+
+    // mgvOrder needs to approve its router for inbound & outbound token transfer (push and pull from reserve)
+    mgvOrder.approveRouter(base);
+    mgvOrder.approveRouter(quote);
 
     // `this` contract will act as `MgvOrder` user
     tkb.mint(address(this), 10 ether);
@@ -431,9 +435,8 @@ contract MangroveOrder_Test is HasMgvEvents {
       address(this)
     ); // quote balance of test runner
 
-    // TestUtils.logOfferBook(mgv,$base,$quote,4);
-    // TestUtils.logOfferBook(mgv,$quote,$base,4);
-
+    TestUtils.logOfferBook(mgv, $base, $quote, 4);
+    TestUtils.logOfferBook(mgv, $quote, $base, 4);
     (bool success, uint sellTkrGot, uint sellTkrGave, uint fee) = sellTkr
       .takeWithInfo({offerId: res.offerId, takerWants: 0.1 ether});
 

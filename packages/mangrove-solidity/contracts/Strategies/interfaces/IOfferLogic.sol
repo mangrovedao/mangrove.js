@@ -56,6 +56,9 @@ interface IOfferLogic is IMaker {
   // changing liqudity router of the logic
   function set_router(AbstractRouter router, uint gasreq) external;
 
+  // maker contract approves router for push and pull operations
+  function approveRouter(IEIP20 token) external;
+
   // withdraw `amount` `token` form the contract's (owner) reserve and sends them to `receiver`'s balance
   function withdrawToken(
     IEIP20 token,
@@ -76,15 +79,16 @@ interface IOfferLogic is IMaker {
     uint gasreq; // max gas required by the offer when called. If maxUint256 is used here, default `ofr_gasreq` will be considered instead
     uint gasprice; // gasprice that should be consider to compute the bounty (Mangrove's gasprice will be used if this value is lower)
     uint pivotId;
+    uint offerId; // 0 if new offer order
   }
 
-  function newOffer(MakerOrder calldata mko)
+  function newOffer(MakerOrder memory mko)
     external
     payable
     returns (uint offerId);
 
   //returns 0 if updateOffer failed (for instance if offer is underprovisioned) otherwise returns `offerId`
-  function updateOffer(MakerOrder calldata mko, uint offerId) external payable;
+  function updateOffer(MakerOrder memory mko) external payable;
 
   function retractOffer(
     IEIP20 outbound_tkn,

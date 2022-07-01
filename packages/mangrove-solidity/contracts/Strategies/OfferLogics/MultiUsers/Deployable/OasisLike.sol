@@ -16,10 +16,11 @@ import "contracts/Strategies/Routers/SimpleRouter.sol";
 
 contract OasisLike is MultiUserPersistent {
   constructor(IMangrove _MGV, address deployer)
-    MultiUserPersistent(_MGV, new SimpleRouter(deployer))
+    MultiUserPersistent(_MGV, new SimpleRouter(address(this)), 50_000)
   {
     if (deployer != msg.sender) {
       setAdmin(deployer);
+      router().setAdmin(deployer);
     }
   }
 }

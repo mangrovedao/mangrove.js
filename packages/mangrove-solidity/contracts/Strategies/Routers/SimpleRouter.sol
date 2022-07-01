@@ -45,7 +45,7 @@ contract SimpleRouter is AbstractRouter {
   ) internal virtual override {
     require(
       TransferLib.transferTokenFrom(token, maker, reserve, amount),
-      "SimpleRouter/flush/transferFail"
+      "SimpleRouter/push/transferFail"
     );
   }
 

@@ -106,7 +106,7 @@ abstract contract SingleUser is MangroveOffer {
   // * Make sure that `this` contract has enough WEI provision on Mangrove to cover for the new offer bounty (function is payable so that caller can increase provision prior to posting the new offer)
   // * Make sure that `gasreq` and `gives` yield a sufficient offer density
   // NB #2: This function will revert when the above points are not met
-  function newOffer(MakerOrder calldata mko)
+  function newOffer(MakerOrder memory mko)
     external
     payable
     override
@@ -130,7 +130,7 @@ abstract contract SingleUser is MangroveOffer {
   // * Make sure that offer maker has enough WEI provision on Mangrove to cover for the new offer bounty in case Mangrove gasprice has increased (function is payable so that caller can increase provision prior to updating the offer)
   // * Make sure that `gasreq` and `gives` yield a sufficient offer density
   // NB #2: This function will revert when the above points are not met
-  function updateOffer(MakerOrder calldata mko, uint offerId)
+  function updateOffer(MakerOrder memory mko)
     external
     payable
     override
@@ -145,7 +145,7 @@ abstract contract SingleUser is MangroveOffer {
         mko.gasreq,
         mko.gasprice,
         mko.pivotId,
-        offerId
+        mko.offerId
       );
   }
 

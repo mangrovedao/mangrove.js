@@ -20,10 +20,8 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => uint))) public expiring;
 
   constructor(IMangrove _MGV, address deployer)
-    MultiUserPersistent(_MGV, new SimpleRouter(address(this)))
+    MultiUserPersistent(_MGV, new SimpleRouter(address(this)), 80_000)
   {
-    console.log("here");
-    router().bind(address(this));
     if (deployer != msg.sender) {
       setAdmin(deployer);
       router().setAdmin(deployer);
@@ -128,9 +126,10 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
           gives: tko.makerGives - res.takerGave,
           gasreq: ofr_gasreq(),
           gasprice: 0,
-          pivotId: 0
+          pivotId: 0,
+          offerId: 0 // irrelevant for new offer
         }), // offer should be best in the book
-        caller: msg.sender, // `msg.sender` will be the owner of the resting order
+        owner: msg.sender,
         provision: msg.value
       });
 

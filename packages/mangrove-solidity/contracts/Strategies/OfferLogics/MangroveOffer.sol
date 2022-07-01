@@ -123,6 +123,14 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     emit SetRouter(router_);
   }
 
+  // maker contract need to approve router for reserve push and pull
+  function approveRouter(IEIP20 token) public mgvOrAdmin {
+    require(
+      token.approve(address(router()), type(uint).max),
+      "mgvOffer/approveRouter/Fail"
+    );
+  }
+
   function router() public view returns (AbstractRouter) {
     AbstractRouter router_ = MOS.get_storage().router;
     require(address(router_) != address(0), "mgvOffer/0xRouter");
@@ -134,7 +142,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   function approveMangrove(IEIP20 outbound_tkn, uint amount) public mgvOrAdmin {
     require(
       outbound_tkn.approve(address(MGV), amount),
-      "mgvOffer/approve/Fail"
+      "mgvOffer/approveMangrove/Fail"
     );
   }
 
