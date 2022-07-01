@@ -11,8 +11,7 @@ If you are looking for the Mangrove developer documentation, the main site to go
 For the Mangrove contracts in `mangrove-solidity`, we extract a doc-site from the rich documentation in the contract files. This is published at [code.mangrove.exchange](https://code.mangrove.exchange).
 
 # Prerequisites
-You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Yarn 2 workspaces](https://yarnpkg.com/features/workspaces) to manage dependencies and run commands on multiple packages. You must also have [Node.js](https://nodejs.org/en/) 14.14+.
-
+You must have [Yarn 2](https://yarnpkg.com/) installed, as this monorepo uses [Yarn 2 workspaces](https://yarnpkg.com/features/workspaces) to manage dependencies and run commands on multiple packages. You must also have [Node.js](https://nodejs.org/en/) 14.14+. You also need [foundry](https://book.getfoundry.sh/getting-started/installation.html).
 
 # Usage
 The following sections describe the most common use cases in this monorepo. For more details on how to use Yarn and Yarn workspaces, see the [Yarn 2 CLI documentation](https://yarnpkg.com/cli/install).
