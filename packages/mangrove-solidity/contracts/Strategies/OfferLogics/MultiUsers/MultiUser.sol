@@ -17,7 +17,10 @@ import "../../interfaces/IOfferLogicMulti.sol";
 
 abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   struct OfferData {
+    // offer owner address
     address owner;
+    // under approx of the portion of this contract's balance on mangrove
+    // that can be returned to the user's reserve when this offer is deprovisioned
     uint96 wei_balance;
   }
 
@@ -30,8 +33,9 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     uint gasreq
   ) MangroveOffer(_mgv) {
     require(address(_router) != address(0), "MultiUser/0xRouter");
+    // define `_router` as the liquidity router for `this` and declare that `this` is allowed to call router.
+    // NB router also needs to be approved for outbound/inbound token transfers by each user of this contract.
     set_router(_router, gasreq);
-    _router.bind(address(this));
   }
 
   /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
@@ -47,6 +51,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     }
   }
 
+  /// @notice assigns an `owner` to `offerId`  on the `(outbound_tkn, inbound_tkn)` offer list
   function addOwner(
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,
@@ -60,8 +65,10 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     emit NewOwnedOffer(MGV, outbound_tkn, inbound_tkn, offerId, owner);
   }
 
-  // Computes an under approx of gasprice covered by given provision
-  // the returned gasprice is guaranteed to be smaller or equal to the gasprice effectively covered by provision
+  /// @param gasreq the gas required by the offer
+  /// @param provision the amount of native token one is using to provision the offer
+  /// @return gasprice that the `provision` can cover for
+  /// @dev the returned gasprice is slightly lower than the real gasprice that the provision can cover because of the rouding error due to division
   function derive_gasprice(
     uint gasreq,
     uint provision,
@@ -85,6 +92,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   }
 
   // splitting newOffer into external/internal in order to let internal calls specify who the owner of the newly created offer should be.
+  // in case `newOffer` is being called during `makerExecute` or `posthook` calls.
   function newOffer(MakerOrder calldata mko)
     external
     payable
@@ -103,18 +111,24 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       address(mko.outbound_tkn),
       address(mko.inbound_tkn)
     );
+    // convention for default gasreq value
     mko.gasreq = (mko.gasreq > type(uint24).max) ? ofr_gasreq() : mko.gasreq;
+    // computing gasprice implied by offer provision
     mko.gasprice = derive_gasprice(
       mko.gasreq,
       provision,
       local.offer_gasbase()
     );
+    // mangrove will take max(`mko.gasprice`, `global.gasprice`)
+    // if `mko.gapsrice < global.gasprice` Mangrove will use availble provision of this contract to provision the offer
+    // this would potentially take native tokens that have been released after some offer managed by this contract have failed
+    // so one needs to make sure here that only provision of this call will be used to provision the offer on mangrove
     require(
       mko.gasprice >= global.gasprice(),
       "MultiUser/newOffer/NotEnoughProvision"
     );
 
-    // this call could revert if this contract does not have the provision to cover the bounty
+    // this call cannot revert for lack of provision (by design)
     mko.offerId = MGV.newOffer{value: provision}(
       $(mko.outbound_tkn),
       $(mko.inbound_tkn),

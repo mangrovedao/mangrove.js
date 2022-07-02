@@ -120,6 +120,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     gasreq = gasreq == type(uint).max ? ofr_gasreq() : gasreq;
     MOS.get_storage().router = router_;
     set_gasreq(gasreq);
+    router_.bind(address(this));
     emit SetRouter(router_);
   }
 
