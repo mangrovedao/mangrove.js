@@ -16,8 +16,6 @@ pragma abicoder v2;
 import "contracts/Strategies/interfaces/IEIP20.sol";
 import "contracts/Strategies/utils/AccessControlled.sol";
 
-import "hardhat/console.sol";
-
 abstract contract AbstractRouter is AccessControlled {
   mapping(address => bool) public makers;
   modifier onlyMakers() {
@@ -134,8 +132,6 @@ abstract contract AbstractRouter is AccessControlled {
 
   // connect a maker contract to this router
   function bind(address maker) public makersOrAdmin {
-    console.log(msg.sender);
-    console.log(admin());
     makers[maker] = true;
   }
 
