@@ -14,7 +14,6 @@ pragma abicoder v2;
 import "../OfferLogics/MultiUsers/Persistent.sol";
 import "../interfaces/IOrderLogic.sol";
 import "contracts/Strategies/Routers/SimpleRouter.sol";
-import "hardhat/console.sol";
 
 contract MangroveOrder is MultiUserPersistent, IOrderLogic {
   // `blockToLive[token1][token2][offerId]` gives block number beyond which the offer should renege on trade.
@@ -96,7 +95,6 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
         break;
       }
     }
-    console.log("Market order complete");
     bool isComplete = checkCompleteness(tko, res);
     // requiring `partialFillNotAllowed` => `isComplete \/ restingOrder`
     require(
