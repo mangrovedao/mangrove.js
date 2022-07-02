@@ -51,6 +51,7 @@ abstract contract MultiUserPersistent is MultiUser {
       // gas saving
       return true;
     }
+    // if updateOffer fails offer will be retracted
     return
       updateOfferInternal(
         MakerOrder({

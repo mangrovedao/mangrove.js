@@ -14,13 +14,14 @@ pragma abicoder v2;
 import "../OfferLogics/MultiUsers/Persistent.sol";
 import "../interfaces/IOrderLogic.sol";
 import "contracts/Strategies/Routers/SimpleRouter.sol";
+import "hardhat/console.sol";
 
 contract MangroveOrder is MultiUserPersistent, IOrderLogic {
   // `blockToLive[token1][token2][offerId]` gives block number beyond which the offer should renege on trade.
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => uint))) public expiring;
 
   constructor(IMangrove _MGV, address deployer)
-    MultiUserPersistent(_MGV, new SimpleRouter(address(this)), 80_000)
+    MultiUserPersistent(_MGV, new SimpleRouter(address(this)), 90_000)
   {
     if (deployer != msg.sender) {
       setAdmin(deployer);
@@ -95,6 +96,7 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
         break;
       }
     }
+    console.log("Market order complete");
     bool isComplete = checkCompleteness(tko, res);
     // requiring `partialFillNotAllowed` => `isComplete \/ restingOrder`
     require(
@@ -213,6 +215,24 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
         restingOrderId: 0
       });
       return res;
+    }
+  }
+
+  function __posthookSuccess__(ML.SingleOrder calldata order)
+    internal
+    virtual
+    override
+    returns (bool noFailure)
+  {
+    noFailure = super.__posthookSuccess__(order);
+    if (!noFailure) {
+      // if offer failed to be reposted, if is now off the book but provision is still locked
+      retractOffer(
+        IEIP20(order.outbound_tkn),
+        IEIP20(order.inbound_tkn),
+        order.offerId,
+        true
+      );
     }
   }
 

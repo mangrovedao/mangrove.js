@@ -60,6 +60,8 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     emit NewOwnedOffer(MGV, outbound_tkn, inbound_tkn, offerId, owner);
   }
 
+  // Computes an under approx of gasprice covered by given provision
+  // the returned gasprice is guaranteed to be smaller or equal to the gasprice effectively covered by provision
   function derive_gasprice(
     uint gasreq,
     uint provision,
@@ -101,7 +103,6 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       address(mko.outbound_tkn),
       address(mko.inbound_tkn)
     );
-
     mko.gasreq = (mko.gasreq > type(uint24).max) ? ofr_gasreq() : mko.gasreq;
     mko.gasprice = derive_gasprice(
       mko.gasreq,
@@ -224,11 +225,6 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     {
       return true;
     } catch {
-      // density could be too low, or offer provision be insufficient
-      if (msg.sender == address(MGV)) {
-        // offer is retracted and freed provision is returned to offer owner's reserve
-        retractOffer(mko.outbound_tkn, mko.inbound_tkn, mko.offerId, true);
-      }
       return false;
     }
   }
@@ -246,7 +242,6 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       od.owner == msg.sender || address(MGV) == msg.sender,
       "Multi/retractOffer/unauthorized"
     );
-
     if (od.wei_balance > 0) {
       // offer was already retracted and deprovisioned by Mangrove after a trade failure
       free_wei = deprovision ? od.wei_balance : 0;
@@ -332,10 +327,25 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     withdrawFromMangrove(type(uint).max);
 
     // computing an under approximation of returned provision
-    (P.Global.t global, ) = MGV.config(order.outbound_tkn, order.inbound_tkn);
+    (P.Global.t global, P.Local.t local) = MGV.config(
+      order.outbound_tkn,
+      order.inbound_tkn
+    );
     uint gaspriceInWei = global.gasprice() * 10**9;
-    uint approxReturnedProvision = (order.offerDetail.gasreq() - gasleft()) *
-      gaspriceInWei;
+    uint provision = 10**9 *
+      order.offerDetail.gasprice() *
+      (order.offerDetail.gasreq() + order.offerDetail.offer_gasbase());
+
+    // gas estimate to complete posthook ~ 1500, putting 3000 to be overapproximating
+    uint approxBounty = (order.offerDetail.gasreq() -
+      gasleft() +
+      3000 +
+      local.offer_gasbase()) * gaspriceInWei;
+
+    uint approxReturnedProvision = approxBounty > provision
+      ? 0
+      : provision - approxBounty;
+
     offerData[outTkn][inTkn][order.offerId] = OfferData({
       owner: od.owner,
       wei_balance: uint96(approxReturnedProvision) // previous wei_balance is always 0 here: if offer failed in the past, `updateOffer` did reuse it
