@@ -87,7 +87,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     ML.OrderResult calldata result
   ) external override onlyCaller(address(MGV)) {
     if (result.mgvData == "mgv/tradeSuccess") {
-      // toplevel posthook may ignore returned value which is only usefull for compositionality
+      // toplevel posthook may ignore returned value which is only usefull for (vertical) compositionality
       __posthookSuccess__(order);
     } else {
       emit LogIncident(
