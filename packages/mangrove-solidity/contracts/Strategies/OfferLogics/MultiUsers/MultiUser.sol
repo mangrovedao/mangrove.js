@@ -143,7 +143,12 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     return mko.offerId;
   }
 
-  // tries to update offer with parameters given in `mko`.
+  ///@notice update offer with parameters given in `mko`.
+  ///@dev mko.gasreq == max_int indicates one wishes to use ofr_gasreq (default value)
+  ///@dev mko.gasprice is overriden by the value computed by taking into account :
+  /// * value transfered on current tx
+  /// * if offer was deprovisioned after a fail, amount of wei (still on this contract balance on Mangrove) that should be counted as offer owner's
+  /// * if offer is still live, its current locked provision
   function updateOffer(MakerOrder calldata mko) external payable {
     require(updateOfferInternal(mko, msg.value), "MultiUser/updateOfferFail");
   }
@@ -244,7 +249,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   }
 
   // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove. Function call will throw if `this` contract is not the owner of `offerId`.
-  ///@dev if msg.sender cannot receive funds it will loose the released provision
+  ///@param deprovision is true if offer owner wishes to have the offer's provision pushed to its reserve
   function retractOffer(
     IEIP20 outbound_tkn,
     IEIP20 inbound_tkn,
@@ -326,7 +331,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   // if offer failed to execute or reneged Mangrove has deprovisioned it
   // the wei balance of `this` contract on Mangrove is now positive
   // this fallback returns an under approx of the provision that has been returned to this contract
-  // being under approx implies `this` contract will accumulate a small amount of wei over time
+  // being under approx implies `this` contract might accumulate a small amount of wei over time
   function __posthookFallback__(
     ML.SingleOrder calldata order,
     ML.OrderResult calldata result
