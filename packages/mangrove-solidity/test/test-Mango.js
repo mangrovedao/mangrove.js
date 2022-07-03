@@ -77,6 +77,7 @@ describe("Running tests...", function () {
 
   it("Deploy strat", async function () {
     //lc.listenMgv(mgv);
+
     const strategy = "Mango";
     const Strat = await ethers.getContractFactory(strategy);
 
@@ -94,33 +95,17 @@ describe("Running tests...", function () {
         maker.address // admin
       )
     ).connect(maker);
-    const RouterFactory = await ethers.getContractFactory("SimpleRouter");
-    const router = await RouterFactory.deploy(maker.address);
-    await router.deployed();
-    tx = await router.bind(makerContract.address);
-    await tx.wait();
-    tx = await makerContract.set_router(
-      router.address,
-      maker.address, // reserve is maker EOA
-      await makerContract.ofr_gasreq()
-    );
-    await tx.wait();
 
     let txs = [];
     let i = 0;
     // maker has to approve liquidity router of Mango for ETH and USDC transfer
-    txs[i++] = await wEth
-      .connect(maker)
-      .approve(
-        await makerContract.router(),
-        ethers.constants.MaxUint256
-      );
+
     txs[i++] = await usdc
       .connect(maker)
-      .approve(
-        await makerContract.router(),
-        ethers.constants.MaxUint256
-      );
+      .approve(await makerContract.router(), ethers.constants.MaxUint256);
+    txs[i++] = await wEth
+      .connect(maker)
+      .approve(await makerContract.router(), ethers.constants.MaxUint256);
     await lc.synch(txs);
 
     // funds come from maker's wallet by default

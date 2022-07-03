@@ -15,6 +15,7 @@ import "./MangoStorage.sol";
 import "./MangoImplementation.sol";
 import "contracts/Strategies/OfferLogics/SingleUser/Persistent.sol";
 import "contracts/Strategies/Routers/AbstractRouter.sol";
+import "contracts/Strategies/Routers/SimpleRouter.sol";
 
 /** Discrete automated market making strat */
 /** This AMM is headless (no price model) and market makes on `NSLOTS` price ranges*/
@@ -29,7 +30,6 @@ import "contracts/Strategies/Routers/AbstractRouter.sol";
 contract Mango is Persistent {
   // emitted when init function has been called and AMM becomes active
   event Initialized(uint from, uint to);
- 
 
   address private immutable IMPLEMENTATION;
 
@@ -48,7 +48,13 @@ contract Mango is Persistent {
     uint nslots,
     uint price_incr,
     address deployer
-  ) SingleUser(mgv, address(this), AbstractRouter(address(0))) {
+  )
+    SingleUser(
+      mgv,
+      deployer, // reserve is deployer's wallet
+      new SimpleRouter(address(this)) // default router for Mango is SimpleRouter
+    )
+  {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     // sanity check
     require(
@@ -59,7 +65,7 @@ contract Mango is Persistent {
         uint96(quote_0) == quote_0,
       "Mango/constructor/invalidArguments"
     );
-    
+
     NSLOTS = nslots;
 
     // implementation should have correct immutables
@@ -87,10 +93,13 @@ contract Mango is Persistent {
     // approve Mangrove to pull funds during trade in order to pay takers
     approveMangrove(quote, type(uint).max);
     approveMangrove(base, type(uint).max);
+    approveRouter(quote);
+    approveRouter(base);
 
     // setting admin of contract if a static address deployment was used
     if (deployer != msg.sender) {
       setAdmin(deployer);
+      router().setAdmin(deployer);
     }
   }
 
