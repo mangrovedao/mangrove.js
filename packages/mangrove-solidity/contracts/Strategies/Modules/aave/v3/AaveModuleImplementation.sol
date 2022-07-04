@@ -12,7 +12,7 @@
 
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import {AaveV3ModuleStorage as AMS, IEIP20, IRewardsControllerIsh, IPoolAddressesProvider, IPool, IPriceOracleGetter, DataTypes, RC} from "./AaveModuleStorage.sol";
+import {AaveV3ModuleStorage as AMS, IEIP20, IRewardsControllerIsh, IPoolAddressesProvider, ICreditDelegationToken, IPool, IPriceOracleGetter, DataTypes, RC} from "./AaveModuleStorage.sol";
 
 contract AaveV3ModuleImplementation {
   IPool public immutable POOL;

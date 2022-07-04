@@ -49,10 +49,9 @@ contract Mango is Persistent {
     uint price_incr,
     address deployer
   )
-    SingleUser(
+    Persistent(
       mgv,
       250_000, // gas cost for trade execution (w/o taking routing specific gas cost)
-      deployer, /* liquidity reserve address for offers is deployer's account*/
       new SimpleRouter() // routes liqudity from (to) reserve to (from) this contract
     )
   {
@@ -95,10 +94,15 @@ contract Mango is Persistent {
     approveRouter(quote);
     approveRouter(base);
 
+    // in order to let deployer's EOA have control over liquidity
+    set_reserve(deployer);
+
+    // `this` deployed the router, letting admin take control over it.
+    router().setAdmin(deployer);
+
     // setting admin of contract if a static address deployment was used
     if (deployer != msg.sender) {
       setAdmin(deployer);
-      router().setAdmin(deployer);
     }
   }
 

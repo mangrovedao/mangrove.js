@@ -14,7 +14,7 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 
 import {AaveV3ModuleStorage as AMS} from "./AaveModuleStorage.sol";
-import {AaveV3ModuleImplementation as AMI, IEIP20, IRewardsControllerIsh, IPoolAddressesProvider, IPool, IPriceOracleGetter, DataTypes} from "./AaveModuleImplementation.sol";
+import {AaveV3ModuleImplementation as AMI, IEIP20, IRewardsControllerIsh, IPoolAddressesProvider, ICreditDelegationToken, IPool, IPriceOracleGetter, DataTypes} from "./AaveModuleImplementation.sol";
 
 contract AaveV3Module {
   address private immutable IMPLEMENTATION;
@@ -67,6 +67,20 @@ contract AaveV3Module {
 
   function overlying(IEIP20 asset) public view returns (IEIP20 aToken) {
     aToken = IEIP20(POOL.getReserveData(address(asset)).aTokenAddress);
+  }
+
+  function debtToken(IEIP20 asset)
+    public
+    view
+    returns (ICreditDelegationToken debtToken)
+  {
+    debtToken = INTEREST_RATE_MODE == 1
+      ? ICreditDelegationToken(
+        POOL.getReserveData(address(asset)).stableDebtTokenAddress
+      )
+      : ICreditDelegationToken(
+        POOL.getReserveData(address(asset)).variableDebtTokenAddress
+      );
   }
 
   function _staticdelegatecall(bytes calldata data) external {

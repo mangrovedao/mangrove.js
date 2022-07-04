@@ -21,17 +21,14 @@ abstract contract SingleUser is MangroveOffer {
   constructor(
     IMangrove _mgv,
     uint strat_gasreq,
-    address _reserve,
     AbstractRouter _router
   ) MangroveOffer(_mgv, strat_gasreq) {
-    // _router == 0x ==> _reserve == this
-    require(
-      address(_router) != address(0) || _reserve == address(this),
-      "SingleUser/NoRouterForReserve"
-    );
-    set_reserve(_reserve);
-
-    if (address(_router) != address(0)) {
+    // default reserve is router's address if router is defined
+    // if not then default reserve is `this` contract
+    if (address(_router) == address(0)) {
+      set_reserve(address(this));
+    } else {
+      set_reserve(address(_router));
       set_router(_router);
     }
   }

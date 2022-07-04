@@ -17,6 +17,12 @@ import "./SingleUser.sol";
 /** (Single user variant) */
 
 abstract contract Persistent is SingleUser {
+  constructor(
+    IMangrove _mgv,
+    uint strat_gasreq,
+    AbstractRouter _router
+  ) SingleUser(_mgv, strat_gasreq, _router) {}
+
   /** Persistent class specific hooks. */
 
   // Hook that defines how much inbound tokens the residual offer should ask for when repositing itself on the Offer List.

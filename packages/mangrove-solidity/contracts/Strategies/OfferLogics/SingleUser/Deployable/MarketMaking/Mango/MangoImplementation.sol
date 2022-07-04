@@ -56,10 +56,9 @@ contract MangoImplementation is Persistent {
     uint96 quote_0,
     uint nslots
   )
-    SingleUser(
+    Persistent(
       mgv,
       0,
-      address(this), /*any value but 0x works*/
       AbstractRouter(address(0)) /* router*/
     )
   {
