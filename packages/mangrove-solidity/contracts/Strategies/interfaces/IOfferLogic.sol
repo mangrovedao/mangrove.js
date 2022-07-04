@@ -54,7 +54,7 @@ interface IOfferLogic is IMaker {
   function set_gasreq(uint gasreq) external;
 
   // changing liqudity router of the logic
-  function set_router(AbstractRouter router, uint gasreq) external;
+  function set_router(AbstractRouter router) external;
 
   // maker contract approves router for push and pull operations
   function approveRouter(IEIP20 token) external;

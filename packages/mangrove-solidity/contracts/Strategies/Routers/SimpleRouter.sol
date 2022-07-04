@@ -17,9 +17,7 @@ import "contracts/Strategies/utils/AccessControlled.sol";
 import "contracts/Strategies/utils/TransferLib.sol";
 import "./AbstractRouter.sol";
 
-contract SimpleRouter is AbstractRouter {
-  constructor(address deployer) AbstractRouter(deployer) {}
-
+contract SimpleRouter is AbstractRouter(50_000) {
   // requires approval of `reserve`
   function __pull__(
     IEIP20 token,

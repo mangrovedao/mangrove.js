@@ -55,12 +55,14 @@ contract MangoImplementation is Persistent {
     uint96 base_0,
     uint96 quote_0,
     uint nslots
-  ) 
-  SingleUser(
-    mgv, 
-    address(this) /*any value but 0x works*/, 
-    AbstractRouter(address(0)) /* router*/
-    ) {
+  )
+    SingleUser(
+      mgv,
+      0,
+      address(this), /*any value but 0x works*/
+      AbstractRouter(address(0)) /* router*/
+    )
+  {
     // setting immutable fields to match those of `Mango`
     BASE = base;
     QUOTE = quote;
@@ -82,10 +84,7 @@ contract MangoImplementation is Persistent {
   ) external delegated {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     // making sure a router has been defined between deployment and initialization
-    require(
-      address(router()) != address(0),
-      "Mango/initialize/0xRouter"
-    );
+    require(address(router()) != address(0), "Mango/initialize/0xRouter");
     /** Initializing Asks and Bids */
     /** NB we assume Mangrove is already provisioned for posting NSLOTS asks and NSLOTS bids*/
     /** NB cannot post newOffer with infinite gasreq since fallback ofr_gasreq is not defined yet (and default is likely wrong) */
@@ -618,7 +617,7 @@ contract MangoImplementation is Persistent {
     // reposting residual of offer using override `__newWants__` and `__newGives__` for new price
     if (order.outbound_tkn == $(BASE)) {
       // order is an Ask
-      //// Reposting Offer residual 
+      //// Reposting Offer residual
       if (!super.__posthookSuccess__(order)) {
         // residual could not be reposted --either below density or Mango went out of provision on Mangrove
         mStr.pending_base = __residualGives__(order); // this includes previous `pending_base`

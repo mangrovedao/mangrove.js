@@ -16,7 +16,7 @@ import "contracts/Strategies/Routers/SimpleRouter.sol";
 
 contract MultiMaker is MultiUser {
   constructor(IMangrove _MGV, address deployer)
-    MultiUser(_MGV, new SimpleRouter(address(this)), 50_000)
+    MultiUser(_MGV, new SimpleRouter(), 30_000)
   {
     if (deployer != msg.sender) {
       setAdmin(deployer);

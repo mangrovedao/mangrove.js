@@ -834,7 +834,7 @@ function listenOfferLogic(once, logic, reason = null) {
       );
     });
   } else {
-    logic.on(filter_fail, (outTkn, inTkn, offerId, data) => {
+    logic.on(filter_fail, (mgv, outTkn, inTkn, offerId, data) => {
       let reason_ = ethers.utils.parseBytes32String(data);
       if (reason) {
         assert(

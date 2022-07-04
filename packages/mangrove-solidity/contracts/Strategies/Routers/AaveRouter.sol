@@ -25,16 +25,12 @@ import "./AbstractRouter.sol";
 // `this` must be approved by reserve for *overlying* of inbound token transfer
 // `this` must be approved by maker contract for outbound token transfer
 
-contract AaveRouter is AbstractRouter, AaveV3Module {
+contract AaveRouter is AbstractRouter(700_000), AaveV3Module {
   constructor(
     address _addressesProvider,
     uint _referralCode,
-    uint _interestRateMode,
-    address deployer
-  )
-    AbstractRouter(deployer)
-    AaveV3Module(_addressesProvider, _referralCode, _interestRateMode)
-  {}
+    uint _interestRateMode
+  ) AaveV3Module(_addressesProvider, _referralCode, _interestRateMode) {}
 
   // 1. pulls aTokens from reserve
   // 2. redeems underlying on AAVE to calling maker contract

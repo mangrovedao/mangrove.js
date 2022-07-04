@@ -92,14 +92,15 @@ describe("Running tests...", function () {
         ethers.utils.parseUnits("1000", 6), // QUOTE0
         NSLOTS, // price slots
         delta, //quote progression
-        maker.address // admin
+        maker.address // liquidity reserve
       )
     ).connect(maker);
 
     let txs = [];
     let i = 0;
-    // maker has to approve liquidity router of Mango for ETH and USDC transfer
 
+    // reserve has to approve liquidity router of Mango for ETH and USDC transfer
+    // since reserve here is an EOA we do it direclty
     txs[i++] = await usdc
       .connect(maker)
       .approve(await makerContract.router(), ethers.constants.MaxUint256);

@@ -18,6 +18,8 @@ import "contracts/Strategies/utils/AccessControlled.sol";
 
 abstract contract AbstractRouter is AccessControlled {
   mapping(address => bool) public makers;
+  uint public immutable GAS_OVERHEAD;
+
   modifier onlyMakers() {
     require(makers[msg.sender], "Router/unauthorized");
     _;
@@ -27,7 +29,10 @@ abstract contract AbstractRouter is AccessControlled {
     _;
   }
 
-  constructor(address deployer) AccessControlled(deployer) {}
+  constructor(uint overhead) AccessControlled(msg.sender) {
+    require(uint24(overhead) == overhead, "AbstractRouter/overheadTooHigh");
+    GAS_OVERHEAD = overhead;
+  }
 
   // pulls `amount` of `token`s from reserve to maker contract's balance
   // `reserve` is typically an EOA (for nice UX), the router contract itself (to minimize fragmentation when router is bound to several makers)

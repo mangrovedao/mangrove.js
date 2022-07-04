@@ -51,8 +51,9 @@ contract Mango is Persistent {
   )
     SingleUser(
       mgv,
-      deployer, // reserve is deployer's wallet
-      new SimpleRouter(address(this)) // default router for Mango is SimpleRouter
+      250_000, // gas cost for trade execution (w/o taking routing specific gas cost)
+      deployer, /* liquidity reserve address for offers is deployer's account*/
+      new SimpleRouter() // routes liqudity from (to) reserve to (from) this contract
     )
   {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
@@ -88,8 +89,6 @@ contract Mango is Persistent {
     // logs `BID/ASKatMin/MaxPosition` events when only 1 slot remains
     mStr.min_buffer = 1;
 
-    // setting inherited storage
-    set_gasreq(400_000); // dry run OK with 200_000
     // approve Mangrove to pull funds during trade in order to pay takers
     approveMangrove(quote, type(uint).max);
     approveMangrove(base, type(uint).max);

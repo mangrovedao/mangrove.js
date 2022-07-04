@@ -41,9 +41,13 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   // necessary function to withdraw funds from Mangrove
   receive() external payable virtual {}
 
-  constructor(IMangrove _mgv) AccessControlled(msg.sender) {
+  constructor(IMangrove _mgv, uint strat_gasreq) AccessControlled(msg.sender) {
+    require(
+      strat_gasreq == uint24(strat_gasreq),
+      "MangroveOffer/gasreqTooHigh"
+    );
     MGV = _mgv;
-    MOS.get_storage().ofr_gasreq = 80_000;
+    MOS.get_storage().ofr_gasreq = strat_gasreq;
   }
 
   function ofr_gasreq() public view returns (uint) {
@@ -80,7 +84,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   }
 
   // `makerPosthook` is the callback function that is called by Mangrove *after* the offer execution.
-  // It may not be overriden although it can be customized via the post-hooks `__posthookSuccess__`, `__posthookGetFailure__`, `__posthookReneged__` and `__posthookFallback__` (see below).
+  // It may not be overriden although it can be customized via the post-hooks `__posthookSuccess__` and `__posthookFallback__` (see below).
   // Offer Maker SHOULD make sure the overriden posthooks do not revert in order to be able to post logs in case of bad executions.
   function makerPosthook(
     ML.SingleOrder calldata order,
@@ -111,15 +115,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /** Sets the account from which base (resp. quote) tokens need to be fetched or put during trade execution*/
   /** */
   /** NB Router might need further approval to work as intended*/
-  function set_router(AbstractRouter router_, uint gasreq)
-    public
-    override
-    mgvOrAdmin
-  {
+  function set_router(AbstractRouter router_) public override mgvOrAdmin {
     require(address(router_) != address(0), "mgvOffer/set_router/0xRouter");
-    gasreq = gasreq == type(uint).max ? ofr_gasreq() : gasreq;
     MOS.get_storage().router = router_;
-    set_gasreq(gasreq);
+    set_gasreq(ofr_gasreq() + router().GAS_OVERHEAD());
     router_.bind(address(this));
     emit SetRouter(router_);
   }
@@ -130,6 +129,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       token.approve(address(router()), type(uint).max),
       "mgvOffer/approveRouter/Fail"
     );
+  }
+
+  function has_router() public view returns (bool) {
+    return address(MOS.get_storage().router) != address(0);
   }
 
   function router() public view returns (AbstractRouter) {
@@ -243,8 +246,11 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     } else {
       _gp = gasprice;
     }
-    if (gasreq > type(uint24).max) {
+    if (gasreq >= type(uint24).max) {
       gasreq = ofr_gasreq();
+      if (has_router()) {
+        gasreq += router().GAS_OVERHEAD();
+      }
     }
     uint bounty = (gasreq + localData.offer_gasbase()) * _gp * 10**9; // in WEI
     // if `offerId` is not in the OfferList, all returned values will be 0

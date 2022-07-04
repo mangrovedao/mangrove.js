@@ -24,18 +24,19 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     uint96 wei_balance;
   }
 
+  ///@dev outbound_tkn => inbound_tkn => offerId => OfferData
   mapping(IEIP20 => mapping(IEIP20 => mapping(uint => OfferData)))
-    internal offerData; // outbound_tkn => inbound_tkn => offerId => OfferData
+    internal offerData;
 
   constructor(
     IMangrove _mgv,
     AbstractRouter _router,
-    uint gasreq
-  ) MangroveOffer(_mgv) {
+    uint strat_gasreq
+  ) MangroveOffer(_mgv, strat_gasreq) {
     require(address(_router) != address(0), "MultiUser/0xRouter");
     // define `_router` as the liquidity router for `this` and declare that `this` is allowed to call router.
     // NB router also needs to be approved for outbound/inbound token transfers by each user of this contract.
-    set_router(_router, gasreq);
+    set_router(_router);
   }
 
   /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
@@ -324,6 +325,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     address owner = ownerOf(outTkn, inTkn, order.offerId);
     // telling router one is requiring `amount` of `outTkn` for `owner`.
     // because `pull` is strict, `pulled <= amount` (cannot be greater)
+    // we do not check local balance here because multi user contracts do not keep more balance than what has been pulled
     uint pulled = router().pull(outTkn, owner, amount, true);
     return amount - pulled;
   }
@@ -361,7 +363,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
       3000 +
       local.offer_gasbase()) * gaspriceInWei;
 
-    uint approxReturnedProvision = approxBounty > provision
+    uint approxReturnedProvision = approxBounty >= provision
       ? 0
       : provision - approxBounty;
 
