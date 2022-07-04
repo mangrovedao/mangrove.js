@@ -53,14 +53,13 @@ export class BotArbitrage {
     this.#askIdsBlacklist = [];
     this.#bidIdsBlacklist = [];
     this.#lastBlockRun = 0;
-
-    logger.info("Initialized arbitrage bot", {
-      base: this.#outboundTokenSymbol,
-      quote: this.#inboundTokenSymbol,
-    });
   }
 
   public async start(): Promise<void> {
+    logger.info("Started arbitrage bot", {
+      base: this.#outboundTokenSymbol,
+      quote: this.#inboundTokenSymbol,
+    });
     this.#blocksSubscriber.on("block", async () => {
       const blockNumber = await this.#blocksSubscriber.getBlockNumber();
       const [bestAskId, bestBidId, bestAsk, bestBid] =
@@ -133,11 +132,13 @@ export class BotArbitrage {
   }
 
   #blackListOffers(askId: BigNumber, bidId: BigNumber) {
-    if (
-      this.#askIdsBlacklist.includes(askId) ||
-      this.#bidIdsBlacklist.includes(bidId)
-    ) {
-      throw new Error("Offer already blacklisted. Should not happen.");
+    if (this.#askIdsBlacklist.includes(askId)) {
+      logger.warn(`askId:${askId} already blacklisted. Should not happen.`);
+      return;
+    }
+    if (this.#bidIdsBlacklist.includes(bidId)) {
+      logger.warn(`bidId:${bidId} already blacklisted. Should not happen.`);
+      return;
     }
     this.#askIdsBlacklist.push(askId);
     this.#bidIdsBlacklist.push(bidId);
@@ -147,10 +148,17 @@ export class BotArbitrage {
     const askIndex = this.#askIdsBlacklist.indexOf(askId);
     const bidIndex = this.#bidIdsBlacklist.indexOf(bidId);
 
-    if (askIndex == -1 || bidIndex == -1) {
-      throw new Error(
-        "Trying to unBlackList offer that is not blacklisted. Should not happen"
+    if (askIndex == -1) {
+      logger.warn(
+        `Trying to unblackList askId:${askId} that is not blacklisted. Should not happen`
       );
+      return;
+    }
+    if (bidIndex == -1) {
+      logger.warn(
+        `Trying to unblackList bidId:${bidId} that is not blacklisted. Should not happen`
+      );
+      return;
     }
     this.#askIdsBlacklist.splice(askIndex, 1);
     this.#bidIdsBlacklist.splice(bidIndex, 1);
@@ -193,15 +201,10 @@ export class BotArbitrage {
       BigNumber.from(bestAsk.wants).eq(0) ||
       BigNumber.from(bestBid.gives).eq(0)
     ) {
-      logger.error("Got null price", {
+      logger.warn("Got null price", {
         base: this.#outboundTokenAddress,
         quote: this.#inboundTokenAddress,
-        askGives: bestAsk.gives,
-        askWants: bestAsk.wants,
-        bidGives: bestBid.gives,
-        bidWants: bestBid.wants,
-        askId: bestAskId,
-        bidId: bestBidId,
+        data: `askId:${bestAskId} askGives:${bestAsk.gives} askWants:${bestAsk.wants}\nbidId:${bestBidId} bidGives:${bestBid.gives} bidWants:${bestBid.wants}`,
       });
       return [
         BigNumber.from(-1),

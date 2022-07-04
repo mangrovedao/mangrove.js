@@ -87,7 +87,7 @@ const main = async () => {
       simpleArbitrageBot.start();
       runningBots.push(simpleArbitrageBot);
     } catch (error) {
-      logger.error("Error starting bots for market", { market: mkt });
+      logger.error("Error starting bots for market", { data: mkt });
       stopAndExit(ExitCode.ExceptionInMain);
     } finally {
     }
