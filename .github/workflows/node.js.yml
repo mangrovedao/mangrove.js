@@ -90,6 +90,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -176,6 +177,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -193,6 +195,12 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
     # == build ==
     - name: Solidity Compile
       run: yarn run build-this-package
@@ -263,6 +271,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -280,6 +289,12 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
     # == build ==
     - name: Solidity Compile
       run: yarn run build-this-package
@@ -376,6 +391,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -439,6 +455,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -537,6 +554,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -554,6 +572,12 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -661,6 +685,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -677,7 +702,7 @@ jobs:
         
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
-
+        
     # == download and unzip artefacts ==
     - name: Download cached mangrove-js-src artifact
       uses: actions/download-artifact@v3
@@ -745,6 +770,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -762,6 +788,12 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -861,6 +893,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -878,6 +911,12 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -977,6 +1016,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -990,10 +1030,22 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
-        
+
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -1093,6 +1145,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -1109,6 +1162,18 @@ jobs:
         
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
 
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
@@ -1209,6 +1274,7 @@ jobs:
       with:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
 
     - name: Reconfigure git to use HTTP authentication
       # Workaround for https://github.com/npm/cli/issues/2610    
@@ -1226,6 +1292,18 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
