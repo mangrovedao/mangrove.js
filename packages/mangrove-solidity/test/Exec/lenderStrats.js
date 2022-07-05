@@ -4,6 +4,7 @@ const { stopListeners } = require("../../lib/libcommon");
 
 async function execLenderStrat(
   makerContract,
+  router,
   mgv,
   reader,
   lenderName,
@@ -12,7 +13,7 @@ async function execLenderStrat(
   const zero = ethers.BigNumber.from(0);
 
   await lc.logLenderStatus(
-    makerContract,
+    router,
     lenderName,
     ["DAI", "WETH"],
     players.maker.address
@@ -51,7 +52,7 @@ async function execLenderStrat(
   );
 
   await lc.logLenderStatus(
-    makerContract,
+    router,
     lenderName,
     ["DAI", "WETH"],
     players.maker.address
