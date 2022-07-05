@@ -25,12 +25,18 @@ import "./AbstractRouter.sol";
 // `this` must be approved by reserve for *overlying* of inbound token transfer
 // `this` must be approved by maker contract for outbound token transfer
 
-contract AaveRouter is AbstractRouter(700_000), AaveV3Module {
+// gas overhead:
+// - supply ~ 250K
+// - borrow ~ 360K
+contract AaveRouter is AbstractRouter, AaveV3Module {
   constructor(
     address _addressesProvider,
     uint _referralCode,
     uint _interestRateMode
-  ) AaveV3Module(_addressesProvider, _referralCode, _interestRateMode) {}
+  )
+    AaveV3Module(_addressesProvider, _referralCode, _interestRateMode)
+    AbstractRouter(700_000)
+  {}
 
   // 1. pulls aTokens from reserve
   // 2. redeems underlying on AAVE to calling maker contract
@@ -41,29 +47,24 @@ contract AaveRouter is AbstractRouter(700_000), AaveV3Module {
     uint amount,
     bool strict
   ) internal virtual override returns (uint pulled) {
-    uint buffer = token.balanceOf(maker);
-    if (buffer > amount) {
-      return 0;
+    uint available = reserveBalance(token, reserve);
+    // if strict enable one should pull at most `amount` from reserve
+    if (strict) {
+      amount = amount < available ? amount : available;
     } else {
-      uint available = reserveBalance(token, reserve);
-      // if strict enable one should pull at most `amount` from reserve
-      if (strict) {
-        amount = amount < available ? amount : available;
-      } else {
-        // one is pulling all availble funds from reserve
-        amount = available;
-      }
-      // transfer below is a noop (almost 0 gas) if reserve == address(this)
-      // needs to temporarily deposit tokens to `this` in order to be able to redeem to maker contract
-      TransferLib.transferTokenFrom(
-        overlying(token),
-        reserve,
-        address(this),
-        amount
-      );
-      // redeem below is a noop if amount_ == 0
-      return _redeem(token, amount, maker);
+      // one is pulling all availble funds from reserve
+      amount = available;
     }
+    // transfer below is a noop (almost 0 gas) if reserve == address(this)
+    // needs to temporarily deposit tokens to `this` in order to be able to redeem to maker contract
+    TransferLib.transferTokenFrom(
+      overlying(token),
+      reserve,
+      address(this),
+      amount
+    );
+    // redeem below is a noop if amount_ == 0
+    return _redeem(token, amount, maker);
   }
 
   // Liquidity : MAKER --> `onBehalf`
@@ -77,7 +78,7 @@ contract AaveRouter is AbstractRouter(700_000), AaveV3Module {
       TransferLib.transferTokenFrom(token, maker, address(this), amount),
       "AaveRouter/push/transferFail"
     );
-    // repay and supply `onBehalf`
+    // repay and supply on behalf of `reserve`
     repayThenDeposit(token, reserve, amount);
   }
 
@@ -188,7 +189,7 @@ contract AaveRouter is AbstractRouter(700_000), AaveV3Module {
     (available, ) = maxGettableUnderlying(token, false, reserve);
   }
 
-  function approveLender(IEIP20 token) external onlyAdmin {
+  function approveLender(IEIP20 token) external {
     _approveLender(token, type(uint).max);
   }
 }

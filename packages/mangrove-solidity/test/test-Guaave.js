@@ -128,19 +128,22 @@ describe("Running tests...", function () {
     // putting ETH as collateral on AAVE
     txs[i++] = await aave_router.supply(
       wEth.address, //asset
-      makerContract.reserve(), // reserve
+      await makerContract.reserve(), // reserve
       ethers.utils.parseEther("17"), //amount
       makerContract.address // from (makerContract was funded above)
     );
+    await lc.synch(txs);
+
     // borrowing USDC on collateral
-    txs[i++] = await aave_router.borrow(
+    const borrowTx = await aave_router.borrow(
       usdc.address, // asset
-      makerContract.reserve(),
+      await makerContract.reserve(),
       ethers.utils.parseUnits("2000", 6),
       makerContract.address // (maker contract is buffer)
     );
 
-    await lc.synch(txs);
+    const receipt = await borrowTx.wait();
+    console.log("Borrow gas cost", receipt.gasUsed.toNumber());
 
     await lc.logLenderStatus(
       aave_router,

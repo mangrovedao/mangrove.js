@@ -192,7 +192,6 @@ describe("Deploy offerProxy", function () {
 
     let offerId = await lc.newOffer(
       mgv,
-      reader,
       offerProxy.connect(players.maker.signer),
       "DAI", // outbound
       "WETH", // inbound

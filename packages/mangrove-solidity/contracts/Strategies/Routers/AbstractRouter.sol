@@ -18,7 +18,7 @@ import "contracts/Strategies/utils/AccessControlled.sol";
 
 abstract contract AbstractRouter is AccessControlled {
   mapping(address => bool) public makers;
-  uint public immutable GAS_OVERHEAD;
+  uint public gas_overhead;
 
   modifier onlyMakers() {
     require(makers[msg.sender], "Router/unauthorized");
@@ -31,10 +31,10 @@ abstract contract AbstractRouter is AccessControlled {
 
   constructor(uint overhead) AccessControlled(msg.sender) {
     require(uint24(overhead) == overhead, "AbstractRouter/overheadTooHigh");
-    GAS_OVERHEAD = overhead;
+    gas_overhead = overhead;
   }
 
-  // pulls `amount` of `token`s from reserve to maker contract's balance
+  // pulls `amount` of `token`s from reserve to maker contract's balance if necessary
   // `reserve` is typically an EOA (for nice UX), the router contract itself (to minimize fragmentation when router is bound to several makers)
   // or the Maker contract (to minimize transfer costs)
   function pull(
@@ -43,13 +43,18 @@ abstract contract AbstractRouter is AccessControlled {
     uint amount,
     bool strict
   ) external onlyMakers returns (uint pulled) {
-    pulled = __pull__({
-      token: token,
-      reserve: reserve,
-      maker: msg.sender,
-      amount: amount,
-      strict: strict
-    });
+    uint buffer = token.balanceOf(msg.sender);
+    if (buffer >= amount) {
+      return 0;
+    } else {
+      pulled = __pull__({
+        token: token,
+        reserve: reserve,
+        maker: msg.sender,
+        amount: amount,
+        strict: strict
+      });
+    }
   }
 
   function __pull__(
@@ -86,7 +91,10 @@ abstract contract AbstractRouter is AccessControlled {
     onlyMakers
   {
     for (uint i = 0; i < tokens.length; i++) {
-      __push__(tokens[i], reserve, msg.sender, tokens[i].balanceOf(msg.sender));
+      uint amount = tokens[i].balanceOf(msg.sender);
+      if (amount > 0) {
+        __push__(tokens[i], reserve, msg.sender, amount);
+      }
     }
   }
 

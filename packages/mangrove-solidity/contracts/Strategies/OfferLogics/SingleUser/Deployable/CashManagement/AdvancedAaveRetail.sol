@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:	BSD-2-Clause
 
-// SimpleAaveRetail.sol
+// AdvancedAaveRetail.sol
 
 // Copyright (c) 2021 Giry SAS. All rights reserved.
 
@@ -12,19 +12,30 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 import "../../Persistent.sol";
-import "contracts/Strategies/Routers/AaveRouter.sol";
+import "contracts/Strategies/Routers/AaveDeepRouter.sol";
 
-contract SimpleAaveRetail is Persistent {
+contract AdvancedAaveRetail is Persistent {
   constructor(
     IMangrove _mgv,
     address _addressesProvider,
     address deployer
-  ) Persistent(_mgv, 30_000, new AaveRouter(_addressesProvider, 0, 2)) {
+  ) Persistent(_mgv, 30_000, new AaveDeepRouter(_addressesProvider, 0, 2)) {
     // Router reserve is by default `router.address`
     // use `set_reserve(addr)` to change this
     router().setAdmin(deployer);
     if (deployer != msg.sender) {
       setAdmin(deployer);
     }
+  }
+
+  // overriding put to leverage taker's liquidity on aave
+  // this function will deposit incoming liquidity to increase borrow power during trade
+  function __put__(uint amount, ML.SingleOrder calldata order)
+    internal
+    override
+    returns (uint missingPut)
+  {
+    push(IEIP20(order.inbound_tkn), amount);
+    return 0;
   }
 }

@@ -108,18 +108,18 @@ abstract contract SingleUser is MangroveOffer {
     payable
     override
     onlyAdmin
-    returns (uint offerId)
+    returns (uint)
   {
-    return
-      MGV.newOffer{value: msg.value}(
-        address(mko.outbound_tkn),
-        address(mko.inbound_tkn),
-        mko.wants,
-        mko.gives,
-        mko.gasreq,
-        mko.gasprice,
-        mko.pivotId
-      );
+    mko.offerId = MGV.newOffer{value: msg.value}(
+      address(mko.outbound_tkn),
+      address(mko.inbound_tkn),
+      mko.wants,
+      mko.gives,
+      mko.gasreq >= type(uint24).max ? ofr_gasreq() : mko.gasreq,
+      mko.gasprice,
+      mko.pivotId
+    );
+    return mko.offerId;
   }
 
   // Updates offer `offerId` on the (`outbound_tkn,inbound_tkn`) Offer List of Mangrove.
@@ -139,7 +139,7 @@ abstract contract SingleUser is MangroveOffer {
         address(mko.inbound_tkn),
         mko.wants,
         mko.gives,
-        mko.gasreq,
+        mko.gasreq > type(uint24).max ? ofr_gasreq() : mko.gasreq,
         mko.gasprice,
         mko.pivotId,
         mko.offerId
