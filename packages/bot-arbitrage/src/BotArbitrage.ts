@@ -1,6 +1,6 @@
 import { logger } from "./util/logger";
 import { BigNumber, BigNumberish, ethers } from "ethers";
-import { TransactionResponse } from "@ethersproject/abstract-provider";
+import { TransactionReceipt } from "@ethersproject/abstract-provider";
 import { WebSocketProvider } from "@ethersproject/providers";
 
 type SolSnipeOrder = {
@@ -10,8 +10,8 @@ type SolSnipeOrder = {
   fillWants: boolean;
 };
 
-const maxGasReq = BigNumber.from(2).pow(256).sub(1);
-
+const TEN_MIN_MILLISECOND = 10 * 60 * 1000;
+const MAX_GAS_REQ = BigNumber.from(2).pow(256).sub(1);
 //Arbitrary, estimateGas fails on hardhat
 const MAX_GAS_LIMIT = 2000000;
 
@@ -26,6 +26,8 @@ export class BotArbitrage {
   #askIdsBlacklist: BigNumber[];
   #bidIdsBlacklist: BigNumber[];
   #lastBlockRun: number;
+  #lastBlockNumber: number;
+  #alivePollingRunning: boolean;
   /**
    * Constructs the bot.
    * @param mgvContract Mangrove ethers.js contract object
@@ -53,6 +55,8 @@ export class BotArbitrage {
     this.#askIdsBlacklist = [];
     this.#bidIdsBlacklist = [];
     this.#lastBlockRun = 0;
+    this.#lastBlockNumber = 0;
+    this.#alivePollingRunning = false;
   }
 
   public async start(): Promise<void> {
@@ -60,6 +64,7 @@ export class BotArbitrage {
       base: this.#outboundTokenSymbol,
       quote: this.#inboundTokenSymbol,
     });
+
     this.#blocksSubscriber.on("block", async () => {
       const blockNumber = await this.#blocksSubscriber.getBlockNumber();
       const [bestAskId, bestBidId, bestAsk, bestBid] =
@@ -84,9 +89,9 @@ export class BotArbitrage {
           BigNumber.from(bestBidId)
         );
 
-        await this.#logBlacklist(blockNumber, 0);
+        this.#logBlacklist(blockNumber, 0);
 
-        await this.#logOpportunity(blockNumber, bestAsk, bestBid);
+        this.#logOpportunity(blockNumber, bestAsk, bestBid);
 
         const [buyOrder, sellOrder] = this.#createArbOrders(
           bestAskId,
@@ -105,12 +110,15 @@ export class BotArbitrage {
 
         this.#unBlackListOffers(bestAskId, bestBidId);
 
-        await this.#logBlacklist(blockNumber, 1);
+        this.#logBlacklist(blockNumber, 1);
       }
     });
+
+    this.#alivePollingRunning = true;
+    this.#pollIsAlive(this.#blocksSubscriber);
   }
 
-  async #logBlacklist(blockNumber: number, addOrRm: Number) {
+  #logBlacklist(blockNumber: number, addOrRm: Number) {
     if (addOrRm == 0) {
       //something added to blacklist
       logger.debug(`Ask blacklist addition at block ${blockNumber}`, {
@@ -249,7 +257,7 @@ export class BotArbitrage {
               bestAskId,
               bestBid.wants, //takerWants
               bestBid.wants.mul(bestAsk.wants).div(bestAsk.gives), //takerGives
-              maxGasReq,
+              MAX_GAS_REQ,
             ],
           ],
           fillWants: true,
@@ -263,7 +271,7 @@ export class BotArbitrage {
               bestBidId,
               bestBid.gives, // takerWants
               bestBid.wants, // takerGives
-              maxGasReq,
+              MAX_GAS_REQ,
             ],
           ],
           fillWants: true,
@@ -283,7 +291,7 @@ export class BotArbitrage {
               bestAskId,
               bestAsk.gives, // takerWants
               bestAsk.wants, // takerGives
-              maxGasReq,
+              MAX_GAS_REQ,
             ],
           ],
           fillWants: true,
@@ -297,7 +305,7 @@ export class BotArbitrage {
               bestBidId,
               bestAsk.gives.mul(bestBid.gives).div(bestBid.wants), //takerWants
               bestAsk.gives, // takerGives
-              maxGasReq,
+              MAX_GAS_REQ,
             ],
           ],
           fillWants: true,
@@ -307,7 +315,7 @@ export class BotArbitrage {
     }
   }
 
-  #logArbitrage(tx: ethers.providers.TransactionReceipt) {
+  #logArbitrage(tx: TransactionReceipt) {
     if (tx.status == 1) {
       logger.info(`Arbitrage successful:`, {
         base: this.#outboundTokenSymbol,
@@ -328,7 +336,7 @@ export class BotArbitrage {
     }
   }
 
-  async #logOpportunity(blockNumber: number, bestAsk: any, bestBid: any) {
+  #logOpportunity(blockNumber: number, bestAsk: any, bestBid: any) {
     logger.info("Found opportunity:", {
       base: this.#outboundTokenSymbol,
       quote: this.#inboundTokenSymbol,
@@ -352,9 +360,29 @@ export class BotArbitrage {
     // console.log("gives: ", BigNumber.from(bestBid.gives).toString());
   }
 
+  async #pollIsAlive(provider: WebSocketProvider) {
+    while (this.#alivePollingRunning) {
+      // 10min sleep
+      await this.#sleep(TEN_MIN_MILLISECOND);
+      const currentBlock = await provider.getBlockNumber();
+      if (currentBlock <= this.#lastBlockNumber) {
+        this.#alivePollingRunning = false;
+        throw new Error(`Websocket block provider hangs for 10min+`);
+      }
+      this.#lastBlockNumber = currentBlock;
+    }
+  }
+
+  #sleep(ms: number) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
   stop() {
     this.#blocksSubscriber.removeAllListeners();
     this.#mgvContract.removeAllListeners();
     this.#multiOrderProxyContract.removeAllListeners();
+    this.#alivePollingRunning = false;
   }
 }

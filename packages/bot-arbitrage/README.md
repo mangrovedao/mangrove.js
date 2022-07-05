@@ -20,6 +20,10 @@ $ yarn install   # Sets up the Mangrove monorepo and installs dependencies
 $ yarn build     # Builds the bot and its dependencies
 ```
 
+## Contract deployment
+
+Run [deploy.ts](./src/deploy.ts): `ts-node ./src/deploy.ts`
+
 # Usage
 
 The JSON-RPC endpoint and private key that the bot should use must be specified in the following environment variables:
