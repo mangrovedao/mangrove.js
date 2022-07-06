@@ -455,6 +455,15 @@ class LiquidityProvider {
     }
   }
 
+  // admin only. Approves router to pull and push liquidity on maker contract
+  async enableRouting(
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    const tx = await this.logic.enableRouting(this.market.base.name, overrides);
+    tx.wait();
+    return this.logic.enableRouting(this.market.quote.name, overrides);
+  }
+
   async getMissingProvision(
     ba: "bids" | "asks",
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}

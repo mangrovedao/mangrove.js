@@ -1,5 +1,7 @@
 # next version
 
+- [major update] adding `enableRouting` function on `liquidityProvider` class to approve router to route liquidity on current market.
+- `cancelOffer/Bid/Ask` is now called `retractOffer/Bid/Ask`
 - Remove deprecated and defunct `printOrderBook.ts` script which has been superseded by the `mgv print` commmand
 
 # 0.8.1 (June 2022)
