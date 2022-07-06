@@ -79,7 +79,7 @@ abstract contract SingleUser is MangroveOffer {
     }
   }
 
-  function tokenBalance(IEIP20 token) internal view returns (uint) {
+  function tokenBalance(IEIP20 token) external view override returns (uint) {
     AbstractRouter _router = MOS.get_storage().router;
     uint balance = token.balanceOf(reserve());
     return

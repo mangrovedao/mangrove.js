@@ -42,19 +42,4 @@ contract AaveDeepRouter is AaveRouter {
   ) internal virtual override returns (uint pulled) {
     return redeemThenBorrow(token, reserve, amount, strict, maker);
   }
-
-  function reserveBalance(IEIP20 token, address reserve)
-    public
-    view
-    virtual
-    override
-    returns (uint available)
-  {
-    (uint redeemAvailable, uint borrowAvailable) = maxGettableUnderlying(
-      token,
-      true,
-      reserve
-    );
-    return redeemAvailable + borrowAvailable;
-  }
 }

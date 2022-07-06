@@ -154,14 +154,24 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   }
 
   /// withdraws ETH from the bounty vault of the Mangrove and adds it to `this` balance
-  function withdrawFromMangrove(uint amount) public mgvOrAdmin {
+  /// NB the bounty vault on Mangrove is pooled amongst offer owners in the case of a multiUser strat
+  function withdrawFromMangrove(uint amount, address receiver)
+    public
+    mgvOrAdmin
+  {
     if (amount == type(uint).max) {
       amount = MGV.balanceOf(address(this));
       if (amount == 0) {
         return; // optim
       }
     }
-    require(MGV.withdraw(amount), "mgvOffer/withdraw/transferFail");
+    require(MGV.withdraw(amount), "mgvOffer/withdrawFromMgv/withdrawFail");
+    if (has_router()) {
+      router().push_native{value: amount}(receiver);
+    } else {
+      (bool success, ) = receiver.call{value: amount}("");
+      require(success, "mgvOffer/withdrawFromMgv/payableCallFail");
+    }
   }
 
   ////// Default Customizable hooks for Taker Order'execution

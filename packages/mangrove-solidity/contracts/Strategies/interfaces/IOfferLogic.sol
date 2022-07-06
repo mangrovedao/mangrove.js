@@ -66,10 +66,14 @@ interface IOfferLogic is IMaker {
     uint amount
   ) external returns (bool success);
 
+  ///@return balance the  `token` amount that `msg.sender` has in the contract's reserve
+  function tokenBalance(IEIP20 token) external returns (uint balance);
+
+  // allow this contract to act as a LP for Mangrove on `outbound_tkn`
   function approveMangrove(IEIP20 outbound_tkn, uint amount) external;
 
   // pulls available free wei from Mangrove balance to `this`
-  function withdrawFromMangrove(uint amount) external;
+  function withdrawFromMangrove(uint amount, address receiver) external;
 
   struct MakerOrder {
     IEIP20 outbound_tkn; // address of the ERC20 contract managing outbound tokens

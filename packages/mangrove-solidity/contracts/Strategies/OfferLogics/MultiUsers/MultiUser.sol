@@ -275,7 +275,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     }
     if (free_wei > 0) {
       // pulling free wei from Mangrove to `this`
-      withdrawFromMangrove(free_wei);
+      require(MGV.withdraw(free_wei), "MultiUser/withdrawFail");
       // resetting pending returned provision
       offerData[outbound_tkn][inbound_tkn][offerId] = OfferData({
         owner: od.owner,
@@ -294,6 +294,10 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   ) external override returns (bool success) {
     require(receiver != address(0), "MultiUser/withdrawToken/0xReceiver");
     return router().withdrawToken(token, msg.sender, receiver, amount);
+  }
+
+  function tokenBalance(IEIP20 token) external view override returns (uint) {
+    return router().reserveBalance(token, msg.sender);
   }
 
   // put received inbound tokens on offer owner reserve
@@ -345,7 +349,10 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     // first one withdraws all free weis from Mangrove
     // NB if several offers of `this` contract have failed during the market order, the balance will contain cumulated free provision
     // noop if the balance of `this` is empty on Mangrove so will perform this call only once per market order
-    withdrawFromMangrove(type(uint).max);
+    require(
+      MGV.withdraw(MGV.balanceOf(address(this))),
+      "MultiUser/posthookFallback/withdrawFail"
+    );
 
     // computing an under approximation of returned provision
     (P.Global.t global, P.Local.t local) = MGV.config(

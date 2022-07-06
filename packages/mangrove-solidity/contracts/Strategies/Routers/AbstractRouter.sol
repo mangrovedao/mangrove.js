@@ -132,7 +132,7 @@ abstract contract AbstractRouter is AccessControlled {
     address reserve,
     address recipient,
     uint amount
-  ) public makersOrAdmin returns (bool) {
+  ) public onlyMakers returns (bool) {
     return __withdrawToken__(token, reserve, recipient, amount);
   }
 
@@ -144,6 +144,8 @@ abstract contract AbstractRouter is AccessControlled {
   ) internal virtual returns (bool);
 
   // connect a maker contract to this router
+  // if maker contract is `this` router's deployer, it will do so using admin privilege
+  // if `this` router was deployed independently of maker contract, binding must be done by router's deployer
   function bind(address maker) public makersOrAdmin {
     makers[maker] = true;
   }
