@@ -37,7 +37,7 @@ contract Faucet_Test {
         token.mint(address(faucet), 1000 * 10**18);
     }
 
-    function pull_test() public {
+    function test_pull() public {
         uint256 amt = 4 * 10**18;
         uint256 bal_this = token.balanceOf(address(this));
         uint256 bal_faucet = token.balanceOf(address(faucet));
@@ -54,7 +54,7 @@ contract Faucet_Test {
         );
     }
 
-    function pullTo_test() public {
+    function test_pullTo() public {
         uint256 bal_z = token.balanceOf(Z);
         uint256 bal_faucet = token.balanceOf(address(faucet));
 
@@ -69,7 +69,7 @@ contract Faucet_Test {
         );
     }
 
-    function cant_pull_above_maxpull_test() public {
+    function test_cant_pull_above_maxpull() public {
         uint256 bal_z = token.balanceOf(address(this));
         uint256 bal_faucet = token.balanceOf(address(faucet));
 
@@ -88,12 +88,12 @@ contract Faucet_Test {
         );
     }
 
-    function change_maxpull_test() public {
+    function test_change_maxpull() public {
         faucet.setMaxpull(INIT_MAXPULL * 2);
         Test.eq(faucet.maxpull(), INIT_MAXPULL * 2, "wrong maxpull balance");
     }
 
-    function rainTo_test() public {
+    function test_rainTo() public {
         uint256 bal_z = token.balanceOf(address(this));
         uint256 bal_faucet = token.balanceOf(address(faucet));
 
