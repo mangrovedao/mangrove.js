@@ -49,6 +49,7 @@ describe("RestingOrder", () => {
 
   describe("Resting order integration tests suite", () => {
     let orderContractAsLP: LiquidityProvider = null;
+    let meAsLP: LiquidityProvider = null;
     /* Make sure tx has been mined so we can read the result off the chain */
     const w = async (r) => (await r).wait(1);
 
@@ -70,6 +71,8 @@ describe("RestingOrder", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
+      mgv.orderContract.approveRouter(mgv.getAddress("TokenA"));
+      mgv.orderContract.approveRouter(mgv.getAddress("TokenB"));
 
       orderContractAsLP = await logic.liquidityProvider(market);
 
@@ -81,30 +84,27 @@ describe("RestingOrder", () => {
       await w(
         mgv.token("TokenA").contract.mint(me, utils.parseUnits("100", 18))
       );
-      // depositing tokens on the strat (approve and deposit)
-      await w(mgv.token("TokenA").approve(orderContractAsLP.logic.address));
-      await w(orderContractAsLP.logic.depositToken("TokenA", 50));
-
       await w(
         mgv.token("TokenB").contract.mint(me, utils.parseUnits("100", 18))
       );
 
       // `me` proposes asks on Mangrove so should approve base
       await w(mgv.token("TokenA").approveMangrove());
+      meAsLP = await mgv.liquidityProvider(market);
 
-      const provision = await orderContractAsLP.computeAskProvision();
+      const provision = await meAsLP.computeAskProvision();
       // fills Asks semi book
-      await orderContractAsLP.newAsk({
+      await meAsLP.newAsk({
         wants: 10, //tokenB
         gives: 10, //tokenA
         fund: provision,
       });
-      await orderContractAsLP.newAsk({
+      await meAsLP.newAsk({
         wants: 10,
         gives: 9,
         fund: provision,
       });
-      await orderContractAsLP.newAsk({
+      await meAsLP.newAsk({
         wants: 10,
         gives: 8,
         fund: provision,
@@ -113,8 +113,10 @@ describe("RestingOrder", () => {
 
     it("simple resting order", async () => {
       const provision = await orderContractAsLP.computeBidProvision();
-      // `me` buying base so should approve orderContract for quote
-      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
+      const router_address = await orderContractAsLP.logic?.contract.router();
+      // `me` buying base via orderContract so should approve it for quote
+      await w(mgv.token("TokenB").approve(router_address));
+      await w(mgv.token("TokenA").approve(router_address));
 
       const orderResult: Market.OrderResult =
         await orderContractAsLP.market.buy({
@@ -145,7 +147,10 @@ describe("RestingOrder", () => {
       const provision = await orderContractAsLP.computeBidProvision();
       const market: Market = orderContractAsLP.market;
       // `me` buying base so should approve orderContract for quote
-      await w(mgv.token("TokenB").approve(orderContractAsLP.logic.address));
+      const router_address = await orderContractAsLP.logic?.contract.router();
+      // `me` buying base via orderContract so should approve it for quote
+      await w(mgv.token("TokenB").approve(router_address));
+      await w(mgv.token("TokenA").approve(router_address));
 
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
