@@ -18,6 +18,7 @@ packages/mangrove-solidity/*-mumbai.sh
 *test-report.json
 *tests-report.json
 *.code-workspace
+.vscode
 
 # Yarn
 .yarn/*
