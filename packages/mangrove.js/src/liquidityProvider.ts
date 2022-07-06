@@ -355,25 +355,25 @@ class LiquidityProvider {
   }
 
   /** Cancel an ask. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
-  cancelAsk(
+  retractAsk(
     id: number,
     deprovision = false,
     overrides: ethers.Overrides = {}
   ): Promise<void> {
-    return this.cancelOffer("asks", id, deprovision, overrides);
+    return this.retractOffer("asks", id, deprovision, overrides);
   }
 
   /** Cancel a bid. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
-  cancelBid(
+  retractBid(
     id: number,
     deprovision = false,
     overrides: ethers.Overrides = {}
   ): Promise<void> {
-    return this.cancelOffer("bids", id, deprovision, overrides);
+    return this.retractOffer("bids", id, deprovision, overrides);
   }
 
   /* Cancel an offer. Return a promise fulfilled when mangrove.js has received the tx and updated itself. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
-  async cancelOffer(
+  async retractOffer(
     ba: "bids" | "asks",
     id: number,
     deprovision = false,
@@ -382,7 +382,7 @@ class LiquidityProvider {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
     let txPromise = null;
     if (this.logic) {
-      txPromise = this.logic.cancelOffer(
+      txPromise = this.logic.retractOffer(
         outbound_tkn,
         inbound_tkn,
         id,
@@ -453,6 +453,15 @@ class LiquidityProvider {
         overrides
       );
     }
+  }
+
+  // admin only. Approves router to pull and push liquidity on maker contract
+  async enableRouting(
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    const tx = await this.logic.enableRouting(this.market.base.name, overrides);
+    tx.wait();
+    return this.logic.enableRouting(this.market.quote.name, overrides);
   }
 
   async getMissingProvision(

@@ -204,7 +204,7 @@ const promise = liquidity_provider.updateAsk(askId, { wants: 3600, gives: 1 });
 promise.then((event) => console.log("offer updated", event));
 
 // Cancel an existing bid.
-await liquidity_provider.cancelBid(bidId);
+await liquidity_provider.retractBid(bidId);
 ```
 
 # More Code Examples
