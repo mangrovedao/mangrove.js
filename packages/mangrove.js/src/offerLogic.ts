@@ -110,39 +110,35 @@ class OfferLogic {
     );
   }
 
+  // admin only. Approves router to pull and push liquidity on maker contract
+  enableRouting(
+    tokenName: string,
+    overrides: ethers.Overrides = {}
+  ): Promise<TransactionResponse> {
+    return this.contract.approveRouter(
+      this.mgv.getAddress(tokenName),
+      overrides
+    );
+  }
+
   /** Get the current balance an LP has on Mangrove */
   /** If owner fee is not provided, then the balance of the contract is queried */
   async balanceOnMangrove(
     owner: string = this.address,
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
-    if (this.isMultiMaker) {
-      const rawBalance = await this.contract.balanceOnMangrove(
-        owner,
-        overrides
-      );
-      return this.mgv.fromUnits(rawBalance, 18);
-    } else {
-      return this.mgv.balanceOf(owner, overrides);
-    }
+    return this.mgv.balanceOf(owner, overrides);
   }
 
   async tokenBalance(
     args: { tokenName: string; owner?: string },
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
-    if (this.isMultiMaker) {
-      const rawBalance = await this.contract.tokenBalance(
-        this.mgv.getAddress(args.tokenName),
-        args.owner ? args.owner : this.address,
-        overrides
-      );
-      return this.mgv.fromUnits(rawBalance, args.tokenName);
-    } else {
-      return this.mgv
-        .token(args.tokenName)
-        .balanceOf(args.owner ? args.owner : this.address, overrides);
-    }
+    const rawBalance = await this.contract.tokenBalance(
+      this.mgv.getAddress(args.tokenName),
+      overrides
+    );
+    return this.mgv.fromUnits(rawBalance, args.tokenName);
   }
 
   /** Redeems `amount` tokens from the contract's account */
@@ -165,38 +161,15 @@ class OfferLogic {
     return new OfferLogic(this.mgv, this.contract.address, isMulti, sOp);
   }
 
-  /**Deposits `amount` tokens on the contract accounts */
-  /**NB if contract is multi user, depositor must approve contract for token transfer */
-  depositToken(
-    tokenName: string,
-    amount: Bigish,
-    overrides: ethers.Overrides = {}
-  ): Promise<TransactionResponse> {
-    if (this.isMultiMaker) {
-      // signer needs to have approved contract to transfer his tokens beforehand.
-      return this.contract.depositToken(
-        this.mgv.token(tokenName).address,
-        this.mgv.toUnits(amount, tokenName),
-        overrides
-      );
-    } else {
-      this.mgv
-        .token(tokenName)
-        .transfer(this.contract.address, amount, overrides);
-    }
-  }
-
   /** Fund the current contract balance with ethers sent from current signer. */
   fundMangrove(
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
     if (this.isMultiMaker) {
-      const overrides_: ethers.PayableOverrides = {
-        value: this.mgv.toUnits(amount, 18),
-        ...overrides,
-      };
-      return this.contract.fundMangrove(overrides_);
+      throw Error(
+        "Multi user start must be provisioned at new/update offer time"
+      );
     } else {
       return this.mgv.fundMangrove(amount, this.address, overrides);
     }
@@ -206,7 +179,7 @@ class OfferLogic {
     amount: number,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const tx = this.contract.setGasreq(
+    const tx = this.contract.set_gasreq(
       ethers.BigNumber.from(amount),
       overrides
     );
@@ -214,7 +187,7 @@ class OfferLogic {
   }
 
   async getDefaultGasreq(): Promise<number> {
-    const gr = await this.contract.OFR_GASREQ();
+    const gr = await this.contract.ofr_gasreq();
     return gr.toNumber();
   }
 
@@ -229,7 +202,7 @@ class OfferLogic {
     return this.contract.admin();
   }
 
-  async newOffer(
+  newOffer(
     outbound_tkn: MgvToken,
     inbound_tkn: MgvToken,
     wants: Bigish,
@@ -245,15 +218,16 @@ class OfferLogic {
         inbound_tkn: inbound_tkn.address,
         wants: inbound_tkn.toUnits(wants),
         gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq ? gasreq : await this.contract.OFR_GASREQ(),
+        gasreq: gasreq ? gasreq : ethers.constants.MaxUint256,
         gasprice: gasprice ? gasprice : 0,
         pivotId: pivot ? pivot : 0,
+        offerId: 0,
       },
       overrides
     );
   }
 
-  async updateOffer(
+  updateOffer(
     outbound_tkn: MgvToken,
     inbound_tkn: MgvToken,
     wants: Bigish,
@@ -270,16 +244,16 @@ class OfferLogic {
         inbound_tkn: inbound_tkn.address,
         wants: inbound_tkn.toUnits(wants),
         gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq ? gasreq : await this.contract.OFR_GASREQ(),
+        gasreq: gasreq ? gasreq : ethers.constants.MaxUint256,
         gasprice: gasprice ? gasprice : 0,
         pivotId: pivot,
+        offerId: offerId,
       },
-      offerId,
       overrides
     );
   }
 
-  cancelOffer(
+  retractOffer(
     outbound_tkn: MgvToken,
     inbound_tkn: MgvToken,
     id: number,
@@ -296,14 +270,14 @@ class OfferLogic {
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
+  /** tx will revert is signer is not the admin of the OfferLogic onchain contract */
   async withdrawFromMangrove(
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const owner = await this.mgv._signer.getAddress();
     return this.contract.withdrawFromMangrove(
-      owner,
       this.mgv.toUnits(amount, 18),
+      await this.mgv._signer.getAddress(),
       overrides
     );
   }
