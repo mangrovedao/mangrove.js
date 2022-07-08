@@ -304,9 +304,13 @@ jobs:
       # A tiny bit hacky, but it's simple and works
       run: echo "mangrove_built=true" >> $GITHUB_ENV
 
-    # Run Solidity tests and report
-    - name: Mangrove Solidity Tests
-      run: yarn run test:solidity
+    # Run local Solidity tests
+    - name: Mangrove Local Solidity Tests
+      run: yarn run test:solidity:local
+
+    # Run polygon Solidity tests
+    - name: Mangrove Polygon Solidity Tests
+      run: yarn run test:solidity:polygon
       env:
         POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
 
