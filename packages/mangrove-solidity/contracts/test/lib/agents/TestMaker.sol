@@ -2,11 +2,10 @@
 pragma solidity ^0.8.13;
 pragma abicoder v2;
 
-import {Test} from "forge-std/Test.sol";
 import "mgv_src/AbstractMangrove.sol";
 import {IERC20, MgvLib as ML, P, IMaker} from "mgv_src/MgvLib.sol";
 
-contract TrivialTestMaker is IMaker, Test {
+contract TrivialTestMaker is IMaker {
   function makerExecute(ML.SingleOrder calldata)
     external
     virtual
@@ -134,6 +133,18 @@ contract TestMaker is TrivialTestMaker {
 
   function setShouldFailHook(bool should) external {
     _shouldFailHook = should;
+  }
+
+  // this contract is used by mangrove.js's test
+  // so we vendor DSTest's assertEq
+  // to avoid pulling all the DSTest code into mangrove.js
+  function assertEq(address a, address b) internal {
+    if (a != b) {
+      emit log("Error: a == b not satisfied [address]");
+      emit log_named_address("  Expected", b);
+      emit log_named_address("    Actual", a);
+      fail();
+    }
   }
 
   function makerPosthook(
