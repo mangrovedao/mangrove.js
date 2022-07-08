@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import "mgv_src/AbstractMangrove.sol";
 import {IERC20, MgvLib as ML, P, IMaker} from "mgv_src/MgvLib.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract TrivialTestMaker is IMaker {
   function makerExecute(ML.SingleOrder calldata)
@@ -20,7 +21,7 @@ contract TrivialTestMaker is IMaker {
   {}
 }
 
-contract TestMaker is TrivialTestMaker {
+contract TestMaker is TrivialTestMaker, Test {
   AbstractMangrove _mgv;
   address _base;
   address _quote;
@@ -133,18 +134,6 @@ contract TestMaker is TrivialTestMaker {
 
   function setShouldFailHook(bool should) external {
     _shouldFailHook = should;
-  }
-
-  // this contract is used by mangrove.js's test
-  // so we vendor DSTest's assertEq
-  // to avoid pulling all the DSTest code into mangrove.js
-  function assertEq(address a, address b) internal {
-    if (a != b) {
-      emit log("Error: a == b not satisfied [address]");
-      emit log_named_address("  Expected", b);
-      emit log_named_address("    Actual", a);
-      fail();
-    }
   }
 
   function makerPosthook(
