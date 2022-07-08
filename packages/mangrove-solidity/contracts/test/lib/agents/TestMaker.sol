@@ -21,7 +21,7 @@ contract TrivialTestMaker is IMaker {
   {}
 }
 
-contract TestMaker is TrivialTestMaker, Test {
+contract SimpleTestMaker is TrivialTestMaker {
   AbstractMangrove _mgv;
   address _base;
   address _quote;
@@ -139,14 +139,10 @@ contract TestMaker is TrivialTestMaker, Test {
   function makerPosthook(
     ML.SingleOrder calldata order,
     ML.OrderResult calldata result
-  ) external virtual override {
+  ) public virtual override {
     order; //shh
     if (_shouldFailHook) {
       revert("posthookFail");
-    }
-
-    if (_expectedStatus != bytes32("")) {
-      assertEq(result.mgvData, _expectedStatus, "Incorrect status message");
     }
 
     if (_shouldRepost) {
@@ -306,5 +302,23 @@ contract TestMaker is TrivialTestMaker, Test {
 
   function mgvBalance() public view returns (uint) {
     return _mgv.balanceOf(address(this));
+  }
+}
+
+contract TestMaker is SimpleTestMaker, Test {
+  constructor(
+    AbstractMangrove mgv,
+    IERC20 base,
+    IERC20 quote
+  ) SimpleTestMaker(mgv, base, quote) {}
+
+  function makerPosthook(
+    ML.SingleOrder calldata order,
+    ML.OrderResult calldata result
+  ) public virtual override {
+    if (_expectedStatus != bytes32("")) {
+      assertEq(result.mgvData, _expectedStatus, "Incorrect status message");
+    }
+    super.makerPosthook(order, result);
   }
 }
