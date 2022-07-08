@@ -213,6 +213,8 @@ jobs:
     # Run Solidity tests and report
     - name: Faucet Tests
       run: yarn run test:solidity
+      env:
+        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
 
     - name: Faucet Test Report
       uses: dorny/test-reporter@v1
