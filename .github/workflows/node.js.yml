@@ -594,6 +594,8 @@ jobs:
     # == run and report tests == 
     - name: Mangrove.js Tests
       run: yarn run test
+      env:
+        NODE_OPTIONS: "--max-old-space-size=8192"
 
     - name: Mangrove.js Test Report
       uses: dorny/test-reporter@v1
