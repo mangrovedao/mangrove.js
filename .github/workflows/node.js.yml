@@ -213,8 +213,6 @@ jobs:
     # Run Solidity tests and report
     - name: Faucet Tests
       run: yarn run test:solidity
-      env:
-        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
 
     - name: Faucet Test Report
       uses: dorny/test-reporter@v1
@@ -309,6 +307,8 @@ jobs:
     # Run Solidity tests and report
     - name: Mangrove Solidity Tests
       run: yarn run test:solidity
+      env:
+        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
 
     # NOTE: uncomment once you can manage forge test 
     # outputs in gh actions
