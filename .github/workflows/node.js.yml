@@ -304,16 +304,6 @@ jobs:
       # A tiny bit hacky, but it's simple and works
       run: echo "mangrove_built=true" >> $GITHUB_ENV
 
-    # Run local Solidity tests
-    - name: Mangrove Local Solidity Tests
-      run: yarn run test:solidity:local
-
-    # Run polygon Solidity tests
-    - name: Mangrove Polygon Solidity Tests
-      run: yarn run test:solidity:polygon
-      env:
-        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
-
     # NOTE: uncomment once you can manage forge test 
     # outputs in gh actions
     # - name: Mangrove Solidity Test Report
@@ -346,66 +336,6 @@ jobs:
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job mangrove-solidity ====
-
-  # ==== Job: Build Mangrove documentation ====
-  mangrove-solidity-doc:
-    needs: [security-guard, mangrove-solidity]
-
-    runs-on: ubuntu-latest
-
-    env:
-      working-directory: packages/mangrove-solidity
-
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}    
-
-    steps:
-
-    # == Git checkout ==
-    - name: Checkout
-      uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
-
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-
-    # == yarn setup ==
-    - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-        
-    - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
-
-    # == create and upload docs ==
-    - run: yarn run doc
-
-    - name: Archive documentation
-      uses: actions/upload-artifact@v3
-      with:
-        name: documentation
-        path: ${{env.working-directory}}/doc/
-
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job mangrove-solidity-doc ====
 
   # ==== Job: Build and test hardhat-utils ====
   hardhat-utils:
