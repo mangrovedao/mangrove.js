@@ -1,0 +1,2376 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract IMangrove",
+          "name": "mangrove",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "reason",
+          "type": "bytes32"
+        }
+      ],
+      "name": "LogIncident",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "SetGasreq",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "SetRouter",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "approveMangrove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "approveRouter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasprice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getMissingProvision",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offer",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offerDetail",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "global",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "local",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MgvLib.SingleOrder",
+          "name": "order",
+          "type": "tuple"
+        }
+      ],
+      "name": "makerExecute",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offer",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offerDetail",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "global",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "local",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MgvLib.SingleOrder",
+          "name": "order",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "makerData",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "mgvData",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct MgvLib.OrderResult",
+          "name": "result",
+          "type": "tuple"
+        }
+      ],
+      "name": "makerPosthook",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasreq",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasprice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pivotId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IOfferLogic.MakerOrder",
+          "name": "mko",
+          "type": "tuple"
+        }
+      ],
+      "name": "newOffer",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ofr_gasreq",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "deprovision",
+          "type": "bool"
+        }
+      ],
+      "name": "retractOffer",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "received",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        }
+      ],
+      "name": "set_gasreq",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "router",
+          "type": "address"
+        }
+      ],
+      "name": "set_router",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "tokenBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasreq",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasprice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pivotId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IOfferLogic.MakerOrder",
+          "name": "mko",
+          "type": "tuple"
+        }
+      ],
+      "name": "updateOffer",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "withdrawFromMangrove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawToken",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "approveMangrove(address,uint256)": "aefe8403",
+    "approveRouter(address)": "f259cd27",
+    "getMissingProvision(address,address,uint256,uint256,uint256)": "e4c34f84",
+    "makerExecute((address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256))": "6c49c32c",
+    "makerPosthook((address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32))": "3d3d130d",
+    "newOffer((address,address,uint256,uint256,uint256,uint256,uint256,uint256))": "5486c95f",
+    "ofr_gasreq()": "d1baa1ef",
+    "retractOffer(address,address,uint256,bool)": "ad97db1b",
+    "set_gasreq(uint256)": "fc488a38",
+    "set_router(address)": "db11851e",
+    "tokenBalance(address)": "eedc966a",
+    "updateOffer((address,address,uint256,uint256,uint256,uint256,uint256,uint256))": "10aded60",
+    "withdrawFromMangrove(uint256,address)": "7144df24",
+    "withdrawToken(address,address,uint256)": "01e33667"
+  },
+  "ast": {
+    "absolutePath": "packages/mangrove-solidity/contracts/strategies/interfaces/IOfferLogic.sol",
+    "id": 14162,
+    "exportedSymbols": {
+      "ACS": [20268],
+      "AbstractRouter": [16287],
+      "AccessControlled": [20247],
+      "IERC20": [2050],
+      "IMaker": [1932],
+      "IMangrove": [645],
+      "IOfferLogic": [14161],
+      "ML": [1739],
+      "P": [1710]
+    },
+    "nodeType": "SourceUnit",
+    "src": "1371:3364:30",
+    "nodes": [
+      {
+        "id": 14005,
+        "nodeType": "PragmaDirective",
+        "src": "1371:24:30",
+        "literals": ["solidity", ">=", "0.8", ".0"]
+      },
+      {
+        "id": 14006,
+        "nodeType": "PragmaDirective",
+        "src": "1396:19:30",
+        "literals": ["abicoder", "v2"]
+      },
+      {
+        "id": 14007,
+        "nodeType": "ImportDirective",
+        "src": "1416:31:30",
+        "absolutePath": "packages/mangrove-solidity/contracts/IMangrove.sol",
+        "file": "mgv_src/IMangrove.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 14162,
+        "sourceUnit": 646,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 14009,
+        "nodeType": "ImportDirective",
+        "src": "1448:42:30",
+        "absolutePath": "packages/mangrove-solidity/contracts/MgvLib.sol",
+        "file": "mgv_src/MgvLib.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 14162,
+        "sourceUnit": 2051,
+        "symbolAliases": [
+          {
+            "foreign": {
+              "id": 14008,
+              "name": "IERC20",
+              "nodeType": "Identifier",
+              "overloadedDeclarations": [],
+              "referencedDeclaration": 2050,
+              "src": "1456:6:30",
+              "typeDescriptions": {}
+            },
+            "nameLocation": "-1:-1:-1"
+          }
+        ],
+        "unitAlias": ""
+      },
+      {
+        "id": 14010,
+        "nodeType": "ImportDirective",
+        "src": "1491:55:30",
+        "absolutePath": "packages/mangrove-solidity/contracts/strategies/routers/AbstractRouter.sol",
+        "file": "mgv_src/strategies/routers/AbstractRouter.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 14162,
+        "sourceUnit": 16288,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 14161,
+        "nodeType": "ContractDefinition",
+        "src": "1548:3186:30",
+        "nodes": [
+          {
+            "id": 14028,
+            "nodeType": "EventDefinition",
+            "src": "1724:157:30",
+            "anonymous": false,
+            "documentation": {
+              "id": 14013,
+              "nodeType": "StructuredDocumentation",
+              "src": "1651:21:30",
+              "text": "@notice Events "
+            },
+            "eventSelector": "736a3993b9f8b1c5603896c76376792887f376b1fe7fc981e09a16530bf1e4e0",
+            "name": "LogIncident",
+            "nameLocation": "1730:11:30",
+            "parameters": {
+              "id": 14027,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14016,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "mangrove",
+                  "nameLocation": "1757:8:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14028,
+                  "src": "1747:18:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IMangrove_$645",
+                    "typeString": "contract IMangrove"
+                  },
+                  "typeName": {
+                    "id": 14015,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14014,
+                      "name": "IMangrove",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 645,
+                      "src": "1747:9:30"
+                    },
+                    "referencedDeclaration": 645,
+                    "src": "1747:9:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IMangrove_$645",
+                      "typeString": "contract IMangrove"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14019,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "outbound_tkn",
+                  "nameLocation": "1786:12:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14028,
+                  "src": "1771:27:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14018,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14017,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "1771:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "1771:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14022,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "inbound_tkn",
+                  "nameLocation": "1819:11:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14028,
+                  "src": "1804:26:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14021,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14020,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "1804:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "1804:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14024,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "offerId",
+                  "nameLocation": "1849:7:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14028,
+                  "src": "1836:20:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14023,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1836:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14026,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "reason",
+                  "nameLocation": "1870:6:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14028,
+                  "src": "1862:14:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 14025,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1862:7:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1741:139:30"
+            }
+          },
+          {
+            "id": 14033,
+            "nodeType": "EventDefinition",
+            "src": "1923:32:30",
+            "anonymous": false,
+            "eventSelector": "6de4326a8b9054d72d9dbab97d27bc4edffadee7d966f5af9cc4eafdaf8e5455",
+            "name": "SetRouter",
+            "nameLocation": "1929:9:30",
+            "parameters": {
+              "id": 14032,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14031,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14033,
+                  "src": "1939:14:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_AbstractRouter_$16287",
+                    "typeString": "contract AbstractRouter"
+                  },
+                  "typeName": {
+                    "id": 14030,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14029,
+                      "name": "AbstractRouter",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 16287,
+                      "src": "1939:14:30"
+                    },
+                    "referencedDeclaration": 16287,
+                    "src": "1939:14:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_AbstractRouter_$16287",
+                      "typeString": "contract AbstractRouter"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1938:16:30"
+            }
+          },
+          {
+            "id": 14037,
+            "nodeType": "EventDefinition",
+            "src": "1996:22:30",
+            "anonymous": false,
+            "eventSelector": "afef3ad374c0b972e3c793be825735801fa05cc4c67157d98d9a111b4027988d",
+            "name": "SetGasreq",
+            "nameLocation": "2002:9:30",
+            "parameters": {
+              "id": 14036,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14035,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14037,
+                  "src": "2012:4:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14034,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2012:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2011:6:30"
+            }
+          },
+          {
+            "id": 14042,
+            "nodeType": "FunctionDefinition",
+            "src": "2120:46:30",
+            "functionSelector": "d1baa1ef",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "ofr_gasreq",
+            "nameLocation": "2129:10:30",
+            "parameters": {
+              "id": 14038,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2139:2:30"
+            },
+            "returnParameters": {
+              "id": 14041,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14040,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14042,
+                  "src": "2160:4:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14039,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2160:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2159:6:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14059,
+            "nodeType": "FunctionDefinition",
+            "src": "2407:165:30",
+            "functionSelector": "e4c34f84",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getMissingProvision",
+            "nameLocation": "2416:19:30",
+            "parameters": {
+              "id": 14055,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14045,
+                  "mutability": "mutable",
+                  "name": "outbound_tkn",
+                  "nameLocation": "2448:12:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14059,
+                  "src": "2441:19:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14044,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14043,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "2441:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "2441:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14048,
+                  "mutability": "mutable",
+                  "name": "inbound_tkn",
+                  "nameLocation": "2473:11:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14059,
+                  "src": "2466:18:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14047,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14046,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "2466:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "2466:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14050,
+                  "mutability": "mutable",
+                  "name": "gasreq",
+                  "nameLocation": "2495:6:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14059,
+                  "src": "2490:11:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14049,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2490:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14052,
+                  "mutability": "mutable",
+                  "name": "gasprice",
+                  "nameLocation": "2512:8:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14059,
+                  "src": "2507:13:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14051,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2507:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14054,
+                  "mutability": "mutable",
+                  "name": "offerId",
+                  "nameLocation": "2531:7:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14059,
+                  "src": "2526:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14053,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2526:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2435:107:30"
+            },
+            "returnParameters": {
+              "id": 14058,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14057,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14059,
+                  "src": "2566:4:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14056,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2566:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2565:6:30"
+            },
+            "scope": 14161,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14064,
+            "nodeType": "FunctionDefinition",
+            "src": "2614:42:30",
+            "functionSelector": "fc488a38",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "set_gasreq",
+            "nameLocation": "2623:10:30",
+            "parameters": {
+              "id": 14062,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14061,
+                  "mutability": "mutable",
+                  "name": "gasreq",
+                  "nameLocation": "2639:6:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14064,
+                  "src": "2634:11:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14060,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2634:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2633:13:30"
+            },
+            "returnParameters": {
+              "id": 14063,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2655:0:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14070,
+            "nodeType": "FunctionDefinition",
+            "src": "2703:52:30",
+            "functionSelector": "db11851e",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "set_router",
+            "nameLocation": "2712:10:30",
+            "parameters": {
+              "id": 14068,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14067,
+                  "mutability": "mutable",
+                  "name": "router",
+                  "nameLocation": "2738:6:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14070,
+                  "src": "2723:21:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_AbstractRouter_$16287",
+                    "typeString": "contract AbstractRouter"
+                  },
+                  "typeName": {
+                    "id": 14066,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14065,
+                      "name": "AbstractRouter",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 16287,
+                      "src": "2723:14:30"
+                    },
+                    "referencedDeclaration": 16287,
+                    "src": "2723:14:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_AbstractRouter_$16287",
+                      "typeString": "contract AbstractRouter"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2722:23:30"
+            },
+            "returnParameters": {
+              "id": 14069,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2754:0:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14076,
+            "nodeType": "FunctionDefinition",
+            "src": "2824:46:30",
+            "functionSelector": "f259cd27",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "approveRouter",
+            "nameLocation": "2833:13:30",
+            "parameters": {
+              "id": 14074,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14073,
+                  "mutability": "mutable",
+                  "name": "token",
+                  "nameLocation": "2854:5:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14076,
+                  "src": "2847:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14072,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14071,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "2847:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "2847:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2846:14:30"
+            },
+            "returnParameters": {
+              "id": 14075,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2869:0:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14088,
+            "nodeType": "FunctionDefinition",
+            "src": "2980:116:30",
+            "functionSelector": "01e33667",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawToken",
+            "nameLocation": "2989:13:30",
+            "parameters": {
+              "id": 14084,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14079,
+                  "mutability": "mutable",
+                  "name": "token",
+                  "nameLocation": "3015:5:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14088,
+                  "src": "3008:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14078,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14077,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "3008:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "3008:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14081,
+                  "mutability": "mutable",
+                  "name": "receiver",
+                  "nameLocation": "3034:8:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14088,
+                  "src": "3026:16:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 14080,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3026:7:30",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14083,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nameLocation": "3053:6:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14088,
+                  "src": "3048:11:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14082,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3048:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3002:61:30"
+            },
+            "returnParameters": {
+              "id": 14087,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14086,
+                  "mutability": "mutable",
+                  "name": "success",
+                  "nameLocation": "3087:7:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14088,
+                  "src": "3082:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 14085,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3082:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3081:14:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14097,
+            "nodeType": "FunctionDefinition",
+            "src": "3189:68:30",
+            "documentation": {
+              "id": 14089,
+              "nodeType": "StructuredDocumentation",
+              "src": "3100:86:30",
+              "text": "@return balance the  `token` amount that `msg.sender` has in the contract's reserve"
+            },
+            "functionSelector": "eedc966a",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "tokenBalance",
+            "nameLocation": "3198:12:30",
+            "parameters": {
+              "id": 14093,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14092,
+                  "mutability": "mutable",
+                  "name": "token",
+                  "nameLocation": "3218:5:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14097,
+                  "src": "3211:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14091,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14090,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "3211:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "3211:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3210:14:30"
+            },
+            "returnParameters": {
+              "id": 14096,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14095,
+                  "mutability": "mutable",
+                  "name": "balance",
+                  "nameLocation": "3248:7:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14097,
+                  "src": "3243:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14094,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3243:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3242:14:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14105,
+            "nodeType": "FunctionDefinition",
+            "src": "3332:68:30",
+            "functionSelector": "aefe8403",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "approveMangrove",
+            "nameLocation": "3341:15:30",
+            "parameters": {
+              "id": 14103,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14100,
+                  "mutability": "mutable",
+                  "name": "outbound_tkn",
+                  "nameLocation": "3364:12:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14105,
+                  "src": "3357:19:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14099,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14098,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "3357:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "3357:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14102,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nameLocation": "3383:6:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14105,
+                  "src": "3378:11:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14101,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3378:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3356:34:30"
+            },
+            "returnParameters": {
+              "id": 14104,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3399:0:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14112,
+            "nodeType": "FunctionDefinition",
+            "src": "3466:70:30",
+            "functionSelector": "7144df24",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawFromMangrove",
+            "nameLocation": "3475:20:30",
+            "parameters": {
+              "id": 14110,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14107,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nameLocation": "3501:6:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14112,
+                  "src": "3496:11:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14106,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3496:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14109,
+                  "mutability": "mutable",
+                  "name": "receiver",
+                  "nameLocation": "3517:8:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14112,
+                  "src": "3509:16:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 14108,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3509:7:30",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3495:31:30"
+            },
+            "returnParameters": {
+              "id": 14111,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3535:0:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14131,
+            "nodeType": "StructDefinition",
+            "src": "3540:662:30",
+            "canonicalName": "IOfferLogic.MakerOrder",
+            "members": [
+              {
+                "constant": false,
+                "id": 14115,
+                "mutability": "mutable",
+                "name": "outbound_tkn",
+                "nameLocation": "3571:12:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "3564:19:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_contract$_IERC20_$2050",
+                  "typeString": "contract IERC20"
+                },
+                "typeName": {
+                  "id": 14114,
+                  "nodeType": "UserDefinedTypeName",
+                  "pathNode": {
+                    "id": 14113,
+                    "name": "IERC20",
+                    "nodeType": "IdentifierPath",
+                    "referencedDeclaration": 2050,
+                    "src": "3564:6:30"
+                  },
+                  "referencedDeclaration": 2050,
+                  "src": "3564:6:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14118,
+                "mutability": "mutable",
+                "name": "inbound_tkn",
+                "nameLocation": "3654:11:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "3647:18:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_contract$_IERC20_$2050",
+                  "typeString": "contract IERC20"
+                },
+                "typeName": {
+                  "id": 14117,
+                  "nodeType": "UserDefinedTypeName",
+                  "pathNode": {
+                    "id": 14116,
+                    "name": "IERC20",
+                    "nodeType": "IdentifierPath",
+                    "referencedDeclaration": 2050,
+                    "src": "3647:6:30"
+                  },
+                  "referencedDeclaration": 2050,
+                  "src": "3647:6:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14120,
+                "mutability": "mutable",
+                "name": "wants",
+                "nameLocation": "3734:5:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "3729:10:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14119,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "3729:4:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14122,
+                "mutability": "mutable",
+                "name": "gives",
+                "nameLocation": "3804:5:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "3799:10:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14121,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "3799:4:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14124,
+                "mutability": "mutable",
+                "name": "gasreq",
+                "nameLocation": "3874:6:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "3869:11:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14123,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "3869:4:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14126,
+                "mutability": "mutable",
+                "name": "gasprice",
+                "nameLocation": "4013:8:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "4008:13:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14125,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "4008:4:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14128,
+                "mutability": "mutable",
+                "name": "pivotId",
+                "nameLocation": "4148:7:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "4143:12:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14127,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "4143:4:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14130,
+                "mutability": "mutable",
+                "name": "offerId",
+                "nameLocation": "4166:7:30",
+                "nodeType": "VariableDeclaration",
+                "scope": 14131,
+                "src": "4161:12:30",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14129,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "4161:4:30",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "MakerOrder",
+            "nameLocation": "3547:10:30",
+            "scope": 14161,
+            "visibility": "public"
+          },
+          {
+            "id": 14139,
+            "nodeType": "FunctionDefinition",
+            "src": "4206:93:30",
+            "functionSelector": "5486c95f",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "newOffer",
+            "nameLocation": "4215:8:30",
+            "parameters": {
+              "id": 14135,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14134,
+                  "mutability": "mutable",
+                  "name": "mko",
+                  "nameLocation": "4242:3:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14139,
+                  "src": "4224:21:30",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_MakerOrder_$14131_memory_ptr",
+                    "typeString": "struct IOfferLogic.MakerOrder"
+                  },
+                  "typeName": {
+                    "id": 14133,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14132,
+                      "name": "MakerOrder",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 14131,
+                      "src": "4224:10:30"
+                    },
+                    "referencedDeclaration": 14131,
+                    "src": "4224:10:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_MakerOrder_$14131_storage_ptr",
+                      "typeString": "struct IOfferLogic.MakerOrder"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4223:23:30"
+            },
+            "returnParameters": {
+              "id": 14138,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14137,
+                  "mutability": "mutable",
+                  "name": "offerId",
+                  "nameLocation": "4290:7:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14139,
+                  "src": "4285:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14136,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4285:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4284:14:30"
+            },
+            "scope": 14161,
+            "stateMutability": "payable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14145,
+            "nodeType": "FunctionDefinition",
+            "src": "4411:61:30",
+            "functionSelector": "10aded60",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "updateOffer",
+            "nameLocation": "4420:11:30",
+            "parameters": {
+              "id": 14143,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14142,
+                  "mutability": "mutable",
+                  "name": "mko",
+                  "nameLocation": "4450:3:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14145,
+                  "src": "4432:21:30",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_MakerOrder_$14131_memory_ptr",
+                    "typeString": "struct IOfferLogic.MakerOrder"
+                  },
+                  "typeName": {
+                    "id": 14141,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14140,
+                      "name": "MakerOrder",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 14131,
+                      "src": "4432:10:30"
+                    },
+                    "referencedDeclaration": 14131,
+                    "src": "4432:10:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_MakerOrder_$14131_storage_ptr",
+                      "typeString": "struct IOfferLogic.MakerOrder"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4431:23:30"
+            },
+            "returnParameters": {
+              "id": 14144,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "4471:0:30"
+            },
+            "scope": 14161,
+            "stateMutability": "payable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14160,
+            "nodeType": "FunctionDefinition",
+            "src": "4476:256:30",
+            "functionSelector": "ad97db1b",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "retractOffer",
+            "nameLocation": "4485:12:30",
+            "parameters": {
+              "id": 14156,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14148,
+                  "mutability": "mutable",
+                  "name": "outbound_tkn",
+                  "nameLocation": "4510:12:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14160,
+                  "src": "4503:19:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14147,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14146,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "4503:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "4503:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14151,
+                  "mutability": "mutable",
+                  "name": "inbound_tkn",
+                  "nameLocation": "4535:11:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14160,
+                  "src": "4528:18:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14150,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14149,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "4528:6:30"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "4528:6:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14153,
+                  "mutability": "mutable",
+                  "name": "offerId",
+                  "nameLocation": "4557:7:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14160,
+                  "src": "4552:12:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14152,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4552:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14155,
+                  "mutability": "mutable",
+                  "name": "deprovision",
+                  "nameLocation": "4575:11:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14160,
+                  "src": "4570:16:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 14154,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4570:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4497:201:30"
+            },
+            "returnParameters": {
+              "id": 14159,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14158,
+                  "mutability": "mutable",
+                  "name": "received",
+                  "nameLocation": "4722:8:30",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14160,
+                  "src": "4717:13:30",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14157,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4717:4:30",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4716:15:30"
+            },
+            "scope": 14161,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [
+          {
+            "baseName": {
+              "id": 14011,
+              "name": "IMaker",
+              "nodeType": "IdentifierPath",
+              "referencedDeclaration": 1932,
+              "src": "1573:6:30"
+            },
+            "id": 14012,
+            "nodeType": "InheritanceSpecifier",
+            "src": "1573:6:30"
+          }
+        ],
+        "canonicalName": "IOfferLogic",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [14161, 1932],
+        "name": "IOfferLogic",
+        "nameLocation": "1558:11:30",
+        "scope": 14162,
+        "usedErrors": []
+      }
+    ],
+    "license": "BSD-2-Clause"
+  },
+  "id": 30
+}

@@ -1,0 +1,320 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "name": "BASE_CURRENCY",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BASE_CURRENCY_UNIT",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "asset",
+          "type": "address"
+        }
+      ],
+      "name": "getAssetPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "BASE_CURRENCY()": "e19f4700",
+    "BASE_CURRENCY_UNIT()": "8c89b64f",
+    "getAssetPrice(address)": "b3596f07"
+  },
+  "ast": {
+    "absolutePath": "packages/mangrove-solidity/contracts/strategies/vendor/aave/v3/IPriceOracleGetter.sol",
+    "id": 22670,
+    "exportedSymbols": {
+      "IPriceOracleGetter": [22669]
+    },
+    "nodeType": "SourceUnit",
+    "src": "37:815:59",
+    "nodes": [
+      {
+        "id": 22647,
+        "nodeType": "PragmaDirective",
+        "src": "37:24:59",
+        "literals": ["solidity", "^", "0.8", ".10"]
+      },
+      {
+        "id": 22669,
+        "nodeType": "ContractDefinition",
+        "src": "165:686:59",
+        "nodes": [
+          {
+            "id": 22654,
+            "nodeType": "FunctionDefinition",
+            "src": "366:57:59",
+            "documentation": {
+              "id": 22649,
+              "nodeType": "StructuredDocumentation",
+              "src": "198:165:59",
+              "text": " @notice Returns the base currency address\n @dev Address 0x0 is reserved for USD as base currency.\n @return Returns the base currency address.*"
+            },
+            "functionSelector": "e19f4700",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "BASE_CURRENCY",
+            "nameLocation": "375:13:59",
+            "parameters": {
+              "id": 22650,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "388:2:59"
+            },
+            "returnParameters": {
+              "id": 22653,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 22652,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 22654,
+                  "src": "414:7:59",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 22651,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "414:7:59",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "413:9:59"
+            },
+            "scope": 22669,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 22660,
+            "nodeType": "FunctionDefinition",
+            "src": "569:59:59",
+            "documentation": {
+              "id": 22655,
+              "nodeType": "StructuredDocumentation",
+              "src": "427:139:59",
+              "text": " @notice Returns the base currency unit\n @dev 1 ether for ETH, 1e8 for USD.\n @return Returns the base currency unit.*"
+            },
+            "functionSelector": "8c89b64f",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "BASE_CURRENCY_UNIT",
+            "nameLocation": "578:18:59",
+            "parameters": {
+              "id": 22656,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "596:2:59"
+            },
+            "returnParameters": {
+              "id": 22659,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 22658,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 22660,
+                  "src": "622:4:59",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 22657,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "622:4:59",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "621:6:59"
+            },
+            "scope": 22669,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 22668,
+            "nodeType": "FunctionDefinition",
+            "src": "782:67:59",
+            "documentation": {
+              "id": 22661,
+              "nodeType": "StructuredDocumentation",
+              "src": "632:147:59",
+              "text": " @notice Returns the asset price in the base currency\n @param asset The address of the asset\n @return The price of the asset*"
+            },
+            "functionSelector": "b3596f07",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getAssetPrice",
+            "nameLocation": "791:13:59",
+            "parameters": {
+              "id": 22664,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 22663,
+                  "mutability": "mutable",
+                  "name": "asset",
+                  "nameLocation": "813:5:59",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 22668,
+                  "src": "805:13:59",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 22662,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "805:7:59",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "804:15:59"
+            },
+            "returnParameters": {
+              "id": 22667,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 22666,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 22668,
+                  "src": "843:4:59",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 22665,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "843:4:59",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "842:6:59"
+            },
+            "scope": 22669,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "IPriceOracleGetter",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "documentation": {
+          "id": 22648,
+          "nodeType": "StructuredDocumentation",
+          "src": "63:101:59",
+          "text": " @title IPriceOracleGetter\n @author Aave\n @notice Interface for the Aave price oracle.*"
+        },
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [22669],
+        "name": "IPriceOracleGetter",
+        "nameLocation": "175:18:59",
+        "scope": 22670,
+        "usedErrors": []
+      }
+    ],
+    "license": "AGPL-3.0"
+  },
+  "id": 59
+}

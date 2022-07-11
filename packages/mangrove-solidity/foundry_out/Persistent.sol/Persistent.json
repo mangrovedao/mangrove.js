@@ -1,0 +1,2611 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract IMangrove",
+          "name": "mangrove",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "reason",
+          "type": "bytes32"
+        }
+      ],
+      "name": "LogIncident",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "SetGasreq",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "SetRouter",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "MGV",
+      "outputs": [
+        {
+          "internalType": "contract IMangrove",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "admin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "approveMangrove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "approveRouter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasprice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getMissingProvision",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "has_router",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offer",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offerDetail",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "global",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "local",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MgvLib.SingleOrder",
+          "name": "order",
+          "type": "tuple"
+        }
+      ],
+      "name": "makerExecute",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "ret",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offer",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offerDetail",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "global",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "local",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MgvLib.SingleOrder",
+          "name": "order",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "makerData",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "mgvData",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct MgvLib.OrderResult",
+          "name": "result",
+          "type": "tuple"
+        }
+      ],
+      "name": "makerPosthook",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasreq",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasprice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pivotId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IOfferLogic.MakerOrder",
+          "name": "mko",
+          "type": "tuple"
+        }
+      ],
+      "name": "newOffer",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ofr_gasreq",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "reserve",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "deprovision",
+          "type": "bool"
+        }
+      ],
+      "name": "retractOffer",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "router",
+      "outputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_admin",
+          "type": "address"
+        }
+      ],
+      "name": "setAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        }
+      ],
+      "name": "set_gasreq",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_reserve",
+          "type": "address"
+        }
+      ],
+      "name": "set_reserve",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "router_",
+          "type": "address"
+        }
+      ],
+      "name": "set_router",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "tokenBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasreq",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasprice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pivotId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IOfferLogic.MakerOrder",
+          "name": "mko",
+          "type": "tuple"
+        }
+      ],
+      "name": "updateOffer",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "withdrawFromMangrove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawToken",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "MGV()": "99fa5e2d",
+    "admin()": "f851a440",
+    "approveMangrove(address,uint256)": "aefe8403",
+    "approveRouter(address)": "f259cd27",
+    "getMissingProvision(address,address,uint256,uint256,uint256)": "e4c34f84",
+    "has_router()": "84b627f9",
+    "makerExecute((address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256))": "6c49c32c",
+    "makerPosthook((address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,bytes32))": "3d3d130d",
+    "newOffer((address,address,uint256,uint256,uint256,uint256,uint256,uint256))": "5486c95f",
+    "ofr_gasreq()": "d1baa1ef",
+    "reserve()": "cd3293de",
+    "retractOffer(address,address,uint256,bool)": "ad97db1b",
+    "router()": "f887ea40",
+    "setAdmin(address)": "704b6c02",
+    "set_gasreq(uint256)": "fc488a38",
+    "set_reserve(address)": "3d77fcde",
+    "set_router(address)": "db11851e",
+    "tokenBalance(address)": "eedc966a",
+    "updateOffer((address,address,uint256,uint256,uint256,uint256,uint256,uint256))": "10aded60",
+    "withdrawFromMangrove(uint256,address)": "7144df24",
+    "withdrawToken(address,address,uint256)": "01e33667"
+  },
+  "ast": {
+    "absolutePath": "packages/mangrove-solidity/contracts/strategies/single_user/abstract/Persistent.sol",
+    "id": 16628,
+    "exportedSymbols": {
+      "ACS": [20268],
+      "AbstractRouter": [16287],
+      "AccessControlled": [20247],
+      "IERC20": [2050],
+      "IMaker": [1932],
+      "IMangrove": [645],
+      "IOfferLogic": [14161],
+      "ML": [1739],
+      "MOS": [11261],
+      "MangroveOffer": [11235],
+      "P": [1710],
+      "Persistent": [16627],
+      "SUS": [17215],
+      "SingleUser": [17193],
+      "TransferLib": [20400]
+    },
+    "nodeType": "SourceUnit",
+    "src": "1361:2736:41",
+    "nodes": [
+      {
+        "id": 16475,
+        "nodeType": "PragmaDirective",
+        "src": "1361:24:41",
+        "literals": ["solidity", "^", "0.8", ".10"]
+      },
+      {
+        "id": 16476,
+        "nodeType": "PragmaDirective",
+        "src": "1386:19:41",
+        "literals": ["abicoder", "v2"]
+      },
+      {
+        "id": 16477,
+        "nodeType": "ImportDirective",
+        "src": "1406:26:41",
+        "absolutePath": "packages/mangrove-solidity/contracts/strategies/single_user/abstract/SingleUser.sol",
+        "file": "./SingleUser.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 16628,
+        "sourceUnit": 17194,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 16627,
+        "nodeType": "ContractDefinition",
+        "src": "1554:2542:41",
+        "nodes": [
+          {
+            "id": 16497,
+            "nodeType": "FunctionDefinition",
+            "src": "1601:129:41",
+            "body": {
+              "id": 16496,
+              "nodeType": "Block",
+              "src": "1728:2:41",
+              "statements": []
+            },
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [
+              {
+                "arguments": [
+                  {
+                    "id": 16491,
+                    "name": "_mgv",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 16483,
+                    "src": "1699:4:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IMangrove_$645",
+                      "typeString": "contract IMangrove"
+                    }
+                  },
+                  {
+                    "id": 16492,
+                    "name": "strat_gasreq",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 16485,
+                    "src": "1705:12:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  {
+                    "id": 16493,
+                    "name": "_router",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 16488,
+                    "src": "1719:7:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_AbstractRouter_$16287",
+                      "typeString": "contract AbstractRouter"
+                    }
+                  }
+                ],
+                "id": 16494,
+                "kind": "baseConstructorSpecifier",
+                "modifierName": {
+                  "id": 16490,
+                  "name": "SingleUser",
+                  "nodeType": "IdentifierPath",
+                  "referencedDeclaration": 17193,
+                  "src": "1688:10:41"
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "1688:39:41"
+              }
+            ],
+            "name": "",
+            "nameLocation": "-1:-1:-1",
+            "parameters": {
+              "id": 16489,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 16483,
+                  "mutability": "mutable",
+                  "name": "_mgv",
+                  "nameLocation": "1628:4:41",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16497,
+                  "src": "1618:14:41",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IMangrove_$645",
+                    "typeString": "contract IMangrove"
+                  },
+                  "typeName": {
+                    "id": 16482,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 16481,
+                      "name": "IMangrove",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 645,
+                      "src": "1618:9:41"
+                    },
+                    "referencedDeclaration": 645,
+                    "src": "1618:9:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IMangrove_$645",
+                      "typeString": "contract IMangrove"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 16485,
+                  "mutability": "mutable",
+                  "name": "strat_gasreq",
+                  "nameLocation": "1643:12:41",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16497,
+                  "src": "1638:17:41",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 16484,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1638:4:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 16488,
+                  "mutability": "mutable",
+                  "name": "_router",
+                  "nameLocation": "1676:7:41",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16497,
+                  "src": "1661:22:41",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_AbstractRouter_$16287",
+                    "typeString": "contract AbstractRouter"
+                  },
+                  "typeName": {
+                    "id": 16487,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 16486,
+                      "name": "AbstractRouter",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 16287,
+                      "src": "1661:14:41"
+                    },
+                    "referencedDeclaration": 16287,
+                    "src": "1661:14:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_AbstractRouter_$16287",
+                      "typeString": "contract AbstractRouter"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1612:75:41"
+            },
+            "returnParameters": {
+              "id": 16495,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1728:0:41"
+            },
+            "scope": 16627,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "internal"
+          },
+          {
+            "id": 16515,
+            "nodeType": "FunctionDefinition",
+            "src": "1964:155:41",
+            "body": {
+              "id": 16514,
+              "nodeType": "Block",
+              "src": "2068:51:41",
+              "statements": [
+                {
+                  "expression": {
+                    "commonType": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    },
+                    "id": 16512,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftExpression": {
+                      "arguments": [],
+                      "expression": {
+                        "argumentTypes": [],
+                        "expression": {
+                          "expression": {
+                            "id": 16506,
+                            "name": "order",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 16501,
+                            "src": "2081:5:41",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                              "typeString": "struct MgvLib.SingleOrder calldata"
+                            }
+                          },
+                          "id": 16507,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "offer",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": 1719,
+                          "src": "2081:11:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_userDefinedValueType$_t_$9363",
+                            "typeString": "t"
+                          }
+                        },
+                        "id": 16508,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "wants",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 9726,
+                        "src": "2081:17:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$9363_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$9363_$",
+                          "typeString": "function (t) pure returns (uint256)"
+                        }
+                      },
+                      "id": 16509,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "2081:19:41",
+                      "tryCall": false,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "BinaryOperation",
+                    "operator": "-",
+                    "rightExpression": {
+                      "expression": {
+                        "id": 16510,
+                        "name": "order",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 16501,
+                        "src": "2103:5:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      },
+                      "id": 16511,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "gives",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 1723,
+                      "src": "2103:11:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "2081:33:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 16505,
+                  "id": 16513,
+                  "nodeType": "Return",
+                  "src": "2074:40:41"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 16498,
+              "nodeType": "StructuredDocumentation",
+              "src": "1734:39:41",
+              "text": "Persistent class specific hooks. "
+            },
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "__residualWants__",
+            "nameLocation": "1973:17:41",
+            "parameters": {
+              "id": 16502,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 16501,
+                  "mutability": "mutable",
+                  "name": "order",
+                  "nameLocation": "2015:5:41",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16515,
+                  "src": "1991:29:41",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                    "typeString": "struct MgvLib.SingleOrder"
+                  },
+                  "typeName": {
+                    "id": 16500,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 16499,
+                      "name": "ML.SingleOrder",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 1733,
+                      "src": "1991:14:41"
+                    },
+                    "referencedDeclaration": 1733,
+                    "src": "1991:14:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_SingleOrder_$1733_storage_ptr",
+                      "typeString": "struct MgvLib.SingleOrder"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1990:31:41"
+            },
+            "returnParameters": {
+              "id": 16505,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 16504,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16515,
+                  "src": "2060:4:41",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 16503,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2060:4:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2059:6:41"
+            },
+            "scope": 16627,
+            "stateMutability": "nonpayable",
+            "virtual": true,
+            "visibility": "internal"
+          },
+          {
+            "id": 16532,
+            "nodeType": "FunctionDefinition",
+            "src": "2471:155:41",
+            "body": {
+              "id": 16531,
+              "nodeType": "Block",
+              "src": "2575:51:41",
+              "statements": [
+                {
+                  "expression": {
+                    "commonType": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    },
+                    "id": 16529,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftExpression": {
+                      "arguments": [],
+                      "expression": {
+                        "argumentTypes": [],
+                        "expression": {
+                          "expression": {
+                            "id": 16523,
+                            "name": "order",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 16518,
+                            "src": "2588:5:41",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                              "typeString": "struct MgvLib.SingleOrder calldata"
+                            }
+                          },
+                          "id": 16524,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "offer",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": 1719,
+                          "src": "2588:11:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_userDefinedValueType$_t_$9363",
+                            "typeString": "t"
+                          }
+                        },
+                        "id": 16525,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "gives",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 9784,
+                        "src": "2588:17:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$9363_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$9363_$",
+                          "typeString": "function (t) pure returns (uint256)"
+                        }
+                      },
+                      "id": 16526,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "2588:19:41",
+                      "tryCall": false,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "BinaryOperation",
+                    "operator": "-",
+                    "rightExpression": {
+                      "expression": {
+                        "id": 16527,
+                        "name": "order",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 16518,
+                        "src": "2610:5:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      },
+                      "id": 16528,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "wants",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 1721,
+                      "src": "2610:11:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "2588:33:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 16522,
+                  "id": 16530,
+                  "nodeType": "Return",
+                  "src": "2581:40:41"
+                }
+              ]
+            },
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "__residualGives__",
+            "nameLocation": "2480:17:41",
+            "parameters": {
+              "id": 16519,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 16518,
+                  "mutability": "mutable",
+                  "name": "order",
+                  "nameLocation": "2522:5:41",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16532,
+                  "src": "2498:29:41",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                    "typeString": "struct MgvLib.SingleOrder"
+                  },
+                  "typeName": {
+                    "id": 16517,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 16516,
+                      "name": "ML.SingleOrder",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 1733,
+                      "src": "2498:14:41"
+                    },
+                    "referencedDeclaration": 1733,
+                    "src": "2498:14:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_SingleOrder_$1733_storage_ptr",
+                      "typeString": "struct MgvLib.SingleOrder"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2497:31:41"
+            },
+            "returnParameters": {
+              "id": 16522,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 16521,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16532,
+                  "src": "2567:4:41",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 16520,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2567:4:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2566:6:41"
+            },
+            "scope": 16627,
+            "stateMutability": "nonpayable",
+            "virtual": true,
+            "visibility": "internal"
+          },
+          {
+            "id": 16626,
+            "nodeType": "FunctionDefinition",
+            "src": "2708:1386:41",
+            "body": {
+              "id": 16625,
+              "nodeType": "Block",
+              "src": "2827:1267:41",
+              "statements": [
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "id": 16544,
+                        "name": "order",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 16535,
+                        "src": "2924:5:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      ],
+                      "expression": {
+                        "id": 16541,
+                        "name": "super",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": -25,
+                        "src": "2898:5:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_type$_t_super$_Persistent_$16627_$",
+                          "typeString": "type(contract super Persistent)"
+                        }
+                      },
+                      "id": 16543,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "__posthookSuccess__",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 17192,
+                      "src": "2898:25:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_SingleOrder_$1733_calldata_ptr_$returns$_t_bool_$",
+                        "typeString": "function (struct MgvLib.SingleOrder calldata) returns (bool)"
+                      }
+                    },
+                    "id": 16545,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "2898:32:41",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 16546,
+                  "nodeType": "ExpressionStatement",
+                  "src": "2898:32:41"
+                },
+                {
+                  "assignments": [16548],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 16548,
+                      "mutability": "mutable",
+                      "name": "new_gives",
+                      "nameLocation": "2979:9:41",
+                      "nodeType": "VariableDeclaration",
+                      "scope": 16625,
+                      "src": "2974:14:41",
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      },
+                      "typeName": {
+                        "id": 16547,
+                        "name": "uint",
+                        "nodeType": "ElementaryTypeName",
+                        "src": "2974:4:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 16552,
+                  "initialValue": {
+                    "arguments": [
+                      {
+                        "id": 16550,
+                        "name": "order",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 16535,
+                        "src": "3009:5:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      ],
+                      "id": 16549,
+                      "name": "__residualGives__",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 16532,
+                      "src": "2991:17:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_SingleOrder_$1733_calldata_ptr_$returns$_t_uint256_$",
+                        "typeString": "function (struct MgvLib.SingleOrder calldata) returns (uint256)"
+                      }
+                    },
+                    "id": 16551,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "2991:24:41",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "2974:41:41"
+                },
+                {
+                  "condition": {
+                    "commonType": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    },
+                    "id": 16555,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftExpression": {
+                      "id": 16553,
+                      "name": "new_gives",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 16548,
+                      "src": "3236:9:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "BinaryOperation",
+                    "operator": "==",
+                    "rightExpression": {
+                      "hexValue": "30",
+                      "id": 16554,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": true,
+                      "kind": "number",
+                      "lValueRequested": false,
+                      "nodeType": "Literal",
+                      "src": "3249:1:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_rational_0_by_1",
+                        "typeString": "int_const 0"
+                      },
+                      "value": "0"
+                    },
+                    "src": "3236:14:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "id": 16559,
+                  "nodeType": "IfStatement",
+                  "src": "3232:46:41",
+                  "trueBody": {
+                    "id": 16558,
+                    "nodeType": "Block",
+                    "src": "3252:26:41",
+                    "statements": [
+                      {
+                        "expression": {
+                          "hexValue": "74727565",
+                          "id": 16556,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": true,
+                          "kind": "bool",
+                          "lValueRequested": false,
+                          "nodeType": "Literal",
+                          "src": "3267:4:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bool",
+                            "typeString": "bool"
+                          },
+                          "value": "true"
+                        },
+                        "functionReturnParameters": 16540,
+                        "id": 16557,
+                        "nodeType": "Return",
+                        "src": "3260:11:41"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "assignments": [16561],
+                  "declarations": [
+                    {
+                      "constant": false,
+                      "id": 16561,
+                      "mutability": "mutable",
+                      "name": "new_wants",
+                      "nameLocation": "3288:9:41",
+                      "nodeType": "VariableDeclaration",
+                      "scope": 16625,
+                      "src": "3283:14:41",
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      },
+                      "typeName": {
+                        "id": 16560,
+                        "name": "uint",
+                        "nodeType": "ElementaryTypeName",
+                        "src": "3283:4:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      "visibility": "internal"
+                    }
+                  ],
+                  "id": 16565,
+                  "initialValue": {
+                    "arguments": [
+                      {
+                        "id": 16563,
+                        "name": "order",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 16535,
+                        "src": "3318:5:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                          "typeString": "struct MgvLib.SingleOrder calldata"
+                        }
+                      ],
+                      "id": 16562,
+                      "name": "__residualWants__",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 16515,
+                      "src": "3300:17:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_SingleOrder_$1733_calldata_ptr_$returns$_t_uint256_$",
+                        "typeString": "function (struct MgvLib.SingleOrder calldata) returns (uint256)"
+                      }
+                    },
+                    "id": 16564,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "3300:24:41",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "nodeType": "VariableDeclarationStatement",
+                  "src": "3283:41:41"
+                },
+                {
+                  "clauses": [
+                    {
+                      "block": {
+                        "id": 16591,
+                        "nodeType": "Block",
+                        "src": "3586:26:41",
+                        "statements": [
+                          {
+                            "expression": {
+                              "hexValue": "74727565",
+                              "id": 16589,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "kind": "bool",
+                              "lValueRequested": false,
+                              "nodeType": "Literal",
+                              "src": "3601:4:41",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bool",
+                                "typeString": "bool"
+                              },
+                              "value": "true"
+                            },
+                            "functionReturnParameters": 16540,
+                            "id": 16590,
+                            "nodeType": "Return",
+                            "src": "3594:11:41"
+                          }
+                        ]
+                      },
+                      "errorName": "",
+                      "id": 16592,
+                      "nodeType": "TryCatchClause",
+                      "src": "3586:26:41"
+                    },
+                    {
+                      "block": {
+                        "id": 16622,
+                        "nodeType": "Block",
+                        "src": "3641:449:41",
+                        "statements": [
+                          {
+                            "condition": {
+                              "commonType": {
+                                "typeIdentifier": "t_bytes32",
+                                "typeString": "bytes32"
+                              },
+                              "id": 16602,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "leftExpression": {
+                                "arguments": [
+                                  {
+                                    "id": 16597,
+                                    "name": "reason",
+                                    "nodeType": "Identifier",
+                                    "overloadedDeclarations": [],
+                                    "referencedDeclaration": 16594,
+                                    "src": "3809:6:41",
+                                    "typeDescriptions": {
+                                      "typeIdentifier": "t_bytes_memory_ptr",
+                                      "typeString": "bytes memory"
+                                    }
+                                  }
+                                ],
+                                "expression": {
+                                  "argumentTypes": [
+                                    {
+                                      "typeIdentifier": "t_bytes_memory_ptr",
+                                      "typeString": "bytes memory"
+                                    }
+                                  ],
+                                  "id": 16596,
+                                  "name": "keccak256",
+                                  "nodeType": "Identifier",
+                                  "overloadedDeclarations": [],
+                                  "referencedDeclaration": -8,
+                                  "src": "3799:9:41",
+                                  "typeDescriptions": {
+                                    "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
+                                    "typeString": "function (bytes memory) pure returns (bytes32)"
+                                  }
+                                },
+                                "id": 16598,
+                                "isConstant": false,
+                                "isLValue": false,
+                                "isPure": false,
+                                "kind": "functionCall",
+                                "lValueRequested": false,
+                                "names": [],
+                                "nodeType": "FunctionCall",
+                                "src": "3799:17:41",
+                                "tryCall": false,
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_bytes32",
+                                  "typeString": "bytes32"
+                                }
+                              },
+                              "nodeType": "BinaryOperation",
+                              "operator": "==",
+                              "rightExpression": {
+                                "arguments": [
+                                  {
+                                    "hexValue": "6d67762f696e73756666696369656e7450726f766973696f6e",
+                                    "id": 16600,
+                                    "isConstant": false,
+                                    "isLValue": false,
+                                    "isPure": true,
+                                    "kind": "string",
+                                    "lValueRequested": false,
+                                    "nodeType": "Literal",
+                                    "src": "3830:27:41",
+                                    "typeDescriptions": {
+                                      "typeIdentifier": "t_stringliteral_3a0373dba6f7852b0f16a81b9a20b7a79b5c4e5c863d9ac00183aab67e121990",
+                                      "typeString": "literal_string \"mgv/insufficientProvision\""
+                                    },
+                                    "value": "mgv/insufficientProvision"
+                                  }
+                                ],
+                                "expression": {
+                                  "argumentTypes": [
+                                    {
+                                      "typeIdentifier": "t_stringliteral_3a0373dba6f7852b0f16a81b9a20b7a79b5c4e5c863d9ac00183aab67e121990",
+                                      "typeString": "literal_string \"mgv/insufficientProvision\""
+                                    }
+                                  ],
+                                  "id": 16599,
+                                  "name": "keccak256",
+                                  "nodeType": "Identifier",
+                                  "overloadedDeclarations": [],
+                                  "referencedDeclaration": -8,
+                                  "src": "3820:9:41",
+                                  "typeDescriptions": {
+                                    "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
+                                    "typeString": "function (bytes memory) pure returns (bytes32)"
+                                  }
+                                },
+                                "id": 16601,
+                                "isConstant": false,
+                                "isLValue": false,
+                                "isPure": true,
+                                "kind": "functionCall",
+                                "lValueRequested": false,
+                                "names": [],
+                                "nodeType": "FunctionCall",
+                                "src": "3820:38:41",
+                                "tryCall": false,
+                                "typeDescriptions": {
+                                  "typeIdentifier": "t_bytes32",
+                                  "typeString": "bytes32"
+                                }
+                              },
+                              "src": "3799:59:41",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bool",
+                                "typeString": "bool"
+                              }
+                            },
+                            "id": 16619,
+                            "nodeType": "IfStatement",
+                            "src": "3795:269:41",
+                            "trueBody": {
+                              "id": 16618,
+                              "nodeType": "Block",
+                              "src": "3860:204:41",
+                              "statements": [
+                                {
+                                  "eventCall": {
+                                    "arguments": [
+                                      {
+                                        "id": 16604,
+                                        "name": "MGV",
+                                        "nodeType": "Identifier",
+                                        "overloadedDeclarations": [],
+                                        "referencedDeclaration": 10574,
+                                        "src": "3898:3:41",
+                                        "typeDescriptions": {
+                                          "typeIdentifier": "t_contract$_IMangrove_$645",
+                                          "typeString": "contract IMangrove"
+                                        }
+                                      },
+                                      {
+                                        "arguments": [
+                                          {
+                                            "expression": {
+                                              "id": 16606,
+                                              "name": "order",
+                                              "nodeType": "Identifier",
+                                              "overloadedDeclarations": [],
+                                              "referencedDeclaration": 16535,
+                                              "src": "3920:5:41",
+                                              "typeDescriptions": {
+                                                "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                                                "typeString": "struct MgvLib.SingleOrder calldata"
+                                              }
+                                            },
+                                            "id": 16607,
+                                            "isConstant": false,
+                                            "isLValue": false,
+                                            "isPure": false,
+                                            "lValueRequested": false,
+                                            "memberName": "outbound_tkn",
+                                            "nodeType": "MemberAccess",
+                                            "referencedDeclaration": 1712,
+                                            "src": "3920:18:41",
+                                            "typeDescriptions": {
+                                              "typeIdentifier": "t_address",
+                                              "typeString": "address"
+                                            }
+                                          }
+                                        ],
+                                        "expression": {
+                                          "argumentTypes": [
+                                            {
+                                              "typeIdentifier": "t_address",
+                                              "typeString": "address"
+                                            }
+                                          ],
+                                          "id": 16605,
+                                          "name": "IERC20",
+                                          "nodeType": "Identifier",
+                                          "overloadedDeclarations": [],
+                                          "referencedDeclaration": 2050,
+                                          "src": "3913:6:41",
+                                          "typeDescriptions": {
+                                            "typeIdentifier": "t_type$_t_contract$_IERC20_$2050_$",
+                                            "typeString": "type(contract IERC20)"
+                                          }
+                                        },
+                                        "id": 16608,
+                                        "isConstant": false,
+                                        "isLValue": false,
+                                        "isPure": false,
+                                        "kind": "typeConversion",
+                                        "lValueRequested": false,
+                                        "names": [],
+                                        "nodeType": "FunctionCall",
+                                        "src": "3913:26:41",
+                                        "tryCall": false,
+                                        "typeDescriptions": {
+                                          "typeIdentifier": "t_contract$_IERC20_$2050",
+                                          "typeString": "contract IERC20"
+                                        }
+                                      },
+                                      {
+                                        "arguments": [
+                                          {
+                                            "expression": {
+                                              "id": 16610,
+                                              "name": "order",
+                                              "nodeType": "Identifier",
+                                              "overloadedDeclarations": [],
+                                              "referencedDeclaration": 16535,
+                                              "src": "3958:5:41",
+                                              "typeDescriptions": {
+                                                "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                                                "typeString": "struct MgvLib.SingleOrder calldata"
+                                              }
+                                            },
+                                            "id": 16611,
+                                            "isConstant": false,
+                                            "isLValue": false,
+                                            "isPure": false,
+                                            "lValueRequested": false,
+                                            "memberName": "inbound_tkn",
+                                            "nodeType": "MemberAccess",
+                                            "referencedDeclaration": 1714,
+                                            "src": "3958:17:41",
+                                            "typeDescriptions": {
+                                              "typeIdentifier": "t_address",
+                                              "typeString": "address"
+                                            }
+                                          }
+                                        ],
+                                        "expression": {
+                                          "argumentTypes": [
+                                            {
+                                              "typeIdentifier": "t_address",
+                                              "typeString": "address"
+                                            }
+                                          ],
+                                          "id": 16609,
+                                          "name": "IERC20",
+                                          "nodeType": "Identifier",
+                                          "overloadedDeclarations": [],
+                                          "referencedDeclaration": 2050,
+                                          "src": "3951:6:41",
+                                          "typeDescriptions": {
+                                            "typeIdentifier": "t_type$_t_contract$_IERC20_$2050_$",
+                                            "typeString": "type(contract IERC20)"
+                                          }
+                                        },
+                                        "id": 16612,
+                                        "isConstant": false,
+                                        "isLValue": false,
+                                        "isPure": false,
+                                        "kind": "typeConversion",
+                                        "lValueRequested": false,
+                                        "names": [],
+                                        "nodeType": "FunctionCall",
+                                        "src": "3951:25:41",
+                                        "tryCall": false,
+                                        "typeDescriptions": {
+                                          "typeIdentifier": "t_contract$_IERC20_$2050",
+                                          "typeString": "contract IERC20"
+                                        }
+                                      },
+                                      {
+                                        "expression": {
+                                          "id": 16613,
+                                          "name": "order",
+                                          "nodeType": "Identifier",
+                                          "overloadedDeclarations": [],
+                                          "referencedDeclaration": 16535,
+                                          "src": "3988:5:41",
+                                          "typeDescriptions": {
+                                            "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                                            "typeString": "struct MgvLib.SingleOrder calldata"
+                                          }
+                                        },
+                                        "id": 16614,
+                                        "isConstant": false,
+                                        "isLValue": false,
+                                        "isPure": false,
+                                        "lValueRequested": false,
+                                        "memberName": "offerId",
+                                        "nodeType": "MemberAccess",
+                                        "referencedDeclaration": 1716,
+                                        "src": "3988:13:41",
+                                        "typeDescriptions": {
+                                          "typeIdentifier": "t_uint256",
+                                          "typeString": "uint256"
+                                        }
+                                      },
+                                      {
+                                        "hexValue": "50657273697374656e742f686f6f6b2f6f75744f6650726f766973696f6e",
+                                        "id": 16615,
+                                        "isConstant": false,
+                                        "isLValue": false,
+                                        "isPure": true,
+                                        "kind": "string",
+                                        "lValueRequested": false,
+                                        "nodeType": "Literal",
+                                        "src": "4013:32:41",
+                                        "typeDescriptions": {
+                                          "typeIdentifier": "t_stringliteral_bf41593be1741924affcca25e7f3041cb98bff7df12fcf2ada28c4ef2ce560c5",
+                                          "typeString": "literal_string \"Persistent/hook/outOfProvision\""
+                                        },
+                                        "value": "Persistent/hook/outOfProvision"
+                                      }
+                                    ],
+                                    "expression": {
+                                      "argumentTypes": [
+                                        {
+                                          "typeIdentifier": "t_contract$_IMangrove_$645",
+                                          "typeString": "contract IMangrove"
+                                        },
+                                        {
+                                          "typeIdentifier": "t_contract$_IERC20_$2050",
+                                          "typeString": "contract IERC20"
+                                        },
+                                        {
+                                          "typeIdentifier": "t_contract$_IERC20_$2050",
+                                          "typeString": "contract IERC20"
+                                        },
+                                        {
+                                          "typeIdentifier": "t_uint256",
+                                          "typeString": "uint256"
+                                        },
+                                        {
+                                          "typeIdentifier": "t_stringliteral_bf41593be1741924affcca25e7f3041cb98bff7df12fcf2ada28c4ef2ce560c5",
+                                          "typeString": "literal_string \"Persistent/hook/outOfProvision\""
+                                        }
+                                      ],
+                                      "id": 16603,
+                                      "name": "LogIncident",
+                                      "nodeType": "Identifier",
+                                      "overloadedDeclarations": [],
+                                      "referencedDeclaration": 14028,
+                                      "src": "3875:11:41",
+                                      "typeDescriptions": {
+                                        "typeIdentifier": "t_function_event_nonpayable$_t_contract$_IMangrove_$645_$_t_contract$_IERC20_$2050_$_t_contract$_IERC20_$2050_$_t_uint256_$_t_bytes32_$returns$__$",
+                                        "typeString": "function (contract IMangrove,contract IERC20,contract IERC20,uint256,bytes32)"
+                                      }
+                                    },
+                                    "id": 16616,
+                                    "isConstant": false,
+                                    "isLValue": false,
+                                    "isPure": false,
+                                    "kind": "functionCall",
+                                    "lValueRequested": false,
+                                    "names": [],
+                                    "nodeType": "FunctionCall",
+                                    "src": "3875:180:41",
+                                    "tryCall": false,
+                                    "typeDescriptions": {
+                                      "typeIdentifier": "t_tuple$__$",
+                                      "typeString": "tuple()"
+                                    }
+                                  },
+                                  "id": 16617,
+                                  "nodeType": "EmitStatement",
+                                  "src": "3870:185:41"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "expression": {
+                              "hexValue": "66616c7365",
+                              "id": 16620,
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "kind": "bool",
+                              "lValueRequested": false,
+                              "nodeType": "Literal",
+                              "src": "4078:5:41",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bool",
+                                "typeString": "bool"
+                              },
+                              "value": "false"
+                            },
+                            "functionReturnParameters": 16540,
+                            "id": 16621,
+                            "nodeType": "Return",
+                            "src": "4071:12:41"
+                          }
+                        ]
+                      },
+                      "errorName": "",
+                      "id": 16623,
+                      "nodeType": "TryCatchClause",
+                      "parameters": {
+                        "id": 16595,
+                        "nodeType": "ParameterList",
+                        "parameters": [
+                          {
+                            "constant": false,
+                            "id": 16594,
+                            "mutability": "mutable",
+                            "name": "reason",
+                            "nameLocation": "3633:6:41",
+                            "nodeType": "VariableDeclaration",
+                            "scope": 16623,
+                            "src": "3620:19:41",
+                            "stateVariable": false,
+                            "storageLocation": "memory",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_bytes_memory_ptr",
+                              "typeString": "bytes"
+                            },
+                            "typeName": {
+                              "id": 16593,
+                              "name": "bytes",
+                              "nodeType": "ElementaryTypeName",
+                              "src": "3620:5:41",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_bytes_storage_ptr",
+                                "typeString": "bytes"
+                              }
+                            },
+                            "visibility": "internal"
+                          }
+                        ],
+                        "src": "3619:21:41"
+                      },
+                      "src": "3613:477:41"
+                    }
+                  ],
+                  "externalCall": {
+                    "arguments": [
+                      {
+                        "expression": {
+                          "id": 16568,
+                          "name": "order",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 16535,
+                          "src": "3365:5:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                            "typeString": "struct MgvLib.SingleOrder calldata"
+                          }
+                        },
+                        "id": 16569,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "outbound_tkn",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 1712,
+                        "src": "3365:18:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "expression": {
+                          "id": 16570,
+                          "name": "order",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 16535,
+                          "src": "3393:5:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                            "typeString": "struct MgvLib.SingleOrder calldata"
+                          }
+                        },
+                        "id": 16571,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "inbound_tkn",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 1714,
+                        "src": "3393:17:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "id": 16572,
+                        "name": "new_wants",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 16561,
+                        "src": "3420:9:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "id": 16573,
+                        "name": "new_gives",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 16548,
+                        "src": "3439:9:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "arguments": [],
+                        "expression": {
+                          "argumentTypes": [],
+                          "expression": {
+                            "expression": {
+                              "id": 16574,
+                              "name": "order",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 16535,
+                              "src": "3458:5:41",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                                "typeString": "struct MgvLib.SingleOrder calldata"
+                              }
+                            },
+                            "id": 16575,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "offerDetail",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": 1726,
+                            "src": "3458:17:41",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_userDefinedValueType$_t_$9916",
+                              "typeString": "t"
+                            }
+                          },
+                          "id": 16576,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "gasreq",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": 10245,
+                          "src": "3458:24:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$9916_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$9916_$",
+                            "typeString": "function (t) pure returns (uint256)"
+                          }
+                        },
+                        "id": 16577,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "functionCall",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "3458:26:41",
+                        "tryCall": false,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "arguments": [],
+                        "expression": {
+                          "argumentTypes": [],
+                          "expression": {
+                            "expression": {
+                              "id": 16578,
+                              "name": "order",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 16535,
+                              "src": "3494:5:41",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                                "typeString": "struct MgvLib.SingleOrder calldata"
+                              }
+                            },
+                            "id": 16579,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "offerDetail",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": 1726,
+                            "src": "3494:17:41",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_userDefinedValueType$_t_$9916",
+                              "typeString": "t"
+                            }
+                          },
+                          "id": 16580,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "gasprice",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": 10361,
+                          "src": "3494:26:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$9916_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$9916_$",
+                            "typeString": "function (t) pure returns (uint256)"
+                          }
+                        },
+                        "id": 16581,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "functionCall",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "3494:28:41",
+                        "tryCall": false,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "arguments": [],
+                        "expression": {
+                          "argumentTypes": [],
+                          "expression": {
+                            "expression": {
+                              "id": 16582,
+                              "name": "order",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": 16535,
+                              "src": "3532:5:41",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                                "typeString": "struct MgvLib.SingleOrder calldata"
+                              }
+                            },
+                            "id": 16583,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "offer",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": 1719,
+                            "src": "3532:11:41",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_userDefinedValueType$_t_$9363",
+                              "typeString": "t"
+                            }
+                          },
+                          "id": 16584,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "next",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": 9668,
+                          "src": "3532:16:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$9363_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$9363_$",
+                            "typeString": "function (t) pure returns (uint256)"
+                          }
+                        },
+                        "id": 16585,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "functionCall",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "3532:18:41",
+                        "tryCall": false,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "expression": {
+                          "id": 16586,
+                          "name": "order",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 16535,
+                          "src": "3560:5:41",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                            "typeString": "struct MgvLib.SingleOrder calldata"
+                          }
+                        },
+                        "id": 16587,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "offerId",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 1716,
+                        "src": "3560:13:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      ],
+                      "expression": {
+                        "id": 16566,
+                        "name": "MGV",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 10574,
+                        "src": "3340:3:41",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_IMangrove_$645",
+                          "typeString": "contract IMangrove"
+                        }
+                      },
+                      "id": 16567,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "updateOffer",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 629,
+                      "src": "3340:15:41",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_external_payable$_t_address_$_t_address_$_t_uint256_$_t_uint256_$_t_uint256_$_t_uint256_$_t_uint256_$_t_uint256_$returns$__$",
+                        "typeString": "function (address,address,uint256,uint256,uint256,uint256,uint256,uint256) payable external"
+                      }
+                    },
+                    "id": 16588,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "3340:241:41",
+                    "tryCall": true,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 16624,
+                  "nodeType": "TryStatement",
+                  "src": "3330:760:41"
+                }
+              ]
+            },
+            "baseFunctions": [17192],
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "__posthookSuccess__",
+            "nameLocation": "2717:19:41",
+            "overrides": {
+              "id": 16537,
+              "nodeType": "OverrideSpecifier",
+              "overrides": [],
+              "src": "2797:8:41"
+            },
+            "parameters": {
+              "id": 16536,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 16535,
+                  "mutability": "mutable",
+                  "name": "order",
+                  "nameLocation": "2761:5:41",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16626,
+                  "src": "2737:29:41",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_SingleOrder_$1733_calldata_ptr",
+                    "typeString": "struct MgvLib.SingleOrder"
+                  },
+                  "typeName": {
+                    "id": 16534,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 16533,
+                      "name": "ML.SingleOrder",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 1733,
+                      "src": "2737:14:41"
+                    },
+                    "referencedDeclaration": 1733,
+                    "src": "2737:14:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_SingleOrder_$1733_storage_ptr",
+                      "typeString": "struct MgvLib.SingleOrder"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2736:31:41"
+            },
+            "returnParameters": {
+              "id": 16540,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 16539,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 16626,
+                  "src": "2819:4:41",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 16538,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2819:4:41",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2818:6:41"
+            },
+            "scope": 16627,
+            "stateMutability": "nonpayable",
+            "virtual": true,
+            "visibility": "internal"
+          }
+        ],
+        "abstract": true,
+        "baseContracts": [
+          {
+            "baseName": {
+              "id": 16479,
+              "name": "SingleUser",
+              "nodeType": "IdentifierPath",
+              "referencedDeclaration": 17193,
+              "src": "1586:10:41"
+            },
+            "id": 16480,
+            "nodeType": "InheritanceSpecifier",
+            "src": "1586:10:41"
+          }
+        ],
+        "canonicalName": "Persistent",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": {
+          "id": 16478,
+          "nodeType": "StructuredDocumentation",
+          "src": "1524:28:41",
+          "text": "(Single user variant) "
+        },
+        "fullyImplemented": true,
+        "linearizedBaseContracts": [16627, 17193, 11235, 14161, 1932, 20247],
+        "name": "Persistent",
+        "nameLocation": "1572:10:41",
+        "scope": 16628,
+        "usedErrors": []
+      }
+    ],
+    "license": "BSD-2-Clause"
+  },
+  "id": 41
+}

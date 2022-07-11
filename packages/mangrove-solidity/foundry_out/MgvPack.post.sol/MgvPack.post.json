@@ -1,0 +1,98 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "packages/mangrove-solidity/contracts/preprocessed/MgvPack.post.sol",
+    "id": 10502,
+    "exportedSymbols": {
+      "Global": [10500],
+      "GlobalStruct": [10543],
+      "Local": [10501],
+      "LocalStruct": [10558],
+      "Offer": [10498],
+      "OfferDetail": [10499],
+      "OfferDetailStruct": [10530],
+      "OfferStruct": [10521],
+      "uint_of_bool": [10512]
+    },
+    "nodeType": "SourceUnit",
+    "src": "0:1666:20",
+    "nodes": [
+      {
+        "id": 10496,
+        "nodeType": "PragmaDirective",
+        "src": "0:24:20",
+        "literals": ["solidity", "^", "0.8", ".13"]
+      },
+      {
+        "id": 10497,
+        "nodeType": "ImportDirective",
+        "src": "1464:31:20",
+        "absolutePath": "packages/mangrove-solidity/contracts/preprocessed/MgvStructs.post.sol",
+        "file": "./MgvStructs.post.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 10502,
+        "sourceUnit": 10559,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 10498,
+        "nodeType": "ImportDirective",
+        "src": "1497:38:20",
+        "absolutePath": "packages/mangrove-solidity/contracts/preprocessed/MgvOffer.post.sol",
+        "file": "./MgvOffer.post.sol",
+        "nameLocation": "1529:5:20",
+        "scope": 10502,
+        "sourceUnit": 9912,
+        "symbolAliases": [],
+        "unitAlias": "Offer"
+      },
+      {
+        "id": 10499,
+        "nodeType": "ImportDirective",
+        "src": "1536:50:20",
+        "absolutePath": "packages/mangrove-solidity/contracts/preprocessed/MgvOfferDetail.post.sol",
+        "file": "./MgvOfferDetail.post.sol",
+        "nameLocation": "1574:11:20",
+        "scope": 10502,
+        "sourceUnit": 10495,
+        "symbolAliases": [],
+        "unitAlias": "OfferDetail"
+      },
+      {
+        "id": 10500,
+        "nodeType": "ImportDirective",
+        "src": "1587:40:20",
+        "absolutePath": "packages/mangrove-solidity/contracts/preprocessed/MgvGlobal.post.sol",
+        "file": "./MgvGlobal.post.sol",
+        "nameLocation": "1620:6:20",
+        "scope": 10502,
+        "sourceUnit": 8417,
+        "symbolAliases": [],
+        "unitAlias": "Global"
+      },
+      {
+        "id": 10501,
+        "nodeType": "ImportDirective",
+        "src": "1628:38:20",
+        "absolutePath": "packages/mangrove-solidity/contracts/preprocessed/MgvLocal.post.sol",
+        "file": "./MgvLocal.post.sol",
+        "nameLocation": "1660:5:20",
+        "scope": 10502,
+        "sourceUnit": 9359,
+        "symbolAliases": [],
+        "unitAlias": "Local"
+      }
+    ],
+    "license": "Unlicense"
+  },
+  "id": 20
+}

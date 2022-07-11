@@ -1,0 +1,1336 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract IMangrove",
+          "name": "mangrove",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "base",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "quote",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "taker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "selling",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "takerGot",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "takerGave",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "penalty",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "restingOrderId",
+          "type": "uint256"
+        }
+      ],
+      "name": "OrderSummary",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "expiring",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "contract IERC20",
+              "name": "base",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "quote",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "partialFillNotAllowed",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "selling",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "makerWants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "makerGives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "restingOrder",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "retryNumber",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasForMarketOrder",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "blocksToLiveForRestingOrder",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IOrderLogic.TakerOrder",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "name": "take",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "takerGot",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "takerGave",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "bounty",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "fee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IOrderLogic.TakerOrderResult",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "expiring(address,address,uint256)": "4e7effa8",
+    "take((address,address,bool,bool,uint256,uint256,uint256,uint256,bool,uint256,uint256,uint256))": "6a1c7d05"
+  },
+  "ast": {
+    "absolutePath": "packages/mangrove-solidity/contracts/strategies/interfaces/IOrderLogic.sol",
+    "id": 14321,
+    "exportedSymbols": {
+      "IERC20": [2050],
+      "IMaker": [1932],
+      "IMangrove": [645],
+      "IOrderLogic": [14320],
+      "ML": [1739],
+      "P": [1710]
+    },
+    "nodeType": "SourceUnit",
+    "src": "1371:1733:32",
+    "nodes": [
+      {
+        "id": 14232,
+        "nodeType": "PragmaDirective",
+        "src": "1371:24:32",
+        "literals": ["solidity", ">=", "0.8", ".0"]
+      },
+      {
+        "id": 14233,
+        "nodeType": "PragmaDirective",
+        "src": "1396:19:32",
+        "literals": ["abicoder", "v2"]
+      },
+      {
+        "id": 14234,
+        "nodeType": "ImportDirective",
+        "src": "1416:31:32",
+        "absolutePath": "packages/mangrove-solidity/contracts/IMangrove.sol",
+        "file": "mgv_src/IMangrove.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 14321,
+        "sourceUnit": 646,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 14236,
+        "nodeType": "ImportDirective",
+        "src": "1448:42:32",
+        "absolutePath": "packages/mangrove-solidity/contracts/MgvLib.sol",
+        "file": "mgv_src/MgvLib.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 14321,
+        "sourceUnit": 2051,
+        "symbolAliases": [
+          {
+            "foreign": {
+              "id": 14235,
+              "name": "IERC20",
+              "nodeType": "Identifier",
+              "overloadedDeclarations": [],
+              "referencedDeclaration": 2050,
+              "src": "1456:6:32",
+              "typeDescriptions": {}
+            },
+            "nameLocation": "-1:-1:-1"
+          }
+        ],
+        "unitAlias": ""
+      },
+      {
+        "id": 14320,
+        "nodeType": "ContractDefinition",
+        "src": "1492:1611:32",
+        "nodes": [
+          {
+            "id": 14263,
+            "nodeType": "StructDefinition",
+            "src": "1518:1049:32",
+            "canonicalName": "IOrderLogic.TakerOrder",
+            "members": [
+              {
+                "constant": false,
+                "id": 14239,
+                "mutability": "mutable",
+                "name": "base",
+                "nameLocation": "1549:4:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "1542:11:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_contract$_IERC20_$2050",
+                  "typeString": "contract IERC20"
+                },
+                "typeName": {
+                  "id": 14238,
+                  "nodeType": "UserDefinedTypeName",
+                  "pathNode": {
+                    "id": 14237,
+                    "name": "IERC20",
+                    "nodeType": "IdentifierPath",
+                    "referencedDeclaration": 2050,
+                    "src": "1542:6:32"
+                  },
+                  "referencedDeclaration": 2050,
+                  "src": "1542:6:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14242,
+                "mutability": "mutable",
+                "name": "quote",
+                "nameLocation": "1596:5:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "1589:12:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_contract$_IERC20_$2050",
+                  "typeString": "contract IERC20"
+                },
+                "typeName": {
+                  "id": 14241,
+                  "nodeType": "UserDefinedTypeName",
+                  "pathNode": {
+                    "id": 14240,
+                    "name": "IERC20",
+                    "nodeType": "IdentifierPath",
+                    "referencedDeclaration": 2050,
+                    "src": "1589:6:32"
+                  },
+                  "referencedDeclaration": 2050,
+                  "src": "1589:6:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14244,
+                "mutability": "mutable",
+                "name": "partialFillNotAllowed",
+                "nameLocation": "1612:21:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "1607:26:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 14243,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1607:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14246,
+                "mutability": "mutable",
+                "name": "selling",
+                "nameLocation": "1728:7:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "1723:12:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 14245,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1723:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14248,
+                "mutability": "mutable",
+                "name": "wants",
+                "nameLocation": "1805:5:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "1800:10:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14247,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1800:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14250,
+                "mutability": "mutable",
+                "name": "makerWants",
+                "nameLocation": "1893:10:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "1888:15:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14249,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1888:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14252,
+                "mutability": "mutable",
+                "name": "gives",
+                "nameLocation": "1985:5:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "1980:10:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14251,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1980:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14254,
+                "mutability": "mutable",
+                "name": "makerGives",
+                "nameLocation": "2073:10:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "2068:15:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14253,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2068:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14256,
+                "mutability": "mutable",
+                "name": "restingOrder",
+                "nameLocation": "2164:12:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "2159:17:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 14255,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2159:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14258,
+                "mutability": "mutable",
+                "name": "retryNumber",
+                "nameLocation": "2284:11:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "2279:16:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14257,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2279:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14260,
+                "mutability": "mutable",
+                "name": "gasForMarketOrder",
+                "nameLocation": "2388:17:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "2383:22:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14259,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2383:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14262,
+                "mutability": "mutable",
+                "name": "blocksToLiveForRestingOrder",
+                "nameLocation": "2454:27:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14263,
+                "src": "2449:32:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14261,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2449:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "TakerOrder",
+            "nameLocation": "1525:10:32",
+            "scope": 14320,
+            "visibility": "public"
+          },
+          {
+            "id": 14274,
+            "nodeType": "StructDefinition",
+            "src": "2571:117:32",
+            "canonicalName": "IOrderLogic.TakerOrderResult",
+            "members": [
+              {
+                "constant": false,
+                "id": 14265,
+                "mutability": "mutable",
+                "name": "takerGot",
+                "nameLocation": "2606:8:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14274,
+                "src": "2601:13:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14264,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2601:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14267,
+                "mutability": "mutable",
+                "name": "takerGave",
+                "nameLocation": "2625:9:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14274,
+                "src": "2620:14:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14266,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2620:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14269,
+                "mutability": "mutable",
+                "name": "bounty",
+                "nameLocation": "2645:6:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14274,
+                "src": "2640:11:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14268,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2640:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14271,
+                "mutability": "mutable",
+                "name": "fee",
+                "nameLocation": "2662:3:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14274,
+                "src": "2657:8:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14270,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2657:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 14273,
+                "mutability": "mutable",
+                "name": "offerId",
+                "nameLocation": "2676:7:32",
+                "nodeType": "VariableDeclaration",
+                "scope": 14274,
+                "src": "2671:12:32",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 14272,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "2671:4:32",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "TakerOrderResult",
+            "nameLocation": "2578:16:32",
+            "scope": 14320,
+            "visibility": "public"
+          },
+          {
+            "id": 14297,
+            "nodeType": "EventDefinition",
+            "src": "2692:225:32",
+            "anonymous": false,
+            "eventSelector": "587734843819064f2153f96c808d1aeacaceccfa595ec4b9ed484c4bff687f7c",
+            "name": "OrderSummary",
+            "nameLocation": "2698:12:32",
+            "parameters": {
+              "id": 14296,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14277,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "mangrove",
+                  "nameLocation": "2726:8:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2716:18:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IMangrove_$645",
+                    "typeString": "contract IMangrove"
+                  },
+                  "typeName": {
+                    "id": 14276,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14275,
+                      "name": "IMangrove",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 645,
+                      "src": "2716:9:32"
+                    },
+                    "referencedDeclaration": 645,
+                    "src": "2716:9:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IMangrove_$645",
+                      "typeString": "contract IMangrove"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14280,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "base",
+                  "nameLocation": "2755:4:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2740:19:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14279,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14278,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "2740:6:32"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "2740:6:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14283,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "quote",
+                  "nameLocation": "2780:5:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2765:20:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14282,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14281,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "2765:6:32"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "2765:6:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14285,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "taker",
+                  "nameLocation": "2807:5:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2791:21:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 14284,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2791:7:32",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14287,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "selling",
+                  "nameLocation": "2823:7:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2818:12:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 14286,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2818:4:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14289,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "takerGot",
+                  "nameLocation": "2841:8:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2836:13:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14288,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2836:4:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14291,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "takerGave",
+                  "nameLocation": "2860:9:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2855:14:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14290,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2855:4:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14293,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "penalty",
+                  "nameLocation": "2880:7:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2875:12:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14292,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2875:4:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14295,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "restingOrderId",
+                  "nameLocation": "2898:14:32",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14297,
+                  "src": "2893:19:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14294,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2893:4:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2710:206:32"
+            }
+          },
+          {
+            "id": 14310,
+            "nodeType": "FunctionDefinition",
+            "src": "2921:80:32",
+            "functionSelector": "4e7effa8",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "expiring",
+            "nameLocation": "2930:8:32",
+            "parameters": {
+              "id": 14306,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14300,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14310,
+                  "src": "2944:6:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14299,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14298,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "2944:6:32"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "2944:6:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14303,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14310,
+                  "src": "2956:6:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$2050",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "id": 14302,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14301,
+                      "name": "IERC20",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 2050,
+                      "src": "2956:6:32"
+                    },
+                    "referencedDeclaration": 2050,
+                    "src": "2956:6:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$2050",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 14305,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14310,
+                  "src": "2968:4:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14304,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2968:4:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2938:38:32"
+            },
+            "returnParameters": {
+              "id": 14309,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14308,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14310,
+                  "src": "2995:4:32",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 14307,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2995:4:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2994:6:32"
+            },
+            "scope": 14320,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 14319,
+            "nodeType": "FunctionDefinition",
+            "src": "3005:96:32",
+            "functionSelector": "6a1c7d05",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "take",
+            "nameLocation": "3014:4:32",
+            "parameters": {
+              "id": 14314,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14313,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14319,
+                  "src": "3019:17:32",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_TakerOrder_$14263_memory_ptr",
+                    "typeString": "struct IOrderLogic.TakerOrder"
+                  },
+                  "typeName": {
+                    "id": 14312,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14311,
+                      "name": "TakerOrder",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 14263,
+                      "src": "3019:10:32"
+                    },
+                    "referencedDeclaration": 14263,
+                    "src": "3019:10:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_TakerOrder_$14263_storage_ptr",
+                      "typeString": "struct IOrderLogic.TakerOrder"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3018:19:32"
+            },
+            "returnParameters": {
+              "id": 14318,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 14317,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14319,
+                  "src": "3076:23:32",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_TakerOrderResult_$14274_memory_ptr",
+                    "typeString": "struct IOrderLogic.TakerOrderResult"
+                  },
+                  "typeName": {
+                    "id": 14316,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 14315,
+                      "name": "TakerOrderResult",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 14274,
+                      "src": "3076:16:32"
+                    },
+                    "referencedDeclaration": 14274,
+                    "src": "3076:16:32",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_TakerOrderResult_$14274_storage_ptr",
+                      "typeString": "struct IOrderLogic.TakerOrderResult"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3075:25:32"
+            },
+            "scope": 14320,
+            "stateMutability": "payable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "IOrderLogic",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [14320],
+        "name": "IOrderLogic",
+        "nameLocation": "1502:11:32",
+        "scope": 14321,
+        "usedErrors": []
+      }
+    ],
+    "license": "BSD-2-Clause"
+  },
+  "id": 32
+}
