@@ -591,6 +591,8 @@ jobs:
     # == build == 
     - name: Mangrove.js build
       run: yarn run build-this-package
+      env:
+        NODE_OPTIONS: "--max_old_space_size=8192"
 
     - name: Save status of build
       run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
