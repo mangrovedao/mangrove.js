@@ -198,11 +198,6 @@
           "internalType": "contract IERC20",
           "name": "outbound_tkn",
           "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
         }
       ],
       "name": "approveMangrove",
@@ -718,7 +713,7 @@
           "type": "uint256"
         },
         {
-          "internalType": "address",
+          "internalType": "address payable",
           "name": "receiver",
           "type": "address"
         }
