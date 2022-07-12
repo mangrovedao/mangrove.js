@@ -34,7 +34,7 @@
   "TokenA": 18,
   "TokenB": 18,
   "WETH": 18,
-  "amWETH": 18,
-  "amDAI": 18,
-  "amUSDC": 6
+  "aWETH": 18,
+  "aDAI": 18,
+  "aUSDC": 6
 }
