@@ -5,18 +5,31 @@
 
 // Set up hardhat
 const hre = require("hardhat");
+// import hre from "hardhat";
+// import * as hardhatUtils from "../../hardhat-utils.js";
 const hardhatUtils = require("../../hardhat-utils");
+// const execa = await import('execa'); // only way to import without triggering errors, require() and static import both fail...
+// import {execa} from "execa";
+// console.log(execa);
+// const {execa} = require("execa");
+// const execa = Execa.execa;
+// import {getDefaultProvider} from "@ethersproject/providers";
 const getDefaultProvider =
   require("@ethersproject/providers").getDefaultProvider;
+
+const server = require("./localMangrove.js");
+
+const listen = {
+  name: "127.0.0.1",
+  port: 8546,
+};
+
+await server(listen);
 
 const ethers = hre.ethers;
 
 let server; // used to run a localhost server
-
-const host = {
-  name: "localhost",
-  port: 8546,
-};
+let anvil;
 
 exports.mochaHooks = {
   async beforeAll() {
@@ -25,12 +38,11 @@ exports.mochaHooks = {
       // application specific logging, throwing an error, or other logic here
     });
 
-    console.log("Running a Hardhat instance...");
-    server = await hardhatUtils.hreServer({
-      hostname: host.name,
-      port: host.port,
-      provider: hre.network.provider,
-    });
+    // server = await hardhatUtils.hreServer({
+    //   hostname: host.name,
+    //   port: host.port,
+    //   provider: hre.network.provider,
+    // });
 
     this.provider = hre.network.provider;
     // FIXME the hre.network.provider is not a full ethers Provider, e.g. it doesn't have getBalance() and getGasPrice()
@@ -87,6 +99,10 @@ exports.mochaHooks = {
   },
 
   async afterAll() {
+    if (anvil) {
+      anvil.kill();
+    }
+
     if (server) {
       await server.close();
       // we add the following logging to help debug test hangs
