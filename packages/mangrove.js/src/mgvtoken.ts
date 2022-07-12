@@ -11,14 +11,14 @@ class MgvToken {
   displayedDecimals: number;
   decimals: number;
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
-  contract: typechain.MintableERC20BLWithDecimals;
+  contract: typechain.TestToken;
   constructor(name: string, mgv: Mangrove) {
     this.mgv = mgv;
     this.name = name;
     this.address = this.mgv.getAddress(this.name);
     this.decimals = Mangrove.getDecimals(this.name);
     this.displayedDecimals = Mangrove.getDisplayedDecimals(this.name);
-    this.contract = typechain.MintableERC20BLWithDecimals__factory.connect(
+    this.contract = typechain.TestToken__factory.connect(
       this.address,
       this.mgv._signer
     );

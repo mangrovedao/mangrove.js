@@ -20,7 +20,7 @@
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "npm-run-all \"test:*\"",
-    "test:integration": "cross-env NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" mocha --config test/mocha/config/integration-tests.json",
+    "test:integration": "cross-env NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=8192\" mocha --config test/mocha/config/integration-tests.json",
     "start": "node build/index.js",
     "local-hardhat:start-node": "hardhat node --no-deploy",
     "local-hardhat:deploy-mangrove": "hardhat deploy --network localhost",

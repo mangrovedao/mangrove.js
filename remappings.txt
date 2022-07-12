@@ -1,0 +1,6 @@
+hardhat/=packages/mangrove-solidity/foundry_lib/forge-std/src/
+mgv_src/=packages/mangrove-solidity/contracts/
+mgv_test/=packages/mangrove-solidity/contracts/test/
+
+ds-test/=packages/mangrove-solidity/foundry_lib/forge-std/lib/ds-test/src/
+forge-std/=packages/mangrove-solidity/foundry_lib/forge-std/src/
