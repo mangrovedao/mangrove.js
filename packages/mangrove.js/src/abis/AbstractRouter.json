@@ -1,7 +1,4 @@
 {
-  "_format": "hh-sol-artifact-1",
-  "contractName": "AbstractRouter",
-  "sourceName": "contracts/Strategies/Routers/AbstractRouter.sol",
   "abi": [
     {
       "inputs": [],
@@ -32,7 +29,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IEIP20[]",
+          "internalType": "contract IERC20[]",
           "name": "tokens",
           "type": "address[]"
         },
@@ -82,7 +79,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IEIP20",
+          "internalType": "contract IERC20",
           "name": "token",
           "type": "address"
         },
@@ -116,7 +113,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IEIP20",
+          "internalType": "contract IERC20",
           "name": "token",
           "type": "address"
         },
@@ -139,7 +136,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IEIP20",
+          "internalType": "contract IERC20",
           "name": "token",
           "type": "address"
         },
@@ -189,7 +186,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IEIP20",
+          "internalType": "contract IERC20",
           "name": "token",
           "type": "address"
         },
@@ -220,9 +217,5 @@
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ],
-  "bytecode": "0x",
-  "deployedBytecode": "0x",
-  "linkReferences": {},
-  "deployedLinkReferences": {}
+  ]
 }

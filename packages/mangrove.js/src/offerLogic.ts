@@ -4,7 +4,7 @@ import Market from "./market";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { LiquidityProvider, Mangrove } from ".";
+import { LiquidityProvider, Mangrove, AaveV3Module } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
@@ -94,6 +94,10 @@ class OfferLogic {
         this.mgv._signer
       );
     }
+  }
+
+  aaveModule(address: string): AaveV3Module {
+    return new AaveV3Module(this.mgv, address);
   }
 
   /**
