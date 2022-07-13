@@ -556,6 +556,7 @@ class LiquidityProvider {
     return this.#approveToken(this.market.quote.name, overrides);
   }
 
+  //TODO handle multi maker case
   async getMissingProvision(
     ba: "bids" | "asks",
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
@@ -571,7 +572,10 @@ class LiquidityProvider {
       );
       lockedProvision = prov_in_gwei.div(10 ** 9);
     }
-    const balance = await this.balanceOnMangrove();
+    let balance: Bigish = 0;
+    if (this.logic) {
+      balance = this.logic.isMultiMaker ? 0 : await this.balanceOnMangrove();
+    }
     const currentOfferProvision = lockedProvision.add(balance);
     logger.debug(`Get missing provision`, {
       contextInfo: "mangrove.maker",
