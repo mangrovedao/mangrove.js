@@ -14,7 +14,7 @@ export type Account = {
   connectedContracts: {
     // Contracts connected with the signer for setting chain state in test case setup
     mangrove: typechain.Mangrove;
-    testMaker: typechain.TestMaker;
+    testMaker: typechain.SimpleTestMaker;
     tokenA: typechain.TestTokenWithDecimals;
     tokenB: typechain.TestTokenWithDecimals;
   };
@@ -44,7 +44,7 @@ let addresses: Addresses;
 export const getAddresses = async (): Promise<Addresses> => {
   if (!addresses) {
     const mg = await hardhatEthers.getContract("Mangrove");
-    const tm = await hardhatEthers.getContract("TestMaker");
+    const tm = await hardhatEthers.getContract("SimpleTestMaker");
     const ta = await hardhatEthers.getContract("TokenA");
     const tb = await hardhatEthers.getContract("TokenB");
     addresses = {
@@ -66,7 +66,7 @@ export const logAddresses = async (): Promise<void> => {
 
 export type Contracts = {
   mangrove: typechain.Mangrove;
-  testMaker: typechain.TestMaker;
+  testMaker: typechain.SimpleTestMaker;
   tokenA: typechain.TestTokenWithDecimals;
   tokenB: typechain.TestTokenWithDecimals;
 };
@@ -80,7 +80,7 @@ export const getContracts = async (
       addresses.mangrove.address,
       signer
     ),
-    testMaker: typechain.TestMaker__factory.connect(
+    testMaker: typechain.SimpleTestMaker__factory.connect(
       addresses.testMaker.address,
       signer
     ),
@@ -97,7 +97,7 @@ export const getContracts = async (
 
 export enum AccountName {
   Deployer = "deployer", // Owner of deployed MGV and token contracts
-  Maker = "maker", // Owner of TestMaker contract
+  Maker = "maker", // Owner of SimpleTestMaker contract
   Cleaner = "cleaner", // Owner of cleaner EOA
 }
 
