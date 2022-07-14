@@ -185,7 +185,7 @@ describe("Market integration tests suite", () => {
     };
     market.subscribe(cb);
 
-    // post a failing offer from TestMaker
+    // post a failing offer from SimpleTestMaker
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
