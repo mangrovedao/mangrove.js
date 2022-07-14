@@ -15,7 +15,7 @@ import { Provider } from "@ethersproject/abstract-provider";
 
 import { MarketCleaner } from "../../build/MarketCleaner";
 
-let maker: mgvTestUtil.Account; // Owner of TestMaker contract
+let maker: mgvTestUtil.Account; // Owner of SimpleTestMaker contract
 let cleaner: mgvTestUtil.Account; // Owner of cleaner EOA
 let accounts: mgvTestUtil.Account[]; // All referenced accounts for easy debugging
 

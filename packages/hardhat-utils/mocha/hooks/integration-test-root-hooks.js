@@ -72,7 +72,7 @@ exports.mochaHooks = {
     const TokenA = await hre.ethers.getContract("TokenA", deployer);
     const TokenB = await hre.ethers.getContract("TokenB", deployer);
     const testMakerContract = await hre.ethers.getContract(
-      "TestMaker",
+      "SimpleTestMaker",
       deployer
     );
 
