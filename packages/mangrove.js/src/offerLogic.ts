@@ -276,8 +276,8 @@ class OfferLogic {
         inbound_tkn: inbound_tkn.address,
         wants: inbound_tkn.toUnits(wants),
         gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq_bn, //letting backend use its default gasreq
-        gasprice: gasprice_bn, // using Mangrove's current gasprice
+        gasreq: gasreq_bn,
+        gasprice: gasprice_bn,
         pivotId: pivot ? pivot : 0,
         offerId: 0,
       },

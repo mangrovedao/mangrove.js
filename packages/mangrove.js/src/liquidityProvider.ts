@@ -71,19 +71,19 @@ class LiquidityProvider {
 
   computeOfferProvision(
     ba: "bids" | "asks",
-    opts: { id?: number; gasreq?: number } = {}
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision(ba, opts);
   }
 
   computeBidProvision(
-    opts: { id?: number; gasreq?: number } = {}
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision("bids", opts);
   }
 
   computeAskProvision(
-    opts: { id?: number; gasreq?: number } = {}
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision("asks", opts);
   }
@@ -267,9 +267,6 @@ class LiquidityProvider {
     receipt: ethers.ContractReceipt
   ): LiquidityProvider.OfferActionResult {
     let result: LiquidityProvider.OfferActionResult;
-    console.log(receipt);
-    console.log(type);
-    console.log(this.mgv.contract.interface);
     const logs = this.parseEvents(receipt, this.mgv.contract.interface, type);
     for (const evt of logs) {
       result = {
