@@ -13,6 +13,7 @@ packages/mangrove-solidity/*-mumbai.sh
 **/.sethrc
 .DS_Store
 .vscode/settings.json
+.env
 .env.local
 .env.*.local
 *test-report.json
