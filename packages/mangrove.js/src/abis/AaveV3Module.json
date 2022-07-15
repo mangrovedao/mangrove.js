@@ -23,6 +23,19 @@
     },
     {
       "inputs": [],
+      "name": "IMPLEMENTATION",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "INTEREST_RATE_MODE",
       "outputs": [
         {

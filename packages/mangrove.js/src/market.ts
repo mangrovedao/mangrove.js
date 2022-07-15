@@ -33,8 +33,8 @@ namespace Market {
   export type Failure = {
     offerId: number;
     reason: string;
-    FailToDeliver: Big;
-    volumeGiven: Big;
+    FailToDeliver?: Big;
+    volumeGiven?: Big;
   };
   export type Success = {
     offerId: number;
@@ -52,7 +52,8 @@ namespace Market {
     txReceipt: ethers.ContractReceipt;
     summary: Summary;
     successes: Success[];
-    failures: Failure[];
+    tradeFailures: Failure[];
+    posthookFailures: Failure[];
   };
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
@@ -632,11 +633,19 @@ class Market {
       }
       case "OfferFail": {
         const event = evt as TCM.OfferFailEvent;
-        result.failures.push({
+        result.tradeFailures.push({
           offerId: event.args.id.toNumber(),
           reason: event.args.mgvData,
           FailToDeliver: this[got_bq].fromUnits(event.args.takerWants),
           volumeGiven: this[gave_bq].fromUnits(event.args.takerGives),
+        });
+        return result;
+      }
+      case "PosthookFail": {
+        const event = evt as TCM.PosthookFailEvent;
+        result.posthookFailures.push({
+          offerId: event.args.offerId.toNumber(),
+          reason: event.args.posthookData,
         });
         return result;
       }
@@ -714,7 +723,8 @@ class Market {
       txReceipt: receipt,
       summary: undefined,
       successes: [],
-      failures: [],
+      tradeFailures: [],
+      posthookFailures: [],
     };
     //last OrderComplete is ours!
     logger.debug("Market order raw receipt", {
@@ -804,7 +814,8 @@ class Market {
       txReceipt: receipt,
       summary: undefined,
       successes: [],
-      failures: [],
+      tradeFailures: [],
+      posthookFailures: [],
     };
     const got_bq = orderType === "buy" ? "base" : "quote";
     const gave_bq = orderType === "buy" ? "quote" : "base";

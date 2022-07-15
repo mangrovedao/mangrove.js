@@ -150,7 +150,6 @@ describe("SimpleMaker", () => {
         const getBal = async () =>
           mgv._provider.getBalance(await mgv._signer.getAddress());
         let tx = await onchain_lp.fundMangrove(10);
-        console.log(await onchain_lp.balanceOnMangrove());
         await tx.wait();
         const oldBal = await getBal();
         tx = await onchain_lp.withdrawFromMangrove(10);
@@ -195,33 +194,31 @@ describe("SimpleMaker", () => {
       });
 
       it("cancels offer", async () => {
-        console.log("signer:", await onchain_lp.mgv._signer.getAddress());
-        const provision = await onchain_lp.computeBidProvision({});
-        let prov_before_bid = await mgv._provider.getBalance(
-          await onchain_lp.mgv._signer.getAddress()
-        );
-        console.log("before bid:", prov_before_bid.toString());
+        // huge provision to maker sure refund exceeds gas costs
+        const prov = await onchain_lp.computeBidProvision({ gasprice: 12000 });
         const { id: ofrId } = await onchain_lp.newBid({
           wants: 10,
           gives: 20,
-          fund: provision.mul(100000000),
+          gasprice: 12000,
+          fund: prov,
         });
         let prov_before_cancel = await mgv._provider.getBalance(
           await onchain_lp.mgv._signer.getAddress()
         );
 
-        console.log("before cancel:", prov_before_cancel.toString());
-
         await onchain_lp.retractBid(ofrId, true); // with deprovision
-
         let prov_after_cancel = await mgv._provider.getBalance(
           await onchain_lp.mgv._signer.getAddress()
         );
-        console.log("after cancel:", prov_after_cancel.toString());
         assert(
           prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
           "Maker was not refunded"
         );
+        assert(
+          onchain_lp.bids().length === 0,
+          "Bid was not removed from the book"
+        );
+
         await onchain_lp.retractBid(ofrId, true);
         let prov_after_cancel2 = await mgv._provider.getBalance(
           await onchain_lp.mgv._signer.getAddress()
