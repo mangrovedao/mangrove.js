@@ -1,7 +1,8 @@
 # next version
 
+- new class (to be improved) 'aaveV3Module' to cast a contract address into an ethers.js contract with the ABI of 'AaveV3Module.sol'
 - [major update] adding `enableRouting` function on `liquidityProvider` class to approve router to route liquidity on current market.
-- `cancelOffer/Bid/Ask` is now called `retractOffer/Bid/Ask`
+- `cancelOffer/Bid/Ask` is now called `retractOffer/Bid/Ask` to match Mangrove's naming scheme
 - Remove deprecated and defunct `printOrderBook.ts` script which has been superseded by the `mgv print` commmand
 
 # 0.8.1 (June 2022)
