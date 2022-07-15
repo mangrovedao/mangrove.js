@@ -16,46 +16,46 @@ pragma solidity ^0.8.6;
 
 interface DSAuthority {
     function canCall(
-        address src, address dst, bytes4 sig
+        address src,
+        address dst,
+        bytes4 sig
     ) external view returns (bool);
 }
 
 contract DSAuthEvents {
-    event LogSetAuthority (address indexed authority);
-    event LogSetOwner     (address indexed owner);
+    event LogSetAuthority(address indexed authority);
+    event LogSetOwner(address indexed owner);
 }
 
 contract DSAuth is DSAuthEvents {
-    DSAuthority  public  authority;
-    address      public  owner;
+    DSAuthority public authority;
+    address public owner;
 
-    constructor() public {
+    constructor() {
         owner = msg.sender;
         emit LogSetOwner(msg.sender);
     }
 
-    function setOwner(address owner_)
-        public
-        auth
-    {
+    function setOwner(address owner_) public auth {
         owner = owner_;
         emit LogSetOwner(owner);
     }
 
-    function setAuthority(DSAuthority authority_)
-        public
-        auth
-    {
+    function setAuthority(DSAuthority authority_) public auth {
         authority = authority_;
         emit LogSetAuthority(address(authority));
     }
 
-    modifier auth {
+    modifier auth() {
         require(isAuthorized(msg.sender, msg.sig), "ds-auth-unauthorized");
         _;
     }
 
-    function isAuthorized(address src, bytes4 sig) internal view returns (bool) {
+    function isAuthorized(address src, bytes4 sig)
+        internal
+        view
+        returns (bool)
+    {
         if (src == address(this)) {
             return true;
         } else if (src == owner) {
@@ -69,43 +69,45 @@ contract DSAuth is DSAuthEvents {
 }
 
 interface TokenLike {
-  function transfer(address dest, uint amt) external;
+    function transfer(address dest, uint256 amt) external;
 }
 
-contract Faucet is DSAuth() {
+contract Faucet is DSAuth {
+    uint256 public maxpull;
+    TokenLike public token;
+    string public name;
 
-  uint public maxpull;
-  TokenLike public token;
-  string public name;
+    function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        z = x > y ? y : x;
+    }
 
-  function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
-    z = x > y ? y : x;
-  }
+    function _pullTo(address dest, uint256 amt) internal {
+        token.transfer(dest, min(amt, maxpull));
+    }
 
-  function _pullTo(address dest, uint amt) internal {
-    token.transfer(dest,min(amt,maxpull));
-  }
+    constructor(
+        address _token,
+        string memory _name,
+        uint256 _maxpull
+    ) {
+        token = TokenLike(_token);
+        name = _name;
+        maxpull = _maxpull;
+    }
 
-  constructor(address _token, string memory _name, uint _maxpull) { 
-    token = TokenLike(_token);
-    name = _name;
-    maxpull = _maxpull;
-  }
+    function pull(uint256 amt) external {
+        _pullTo(msg.sender, amt);
+    }
 
-  function pull(uint amt) external {
-    _pullTo(msg.sender,amt);
-  }
+    function pullTo(address dest, uint256 amt) external {
+        _pullTo(dest, amt);
+    }
 
-  function pullTo(address dest, uint amt) external {
-    _pullTo(dest,amt);
-  }
+    function drainTo(address dest, uint256 amt) external auth {
+        token.transfer(dest, amt);
+    }
 
-  function drainTo(address dest, uint amt) external auth {
-    token.transfer(dest, amt);
-  }
-
-  function setMaxpull(uint _maxpull) external auth {
-    maxpull = _maxpull;
-  }
-
+    function setMaxpull(uint256 _maxpull) external auth {
+        maxpull = _maxpull;
+    }
 }

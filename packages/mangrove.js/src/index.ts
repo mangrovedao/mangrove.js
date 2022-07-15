@@ -14,6 +14,7 @@ import Semibook from "./semibook";
 import OfferLogic from "./offerLogic";
 import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
+import AaveV3Module from "./aaveV3Module";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -29,4 +30,5 @@ export {
   MgvToken,
   OfferLogic,
   LiquidityProvider,
+  AaveV3Module,
 };

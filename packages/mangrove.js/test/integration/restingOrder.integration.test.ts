@@ -42,14 +42,14 @@ describe("RestingOrder", () => {
       });
 
       //check that contract responds
-      const gasreq = await lp.logic.contract.ofr_gasreq();
-      assert(gasreq.gt(0), "Cannot talk to resting order contract");
+      const gasreq = await lp.logic?.contract.ofr_gasreq();
+      assert(gasreq?.gt(0), "Cannot talk to resting order contract");
     });
   });
 
   describe("Resting order integration tests suite", () => {
-    let orderContractAsLP: LiquidityProvider = null;
-    let meAsLP: LiquidityProvider = null;
+    let orderContractAsLP: LiquidityProvider;
+    let meAsLP: LiquidityProvider;
     /* Make sure tx has been mined so we can read the result off the chain */
     const w = async (r) => (await r).wait(1);
 

@@ -34,6 +34,16 @@ namespace LiquidityProvider {
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
     | ({ wants: Bigish; gives: Bigish } & OptParams);
+
+  export type OfferActionResult = {
+    offerType: "bids" | "asks";
+    market: string;
+    txReceipt: ethers.ContractReceipt;
+    id: number;
+    gasprice?: number;
+    gasreq?: number;
+    refund?: Big;
+  };
 }
 
 /**
@@ -61,19 +71,19 @@ class LiquidityProvider {
 
   computeOfferProvision(
     ba: "bids" | "asks",
-    opts: { id?: number; gasreq?: number } = {}
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision(ba, opts);
   }
 
   computeBidProvision(
-    opts: { id?: number; gasreq?: number } = {}
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision("bids", opts);
   }
 
   computeAskProvision(
-    opts: { id?: number; gasreq?: number } = {}
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision("asks", opts);
   }
@@ -159,6 +169,18 @@ class LiquidityProvider {
     }
   }
 
+  #logicOnly(message: string): void {
+    if (!this.logic) {
+      throw new Error(message);
+    }
+  }
+
+  #singleUserOnly(message: string): void {
+    if (this.logic && this.logic.isMultiMaker) {
+      throw new Error(message);
+    }
+  }
+
   async #gasreq(): Promise<number> {
     if (this.eoa) {
       return EOA_offer_gasreq;
@@ -194,18 +216,20 @@ class LiquidityProvider {
 
   approveMangrove(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     return this.logic
-      ? this.logic.approveMangrove(tokenName, arg, overrides)
-      : this.mgv.token(tokenName).approve(this.mgv._address, arg);
+      ? this.logic.approveMangrove(tokenName, overrides)
+      : this.mgv.token(tokenName).approve(this.mgv._address);
   }
 
   fundMangrove(
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
+    this.#singleUserOnly(
+      "Multi user contracts must be funded when calling new/updateOffer."
+    );
     if (this.eoa) {
       return this.mgv.fundMangrove(amount, this.eoa, overrides);
     } else {
@@ -226,6 +250,40 @@ class LiquidityProvider {
     To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
   */
 
+  parseEvents(
+    receipt: ethers.ContractReceipt,
+    contractInterface: ethers.Contract["Interface"],
+    eventName: string
+  ) {
+    const logs = receipt.logs
+      .map((log) => contractInterface.parseLog(log))
+      .filter((log) => log.name === eventName);
+    return logs;
+  }
+
+  #resultOfOfferAction(
+    ba: "bids" | "asks",
+    type: "OfferWrite" | "OfferRetract",
+    receipt: ethers.ContractReceipt
+  ): LiquidityProvider.OfferActionResult {
+    let result: LiquidityProvider.OfferActionResult;
+    const logs = this.parseEvents(receipt, this.mgv.contract.interface, type);
+    for (const evt of logs) {
+      result = {
+        offerType: ba,
+        market: `(${this.market.base.name},${this.market.quote.name})`,
+        txReceipt: receipt,
+        id: evt.args.id.toNumber(),
+        gasprice: evt.args.gasprice ? evt.args.gasprice.toNumber() : undefined,
+        gasreq: evt.args.gasreq ? evt.args.gasreq.toNumber() : undefined,
+      };
+    }
+    if (!result) {
+      throw Error("Maker offer went wrong");
+    }
+    return result;
+  }
+
   /* Returns an easy to use promise of a view of the new offer. You can also catch any error thrown if the transaction was rejected/replaced. */
   async newOffer(
     p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
@@ -233,6 +291,7 @@ class LiquidityProvider {
   ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
     const { wants, gives, price, gasreq, gasprice, fund } =
       this.#normalizeOfferParams(p);
+
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
     let txPromise = null;
@@ -297,7 +356,7 @@ class LiquidityProvider {
   }
 
   /* Update an existing offer. Non-specified parameters will be copied from current
-     data in the offer. Reuse current offer's gasprice.
+     data in the offer. Reuse current offer's gasprice if gasprice is undefined
      Input should be {ba:"bids"|"asks"} and price info as wants&gives or as price&volume
      */
   async updateOffer(
@@ -412,7 +471,10 @@ class LiquidityProvider {
       (cbArg, evt /* _ethersEvent*/) => evt.name === "OfferRetract"
     );
   }
-  /** Get the current balance the liquidity provider has in Mangrove */
+  /**
+   * @note Get the current balance the liquidity provider has on Mangrove
+   * If this liquidity provider has a multi user underlying logic, the balance corresponds to the sum of all offers' available balances
+   * */
   balanceOnMangrove(
     arg: { owner?: string } = {},
     overrides: ethers.Overrides = {}
@@ -428,16 +490,14 @@ class LiquidityProvider {
   }
 
   tokenBalance(
-    args: { tokenName: string; owner?: string },
+    tokenName: string,
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
     if (this.logic) {
       // if liquidity provider has a logic, then one should ask its contract what is the balance of signer (could be multiple users)
-      return this.logic.tokenBalance(args, overrides);
+      return this.logic.tokenBalance(tokenName, overrides);
     } else {
-      // if liquidity provider has no logic, balance is the token.balanceOf(signer)
-      const owner = args.owner ? args.owner : this.eoa;
-      return this.mgv.token(args.tokenName).balanceOf(owner, overrides);
+      return this.mgv.token(tokenName).balanceOf(this.eoa, overrides);
     }
   }
 
@@ -456,14 +516,44 @@ class LiquidityProvider {
   }
 
   // admin only. Approves router to pull and push liquidity on maker contract
-  async enableRouting(
+  approveAsksRouting(
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    const tx = await this.logic.enableRouting(this.market.base.name, overrides);
-    tx.wait();
-    return this.logic.enableRouting(this.market.quote.name, overrides);
+    this.#logicOnly("EOA liquidity provider cannot route liquidity");
+    return this.logic.approveRouter(this.market.base.name, overrides);
   }
 
+  approveBidsRouting(
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    this.#logicOnly("EOA liquidity provider cannot route liquidity");
+    return this.logic.approveRouter(this.market.quote.name, overrides);
+  }
+
+  #approveToken(
+    tokenName: string,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    if (this.logic) {
+      return this.logic.approveToken(tokenName, {}, overrides);
+    } else {
+      // LP is an EOA
+      return this.mgv.approveMangrove(tokenName, {}, overrides);
+    }
+  }
+
+  approveAsks(
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.#approveToken(this.market.base.name, overrides);
+  }
+  approveBids(
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.#approveToken(this.market.quote.name, overrides);
+  }
+
+  //TODO handle multi maker case
   async getMissingProvision(
     ba: "bids" | "asks",
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
@@ -479,7 +569,10 @@ class LiquidityProvider {
       );
       lockedProvision = prov_in_gwei.div(10 ** 9);
     }
-    const balance = await this.balanceOnMangrove();
+    let balance: Bigish = 0;
+    if (this.logic) {
+      balance = this.logic.isMultiMaker ? 0 : await this.balanceOnMangrove();
+    }
     const currentOfferProvision = lockedProvision.add(balance);
     logger.debug(`Get missing provision`, {
       contextInfo: "mangrove.maker",

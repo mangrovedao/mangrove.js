@@ -4,7 +4,7 @@ import Market from "./market";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { LiquidityProvider, Mangrove } from ".";
+import { LiquidityProvider, Mangrove, AaveV3Module } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
@@ -15,29 +15,6 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 */
 import Big from "big.js";
 import MgvToken from "./mgvtoken";
-
-// eslint-disable-next-line @typescript-eslint/no-namespace
-// namespace OL {
-//   export type ConstructionParams = {
-//     mgv: Mangrove;
-//     address: string; //Offer logic address
-//   };
-//   /*
-//    *  This basic API will connect to an onchain offerLogic that relays new/cancel/update
-//    *  offer order.
-//    */
-
-//   type OptParams = { gasreq?: number; gasprice?: number };
-
-//   export type OfferParams =
-//     | ({ price: Bigish; volume: Bigish } & OptParams)
-//     | ({ wants: Bigish; gives: Bigish } & OptParams);
-
-//   export type SignerOrProvider =
-//     | ethers.ethers.Signer
-//     | ethers.ethers.providers.Provider;
-
-// }
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 
@@ -81,6 +58,7 @@ class OfferLogic {
   /**
    * @note Returns the allowance Mangrove has to spend token on the contract's
    * behalf.
+   * @returns the current allowance the contract has on Mangrove
    */
   mangroveAllowance(tokenName: string): Promise<Big> {
     return this.mgv
@@ -91,27 +69,64 @@ class OfferLogic {
   /**
    *
    * @note Approve Mangrove to spend tokens on the contract's behalf.
+   * @dev Contract admin only. This has to be performed for each outbound token the contract might send to takers.
+   * @param arg optional `arg.amount` for allowance is by default max uint256
    */
   approveMangrove(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    let amount_: ethers.BigNumber;
-    if (arg.amount) {
-      amount_ = this.mgv.toUnits(arg.amount, 18);
-    } else {
-      amount_ = ethers.constants.MaxUint256;
-    }
     return this.contract.approveMangrove(
       this.mgv.getAddress(tokenName),
-      amount_,
       overrides
     );
   }
 
-  // admin only. Approves router to pull and push liquidity on maker contract
-  enableRouting(
+  /**
+   * @note Returns this logic's router. If logic has no router this call will return `undefined`
+   * @returns the router ethers.js contract responding to the `AbstractRouter` abi.
+   */
+  async router(): Promise<typechain.AbstractRouter | undefined> {
+    if (await this.contract.has_router()) {
+      const router_address = await this.contract.router();
+      return typechain.AbstractRouter__factory.connect(
+        router_address,
+        this.mgv._signer
+      );
+    }
+  }
+
+  aaveModule(address: string): AaveV3Module {
+    return new AaveV3Module(this.mgv, address);
+  }
+
+  /**
+   * @note Approves the logic to spend `token`s on signer's behalf.
+   * This has to be done for each token the signer's wishes to ask or bid for.
+   * @param arg optional `arg.amount` can be used if one wishes to approve a finite amount
+   */
+  async approveToken(
+    tokenName: string,
+    arg: { amount?: Bigish } = {},
+    overrides: ethers.Overrides
+  ): Promise<TransactionResponse> {
+    const router: typechain.AbstractRouter | undefined = await this.router();
+    const token = this.mgv.token(tokenName);
+    if (router) {
+      // LP's logic is using a router to manage its liquidity
+      return token.approve(router.address, arg, overrides);
+    } else {
+      // LP's logic is doing the routing itself
+      return token.approve(this.address, arg, overrides);
+    }
+  }
+
+  /**
+   * @note Approves router to pull and push `tokenName` on maker contract.
+   * @dev admin only. Call will throw if contract doesn't have a router
+   * This function has to be called once by admin for each outbound token the logic is going to send
+   */
+  approveRouter(
     tokenName: string,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
@@ -121,8 +136,17 @@ class OfferLogic {
     );
   }
 
-  /** Get the current balance an LP has on Mangrove */
-  /** If owner fee is not provided, then the balance of the contract is queried */
+  async routerAllowance(tokenName: string): Promise<Big> {
+    const router_address = (await this.router()).address;
+    return await this.mgv
+      .token(tokenName)
+      .allowance({ owner: this.address, spender: router_address });
+  }
+
+  /**
+   * @note Get the current provision balance (native token) the logic has on Mangrove
+   * @dev if the underlying logic is multi user, then this only shows the pooled provision the contract has on Mangrove
+   **/
   async balanceOnMangrove(
     owner: string = this.address,
     overrides: ethers.Overrides = {}
@@ -130,18 +154,34 @@ class OfferLogic {
     return this.mgv.balanceOf(owner, overrides);
   }
 
+  /**
+   * @note a contract's reserve is where contract's liquidity is stored (waiting for a trade execution)
+   * This function returns the balance of a token type on contract's reserve (note that where tokens are stored depends on the contracts immplementation)
+   * if this contract is single user this is the contracts's unique reserve, if it is multi user this is the signer's reserve of tokens
+   * @param tokenName one wishes to know the balance of.
+   * @param overrides ethers.js overrides
+   * @returns the balance of tokens
+   */
+
   async tokenBalance(
-    args: { tokenName: string; owner?: string },
+    tokenName: string,
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
     const rawBalance = await this.contract.tokenBalance(
-      this.mgv.getAddress(args.tokenName),
+      this.mgv.getAddress(tokenName),
       overrides
     );
-    return this.mgv.fromUnits(rawBalance, args.tokenName);
+    return this.mgv.fromUnits(rawBalance, tokenName);
   }
 
-  /** Redeems `amount` tokens from the contract's account */
+  /**
+   * @note Withdraws `amount` tokens from offer logic
+   * if contract is single user tokens are redeems from the contract's reserve (admin only tx)
+   * if contract is multi user, tokens are redeemed form signer's reserve
+   * @param tokenName the token type on wishes to withdraw
+   * @param recipient the address to which the withdrawn tokens should be sent
+   * @param overrides ethers.js overrides
+   * */
   withdrawToken(
     tokenName: string,
     recipient: string,
@@ -202,7 +242,7 @@ class OfferLogic {
     return this.contract.admin();
   }
 
-  newOffer(
+  async newOffer(
     outbound_tkn: MgvToken,
     inbound_tkn: MgvToken,
     wants: Bigish,
@@ -211,20 +251,39 @@ class OfferLogic {
     gasprice: number,
     pivot: number,
     overrides: ethers.PayableOverrides
-  ): Promise<TransactionResponse> {
-    return this.contract.newOffer(
+  ): Promise<ethers.ContractTransaction> {
+    const gasreq_bn = gasreq ? gasreq : ethers.constants.MaxUint256;
+    const gasprice_bn = gasprice ? gasprice : 0;
+    const fund = overrides.value ? overrides.value : 0;
+    if (this.isMultiMaker) {
+      // checking transfered native tokens are enough to cover gasprice
+      const provision = await this.contract.getMissingProvision(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        gasreq_bn,
+        gasprice_bn,
+        0
+      );
+      if (provision < fund) {
+        throw Error(
+          "New offer doesn't have enough provision to cover for bounty"
+        );
+      }
+    }
+    const response = await this.contract.newOffer(
       {
         outbound_tkn: outbound_tkn.address,
         inbound_tkn: inbound_tkn.address,
         wants: inbound_tkn.toUnits(wants),
         gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq ? gasreq : ethers.constants.MaxUint256,
-        gasprice: gasprice ? gasprice : 0,
+        gasreq: gasreq_bn,
+        gasprice: gasprice_bn,
         pivotId: pivot ? pivot : 0,
         offerId: 0,
       },
       overrides
     );
+    return response;
   }
 
   updateOffer(
@@ -253,6 +312,7 @@ class OfferLogic {
     );
   }
 
+  // todo look in the tx receipt for the `Debit(maker, amount)` log emitted by mangrove in order to returned a value to user
   retractOffer(
     outbound_tkn: MgvToken,
     inbound_tkn: MgvToken,

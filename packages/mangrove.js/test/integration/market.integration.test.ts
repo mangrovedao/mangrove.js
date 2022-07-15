@@ -196,10 +196,10 @@ describe("Market integration tests suite", () => {
 
     // make a buy, which we expect to provoke an OfferFail
     const result = await market.buy({ wants: "1", gives: "1.5" });
-    expect(result.failures).to.have.lengthOf(1);
-    expect(utils.parseBytes32String(result.failures[0].reason)).to.be.equal(
-      "mgv/makerTransferFail"
-    );
+    expect(result.tradeFailures).to.have.lengthOf(1);
+    expect(
+      utils.parseBytes32String(result.tradeFailures[0].reason)
+    ).to.be.equal("mgv/makerTransferFail");
     expect(result.successes).to.have.lengthOf(0);
     expect(result.summary.penalty.toNumber()).to.be.greaterThan(0);
     //expect(result.failures[0].offerId).to.be.equal(1);
@@ -219,7 +219,8 @@ describe("Market integration tests suite", () => {
 
     await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
     const result_ = await market.buy({ wants: "1", gives: "1.5" });
-    expect(result_.failures).to.have.lengthOf(0);
+    expect(result_.tradeFailures).to.have.lengthOf(0);
+    expect(result_.posthookFailures).to.have.lengthOf(0);
     expect(result_.successes).to.have.lengthOf(1);
     expect(result_.successes[0].got.toNumber()).to.be.greaterThan(0);
     expect(result_.successes[0].gave.toNumber()).to.be.greaterThan(0);

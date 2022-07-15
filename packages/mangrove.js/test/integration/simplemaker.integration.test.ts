@@ -36,13 +36,7 @@ describe("SimpleMaker", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
-      // const mkr = await mgv.makerConnect({
-      //   address: mkr_address,
-      //   base: "TokenA",
-      //   quote: "TokenB",
-      // });
-      //check that contract responds
-      await lp.logic.contract.ofr_gasreq();
+      await lp.logic?.contract.ofr_gasreq();
     });
   });
 
@@ -86,25 +80,8 @@ describe("SimpleMaker", () => {
           "allowance should be 0"
         );
 
-        const overridesTest = { gasLimit: 100000 };
-        // test specified approve amount
-        await w(
-          onchain_lp.approveMangrove(
-            "TokenB",
-            { amount: 10 ** 9 },
-            overridesTest
-          )
-        );
-        allowanceForLogic /*:Big*/ = await onchain_lp.mangroveAllowance(
-          "TokenB"
-        );
-        assert.strictEqual(
-          allowanceForLogic.toNumber(),
-          10 ** 9,
-          "allowance should be 1 billion"
-        );
         // test default approve amount
-        await w(onchain_lp.logic.approveMangrove("TokenB"));
+        await w(onchain_lp.logic?.approveMangrove("TokenB"));
         allowanceForLogic /*:Big*/ = await onchain_lp.mangroveAllowance(
           "TokenB"
         );
@@ -173,7 +150,6 @@ describe("SimpleMaker", () => {
         const getBal = async () =>
           mgv._provider.getBalance(await mgv._signer.getAddress());
         let tx = await onchain_lp.fundMangrove(10);
-        console.log(await onchain_lp.balanceOnMangrove());
         await tx.wait();
         const oldBal = await getBal();
         tx = await onchain_lp.withdrawFromMangrove(10);
@@ -188,19 +164,26 @@ describe("SimpleMaker", () => {
       });
 
       it("pushes a new offer", async () => {
-        const provision = await onchain_lp.computeAskProvision({});
+        const provision = await onchain_lp.computeAskProvision();
+
         const { id: ofrId } = await onchain_lp.newAsk({
           wants: 10,
           gives: 10,
           fund: provision,
         });
-        const asks = onchain_lp.asks();
-        assert.strictEqual(
-          asks.length,
-          1,
-          "there should be one ask in the book"
+        assert(
+          await onchain_lp.market.isLive("asks", ofrId),
+          "Offer should be live"
         );
-        assert.deepStrictEqual(asks[0].id, ofrId, "wrong offer id");
+        // this does not work because newAsk is not synced with cache
+        // const asks = onchain_lp.asks();
+        // assert.strictEqual(
+        //   asks.length,
+        //   1,
+        //   "there should be one ask in the book"
+        // );
+        // assert.deepStrictEqual(asks[0].id, ofrId, "wrong offer id");
+
         const missingProvision = await onchain_lp.computeAskProvision({
           id: ofrId,
         });
@@ -211,29 +194,37 @@ describe("SimpleMaker", () => {
       });
 
       it("cancels offer", async () => {
-        const provision = await onchain_lp.computeBidProvision({});
+        // huge provision to maker sure refund exceeds gas costs
+        const prov = await onchain_lp.computeBidProvision({ gasprice: 12000 });
         const { id: ofrId } = await onchain_lp.newBid({
           wants: 10,
           gives: 20,
-          fund: provision,
+          gasprice: 12000,
+          fund: prov,
         });
+        let prov_before_cancel = await mgv._provider.getBalance(
+          await onchain_lp.mgv._signer.getAddress()
+        );
 
-        let prov_before_cancel = await onchain_lp.balanceOnMangrove();
         await onchain_lp.retractBid(ofrId, true); // with deprovision
-
-        const bids = onchain_lp.bids();
-        assert.strictEqual(bids.length, 0, "offer should have been canceled");
-
-        let prov_after_cancel = await onchain_lp.balanceOnMangrove();
+        let prov_after_cancel = await mgv._provider.getBalance(
+          await onchain_lp.mgv._signer.getAddress()
+        );
         assert(
-          prov_after_cancel.gt(prov_before_cancel),
+          prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
           "Maker was not refunded"
         );
-        await onchain_lp.retractBid(ofrId);
-        let prov_after_cancel2 = await onchain_lp.balanceOnMangrove();
-        assert.strictEqual(
-          prov_after_cancel2.toString(),
-          prov_after_cancel.toString(),
+        assert(
+          onchain_lp.bids().length === 0,
+          "Bid was not removed from the book"
+        );
+
+        await onchain_lp.retractBid(ofrId, true);
+        let prov_after_cancel2 = await mgv._provider.getBalance(
+          await onchain_lp.mgv._signer.getAddress()
+        );
+        assert(
+          prov_after_cancel2.lt(prov_after_cancel), // cannot do better because of gas cost
           "Cancel twice should not provision maker"
         );
       });
@@ -266,10 +257,11 @@ describe("SimpleMaker", () => {
       });
 
       it("changes gasreq", async () => {
-        await onchain_lp.logic.setDefaultGasreq(50000);
+        const tx = await onchain_lp.logic?.setDefaultGasreq(50000);
+        await tx?.wait();
         assert.strictEqual(
           50000,
-          (await onchain_lp.logic.contract.ofr_gasreq()).toNumber(),
+          (await onchain_lp.logic?.contract.ofr_gasreq()).toNumber(),
           "Offer default gasreq not updated"
         );
       });
