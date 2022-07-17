@@ -71,13 +71,10 @@ describe("RestingOrder", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
-      mgv.orderContract.approveRouter(mgv.getAddress("TokenA"));
-      mgv.orderContract.approveRouter(mgv.getAddress("TokenB"));
 
       orderContractAsLP = await logic.liquidityProvider(market);
 
-      await w(orderContractAsLP.approveMangrove("TokenA"));
-      await w(orderContractAsLP.approveMangrove("TokenB"));
+      await w(orderContractAsLP.logic.activate(["TokenA", "TokenB"]));
 
       // minting As and Bs for test runner
       const me = await mgv._signer.getAddress();

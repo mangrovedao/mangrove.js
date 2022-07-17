@@ -1,5 +1,8 @@
 # next version
 
+- several bugfixes
+- [strats] Providing an 'activate' function to enable strat admin to set required allowances in a single transaction
+- Providing access to `activate` in the API (`OfferLogic` class)
 - new class (to be improved) 'aaveV3Module' to cast a contract address into an ethers.js contract with the ABI of 'AaveV3Module.sol'
 - [major update] adding `enableRouting` function on `liquidityProvider` class to approve router to route liquidity on current market.
 - `cancelOffer/Bid/Ask` is now called `retractOffer/Bid/Ask` to match Mangrove's naming scheme

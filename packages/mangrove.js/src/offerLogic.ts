@@ -15,6 +15,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 */
 import Big from "big.js";
 import MgvToken from "./mgvtoken";
+import { BigNumberish } from "@ethersproject/bignumber";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 
@@ -242,6 +243,17 @@ class OfferLogic {
     return this.contract.admin();
   }
 
+  // admin action for contract
+  activate(
+    tokenNames: string[],
+    overrides: ethers.Overrides = {}
+  ): Promise<TransactionResponse> {
+    const tokenAddresses = tokenNames.map(
+      (tokenName) => this.mgv.token(tokenName).address
+    );
+    return this.contract.activate(tokenAddresses, overrides);
+  }
+
   async newOffer(
     outbound_tkn: MgvToken,
     inbound_tkn: MgvToken,
@@ -254,7 +266,7 @@ class OfferLogic {
   ): Promise<ethers.ContractTransaction> {
     const gasreq_bn = gasreq ? gasreq : ethers.constants.MaxUint256;
     const gasprice_bn = gasprice ? gasprice : 0;
-    const fund = overrides.value ? overrides.value : 0;
+    const fund: BigNumberish = overrides.value ? await overrides.value : 0;
     if (this.isMultiMaker) {
       // checking transfered native tokens are enough to cover gasprice
       const provision = await this.contract.getMissingProvision(
@@ -264,9 +276,13 @@ class OfferLogic {
         gasprice_bn,
         0
       );
-      if (provision < fund) {
+      if (provision.gt(fund)) {
         throw Error(
-          "New offer doesn't have enough provision to cover for bounty"
+          `New offer doesn't have enough provision (
+            ${ethers.utils.formatEther(fund)}
+          ) to cover for bounty (
+            ${this.mgv.fromUnits(provision, 18)}
+          )`
         );
       }
     }
