@@ -246,7 +246,7 @@ class OfferLogic {
   // admin action for contract
   activate(
     tokenNames: string[],
-    overrides: ethers.Overrides
+    overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
     const tokenAddresses = tokenNames.map(
       (tokenName) => this.mgv.token(tokenName).address
