@@ -626,8 +626,8 @@ class Market {
         const event = evt as TCM.OfferSuccessEvent;
         result.successes.push({
           offerId: event.args.id.toNumber(),
-          got: this[gave_bq].fromUnits(event.args.takerWants),
-          gave: this[got_bq].fromUnits(event.args.takerGives),
+          got: this[got_bq].fromUnits(event.args.takerWants),
+          gave: this[gave_bq].fromUnits(event.args.takerGives),
         });
         return result;
       }
