@@ -8,10 +8,8 @@
 const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const yargs = require("yargs");
 import { ethers } from "ethers";
 import * as eth from "../eth";
-// const {Mangrove} = require("../mangrove");
 import { Mangrove } from "../";
 
 const DEFAULT_HOST = "127.0.0.1";
@@ -19,7 +17,46 @@ const DEFAULT_PORT = 8546;
 const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 
+import yargs from "yargs/yargs";
+
+// ignore command line if not main module, but still read from env vars
+const cmdLineArgv = require.main === module ? process.argv.slice(2) : [];
+const argv = yargs(cmdLineArgv)
+  .usage("Run a test Mangrove deployment on a server")
+  .version(false)
+  .option("host", {
+    describe: "The IP address the server will listen on",
+    type: "string",
+    default: DEFAULT_HOST,
+  })
+  .option("port", {
+    describe: "Port number to listen on",
+    type: "string",
+    default: DEFAULT_PORT,
+  })
+  .option("spawn-server", {
+    describe: "Do not spawn a new node",
+    type: "boolean",
+    default: true,
+  })
+  .option("use-cache", {
+    describe: "Read/write ./state.dump file when possible",
+    type: "boolean",
+    default: false,
+  })
+  .option("deploy", {
+    describe: "Do not spawn a new node",
+    type: "boolean",
+    default: true,
+  })
+  .env("MGV_TEST") // allow env vars like MGV_TEST_DEPLOY=false
+  .help().argv;
+
 const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
+
+const defaultParams = (params: any) => {
+  return { ...argv, ...params };
+};
 
 // first three default anvil accounts
 const anvilAccounts = [
@@ -42,92 +79,82 @@ const script = require.resolve(
   "@mangrovedao/mangrove-solidity/scripts/test-deploy.sol"
 );
 
-const DEFAULT_PARAMS = {
-  host: DEFAULT_HOST,
-  port: DEFAULT_PORT,
-  pipeAnvil: false,
-  useCache: false, // use state.dump if it exists, creates one otherwise
-  spawnServer: true,
-  deploy: true,
-};
+/* Spawn a test server */
+const spawn = async (params: any) => {
+  params = defaultParams(params);
 
-let anvil;
+  const anvil = childProcess.spawn("anvil", [
+    "--host",
+    params.host,
+    "--port",
+    params.port,
+    "--order",
+    "fifo", // just mine as you receive
+    "--mnemonic",
+    LOCAL_MNEMONIC,
+  ]);
 
-const start = async (params: any) => {
-  params = { ...DEFAULT_PARAMS, ...params };
-  if (process.env["MGV_TEST_USE_CACHE"] === "true") {
-    params.useCache = true;
-  } else if (process.env["MGV_TEST_USE_CACHE"] === "false") {
-    params.useCache = false;
-  }
+  anvil.stdout.setEncoding("utf8");
+  anvil.on("close", (code) => {
+    if (code !== null) {
+      console.log(`anvil has closed with code ${code}`);
+    }
+  });
 
-  if (process.env["MGV_TEST_NO_SPAWN_SERVER"] === "true") {
-    params.spawnServer = false;
-  } else if (process.env["MGV_TEST_NO_SPAWN_SERVER"] === "false") {
-    params.spawnServer = true;
-  }
+  anvil.stderr.on("data", (data) => {
+    console.error(`anvil: stderr: ${data}`);
+  });
 
-  if (process.env["MGV_TEST_NO_DEPLOY"] === "true") {
-    params.deploy = false;
-  } else if (process.env["MGV_TEST_NO_DEPLOY"] === "false") {
-    params.deploy = true;
-  }
+  process.on("exit", function () {
+    anvil.kill();
+  });
 
-  if (params.spawnServer) {
-    anvil = childProcess.spawn("anvil", [
-      "--host",
-      params.host,
-      "--port",
-      params.port,
-      "--order",
-      "fifo", // just mine as you receive
-      "--mnemonic",
-      LOCAL_MNEMONIC,
-    ]);
+  const serverClosedPromise = new Promise<void>((ok) => {
+    if (params.spawnServer) {
+      anvil.on("close", ok);
+    } else {
+      ok();
+    }
+  });
 
-    anvil.stdout.setEncoding("utf8");
-    anvil.on("close", (code) => {
-      if (code !== null) {
-        console.log(`anvil has closed with code ${code}`);
+  // wait a while for anvil to be ready, then bail
+  const serverReady = new Promise<void>((ok, ko) => {
+    let ready = null;
+    setTimeout(() => {
+      if (ready === null) {
+        ready = false;
+        ko("timeout");
+      }
+    }, 3000);
+    anvil.stdout.on("data", (data) => {
+      if (params.pipeAnvil) {
+        console.log(data);
+      }
+      if (ready !== null) {
+        return;
+      }
+      for (const line of data.split("\n")) {
+        if (line.startsWith(`Listening on`)) {
+          ready = true;
+          ok();
+          break;
+        }
       }
     });
+  });
 
-    anvil.stderr.on("data", (data) => {
-      console.error(`anvil: stderr: ${data}`);
-    });
+  await serverReady;
 
-    process.on("exit", function () {
-      anvil.kill();
-    });
+  return {
+    accounts: anvilAccounts,
+    serverClosedPromise,
+    process: anvil,
+  };
+};
 
-    // wait a while for anvil to be ready, then bail
-    const serverReady = new Promise<void>((ok, ko) => {
-      let ready = null;
-      setTimeout(() => {
-        if (ready === null) {
-          ready = false;
-          ko("timeout");
-        }
-      }, 3000);
-      anvil.stdout.on("data", (data) => {
-        if (params.pipeAnvil) {
-          console.log(data);
-        }
-        if (ready !== null) {
-          return;
-        }
-        for (const line of data.split("\n")) {
-          if (line.startsWith(`Listening on`)) {
-            ready = true;
-            ok();
-            break;
-          }
-        }
-      });
-    });
-
-    await serverReady;
-  }
+/* Run a deployment, populate Mangrove addresses */
+const deploy = async (params: any) => {
+  params = defaultParams(params);
 
   const providerUrl = `http://${params.host}:${params.port}`;
 
@@ -149,59 +176,49 @@ const start = async (params: any) => {
     await provider.send("anvil_loadState", [state]);
     console.log("...done.");
   } else {
-    if (params.deploy) {
-      // await provider.send("anvil_setLoggingEnabled", [true]);
-      const forgeScriptCmd = `forge script \
-      --rpc-url http://${params.host}:${params.port} \
-      --froms ${mnemonic.address(0)} \
-      --private-key ${mnemonic.key(0)} \
-      --broadcast --json \
-      ${script}`;
+    // await provider.send("anvil_setLoggingEnabled", [true]);
+    const forgeScriptCmd = `forge script \
+    --rpc-url http://${params.host}:${params.port} \
+    --froms ${mnemonic.address(0)} \
+    --private-key ${mnemonic.key(0)} \
+    --broadcast --json \
+    ${script}`;
 
-      console.log("Running forge script:");
-      console.log(forgeScriptCmd);
-      // Warning: using exec & awaiting promise instead of using the simpler `execSync`
-      // due to the following issue: when too many transactions are broadcast by the script,
-      // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
-      // Using util.promisify on childProcess.exec recreates the issue.
-      // Must be investigated further if it pops up again.
-      const scriptPromise = new Promise((ok, ko) => {
-        childProcess.exec(
-          forgeScriptCmd,
-          {
-            encoding: "utf8",
-            env: process.env,
-          },
-          (error, stdout, stderr) => {
-            if (error) {
-              throw error;
-            }
-            console.error("forge cmd stdout:");
-            console.error(stdout);
-            if (stderr.length > 0) {
-              console.error("forge cmd stderr:");
-              console.error(stderr);
-            }
-            ok(void 0);
+    console.log("Running forge script:");
+    console.log(forgeScriptCmd);
+    // Warning: using exec & awaiting promise instead of using the simpler `execSync`
+    // due to the following issue: when too many transactions are broadcast by the script,
+    // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
+    // Using util.promisify on childProcess.exec recreates the issue.
+    // Must be investigated further if it pops up again.
+    const scriptPromise = new Promise((ok, ko) => {
+      childProcess.exec(
+        forgeScriptCmd,
+        {
+          encoding: "utf8",
+          env: process.env,
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            throw error;
           }
-        );
-      });
-      await scriptPromise;
-      if (params.useCache) {
-        const stateData = await provider.send("anvil_dumpState", []);
-        fs.writeFileSync(stateCache, stateData);
-        console.log(`Wrote state cache to ${stateCache}`);
-      }
+          console.error("forge cmd stdout:");
+          console.error(stdout);
+          if (stderr.length > 0) {
+            console.error("forge cmd stderr:");
+            console.error(stderr);
+          }
+          ok(void 0);
+        }
+      );
+    });
+    await scriptPromise;
+    if (params.useCache) {
+      const stateData = await provider.send("anvil_dumpState", []);
+      fs.writeFileSync(stateCache, stateData);
+      console.log(`Wrote state cache to ${stateCache}`);
     }
   }
-
-  const spawnedServerClosedIfAny = new Promise<void>((ok) => {
-    if (params.spawnServer) {
-      anvil.on("close", ok);
-    } else {
-      ok();
-    }
-  });
 
   // convenience: try to populate global Mangrove instance if possible
   await Mangrove.fetchAllAddresses(provider);
@@ -209,9 +226,6 @@ const start = async (params: any) => {
   let lastSnapshotId;
 
   return {
-    accounts: anvilAccounts,
-    process: anvil,
-    spawnedServerClosedIfAny,
     url: providerUrl,
     params,
     snapshot: async () =>
@@ -221,8 +235,38 @@ const start = async (params: any) => {
   };
 };
 
+/* Runs a server and/or a deploy, depending on commandline/environment parameters */
+const defaultRun = async (params: any) => {
+  params = defaultParams(params);
+
+  let spawnInfo;
+
+  if (params.spawnServer) {
+    spawnInfo = await spawn(params);
+  }
+
+  let deployInfo;
+  if (params.deploy) {
+    deployInfo = await deploy(params);
+  }
+
+  if (!params.deploy) {
+    // fetch always, even if deploy did not occur
+    const providerUrl = `http://${params.host}:${params.port}`;
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+    await Mangrove.fetchAllAddresses(provider);
+  }
+
+  return {
+    params: defaultParams(params),
+    ...spawnInfo,
+    ...deployInfo,
+  };
+};
+
 type fetchedContract = { name: string; address: string; isToken: boolean };
 
+/* Fetch all Toy ENS entries, used to give contract addresses to Mangrove */
 const getAllToyENSEntries = async (
   provider: ethers.providers.Provider
 ): Promise<fetchedContract[]> => {
@@ -243,52 +287,14 @@ const getAllToyENSEntries = async (
   return contracts;
 };
 
-// if running as script, start anvil
+/* If running as script, start anvil. */
 if (require.main === module) {
-  const argv = require("yargs")
-    .usage("Run a test Mangrove deployment on a server")
-    .version(false)
-    .option("host", {
-      describe: "The IP address the server will listen on",
-      type: "string",
-      default: DEFAULT_HOST,
-    })
-    .option("port", {
-      describe: "Port number to listen on",
-      type: "string",
-      default: DEFAULT_PORT,
-    })
-    .option("spawn-server", {
-      describe: "Do not spawn a new node",
-      type: "boolean",
-      default: true,
-    })
-    .option("use-cache", {
-      describe: "Read/write ./state.dump file when possible",
-      type: "boolean",
-      default: false,
-    })
-    .option("deploy", {
-      describe: "Do not spawn a new node",
-      type: "boolean",
-      default: true,
-    })
-    .help().argv;
-
   const main = async () => {
-    const { params, spawnedServerClosedIfAny } = await start({
-      host: argv.host,
-      port: argv.port,
-      spawnServer: argv.spawnServer,
-      useCache: argv.useCache,
-      deploy: argv.deploy,
-      pipeAnvil: argv.spawnServer,
-    });
-
-    if (params.spawnServer) {
+    const { params, serverClosedPromise } = await defaultRun(undefined);
+    if (serverClosedPromise) {
       console.log("Server ready.");
+      await serverClosedPromise;
     }
-    await spawnedServerClosedIfAny;
   };
   main()
     .then(() => {
@@ -300,5 +306,12 @@ if (require.main === module) {
     });
 }
 
-export { start, LOCAL_MNEMONIC, getAllToyENSEntries, Mangrove };
-export default start;
+export {
+  spawn,
+  deploy,
+  defaultRun,
+  LOCAL_MNEMONIC,
+  getAllToyENSEntries,
+  Mangrove,
+};
+export default defaultRun;

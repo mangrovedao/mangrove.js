@@ -10,7 +10,7 @@ const params = {
 
 exports.mochaHooks = {
   async beforeAll() {
-    this.server = await testServer.start(params);
+    this.server = await testServer.defaultRun(params);
     this.accounts = {
       deployer: this.server.accounts[0],
       tester: this.server.accounts[1],
