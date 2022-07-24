@@ -163,7 +163,6 @@ describe("SimpleMaker", () => {
           18
         );
 
-        console.log("diff", (await getBal()).sub(oldBal));
         /* FIXME the effectiveGasPrice returned by anvil is incorrect, so for now we do an approx estimate. */
         const diff2 = (await getBal()).sub(oldBal).add(txcost);
         assert(approxEq(diff2, mgv.toUnits(10, 18), "0.001"), "wrong balance");

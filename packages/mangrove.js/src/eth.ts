@@ -41,6 +41,36 @@ export interface ProviderNetwork {
   name: string;
 }
 
+export class Mnemonic {
+  mnemonic: string;
+  iterateOn: "account" | "change" | "index";
+  static path(iterator, iterateOn: "account" | "change" | "index"): string {
+    const params = { account: 0, change: 0, index: 0 };
+    params[iterateOn] = iterator;
+    return `m/44'/60'/${params.account}'/${params.change}/${params.index}`;
+  }
+  constructor(
+    mnemonic: string,
+    iterateOn: "account" | "change" | "index" = "index"
+  ) {
+    this.mnemonic = mnemonic;
+    this.iterateOn = iterateOn;
+  }
+
+  signer(iterator: number): ethers.Wallet {
+    const path = Mnemonic.path(iterator, this.iterateOn);
+    return ethers.Wallet.fromMnemonic(this.mnemonic, path);
+  }
+
+  address(iterator: number) {
+    return this.signer(iterator).address;
+  }
+
+  key(iterator: number) {
+    return this.signer(iterator).privateKey;
+  }
+}
+
 /**
  * This helps the mangrove.js constructor discover which Ethereum network the
  *     developer wants to use.
@@ -177,9 +207,10 @@ export async function _createSigner(
       contextInfo: "eth.signer",
       data: { signer: options.signer },
     });
-    provider = process.env["MGV_TEST_DEBUG"]
-      ? new LoggingProvider(provider)
-      : new providers.JsonRpcProvider(provider);
+    provider =
+      process.env["MGV_TEST_DEBUG"] === "true"
+        ? new LoggingProvider(provider)
+        : new providers.JsonRpcProvider(provider);
   } else if (provider instanceof ethers.providers.JsonRpcProvider) {
     logger.debug("Uses given provider", {
       contextInfo: "eth.signer",
