@@ -9,7 +9,7 @@ import {
   defaultDisplayedPriceDecimals,
 } from "./constants";
 import * as eth from "./eth";
-import * as testServer from "./util/testServer";
+import testServer from "./util/testServer";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
 import { LiquidityProvider, OfferLogic, MgvToken, Market } from ".";

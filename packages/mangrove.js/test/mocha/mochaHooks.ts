@@ -1,6 +1,5 @@
 const { ethers } = require("ethers");
-const { Mangrove, eth } = require("../../src");
-const testServer = require("../../src/util/testServer");
+const { Mangrove, eth, testServer } = require("../../src");
 
 const params = {
   host: "127.0.0.1",
@@ -11,7 +10,7 @@ const params = {
 
 exports.mochaHooks = {
   async beforeAll() {
-    this.server = await testServer.defaultRun(params);
+    this.server = await testServer(params).defaultRun();
     this.accounts = {
       deployer: this.server.accounts[0],
       tester: this.server.accounts[1],

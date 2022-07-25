@@ -20,56 +20,9 @@ const LOCAL_MNEMONIC =
 
 import yargs from "yargs/yargs";
 
-// ignore command line if not main module, but still read from env vars
-const cmdLineArgv = require.main === module ? process.argv.slice(2) : [];
-const argv = yargs(cmdLineArgv)
-  .usage("Run a test Mangrove deployment on a server")
-  .version(false)
-  .option("host", {
-    describe: "The IP address the server will listen on",
-    type: "string",
-    default: DEFAULT_HOST,
-  })
-  .option("port", {
-    describe: "Port number to listen on",
-    type: "string",
-    default: DEFAULT_PORT,
-  })
-  .option("spawn-server", {
-    describe: "Do not spawn a new node",
-    type: "boolean",
-    default: true,
-  })
-  .option("use-cache", {
-    describe: "Read/write ./state.dump file when possible",
-    type: "boolean",
-    default: false,
-  })
-  .option("deploy", {
-    describe: "Do not spawn a new node",
-    type: "boolean",
-    default: true,
-  })
-  .option("script", {
-    describe: "Path to forge script (from foundry's root dir)",
-    type: "string",
-  })
-  .option("target-contract", {
-    describe: "Specify forge script --target-contract, if necessary",
-    type: "string",
-    default: undefined,
-  })
-  .env("MGV_TEST") // allow env vars like MGV_TEST_DEPLOY=false
-  .help().argv;
-
-const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
-
-const defaultParams = (params: any) => {
-  return { ...argv, ...params };
-};
-
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value
+const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
 const anvilAccounts = [
   {
     address: mnemonic.address(0),
@@ -87,10 +40,52 @@ const anvilAccounts = [
 
 const stateCache = path.resolve("./state.dump");
 
+const computeArgv = (params: any) => {
+  // ignore command line if not main module, but still read from env vars
+  // note: this changes yargs' default precedence, which is (high to low):
+  // cmdline args -> env vars -> config(obj) -> defaults
+  const cmdLineArgv = require.main === module ? process.argv.slice(2) : [];
+  return yargs(cmdLineArgv)
+    .usage("Run a test Mangrove deployment on a server")
+    .version(false)
+    .config(params)
+    .option("host", {
+      describe: "The IP address the server will listen on",
+      type: "string",
+      default: DEFAULT_HOST,
+    })
+    .option("port", {
+      describe: "Port number to listen on",
+      type: "string",
+      default: DEFAULT_PORT,
+    })
+    .option("spawn-server", {
+      describe: "Do not spawn a new node",
+      type: "boolean",
+      default: true,
+    })
+    .option("use-cache", {
+      describe: "Read/write ./state.dump file when possible",
+      type: "boolean",
+      default: false,
+    })
+    .option("deploy", {
+      describe: "Do not spawn a new node",
+      type: "boolean",
+      default: true,
+    })
+    .option("script", {
+      describe: "Path to forge script (contract or path or path:contract)",
+      demandOption: true,
+      requiresArg: true,
+      type: "string",
+    })
+    .env("MGV_TEST") // allow env vars like MGV_TEST_DEPLOY=false
+    .help().argv;
+};
+
 /* Spawn a test server */
 const spawn = async (params: any) => {
-  params = defaultParams(params);
-
   const anvil = childProcess.spawn("anvil", [
     "--host",
     params.host,
@@ -152,12 +147,8 @@ const spawn = async (params: any) => {
   });
 
   await serverReady;
-
-  const providerUrl = `http://${params.host}:${params.port}`;
-  const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-  // await provider.send('anvil_setCode',[CREATE3_ADDRESS,CREATE3_CODE]);
   // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-  await provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
+  await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
 
   return {
     accounts: anvilAccounts,
@@ -168,15 +159,9 @@ const spawn = async (params: any) => {
 
 /* Run a deployment, populate Mangrove addresses */
 const deploy = async (params: any) => {
-  params = defaultParams(params);
-
-  const providerUrl = `http://${params.host}:${params.port}`;
-
-  const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-
   // test connectivity
   try {
-    await provider.send("eth_chainId", []);
+    await params.provider.send("eth_chainId", []);
   } catch (err) {
     throw new Error(
       "Could not get chain id, is the anvil server running?\nOriginal error: \n" +
@@ -187,7 +172,7 @@ const deploy = async (params: any) => {
   if (params.useCache && fs.existsSync(stateCache)) {
     const state = fs.readFileSync(stateCache, "utf8");
     console.log("Loading state from cache...");
-    await provider.send("anvil_loadState", [state]);
+    await params.provider.send("anvil_loadState", [state]);
     console.log("...done.");
   } else {
     // await provider.send("anvil_setLoggingEnabled", [true]);
@@ -230,30 +215,28 @@ const deploy = async (params: any) => {
       );
     });
     await scriptPromise;
-    const stateData = await provider.send("anvil_dumpState", []);
+    const stateData = await params.provider.send("anvil_dumpState", []);
     fs.writeFileSync(stateCache, stateData);
     console.log(`Wrote state cache to ${stateCache}`);
   }
 
   // convenience: try to populate global Mangrove instance if possible
-  await Mangrove.fetchAllAddresses(provider);
+  await Mangrove.fetchAllAddresses(params.provider);
 
   let lastSnapshotId;
 
   return {
-    url: providerUrl,
+    url: params.url,
     params,
     snapshot: async () =>
-      (lastSnapshotId = await provider.send("evm_snapshot", [])),
+      (lastSnapshotId = await params.provider.send("evm_snapshot", [])),
     revert: (snapshotId = lastSnapshotId) =>
-      provider.send("evm_revert", [snapshotId]),
+      params.provider.send("evm_revert", [snapshotId]),
   };
 };
 
 /* Runs a server and/or a deploy, depending on commandline/environment parameters */
 const defaultRun = async (params: any) => {
-  params = defaultParams(params);
-
   let spawnInfo;
 
   if (params.spawnServer) {
@@ -273,7 +256,7 @@ const defaultRun = async (params: any) => {
   }
 
   return {
-    params: defaultParams(params),
+    params,
     ...spawnInfo,
     ...deployInfo,
   };
@@ -293,10 +276,37 @@ const getAllToyENSEntries = async (
   return contracts;
 };
 
+/* Generate initial parameters with yargs, add data, then return server actions. */
+const init = (argv: any) => {
+  const params: any = computeArgv(argv);
+
+  params.url = `http://${params.host}:${params.port}`;
+  params.provider = new ethers.providers.JsonRpcProvider(params.url);
+
+  return {
+    spawn() {
+      return spawn(params);
+    },
+    deploy() {
+      return deploy(params);
+    },
+    defaultRun() {
+      return defaultRun(params);
+    },
+    getAllToyENSEntries() {
+      return getAllToyENSEntries(params.provider);
+    },
+  };
+};
+
+init.getAllToyENSEntries = getAllToyENSEntries;
+
+export default init;
+
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
-    const { params, serverClosedPromise } = await defaultRun(undefined);
+    const { serverClosedPromise } = await init({}).defaultRun();
     if (serverClosedPromise) {
       console.log("Server ready.");
       await serverClosedPromise;
@@ -311,13 +321,3 @@ if (require.main === module) {
       process.exit(1);
     });
 }
-
-export {
-  spawn,
-  deploy,
-  defaultRun,
-  LOCAL_MNEMONIC,
-  getAllToyENSEntries,
-  Mangrove,
-};
-export default defaultRun;
