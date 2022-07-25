@@ -7,6 +7,8 @@ out='packages/mangrove-solidity/foundry_out'
 libs=['packages/mangrove-solidity/foundry_lib']
 cache_path='packages/mangrove-solidity/foundry_cache'
 solc_version="0.8.14"
+optimizer=true
+optimizer_runs=20000
 [polygon]
 eth_rpc_url="https://polygon-rpc.com"
 fork_block_number=26416000
