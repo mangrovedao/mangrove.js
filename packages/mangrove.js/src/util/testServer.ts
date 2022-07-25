@@ -1,4 +1,4 @@
-/* Run an anvil node, execute a script against it, gather its list of deployed contracts.
+/* Run an anvil node, deploy a toy ENS server, execute a script against it, gather its list of deployed contracts.
  
   This is a Mangrove.js utility for its internal tests. It can also be used in standalone.
 
@@ -11,6 +11,7 @@ const fs = require("fs");
 import { ethers } from "ethers";
 import * as eth from "../eth";
 import { Mangrove } from "../";
+import * as ToyENS from "./ToyENSCode";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8546;
@@ -58,7 +59,8 @@ const defaultParams = (params: any) => {
   return { ...argv, ...params };
 };
 
-// first three default anvil accounts
+// default first three default anvil accounts,
+// TODO once --unlocked is added to forge script: use anvil's eth_accounts return value
 const anvilAccounts = [
   {
     address: mnemonic.address(0),
@@ -144,6 +146,12 @@ const spawn = async (params: any) => {
   });
 
   await serverReady;
+
+  const providerUrl = `http://${params.host}:${params.port}`;
+  const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+  // await provider.send('anvil_setCode',[CREATE3_ADDRESS,CREATE3_CODE]);
+  // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
+  await provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
 
   return {
     accounts: anvilAccounts,
@@ -270,16 +278,7 @@ type fetchedContract = { name: string; address: string; isToken: boolean };
 const getAllToyENSEntries = async (
   provider: ethers.providers.Provider
 ): Promise<fetchedContract[]> => {
-  const deployerAddress = new eth.Mnemonic(LOCAL_MNEMONIC).address(0);
-  const ensAddress = ethers.utils.getContractAddress({
-    from: deployerAddress,
-    nonce: 0,
-  });
-  const ens = new ethers.Contract(
-    ensAddress,
-    ["function all() public view returns (string[],address[],bool[])"],
-    provider
-  );
+  const ens = new ethers.Contract(ToyENS.address, ToyENS.abi, provider);
   const [names, addresses, isTokens] = await ens.all();
   const contracts = names.map((name, index) => {
     return { name, address: addresses[index], isToken: isTokens[index] };

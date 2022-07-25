@@ -8,8 +8,7 @@ abstract contract LocalScript is Script, Utilities {
   ToyENS ens;
 
   function run() public {
-    vm.broadcast();
-    ens = new ToyENS();
+    ens = ToyENS(address(bytes20(hex"decaf0")));
     deploy();
   }
 

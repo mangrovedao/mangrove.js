@@ -7,7 +7,7 @@ contract ToyENS {
   string[] _names;
 
   function get(string calldata name)
-    public
+    external
     view
     returns (address addr, bool isToken)
   {
@@ -15,52 +15,28 @@ contract ToyENS {
     isToken = _isToken[name];
   }
 
-  function setAddr(string calldata name, address addr) public {
-    _addrs[name] = addr;
-    _names.push(name);
-  }
-
-  function setIsToken(string calldata name, bool isToken) public {
-    require(
-      _addrs[name] != address(0),
-      "only nonzero addresse can be marked as tokens"
-    );
-    _isToken[name] = isToken;
-  }
-
-  // shorthand
-  function setIsToken(string calldata name) public {
-    setIsToken(name, true);
-  }
-
-  // shorthand
-  function set(string calldata name, address addr) public {
-    setAddr(name, addr);
-  }
-
-  // shorthand
   function set(
     string calldata name,
     address addr,
     bool isToken
   ) public {
-    setAddr(name, addr);
-    setIsToken(name, isToken);
+    _addrs[name] = addr;
+    _names.push(name);
+    _isToken[name] = isToken;
   }
 
-  // shorthand
   function set(
     string[] calldata names,
     address[] calldata addrs,
     bool[] calldata isToken
-  ) public {
+  ) external {
     for (uint i = 0; i < names.length; i++) {
       set(names[i], addrs[i], isToken[i]);
     }
   }
 
   function all()
-    public
+    external
     view
     returns (
       string[] memory names,

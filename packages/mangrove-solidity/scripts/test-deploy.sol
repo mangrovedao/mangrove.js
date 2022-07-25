@@ -81,19 +81,19 @@ contract MyScript is LocalScript {
       gasmax: 2_000_000
     });
 
-    ens.set("Mangrove", payable(mgv));
+    ens.set("Mangrove", payable(mgv), false);
 
     /* Mangrove Reader
      ******************************/
     MgvReader reader = new MgvReader({_mgv: payable(mgv)});
 
-    ens.set("MgvReader", address(reader));
+    ens.set("MgvReader", address(reader), false);
 
     /* Mangrove Cleaner
      ******************************/
     MgvCleaner cleaner = new MgvCleaner({_MGV: address(mgv)});
 
-    ens.set("MgvCleaner", address(cleaner));
+    ens.set("MgvCleaner", address(cleaner), false);
 
     /* Mangrove Oracle
      ******************************/
@@ -102,7 +102,7 @@ contract MyScript is LocalScript {
       _initialMutator: address(0) // FIXME who should this be
     });
 
-    ens.set("MgvOracle", address(oracle));
+    ens.set("MgvOracle", address(oracle), false);
 
     /* Simple Test Maker
      ******************************/
@@ -113,7 +113,7 @@ contract MyScript is LocalScript {
       quote: tokenB
     });
 
-    ens.set("SimpleTestMaker", address(simpleTestMaker));
+    ens.set("SimpleTestMaker", address(simpleTestMaker), false);
 
     // /* Mangrove Order
     //  ******************************/
@@ -122,7 +122,7 @@ contract MyScript is LocalScript {
       deployer: msg.sender
     });
 
-    ens.set("MangroveOrder", address(mgo));
+    ens.set("MangroveOrder", address(mgo), false);
 
     // /* Mangrove Order Enriched
     //  ******************************/
@@ -131,7 +131,7 @@ contract MyScript is LocalScript {
       deployer: msg.sender
     });
 
-    ens.set("MangroveOrderEnriched", address(mgoe));
+    ens.set("MangroveOrderEnriched", address(mgoe), false);
 
     vm.stopBroadcast();
   }
