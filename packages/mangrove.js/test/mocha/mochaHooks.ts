@@ -6,6 +6,7 @@ const params = {
   host: "127.0.0.1",
   port: 8546,
   pipeAnvil: false,
+  script: "MangroveJsDeploy",
 };
 
 exports.mochaHooks = {

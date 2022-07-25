@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {ToyENS} from "./lib/ToyENS.sol";
-import {LocalScript} from "./lib/DeployScript.sol";
+import {LocalDeployScript} from "./lib/LocalDeployScript.sol";
 
 import "mgv_src/Mangrove.sol";
 import "mgv_src/periphery/MgvReader.sol";
@@ -14,7 +14,7 @@ import {MgvCleaner} from "mgv_src/periphery/MgvCleaner.sol";
 import {MgvOracle} from "mgv_src/periphery/MgvOracle.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 
-contract MyScript is LocalScript {
+contract MangroveJsDeploy is LocalDeployScript {
   function deploy() public override {
     vm.startBroadcast();
 

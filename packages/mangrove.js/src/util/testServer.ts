@@ -50,6 +50,15 @@ const argv = yargs(cmdLineArgv)
     type: "boolean",
     default: true,
   })
+  .option("script", {
+    describe: "Path to forge script (from foundry's root dir)",
+    type: "string",
+  })
+  .option("target-contract", {
+    describe: "Specify forge script --target-contract, if necessary",
+    type: "string",
+    default: undefined,
+  })
   .env("MGV_TEST") // allow env vars like MGV_TEST_DEPLOY=false
   .help().argv;
 
@@ -77,9 +86,6 @@ const anvilAccounts = [
 ];
 
 const stateCache = path.resolve("./state.dump");
-const script = require.resolve(
-  "@mangrovedao/mangrove-solidity/scripts/test-deploy.sol"
-);
 
 /* Spawn a test server */
 const spawn = async (params: any) => {
@@ -190,7 +196,10 @@ const deploy = async (params: any) => {
     --froms ${mnemonic.address(0)} \
     --private-key ${mnemonic.key(0)} \
     --broadcast --json \
-    ${script}`;
+    ${
+      params.targetContract ? `--target-contract ${params.targetContract}` : ""
+    } \
+    ${params.script}`;
 
     console.log("Running forge script:");
     console.log(forgeScriptCmd);
