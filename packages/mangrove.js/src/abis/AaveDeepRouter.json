@@ -100,6 +100,24 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "reserve",
+          "type": "address"
+        }
+      ],
+      "name": "activate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "admin",
       "outputs": [
@@ -187,6 +205,24 @@
           "type": "uint256"
         }
       ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "reserve",
+          "type": "address"
+        }
+      ],
+      "name": "checkList",
+      "outputs": [],
       "stateMutability": "view",
       "type": "function"
     },
