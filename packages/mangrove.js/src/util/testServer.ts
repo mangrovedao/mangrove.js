@@ -303,6 +303,8 @@ init.getAllToyENSEntries = getAllToyENSEntries;
 
 export default init;
 
+export { getAllToyENSEntries };
+
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {

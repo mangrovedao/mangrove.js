@@ -1,5 +1,5 @@
-const { ethers } = require("ethers");
-const { Mangrove, eth, testServer } = require("../../src");
+import { ethers } from "ethers";
+import { testServer, Mangrove } from "..";
 
 const params = {
   host: "127.0.0.1",
@@ -8,7 +8,7 @@ const params = {
   script: "MangroveJsDeploy",
 };
 
-exports.mochaHooks = {
+export const mochaHooks = {
   async beforeAll() {
     this.server = await testServer(params).defaultRun();
     this.accounts = {

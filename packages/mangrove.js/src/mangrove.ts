@@ -9,7 +9,7 @@ import {
   defaultDisplayedPriceDecimals,
 } from "./constants";
 import * as eth from "./eth";
-import testServer from "./util/testServer";
+import { getAllToyENSEntries } from "./util/testServer";
 import { typechain, Provider, Signer } from "./types";
 import { Bigish } from "./types";
 import { LiquidityProvider, OfferLogic, MgvToken, Market } from ".";
@@ -480,7 +480,7 @@ class Mangrove {
   static async fetchAllAddresses(provider: ethers.providers.Provider) {
     const network = await eth.getProviderNetwork(provider);
     try {
-      const contracts = await testServer.getAllToyENSEntries(provider);
+      const contracts = await getAllToyENSEntries(provider);
       for (const { name, address, isToken } of contracts) {
         Mangrove.setAddress(name, address, network.name);
         if (isToken) {
