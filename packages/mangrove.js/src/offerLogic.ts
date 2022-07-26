@@ -236,7 +236,7 @@ class OfferLogic {
     newAdmin: string,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    return this.contract.setAdmin(newAdmin, overrides);
+    return this.contract.set_admin(newAdmin, overrides);
   }
 
   getAdmin(): Promise<string> {
