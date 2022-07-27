@@ -51,7 +51,7 @@ abstract contract SingleUser is MangroveOffer {
     if (!has_router()) {
       return TransferLib.transferToken(IERC20(token), receiver, amount);
     } else {
-      router().withdrawToken(token, reserve(), receiver, amount);
+      return router().withdrawToken(token, reserve(), receiver, amount);
     }
   }
 
@@ -81,11 +81,10 @@ abstract contract SingleUser is MangroveOffer {
 
   function tokenBalance(IERC20 token) external view override returns (uint) {
     AbstractRouter _router = MOS.get_storage().router;
-    uint balance = token.balanceOf(reserve());
     return
       address(_router) == address(0)
-        ? balance
-        : balance + _router.reserveBalance(token, reserve());
+        ? token.balanceOf(reserve())
+        : _router.reserveBalance(token, reserve());
   }
 
   function flush(IERC20[] memory tokens) internal {
