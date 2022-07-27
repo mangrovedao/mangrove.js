@@ -198,4 +198,17 @@ contract MangroveOfferTest is MangroveTest {
     makerContract.activate(tokens);
     makerContract.checkList(tokens);
   }
+
+  function test_GasReqTakesNewRouterIntoAccount() public {
+    uint gasreq = makerContract.ofr_gasreq();
+    vm.startPrank(maker);
+    SimpleRouter router = new SimpleRouter();
+    router.set_admin(address(makerContract));
+    makerContract.set_router(router);
+    assertEq(
+      makerContract.ofr_gasreq(),
+      gasreq + router.gas_overhead(),
+      "incorrect gasreq"
+    );
+  }
 }
