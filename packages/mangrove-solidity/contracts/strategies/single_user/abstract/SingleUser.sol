@@ -161,9 +161,14 @@ abstract contract SingleUser is MangroveOffer {
       offerId,
       deprovision
     );
-    require(MGV.withdraw(free_wei), "SingleUser/withdrawFromMgv/withdrawFail");
-    (bool noRevert, ) = msg.sender.call{value: free_wei}("");
-    require(noRevert, "SingleUser/weiTransferFail");
+    if (free_wei > 0) {
+      require(
+        MGV.withdraw(free_wei),
+        "SingleUser/withdrawFromMgv/withdrawFail"
+      );
+      (bool noRevert, ) = msg.sender.call{value: free_wei}("");
+      require(noRevert, "SingleUser/weiTransferFail");
+    }
   }
 
   function __put__(

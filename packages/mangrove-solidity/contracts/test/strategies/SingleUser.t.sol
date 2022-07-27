@@ -1,9 +1,9 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.10;
 
-import "./SingleUserNoRouter.t.sol";
+import "./OfferLogic.t.sol";
 
-contract SingleUserWithRouterTest is SingleUserNoRouterTest {
+contract SingleUserTest is OfferLogicTest {
   SimpleRouter router;
 
   function setUp() public override {

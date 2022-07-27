@@ -5,12 +5,13 @@ import "mgv_test/lib/MangroveTest.sol";
 import "mgv_src/strategies/single_user/SimpleMaker.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
 
-contract SingleUserNoRouterTest is MangroveTest {
+contract OfferLogicTest is MangroveTest {
   TestToken weth;
   TestToken usdc;
   address payable maker;
   address payable taker;
   SimpleMaker makerContract;
+  IOfferLogic.MakerOrder mko;
 
   // tracking IOfferLogic logs
   event LogIncident(
@@ -32,8 +33,20 @@ contract SingleUserNoRouterTest is MangroveTest {
     // rename for convenience
     weth = base;
     usdc = quote;
+    mko = IOfferLogic.MakerOrder({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0,
+      offerId: 0
+    });
 
     maker = freshAddress("maker");
+    vm.deal(maker, 10 ether);
+
     taker = freshAddress("taker");
     deal($(weth), taker, cash(weth, 50));
     deal($(usdc), taker, cash(usdc, 100_000));
@@ -82,5 +95,47 @@ contract SingleUserNoRouterTest is MangroveTest {
     );
   }
 
-  // todo offer management
+  function test_AdminCanPostNewOffer() public {
+    vm.expectRevert("AccessControlled/Invalid");
+    makerContract.newOffer{value: 0.1 ether}(mko);
+    vm.prank(maker);
+    makerContract.newOffer{value: 0.1 ether}(mko);
+  }
+
+  function test_AdminCanRetractOffer() public {
+    vm.prank(maker);
+    uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
+    vm.expectRevert("AccessControlled/Invalid");
+    makerContract.retractOffer(
+      mko.outbound_tkn,
+      mko.inbound_tkn,
+      offerId,
+      true
+    );
+    uint makerBalWei = maker.balance;
+    vm.prank(maker);
+    uint deprovisioned = makerContract.retractOffer(
+      mko.outbound_tkn,
+      mko.inbound_tkn,
+      offerId,
+      true
+    );
+    assertEq(
+      maker.balance,
+      makerBalWei + deprovisioned,
+      "Incorrect WEI balance"
+    );
+  }
+
+  function test_AdminCanUpdateOffer() public {
+    vm.prank(maker);
+    uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
+    mko.offerId = offerId;
+    vm.expectRevert("AccessControlled/Invalid");
+    makerContract.updateOffer(mko);
+    vm.prank(maker);
+    makerContract.updateOffer(mko);
+  }
+
+  // TODO test trade execution (test tokenBalance)
 }
