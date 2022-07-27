@@ -114,7 +114,7 @@ const { takerGot2, takerGave2, bounty2 } = await market.sell({
 
 # Using the API as a liquidity provider
 
-## Connect to a deployed offer logic (that should match the [`IOfferLogic.sol`](https://github.com/mangrovedao/mangrove/blob/master/packages/mangrove-solidity/contracts/Strategies/interfaces/IOfferLogic.sol) interface)
+## Connect to a deployed offer logic (that should match the [`IOfferLogic.sol`](https://github.com/mangrovedao/mangrove/blob/master/packages/mangrove-solidity/contracts/strategies/interfaces/IOfferLogic.sol) interface)
 
 ```js
 const mgv = await Mangrove.connect("maticmum"); // Mumbai testnet
