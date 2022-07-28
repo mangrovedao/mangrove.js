@@ -66,7 +66,7 @@ const computeArgv = (params: any) => {
     })
     .option("script", {
       describe: "Path to forge script (contract or path or path:contract)",
-      demandOption: true,
+      default: "MangroveJsDeploy",
       requiresArg: true,
       type: "string",
     })
@@ -211,7 +211,10 @@ const deploy = async (params: any) => {
   }
 
   // convenience: try to populate global Mangrove instance if possible
-  await Mangrove.fetchAllAddresses(params.provider);
+  if (require.main !== module) {
+    // assume we will use mangrove.js soon
+    await Mangrove.fetchAllAddresses(params.provider);
+  }
 
   let lastSnapshotId;
 
@@ -240,9 +243,10 @@ const defaultRun = async (params: any) => {
 
   if (!params.deploy) {
     // fetch always, even if deploy did not occur
-    const providerUrl = `http://${params.host}:${params.port}`;
-    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-    await Mangrove.fetchAllAddresses(provider);
+    if (require.main !== module) {
+      // assume we will use mangrove.js soon
+      await Mangrove.fetchAllAddresses(params.provider);
+    }
   }
 
   return {
@@ -271,7 +275,7 @@ const init = (argv: any) => {
   const params: any = computeArgv(argv);
 
   params.url = `http://${params.host}:${params.port}`;
-  params.provider = new ethers.providers.JsonRpcProvider(params.url);
+  params.provider = new ethers.providers.StaticJsonRpcProvider(params.url);
 
   return {
     spawn() {
@@ -298,7 +302,9 @@ export { getAllToyENSEntries };
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
-    const { serverClosedPromise } = await init({}).defaultRun();
+    const { serverClosedPromise } = await init({
+      pipeAnvil: true,
+    }).defaultRun();
     if (serverClosedPromise) {
       console.log("Server ready.");
       await serverClosedPromise;
