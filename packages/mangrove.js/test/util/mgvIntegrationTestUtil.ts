@@ -1,3 +1,4 @@
+// TEMPORARY: You need the importing package to have hardhat available!
 // Utility functions for writing integration tests against Mangrove.
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import { Market, MgvToken } from "../..";

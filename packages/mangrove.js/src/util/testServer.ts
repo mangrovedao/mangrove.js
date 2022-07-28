@@ -1,3 +1,4 @@
+// TODO do not distribute this in browser build
 /* Run an anvil node, deploy a toy ENS server, execute a script against it, gather its list of deployed contracts.
  
   This is a Mangrove.js utility for its internal tests. It can also be used in standalone.
