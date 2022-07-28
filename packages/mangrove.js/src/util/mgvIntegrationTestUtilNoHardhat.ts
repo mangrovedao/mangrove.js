@@ -1,10 +1,11 @@
+// TODO do not distribute in browser version
 // Utility functions for writing integration tests against Mangrove.
 // Temporarily keep a hardhat-using copy and a more generic copy that needs to get its info from a `setConfig` function.
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import { Market, MgvToken, Mangrove } from "../../src";
-import * as typechain from "../../src/types/typechain";
+import { Market, MgvToken, Mangrove } from "..";
+import * as typechain from "../types/typechain";
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
-import { Deferred } from "../../src/util";
+import { Deferred } from "../util";
 
 export type Account = {
   name: string;
@@ -116,6 +117,7 @@ export const getContracts = async (
 export enum AccountName {
   Deployer = "deployer", // Owner of deployed MGV and token contracts
   Cleaner = "cleaner", // Owner of cleaner EOA
+  Maker = "maker", // Owner of maker
 }
 
 export const getAccount = async (name: AccountName): Promise<Account> => {

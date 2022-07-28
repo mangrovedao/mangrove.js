@@ -16,6 +16,7 @@ import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
 import AaveV3Module from "./aaveV3Module";
 import testServer from "./util/testServer";
+import * as mgvTestUtil from "./util/mgvIntegrationTestUtilNoHardhat";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -33,4 +34,5 @@ export {
   LiquidityProvider,
   AaveV3Module,
   testServer,
+  mgvTestUtil,
 };

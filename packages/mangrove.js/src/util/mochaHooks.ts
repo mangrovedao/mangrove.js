@@ -1,3 +1,4 @@
+// TODO do not distribute in browser version
 import { ethers } from "ethers";
 import { testServer, Mangrove } from "..";
 
@@ -13,7 +14,9 @@ export const mochaHooks = {
     this.server = await testServer(params).defaultRun();
     this.accounts = {
       deployer: this.server.accounts[0],
-      tester: this.server.accounts[1],
+      maker: this.server.accounts[1],
+      cleaner: this.server.accounts[2],
+      tester: this.server.accounts[3],
     };
 
     const provider = new ethers.providers.JsonRpcProvider(this.server.url);
