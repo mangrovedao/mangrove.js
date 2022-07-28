@@ -24,7 +24,8 @@
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json --exit",
     "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
-    "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts"
+    "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts",
+    "test-server": "ts-node src/util/testServer.ts"
   },
   "files": [
     "dist/",
