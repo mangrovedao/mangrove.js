@@ -32,19 +32,17 @@ describe("Bot integration tests", () => {
   let botSigner: Signer;
   let mgv: Mangrove;
 
-  before(async function () {});
+  before(async function () {
+    botSigner = new ethers.Wallet(this.accounts.deployer.key);
+  });
 
   beforeEach(async function () {
-    // must be in beforeeach or resets will disrupt nonce mgmt
-    botSigner = new ethers.Wallet(
-      this.accounts.deployer.key,
-      new ethers.providers.JsonRpcProvider(this.server.url)
-    );
     //TODO:
     // update "gasUpdater" below to be the named address (see packages/hardhat-utils/config/hardhat-mangrove-config.js)
     // specific to this bot
     mgv = await Mangrove.connect({
       signer: botSigner,
+      provider: this.server.url,
     });
   });
 
