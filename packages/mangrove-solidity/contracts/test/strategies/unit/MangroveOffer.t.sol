@@ -27,7 +27,9 @@ contract MangroveOfferTest is MangroveTest {
     options.quote.decimals = 6;
     options.defaultFee = 30;
 
-    // deploying mangrove and opening WETH/USDC market.
+    // populates `weth`,`usdc` and `mgv`
+    // opens WETH/USDC market on mangrove
+
     super.setUp();
     // rename for convenience
     weth = base;
@@ -58,32 +60,23 @@ contract MangroveOfferTest is MangroveTest {
   }
 
   function test_CheckList() public {
-    IERC20[] memory tokens = new IERC20[](2);
-    tokens[0] = weth;
-    tokens[1] = usdc;
+    IERC20[] memory tokens = tkn_pair(weth, usdc);
     vm.expectRevert("MangroveOffer/AdminMustApproveMangrove");
     makerContract.checkList(tokens);
     vm.prank(maker);
     makerContract.approveMangrove(weth);
     makerContract.approveMangrove(usdc);
     // after approval, checkList should no longer revert
-    try makerContract.checkList(tokens) {} catch Error(string memory reason) {
-      fail(reason);
-    }
+    makerContract.checkList(tokens);
   }
 
   function testCannot_ActivateIfNotAdmin() public {
-    IERC20[] memory tokens = new IERC20[](2);
-    tokens[0] = weth;
-    tokens[1] = usdc;
     vm.expectRevert("AccessControlled/Invalid");
-    makerContract.activate(tokens);
+    makerContract.activate(tkn_pair(weth, usdc));
   }
 
   function test_ActivatePassesCheckList() public {
-    IERC20[] memory tokens = new IERC20[](2);
-    tokens[0] = weth;
-    tokens[1] = usdc;
+    IERC20[] memory tokens = tkn_pair(weth, usdc);
     vm.prank(maker);
     makerContract.activate(tokens);
     makerContract.checkList(tokens);
@@ -189,9 +182,7 @@ contract MangroveOfferTest is MangroveTest {
     router.set_admin(address(makerContract));
     makerContract.set_router(router);
 
-    IERC20[] memory tokens = new IERC20[](2);
-    tokens[0] = weth;
-    tokens[1] = usdc;
+    IERC20[] memory tokens = tkn_pair(weth, usdc);
     vm.expectRevert("Router/NotApprovedByMakerContract");
     makerContract.checkList(tokens);
 

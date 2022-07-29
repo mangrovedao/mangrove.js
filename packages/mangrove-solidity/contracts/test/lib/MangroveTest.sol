@@ -41,6 +41,12 @@ contract MangroveTest is Test2, HasMgvEvents {
     uint defaultFee;
   }
 
+  modifier prank(address a) {
+    vm.startPrank(a);
+    _;
+    vm.stopPrank();
+  }
+
   AbstractMangrove mgv;
   TestToken base;
   TestToken quote;
@@ -83,9 +89,12 @@ contract MangroveTest is Test2, HasMgvEvents {
     );
     // mangrove deploy
     mgv = setupMangrove(base, quote, options.invertedMangrove);
-    // start with mgvBalance on mangrove
+
+    // below are necessary operations because testRunner acts as a taker/maker in some core protocol tests
+    // TODO this should be done somewhere else
+    //provision mangrove so that testRunner can post offers
     mgv.fund{value: 10 ether}();
-    // approve mgv
+    // approve mangrove so that testRunner can take offers on Mangrove
     base.approve($(mgv), type(uint).max);
     quote.approve($(mgv), type(uint).max);
   }
@@ -361,9 +370,10 @@ contract MangroveTest is Test2, HasMgvEvents {
 
   /* **** Token conversion */
   /* return underlying amount with correct number of decimals */
-  function cash(TestToken t, uint amount) public returns (uint) {
+  function cash(TestToken t, uint amount) public view returns (uint) {
     // don't use an ongoing vm.prank here
-    uint decimals = stdstore.target(address(t)).sig("__decimals()").read_uint();
+    uint decimals = t.decimals();
+    //stdstore.target(address(t)).sig("__decimals()").read_uint();
     return amount * 10**decimals;
   }
 
@@ -372,7 +382,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     TestToken t,
     uint amount,
     uint power
-  ) public returns (uint) {
+  ) public view returns (uint) {
     return cash(t, amount) / 10**power;
   }
 
@@ -395,5 +405,15 @@ contract MangroveTest is Test2, HasMgvEvents {
 
   function $(IERC20 t) internal pure returns (address payable) {
     return payable(address(t));
+  }
+
+  function tkn_pair(IERC20 t, IERC20 s)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](2);
+    ret[0] = t;
+    ret[1] = s;
   }
 }
