@@ -31,11 +31,11 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
 
 const stateCache = path.resolve("./state.dump");
 
-const computeArgv = (params: any) => {
+const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
   // ignore command line if not main module, but still read from env vars
   // note: this changes yargs' default precedence, which is (high to low):
   // cmdline args -> env vars -> config(obj) -> defaults
-  const cmdLineArgv = require.main === module ? process.argv.slice(2) : [];
+  const cmdLineArgv = ignoreCmdLineArgs ? [] : process.argv.slice(2);
   return yargs(cmdLineArgv)
     .usage("Run a test Mangrove deployment on a server")
     .version(false)
