@@ -370,16 +370,16 @@ contract MangroveTest is Test2, HasMgvEvents {
 
   /* **** Token conversion */
   /* return underlying amount with correct number of decimals */
-  function cash(TestToken t, uint amount) public view returns (uint) {
-    // don't use an ongoing vm.prank here
+  function cash(IERC20 t, uint amount) public returns (uint) {
+    savePrank();
     uint decimals = t.decimals();
-    //stdstore.target(address(t)).sig("__decimals()").read_uint();
+    restorePrank();
     return amount * 10**decimals;
   }
 
   /* return underlying amount divided by 10**power */
   function cash(
-    TestToken t,
+    IERC20 t,
     uint amount,
     uint power
   ) public view returns (uint) {
