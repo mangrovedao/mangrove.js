@@ -174,7 +174,7 @@ contract OfferLogicTest is MangroveTest {
     uint balIn = makerContract.tokenBalance(mko.inbound_tkn);
 
     (uint takergot, uint takergave, uint bounty, uint fee) = performTrade();
-
+    assertTrue(bounty == 0 && takergot > 0, "trade failed");
     assertEq(
       makerContract.tokenBalance(mko.outbound_tkn),
       balOut - (takergot + fee),
