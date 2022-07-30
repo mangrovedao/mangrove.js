@@ -93,8 +93,6 @@ contract OfferLogicTest is MangroveTest {
   }
 
   function test_AdminCanSetReserve() public {
-    vm.expectRevert("AccessControlled/Invalid");
-    makerContract.set_reserve(freshAddress());
     address new_reserve = freshAddress();
     vm.prank(maker);
     makerContract.set_reserve(new_reserve);
@@ -102,8 +100,6 @@ contract OfferLogicTest is MangroveTest {
   }
 
   function test_AdminCanPostNewOffer() public {
-    vm.expectRevert("AccessControlled/Invalid");
-    makerContract.newOffer{value: 0.1 ether}(mko);
     vm.prank(maker);
     makerContract.newOffer{value: 0.1 ether}(mko);
   }
@@ -111,13 +107,6 @@ contract OfferLogicTest is MangroveTest {
   function test_AdminCanRetractOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
-    vm.expectRevert("AccessControlled/Invalid");
-    makerContract.retractOffer(
-      mko.outbound_tkn,
-      mko.inbound_tkn,
-      offerId,
-      true
-    );
     uint makerBalWei = maker.balance;
     vm.prank(maker);
     uint deprovisioned = makerContract.retractOffer(
@@ -137,8 +126,7 @@ contract OfferLogicTest is MangroveTest {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
     mko.offerId = offerId;
-    vm.expectRevert("AccessControlled/Invalid");
-    makerContract.updateOffer(mko);
+
     vm.prank(maker);
     makerContract.updateOffer(mko);
   }
@@ -193,10 +181,6 @@ contract OfferLogicTest is MangroveTest {
     uint balusdc = usdc.balanceOf(maker);
 
     (, uint takergave, , ) = performTrade();
-
-    vm.expectRevert("AccessControlled/Invalid");
-    makerContract.withdrawToken(weth, maker, 0.5 ether);
-
     vm.prank(maker);
     // this will be a noop when maker == reserve
     makerContract.withdrawToken(usdc, maker, takergave);
