@@ -382,7 +382,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     IERC20 t,
     uint amount,
     uint power
-  ) public view returns (uint) {
+  ) public returns (uint) {
     return cash(t, amount) / 10**power;
   }
 
