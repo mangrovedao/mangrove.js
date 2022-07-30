@@ -5,6 +5,7 @@ import "mgv_test/lib/MangroveTest.sol";
 import "mgv_test/lib/Fork.sol";
 
 import "mgv_src/strategies/single_user/SimpleMaker.sol";
+import "mgv_src/strategies/routers/AbstractRouter.sol";
 
 contract MakerPermissionTest is MangroveTest {
   TestToken weth;
@@ -44,9 +45,19 @@ contract MakerPermissionTest is MangroveTest {
     makerContract.activate(tkn_pair(weth, usdc));
   }
 
+  function testCannot_setAdmin() public {
+    vm.expectRevert("AccessControlled/Invalid");
+    makerContract.set_admin(freshAddress());
+  }
+
   function testCannot_setReserve() public {
     vm.expectRevert("AccessControlled/Invalid");
     makerContract.set_reserve(freshAddress());
+  }
+
+  function testCannot_setRouter() public {
+    vm.expectRevert("AccessControlled/Invalid");
+    makerContract.set_router(AbstractRouter(freshAddress()));
   }
 
   function testCannot_PostNewOffer() public {
