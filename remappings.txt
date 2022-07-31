@@ -1,4 +1,3 @@
-hardhat/=packages/mangrove-solidity/foundry_lib/forge-std-vendored/src/
 mgv_src/=packages/mangrove-solidity/contracts/
 mgv_test/=packages/mangrove-solidity/contracts/test/
 mgv_scripts/=packages/mangrove-solidity/scripts/

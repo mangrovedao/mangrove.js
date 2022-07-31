@@ -8,11 +8,8 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { Mangrove } from "@mangrovedao/mangrove.js";
 import { GasUpdater, OracleSourceConfiguration } from "../../src/GasUpdater";
-// import * as hre from "hardhat";
-// import "hardhat-deploy-ethers/dist/src/type-extensions";
 import { config } from "../../src/util/config";
 import { Signer, ethers } from "ethers";
-// import { SignerWithAddress } from "hardhat-deploy-ethers/dist/src/signers";
 
 describe("GasUpdater integration tests", () => {
   let gasUpdaterSigner: ethers.Wallet;

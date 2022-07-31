@@ -13,7 +13,7 @@ pragma solidity ^0.8.10;
   const domain = {
     name: "Mangrove",
     version: "1",
-    chainId: 31337, // hardhat chainid
+    chainId: 31337, // local chainid
     verifyingContract: mgvAddress,
   };
 

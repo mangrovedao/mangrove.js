@@ -2,7 +2,7 @@
 import { describe, beforeEach, afterEach, it } from "mocha";
 import { expect } from "chai";
 
-import * as mgvTestUtil from "../../src/util/mgvIntegrationTestUtilNoHardhat";
+import * as mgvTestUtil from "../../src/util/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 import { newOffer, toWei } from "../util/helpers";
 

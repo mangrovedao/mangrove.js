@@ -102,7 +102,7 @@ export async function getProviderNetwork(
   let networkName;
 
   if (networkId === 31337) {
-    networkName = "hardhat";
+    networkName = "local";
   } else {
     networkName = ethers.providers.getNetwork(networkId).name;
   }

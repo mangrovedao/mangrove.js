@@ -1,6 +1,5 @@
 // TODO do not distribute in browser version
 // Utility functions for writing integration tests against Mangrove.
-// Temporarily keep a hardhat-using copy and a more generic copy that needs to get its info from a `setConfig` function.
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import { Market, MgvToken, Mangrove } from "..";
 import * as typechain from "../types/typechain";
@@ -45,7 +44,7 @@ let mgv: Mangrove;
 let signers: any = {};
 
 // With the removal of hardhat, there is no "default chain" anymore
-// (it used to be implicit since we ran the hardhat server in-process).
+// (it used to be implicit since we ran the ethereum local server in-process).
 // Now getting contract addresses requires a known network.
 // We minimally disrupt this library and just add a global "mangrove"
 // to be set early in the tests.

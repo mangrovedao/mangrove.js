@@ -1,5 +1,4 @@
 dist
-deployments/hardhat
 deployments/localhost
 artifacts/*
 exported-abis/*

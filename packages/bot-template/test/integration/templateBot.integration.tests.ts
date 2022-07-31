@@ -9,11 +9,8 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import Mangrove from "@mangrovedao/mangrove.js";
 import { TemplateBot } from "../../src/TemplateBot";
-// import * as hre from "hardhat";
-// import "hardhat-deploy-ethers/dist/src/type-extensions";
 import { Signer, ethers } from "ethers";
 import { config } from "../../src/util/config";
-// import { SignerWithAddress } from "hardhat-deploy-ethers/dist/src/signers";
 
 // TODO: Basic can-connect test - delete/update as needed
 describe("Can connect to Mangrove on local chain", () => {
@@ -37,8 +34,6 @@ describe("Bot integration tests", () => {
   });
 
   beforeEach(async function () {
-    //TODO:
-    // update "gasUpdater" below to be the named address (see packages/hardhat-utils/config/hardhat-mangrove-config.js)
     // specific to this bot
     mgv = await Mangrove.connect({
       signer: botSigner,
