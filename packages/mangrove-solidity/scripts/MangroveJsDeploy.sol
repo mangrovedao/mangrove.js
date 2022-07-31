@@ -98,8 +98,8 @@ contract MangroveJsDeploy is LocalDeployScript {
     /* Mangrove Oracle
      ******************************/
     MgvOracle oracle = new MgvOracle({
-      _governance: payable(mgv),
-      _initialMutator: address(0) // FIXME who should this be
+      _governance: msg.sender,
+      _initialMutator: msg.sender
     });
 
     ens.set("MgvOracle", address(oracle), false);
