@@ -207,8 +207,10 @@ const deploy = async (params: any) => {
     });
     await scriptPromise;
     const stateData = await params.provider.send("anvil_dumpState", []);
-    fs.writeFileSync(stateCache, stateData);
-    console.log(`Wrote state cache to ${stateCache}`);
+    if (params.useCache) {
+      fs.writeFileSync(stateCache, stateData);
+      console.log(`Wrote state cache to ${stateCache}`);
+    }
   }
 
   // convenience: try to populate global Mangrove instance if possible
