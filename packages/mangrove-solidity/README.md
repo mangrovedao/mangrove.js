@@ -90,7 +90,7 @@ To run specific test suites, use the `testSuites` package script:
 
 ## FIXME
 
-No deployment story on foundry yet.
+No deployment story with foundry yet -- but foundry has the features, we just need to write the deployments and the tooling around it.
 
 # Generate documentation
 

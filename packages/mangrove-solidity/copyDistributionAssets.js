@@ -78,7 +78,7 @@ const match_path = (artifacts, name) => {
 const export_queue = [];
 
 // gather all artifact files
-const artifacts = all_files(path.join(cwd, "foundry_out"));
+const artifacts = all_files(path.join(cwd, "out"));
 
 // combine all configured exports in a single list
 const all_exports = config.abi_exports
@@ -87,7 +87,6 @@ const all_exports = config.abi_exports
 
 // add subset of full artifacts to export queue
 for (const { name, export_type } of all_exports) {
-  // files(process.cwd()+'/foundry_out')) {
   const match = match_path(artifacts, name);
   const artifact = read_artifact(match);
   let data;

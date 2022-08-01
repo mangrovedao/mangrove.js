@@ -1,14 +1,14 @@
 # Note: remember to `git submodule update --recursive` to pull in dependencies
 [default]
-src='packages/mangrove-solidity/contracts'
+src='packages/mangrove-solidity/src'
 script='packages/mangrove-solidity/scripts'
-test='packages/mangrove-solidity/foundry_test'
-out='packages/mangrove-solidity/foundry_out'
-libs=['packages/mangrove-solidity/foundry_lib']
-cache_path='packages/mangrove-solidity/foundry_cache'
+test='packages/mangrove-solidity/test'
+out='packages/mangrove-solidity/out'
+libs=['packages/mangrove-solidity/lib']
+cache_path='packages/mangrove-solidity/cache'
 solc_version="0.8.14"
-optimizer=true
-optimizer_runs=20000
+# optimizer=true
+# optimizer_runs=20000
 [polygon]
 eth_rpc_url="https://polygon-rpc.com"
 fork_block_number=26416000

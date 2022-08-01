@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:	BSD-2-Clause
 
-// MangroveOffer.sol
+// Reposting.sol
 
 // Copyright (c) 2021 Giry SAS. All rights reserved.
 
@@ -12,25 +12,17 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-import "contracts/strategies/interfaces/IOfferLogic.sol";
+import "mgv_src/strategies/single_user/abstract/Persistent.sol";
+import "mgv_src/strategies/routers/SimpleRouter.sol";
 
-// Naming scheme:
-// `f() public`: can be used as is in all descendants of `this` contract
-// `_f() internal`: descendant of this contract should provide a public wrapper of this function
-// `__f__() virtual internal`: descendant of this contract may override this function to specialize the strat
-
-/// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
-library MangroveOfferStorage {
-  struct Layout {
-    // default values
-    uint ofr_gasreq;
-    AbstractRouter router;
-  }
-
-  function get_storage() internal pure returns (Layout storage st) {
-    bytes32 storagePosition = keccak256("Mangrove.MangroveOfferStorage");
-    assembly {
-      st.slot := storagePosition
+/* Simply inherits Persistent and is deployable. No additional internal logic. */
+contract Reposting is Persistent {
+  constructor(IMangrove _MGV, address deployer)
+    Persistent(_MGV, 50_000, new SimpleRouter())
+  {
+    if (deployer != msg.sender) {
+      setAdmin(deployer);
+      router().setAdmin(deployer);
     }
   }
 }
