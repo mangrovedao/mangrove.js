@@ -16,12 +16,15 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "build-this-package": "tsc && yarn run write-env-info-file",
     "heroku-build-this-package": "yarn run build-this-package",
-    "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
-    "clean-this-package": "rimraf build",
+    "build": "yarn run get-oracle-abi && yarn install && yarn run typechain && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
+    "get-oracle-abi": "cp -R node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/MgvOracle.json ./src/abis/",
+    "clean-this-package": "yarn run clean-typechain && rimraf build",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
+    "clean-typechain": "rimraf \"src/types/typechain/*\" || exit 0",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "npm-run-all \"test:*\"",
     "test:integration": "cross-env NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=8192\" mocha --config test/mocha/config/integration-tests.json",
+    "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
     "start": "node build/index.js",
     "local-hardhat:start-node": "hardhat node --no-deploy",
     "local-hardhat:deploy-mangrove": "hardhat deploy --network localhost",
@@ -53,6 +56,7 @@
     "@mangrovedao/hardhat-utils": "workspace:*",
     "@mangrovedao/mangrove-solidity": "workspace:*",
     "@nomiclabs/hardhat-ethers": "^2.0.6",
+    "@typechain/ethers-v5": "^10.1.0",
     "@types/chai": "^4.3.1",
     "@types/chai-as-promised": "^7.1.5",
     "@types/config": "^0.0.41",
@@ -79,6 +83,7 @@
     "rimraf": "^3.0.2",
     "shelljs": "^0.8.4",
     "ts-node": "^10.2.1",
+    "typechain": "^8.1.0",
     "typescript": "^4.4.2"
   }
 }
