@@ -26,7 +26,7 @@ contract MonitorTest is MangroveTest {
   }
 
   function test_initial_monitor_values() public {
-    (P.Global.t config, ) = mgv.config($(base), $(quote));
+    (globalT config, ) = mgv.config($(base), $(quote));
     assertTrue(!config.useOracle(), "initial useOracle should be false");
     assertTrue(!config.notify(), "initial notify should be false");
   }
@@ -36,7 +36,7 @@ contract MonitorTest is MangroveTest {
     mgv.setUseOracle(true);
     mgv.setNotify(true);
     expectToMockCall(monitor, monitor_read_cd, abi.encode(0, 0));
-    (P.Global.t config, ) = mgv.config($(base), $(quote));
+    (globalT config, ) = mgv.config($(base), $(quote));
     assertEq(config.monitor(), monitor, "monitor should be set");
     assertTrue(config.useOracle(), "useOracle should be set");
     assertTrue(config.notify(), "notify should be set");
@@ -47,14 +47,14 @@ contract MonitorTest is MangroveTest {
     mgv.setUseOracle(true);
     mgv.setDensity($(base), $(quote), 898);
     expectToMockCall(monitor, monitor_read_cd, abi.encode(0, 1));
-    (, P.Local.t config) = mgv.config($(base), $(quote));
+    (, localT config) = mgv.config($(base), $(quote));
     assertEq(config.density(), 1, "density should be set oracle");
   }
 
   function test_set_oracle_density_without_useOracle_fails() public {
     mgv.setMonitor(monitor);
     mgv.setDensity($(base), $(quote), 898);
-    (, P.Local.t config) = mgv.config($(base), $(quote));
+    (, localT config) = mgv.config($(base), $(quote));
     assertEq(config.density(), 898, "density should be set by mgv");
   }
 
@@ -64,14 +64,14 @@ contract MonitorTest is MangroveTest {
     mgv.setUseOracle(true);
     mgv.setGasprice(900);
     expectToMockCall(monitor, monitor_read_cd, abi.encode(1, 0));
-    (P.Global.t config, ) = mgv.config($(base), $(quote));
+    (globalT config, ) = mgv.config($(base), $(quote));
     assertEq(config.gasprice(), 1, "gasprice should be set by oracle");
   }
 
   function test_set_oracle_gasprice_without_useOracle_fails() public {
     mgv.setMonitor(monitor);
     mgv.setGasprice(900);
-    (P.Global.t config, ) = mgv.config($(base), $(quote));
+    (globalT config, ) = mgv.config($(base), $(quote));
     assertEq(config.gasprice(), 900, "gasprice should be set by mgv");
   }
 
@@ -89,13 +89,13 @@ contract MonitorTest is MangroveTest {
     mgv.setMonitor(monitor);
     mgv.setNotify(true);
     uint ofrId = mkr.newOffer(0.1 ether, 0.1 ether, 100_000, 0);
-    P.Offer.t offer = mgv.offers($(base), $(quote), ofrId);
+    offerT offer = mgv.offers($(base), $(quote), ofrId);
 
     uint[4][] memory targets = wrap_dynamic(
       [ofrId, 0.04 ether, 0.05 ether, 100_000]
     );
 
-    (P.Global.t _global, P.Local.t _local) = mgv.config($(base), $(quote));
+    (globalT _global, localT _local) = mgv.config($(base), $(quote));
     _local = _local.best(1).lock(true);
 
     MgvLib.SingleOrder memory order = MgvLib.SingleOrder({
@@ -125,14 +125,14 @@ contract MonitorTest is MangroveTest {
     mgv.setMonitor(address(monitor));
     mgv.setNotify(true);
     uint ofrId = mkr.newOffer(0.1 ether, 0.1 ether, 100_000, 0);
-    P.Offer.t offer = mgv.offers($(base), $(quote), ofrId);
-    P.OfferDetail.t offerDetail = mgv.offerDetails($(base), $(quote), ofrId);
+    offerT offer = mgv.offers($(base), $(quote), ofrId);
+    offerDetailT offerDetail = mgv.offerDetails($(base), $(quote), ofrId);
 
     uint[4][] memory targets = wrap_dynamic(
       [ofrId, 0.04 ether, 0.05 ether, 100_000]
     );
 
-    (P.Global.t _global, P.Local.t _local) = mgv.config($(base), $(quote));
+    (globalT _global, localT _local) = mgv.config($(base), $(quote));
     // config sent during maker callback has stale best and, is locked
     _local = _local.best(1).lock(true);
 

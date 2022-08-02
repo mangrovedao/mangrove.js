@@ -108,7 +108,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     address owner,
     uint provision
   ) internal returns (uint) {
-    (P.Global.t global, P.Local.t local) = MGV.config(
+    (globalT global, localT local) = MGV.config(
       address(mko.outbound_tkn),
       address(mko.inbound_tkn)
     );
@@ -162,9 +162,9 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
   // * if offer is still live one should compute its currenlty locked provision $P$ and derive gasprice based on msg.value + $P$ (note if msg.value = 0 offer can be reposted with offer.gasprice)
 
   struct UpdateData {
-    P.Global.t global;
-    P.Local.t local;
-    P.OfferDetail.t offer_detail;
+    globalT global;
+    localT local;
+    offerDetailT offer_detail;
     uint provision;
   }
 
@@ -352,7 +352,7 @@ abstract contract MultiUser is IOfferLogicMulti, MangroveOffer {
     // NB if several offers of `this` contract have failed during the market order, the balance of this contract on Mangrove will contain cumulated free provision
 
     // computing an under approximation of returned provision because of this offer's failure
-    (P.Global.t global, P.Local.t local) = MGV.config(
+    (globalT global, localT local) = MGV.config(
       order.outbound_tkn,
       order.inbound_tkn
     );

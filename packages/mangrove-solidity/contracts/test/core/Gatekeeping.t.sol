@@ -85,7 +85,7 @@ contract GatekeepingTest is IMaker, MangroveTest {
   }
 
   function test_killing_updates_config() public {
-    (P.Global.t global, ) = mgv.config(address(0), address(0));
+    (globalT global, ) = mgv.config(address(0), address(0));
     assertTrue(!global.dead(), "mgv should not be dead ");
     expectFrom($(mgv));
     emit Kill();
@@ -95,7 +95,7 @@ contract GatekeepingTest is IMaker, MangroveTest {
   }
 
   function test_kill_is_idempotent() public {
-    (P.Global.t global, ) = mgv.config(address(0), address(0));
+    (globalT global, ) = mgv.config(address(0), address(0));
     assertTrue(!global.dead(), "mgv should not be dead ");
     expectFrom($(mgv));
     emit Kill();
@@ -200,13 +200,13 @@ contract GatekeepingTest is IMaker, MangroveTest {
   }
 
   function test_makerGasreq_bigger_than_gasmax_fails_newOffer() public {
-    (P.Global.t cfg, ) = mgv.config($(base), $(quote));
+    (globalT cfg, ) = mgv.config($(base), $(quote));
     vm.expectRevert("mgv/writeOffer/gasreq/tooHigh");
     mkr.newOffer(1, 1, cfg.gasmax() + 1, 0);
   }
 
   function test_makerGasreq_at_gasmax_succeeds_newOffer() public {
-    (P.Global.t cfg, ) = mgv.config($(base), $(quote));
+    (globalT cfg, ) = mgv.config($(base), $(quote));
     // Logging tests
     expectFrom($(mgv));
     emit OfferWrite(
@@ -231,7 +231,7 @@ contract GatekeepingTest is IMaker, MangroveTest {
 
   function test_makerGasreq_lower_than_density_fails_newOffer() public {
     mgv.setDensity($(base), $(quote), 100);
-    (, P.Local.t cfg) = mgv.config($(base), $(quote));
+    (, localT cfg) = mgv.config($(base), $(quote));
     uint amount = (1 + cfg.offer_gasbase()) * cfg.density();
     vm.expectRevert("mgv/writeOffer/density/tooLow");
     mkr.newOffer(amount - 1, amount - 1, 1, 0);
@@ -239,7 +239,7 @@ contract GatekeepingTest is IMaker, MangroveTest {
 
   function test_makerGasreq_at_density_suceeds() public {
     mgv.setDensity($(base), $(quote), 100);
-    (P.Global.t glob, P.Local.t cfg) = mgv.config($(base), $(quote));
+    (globalT glob, localT cfg) = mgv.config($(base), $(quote));
     uint amount = (1 + cfg.offer_gasbase()) * cfg.density();
     // Logging tests
     expectFrom($(mgv));

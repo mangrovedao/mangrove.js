@@ -28,8 +28,8 @@ contract MgvReaderTest is MangroveTest {
     (
       uint currentId,
       uint[] memory offerIds,
-      P.OfferStruct[] memory offers,
-      P.OfferDetailStruct[] memory details
+      Struct[] memory offers,
+      DetailStruct[] memory details
     ) = reader.offerList($(base), $(quote), 0, 50);
 
     assertEq(offerIds.length, 0, "ids: wrong length on 2elem");

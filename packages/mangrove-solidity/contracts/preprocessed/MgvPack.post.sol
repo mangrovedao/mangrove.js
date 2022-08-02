@@ -20,7 +20,7 @@ pragma solidity ^0.8.13;
 
 import "./MgvStructs.post.sol";
 
-import "./MgvOffer.post.sol" as Offer;
-import "./MgvOfferDetail.post.sol" as OfferDetail;
-import "./MgvGlobal.post.sol" as Global;
-import "./MgvLocal.post.sol" as Local;
+import "./MgvOffer.post.sol";
+import "./MgvOfferDetail.post.sol";
+import "./MgvGlobal.post.sol";
+import "./MgvLocal.post.sol";

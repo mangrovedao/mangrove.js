@@ -18,7 +18,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import {IERC20, HasMgvEvents, IMaker, IMgvMonitor, MgvLib as ML, P} from "./MgvLib.sol";
+import {IERC20, HasMgvEvents, IMaker, IMgvMonitor, MgvLib as ML} from "./MgvLib.sol";
 import {MgvHasOffers} from "./MgvHasOffers.sol";
 
 abstract contract MgvOfferTaking is MgvHasOffers {
@@ -209,8 +209,8 @@ abstract contract MgvOfferTaking is MgvHasOffers {
         uint takerWants = sor.wants;
         uint takerGives = sor.gives;
         uint offerId = sor.offerId;
-        P.Offer.t offer = sor.offer;
-        P.OfferDetail.t offerDetail = sor.offerDetail;
+        offerT offer = sor.offer;
+        offerDetailT offerDetail = sor.offerDetail;
 
         /* If an execution was attempted, we move `sor` to the next offer. Note that the current state is inconsistent, since we have not yet updated `sor.offerDetails`. */
         if (mgvData != "mgv/notExecuted") {

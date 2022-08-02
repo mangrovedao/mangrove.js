@@ -684,7 +684,7 @@ contract MangoImplementation is Persistent {
   ) internal {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     // outbound : QUOTE, inbound: BASE
-    P.Offer.t offer = MGV.offers($(QUOTE), $(BASE), mStr.bids[index]);
+    offerT offer = MGV.offers($(QUOTE), $(BASE), mStr.bids[index]);
 
     uint position = position_of_index(index);
 
@@ -727,7 +727,7 @@ contract MangoImplementation is Persistent {
   ) internal {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
     // outbound : BASE, inbound: QUOTE
-    P.Offer.t offer = MGV.offers($(BASE), $(QUOTE), mStr.asks[index]);
+    offerT offer = MGV.offers($(BASE), $(QUOTE), mStr.asks[index]);
     uint position = position_of_index(index);
 
     uint new_gives = reset

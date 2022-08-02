@@ -18,7 +18,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import {MgvLib as ML, P} from "../MgvLib.sol";
+import {MgvLib as ML} from "../MgvLib.sol";
 
 interface MangroveLike {
   function best(address, address) external view returns (uint);
@@ -27,24 +27,24 @@ interface MangroveLike {
     address,
     address,
     uint
-  ) external view returns (P.Offer.t);
+  ) external view returns (offerT);
 
   function offerDetails(
     address,
     address,
     uint
-  ) external view returns (P.OfferDetail.t);
+  ) external view returns (offerDetailT);
 
   function offerInfo(
     address,
     address,
     uint
-  ) external view returns (P.OfferStruct memory, P.OfferDetailStruct memory);
+  ) external view returns (OfferStruct memory, OfferDetailStruct memory);
 
   function config(address, address)
     external
     view
-    returns (P.Global.t, P.Local.t);
+    returns (globalT, localT);
 }
 
 contract MgvReader {
@@ -101,8 +101,8 @@ contract MgvReader {
     returns (
       uint,
       uint[] memory,
-      P.Offer.t[] memory,
-      P.OfferDetail.t[] memory
+      offerT[] memory,
+      offerDetailT[] memory
     )
   {
     unchecked {
@@ -114,8 +114,8 @@ contract MgvReader {
       );
 
       uint[] memory offerIds = new uint[](length);
-      P.Offer.t[] memory offers = new P.Offer.t[](length);
-      P.OfferDetail.t[] memory details = new P.OfferDetail.t[](length);
+      offerT[] memory offers = new offerT[](length);
+      offerDetailT[] memory details = new offerDetailT[](length);
 
       uint i = 0;
 
@@ -143,8 +143,8 @@ contract MgvReader {
     returns (
       uint,
       uint[] memory,
-      P.OfferStruct[] memory,
-      P.OfferDetailStruct[] memory
+      Struct[] memory,
+      DetailStruct[] memory
     )
   {
     unchecked {
@@ -156,8 +156,8 @@ contract MgvReader {
       );
 
       uint[] memory offerIds = new uint[](length);
-      P.OfferStruct[] memory offers = new P.OfferStruct[](length);
-      P.OfferDetailStruct[] memory details = new P.OfferDetailStruct[](length);
+      Struct[] memory offers = new Struct[](length);
+      DetailStruct[] memory details = new DetailStruct[](length);
 
       uint i = 0;
       while (currentId != 0 && i < length) {
@@ -182,7 +182,7 @@ contract MgvReader {
     uint ofr_gasprice
   ) external view returns (uint) {
     unchecked {
-      (P.Global.t global, P.Local.t local) = mgv.config(
+      (globalT global, localT local) = mgv.config(
         outbound_tkn,
         inbound_tkn
       );

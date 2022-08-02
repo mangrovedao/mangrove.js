@@ -10,7 +10,7 @@ import {TestToken} from "mgv_test/lib/tokens/TestToken.sol";
 import {AbstractMangrove} from "mgv_src/AbstractMangrove.sol";
 import {Mangrove} from "mgv_src/Mangrove.sol";
 import {InvertedMangrove} from "mgv_src/InvertedMangrove.sol";
-import {IERC20, MgvLib, P, HasMgvEvents, IMaker, ITaker, IMgvMonitor} from "mgv_src/MgvLib.sol";
+import {IERC20, MgvLib, HasMgvEvents, IMaker, ITaker, IMgvMonitor} from "mgv_src/MgvLib.sol";
 import {console2 as csl} from "forge-std/console2.sol";
 
 // below imports are for the \$( function)
@@ -128,8 +128,8 @@ contract MangroveTest is Test2, HasMgvEvents {
 
     // save call results so logs are easier to read
     uint[] memory ids = new uint[](size);
-    P.Offer.t[] memory offers = new P.Offer.t[](size);
-    P.OfferDetail.t[] memory details = new P.OfferDetail.t[](size);
+    offerT[] memory offers = new offerT[](size);
+    offerDetailT[] memory details = new offerDetailT[](size);
     uint c = 0;
     while ((offerId != 0) && (c < size)) {
       ids[c] = offerId;
@@ -167,7 +167,7 @@ contract MangroveTest is Test2, HasMgvEvents {
       )
     );
     while (offerId != 0) {
-      (P.OfferStruct memory ofr, ) = mgv.offerInfo($out, $in, offerId);
+      (OfferStruct memory ofr, ) = mgv.offerInfo($out, $in, offerId);
       console.log(
         string.concat(
           unicode"│ ",
@@ -225,7 +225,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     address $in,
     uint price
   ) internal view returns (uint) {
-    (, P.Local.t local) = mgv.config($out, $in);
+    (, localT local) = mgv.config($out, $in);
     return ((price * local.fee()) / 10000);
   }
 
@@ -234,7 +234,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     address $in,
     uint price
   ) internal view returns (uint) {
-    (, P.Local.t local) = mgv.config($out, $in);
+    (, localT local) = mgv.config($out, $in);
     return (price * (10_000 - local.fee())) / 10000;
   }
 
@@ -243,7 +243,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     address $in,
     uint gasreq
   ) internal view returns (uint) {
-    (P.Global.t glo_cfg, P.Local.t loc_cfg) = mgv.config($out, $in);
+    (globalT glo_cfg, localT loc_cfg) = mgv.config($out, $in);
     return ((gasreq + loc_cfg.offer_gasbase()) *
       uint(glo_cfg.gasprice()) *
       10**9);
@@ -255,7 +255,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     uint gasreq,
     uint gasprice
   ) internal view returns (uint) {
-    (P.Global.t glo_cfg, P.Local.t loc_cfg) = mgv.config($out, $in);
+    (globalT glo_cfg, localT loc_cfg) = mgv.config($out, $in);
     uint _gp;
     if (glo_cfg.gasprice() > gasprice) {
       _gp = uint(glo_cfg.gasprice());

@@ -578,7 +578,7 @@ contract MakerPosthookTest is MangroveTest, IMaker {
     MgvLib.OrderResult calldata
   ) internal {
     called = true;
-    (, P.Local.t cfg) = mgv.config(order.outbound_tkn, order.inbound_tkn);
+    (, localT cfg) = mgv.config(order.outbound_tkn, order.inbound_tkn);
     assertEq(cfg.best(), ofr, "Incorrect best offer id in posthook");
   }
 
@@ -638,7 +638,7 @@ contract MakerPosthookTest is MangroveTest, IMaker {
     MgvLib.OrderResult calldata
   ) internal {
     called = true;
-    (, P.Local.t cfg) = mgv.config(order.outbound_tkn, order.inbound_tkn);
+    (, localT cfg) = mgv.config(order.outbound_tkn, order.inbound_tkn);
     assertEq(cfg.last(), ofr, "Incorrect last offer id in posthook");
   }
 

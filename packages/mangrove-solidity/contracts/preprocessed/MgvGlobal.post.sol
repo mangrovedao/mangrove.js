@@ -23,107 +23,113 @@ import "./MgvStructs.post.sol";
  * ************************************************** */
 
 //some type safety for each struct
-type t is uint;
-using Library for t global;
+type globalT is uint;
+using GlobalLibrary for globalT global;
 
-uint constant monitor_bits   = 160;
-uint constant useOracle_bits = 8;
-uint constant notify_bits    = 8;
-uint constant gasprice_bits  = 16;
-uint constant gasmax_bits    = 24;
-uint constant dead_bits      = 8;
+uint constant global_monitor_bits = 160;
+uint constant global_useOracle_bits = 8;
+uint constant global_notify_bits = 8;
+uint constant global_gasprice_bits = 16;
+uint constant global_gasmax_bits = 24;
+uint constant global_dead_bits = 8;
 
-uint constant monitor_before   = 0;
-uint constant useOracle_before = monitor_before   + monitor_bits  ;
-uint constant notify_before    = useOracle_before + useOracle_bits;
-uint constant gasprice_before  = notify_before    + notify_bits   ;
-uint constant gasmax_before    = gasprice_before  + gasprice_bits ;
-uint constant dead_before      = gasmax_before    + gasmax_bits   ;
+uint constant global_monitor_before = 0;
+uint constant global_useOracle_before = global_monitor_before + global_monitor_bits;
+uint constant global_notify_before = global_useOracle_before + global_useOracle_bits;
+uint constant global_gasprice_before = global_notify_before + global_notify_bits;
+uint constant global_gasmax_before = global_gasprice_before + global_gasprice_bits;
+uint constant global_dead_before = global_gasmax_before + global_gasmax_bits;
 
-uint constant monitor_mask   = 0x0000000000000000000000000000000000000000ffffffffffffffffffffffff;
-uint constant useOracle_mask = 0xffffffffffffffffffffffffffffffffffffffff00ffffffffffffffffffffff;
-uint constant notify_mask    = 0xffffffffffffffffffffffffffffffffffffffffff00ffffffffffffffffffff;
-uint constant gasprice_mask  = 0xffffffffffffffffffffffffffffffffffffffffffff0000ffffffffffffffff;
-uint constant gasmax_mask    = 0xffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffff;
-uint constant dead_mask      = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffff;
+uint constant global_monitor_mask = 0x0000000000000000000000000000000000000000ffffffffffffffffffffffff;
+uint constant global_useOracle_mask = 0xffffffffffffffffffffffffffffffffffffffff00ffffffffffffffffffffff;
+uint constant global_notify_mask = 0xffffffffffffffffffffffffffffffffffffffffff00ffffffffffffffffffff;
+uint constant global_gasprice_mask = 0xffffffffffffffffffffffffffffffffffffffffffff0000ffffffffffffffff;
+uint constant global_gasmax_mask = 0xffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffff;
+uint constant global_dead_mask = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffff;
 
-library Library {
-  function to_struct(t __packed) internal pure returns (GlobalStruct memory __s) { unchecked {
-    __s.monitor = address(uint160((t.unwrap(__packed) << monitor_before) >> (256-monitor_bits)));
-    __s.useOracle = (((t.unwrap(__packed) << useOracle_before) >> (256-useOracle_bits)) > 0);
-    __s.notify = (((t.unwrap(__packed) << notify_before) >> (256-notify_bits)) > 0);
-    __s.gasprice = (t.unwrap(__packed) << gasprice_before) >> (256-gasprice_bits);
-    __s.gasmax = (t.unwrap(__packed) << gasmax_before) >> (256-gasmax_bits);
-    __s.dead = (((t.unwrap(__packed) << dead_before) >> (256-dead_bits)) > 0);
-  }}
-
-  function eq(t __packed1, t __packed2) internal pure returns (bool) { unchecked {
-    return t.unwrap(__packed1) == t.unwrap(__packed2);
+library GlobalLibrary {
+  function to_struct(globalT __packed) internal pure returns (GlobalStruct memory __s) { unchecked {
+    __s.monitor = address(uint160((globalT.unwrap(__packed) << global_monitor_before) >> (256-global_monitor_bits)));
+    __s.useOracle = (((globalT.unwrap(__packed) << global_useOracle_before) >> (256-global_useOracle_bits)) > 0);
+    __s.notify = (((globalT.unwrap(__packed) << global_notify_before) >> (256-global_notify_bits)) > 0);
+    __s.gasprice = (globalT.unwrap(__packed) << global_gasprice_before) >> (256-global_gasprice_bits);
+    __s.gasmax = (globalT.unwrap(__packed) << global_gasmax_before) >> (256-global_gasmax_bits);
+    __s.dead = (((globalT.unwrap(__packed) << global_dead_before) >> (256-global_dead_bits)) > 0);
   }}
 
-  function unpack(t __packed) internal pure returns (address __monitor, bool __useOracle, bool __notify, uint __gasprice, uint __gasmax, bool __dead) { unchecked {
-    __monitor = address(uint160((t.unwrap(__packed) << monitor_before) >> (256-monitor_bits)));
-    __useOracle = (((t.unwrap(__packed) << useOracle_before) >> (256-useOracle_bits)) > 0);
-    __notify = (((t.unwrap(__packed) << notify_before) >> (256-notify_bits)) > 0);
-    __gasprice = (t.unwrap(__packed) << gasprice_before) >> (256-gasprice_bits);
-    __gasmax = (t.unwrap(__packed) << gasmax_before) >> (256-gasmax_bits);
-    __dead = (((t.unwrap(__packed) << dead_before) >> (256-dead_bits)) > 0);
+  function eq(globalT __packed1, globalT __packed2) internal pure returns (bool) { unchecked {
+    return globalT.unwrap(__packed1) == globalT.unwrap(__packed2);
   }}
 
-  function monitor(t __packed) internal pure returns(address) { unchecked {
-    return address(uint160((t.unwrap(__packed) << monitor_before) >> (256-monitor_bits)));
+  function unpack(globalT __packed) internal pure returns (address __monitor, bool __useOracle, bool __notify, uint __gasprice, uint __gasmax, bool __dead) { unchecked {
+    __monitor = address(uint160((globalT.unwrap(__packed) << global_monitor_before) >> (256-global_monitor_bits)));
+    __useOracle = (((globalT.unwrap(__packed) << global_useOracle_before) >> (256-global_useOracle_bits)) > 0);
+    __notify = (((globalT.unwrap(__packed) << global_notify_before) >> (256-global_notify_bits)) > 0);
+    __gasprice = (globalT.unwrap(__packed) << global_gasprice_before) >> (256-global_gasprice_bits);
+    __gasmax = (globalT.unwrap(__packed) << global_gasmax_before) >> (256-global_gasmax_bits);
+    __dead = (((globalT.unwrap(__packed) << global_dead_before) >> (256-global_dead_bits)) > 0);
   }}
-  function monitor(t __packed,address val) internal pure returns(t) { unchecked {
-    return t.wrap((t.unwrap(__packed) & monitor_mask)
-                  | ((uint(uint160(val)) << (256-monitor_bits) >> monitor_before)));
+
+  function monitor(globalT __packed) internal pure returns(address) { unchecked {
+    return address(uint160((globalT.unwrap(__packed) << global_monitor_before) >> (256-global_monitor_bits)));
   }}
-  function useOracle(t __packed) internal pure returns(bool) { unchecked {
-    return (((t.unwrap(__packed) << useOracle_before) >> (256-useOracle_bits)) > 0);
+
+  function monitor(globalT __packed,address val) internal pure returns(globalT) { unchecked {
+    return globalT.wrap((globalT.unwrap(__packed) & global_monitor_mask)
+                        | ((uint(uint160(val)) << (256-global_monitor_bits) >> global_monitor_before)));
   }}
-  function useOracle(t __packed,bool val) internal pure returns(t) { unchecked {
-    return t.wrap((t.unwrap(__packed) & useOracle_mask)
-                  | ((uint_of_bool(val) << (256-useOracle_bits) >> useOracle_before)));
+  function useOracle(globalT __packed) internal pure returns(bool) { unchecked {
+    return (((globalT.unwrap(__packed) << global_useOracle_before) >> (256-global_useOracle_bits)) > 0);
   }}
-  function notify(t __packed) internal pure returns(bool) { unchecked {
-    return (((t.unwrap(__packed) << notify_before) >> (256-notify_bits)) > 0);
+
+  function useOracle(globalT __packed,bool val) internal pure returns(globalT) { unchecked {
+    return globalT.wrap((globalT.unwrap(__packed) & global_useOracle_mask)
+                        | ((uint_of_bool(val) << (256-global_useOracle_bits) >> global_useOracle_before)));
   }}
-  function notify(t __packed,bool val) internal pure returns(t) { unchecked {
-    return t.wrap((t.unwrap(__packed) & notify_mask)
-                  | ((uint_of_bool(val) << (256-notify_bits) >> notify_before)));
+  function notify(globalT __packed) internal pure returns(bool) { unchecked {
+    return (((globalT.unwrap(__packed) << global_notify_before) >> (256-global_notify_bits)) > 0);
   }}
-  function gasprice(t __packed) internal pure returns(uint) { unchecked {
-    return (t.unwrap(__packed) << gasprice_before) >> (256-gasprice_bits);
+
+  function notify(globalT __packed,bool val) internal pure returns(globalT) { unchecked {
+    return globalT.wrap((globalT.unwrap(__packed) & global_notify_mask)
+                        | ((uint_of_bool(val) << (256-global_notify_bits) >> global_notify_before)));
   }}
-  function gasprice(t __packed,uint val) internal pure returns(t) { unchecked {
-    return t.wrap((t.unwrap(__packed) & gasprice_mask)
-                  | ((val << (256-gasprice_bits) >> gasprice_before)));
+  function gasprice(globalT __packed) internal pure returns(uint) { unchecked {
+    return (globalT.unwrap(__packed) << global_gasprice_before) >> (256-global_gasprice_bits);
   }}
-  function gasmax(t __packed) internal pure returns(uint) { unchecked {
-    return (t.unwrap(__packed) << gasmax_before) >> (256-gasmax_bits);
+
+  function gasprice(globalT __packed,uint val) internal pure returns(globalT) { unchecked {
+    return globalT.wrap((globalT.unwrap(__packed) & global_gasprice_mask)
+                        | ((val << (256-global_gasprice_bits) >> global_gasprice_before)));
   }}
-  function gasmax(t __packed,uint val) internal pure returns(t) { unchecked {
-    return t.wrap((t.unwrap(__packed) & gasmax_mask)
-                  | ((val << (256-gasmax_bits) >> gasmax_before)));
+  function gasmax(globalT __packed) internal pure returns(uint) { unchecked {
+    return (globalT.unwrap(__packed) << global_gasmax_before) >> (256-global_gasmax_bits);
   }}
-  function dead(t __packed) internal pure returns(bool) { unchecked {
-    return (((t.unwrap(__packed) << dead_before) >> (256-dead_bits)) > 0);
+
+  function gasmax(globalT __packed,uint val) internal pure returns(globalT) { unchecked {
+    return globalT.wrap((globalT.unwrap(__packed) & global_gasmax_mask)
+                        | ((val << (256-global_gasmax_bits) >> global_gasmax_before)));
   }}
-  function dead(t __packed,bool val) internal pure returns(t) { unchecked {
-    return t.wrap((t.unwrap(__packed) & dead_mask)
-                  | ((uint_of_bool(val) << (256-dead_bits) >> dead_before)));
+  function dead(globalT __packed) internal pure returns(bool) { unchecked {
+    return (((globalT.unwrap(__packed) << global_dead_before) >> (256-global_dead_bits)) > 0);
+  }}
+
+  function dead(globalT __packed,bool val) internal pure returns(globalT) { unchecked {
+    return globalT.wrap((globalT.unwrap(__packed) & global_dead_mask)
+                        | ((uint_of_bool(val) << (256-global_dead_bits) >> global_dead_before)));
   }}
 }
 
-function t_of_struct(GlobalStruct memory __s) pure returns (t) { unchecked {
-  return pack(__s.monitor, __s.useOracle, __s.notify, __s.gasprice, __s.gasmax, __s.dead);
+function global_t_of_struct(GlobalStruct memory __s) pure returns (globalT) { unchecked {
+  return global_pack(__s.monitor, __s.useOracle, __s.notify, __s.gasprice, __s.gasmax, __s.dead);
 }}
 
-function pack(address __monitor, bool __useOracle, bool __notify, uint __gasprice, uint __gasmax, bool __dead) pure returns (t) { unchecked {
-  return t.wrap(((((((0
-                | ((uint(uint160(__monitor)) << (256-monitor_bits)) >> monitor_before))
-                | ((uint_of_bool(__useOracle) << (256-useOracle_bits)) >> useOracle_before))
-                | ((uint_of_bool(__notify) << (256-notify_bits)) >> notify_before))
-                | ((__gasprice << (256-gasprice_bits)) >> gasprice_before))
-                | ((__gasmax << (256-gasmax_bits)) >> gasmax_before))
-                | ((uint_of_bool(__dead) << (256-dead_bits)) >> dead_before)));
+function global_pack(address __monitor, bool __useOracle, bool __notify, uint __gasprice, uint __gasmax, bool __dead) pure returns (globalT) { unchecked {
+  return globalT.wrap(((((((0
+                      | ((uint(uint160(__monitor)) << (256-global_monitor_bits)) >> global_monitor_before))
+                      | ((uint_of_bool(__useOracle) << (256-global_useOracle_bits)) >> global_useOracle_before))
+                      | ((uint_of_bool(__notify) << (256-global_notify_bits)) >> global_notify_before))
+                      | ((__gasprice << (256-global_gasprice_bits)) >> global_gasprice_before))
+                      | ((__gasmax << (256-global_gasmax_bits)) >> global_gasmax_before))
+                      | ((uint_of_bool(__dead) << (256-global_dead_bits)) >> global_dead_before)));
 }}

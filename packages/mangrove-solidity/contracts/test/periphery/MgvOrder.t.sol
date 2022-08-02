@@ -6,7 +6,7 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 
 // import "../../AbstractMangrove.sol";
-import {MgvLib as ML, P, IMaker} from "mgv_src/MgvLib.sol";
+import {MgvLib as ML, IMaker} from "mgv_src/MgvLib.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 
 // import "hardhat/console.sol";
@@ -346,7 +346,7 @@ contract MangroveOrder_Test is MangroveTest {
     );
 
     // checking resting order parameters
-    P.Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
+    offerT offer = mgv.offers($(quote), $(base), res.offerId);
     assertEq(
       offer.wants(),
       buyOrder.makerWants - (res.takerGot + res.fee),
@@ -427,7 +427,7 @@ contract MangroveOrder_Test is MangroveTest {
     );
 
     // checking resting order residual
-    P.Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
+    offerT offer = mgv.offers($(quote), $(base), res.offerId);
 
     assertEq(
       offer.gives(),

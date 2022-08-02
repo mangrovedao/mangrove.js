@@ -23,6 +23,6 @@ import "./MgvStructs.post.sol";
 // #def sname ns[0]
 // #def Sname capitalize(ns[0])
 // #def struct_def ns[1]
-$$(concat('import \"./',filename(ns),'\" as ',Sname));
+$$(concat('import \"./',filename(ns),'\"'));
 // #done
 // #def __x avoid_solpp_eof_error_by_adding_useless_line
