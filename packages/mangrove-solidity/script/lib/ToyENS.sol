@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.13;
 
+// out-of-band agreed upon toy ens address
+ToyENS constant ENS = ToyENS(address(bytes20(hex"decaf0")));
+
 contract ToyENS {
   mapping(string => address) _addrs;
   mapping(string => bool) _isToken;
