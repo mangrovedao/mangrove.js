@@ -295,6 +295,19 @@
     {
       "inputs": [
         {
+          "internalType": "contract IERC20[]",
+          "name": "tokens",
+          "type": "address[]"
+        }
+      ],
+      "name": "checkList",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "contract IERC20",
           "name": "",
           "type": "address"
@@ -703,7 +716,7 @@
           "type": "address"
         }
       ],
-      "name": "setAdmin",
+      "name": "set_admin",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

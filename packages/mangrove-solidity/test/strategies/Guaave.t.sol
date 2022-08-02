@@ -37,8 +37,8 @@ contract GuaaveTest is MangroveTest {
 
     maker = freshAddress("maker");
     taker = freshAddress("taker");
-    deal($(weth), taker, 50 ether + weth.balanceOf(taker), true);
-    deal($(usdc), taker, 100_000 * 10**6 + usdc.balanceOf(taker), true);
+    deal($(weth), taker, cash(weth, 50) + weth.balanceOf(taker), true);
+    deal($(usdc), taker, cash(usdc, 100_000) + usdc.balanceOf(taker), true);
 
     vm.startPrank(maker);
     mgo = new Mango({
@@ -93,15 +93,20 @@ contract GuaaveTest is MangroveTest {
     vm.stopPrank();
     mgv.fund{value: prov * (NSLOTS * 2)}($(mgo));
     vm.startPrank(maker);
-    deal($(weth), $(mgo), 17 ether + weth.balanceOf($(mgo)), true);
+    deal($(weth), $(mgo), cash(weth, 17) + weth.balanceOf($(mgo)), true);
 
-    // to mint awETH
-    router.approveLender(weth);
-    // to mint aUSDC
-    router.approveLender(usdc);
-    // to allow router to pull/push from Mango
-    mgo.approveRouter(weth);
-    mgo.approveRouter(usdc);
+    IERC20[] memory tokens = new IERC20[](2);
+    tokens[0] = weth;
+    tokens[1] = usdc;
+
+    vm.expectRevert("Router/NotApprovedByMakerContract");
+    mgo.checkList(tokens);
+
+    // no need to approve for overlying transfer because router is the reserve
+    mgo.activate(tokens);
+    try mgo.checkList(tokens) {} catch Error(string memory reason) {
+      fail(reason);
+    }
 
     // putting ETH as collateral on AAVE
     router.supply(
