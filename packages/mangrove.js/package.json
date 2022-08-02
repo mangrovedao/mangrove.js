@@ -10,7 +10,7 @@
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc --build src && yarn run make-cli-executable && yarn run write-test-deployment-file && yarn run rollup",
+    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc --build src && yarn run make-cli-executable && cross-env NODE_OPTIONS=--max-old-space-size=8192 yarn run write-test-deployment-file && yarn run rollup",
     "heroku-build-this-package": "yarn run typechain && yarn run lint && tsc --build src && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",

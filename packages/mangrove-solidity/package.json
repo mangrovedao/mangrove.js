@@ -34,6 +34,7 @@
     "chai-events": "^0.0.3",
     "config": "^3.3.7",
     "cross-env": "^7.0.3",
+    "dotenv-cli": "^6.0.0",
     "dotenv-flow": "^3.2.0",
     "ethers": "^5.6.4",
     "fs": "^0.0.1-security",
