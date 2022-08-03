@@ -14,7 +14,7 @@ Each package also contains a README.md with package-specific documentation.
 
 # Prerequisites
 
-For Mac everything should work out of the box, if you are using Windows, then we recommend installing everything from within WSL2 and expect some quirks.
+For Linux or macOS everything should work out of the box, if you are using Windows, then we recommend installing everything from within WSL2 and expect some quirks.
 
 1. [Node.js](https://nodejs.org/en/) 14.14+, we recommend installation through [nvm](https://github.com/nvm-sh/nvm#installing-and-updating), e.g.:
 
