@@ -9,6 +9,7 @@ chai.use(chaiAsPromised);
 import { Mangrove } from "@mangrovedao/mangrove.js";
 import { GasUpdater, OracleSourceConfiguration } from "../../src/GasUpdater";
 import { config } from "../../src/util/config";
+import * as typechain from "../../src/types/typechain";
 import { Signer, ethers } from "ethers";
 
 describe("GasUpdater integration tests", () => {
@@ -38,10 +39,18 @@ describe("GasUpdater integration tests", () => {
       provider: this.server.url,
     });
 
-    await mgvAdmin.contract.setMonitor(mgv.oracleContract.address);
+    // Using the mangrove.js address functionallity, since there is no reason to recreate the significant infastructure for only one Contract.
+    const oracleAddress = Mangrove.getAddress("MgvOracle", mgv._network.name);
+
+    await mgvAdmin.contract.setMonitor(oracleAddress);
     await mgvAdmin.contract.setUseOracle(true);
     await mgvAdmin.contract.setNotify(true);
-    await mgvAdmin.oracleContract.setMutator(gasUpdaterSigner.address);
+
+    const oracleContract = typechain.MgvOracle__factory.connect(
+      oracleAddress,
+      mgvAdmin._signer
+    );
+    await oracleContract.setMutator(gasUpdaterSigner.address);
   });
 
   afterEach(() => {

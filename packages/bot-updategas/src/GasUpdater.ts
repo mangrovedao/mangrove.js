@@ -2,6 +2,7 @@ import { logger } from "./util/logger";
 import Mangrove from "@mangrovedao/mangrove.js";
 import Big from "big.js";
 import get from "axios";
+import * as typechain from "./types/typechain";
 
 /**
  * Configuration for an external oracle JSON REST endpoint.
@@ -41,6 +42,7 @@ export class GasUpdater {
   #constantOracleGasPrice: number | undefined;
   #oracleURL = "";
   #oracleURL_Key = "";
+  oracleContract: typechain.MgvOracle;
 
   /**
    * Constructs a GasUpdater bot.
@@ -70,6 +72,15 @@ export class GasUpdater {
           `Parameter oracleSourceConfiguration must be either ConstantOracleConfiguration or OracleEndpointConfiguration. Found '${oracleSourceConfiguration}'`
         );
     }
+    // Using the mangrove.js address functionallity, since there is no reason to recreate the significant infastructure for only one Contract.
+    const oracleAddress = Mangrove.getAddress(
+      "MgvOracle",
+      mangrove._network.name
+    );
+    this.oracleContract = typechain.MgvOracle__factory.connect(
+      oracleAddress,
+      mangrove._signer
+    );
   }
 
   /**
@@ -191,7 +202,7 @@ export class GasUpdater {
       // Round to closest integer before converting to BigNumber
       const newGasPriceRounded = Math.round(newGasPrice);
 
-      await this.#mangrove.oracleContract
+      await this.oracleContract
         .setGasPrice(newGasPriceRounded)
         .then((tx) => tx.wait());
 
