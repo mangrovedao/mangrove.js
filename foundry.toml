@@ -9,9 +9,8 @@ cache_path='packages/mangrove-solidity/cache'
 solc_version="0.8.14"
 # optimizer=true
 # optimizer_runs=20000
-[profile.polygon]
-eth_rpc_url="https://polygon-rpc.com"
-fork_block_number=26416000
+[rpc_endpoints]
+polygon="${POLYGON_NODE_URL}"
 # The remappings are in remappings.txt so vscode solidity ext. can read them
 # The first lines are the manual remappings
 # The other lines are a copy/paste of the inferred mappings shown by `forge config` (inferred from imported libs)

@@ -16,9 +16,7 @@
     "preproc": "node preprocessing/run.js",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "npm-run-all \"test:*\"",
-    "test:solidity": "npm-run-all --continue-on-error \"test:solidity:*\"",
-    "test:solidity:local": "dotenv -e .env.test.local -- bash -c 'forge test -vvv --no-match-contract \\'^(Guaave|AaveLender)Test$\\''",
-    "test:solidity:polygon": "dotenv -e .env.test.local -- bash -c 'forge test -vvv --fork-url $POLYGON_NODE_URL --fork-block-number 26416000 --match-contract \\'^(Guaave|AaveLender)Test$\\''"
+    "test:solidity": "dotenv -e .env.test.local -- forge test -vvv"
   },
   "lint-staged": {
     "*.{js,css,md,sol,json}": "prettier --write --ignore-unknown"

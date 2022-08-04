@@ -1,13 +1,24 @@
 // SPDX-License-Identifier:	AGPL-3.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.14;
 
 import "mgv_test/lib/MangroveTest.sol";
 import "mgv_src/strategies/single_user/market_making/mango/Mango.sol";
 import "mgv_src/strategies/routers/AaveRouter.sol";
-import "mgv_test/lib/Fork.sol";
+import "mgv_test/lib/forks/Polygon.sol";
 
-// note: this is a forking test
-contract GuaaveTest is MangroveTest {
+/* This test works as an example of how to run the same test on multiple forks. 
+
+  1) There is GuaaveAbstractTest which inherits AbstractFork, and where all tests are defined.
+  2) At the bottom of the file, there is GuaavePolygonTest, which inherits PolygonFork.
+
+  Inheriting PolygonFork will set the rpc endpoint, block number, and contract addresses.
+
+  If you want to test on e.g. Mumbai, and you have a MumbaiFork contract, add the following contract:
+
+    contract GuaaveMumbaiTest is GuaaveAsbtractTest, MumbaiFork {}
+*/
+
+abstract contract GuaaveAbstractTest is MangroveTest, AbstractFork {
   uint constant BASE0 = 0.34 ether;
   uint constant BASE1 = 1000 * 10**6; //because usdc decimals?
   uint constant NSLOTS = 20;
@@ -22,13 +33,13 @@ contract GuaaveTest is MangroveTest {
   AaveRouter router;
 
   function setUp() public override {
-    Fork.setUp();
+    setUpFork();
 
     mgv = setupMangrove();
     mgv.setVault($(mgv));
 
-    weth = IERC20(Fork.WETH);
-    usdc = IERC20(Fork.USDC);
+    weth = IERC20(fork.WETH);
+    usdc = IERC20(fork.USDC);
     options.defaultFee = 30;
     setupMarket(weth, usdc);
 
@@ -70,7 +81,7 @@ contract GuaaveTest is MangroveTest {
     // router will redeem and deposit funds that are mobilized during trade execution
     vm.startPrank(maker);
     router = new AaveRouter({
-      _addressesProvider: Fork.AAVE,
+      _addressesProvider: fork.AAVE,
       _referralCode: 0,
       _interestRateMode: 1 // stable rate
     });
@@ -134,7 +145,7 @@ contract GuaaveTest is MangroveTest {
   }
 
   function part_market_order_with_buffer() public {
-    IERC20 aweth = IERC20(Fork.AWETH);
+    IERC20 aweth = IERC20(fork.AWETH);
     uint takerWants = 3 ether;
     vm.startPrank(taker);
     weth.approve($(mgv), type(uint).max);
@@ -174,3 +185,5 @@ contract GuaaveTest is MangroveTest {
     }
   }
 }
+
+contract GuaavePolygonTest is GuaaveAbstractTest, PolygonFork {}

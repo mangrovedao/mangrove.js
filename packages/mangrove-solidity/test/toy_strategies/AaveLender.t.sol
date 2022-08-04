@@ -2,7 +2,7 @@
 pragma solidity ^0.8.10;
 
 import "mgv_test/lib/MangroveTest.sol";
-import "mgv_test/lib/Fork.sol";
+import "mgv_test/lib/forks/Polygon.sol";
 import "mgv_src/toy_strategies/single_user/cash_management/AdvancedAaveRetail.sol";
 
 abstract contract AaveV3ModuleTest is MangroveTest {
@@ -34,7 +34,7 @@ abstract contract AaveV3ModuleTest is MangroveTest {
 
 // warning! currently only known to work on Polygon, block 26416000
 // at a later point, Aave disables stable dai borrowing which those tests need
-contract AaveLenderTest is AaveV3ModuleTest {
+contract AaveLenderTest is AaveV3ModuleTest, PolygonFork {
   IERC20 weth;
   IERC20 dai;
   AaveDeepRouter router;
@@ -43,13 +43,13 @@ contract AaveLenderTest is AaveV3ModuleTest {
   receive() external payable {}
 
   function setUp() public override {
-    Fork.setUp();
+    setUpFork();
 
     mgv = setupMangrove();
     mgv.setVault($(mgv));
 
-    dai = IERC20(Fork.DAI);
-    weth = IERC20(Fork.WETH);
+    dai = IERC20(fork.DAI);
+    weth = IERC20(fork.WETH);
     options.defaultFee = 30;
     setupMarket(dai, weth);
 
@@ -69,7 +69,7 @@ contract AaveLenderTest is AaveV3ModuleTest {
   function deployStrat() public {
     strat = new AdvancedAaveRetail({
       _mgv: IMangrove($(mgv)),
-      _addressesProvider: Fork.AAVE,
+      _addressesProvider: fork.AAVE,
       deployer: $(this)
     });
 
