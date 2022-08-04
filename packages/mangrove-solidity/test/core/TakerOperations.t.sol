@@ -900,7 +900,7 @@ contract TakerOperationsTest is MangroveTest {
     quote.approve($(mgv), 10 ether);
     // 6/1/20 : ~50k/offer with optims
     //uint g = gasleft();
-    //console.log("gas used per offer: ",(g-gasleft())/50);
+    //console.log("gas used per offer: %s",(g-gasleft())/50);
   }
 
   function test_partial_fill() public {

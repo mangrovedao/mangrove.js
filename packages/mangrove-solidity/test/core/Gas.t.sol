@@ -65,7 +65,7 @@ contract GasTest is MangroveTest, IMaker {
     _gas();
     mgv.updateOffer(base, quote, 1 ether, 1 ether, 100_000, 0, 1, 1);
     gas_();
-    // console.log("Gas used", g - gasleft());
+    // console.log("Gas used is %s", g - gasleft());
   }
 
   function test_update_full_offer() public {

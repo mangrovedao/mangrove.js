@@ -181,7 +181,7 @@ abstract contract GuaaveAbstractTest is MangroveTest, AbstractFork {
         tokenAmounts: amounts
       });
       // enable for more info
-      // console.log(string.concat("Offers ",vm.toString(slice * i),",",vm.toString(slice * (i + 1))," initialized"));
+      // console.log("Offers %s,%s initialized",slice * i, slice * (i + 1));
     }
   }
 }
