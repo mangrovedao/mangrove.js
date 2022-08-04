@@ -1,39 +1,11 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.13;
 import {console2 as console} from "forge-std/console2.sol";
+import {Script} from "forge-std/Script.sol";
 
 /* Some general utility methods.
 /* You mostly want to inherit `MangroveTest` (which inherits Test2` which inherits `Utilities`) rather than inherit `Utilities` directly */
-contract Utilities {
-  function uint2str(uint _i)
-    internal
-    pure
-    returns (string memory _uintAsString)
-  {
-    unchecked {
-      if (_i == 0) {
-        return "0";
-      }
-      uint j = _i;
-      uint len;
-      while (j != 0) {
-        len++;
-        j /= 10;
-      }
-      bytes memory bstr = new bytes(len);
-      uint k = len - 1;
-      while (_i != 0) {
-        bstr[k--] = bytes1(uint8(48 + (_i % 10)));
-        _i /= 10;
-      }
-      return string(bstr);
-    }
-  }
-
-  function int2str(int _i) internal pure returns (string memory) {
-    return uint2str(uint(_i));
-  }
-
+contract Utilities is Script {
   /* units to e-18 units */
   function toEthUnits(uint w, string memory units)
     internal
@@ -52,7 +24,7 @@ contract Utilities {
     }
     if (i >= 18) {
       w = w * (10**(i - 18));
-      return string.concat(uint2str(w), suffix);
+      return string.concat(vm.toString(w), suffix);
     } else {
       uint zeroBefore = 18 - i;
       string memory zeros = "";
@@ -60,7 +32,7 @@ contract Utilities {
         zeros = string.concat(zeros, "0");
         zeroBefore--;
       }
-      return (string.concat("0.", zeros, uint2str(w), suffix));
+      return (string.concat("0.", zeros, vm.toString(w), suffix));
     }
   }
 

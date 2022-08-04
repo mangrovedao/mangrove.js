@@ -238,17 +238,18 @@ interface Vm {
   function removeFile(string calldata) external;
 
   // Convert values to a string, (value) => (stringified value)
-  function toString(address) external returns (string memory);
+  // VENDOR EDIT: added `pure`
+  function toString(address) external pure returns (string memory);
 
-  function toString(bytes calldata) external returns (string memory);
+  function toString(bytes calldata) external pure returns (string memory);
 
-  function toString(bytes32) external returns (string memory);
+  function toString(bytes32) external pure returns (string memory);
 
-  function toString(bool) external returns (string memory);
+  function toString(bool) external pure returns (string memory);
 
-  function toString(uint) external returns (string memory);
+  function toString(uint) external pure returns (string memory);
 
-  function toString(int) external returns (string memory);
+  function toString(int) external pure returns (string memory);
 
   // Record all the transaction logs
   function recordLogs() external;

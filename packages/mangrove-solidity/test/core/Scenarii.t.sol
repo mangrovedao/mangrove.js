@@ -58,7 +58,7 @@ contract ScenariiTest is MangroveTest {
     for (uint i = 1; i < makers.length(); i++) {
       vm.label(
         address(makers.getMaker(i)),
-        string.concat("maker-", uint2str(i))
+        string.concat("maker-", vm.toString(i))
       );
     }
     vm.label(address(makers.getMaker(0)), "failer");
@@ -199,7 +199,7 @@ contract ScenariiTest is MangroveTest {
       assertEq(
         mgv.balanceOf(address(makers.getMaker(i))),
         balances.makersBalanceWei[i] - provision_i,
-        string.concat("Incorrect wei balance for maker ", uint2str(i))
+        string.concat("Incorrect wei balance for maker ", vm.toString(i))
       );
     }
     //Checking offers are correctly positioned (3 > 2 > 1 > 0)
@@ -211,7 +211,7 @@ contract ScenariiTest is MangroveTest {
       assertEq(
         od.maker,
         address(makers.getMaker(expected_maker)),
-        string.concat("Incorrect maker address at offer ", uint2str(offerId))
+        string.concat("Incorrect maker address at offer ", vm.toString(offerId))
       );
 
       unchecked {
@@ -234,12 +234,12 @@ contract ScenariiTest is MangroveTest {
       assertEq(
         base.balanceOf(address(makers.getMaker(i))),
         balances.makersBalanceA[i] - offers[i][Info.makerGives],
-        string.concat("Incorrect A balance for maker ", uint2str(i))
+        string.concat("Incorrect A balance for maker ", vm.toString(i))
       );
       assertEq(
         quote.balanceOf(address(makers.getMaker(i))),
         balances.makersBalanceB[i] + offers[i][Info.makerWants],
-        string.concat("Incorrect B balance for maker ", uint2str(i))
+        string.concat("Incorrect B balance for maker ", vm.toString(i))
       );
     }
     uint leftMkrWants;

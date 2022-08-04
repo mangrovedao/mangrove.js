@@ -158,7 +158,7 @@ contract Test2 is Test, Utilities {
   function logary(uint[] memory uints) public view {
     string memory s = "";
     for (uint i = 0; i < uints.length; i++) {
-      s = string.concat(s, uint2str(uints[i]));
+      s = string.concat(s, vm.toString(uints[i]));
       if (i < uints.length - 1) {
         s = string.concat(s, ", ");
       }
@@ -169,7 +169,7 @@ contract Test2 is Test, Utilities {
   function logary(int[] memory ints) public view {
     string memory s = "";
     for (uint i = 0; i < ints.length; i++) {
-      s = string.concat(s, uint2str(uint(ints[i])));
+      s = string.concat(s, vm.toString(uint(ints[i])));
       if (i < ints.length - 1) {
         s = string.concat(s, ", ");
       }

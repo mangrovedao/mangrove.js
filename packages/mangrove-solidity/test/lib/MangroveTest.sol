@@ -162,7 +162,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     console.log(
       string.concat(
         unicode"┌────┬──Best offer: ",
-        uint2str(offerId),
+        vm.toString(offerId),
         unicode"──────"
       )
     );
@@ -171,7 +171,7 @@ contract MangroveTest is Test2, HasMgvEvents {
       console.log(
         string.concat(
           unicode"│ ",
-          string.concat(offerId < 9 ? " " : "", uint2str(offerId)), // breaks on id>99
+          string.concat(offerId < 9 ? " " : "", vm.toString(offerId)), // breaks on id>99
           unicode" ┆ ",
           toEthUnits(ofr.wants, req_tk.symbol()),
           "  /  ",

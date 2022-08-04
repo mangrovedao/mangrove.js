@@ -507,7 +507,7 @@ contract MangoTest is MangroveTest {
       assertEq(
         mgv.offers($out, $in, abs(sid)).gives() > 0,
         sid > 0,
-        string.concat("wrong offer status ", int2str(sid))
+        string.concat("wrong offer status ", vm.toString(sid))
       );
       assertEq(offerIds[i], abs(sid), "Offer misplaced");
     }
