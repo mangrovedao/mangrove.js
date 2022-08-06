@@ -5,6 +5,7 @@ import "mgv_test/lib/MangroveTest.sol";
 import "forge-std/Vm.sol";
 
 contract GenericFork is Script {
+  uint public INTERNAL_FORK_ID;
   uint public CHAIN_ID;
   string public NAME;
   uint public BLOCK_NUMBER;
@@ -36,10 +37,11 @@ contract GenericFork is Script {
 
     if (BLOCK_NUMBER == 0) {
       // 0 means latest
-      vm.createSelectFork(vm.rpcUrl(NAME));
+      INTERNAL_FORK_ID = vm.createFork(vm.rpcUrl(NAME));
     } else {
-      vm.createSelectFork(vm.rpcUrl(NAME), BLOCK_NUMBER);
+      INTERNAL_FORK_ID = vm.createFork(vm.rpcUrl(NAME), BLOCK_NUMBER);
     }
+    select();
 
     if (CHAIN_ID == 0) {
       revert(
@@ -59,5 +61,9 @@ contract GenericFork is Script {
         )
       );
     }
+  }
+
+  function select() internal {
+    vm.selectFork(INTERNAL_FORK_ID);
   }
 }
