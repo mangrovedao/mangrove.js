@@ -16,6 +16,7 @@ abstract contract AaveV3ModuleTest is MangroveTest {
   ) public {
     uint balance = op.overlying(underlying).balanceOf(account);
     uint borrow = op.borrowed($(underlying), account);
+    console2.log(vm.rpcUrl("polygon"));
     console2.log("borrow is %s", borrow);
     assertApproxEqAbs(
       balance,
@@ -34,22 +35,24 @@ abstract contract AaveV3ModuleTest is MangroveTest {
 
 // warning! currently only known to work on Polygon, block 26416000
 // at a later point, Aave disables stable dai borrowing which those tests need
-contract AaveLenderTest is AaveV3ModuleTest, PolygonFork {
+contract AaveLenderTest is AaveV3ModuleTest {
   IERC20 weth;
   IERC20 dai;
   AaveDeepRouter router;
   AdvancedAaveRetail strat;
+  PolygonFork fork;
 
   receive() external payable {}
 
   function setUp() public override {
-    setUpFork();
+    fork = new PolygonFork();
+    fork.setUp();
 
     mgv = setupMangrove();
     mgv.setVault($(mgv));
 
-    dai = IERC20(fork.DAI);
-    weth = IERC20(fork.WETH);
+    dai = IERC20(fork.DAI());
+    weth = IERC20(fork.WETH());
     options.defaultFee = 30;
     setupMarket(dai, weth);
 
@@ -69,7 +72,7 @@ contract AaveLenderTest is AaveV3ModuleTest, PolygonFork {
   function deployStrat() public {
     strat = new AdvancedAaveRetail({
       _mgv: IMangrove($(mgv)),
-      _addressesProvider: fork.AAVE,
+      _addressesProvider: fork.AAVE(),
       deployer: $(this)
     });
 
