@@ -41,7 +41,8 @@ contract GenericFork is Script {
     } else {
       INTERNAL_FORK_ID = vm.createFork(vm.rpcUrl(NAME), BLOCK_NUMBER);
     }
-    select();
+
+    vm.selectFork(INTERNAL_FORK_ID);
 
     if (CHAIN_ID == 0) {
       revert(
@@ -61,9 +62,5 @@ contract GenericFork is Script {
         )
       );
     }
-  }
-
-  function select() internal {
-    vm.selectFork(INTERNAL_FORK_ID);
   }
 }
