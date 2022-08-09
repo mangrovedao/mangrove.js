@@ -200,6 +200,12 @@ jobs:
       uses: foundry-rs/foundry-toolchain@v1
       with:
         version: nightly
+
+    - name: Get Foundry RPC cache
+      uses: actions/cache@v3
+      with:
+        path: "~/.foundry/cache"
+        key: foundry-rpc-cache-${{ hashFiles('${{github.workspace}}/foundry.toml','test/') }}
         
     # == build ==
     - name: Solidity Compile
