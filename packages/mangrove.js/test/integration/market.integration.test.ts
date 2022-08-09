@@ -39,9 +39,11 @@ describe("Market integration tests suite", () => {
 
     await tokenA.approveMangrove({ amount: 1000 });
     await tokenB.approveMangrove({ amount: 1000 });
+    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
   });
 
   afterEach(async () => {
+    mgvTestUtil.stopPollOfTransactionTracking();
     mgv.disconnect();
   });
 
@@ -100,8 +102,8 @@ describe("Market integration tests suite", () => {
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    let latestAsks: Market.Offer[];
-    let latestBids: Market.Offer[];
+    let latestAsks: Market.Offer[] = [];
+    let latestBids: Market.Offer[] = [];
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
       queue.put(evt);
@@ -190,7 +192,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
-    await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+    await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
     const events = [await queue.get()];
     expect(events).to.have.lengthOf(1);
 

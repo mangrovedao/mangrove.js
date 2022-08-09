@@ -216,7 +216,14 @@ let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
 /**
  * Await this when you want to wait for all events corresponding to the last sent tx to have been sent.
  */
-export let eventsForLastTxHaveBeenGenerated: Promise<void>;
+export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
+
+export function eventsForLastTxHaveBeenGenerated() {
+  if (!eventsForLastTxHaveBeenGeneratedPromise) {
+    throw Error("call initPollOfTransactionTracking before trying to await eventsForLastTxHaveBeenGenerated");
+  }
+  return eventsForLastTxHaveBeenGeneratedPromise;
+};
 
 // Handler for ethers.js "poll" events:
 // "emitted during each poll cycle after `blockNumber` is updated (if changed) and
@@ -279,7 +286,7 @@ export async function waitForTransaction(
   lastTxReceipt = await tx.wait();
   if (isTrackingPolls) {
     eventsForLastTxHaveBeenGeneratedDeferred = new Deferred();
-    eventsForLastTxHaveBeenGenerated =
+    eventsForLastTxHaveBeenGeneratedPromise =
       eventsForLastTxHaveBeenGeneratedDeferred.promise;
   }
   return lastTxReceipt;
