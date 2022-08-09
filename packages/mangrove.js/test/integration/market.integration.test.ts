@@ -1,23 +1,22 @@
 // Integration tests for Market.ts
-import { describe, beforeEach, afterEach, it } from "mocha";
 import { expect } from "chai";
+import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { toWei } from "../util/helpers";
 import * as mgvTestUtil from "../util/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import assert from "assert";
-import { Mangrove, Market, MgvToken, Semibook } from "../..";
+import { Mangrove, Market, Semibook } from "../..";
 import * as helpers from "../util/helpers";
 
 
-import * as mockito from 'ts-mockito';
 import { Big } from "big.js";
-import { Deferred } from "../../src/util";
 import { BigNumber, utils } from "ethers";
+import * as mockito from 'ts-mockito';
 import { Bigish } from "../../dist/nodejs/types";
-import { typechain } from "../../src/types";
-import { MgvReader} from "../../src/types/typechain/MgvReader"
+import { MgvReader } from "../../src/types/typechain/MgvReader";
+import { Deferred } from "../../src/util";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -89,7 +88,7 @@ describe("Market integration tests suite", () => {
 
   describe("getOutboundInbound", () => {
 
-    it("returns base as outbound and quote as inbound", async function(){
+    it("returns base as outbound and quote as inbound, when asks", async function(){
       //Arrange
       const quote = mgv.token("TokenB");
       const base = mgv.token("TokenA");
@@ -100,7 +99,7 @@ describe("Market integration tests suite", () => {
       assert.equal( base, result.outbound_tkn );
     })
 
-    it("returns base as inbound and quote as outbound", async function(){
+    it("returns base as inbound and quote as outbound, when bids", async function(){
       //Arrange
       const quote = mgv.token("TokenB");
       const base = mgv.token("TokenA");
@@ -111,7 +110,7 @@ describe("Market integration tests suite", () => {
       assert.equal( quote, result.outbound_tkn );
     })
 
-    it("returns this.base as outbound and this.quote as inbound", async function(){
+    it("returns this.base as outbound and this.quote as inbound, when asks", async function(){
       // Arrange
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       // Act
@@ -121,7 +120,7 @@ describe("Market integration tests suite", () => {
       assert.equal(result.inbound_tkn.name, "TokenB" );
     })
 
-    it("returns this.base as inbound and this.quote as outbound", async function(){
+    it("returns this.base as inbound and this.quote as outbound, when bids", async function(){
       // Arrange
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       // Act
@@ -135,7 +134,7 @@ describe("Market integration tests suite", () => {
 
   describe("isActive", () => {
     
-    it("returns true", async function(){
+    it("returns true, when asks and bids are active", async function(){
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
       const mockedMarket = mockito.spy(market);
@@ -166,7 +165,7 @@ describe("Market integration tests suite", () => {
       expect(isActive).to.be.equal(true);
     } )
 
-    it("returns false, asks and bids both not active", async function(){
+    it("returns false, when asks and bids both not active", async function(){
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
       const mockedMarket = mockito.spy(market);
@@ -196,7 +195,7 @@ describe("Market integration tests suite", () => {
       expect(isActive).to.be.equal(false);
     } )
 
-      it("returns false, asks is active and bids is not active", async function(){
+      it("returns false, when asks is active and bids is not active", async function(){
         // Arrange
         const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
         const mockedMarket = mockito.spy(market);
@@ -227,7 +226,7 @@ describe("Market integration tests suite", () => {
       expect(isActive).to.be.equal(false);
     } )
 
-    it("returns false, asks is not active and bids is active", async function(){
+    it("returns false, when asks is not active and bids is active", async function(){
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
       const mockedMarket = mockito.spy(market);
@@ -261,7 +260,7 @@ describe("Market integration tests suite", () => {
   })
 
   describe("isLive", () => {
-    it("returns true", async function(){
+    it("returns true, when gives is positive", async function(){
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
       const mockedMarket = mockito.spy(market);
@@ -289,7 +288,7 @@ describe("Market integration tests suite", () => {
       expect(result).to.be.equal(true)
     })
 
-    it("returns false", async function(){
+    it("returns false, when gives is negativ", async function(){
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
       const mockedMarket = mockito.spy(market);
