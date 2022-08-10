@@ -27,6 +27,8 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
 let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
+import MangroveUtils from "./util/mangroveUtils";
+import { number } from "yargs";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
@@ -66,6 +68,7 @@ class Mangrove {
   // orderContract: typechain.MangroveOrder;
   orderContract: typechain.MangroveOrderEnriched;
   static typechain = typechain;
+  mangroveUtils = new MangroveUtils();
 
   /**
    * Creates an instance of the Mangrove Typescript object
@@ -292,16 +295,7 @@ class Mangrove {
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
-    let decimals;
-    if (typeof nameOrDecimals === "number") {
-      decimals = nameOrDecimals;
-    } else {
-      decimals = Mangrove.getDecimals(nameOrDecimals);
-    }
-    if (amount instanceof ethers.BigNumber) {
-      amount = amount.toString();
-    }
-    return Big(amount).div(Big(10).pow(decimals));
+    return this.mangroveUtils.fromUnits(amount, nameOrDecimals );
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */

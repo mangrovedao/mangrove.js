@@ -1,12 +1,12 @@
-import { logger } from "./util/logger";
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
-import { Bigish, typechain } from "./types";
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
-import { OrderSummaryEvent } from "./types/typechain/MangroveOrder";
 import Semibook from "./semibook";
+import { Bigish, typechain } from "./types";
 import { Deferred } from "./util";
+import { logger } from "./util/logger";
+import MarketUtils from "./util/marketUtils";
 
 let canConstructMarket = false;
 
@@ -25,7 +25,9 @@ export const bookOptsDefault: Market.BookOptions = {
 };
 
 import type { Awaited } from "ts-essentials";
+import ThresholdBlockSubscriptions from "./ThresholdBlockSubscriptions";
 import * as TCM from "./types/typechain/Mangrove";
+import EventUtils from "./util/eventUtils";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -64,14 +66,12 @@ namespace Market {
 
   export type TradeParams = {
     slippage?: number;
-  } & (
-    | {restingOrder?: RestingOrderParams }
-    | {offerId?: number }
-  ) & (
-    | { volume: Bigish; price: Bigish | null }
-    | { total: Bigish; price: Bigish | null }
-    | { wants: Bigish; gives: Bigish; fillWants?: boolean }
-  );
+  } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
+    (
+      | { volume: Bigish; price: Bigish | null }
+      | { total: Bigish; price: Bigish | null }
+      | { wants: Bigish; gives: Bigish; fillWants?: boolean }
+    );
 
   export type RestingOrderParams = {
     partialFillNotAllowed?: boolean;
@@ -205,6 +205,8 @@ class Market {
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
   #initClosure?: () => Promise<void>;
+  marketUtils: MarketUtils = new MarketUtils();
+  eventUtils: EventUtils = new EventUtils();
 
   static async connect(params: {
     mgv: Mangrove;
@@ -266,18 +268,6 @@ class Market {
       opts.desiredVolume === undefined
         ? undefined
         : { given: opts.desiredVolume.given, to: opts.desiredVolume.to };
-    const isVolumeDesiredForAsks =
-      opts.desiredVolume !== undefined &&
-      ((opts.desiredVolume.what === "base" &&
-        opts.desiredVolume.to === "buy") ||
-        (opts.desiredVolume.what === "quote" &&
-          opts.desiredVolume.to === "sell"));
-    const isVolumeDesiredForBids =
-      opts.desiredVolume !== undefined &&
-      ((opts.desiredVolume.what === "base" &&
-        opts.desiredVolume.to === "sell") ||
-        (opts.desiredVolume.what === "quote" &&
-          opts.desiredVolume.to === "buy"));
 
     const getSemibookOpts: (ba: "bids" | "asks") => Semibook.Options = (
       ba
@@ -286,8 +276,8 @@ class Market {
       chunkSize: opts.chunkSize,
       desiredPrice: opts.desiredPrice,
       desiredVolume:
-        (ba === "asks" && isVolumeDesiredForAsks) ||
-        (ba === "bids" && isVolumeDesiredForBids)
+        (ba === "asks" && this.marketUtils.getIsVolumeDesiredForAsks(opts)) ||
+        (ba === "bids" && this.marketUtils.getIsVolumeDesiredForBids(opts))
           ? semibookDesiredVolume
           : undefined,
     });
@@ -414,7 +404,6 @@ class Market {
     price: Bigish
   ): Promise<number | undefined> {
     return this.getSemibook(ba).getPivotId(price);
-    
   }
 
   async getOfferProvision(
@@ -459,10 +448,10 @@ class Market {
    * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
    * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
-     * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
+   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
    * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
    * to account for gas.
-   * 
+   *
    * Will stop if
    * - book is empty, or
    * - price no longer good, or
@@ -478,35 +467,11 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    let _wants: Big, _gives: Big, fillWants: boolean;
-    if ("price" in params) {
-      if ("volume" in params) {
-        _wants = Big(params.volume);
-        _gives =
-          params.price === null
-            ? Big(2).pow(256).minus(1)
-            : _wants.mul(params.price);
-        fillWants = true;
-      } else {
-        _gives = Big(params.total);
-        _wants = params.price === null ? Big(0) : _gives.div(params.price);
-        fillWants = false;
-      }
-    } else {
-      _wants = Big(params.wants);
-      _gives = Big(params.gives);
-      fillWants = "fillWants" in params ? params.fillWants : true;
-    }
-
-    const slippage = validateSlippage(params.slippage);
-
-    const __gives = _gives.mul(100 + slippage).div(100);
-    const wants = this.base.toUnits(_wants);
-    const gives = this.quote.toUnits(__gives);
-
+    const { wants, givesWithoutSlippage, gives, fillWants } =
+      this.marketUtils.getParamsForBuy(params, this.base, this.quote);
     if ("restingOrder" in params && params.restingOrder) {
       const makerWants = wants;
-      const makerGives = this.quote.toUnits(_gives);
+      const makerGives = this.quote.toUnits(givesWithoutSlippage);
 
       return this.#restingOrder(
         {
@@ -524,9 +489,16 @@ class Market {
       if ("offerId" in params && params.offerId) {
         return this.#snipes(
           {
-            targets: [{ offerId: params.offerId, gives: gives, wants: wants, gasLimit: null }],
+            targets: [
+              {
+                offerId: params.offerId,
+                gives: gives,
+                wants: wants,
+                gasLimit: null,
+              },
+            ],
             fillWants: fillWants,
-            orderType: "buy"
+            orderType: "buy",
           },
           overrides
         );
@@ -549,7 +521,7 @@ class Market {
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
    * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
    * to account for gas.
-   * 
+   *
    * Will stop if
    * - book is empty, or
    * - price no longer good, or
@@ -565,35 +537,11 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    let _wants, _gives, fillWants;
-    if ("price" in params) {
-      if ("volume" in params) {
-        _gives = Big(params.volume);
-        _wants = params.price === null ? Big(0) : _gives.mul(params.price);
-        fillWants = false;
-      } else {
-        _wants = Big(params.total);
-        _gives =
-          params.price === null
-            ? Big(2).pow(256).minus(1)
-            : _wants.div(params.price);
-        fillWants = true;
-      }
-    } else {
-      _wants = Big(params.wants);
-      _gives = Big(params.gives);
-      fillWants = "fillWants" in params ? params.fillWants : false;
-    }
-
-    const slippage = validateSlippage(params.slippage);
-
-    const __wants = _wants.mul(100 - slippage).div(100);
-    const gives = this.base.toUnits(_gives);
-    const wants = this.quote.toUnits(__wants);
-
-    if ("restingOrder" in params && params.restingOrder) {
+    const { gives, wants, wantsWithoutSlippage, fillWants } =
+      this.marketUtils.getParamsForSell(params, this.base, this.quote);
+      if ("restingOrder" in params && params.restingOrder) {
       const makerGives = gives;
-      const makerWants = this.quote.toUnits(_wants);
+      const makerWants = this.quote.toUnits(wantsWithoutSlippage);
       return this.#restingOrder(
         {
           gives,
@@ -610,7 +558,14 @@ class Market {
       if ("offerId" in params && params.offerId) {
         return this.#snipes(
           {
-            targets: [{ offerId: params.offerId, gives: wants, wants: gives, gasLimit: null }],
+            targets: [
+              {
+                offerId: params.offerId,
+                gives: wants,
+                wants: gives,
+                gasLimit: null,
+              },
+            ],
             orderType: "sell",
             fillWants: fillWants,
           },
@@ -634,11 +589,14 @@ class Market {
     takerGives: ethers.BigNumber,
     result: Market.OrderResult
   ): Market.OrderResult {
-    return this.#resultOfEventCore(evt, got_bq, gave_bq, 
-      (takerGot, takerGave) => fillWants
-        ? takerGot.lt(takerWants)
-        : takerGave.lt(takerGives),
-      result);
+    return this.#resultOfEventCore(
+      evt,
+      got_bq,
+      gave_bq,
+      (takerGot, takerGave) =>
+        fillWants ? takerGot.lt(takerWants) : takerGave.lt(takerGives),
+      result
+    );
   }
 
   #resultOfEventCore(
@@ -648,53 +606,41 @@ class Market {
     partialFillFunc: (takerGot: BigNumber, takerGave: BigNumber) => boolean,
     result: Market.OrderResult
   ): Market.OrderResult {
+    const got = this[got_bq];
+    const gave = this[gave_bq];
     switch (evt.event) {
       case "OrderComplete": {
-        const event = evt as TCM.OrderCompleteEvent;
-        result.summary = {
-          got: this[got_bq].fromUnits(event.args.takerGot),
-          gave: this[gave_bq].fromUnits(event.args.takerGave),
-          partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
-          penalty: this.mgv.fromUnits(event.args.penalty, 18),
-        };
+        result.summary = this.eventUtils.createSummaryForOrderComplete(
+          evt,
+          got,
+          gave,
+          partialFillFunc
+        );
         return result;
       }
       case "OfferSuccess": {
-        const event = evt as TCM.OfferSuccessEvent;
-        result.successes.push({
-          offerId: event.args.id.toNumber(),
-          got: this[got_bq].fromUnits(event.args.takerWants),
-          gave: this[gave_bq].fromUnits(event.args.takerGives),
-        });
+        result.successes.push(this.eventUtils.createSucces(evt, got, gave));
         return result;
       }
       case "OfferFail": {
-        const event = evt as TCM.OfferFailEvent;
-        result.tradeFailures.push({
-          offerId: event.args.id.toNumber(),
-          reason: event.args.mgvData,
-          FailToDeliver: this[got_bq].fromUnits(event.args.takerWants),
-          volumeGiven: this[gave_bq].fromUnits(event.args.takerGives),
-        });
+        result.tradeFailures.push(
+          this.eventUtils.createTradeFailure(evt, got, gave)
+        );
         return result;
       }
       case "PosthookFail": {
-        const event = evt as TCM.PosthookFailEvent;
-        result.posthookFailures.push({
-          offerId: event.args.offerId.toNumber(),
-          reason: event.args.posthookData,
-        });
+        result.posthookFailures.push(
+          this.eventUtils.createPosthookFailure(evt)
+        );
         return result;
       }
       case "OrderSummary": {
-        const event = evt as OrderSummaryEvent;
-        result.summary = {
-          got: this[got_bq].fromUnits(event.args.takerGot),
-          gave: this[gave_bq].fromUnits(event.args.takerGave),
-          partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
-          penalty: this.mgv.fromUnits(event.args.penalty, 18),
-          offerId: event.args.restingOrderId.toNumber(),
-        };
+        result.summary = this.eventUtils.createSummaryForOrderSummary(
+          evt,
+          got,
+          gave,
+          partialFillFunc
+        );
         return result;
       }
       default: {
@@ -746,7 +692,7 @@ class Market {
         wants: wants.toString(),
         gives: gives.toString(),
         orderType: orderType,
-        gasLimit: overrides.gasLimit?.toString()
+        gasLimit: overrides.gasLimit?.toString(),
       },
     });
     const response = await this.mgv.contract.marketOrder(
@@ -759,36 +705,19 @@ class Market {
     );
     const receipt = await response.wait();
 
-    let result: Market.OrderResult = {
-      txReceipt: receipt,
-      summary: undefined,
-      successes: [],
-      tradeFailures: [],
-      posthookFailures: [],
-    };
     //last OrderComplete is ours!
     logger.debug("Market order raw receipt", {
       contextInfo: "market.marketOrder",
       data: { receipt: receipt },
     });
-    const got_bq = orderType === "buy" ? "base" : "quote";
-    const gave_bq = orderType === "buy" ? "quote" : "base";
-    for (const evt of receipt.events) {
-      if (
-        evt.address === this.mgv._address &&
-        (!evt.args.taker || receipt.from === evt.args.taker)
-      ) {
-        result = this.#resultOfEvent(
-          evt,
-          got_bq,
-          gave_bq,
-          fillWants,
-          wants,
-          gives,
-          result
-        );
-      }
-    }
+    const result: Market.OrderResult = this.createOrderResultFromReceipt(
+      receipt,
+      orderType,
+      fillWants,
+      wants,
+      gives,
+      this.mgv._address
+    );
     if (!result.summary) {
       throw Error("market order went wrong");
     }
@@ -850,6 +779,35 @@ class Market {
     );
     const receipt = await response.wait();
 
+    //last OrderComplete is ours!
+    logger.debug("Resting order raw receipt", {
+      contextInfo: "market.restingOrder",
+      data: { receipt: receipt },
+    });
+
+    const result: Market.OrderResult = this.createOrderResultFromReceipt(
+      receipt,
+      orderType,
+      fillWants,
+      wants,
+      gives,
+      this.mgv.orderContract.address
+    );
+    if (!result.summary) {
+      throw Error("resting order went wrong");
+    }
+    // if resting order was not posted, result.summary is still undefined.
+    return result;
+  }
+
+  private createOrderResultFromReceipt(
+    receipt: ethers.ethers.ContractReceipt,
+    orderType: string,
+    fillWants: boolean,
+    wants: ethers.ethers.BigNumber,
+    gives: ethers.ethers.BigNumber,
+    address: string
+  ) {
     let result: Market.OrderResult = {
       txReceipt: receipt,
       summary: undefined,
@@ -859,15 +817,9 @@ class Market {
     };
     const got_bq = orderType === "buy" ? "base" : "quote";
     const gave_bq = orderType === "buy" ? "quote" : "base";
-    //last OrderComplete is ours!
-    logger.debug("Resting order raw receipt", {
-      contextInfo: "market.restingOrder",
-      data: { receipt: receipt },
-    });
-    // check last `OrderComplete` event emitted by `MangroveOrder`
     for (const evt of receipt.events) {
       if (
-        evt.address === this.mgv.orderContract.address &&
+        evt.address === address &&
         (!evt.args.taker || receipt.from === evt.args.taker)
       ) {
         result = this.#resultOfEvent(
@@ -881,16 +833,12 @@ class Market {
         );
       }
     }
-    if (!result.summary) {
-      throw Error("resting order went wrong");
-    }
-    // if resting order was not posted, result.summary is still undefined.
     return result;
   }
 
   /**
    * Low level sniping of `targets`.
-   * 
+   *
    * If `orderType` is `"buy"`, the base/quote market will be used,
    * If `orderType` is `"sell"`, the quote/base market will be used,
    *
@@ -899,13 +847,18 @@ class Market {
    * Returns a promise for snipes result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
    */
-   async #snipes(
+  async #snipes(
     {
       targets,
       orderType,
       fillWants,
     }: {
-      targets: { offerId: ethers.BigNumberish; wants: ethers.BigNumber; gives: ethers.BigNumber; gasLimit?: ethers.BigNumber; }[];
+      targets: {
+        offerId: ethers.BigNumberish;
+        wants: ethers.BigNumber;
+        gives: ethers.BigNumber;
+        gasLimit?: ethers.BigNumber;
+      }[];
       orderType: "buy" | "sell";
       fillWants: boolean;
     },
@@ -924,12 +877,19 @@ class Market {
     });
 
     // user defined gasLimit overrides estimates
-    const _targets = targets.map<[
-      ethers.BigNumberish | Promise<ethers.BigNumberish>,
-      ethers.BigNumberish | Promise<ethers.BigNumberish>,
-      ethers.BigNumberish | Promise<ethers.BigNumberish>,
-      ethers.BigNumberish | Promise<ethers.BigNumberish>,
-    ]>(t => [t.offerId, t.wants, t.gives, t.gasLimit ?? overrides.gasLimit ?? this.estimateGas(orderType, t.wants)]);
+    const _targets = targets.map<
+      [
+        ethers.BigNumberish | Promise<ethers.BigNumberish>,
+        ethers.BigNumberish | Promise<ethers.BigNumberish>,
+        ethers.BigNumberish | Promise<ethers.BigNumberish>,
+        ethers.BigNumberish | Promise<ethers.BigNumberish>
+      ]
+    >((t) => [
+      t.offerId,
+      t.wants,
+      t.gives,
+      t.gasLimit ?? overrides.gasLimit ?? this.estimateGas(orderType, t.wants),
+    ]);
 
     const response = await this.mgv.contract.snipes(
       outboundTkn.address,
@@ -974,7 +934,7 @@ class Market {
     }
     return result;
   }
-  
+
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
     const semibook = bs === "buy" ? this.#asksSemibook : this.#bidsSemibook;
     const {
@@ -1115,7 +1075,7 @@ class Market {
       | "price"
     >
   ): void {
-    const offers = ba === "bids" ? this.#bidsSemibook : this.#asksSemibook;
+    const offers = this.getSemibook(ba);
     console.table([...offers], filter);
   }
 
@@ -1350,84 +1310,6 @@ class Market {
     return minAbsPriceDiff === undefined
       ? 0
       : -Math.floor(Math.log10(minAbsPriceDiff.toNumber()));
-  }
-}
-
-const validateSlippage = (slippage = 0) => {
-  if (typeof slippage === "undefined") {
-    return 0;
-  } else if (slippage > 100 || slippage < 0) {
-    throw new Error("slippage should be a number between 0 and 100");
-  }
-  return slippage;
-};
-
-// eslint-disable-next-line @typescript-eslint/no-namespace
-namespace ThresholdBlockSubscriptions {
-  export type blockSubscription = {
-    seenCount: number;
-    cbs: Set<(n: number) => void>;
-  };
-}
-
-class ThresholdBlockSubscriptions {
-  #byBlock: Map<number, ThresholdBlockSubscriptions.blockSubscription>;
-  #lastSeen: number;
-  #seenThreshold: number;
-
-  constructor(lastSeen: number, seenThreshold: number) {
-    this.#seenThreshold = seenThreshold;
-    this.#lastSeen = lastSeen;
-    this.#byBlock = new Map();
-  }
-
-  #get(n: number): ThresholdBlockSubscriptions.blockSubscription {
-    return this.#byBlock.get(n) || { seenCount: 0, cbs: new Set() };
-  }
-
-  #set(n, seenCount, cbs) {
-    this.#byBlock.set(n, { seenCount, cbs });
-  }
-
-  // assumes increaseCount(n) is called monotonically in n
-  increaseCount(n: number): void {
-    // seeing an already-seen-enough block (should not occur)
-    if (n <= this.#lastSeen) {
-      return;
-    }
-
-    const { seenCount, cbs } = this.#get(n);
-
-    this.#set(n, seenCount + 1, cbs);
-
-    // havent seen the block enough times
-    if (seenCount + 1 < this.#seenThreshold) {
-      return;
-    }
-
-    const prevLastSeen = this.#lastSeen;
-    this.#lastSeen = n;
-
-    // clear all past callbacks
-    for (let i = prevLastSeen + 1; i <= n; i++) {
-      const { cbs: _cbs } = this.#get(i);
-      this.#byBlock.delete(i);
-      for (const cb of _cbs) {
-        cb(i);
-      }
-    }
-  }
-
-  subscribe<T>(n: number, cb: (number) => T): Promise<T> {
-    if (this.#lastSeen >= n) {
-      return Promise.resolve(cb(n));
-    } else {
-      const { seenCount, cbs } = this.#get(n);
-      return new Promise((ok, ko) => {
-        const _cb = (n) => Promise.resolve(cb(n)).then(ok, ko);
-        this.#set(n, seenCount, cbs.add(_cb));
-      });
-    }
   }
 }
 
