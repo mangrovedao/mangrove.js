@@ -411,9 +411,8 @@ class Market {
     ba: "asks" | "bids",
     price: Bigish
   ): Promise<number | undefined> {
-    return ba === "asks"
-      ? await this.#asksSemibook.getPivotId(price)
-      : await this.#bidsSemibook.getPivotId(price);
+    return this.getSemibook(ba).getPivotId(price);
+    
   }
 
   async getOfferProvision(
@@ -448,9 +447,7 @@ class Market {
 
   /** Returns struct containing offer details in the current market */
   async offerInfo(ba: "bids" | "asks", offerId: number): Promise<Market.Offer> {
-    return ba === "asks"
-      ? this.#asksSemibook.offerInfo(offerId)
-      : this.#bidsSemibook.offerInfo(offerId);
+    return this.getSemibook(ba).offerInfo(offerId);
   }
 
   /**
