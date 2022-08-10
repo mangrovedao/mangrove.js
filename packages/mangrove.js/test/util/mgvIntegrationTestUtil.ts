@@ -219,6 +219,12 @@ let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
  */
 export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
 
+export async function waitForBooksForLastTx(market: Market) {
+  await eventsForLastTxHaveBeenGenerated();
+  const lastBlock = await market.mgv._provider.getBlockNumber();
+  await market.afterBlock(lastBlock, () => {});
+}
+
 export function eventsForLastTxHaveBeenGenerated() {
   if (!eventsForLastTxHaveBeenGeneratedPromise) {
     throw Error("call initPollOfTransactionTracking before trying to await eventsForLastTxHaveBeenGenerated");
