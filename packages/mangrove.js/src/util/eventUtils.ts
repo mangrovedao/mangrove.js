@@ -103,6 +103,15 @@ class EventUtils {
     summary.offerId = event.args.restingOrderId.toNumber();
     return summary;
   }
+
+  partialFill(
+    fillWants: boolean,
+    takerWants: ethers.ethers.BigNumber,
+    takerGives: ethers.ethers.BigNumber
+  ) {
+    return (takerGot:ethers.BigNumber, takerGave:ethers.BigNumber) =>
+      fillWants ? takerGot.lt(takerWants) : takerGave.lt(takerGives);
+  }
 }
 
 export default EventUtils;

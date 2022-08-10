@@ -539,7 +539,7 @@ class Market {
   ): Promise<Market.OrderResult> {
     const { gives, wants, wantsWithoutSlippage, fillWants } =
       this.marketUtils.getParamsForSell(params, this.base, this.quote);
-      if ("restingOrder" in params && params.restingOrder) {
+    if ("restingOrder" in params && params.restingOrder) {
       const makerGives = gives;
       const makerWants = this.quote.toUnits(wantsWithoutSlippage);
       return this.#restingOrder(
@@ -593,8 +593,7 @@ class Market {
       evt,
       got_bq,
       gave_bq,
-      (takerGot, takerGave) =>
-        fillWants ? takerGot.lt(takerWants) : takerGave.lt(takerGives),
+      this.eventUtils.partialFill(fillWants, takerWants, takerGives),
       result
     );
   }
