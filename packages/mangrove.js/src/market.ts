@@ -64,8 +64,10 @@ namespace Market {
 
   export type TradeParams = {
     slippage?: number;
-    restingOrder?: RestingOrderParams;
   } & (
+    | {restingOrder?: RestingOrderParams }
+    | {offerId?: number }
+  ) & (
     | { volume: Bigish; price: Bigish | null }
     | { total: Bigish; price: Bigish | null }
     | { wants: Bigish; gives: Bigish; fillWants?: boolean }
@@ -457,8 +459,10 @@ class Market {
    * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
    * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
-   *
+     * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
+   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
+   * to account for gas.
+   * 
    * Will stop if
    * - book is empty, or
    * - price no longer good, or
@@ -500,7 +504,7 @@ class Market {
     const wants = this.base.toUnits(_wants);
     const gives = this.quote.toUnits(__gives);
 
-    if (params.restingOrder) {
+    if ("restingOrder" in params && params.restingOrder) {
       const makerWants = wants;
       const makerGives = this.quote.toUnits(_gives);
 
@@ -517,10 +521,21 @@ class Market {
         overrides
       );
     } else {
-      return this.#marketOrder(
-        { gives, wants, orderType: "buy", fillWants },
-        overrides
-      );
+      if ("offerId" in params && params.offerId) {
+        return this.#snipes(
+          {
+            targets: [{ offerId: params.offerId, gives: gives, wants: wants, gasLimit: null }],
+            fillWants: fillWants,
+            orderType: "buy"
+          },
+          overrides
+        );
+      } else {
+        return this.#marketOrder(
+          { gives, wants, orderType: "buy", fillWants },
+          overrides
+        );
+      }
     }
   }
 
@@ -531,8 +546,10 @@ class Market {
    * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`. Set `price` to null. `fillWants` will be true.
    * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token.
-   *
+   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
+   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
+   * to account for gas.
+   * 
    * Will stop if
    * - book is empty, or
    * - price no longer good, or
@@ -552,7 +569,7 @@ class Market {
     if ("price" in params) {
       if ("volume" in params) {
         _gives = Big(params.volume);
-        _wants = params.price === null ? 0 : _gives.mul(params.price);
+        _wants = params.price === null ? Big(0) : _gives.mul(params.price);
         fillWants = false;
       } else {
         _wants = Big(params.total);
@@ -574,7 +591,7 @@ class Market {
     const gives = this.base.toUnits(_gives);
     const wants = this.quote.toUnits(__wants);
 
-    if (params.restingOrder) {
+    if ("restingOrder" in params && params.restingOrder) {
       const makerGives = gives;
       const makerWants = this.quote.toUnits(_wants);
       return this.#restingOrder(
@@ -590,10 +607,21 @@ class Market {
         overrides
       );
     } else {
-      return this.#marketOrder(
-        { wants, gives, orderType: "sell", fillWants },
-        overrides
-      );
+      if ("offerId" in params && params.offerId) {
+        return this.#snipes(
+          {
+            targets: [{ offerId: params.offerId, gives: wants, wants: gives, gasLimit: null }],
+            orderType: "sell",
+            fillWants: fillWants,
+          },
+          overrides
+        );
+      } else {
+        return this.#marketOrder(
+          { wants, gives, orderType: "sell", fillWants },
+          overrides
+        );
+      }
     }
   }
 
@@ -606,15 +634,27 @@ class Market {
     takerGives: ethers.BigNumber,
     result: Market.OrderResult
   ): Market.OrderResult {
+    return this.#resultOfEventCore(evt, got_bq, gave_bq, 
+      (takerGot, takerGave) => fillWants
+        ? takerGot.lt(takerWants)
+        : takerGave.lt(takerGives),
+      result);
+  }
+
+  #resultOfEventCore(
+    evt: ethers.Event,
+    got_bq: "base" | "quote",
+    gave_bq: "base" | "quote",
+    partialFillFunc: (takerGot: BigNumber, takerGave: BigNumber) => boolean,
+    result: Market.OrderResult
+  ): Market.OrderResult {
     switch (evt.event) {
       case "OrderComplete": {
         const event = evt as TCM.OrderCompleteEvent;
         result.summary = {
           got: this[got_bq].fromUnits(event.args.takerGot),
           gave: this[gave_bq].fromUnits(event.args.takerGave),
-          partialFill: fillWants
-            ? event.args.takerGot.lt(takerWants)
-            : event.args.takerGave.lt(takerGives),
+          partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
           penalty: this.mgv.fromUnits(event.args.penalty, 18),
         };
         return result;
@@ -651,9 +691,7 @@ class Market {
         result.summary = {
           got: this[got_bq].fromUnits(event.args.takerGot),
           gave: this[gave_bq].fromUnits(event.args.takerGave),
-          partialFill: fillWants
-            ? event.args.takerGot.lt(takerWants)
-            : event.args.takerGave.lt(takerGives),
+          partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
           penalty: this.mgv.fromUnits(event.args.penalty, 18),
           offerId: event.args.restingOrderId.toNumber(),
         };
@@ -694,18 +732,23 @@ class Market {
     const [outboundTkn, inboundTkn] =
       orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
 
+    // user defined gasLimit overrides estimates
+    if (!overrides.gasLimit) {
+      overrides.gasLimit = await this.estimateGas(orderType, wants);
+    }
+
     logger.debug("Creating market order", {
       contextInfo: "market.marketOrder",
       data: {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
         fillWants: fillWants,
+        wants: wants.toString(),
+        gives: gives.toString(),
+        orderType: orderType,
+        gasLimit: overrides.gasLimit?.toString()
       },
     });
-    // user defined gasLimit overrides estimates
-    if (!overrides.gasLimit) {
-      overrides.gasLimit = await this.estimateGas(orderType, wants);
-    }
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
@@ -845,6 +888,93 @@ class Market {
     return result;
   }
 
+  /**
+   * Low level sniping of `targets`.
+   * 
+   * If `orderType` is `"buy"`, the base/quote market will be used,
+   * If `orderType` is `"sell"`, the quote/base market will be used,
+   *
+   * `fillWants` defines whether the market order stops immediately once `wants` tokens have been purchased or whether it tries to keep going until `gives` tokens have been spent.
+   *
+   * Returns a promise for snipes result after 1 confirmation.
+   * Will throw on same conditions as ethers.js `transaction.wait`.
+   */
+   async #snipes(
+    {
+      targets,
+      orderType,
+      fillWants,
+    }: {
+      targets: { offerId: ethers.BigNumberish; wants: ethers.BigNumber; gives: ethers.BigNumber; gasLimit?: ethers.BigNumber; }[];
+      orderType: "buy" | "sell";
+      fillWants: boolean;
+    },
+    overrides: ethers.Overrides
+  ): Promise<Market.OrderResult> {
+    const [outboundTkn, inboundTkn] =
+      orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
+
+    logger.debug("Creating snipes", {
+      contextInfo: "market.snipes",
+      data: {
+        outboundTkn: outboundTkn.name,
+        inboundTkn: inboundTkn.name,
+        fillWants: fillWants,
+      },
+    });
+
+    // user defined gasLimit overrides estimates
+    const _targets = targets.map<[
+      ethers.BigNumberish | Promise<ethers.BigNumberish>,
+      ethers.BigNumberish | Promise<ethers.BigNumberish>,
+      ethers.BigNumberish | Promise<ethers.BigNumberish>,
+      ethers.BigNumberish | Promise<ethers.BigNumberish>,
+    ]>(t => [t.offerId, t.wants, t.gives, t.gasLimit ?? overrides.gasLimit ?? this.estimateGas(orderType, t.wants)]);
+
+    const response = await this.mgv.contract.snipes(
+      outboundTkn.address,
+      inboundTkn.address,
+      _targets,
+      fillWants,
+      overrides
+    );
+
+    const receipt = await response.wait();
+
+    let result: Market.OrderResult = {
+      txReceipt: receipt,
+      summary: undefined,
+      successes: [],
+      tradeFailures: [],
+      posthookFailures: [],
+    };
+    //last OrderComplete is ours!
+    logger.debug("Snipes raw receipt", {
+      contextInfo: "market.snipes",
+      data: { receipt: receipt },
+    });
+    const got_bq = orderType === "buy" ? "base" : "quote";
+    const gave_bq = orderType === "buy" ? "quote" : "base";
+    for (const evt of receipt.events) {
+      if (
+        evt.address === this.mgv._address &&
+        (!evt.args.taker || receipt.from === evt.args.taker)
+      ) {
+        result = this.#resultOfEventCore(
+          evt,
+          got_bq,
+          gave_bq,
+          () => false,
+          result
+        );
+      }
+    }
+    if (!result.summary) {
+      throw Error("snipes went wrong");
+    }
+    return result;
+  }
+  
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
     const semibook = bs === "buy" ? this.#asksSemibook : this.#bidsSemibook;
     const {

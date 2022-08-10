@@ -72,7 +72,7 @@ describe("MarketCleaner integration tests", () => {
     it(`should clean offer failing to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
       await mgvTestUtil.postNewRevertingOffer(market, ba, maker);
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
       const marketCleaner = new MarketCleaner(market, cleanerProvider);
 
@@ -93,7 +93,7 @@ describe("MarketCleaner integration tests", () => {
     it(`should not clean offer suceeding to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
       await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
       const marketCleaner = new MarketCleaner(market, cleanerProvider);
 
