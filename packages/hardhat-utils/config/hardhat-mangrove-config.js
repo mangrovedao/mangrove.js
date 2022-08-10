@@ -9,6 +9,7 @@ module.exports = {
         gasMultiplier: 1,
         blockGasLimit: 7000000000,
         allowUnlimitedContractSize: true,
+        loggingEnabled: false,
       },
       localhost: {
         url: "http://127.0.0.1:8545",
