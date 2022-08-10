@@ -114,6 +114,7 @@
     "shelljs": "^0.8.4",
     "shx": "^0.3.4",
     "ts-essentials": "^9.1.2",
+    "ts-mockito": "^2.0.0",
     "ts-node": "^10.7.0",
     "typechain": "^8.1.0",
     "typedoc": "^0.22.17",
