@@ -572,7 +572,7 @@ class Market {
     if ("price" in params) {
       if ("volume" in params) {
         _gives = Big(params.volume);
-        _wants = params.price === null ? 0 : _gives.mul(params.price);
+        _wants = params.price === null ? Big(0) : _gives.mul(params.price);
         fillWants = false;
       } else {
         _wants = Big(params.total);

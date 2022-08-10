@@ -229,6 +229,97 @@ describe("Market integration tests suite", () => {
     expect(result_.successes[0].offerId).to.be.equal(2);
   });
 
+  it("buying uses best price", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({market, ba: "asks", maker, wants: 1, gives: 1000000});
+    await mgvTestUtil.postNewOffer({market, ba: "asks", maker, wants: 1, gives: 2000000});
+    
+    const result = await market.buy({ wants: 0.000000000002, gives: 10 });
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+  });
+  
+  it("selling uses best price", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({market, ba: "bids", maker, wants: 100, gives: 1000000});
+    await mgvTestUtil.postNewOffer({market, ba: "bids", maker, wants: 100, gives: 2000000});
+    
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    
+    // estimated gas limit is too low, so we set it explicitly
+    const result = await market.sell({ volume: "0.00000000000000001", price: null }, { gasLimit: 6500000 });
+
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+    expect(result.successes[0].got.toNumber()).to.be.equal(2e-13);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
+  });
+
+  it("buying offerId snipes offer", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({market, ba: "asks", maker, wants: 1, gives: 1000000});
+    await mgvTestUtil.postNewOffer({market, ba: "asks", maker, wants: 1, gives: 2000000});
+    
+    // get not-best offer
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+    const notBest = asks[1].id;
+    
+    // make a buy of the not-best offer
+    // a standard buy would give us 2e-12, but due to snipe we only get 1e-12.
+    const result = await market.buy({ offerId: notBest, total: 1, price: null });
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+
+    expect(result.successes[0].got.toNumber()).to.be.equal(1e-12);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+    expect(result.successes[0].offerId).to.be.equal(notBest);
+  });  
+
+  it("selling offerId snipes offer", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({market, ba: "bids", maker, wants: 100, gives: 1000000});
+    await mgvTestUtil.postNewOffer({market, ba: "bids", maker, wants: 100, gives: 2000000});
+    
+    // get not-best offer
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    market.consoleBids();
+    const bids = [...market.getBook().bids];
+    const notBest = bids[1].id;
+    
+    // make a sell of the not-best offer
+    // a standard sell would give us 2e-13, but due to snipe we only get 1e-13.
+    const result = await market.sell({ offerId: notBest, wants: "0.00000000000000001", gives: "0.0000000000000001" }, { gasLimit: 6500000 });
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+
+    expect(result.successes[0].got.toNumber()).to.be.equal(1e-13);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
+    expect(result.successes[0].offerId).to.be.equal(notBest);
+  });
+
   it("gets config", async function () {
     const mgvAsAdmin = await Mangrove.connect({
       provider: "http://localhost:8546",
