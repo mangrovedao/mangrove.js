@@ -637,15 +637,27 @@ class Market {
     takerGives: ethers.BigNumber,
     result: Market.OrderResult
   ): Market.OrderResult {
+    return this.#resultOfEventCore(evt, got_bq, gave_bq, 
+      (takerGot, takerGave) => fillWants
+        ? takerGot.lt(takerWants)
+        : takerGave.lt(takerGives),
+      result);
+  }
+
+  #resultOfEventCore(
+    evt: ethers.Event,
+    got_bq: "base" | "quote",
+    gave_bq: "base" | "quote",
+    partialFillFunc: (takerGot: BigNumber, takerGave: BigNumber) => boolean,
+    result: Market.OrderResult
+  ): Market.OrderResult {
     switch (evt.event) {
       case "OrderComplete": {
         const event = evt as TCM.OrderCompleteEvent;
         result.summary = {
           got: this[got_bq].fromUnits(event.args.takerGot),
           gave: this[gave_bq].fromUnits(event.args.takerGave),
-          partialFill: fillWants
-            ? event.args.takerGot.lt(takerWants)
-            : event.args.takerGave.lt(takerGives),
+          partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
           penalty: this.mgv.fromUnits(event.args.penalty, 18),
         };
         return result;
@@ -682,9 +694,7 @@ class Market {
         result.summary = {
           got: this[got_bq].fromUnits(event.args.takerGot),
           gave: this[gave_bq].fromUnits(event.args.takerGave),
-          partialFill: fillWants
-            ? event.args.takerGot.lt(takerWants)
-            : event.args.takerGave.lt(takerGives),
+          partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
           penalty: this.mgv.fromUnits(event.args.penalty, 18),
           offerId: event.args.restingOrderId.toNumber(),
         };
@@ -725,18 +735,23 @@ class Market {
     const [outboundTkn, inboundTkn] =
       orderType === "buy" ? [this.base, this.quote] : [this.quote, this.base];
 
+    // user defined gasLimit overrides estimates
+    if (!overrides.gasLimit) {
+      overrides.gasLimit = await this.estimateGas(orderType, wants);
+    }
+
     logger.debug("Creating market order", {
       contextInfo: "market.marketOrder",
       data: {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
         fillWants: fillWants,
+        wants: wants.toString(),
+        gives: gives.toString(),
+        orderType: orderType,
+        gasLimit: overrides.gasLimit?.toString()
       },
     });
-    // user defined gasLimit overrides estimates
-    if (!overrides.gasLimit) {
-      overrides.gasLimit = await this.estimateGas(orderType, wants);
-    }
     const response = await this.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
