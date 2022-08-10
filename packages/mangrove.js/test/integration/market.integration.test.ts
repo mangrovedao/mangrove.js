@@ -715,7 +715,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.postNewOffer({market, ba: "asks", maker, wants: 1, gives: 1000000});
     await mgvTestUtil.postNewOffer({market, ba: "asks", maker, wants: 1, gives: 2000000});
     
-    const result = await market.buy({ wants: 0.000000000002, gives: 10 });
+    const result = await market.buy({ wants: 0.000000000002, gives: 10 }, { gasLimit: 6500000 });
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
