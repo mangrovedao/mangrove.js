@@ -99,10 +99,11 @@ export enum AccountName {
   Deployer = "deployer", // Owner of deployed MGV and token contracts
   Maker = "maker", // Owner of SimpleTestMaker contract
   Cleaner = "cleaner", // Owner of cleaner EOA
+  Taker = "taker"
 }
 
 export const getAccount = async (name: AccountName): Promise<Account> => {
-  const signer = await hardhatEthers.getNamedSigner(name);
+  const signer = name === AccountName.Taker ? (await hardhatEthers.getSigners())[0] : await hardhatEthers.getNamedSigner(name);
   return {
     name: name,
     address: signer.address,
