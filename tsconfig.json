@@ -1,0 +1,26 @@
+{
+    "references": [
+      {
+        "path": "./packages/bot-cleaning",
+      },
+      {
+        "path": "./packages/bot-maker-noise",
+      },
+      {
+        "path": "./packages/bot-taker-greedy",
+      },
+      {
+        "path": "./packages/bot-template",
+      },
+      {
+        "path": "./packages/bot-updategas",
+      },
+      {
+        "path": "./packages/commonlib.js",
+      },
+      {
+        "path": "./packages/mangrove.js",
+      }
+    ]
+  }
+  

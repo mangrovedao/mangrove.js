@@ -4,3 +4,4 @@ build/
 static/environmentInformation.json
 .env.local
 .env.*.local
+tsconfig.tsbuildinfo
