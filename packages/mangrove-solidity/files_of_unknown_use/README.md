@@ -9,7 +9,3 @@ For e.g. scripst in governance/ if they are still useful, they should be probabl
 I have removed the `faucet` package for now.
 
 # Questions:
-
-## updateadr
-
-the github job updateadr.yml should be updated -- I'm actually not sure we should keep this workflow since mangrove.js releases could totally trail mangrove-solidity deployments?

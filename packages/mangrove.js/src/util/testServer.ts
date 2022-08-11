@@ -71,22 +71,31 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
       requiresArg: true,
       type: "string",
     })
+    .option("chain-id", {
+      describe: "Chain id to use in server (default is anvil's default)",
+      type: "number",
+    })
     .env("MGV_TEST") // allow env vars like MGV_TEST_DEPLOY=false
     .help().argv;
 };
 
 /* Spawn a test server */
 const spawn = async (params: any) => {
-  const anvil = childProcess.spawn("anvil", [
-    "--host",
-    params.host,
-    "--port",
-    params.port,
-    "--order",
-    "fifo", // just mine as you receive
-    "--mnemonic",
-    LOCAL_MNEMONIC,
-  ]);
+  const chainIdArgs =
+    typeof params.chainId === "undefined" ? [] : ["--chain-id", params.chainId];
+  const anvil = childProcess.spawn(
+    "anvil",
+    [
+      "--host",
+      params.host,
+      "--port",
+      params.port,
+      "--order",
+      "fifo", // just mine as you receive
+      "--mnemonic",
+      LOCAL_MNEMONIC,
+    ].concat(chainIdArgs)
+  );
 
   anvil.stdout.setEncoding("utf8");
   anvil.on("close", (code) => {
