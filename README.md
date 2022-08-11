@@ -79,7 +79,7 @@ This can also be done from a specific package in `./packages/<somePackage>` and 
 If you encounter issues with JavaScript memory consumption, then try increasing the max available space for heap, and try again:
 
 ```shell
-$ export NODE_OPTIONS=--max_old_space_size=4096
+$ export NODE_OPTIONS="$NODE_OPTIONS --max_old_space_size=4096"
 $ yarn build
 ```
 
