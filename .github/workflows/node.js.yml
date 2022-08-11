@@ -208,6 +208,16 @@ jobs:
         key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
         restore-keys: |
           foundry-rpc-cache-
+
+    - name: Get Foundry build cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ format('{0}/cache',env.working-directory) }}
+          ${{ format('{0}/out', env.working-directory) }}
+        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
+        restore-keys: |
+          foundry-build-cache-
         
     # == build ==
     - name: Solidity Compile
