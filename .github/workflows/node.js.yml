@@ -205,7 +205,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles(format('{0}/foundry.toml',github.workspace),format('{0}/test/',env.working-directory)) }}
+        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
         restore-keys: |
           foundry-rpc-cache-
         
