@@ -180,7 +180,7 @@ const deploy = async (params: any) => {
     --rpc-url http://${params.host}:${params.port} \
     --froms ${mnemonic.address(0)} \
     --private-key ${mnemonic.key(0)} \
-    --broadcast --json \
+    --broadcast -vvv \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
@@ -201,16 +201,17 @@ const deploy = async (params: any) => {
           env: process.env,
         },
         (error, stdout, stderr) => {
-          if (error) {
-            throw error;
-          }
           console.error("forge cmd stdout:");
           console.error(stdout);
           if (stderr.length > 0) {
             console.error("forge cmd stderr:");
             console.error(stderr);
           }
-          ok(void 0);
+          if (error) {
+            throw error;
+          } else {
+            ok(void 0);
+          }
         }
       );
     });
@@ -232,6 +233,7 @@ const deploy = async (params: any) => {
 
   return {
     url: params.url,
+    accounts: anvilAccounts,
     params,
     snapshot: async () =>
       (lastSnapshotId = await params.provider.send("evm_snapshot", [])),
@@ -263,6 +265,7 @@ const defaultRun = async (params: any) => {
 
   return {
     params,
+    accounts: anvilAccounts,
     ...spawnInfo,
     ...deployInfo,
   };
