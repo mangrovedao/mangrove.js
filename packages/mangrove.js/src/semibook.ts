@@ -5,7 +5,7 @@ import { BigNumber, ethers } from "ethers";
 import { Mangrove, Market } from ".";
 import { Bigish } from "./types";
 import { TypedEventFilter } from "./types/typechain/common";
-import TradeManagement from "./util/tradeManagement";
+import Trade from "./util/trade";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -134,7 +134,7 @@ class Semibook implements Iterable<Market.Offer> {
   #bestInCache: number | undefined; // id of the best/first offer in the offer list iff #offerCache is non-empty
   #worstInCache: number | undefined; // id of the worst/last offer in #offerCache
   #lastReadBlockNumber: number; // the block number that the cache is consistent with
-  tradeManagement: TradeManagement = new TradeManagement();
+  tradeManagement: Trade = new Trade();
   static async connect(
     market: Market,
     ba: "bids" | "asks",
@@ -913,6 +913,27 @@ class Semibook implements Iterable<Market.Offer> {
     }
     return result;
   }
+
+  static getIsVolumeDesiredForAsks(opts: Market.BookOptions) {
+    return (
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "buy") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "sell"))
+    );
+  }
+  static getIsVolumeDesiredForBids(opts: Market.BookOptions) {
+    return (
+      opts.desiredVolume !== undefined &&
+      ((opts.desiredVolume.what === "base" &&
+        opts.desiredVolume.to === "sell") ||
+        (opts.desiredVolume.what === "quote" &&
+          opts.desiredVolume.to === "buy"))
+    );
+  }
+  
+
 }
 
 class CacheIterator implements Semibook.CacheIterator {

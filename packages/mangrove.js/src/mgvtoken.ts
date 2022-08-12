@@ -1,8 +1,9 @@
+import Big from "big.js";
 import * as ethers from "ethers";
+import { decimals as loadedDecimals } from "./constants";
 import Mangrove from "./mangrove";
 import { Bigish } from "./types";
 import * as typechain from "./types/typechain";
-import Big from "big.js";
 import UnitCalculations from "./util/unitCalculations";
 
 class MgvToken {
@@ -94,6 +95,25 @@ class MgvToken {
     const amount = await this.contract.allowance(params.owner, params.spender);
     return this.fromUnits(amount);
   }
+
+  /**
+   * Read decimals for `tokenName` on given network.
+   * To read decimals directly onchain, use `fetchDecimals`.
+   */
+  static getDecimals(tokenName: string): number {
+    if (typeof loadedDecimals[tokenName] !== "number") {
+      throw Error(`No decimals on record for token ${tokenName}`);
+    }
+
+    return loadedDecimals[tokenName] as number;
+  }
+
+    /**
+   * Set decimals for `tokenName` on current network.
+   */
+     static setDecimals(tokenName: string, dec: number): void {
+      loadedDecimals[tokenName] = dec;
+    }
 
   /**
    * Set approval for Mangrove on `amount`.

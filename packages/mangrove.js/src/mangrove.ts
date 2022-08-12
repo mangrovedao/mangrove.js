@@ -1,17 +1,11 @@
-import { logger, logdataLimiter } from "./util/logger";
 import pick from "object.pick";
+import { LiquidityProvider, Market, MgvToken, OfferLogic } from ".";
 import {
-  addresses,
-  decimals as loadedDecimals,
-  displayedDecimals as loadedDisplayedDecimals,
-  defaultDisplayedDecimals,
-  displayedPriceDecimals as loadedDisplayedPriceDecimals,
-  defaultDisplayedPriceDecimals,
+  addresses, defaultDisplayedDecimals, defaultDisplayedPriceDecimals, displayedDecimals as loadedDisplayedDecimals, displayedPriceDecimals as loadedDisplayedPriceDecimals
 } from "./constants";
 import * as eth from "./eth";
-import { typechain, Provider, Signer } from "./types";
-import { Bigish } from "./types";
-import { LiquidityProvider, OfferLogic, MgvToken, Market } from ".";
+import { Bigish, Provider, Signer, typechain } from "./types";
+import { logdataLimiter, logger } from "./util/logger";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -28,7 +22,6 @@ let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
 import UnitCalculations from "./util/unitCalculations";
-import { number } from "yargs";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
@@ -270,7 +263,6 @@ class Mangrove {
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
-  //TODO: maybe move to MgvToken
   toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
     return this.unitCalculations.toUnits(amount, nameOrDecimals);
   }
@@ -290,7 +282,7 @@ class Mangrove {
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
-    return this.unitCalculations.fromUnits(amount, nameOrDecimals );
+    return this.unitCalculations.fromUnits(amount, nameOrDecimals);
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
@@ -390,11 +382,7 @@ class Mangrove {
    */
   //TODO: move to MgvToken
   static getDecimals(tokenName: string): number {
-    if (typeof loadedDecimals[tokenName] !== "number") {
-      throw Error(`No decimals on record for token ${tokenName}`);
-    }
-
-    return loadedDecimals[tokenName] as number;
+    return MgvToken.getDecimals(tokenName);
   }
 
   /**
@@ -417,7 +405,7 @@ class Mangrove {
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
-    loadedDecimals[tokenName] = dec;
+    MgvToken.setDecimals(tokenName, dec)
   }
 
   /**

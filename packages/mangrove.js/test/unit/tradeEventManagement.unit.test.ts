@@ -12,6 +12,7 @@ import {
   OfferFailEvent,
   OfferSuccessEvent,
   OrderCompleteEvent,
+  PosthookFailEvent,
 } from "../../src/types/typechain/Mangrove";
 
 describe("TradeEventManagement unit tests suite", () => {
@@ -75,7 +76,7 @@ describe("TradeEventManagement unit tests suite", () => {
 
       const partialFillFunc = () => true;
       //Act
-      const result = tradeEventManagement.createSummaryForOrderComplete(
+      const result = tradeEventManagement.createSummaryFromEvent(
         event,
         gotToken,
         gaveToken,
@@ -115,7 +116,7 @@ describe("TradeEventManagement unit tests suite", () => {
 
       const partialFillFunc = () => true;
       //Act
-      const result = tradeEventManagement.createSummaryForOrderSummary(
+      const result = tradeEventManagement.createSummaryFromOrderSummaryEvent(
         event,
         gotToken,
         gaveToken,
@@ -156,7 +157,7 @@ describe("TradeEventManagement unit tests suite", () => {
       when(gaveToken.fromUnits(args.takerGives)).thenReturn(expectedGave);
 
       //Act
-      const result = tradeEventManagement.createSuccess(
+      const result = tradeEventManagement.createSuccessFromEvent(
         event,
         instance(gotToken),
         instance(gaveToken)
@@ -196,7 +197,7 @@ describe("TradeEventManagement unit tests suite", () => {
       );
 
       //Act
-      const result = tradeEventManagement.createTradeFailure(
+      const result = tradeEventManagement.createTradeFailureFromEvent(
         event,
         instance(gotToken),
         instance(gaveToken)
@@ -214,7 +215,7 @@ describe("TradeEventManagement unit tests suite", () => {
     it("returns posthookFailure object, allways", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
-      const mockedEvent = mock<OfferFailEvent>();
+      const mockedEvent = mock<PosthookFailEvent>();
       const event = instance(mockedEvent);
       const expectedOfferId = BigNumber.from(123);
       const args: any = {
@@ -225,7 +226,7 @@ describe("TradeEventManagement unit tests suite", () => {
       when(mockedEvent.args).thenReturn(args);
 
       //Act
-      const result = tradeEventManagement.createPosthookFailure(event);
+      const result = tradeEventManagement.createPosthookFailureFromEvent(event);
 
       // Assert
       assert.equal(result.offerId, expectedOfferId.toNumber());

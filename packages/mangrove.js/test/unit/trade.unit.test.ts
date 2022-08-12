@@ -1,4 +1,4 @@
-// Unit tests for TradeManagement.ts
+// Unit tests for Trade.ts
 import assert from "assert";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
@@ -6,168 +6,17 @@ import { describe, it } from "mocha";
 import { anything, capture, instance, mock, spy, verify, when } from "ts-mockito";
 import { Market, MgvToken } from "../../dist/nodejs";
 import { Bigish } from "../../dist/nodejs/types";
-import TradeManagement from "../../dist/nodejs/util/tradeManagement"
+import Trade from "../../dist/nodejs/util/trade"
 
-describe("TradeManagement unit tests suite", () => {
+describe("Trade unit tests suite", () => {
 
-    describe("getIsVolumeDesiredForAsks", () => {
-        it("returns false, when desiredVolume is undefined", async function () {
-            //Arrange
-            const tradeManager = new TradeManagement();
-            const opts: Market.BookOptions = {
-            }
-            //Act
-            const result = tradeManager.getIsVolumeDesiredForAsks(opts);
-            // Assert
-            assert.equal(result, false)
-        })
-
-        it("returns false, when what is base and to is sell", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "base",
-                    to: "sell",
-                    given: "123"
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForAsks(opts);
-            // Assert
-            assert.equal(result, false)
-        })
-
-        it("returns true, when what is base and to is buy", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "base",
-                    to: "buy",
-                    given: "123"
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForAsks(opts);
-            // Assert
-            assert.equal(result, true)
-        })
-
-        it("returns false, when what is quote and to is buy", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "quote",
-                    to: "buy",
-                    given: "123"
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForAsks(opts);
-            // Assert
-            assert.equal(result, false)
-        })
-
-        it("returns true, when what is quote and to is sell", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "quote",
-                    to: "sell",
-                    given: "123"
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForAsks(opts);
-            // Assert
-            assert.equal(result, true)
-        })
-    })
-
-    describe("getIsVolumeDesiredForBids", () => {
-        it("returns false, when desiredVolume is undefined", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {}
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForBids(opts);
-            // Assert
-            assert.equal(result, false)
-        })
-
-        it("returns false, when what is base and to is buy ", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "base",
-                    to: "buy",
-                    given: ""
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForBids(opts);
-            // Assert
-            assert.equal(result, false)
-        })
-
-        it("returns true, when what is base and to is sell ", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "base",
-                    to: "sell",
-                    given: ""
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForBids(opts);
-            // Assert
-            assert.equal(result, true)
-        })
-
-        it("returns false, when what is quote and to is sell ", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "quote",
-                    to: "sell",
-                    given: ""
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForBids(opts);
-            // Assert
-            assert.equal(result, false)
-        })
-
-        it("returns true, when what is quote and to is buy ", async function () {
-            //Arrange
-            const tradeManagement = new TradeManagement();
-            const opts: Market.BookOptions = {
-                desiredVolume: {
-                    what: "quote",
-                    to: "buy",
-                    given: ""
-                }
-            }
-            //Act
-            const result = tradeManagement.getIsVolumeDesiredForBids(opts);
-            // Assert
-            assert.equal(result, true)
-        })
-    })
+  
 
     describe("getParamsForBuy", () => {
         it("returns wants as volume, gives as wants*price and fillWants true, when params has price!=null and volume", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price: Bigish = 20;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, volume: 30, slippage: slippage }
@@ -175,10 +24,10 @@ describe("TradeManagement unit tests suite", () => {
             const quoteToken = mock(MgvToken);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(params.volume))
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(params.price))
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
             const [wants] = capture(baseToken.toUnits).last();
             const [gives] = capture(quoteToken.toUnits).last();
 
@@ -195,8 +44,8 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns wants as volume, gives as Big(2).pow(256).minus(1) and fillWants true, when params has price===null and volume", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price = null;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, volume: 30, slippage: slippage }
@@ -205,10 +54,10 @@ describe("TradeManagement unit tests suite", () => {
             const veryBigNumber = Big(2).pow(256).minus(1);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(params.volume))
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(veryBigNumber.toFixed(0)))
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
             const [wants] = capture(baseToken.toUnits).last();
             const [gives] = capture(quoteToken.toUnits).last();
 
@@ -225,8 +74,8 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns gives as total, wants as gives.div(price) and fillWants false, when params has price!=null and total", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price: Bigish = 20;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, total: 30, slippage: slippage }
@@ -234,10 +83,10 @@ describe("TradeManagement unit tests suite", () => {
             const quoteToken = mock(MgvToken);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(Big(params.total).div(price).toFixed(0)))
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(params.total))
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
             const [wants] = capture(baseToken.toUnits).last();
             const [gives] = capture(quoteToken.toUnits).last();
 
@@ -253,8 +102,8 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns gives as total, wants as Big(0) and fillWants false, when params has price===null and total", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price = null;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, total: 30, slippage: slippage }
@@ -262,10 +111,10 @@ describe("TradeManagement unit tests suite", () => {
             const quoteToken = mock(MgvToken);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(Big(0).toFixed(0)))
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(params.total))
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
             const [wants] = capture(baseToken.toUnits).last();
             const [gives] = capture(quoteToken.toUnits).last();
 
@@ -281,18 +130,18 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns gives as gives, wants as want and fillWants as true, when params has gives and wants, but no fillWants ", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const slippage = 3;
             const params: Market.TradeParams = {gives:20, wants: 30, slippage:slippage }
             const baseToken = mock(MgvToken);
             const quoteToken = mock(MgvToken);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(Big(params.wants).toFixed(0)))
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(Big(params.gives).toFixed(0) ))
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
             const [wants] = capture(baseToken.toUnits).last();
             const [gives] = capture(quoteToken.toUnits).last();
 
@@ -309,18 +158,18 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns gives as gives, wants as want and fillWants as fillWants, when params has gives, wants and fillWants ", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const slippage = 3;
             const params: Market.TradeParams = {gives:20, wants: 30, fillWants: false, slippage:slippage }
             const baseToken = mock(MgvToken);
             const quoteToken = mock(MgvToken);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(Big(params.wants).toFixed(0)))
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(Big(params.gives).toFixed(0) ))
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForBuy(params, instance(baseToken), instance(quoteToken));
             const [wants] = capture(baseToken.toUnits).last();
             const [gives] = capture(quoteToken.toUnits).last();
 
@@ -338,8 +187,8 @@ describe("TradeManagement unit tests suite", () => {
     describe("getParamsForSell", () => {
         it("returns gives as volume, wants as gives.mul(price) and fillWants false, when params has price!=null and volume", async function() {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price: Bigish = 20;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, volume: 30, slippage: slippage }
@@ -347,10 +196,10 @@ describe("TradeManagement unit tests suite", () => {
             const quoteToken = mock(MgvToken);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(params.volume))
             when(quoteToken.toUnits(anything())).thenReturn( BigNumber.from(Big(params.volume).mul(price).toFixed(0)) )
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForSell(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForSell(params, instance(baseToken), instance(quoteToken));
             const [gives] = capture(baseToken.toUnits).last();
             const [wants] = capture(quoteToken.toUnits).last();
 
@@ -366,8 +215,8 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns gives as volume, wants as Big(0) and fillWants false, when params has price===null and volume", async function() {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price = null;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, volume: 30, slippage: slippage }
@@ -375,10 +224,10 @@ describe("TradeManagement unit tests suite", () => {
             const quoteToken = mock(MgvToken);
             when(baseToken.toUnits(anything())).thenReturn(BigNumber.from(params.volume))
             when(quoteToken.toUnits(anything())).thenReturn( BigNumber.from(Big(0).toFixed(0)) )
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForSell(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForSell(params, instance(baseToken), instance(quoteToken));
             const [gives] = capture(baseToken.toUnits).last();
             const [wants] = capture(quoteToken.toUnits).last();
 
@@ -394,8 +243,8 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns wants as total, gives as wants.div(price) and fillWants true, when params has price!=null and total", async function() {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price = 20;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, total: 30, slippage: slippage }
@@ -403,10 +252,10 @@ describe("TradeManagement unit tests suite", () => {
             const quoteToken = mock(MgvToken);
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(params.total))
             when(baseToken.toUnits(anything())).thenReturn( BigNumber.from(Big(params.total).div(price).toFixed(0)) )
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForSell(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForSell(params, instance(baseToken), instance(quoteToken));
             const [gives] = capture(baseToken.toUnits).last();
             const [wants] = capture(quoteToken.toUnits).last();
 
@@ -422,8 +271,8 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns wants as total, gives as Big(2).pow(256).minus(1) and fillWants true, when params has price===null and total", async function() {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const price = null;
             const slippage = 3;
             const params: Market.TradeParams = { price: price, total: 30, slippage: slippage }
@@ -431,10 +280,10 @@ describe("TradeManagement unit tests suite", () => {
             const quoteToken = mock(MgvToken);
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(params.total))
             when(baseToken.toUnits(anything())).thenReturn( BigNumber.from(Big(2).pow(256).minus(1).toFixed(0)) )
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForSell(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForSell(params, instance(baseToken), instance(quoteToken));
             const [gives] = capture(baseToken.toUnits).last();
             const [wants] = capture(quoteToken.toUnits).last();
 
@@ -450,18 +299,18 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns wants as wants, gives as gives and fillWants false, when params has wants and gives, but no fillWants", async function() {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const slippage = 3;
             const params: Market.TradeParams = { wants: 20, gives: 30, slippage: slippage }
             const baseToken = mock(MgvToken);
             const quoteToken = mock(MgvToken);
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(params.wants))
             when(baseToken.toUnits(anything())).thenReturn( BigNumber.from(params.gives) )
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForSell(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForSell(params, instance(baseToken), instance(quoteToken));
             const [gives] = capture(baseToken.toUnits).last();
             const [wants] = capture(quoteToken.toUnits).last();
 
@@ -477,18 +326,18 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns wants as wants, gives as gives and fillWants as fillWants, when params has wants, gives and fillWants", async function() {
             //Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const slippage = 3;
             const params: Market.TradeParams = { wants: 20, gives: 30, fillWants: true, slippage: slippage }
             const baseToken = mock(MgvToken);
             const quoteToken = mock(MgvToken);
             when(quoteToken.toUnits(anything())).thenReturn(BigNumber.from(params.wants))
             when(baseToken.toUnits(anything())).thenReturn( BigNumber.from(params.gives) )
-            when(spyTradeManagement.validateSlippage(slippage)).thenReturn(slippage)
+            when(spyTrade.validateSlippage(slippage)).thenReturn(slippage)
 
             //Act
-            const result = tradeManagement.getParamsForSell(params, instance(baseToken), instance(quoteToken));
+            const result = trade.getParamsForSell(params, instance(baseToken), instance(quoteToken));
             const [gives] = capture(baseToken.toUnits).last();
             const [wants] = capture(quoteToken.toUnits).last();
 
@@ -506,9 +355,9 @@ describe("TradeManagement unit tests suite", () => {
     describe("validateSlippage", () => {
         it("returns 0, when slippage is undefined", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             //Act
-            const result = tradeManagement.validateSlippage();
+            const result = trade.validateSlippage();
             //Assert
             assert.equal(result, 0)
 
@@ -516,29 +365,29 @@ describe("TradeManagement unit tests suite", () => {
 
         it("throw error, when slippage is above 100", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             //Act
 
             //Assert
-            assert.throws(() => tradeManagement.validateSlippage(101))
+            assert.throws(() => trade.validateSlippage(101))
 
         })
 
         it("throw error, when slippage is lower than 0", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             //Act
 
             //Assert
-            assert.throws(() => tradeManagement.validateSlippage(-1))
+            assert.throws(() => trade.validateSlippage(-1))
 
         })
 
         it("return given slippage, when it is valid", async function () {
             //Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             //Act
-            const result = tradeManagement.validateSlippage(10);
+            const result = trade.validateSlippage(10);
             //Assert
             assert.equal(result, 10)
 
@@ -548,33 +397,33 @@ describe("TradeManagement unit tests suite", () => {
     describe("isPriceBetter", () => {
         it("Uses “lt“ when ba = asks", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const ba = "asks"
             const price = 10
             const referencePrice = 9
 
             //Act
-            const result = tradeManagement.isPriceBetter(price, referencePrice, ba);
+            const result = trade.isPriceBetter(price, referencePrice, ba);
 
             //Assert
-            verify( spyTradeManagement.comparePrices( price, "lt", referencePrice)).once()
+            verify( spyTrade.comparePrices( price, "lt", referencePrice)).once()
             assert.equal( result, false)
         })
 
         it("Uses “gt“ when ba = bids", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const ba = "bids"
             const price = 10
             const referencePrice = 9
 
             //Act
-            const result = tradeManagement.isPriceBetter(price, referencePrice, ba);
+            const result = trade.isPriceBetter(price, referencePrice, ba);
 
             //Assert
-            verify( spyTradeManagement.comparePrices( price, "gt", referencePrice)).once()
+            verify( spyTrade.comparePrices( price, "gt", referencePrice)).once()
             assert.equal( result, true)
         })
     })
@@ -583,33 +432,33 @@ describe("TradeManagement unit tests suite", () => {
     describe("isPriceWorse", () => {
         it("Uses “gt“ when ba = bids", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const ba = "bids"
             const price = 10
             const referencePrice = 9
 
             //Act
-            const result = tradeManagement.isPriceBetter(price, referencePrice, ba);
+            const result = trade.isPriceBetter(price, referencePrice, ba);
 
             //Assert
-            verify( spyTradeManagement.comparePrices( price, "gt", referencePrice)).once()
+            verify( spyTrade.comparePrices( price, "gt", referencePrice)).once()
             assert.equal( result, true)
         })
 
         it("Uses “lt“ when ba = asks", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
-            const spyTradeManagement = spy(tradeManagement);
+            const trade = new Trade();
+            const spyTrade = spy(trade);
             const ba = "asks"
             const price = 10
             const referencePrice = 9
 
             //Act
-            const result = tradeManagement.isPriceBetter(price, referencePrice, ba);
+            const result = trade.isPriceBetter(price, referencePrice, ba);
 
             //Assert
-            verify( spyTradeManagement.comparePrices( price, "lt", referencePrice)).once()
+            verify( spyTrade.comparePrices( price, "lt", referencePrice)).once()
             assert.equal( result, false)
         })
     })  
@@ -617,12 +466,12 @@ describe("TradeManagement unit tests suite", () => {
     describe("comparePrices", () => {
         it("returns true, when price < referencePrice and compare is “lt“", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             const price = 10
             const referencePrice = 11
 
             //Act
-            const result = tradeManagement.comparePrices(price, "lt", referencePrice);
+            const result = trade.comparePrices(price, "lt", referencePrice);
 
             //Assert
             assert.equal( result, true)
@@ -630,12 +479,12 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns false, when price > referencePrice and compare is “lt“", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             const price = 10
             const referencePrice = 9
 
             //Act
-            const result = tradeManagement.comparePrices(price, "lt", referencePrice);
+            const result = trade.comparePrices(price, "lt", referencePrice);
 
             //Assert
             assert.equal( result, false)
@@ -643,12 +492,12 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns false, when price = referencePrice and compare is “lt“", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             const price = 10
             const referencePrice = 10
 
             //Act
-            const result = tradeManagement.comparePrices(price, "lt", referencePrice);
+            const result = trade.comparePrices(price, "lt", referencePrice);
 
             //Assert
             assert.equal( result, false)
@@ -656,12 +505,12 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns true, when price < referencePrice and compare is “gt“", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             const price = 10
             const referencePrice = 11
 
             //Act
-            const result = tradeManagement.comparePrices(price, "gt", referencePrice);
+            const result = trade.comparePrices(price, "gt", referencePrice);
 
             //Assert
             assert.equal( result, false)
@@ -669,12 +518,12 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns false, when price > referencePrice and compare is “gt“", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             const price = 10
             const referencePrice = 9
 
             //Act
-            const result = tradeManagement.comparePrices(price, "gt", referencePrice);
+            const result = trade.comparePrices(price, "gt", referencePrice);
 
             //Assert
             assert.equal( result, true)
@@ -682,12 +531,12 @@ describe("TradeManagement unit tests suite", () => {
 
         it("returns false, when price = referencePrice and compare is “gt“", async function () {
             // Arrange
-            const tradeManagement = new TradeManagement();
+            const trade = new Trade();
             const price = 10
             const referencePrice = 10
 
             //Act
-            const result = tradeManagement.comparePrices(price, "gt", referencePrice);
+            const result = trade.comparePrices(price, "gt", referencePrice);
 
             //Assert
             assert.equal( result, false)
