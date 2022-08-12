@@ -29,6 +29,6 @@ packages/mangrove-solidity/*-mumbai.sh
 .pnp.*
 
 # js tests state dumps
-**/state*.dump
+**/mangroveJsTestServerState.dump
 **/broadcast/**/run-*.json
 !**/broadcast/80001/run-*.json

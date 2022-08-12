@@ -4,7 +4,7 @@
   This is a Mangrove.js utility for its internal tests. It can also be used in standalone.
 
   For rapid test cycles, use MGV_TEST_USE_CACHE=true,
-  then delete the state.dump file every time you want to invalidate the cache.
+  then delete the state dump file every time you want to invalidate the cache.
 */
 const childProcess = require("child_process");
 const path = require("path");
@@ -18,6 +18,7 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8546;
 const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
+const DUMPFILE = "mangroveJsTestServerState.dump";
 
 import yargs from "yargs/yargs";
 
@@ -29,7 +30,7 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
   key: mnemonic.key(i),
 }));
 
-const stateCache = path.resolve("./state.dump");
+const stateCache = path.resolve(`./${DUMPFILE}`);
 
 const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
   // ignore command line if not main module, but still read from env vars
@@ -56,7 +57,7 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
       default: true,
     })
     .option("use-cache", {
-      describe: "Read/write ./state.dump file when possible",
+      describe: `Read/write ./${DUMPFILE} file when possible`,
       type: "boolean",
       default: false,
     })
