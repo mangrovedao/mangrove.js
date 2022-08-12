@@ -10,8 +10,8 @@
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc --build src && yarn run make-cli-executable && cross-env NODE_OPTIONS=--max-old-space-size=8192 yarn run write-test-deployment-file && yarn run rollup",
-    "heroku-build-this-package": "yarn run typechain && yarn run lint && tsc --build src && yarn run rollup",
+    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc && yarn run make-cli-executable && cross-env NODE_OPTIONS=--max-old-space-size=8192 yarn run write-test-deployment-file && yarn run rollup",
+    "heroku-build-this-package": "yarn run typechain && yarn run lint && tsc && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
     "get-mangrove-abis": "cp node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
@@ -33,6 +33,9 @@
     "README.md",
     "tsconfig.json"
   ],
+  "imports": {
+    "#package.json": "./package.json"
+  },
   "bin": {
     "mgv": "./dist/nodejs/cli/mgv.js"
   },
@@ -91,7 +94,7 @@
     "@typescript-eslint/parser": "^5.22.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "chalk": "^5.0.1",
+    "chalk": "^4.1.2",
     "cross-env": "^7.0.3",
     "dir-compare": "^4.0.0",
     "docblock-parser": "^1.0.0",
