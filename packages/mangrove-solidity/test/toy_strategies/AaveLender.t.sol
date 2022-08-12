@@ -16,7 +16,6 @@ abstract contract AaveV3ModuleTest is MangroveTest {
   ) public {
     uint balance = op.overlying(underlying).balanceOf(account);
     uint borrow = op.borrowed($(underlying), account);
-    console2.log(vm.rpcUrl("polygon"));
     console2.log("borrow is %s", borrow);
     assertApproxEqAbs(
       balance,
