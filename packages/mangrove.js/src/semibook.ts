@@ -1,10 +1,11 @@
+import { Listener } from "@ethersproject/providers";
+import { Mutex } from "async-mutex";
 import { Big } from "big.js";
-import { ethers, BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { Mangrove, Market } from ".";
 import { Bigish } from "./types";
 import { TypedEventFilter } from "./types/typechain/common";
-import { Mutex } from "async-mutex";
-import { Listener } from "@ethersproject/providers";
+import TradeManagement from "./util/tradeManagement";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -133,7 +134,7 @@ class Semibook implements Iterable<Market.Offer> {
   #bestInCache: number | undefined; // id of the best/first offer in the offer list iff #offerCache is non-empty
   #worstInCache: number | undefined; // id of the worst/last offer in #offerCache
   #lastReadBlockNumber: number; // the block number that the cache is consistent with
-
+  tradeManagement: TradeManagement = new TradeManagement();
   static async connect(
     market: Market,
     ba: "bids" | "asks",
@@ -315,20 +316,15 @@ class Semibook implements Iterable<Market.Offer> {
   /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
    */
   isPriceBetter(price: Bigish, referencePrice: Bigish): boolean {
-    const priceAsBig = Big(price);
-    const referencePriceAsBig = Big(referencePrice);
-    const priceComparison = this.ba === "asks" ? "lt" : "gt";
-    return priceAsBig[priceComparison](referencePriceAsBig);
+    return this.tradeManagement.isPriceBetter(price, referencePrice, this.ba);
   }
 
   /** Returns `true` if `price` is worse than `referencePrice`; Otherwise, `false` is returned.
    */
   isPriceWorse(price: Bigish, referencePrice: Bigish): boolean {
-    const priceAsBig = Big(price);
-    const referencePriceAsBig = Big(referencePrice);
-    const priceComparison = this.ba === "asks" ? "gt" : "lt";
-    return priceAsBig[priceComparison](referencePriceAsBig);
+    return this.tradeManagement.isPriceWorse(price, referencePrice, this.ba);
   }
+
 
   async getMaxGasReq(): Promise<number | undefined> {
     // TODO: The implementation of the following predicate is work-in-progress

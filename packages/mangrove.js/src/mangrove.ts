@@ -27,7 +27,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
 let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
-import MangroveUtils from "./util/mangroveUtils";
+import UnitCalculations from "./util/unitCalculations";
 import { number } from "yargs";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -68,7 +68,7 @@ class Mangrove {
   // orderContract: typechain.MangroveOrder;
   orderContract: typechain.MangroveOrderEnriched;
   static typechain = typechain;
-  mangroveUtils = new MangroveUtils();
+  unitCalculations = new UnitCalculations();
 
   /**
    * Creates an instance of the Mangrove Typescript object
@@ -270,14 +270,9 @@ class Mangrove {
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
+  //TODO: maybe move to MgvToken
   toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
-    let decimals;
-    if (typeof nameOrDecimals === "number") {
-      decimals = nameOrDecimals;
-    } else {
-      decimals = Mangrove.getDecimals(nameOrDecimals);
-    }
-    return ethers.BigNumber.from(Big(10).pow(decimals).mul(amount).toFixed(0));
+    return this.unitCalculations.toUnits(amount, nameOrDecimals);
   }
 
   /** Convert internal token amount to public token representation.
@@ -295,7 +290,7 @@ class Mangrove {
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
-    return this.mangroveUtils.fromUnits(amount, nameOrDecimals );
+    return this.unitCalculations.fromUnits(amount, nameOrDecimals );
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
@@ -393,6 +388,7 @@ class Mangrove {
    * Read decimals for `tokenName` on given network.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
+  //TODO: move to MgvToken
   static getDecimals(tokenName: string): number {
     if (typeof loadedDecimals[tokenName] !== "number") {
       throw Error(`No decimals on record for token ${tokenName}`);

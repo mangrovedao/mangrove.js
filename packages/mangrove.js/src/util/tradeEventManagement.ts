@@ -1,5 +1,6 @@
 import Big from "big.js";
 import * as ethers from "ethers";
+import Market from "../market";
 import MgvToken from "../mgvtoken";
 import {
   OfferFailEvent,
@@ -8,23 +9,15 @@ import {
   PosthookFailEvent,
 } from "../types/typechain/Mangrove";
 import { OrderSummaryEvent } from "../types/typechain/MangroveOrder";
-import MangroveUtils from "./mangroveUtils";
+import UnitCalculations from "./unitCalculations";
 
-interface Summary {
-  [key: string]: any;
-  got: Big;
-  gave: Big;
-  partialFill: boolean;
-  penalty: Big;
-}
-
-class EventUtils {
-  mangroveUtils: MangroveUtils;
-  constructor(mangroveUtils?: MangroveUtils) {
-    this.mangroveUtils = mangroveUtils ? mangroveUtils : new MangroveUtils();
+class TradeEventManagement {
+  mangroveUtils: UnitCalculations;
+  constructor(mangroveUtils?: UnitCalculations) {
+    this.mangroveUtils = mangroveUtils ? mangroveUtils : new UnitCalculations();
   }
 
-  createSummary(
+  createSummaryFromEvent(
     event: {
       args: {
         takerGot: ethers.BigNumber;
@@ -38,7 +31,7 @@ class EventUtils {
       takerGot: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean
-  ): Summary {
+  ): Market.Summary {
     return {
       got: got.fromUnits(event.args.takerGot),
       gave: gave.fromUnits(event.args.takerGave),
@@ -56,10 +49,10 @@ class EventUtils {
     ) => boolean
   ) {
     const event = evt as OrderCompleteEvent;
-    return this.createSummary(event, got, gave, partialFillFunc);
+    return this.createSummaryFromEvent(event, got, gave, partialFillFunc);
   }
 
-  createSucces(evt: ethers.ethers.Event, got: MgvToken, gave: MgvToken) {
+  createSuccess(evt: ethers.ethers.Event, got: MgvToken, gave: MgvToken) {
     const event = evt as OfferSuccessEvent;
     const success = {
       offerId: event.args.id.toNumber(),
@@ -97,11 +90,11 @@ class EventUtils {
       takerGot: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean
-  ) {
+  ) : Market.Summary {
     const event = evt as OrderSummaryEvent;
-    const summary = this.createSummary(event, got, gave, partialFillFunc);
-    summary.offerId = event.args.restingOrderId.toNumber();
-    return summary;
+    const summary = this.createSummaryFromEvent(event, got, gave, partialFillFunc);
+
+    return { ...summary, offerId: event.args.restingOrderId.toNumber()};
   }
 
   partialFill(
@@ -114,4 +107,4 @@ class EventUtils {
   }
 }
 
-export default EventUtils;
+export default TradeEventManagement;

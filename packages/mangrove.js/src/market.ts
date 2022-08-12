@@ -6,7 +6,7 @@ import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
 import { Deferred } from "./util";
 import { logger } from "./util/logger";
-import MarketUtils from "./util/marketUtils";
+import TradeManagement from "./util/tradeManagement";
 
 let canConstructMarket = false;
 
@@ -27,7 +27,7 @@ export const bookOptsDefault: Market.BookOptions = {
 import type { Awaited } from "ts-essentials";
 import ThresholdBlockSubscriptions from "./ThresholdBlockSubscriptions";
 import * as TCM from "./types/typechain/Mangrove";
-import EventUtils from "./util/eventUtils";
+import TradeEventManagement from "./util/tradeEventManagement";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -205,8 +205,8 @@ class Market {
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
   #initClosure?: () => Promise<void>;
-  marketUtils: MarketUtils = new MarketUtils();
-  eventUtils: EventUtils = new EventUtils();
+  tradeManagement: TradeManagement = new TradeManagement();
+  tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
   static async connect(params: {
     mgv: Mangrove;
@@ -276,8 +276,8 @@ class Market {
       chunkSize: opts.chunkSize,
       desiredPrice: opts.desiredPrice,
       desiredVolume:
-        (ba === "asks" && this.marketUtils.getIsVolumeDesiredForAsks(opts)) ||
-        (ba === "bids" && this.marketUtils.getIsVolumeDesiredForBids(opts))
+        (ba === "asks" && this.tradeManagement.getIsVolumeDesiredForAsks(opts)) ||
+        (ba === "bids" && this.tradeManagement.getIsVolumeDesiredForBids(opts))
           ? semibookDesiredVolume
           : undefined,
     });
@@ -463,12 +463,13 @@ class Market {
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
+  //TODO: move all trade methods to new Trade.ts
   buy(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
     const { wants, givesWithoutSlippage, gives, fillWants } =
-      this.marketUtils.getParamsForBuy(params, this.base, this.quote);
+      this.tradeManagement.getParamsForBuy(params, this.base, this.quote);
     if ("restingOrder" in params && params.restingOrder) {
       const makerWants = wants;
       const makerGives = this.quote.toUnits(givesWithoutSlippage);
@@ -538,7 +539,7 @@ class Market {
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
     const { gives, wants, wantsWithoutSlippage, fillWants } =
-      this.marketUtils.getParamsForSell(params, this.base, this.quote);
+      this.tradeManagement.getParamsForSell(params, this.base, this.quote);
     if ("restingOrder" in params && params.restingOrder) {
       const makerGives = gives;
       const makerWants = this.quote.toUnits(wantsWithoutSlippage);
@@ -593,7 +594,7 @@ class Market {
       evt,
       got_bq,
       gave_bq,
-      this.eventUtils.partialFill(fillWants, takerWants, takerGives),
+      this.tradeEventManagement.partialFill(fillWants, takerWants, takerGives),
       result
     );
   }
@@ -609,7 +610,7 @@ class Market {
     const gave = this[gave_bq];
     switch (evt.event) {
       case "OrderComplete": {
-        result.summary = this.eventUtils.createSummaryForOrderComplete(
+        result.summary = this.tradeEventManagement.createSummaryForOrderComplete(
           evt,
           got,
           gave,
@@ -618,23 +619,23 @@ class Market {
         return result;
       }
       case "OfferSuccess": {
-        result.successes.push(this.eventUtils.createSucces(evt, got, gave));
+        result.successes.push(this.tradeEventManagement.createSuccess(evt, got, gave));
         return result;
       }
       case "OfferFail": {
         result.tradeFailures.push(
-          this.eventUtils.createTradeFailure(evt, got, gave)
+          this.tradeEventManagement.createTradeFailure(evt, got, gave)
         );
         return result;
       }
       case "PosthookFail": {
         result.posthookFailures.push(
-          this.eventUtils.createPosthookFailure(evt)
+          this.tradeEventManagement.createPosthookFailure(evt)
         );
         return result;
       }
       case "OrderSummary": {
-        result.summary = this.eventUtils.createSummaryForOrderSummary(
+        result.summary = this.tradeEventManagement.createSummaryForOrderSummary(
           evt,
           got,
           gave,
