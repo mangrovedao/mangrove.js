@@ -304,7 +304,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@espendk/json-file-reporter@npm:^1.4.1, @espendk/json-file-reporter@npm:^1.4.2":
+"@espendk/json-file-reporter@npm:^1.4.2":
   version: 1.4.2
   resolution: "@espendk/json-file-reporter@npm:1.4.2"
   peerDependencies:
@@ -1659,22 +1659,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mangrovedao/mangrove-solidity@workspace:packages/mangrove-solidity"
   dependencies:
-    "@espendk/json-file-reporter": ^1.4.1
-    "@ethersproject/experimental": ^5.6.1
-    "@ethersproject/hardware-wallets": ^5.6.0
-    app-module-path: ^2.2.0
-    chai: ^4.3.4
-    chai-events: ^0.0.3
-    config: ^3.3.7
-    cross-env: ^7.0.3
     dotenv-cli: ^6.0.0
     dotenv-flow: ^3.2.0
     ethers: ^5.6.4
-    fs: ^0.0.1-security
     lint-staged: ^13.0.2
-    mocha: ^10.0.0
-    mocha-multi-reporters: ^1.5.1
-    npm-run-all: ^4.1.5
     prettier: ^2.4.1
     prettier-plugin-solidity: ^1.0.0-beta.19
     rimraf: ^3.0.2
@@ -1714,11 +1702,8 @@ __metadata:
     chai: ^4.3.4
     chai-as-promised: ^7.1.1
     chalk: ^4.1.2
-    config: ^3.3.7
     cross-env: ^7.0.3
     dir-compare: ^4.0.0
-    docblock-parser: ^1.0.0
-    dotenv-flow: ^3.2.0
     eslint: ^8.14.0
     eslint-config-prettier: ^8.5.0
     ethers: ^5.6.4
@@ -1729,13 +1714,10 @@ __metadata:
     npm-run-all: ^4.1.5
     nyc: ^15.1.0
     object-inspect: ^1.12.0
-    object.pick: ^1.3.0
     prettier: ^2.4.1
     rimraf: ^3.0.2
     rollup: ^2.75.7
     rollup-plugin-terser: ^7.0.2
-    seedrandom: ^3.0.5
-    shelljs: ^0.8.4
     shx: ^0.3.4
     ts-essentials: ^9.1.2
     ts-mockito: ^2.0.0
@@ -2542,13 +2524,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"app-module-path@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "app-module-path@npm:2.2.0"
-  checksum: b52aa49cfa809efbad41b514222e8ef3f8ee9e147f5eccf79280b45eddcc61f7aeb302b0049474e3f42072dd53a28348c57dd96f36cd461d2e31cc8ab1ef56b5
-  languageName: node
-  linkType: hard
-
 "append-transform@npm:^2.0.0":
   version: 2.0.0
   resolution: "append-transform@npm:2.0.0"
@@ -2633,7 +2608,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"assertion-error@npm:^1.0.1, assertion-error@npm:^1.1.0":
+"assertion-error@npm:^1.1.0":
   version: 1.1.0
   resolution: "assertion-error@npm:1.1.0"
   checksum: fd9429d3a3d4fd61782eb3962ae76b6d08aa7383123fca0596020013b3ebd6647891a85b05ce821c47d1471ed1271f00b0545cf6a4326cf2fc91efcc3b0fbecf
@@ -3008,26 +2983,6 @@ __metadata:
   peerDependencies:
     chai: ">= 2.1.2 < 5"
   checksum: 7262868a5b51a12af4e432838ddf97a893109266a505808e1868ba63a12de7ee1166e9d43b5c501a190c377c1b11ecb9ff8e093c89f097ad96c397e8ec0f8d6a
-  languageName: node
-  linkType: hard
-
-"chai-events@npm:^0.0.3":
-  version: 0.0.3
-  resolution: "chai-events@npm:0.0.3"
-  dependencies:
-    chai: ^3.5.0
-  checksum: d7e92e11e7612618ac3b3ed148d653dba3d381d86fdef540939a68b5a30f56e716497867697b907508d64d0beb8325afcb19fde9b0bb18052b52cc6e124d1c3e
-  languageName: node
-  linkType: hard
-
-"chai@npm:^3.5.0":
-  version: 3.5.0
-  resolution: "chai@npm:3.5.0"
-  dependencies:
-    assertion-error: ^1.0.1
-    deep-eql: ^0.1.3
-    type-detect: ^1.0.0
-  checksum: d7e0c52913ebc5411ebf26bbaa014abec4e25ba341fe3e8c2fad09ee657706360d9114dda81e3ebb2931e54e86caf745b9fe4c07143a8121be13a4a5ac331a50
   languageName: node
   linkType: hard
 
@@ -3483,15 +3438,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"deep-eql@npm:^0.1.3":
-  version: 0.1.3
-  resolution: "deep-eql@npm:0.1.3"
-  dependencies:
-    type-detect: 0.1.1
-  checksum: 959734acb233d00727b3e64c8c803d233315ad8d4f7ccf89455a8a12f745055e78df087d1afabbe8931a9387f585d3bc4bf57bdb94e5e52055b38f5ae9360ca7
-  languageName: node
-  linkType: hard
-
 "deep-eql@npm:^3.0.1":
   version: 3.0.1
   resolution: "deep-eql@npm:3.0.1"
@@ -3621,15 +3567,6 @@ __metadata:
   version: 1.1.3
   resolution: "dlv@npm:1.1.3"
   checksum: d7381bca22ed11933a1ccf376db7a94bee2c57aa61e490f680124fa2d1cd27e94eba641d9f45be57caab4f9a6579de0983466f620a2cd6230d7ec93312105ae7
-  languageName: node
-  linkType: hard
-
-"docblock-parser@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "docblock-parser@npm:1.0.0"
-  dependencies:
-    lodash.assign: ^3.2.0
-  checksum: e54f8f4796ee717fce6d0d43b4d87e5a89ecc81cd1314249d5423094fc5300865cc724dcdc451bd0812a216ffa768b49874bf68a3e1f5d2d8b178e5a69313d23
   languageName: node
   linkType: hard
 
@@ -4528,13 +4465,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs@npm:^0.0.1-security":
-  version: 0.0.1-security
-  resolution: "fs@npm:0.0.1-security"
-  checksum: 53c6230e1faae9fa32c1df82c16a84b51b1243d20f3da2b64bd110bb472b73b9185169b703e008356e3cdc92d155088b617d9d39a63b5227a30b3621baad7f5d
-  languageName: node
-  linkType: hard
-
 "fsevents@patch:fsevents@~2.3.2#~builtin<compat/fsevents>":
   version: 2.3.2
   resolution: "fsevents@patch:fsevents@npm%3A2.3.2#~builtin<compat/fsevents>::version=2.3.2&hash=18f3a7"
@@ -5368,13 +5298,6 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"isobject@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "isobject@npm:3.0.1"
-  checksum: db85c4c970ce30693676487cca0e61da2ca34e8d4967c2e1309143ff910c207133a969f9e4ddb2dc6aba670aabce4e0e307146c310350b298e74a31f7d464703
-  languageName: node
-  linkType: hard
-
 "istanbul-lib-coverage@npm:^3.0.0, istanbul-lib-coverage@npm:^3.0.0-alpha.1":
   version: 3.2.0
   resolution: "istanbul-lib-coverage@npm:3.2.0"
@@ -5709,66 +5632,6 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"lodash._baseassign@npm:^3.0.0":
-  version: 3.2.0
-  resolution: "lodash._baseassign@npm:3.2.0"
-  dependencies:
-    lodash._basecopy: ^3.0.0
-    lodash.keys: ^3.0.0
-  checksum: 27155048736d02dc384f97af303ba66bb5f768aedd5191dddf25acbd13a0733c530d4258df2136440fce7e28c8240561ecd94e769ce4cbb0115dbfd9ab5c4203
-  languageName: node
-  linkType: hard
-
-"lodash._basecopy@npm:^3.0.0":
-  version: 3.0.1
-  resolution: "lodash._basecopy@npm:3.0.1"
-  checksum: 4ccbeef09f53cb1a0cdf1cafeaea2d445ec2184337e1389eb3b81649a3e30f33c377d79027fbce06dae199a6f8ffb4fbd32f1ce07bddbdfae14f51f8340ae68c
-  languageName: node
-  linkType: hard
-
-"lodash._bindcallback@npm:^3.0.0":
-  version: 3.0.1
-  resolution: "lodash._bindcallback@npm:3.0.1"
-  checksum: 3916fd72bc02de3643a52d46cf5aaeab4c0b21cd7cb2fb801a8bf9dacdc8532e89b30a4ebafdf65da5fe09d8b0bf898a7416402704fd7262a976703e1c59e549
-  languageName: node
-  linkType: hard
-
-"lodash._createassigner@npm:^3.0.0":
-  version: 3.1.1
-  resolution: "lodash._createassigner@npm:3.1.1"
-  dependencies:
-    lodash._bindcallback: ^3.0.0
-    lodash._isiterateecall: ^3.0.0
-    lodash.restparam: ^3.0.0
-  checksum: ca9e08350914c279560b8930a3f7aa065b061a7e2b0bf13b33af1f782be8b5356f623ce01e89248212cc6099b1bc6c39e03ed9ffc9e0c2fd7169b1b7c447c01e
-  languageName: node
-  linkType: hard
-
-"lodash._getnative@npm:^3.0.0":
-  version: 3.9.1
-  resolution: "lodash._getnative@npm:3.9.1"
-  checksum: ba2152bb10bf44beb54fcd273598197972c989c2181b54e533cec1ff1ebebdf8bb02d4ffc3d5a648480a48beb3026db191f5de99adecd7eac36bbd6025c9b048
-  languageName: node
-  linkType: hard
-
-"lodash._isiterateecall@npm:^3.0.0":
-  version: 3.0.9
-  resolution: "lodash._isiterateecall@npm:3.0.9"
-  checksum: 95ace291d07f2930d9f038ec3c662f88cef48ccebd508665ce08a3251f126b2a645234ab734a6dff0987e1ae9ef74dad706e0d9a2bf26828e50d19c7a6238cab
-  languageName: node
-  linkType: hard
-
-"lodash.assign@npm:^3.2.0":
-  version: 3.2.0
-  resolution: "lodash.assign@npm:3.2.0"
-  dependencies:
-    lodash._baseassign: ^3.0.0
-    lodash._createassigner: ^3.0.0
-    lodash.keys: ^3.0.0
-  checksum: 135351c0e376e2963ec785d4ad4efce55cd7f1d5e3d34387e940c1de6c5f92d6f91d3e415218bc37657f34aae823bc9ecf2fb38bd4734dc69f7d659582cc4178
-  languageName: node
-  linkType: hard
-
 "lodash.camelcase@npm:^4.3.0":
   version: 4.3.0
   resolution: "lodash.camelcase@npm:4.3.0"
@@ -5783,42 +5646,10 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"lodash.isarguments@npm:^3.0.0":
-  version: 3.1.0
-  resolution: "lodash.isarguments@npm:3.1.0"
-  checksum: ae1526f3eb5c61c77944b101b1f655f846ecbedcb9e6b073526eba6890dc0f13f09f72e11ffbf6540b602caee319af9ac363d6cdd6be41f4ee453436f04f13b5
-  languageName: node
-  linkType: hard
-
-"lodash.isarray@npm:^3.0.0":
-  version: 3.0.4
-  resolution: "lodash.isarray@npm:3.0.4"
-  checksum: 3b298fb76ff16981353f7d0695d8680be9451b74d2e76714ddbd903a90fbaa8e1d84979d0ae99325f5a9033776771154b19e05027ab23de83202251c8abe81b5
-  languageName: node
-  linkType: hard
-
-"lodash.keys@npm:^3.0.0":
-  version: 3.1.2
-  resolution: "lodash.keys@npm:3.1.2"
-  dependencies:
-    lodash._getnative: ^3.0.0
-    lodash.isarguments: ^3.0.0
-    lodash.isarray: ^3.0.0
-  checksum: ac7c02c793334c48161a8e8a1f12576c73ee50d1371e75680afc6c2d3740d5e9bdc899517e6c0034014eaa2512c5f433a2e6985c9e16cf28b5c9013ec81bd35e
-  languageName: node
-  linkType: hard
-
 "lodash.merge@npm:^4.6.0, lodash.merge@npm:^4.6.2":
   version: 4.6.2
   resolution: "lodash.merge@npm:4.6.2"
   checksum: ad580b4bdbb7ca1f7abf7e1bce63a9a0b98e370cf40194b03380a46b4ed799c9573029599caebc1b14e3f24b111aef72b96674a56cfa105e0f5ac70546cdc005
-  languageName: node
-  linkType: hard
-
-"lodash.restparam@npm:^3.0.0":
-  version: 3.6.1
-  resolution: "lodash.restparam@npm:3.6.1"
-  checksum: 8bda0c7aaeac93da2b7e856bfeec8e6fdefb4d7eadfe6fd84775312a729fc1cb985636d922fe33b49f41aba135204962f4b853d7946105b7704102edb2bf6082
   languageName: node
   linkType: hard
 
@@ -6738,15 +6569,6 @@ fsevents@~2.3.2:
     has-symbols: ^1.0.1
     object-keys: ^1.1.1
   checksum: d621d832ed7b16ac74027adb87196804a500d80d9aca536fccb7ba48d33a7e9306a75f94c1d29cbfa324bc091bfc530bc24789568efdaee6a47fcfa298993814
-  languageName: node
-  linkType: hard
-
-"object.pick@npm:^1.3.0":
-  version: 1.3.0
-  resolution: "object.pick@npm:1.3.0"
-  dependencies:
-    isobject: ^3.0.1
-  checksum: 77fb6eed57c67adf75e9901187e37af39f052ef601cb4480386436561357eb9e459e820762f01fd02c5c1b42ece839ad393717a6d1850d848ee11fbabb3e580a
   languageName: node
   linkType: hard
 
@@ -8620,20 +8442,6 @@ fsevents@~2.3.2:
   dependencies:
     prelude-ls: ^1.2.1
   checksum: ec688ebfc9c45d0c30412e41ca9c0cdbd704580eb3a9ccf07b9b576094d7b86a012baebc95681999dd38f4f444afd28504cb3a89f2ef16b31d4ab61a0739025a
-  languageName: node
-  linkType: hard
-
-"type-detect@npm:0.1.1":
-  version: 0.1.1
-  resolution: "type-detect@npm:0.1.1"
-  checksum: 3660c29269d15d4cb7d8a6ed26b1cf8cb5789ec9b8ca78c99aef642a83794aba662c57d303e2eb0c2910af57de00db8f38dba8bd7bce13d30c49b0b5fa6b7bde
-  languageName: node
-  linkType: hard
-
-"type-detect@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "type-detect@npm:1.0.0"
-  checksum: ea4eb0a9da4bbdfc92f00c2eab4b1f6e769ae0dbf98219992aeea3b207f2bc40bd4ee9d3fc71adac0ee7799f1e21efe0002858f4ed09a04ee15bc9051c6b8bb2
   languageName: node
   linkType: hard
 

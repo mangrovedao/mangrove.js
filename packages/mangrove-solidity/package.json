@@ -16,29 +16,16 @@
     "doc": "solcco -f doc/MgvDoc.html preprocessing/structs.js src/MgvLib.sol src/MgvRoot.sol src/MgvHasOffers.sol src/MgvOfferMaking.sol src/MgvOfferTaking.sol src/MgvOfferTakingWithPermit.sol src/MgvGovernable.sol src/AbstractMangrove.sol src/Mangrove.sol src/InvertedMangrove.sol",
     "preproc": "node preprocessing/run.js",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
-    "test": "npm-run-all \"test:*\"",
-    "test:solidity": "dotenv -e .env.test.local -- forge test -vvv"
+    "test": "dotenv -e .env.test.local -- forge test -vvv"
   },
   "lint-staged": {
     "*.{js,css,md,sol,json}": "prettier --write --ignore-unknown"
   },
   "devDependencies": {
-    "@espendk/json-file-reporter": "^1.4.1",
-    "@ethersproject/experimental": "^5.6.1",
-    "@ethersproject/hardware-wallets": "^5.6.0",
-    "app-module-path": "^2.2.0",
-    "chai": "^4.3.4",
-    "chai-events": "^0.0.3",
-    "config": "^3.3.7",
-    "cross-env": "^7.0.3",
     "dotenv-cli": "^6.0.0",
     "dotenv-flow": "^3.2.0",
     "ethers": "^5.6.4",
-    "fs": "^0.0.1-security",
     "lint-staged": "^13.0.2",
-    "mocha": "^10.0.0",
-    "mocha-multi-reporters": "^1.5.1",
-    "npm-run-all": "^4.1.5",
     "prettier": "^2.4.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "rimraf": "^3.0.2",

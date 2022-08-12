@@ -230,7 +230,7 @@ jobs:
 
     # Run local Solidity tests
     - name: Mangrove Solidity Tests
-      run: yarn run test:solidity
+      run: yarn run test
       env:
         POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
 

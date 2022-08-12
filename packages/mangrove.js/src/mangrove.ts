@@ -1,5 +1,4 @@
 import { logger, logdataLimiter } from "./util/logger";
-import pick from "object.pick";
 import {
   addresses,
   decimals as loadedDecimals,
@@ -193,7 +192,11 @@ class Mangrove {
   }): Promise<Market> {
     logger.debug("Initialize Market", {
       contextInfo: "mangrove.base",
-      data: pick(params, ["base", "quote", "bookOptions"]),
+      data: {
+        base: params.base,
+        quote: params.quote,
+        bookOptions: params.bookOptions,
+      },
     });
     return await Market.connect({ ...params, mgv: this });
   }
