@@ -51,7 +51,7 @@ const readContractAddresses = function (
 ): Record<string, string> | undefined {
   let fileData: string;
   try {
-    let fileData = fs.readFileSync(broadcastFile, "utf8");
+    fileData = fs.readFileSync(broadcastFile, "utf8");
   } catch (e) {
     console.warn(`Broadcast log ${broadcastFile} not found, skipping.`);
     return undefined;
