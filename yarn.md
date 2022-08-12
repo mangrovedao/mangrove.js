@@ -1,67 +1,80 @@
-[![CI](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml)
+# Yarn usage
 
-This is the Mangrove monorepo which contains most of the packages developed for the Mangrove.
+⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2+. Currently (November 2021), most examples and much tool support is implicitly engineered towards Yarn 1.
 
-Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate repos. The rules for which packages go where are not hard and fast; On the contrary, we are experimenting with different structures, in order to figure out what the pros and cons are in our specific circumstances.
-
-# Documentation
-
-If you are looking for the Mangrove developer documentation, the main site to go to is [docs.mangrove.exchange](https://docs.mangrove.exchange).
-
-For the Mangrove contracts in `mangrove-solidity`, we extract a doc-site from the rich documentation in the contract files. This is published at [code.mangrove.exchange](https://code.mangrove.exchange).
-
-Each package also contains a README.md with package-specific documentation.
-
-# Prerequisites
-
-For Linux or macOS everything should work out of the box, if you are using Windows, then we recommend installing everything from within WSL2 and expect some quirks.
-
-1. [Node.js](https://nodejs.org/en/) 14.14+, we recommend installation through [nvm](https://github.com/nvm-sh/nvm#installing-and-updating), e.g.:
-
-    ```shell
-    $ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-    # Reopen shell
-    $ nvm install --lts
-    ```
-
-2. [Yarn 2](https://yarnpkg.com/getting-started/install), with Node.js >= 16.10:
-
-    ```shell
-    $ corepack enable
-    ```
-
-3. [Foundry](https://book.getfoundry.sh/getting-started/installation.html):
-
-    ```shell
-    $ curl -L https://foundry.paradigm.xyz | bash
-    # Reopen shell
-    $ foundryup
-    ```
-
-4. Clone the git repo with sub-modules
-
-    ```shell
-    $ git clone --recurse-submodules https://github.com/mangrovedao/mangrove.git
-    # Or set the global git config once: git config --global submodule.recurse true
-    ```
-
-# Usage
-
-The following sections describe the most common use cases in this repo.
-
-## Initial setup
-
+## Initial monorepo setup
 After first cloning the repo, you should run `yarn install` in the root folder.
 
 ```shell
+# In ./ or in ./packages/<somePackage>
 $ yarn install
 ```
 
-The you need to setup the local environment (still in the root folder) - here we configure all packages identically, but they can also be configured individually:
+This
+- installs all dependencies in the monorepo
+- sets up appropriate symlinks inside the `node_modules` folders of packages that depend on other packages in the monorepo
+- installs Husky Git hooks.
+
+
+NB: Though the `yarn build` (described next) also runs `yarn install`, Yarn fails with an error if `yarn install` has not been run once. So this must be done after cloning. Afterwards `yarn install` should not be required again.
+
+
+## Update monorepo after clone, pull etc.
+Whenever you clone, pull, switch branches or similar, you should run `yarn build` afterwards, either in the root folder or in a package folder:
 
 ```shell
-$ cp .env.local.example .env.test.local
-$ find ./packages/ -name '.env.local.example' | while read line ; do ln -s $(readlink -f ./.env.test.local) $(dirname $line) ; done
+# In ./ or in ./packages/<somePackage>
+$ yarn build
+```
+
+This will 
+
+1. Run `yarn install` which:
+    - installs/updates all dependencies in the monorepo
+    - updates symlinks inside the `node_modules` folders of packages that depend on other packages in the monorepo
+    - updates Husky Git hooks.
+2. Build all relevant packages for the folder you're in
+    - If you're in root, all packages are built
+    - If you're in a package folder, all dependencies of the package and the package itself are built (in topological order).
+
+Your clone is now updated and ready to run :-)
+
+
+## Building and testing a single package
+Mostly, you'll only be working on a single package and don't want to build and test the whole monorepo. You just want to build enough such that the current package can be build, tested, and run.
+
+To do this, change into the package directory:
+
+```shell
+$ cd packages/<somePackage>
+```
+
+and then run:
+
+```shell
+$ yarn build
+```
+
+This will update dependencies (using `yarn install`) and recursively build the package and its dependencies in topological order.
+
+To build the package *without updating or building its dependencies*, run
+
+```shell
+$ yarn build-this-package
+```
+
+To test the package, run
+
+```shell
+$ yarn test
+```
+
+This will run just the tests in the current package.
+
+If you wish to also run the tests of its dependencies, run
+
+```shell
+$ yarn test-with-dependencies
 ```
 
 
@@ -95,6 +108,8 @@ If the command should be in topological order you can add the flag `--topologica
 ```shell
 $ yarn workspaces foreach --topological-dev build-this-package
 ```
+This will only run `build-this-package` in a package after its dependencies in the monorepo have been built.
+
 
 ## Cleaning build and dist artifacts
 Most of the time, running `yarn build` will generate/update the `build` and/or `dist` folders appropriately. However, sometimes the build system gets confused by artifacts left by previous builds. This can for instance happen after refactorings or when switching git branches.
@@ -112,26 +127,6 @@ will clean the current package and its dependencies (if run in a package) or all
 yarn clean-this-package
 ```
 will clean just the current package.
-
-
-# Structure and contents of this monorepo
-
-The repo root contains the following folders and files:
-
-```bash
-.
-├── .github/         # GitHub related files, in particular CI configurations for GitHub Actions
-├── .husky/          # Husky Git hooks, e.g. for auto formatting
-├── .yarn/           # Yarn files
-├── packages/        # The actual Mangrove packages
-├── .gitattributes   # Git attributes for the whole monorepo 
-├── .gitignore       # Git ignore for the whole monorepo
-├── .yarnrc.yml      # Yarn 2 configuration
-├── LICENSES         # Overview of the licenses that apply to this repo
-├── README.md        # This README file
-├── package.json     # Package file with dependencies and scripts for the monorepo
-└── yarn.lock        # Yarn lock file ensuring consistent installs across machines
-```
 
 
 # Packages
@@ -248,24 +243,3 @@ In Yarn 1 (and Lerna) one can prevent hoisting of specific packages, but that's 
 
 ## `nodeLinker: node-modules`
 Yarn 2 has introduced an alternative to `node_modules` called "Plug'n'Play". While it sounds promising, it's not fully supported by the ecosystem and we have therefore opted to use the old approach using `node_modules`.
-
-
-# Git hooks and Husky
-We use [Husky](https://typicode.github.io/husky/#/) to manage our Git hooks.
-
-The Git hook scripts are in the `.husky/` folder.
-
-## Husky and Heroku
-
-We currently deploy several off-chain packages to Heroku. To disable Husky from running on a Heroku deploy, we use [pinst](https://github.com/typicode/pinst) package and two heroku-specific `scripts` in the top-level `package.json`:
-
-```json
-{
-  ... 
-    "heroku-postbuild": "pinst --disable && yarn build",
-    "heroku-cleanup": "pinst --enable",
-  ...
-}
-```
-
-Note that when Heroku detects a `heroku-postbuild` it [does *not* run the `build` script](https://devcenter.heroku.com/articles/nodejs-support#customizing-the-build-process), so we need to invoke that specifically.

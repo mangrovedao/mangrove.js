@@ -54,7 +54,7 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
       // Load no offers in cache
       const market = await mgv.market({
@@ -75,7 +75,7 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
       );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
       // Load 1 offer in cache
       const market = await mgv.market({
@@ -152,7 +152,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           // Load no offers in cache
           const market = await mgv.market({
@@ -177,7 +177,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           // Load 1 offer in cache
           const market = await mgv.market({
@@ -202,7 +202,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           // Load 1 offer in cache
           const market = await mgv.market({
@@ -227,7 +227,7 @@ describe("Semibook integration tests suite", function () {
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
 
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
         expect(
@@ -242,7 +242,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -261,7 +261,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -277,7 +277,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -296,7 +296,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -315,7 +315,7 @@ describe("Semibook integration tests suite", function () {
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
 
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
         expect(
@@ -330,7 +330,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -349,7 +349,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -365,7 +365,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -384,7 +384,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -420,7 +420,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({
           base: "TokenA",
@@ -441,7 +441,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({
           base: "TokenA",
@@ -468,7 +468,7 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "4" })
         );
-        await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+        await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
         const market = await mgv.market({
           base: "TokenA",
@@ -509,7 +509,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           const market = await mgv.market({
             base: "TokenA",
@@ -534,7 +534,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           const market = await mgv.market({
             base: "TokenA",
@@ -565,7 +565,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "4" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           const market = await mgv.market({
             base: "TokenA",
@@ -609,7 +609,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           const market = await mgv.market({
             base: "TokenA",
@@ -634,7 +634,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           const market = await mgv.market({
             base: "TokenA",
@@ -665,7 +665,7 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+          await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
           const market = await mgv.market({
             base: "TokenA",
@@ -757,7 +757,7 @@ describe("Semibook integration tests suite", function () {
       }
 
       // wait for offer(s) to be recorded in OB
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
 
       const market = await mgv.market({ base: base, quote: quote });
       const actualAsksMaxGasReq = await market.getBook().asks.getMaxGasReq();
