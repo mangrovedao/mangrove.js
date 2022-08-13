@@ -1,37 +1,63 @@
 /*
-Script to a write addresses for a chain to a json file (at a given path), given a foundry broadcast file.
+Enumerate distributed mangrove-solidity deployments and copy required contract (one set for each chainkey) to addresses.json.
 
-Writes a new file, if output file is not already present. If output file is found, only updates the
-values for the chain and contracts corresponding to the given argument for chainkey and the known
-names of Mangrove contracts, and leaves other key-value pairs.
+Warning: since we use foundry's broadcast logs, contract instance names are just their class names. You cannot distinguish two instances of the same contract. If you want to deploy 2 instances of a contract in a single deployment, you must create a new contract in mangrove-solidity, e.g.
+
+  contract SubA is A {}
+
 
 Args:
-  --broadcast=<path to broadcast file>
-  --chainkey=<key for chain in output json file>
-  --output=<path to output json file>
-  [--debug]
 
-  Add --debug flag to get debug output.
+  [--debug] Add --debug flag to get debug output.
+  [--noop] Do not actually update addresses.json.
 
 Example:
 
-  ts-node getMangroveAddresses.ts --broadcast ../../../packages/mangrove-solidity/dist/broadcasts/mumbai/run-latest.json --chainkey maticmum --output ../../../packages/mangrove.js/src/constants/addresses.json 
+  ts-node getMangroveAddresses.ts --noop
 */
 
 import fs from "fs";
+import path from "path";
 import minimist from "minimist";
 
-// define relevant contracts
-const coreContracts = [
-  "Mangrove",
-  "MgvCleaner",
-  "MgvReader",
-  "MgvOracle",
-  "MangroveOrder",
-  "MangroveOrderEnriched",
-];
+/* Configuration */
 
-/* broadcast logs are the form:
+const broadcastDir = path.resolve("../mangrove-solidity/dist/broadcast/");
+const addressesFile = path.resolve("src/constants/addresses.json");
+const addresses = JSON.parse(fs.readFileSync(addressesFile, "utf8"));
+const logName = "run-latest.json";
+
+const chainkeys = {
+  maticmum: [
+    "Mangrove",
+    "MgvCleaner",
+    "MgvReader",
+    "MgvOracle",
+    "MangroveOrder",
+    "MangroveOrderEnriched",
+  ],
+};
+
+/* Argument parsing */
+const args = minimist(process.argv.slice(2), {
+  boolean: ["debug", "noop"],
+  unknown: (a) => {
+    console.error(`Unexpected argument '${a}'- ignoring.`);
+    return false;
+  },
+});
+
+if (args.debug) {
+  console.debug("Args:");
+  console.debug(args);
+}
+
+/* 
+Given a broadcast file and a contract names array, return a name->address
+mapping for each contract name. Throws if != 1 address is found for each
+contract in the array.
+
+Broadcast logs are the form:
 
   transactions: [
     { 
@@ -45,20 +71,10 @@ const coreContracts = [
   ]
 
 */
-const readContractAddresses = function (
-  broadcastFile: string,
+const readBroadcast = function (
+  broadcastLog: any,
   contractNames: string[]
 ): Record<string, string> | undefined {
-  let fileData: string;
-  try {
-    fileData = fs.readFileSync(broadcastFile, "utf8");
-  } catch (e) {
-    console.warn(`Broadcast log ${broadcastFile} not found, skipping.`);
-    return undefined;
-  }
-
-  const broadcastLog = JSON.parse(fileData);
-
   const fullAddressMap: Record<string, string[]> = {};
   const addressMap: Record<string, string> = {};
 
@@ -86,74 +102,31 @@ const readContractAddresses = function (
   return addressMap;
 };
 
-// read args - and do minimal sanity checking
-const stringArgs = ["broadcast", "chainkey", "output"];
+/* Main program */
 
-const args = minimist(process.argv.slice(2), {
-  string: stringArgs,
-  boolean: ["debug"],
-  unknown: (a) => {
-    console.error(`Unexpected argument '${a}'- ignoring.`);
-    return false;
-  },
-});
-
-if (args.debug) {
-  console.debug("Args:");
-  console.debug(args);
-}
-
-const missingArgs = stringArgs.filter((name) => !(name in args));
-if (missingArgs.length > 0) {
-  console.error(`Error: Missing arguments ${missingArgs}`);
-  process.exit(1);
-}
-
-const broadcastFile: string = args["broadcast"];
-const chainkey: string = args["chainkey"];
-const outputFile: string = args["output"];
-
-// read broadcast addresses for core contracts
-const contractAddresses = readContractAddresses(broadcastFile, coreContracts);
-// if falsy value returned, skip processing
-if (contractAddresses) {
-  // read outputFile, if present
-  let oldAddresses: Record<string, {}> = {};
-  if (fs.existsSync(outputFile)) {
-    if (args.debug) {
-      console.debug(
-        `Found existing file at ${outputFile}. File will be updated.`
-      );
-    }
-
-    oldAddresses = JSON.parse(fs.readFileSync(outputFile, "utf8"));
-  } else {
-    if (args.debug) {
-      console.debug(
-        `Did not find file at ${outputFile}. File will be created.`
-      );
-    }
+for (const [chainkey, requiredContracts] of Object.entries(chainkeys)) {
+  const broadcast = path.join(broadcastDir, chainkey, logName);
+  let latestData: string;
+  try {
+    latestData = fs.readFileSync(broadcast, "utf8");
+  } catch (e) {
+    console.warn(`Could not read ${broadcast} file, skipping`);
+    continue;
   }
+  const latest = JSON.parse(latestData);
+  const chainAddresses = readBroadcast(latest, requiredContracts);
+  addresses[chainkey] = { ...addresses[chainkey], ...chainAddresses };
+}
 
-  // Overwrite info for relevant addresses for the relevant chainkey, and then write to file.
-  // (Note - we don't test whether there are actually any changes, and we always write to file, so
-  // the file timestamp will always be updated. This script is intended for CI, so it's an
-  // unnecessary hassle to actually test for changes.)
-
-  const newChainAddresses = Object.assign(
-    oldAddresses[chainkey] ?? {},
-    contractAddresses
+if (args.debug || args.noop) {
+  console.debug(
+    `New address file, which ${
+      args.noop ? "would" : "will"
+    } be written to file at ${addressesFile}:`
   );
-  const newAddresses = Object.assign(oldAddresses, {
-    [chainkey]: newChainAddresses,
-  });
+  console.dir(addresses);
+}
 
-  if (args.debug) {
-    console.debug(
-      `Constructed the following content, which will be written to file at ${outputFile}:`
-    );
-    console.dir(newAddresses);
-  }
-
-  fs.writeFileSync(outputFile, JSON.stringify(newAddresses, null, 2));
+if (!args.noop) {
+  fs.writeFileSync(addressesFile, JSON.stringify(addresses, null, 2) + "\n");
 }
