@@ -30,5 +30,3 @@ packages/mangrove-solidity/*-mumbai.sh
 
 # js tests state dumps
 **/mangroveJsTestServerState.dump
-**/broadcast/**/run-*.json
-!**/broadcast/80001/run-*.json

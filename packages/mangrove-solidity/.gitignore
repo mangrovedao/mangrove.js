@@ -8,3 +8,7 @@ out
 cache
 .env*
 
+
+# broadcast files
+**/broadcast/**/run-*.json
+!**/broadcast/**/80001/run-*.json
