@@ -1,6 +1,7 @@
 # Note: remember to `git submodule update --recursive` to pull in dependencies
 [profile.default]
 src='packages/mangrove-solidity/src'
+broadcast='packages/mangrove-solidity/broadcast'
 script='packages/mangrove-solidity/script'
 test='packages/mangrove-solidity/test'
 out='packages/mangrove-solidity/out'
