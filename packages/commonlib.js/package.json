@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/commonlib.js",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "author": "Mangrove DAO",
   "description": "Common javascript and typescript library code employed in the Mangrove mono-repo.",
   "license": "BSD-2-Clause",
@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "precommit": "lint-staged",
-    "prepack": "yarn build",
+    "prepack": "yarn run build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "build-this-package": "tsc",
     "heroku-build-this-package": "yarn run build-this-package",
@@ -22,6 +22,13 @@
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "echo TODO test $npm_package_name"
   },
+  "files": [
+    "dist/",
+    "src/",
+    "LICENSE",
+    "README.md",
+    "tsconfig.json"
+  ],
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
   },
@@ -51,7 +58,7 @@
     "prettier": "2.7.1",
     "prettier-eslint": "^15.0.1",
     "rimraf": "^3.0.2",
-    "ts-node": "^10.2.1",
-    "typescript": "^4.4.2"
+    "ts-node": "^10.9.1",
+    "typescript": "^4.7.0"
   }
 }

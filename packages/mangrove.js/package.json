@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/mangrove.js",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
@@ -10,8 +10,8 @@
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc --build src && yarn run make-cli-executable && cross-env NODE_OPTIONS=--max-old-space-size=8192 yarn run write-test-deployment-file && yarn run rollup",
-    "heroku-build-this-package": "yarn run typechain && yarn run lint && tsc --build src && yarn run rollup",
+    "build-this-package": "yarn run get-mangrove-abis && yarn run typechain && yarn run lint && tsc && yarn run make-cli-executable && cross-env NODE_OPTIONS=--max-old-space-size=8192 yarn run write-test-deployment-file && yarn run rollup",
+    "heroku-build-this-package": "yarn run typechain && yarn run lint && tsc && yarn run rollup",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
     "get-mangrove-abis": "cp node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
@@ -22,7 +22,9 @@
     "clean-typechain": "rimraf \"src/types/typechain/*\" || exit 0",
     "rollup": "rollup -c rollup.config.ts",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
-    "test": "cross-env NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=8192\" nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json --exit",
+    "test": "yarn run test:unit && yarn run test:integration",
+    "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --max-old-space-size=8192 --config test/mocha/config/integration-tests.json --exit",
+    "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/unit-tests.json --exit",
     "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
     "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts"
   },
@@ -33,6 +35,9 @@
     "README.md",
     "tsconfig.json"
   ],
+  "imports": {
+    "#package.json": "./package.json"
+  },
   "bin": {
     "mgv": "./dist/nodejs/cli/mgv.js"
   },
@@ -72,7 +77,7 @@
     "@espendk/json-file-reporter": "^1.4.2",
     "@ethersproject/abi": "^5.6.0",
     "@ethersproject/bytes": "^5.0.0",
-    "@ethersproject/hardware-wallets": "^5.6.0",
+    "@ethersproject/hardware-wallets": "^5.6.1",
     "@ethersproject/providers": "^5.6.4",
     "@mangrovedao/hardhat-utils": "workspace:*",
     "@mangrovedao/mangrove-solidity": "workspace:*",
@@ -91,7 +96,7 @@
     "@typescript-eslint/parser": "^5.22.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "chalk": "^5.0.1",
+    "chalk": "^4.1.2",
     "cross-env": "^7.0.3",
     "dir-compare": "^4.0.0",
     "docblock-parser": "^1.0.0",
@@ -114,10 +119,11 @@
     "shelljs": "^0.8.4",
     "shx": "^0.3.4",
     "ts-essentials": "^9.1.2",
-    "ts-node": "^10.7.0",
+    "ts-mockito": "^2.0.0",
+    "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
     "typedoc": "^0.22.17",
-    "typescript": "^4.4.0",
+    "typescript": "^4.7.0",
     "yargs": "^17.3.0"
   }
 }

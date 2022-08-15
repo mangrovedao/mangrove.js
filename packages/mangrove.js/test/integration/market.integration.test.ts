@@ -1,18 +1,21 @@
 // Integration tests for Market.ts
-import { describe, beforeEach, afterEach, it } from "mocha";
 import { expect } from "chai";
+import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { toWei } from "../util/helpers";
 import * as mgvTestUtil from "../util/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import assert from "assert";
-import { Mangrove, Market } from "../..";
+import { Mangrove, Market, Semibook } from "../..";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { Deferred } from "../../src/util";
 import { BigNumber, utils } from "ethers";
+import * as mockito from "ts-mockito";
+import { Bigish } from "../../dist/nodejs/types";
+import { MgvReader } from "../../src/types/typechain/MgvReader";
+import { Deferred } from "../../src/util";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -39,9 +42,11 @@ describe("Market integration tests suite", () => {
 
     await tokenA.approveMangrove({ amount: 1000 });
     await tokenB.approveMangrove({ amount: 1000 });
+    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
   });
 
   afterEach(async () => {
+    mgvTestUtil.stopPollOfTransactionTracking();
     mgv.disconnect();
   });
 
@@ -82,6 +87,507 @@ describe("Market integration tests suite", () => {
     });
   });
 
+  describe("getOutboundInbound", () => {
+    it("returns base as outbound and quote as inbound, when asks", async function () {
+      //Arrange
+      const quote = mgv.token("TokenB");
+      const base = mgv.token("TokenA");
+      //Act
+      const result = Market.getOutboundInbound("asks", base, quote);
+      //Assert
+      assert.equal(quote, result.inbound_tkn);
+      assert.equal(base, result.outbound_tkn);
+    });
+
+    it("returns base as inbound and quote as outbound, when bids", async function () {
+      //Arrange
+      const quote = mgv.token("TokenB");
+      const base = mgv.token("TokenA");
+      //Act
+      const result = Market.getOutboundInbound("bids", base, quote);
+      //Assert
+      assert.equal(base, result.inbound_tkn);
+      assert.equal(quote, result.outbound_tkn);
+    });
+
+    it("returns this.base as outbound and this.quote as inbound, when asks", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      // Act
+      const result = market.getOutboundInbound("asks");
+      // Assert
+      assert.equal(result.outbound_tkn.name, "TokenA");
+      assert.equal(result.inbound_tkn.name, "TokenB");
+    });
+
+    it("returns this.base as inbound and this.quote as outbound, when bids", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      // Act
+      const result = market.getOutboundInbound("bids");
+      // Assert
+      assert.equal(result.inbound_tkn.name, "TokenA");
+      assert.equal(result.outbound_tkn.name, "TokenB");
+    });
+  });
+
+  describe("isActive", () => {
+    it("returns true, when asks and bids are active", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const asks: Mangrove.LocalConfig = {
+        active: true,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+      const bids: Mangrove.LocalConfig = {
+        active: true,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+
+      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      // Act
+      const isActive = await market.isActive();
+      // Assert
+      expect(isActive).to.be.equal(true);
+    });
+
+    it("returns false, when asks and bids both not active", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const asks: Mangrove.LocalConfig = {
+        active: false,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+      const bids: Mangrove.LocalConfig = {
+        active: false,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+
+      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      // Act
+      const isActive = await market.isActive();
+      // Assert
+      expect(isActive).to.be.equal(false);
+    });
+
+    it("returns false, when asks is active and bids is not active", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const asks: Mangrove.LocalConfig = {
+        active: true,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+      const bids: Mangrove.LocalConfig = {
+        active: false,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+
+      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      // Act
+      const isActive = await market.isActive();
+      // Assert
+      expect(isActive).to.be.equal(false);
+    });
+
+    it("returns false, when asks is not active and bids is active", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const asks: Mangrove.LocalConfig = {
+        active: false,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+      const bids: Mangrove.LocalConfig = {
+        active: true,
+        fee: 0,
+        density: new Big(2),
+        offer_gasbase: 0,
+        lock: false,
+        best: undefined,
+        last: undefined,
+      };
+
+      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      // Act
+      const isActive = await market.isActive();
+      // Assert
+      expect(isActive).to.be.equal(false);
+    });
+  });
+
+  describe("isLive", () => {
+    it("returns true, when gives is positive", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const semiBook = mockito.mock(Semibook);
+      const ba = "asks";
+      const offerId = 23;
+      const offer: Market.Offer = {
+        id: 0,
+        prev: undefined,
+        next: undefined,
+        gasprice: 0,
+        maker: "",
+        gasreq: 0,
+        offer_gasbase: 0,
+        wants: new Big(23),
+        gives: new Big(23),
+        volume: new Big(23),
+        price: new Big(23),
+      };
+      mockito
+        .when(mockedMarket.getSemibook(ba))
+        .thenReturn(mockito.instance(semiBook));
+      mockito.when(semiBook.offerInfo(offerId)).thenResolve(offer);
+      // Act
+      const result = await market.isLive(ba, offerId);
+      // Assert
+      expect(result).to.be.equal(true);
+    });
+
+    it("returns false, when gives is negativ", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const semiBook = mockito.mock(Semibook);
+      const ba = "asks";
+      const offerId = 23;
+      const offer: Market.Offer = {
+        id: 0,
+        prev: undefined,
+        next: undefined,
+        gasprice: 0,
+        maker: "",
+        gasreq: 0,
+        offer_gasbase: 0,
+        wants: new Big(23),
+        gives: new Big(-12),
+        volume: new Big(23),
+        price: new Big(23),
+      };
+      mockito
+        .when(mockedMarket.getSemibook(ba))
+        .thenReturn(mockito.instance(semiBook));
+      mockito.when(semiBook.offerInfo(offerId)).thenResolve(offer);
+      // Act
+      const result = await market.isLive(ba, offerId);
+      // Assert
+      mockito.verify(mockedMarket.getSemibook(ba)).once();
+      expect(result).to.be.equal(false);
+    });
+  });
+
+  describe("getPivotIdTest", () => {
+    it("returns Pivot id for bids", async function () {
+      // Arrange
+      // let mgv:Mangrove | undefined =undefined;
+      // const params = { mgv: mgv!, base: "TokenA", quote: "TokenB", noInit: true };
+      // const market = await Market.connect(params);
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const semiBook = mockito.mock(Semibook);
+
+      const ba = "asks";
+      const price: Bigish = "234";
+      const pivotId: number = 231;
+      mockito
+        .when(mockedMarket.getSemibook(ba))
+        .thenReturn(mockito.instance(semiBook));
+      mockito.when(semiBook.getPivotId(price)).thenResolve(pivotId);
+
+      // Act
+      const result = await market.getPivotId(ba, price);
+      // Assert
+      mockito.verify(mockedMarket.getSemibook(ba)).once();
+      mockito.verify(semiBook.getPivotId(price)).once();
+      expect(result).to.be.equal(pivotId);
+    });
+  });
+
+  describe("getOfferProvision", () => {
+    it("returns Big number", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const mockedMgv: Mangrove = mockito.spy(mgv);
+      const mockedReader = mockito.mock<MgvReader>();
+      const ba = "asks";
+      const inBound = market.quote;
+      const outBound = market.base;
+      const gasreq = 2;
+      const gasprice = 2;
+      const fromUnits = new Big(1);
+      const prov = BigNumber.from("1000000000000000000");
+      mockito.when(mockedMarket.mgv).thenReturn(mgv);
+      mockito
+        .when(mockedMgv.readerContract)
+        .thenReturn(mockito.instance(mockedReader));
+      mockito
+        .when(
+          mockedReader.getProvision(
+            outBound.address,
+            inBound.address,
+            gasreq,
+            gasprice
+          )
+        )
+        .thenResolve(prov);
+      // Act
+      const result = await market.getOfferProvision(ba, gasreq, gasprice);
+      // Assert
+      mockito.verify(mockedMarket.getOutboundInbound(ba)).once();
+      expect(result.eq(fromUnits)).to.be.true;
+    });
+    it("return offer provision for bids", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+
+      const toBeReturned = new Big(23);
+      mockito
+        .when(
+          mockedMarket.getOfferProvision(
+            mockito.anything(),
+            mockito.anything(),
+            mockito.anything()
+          )
+        )
+        .thenResolve(toBeReturned);
+      // Act
+      const result = await market.getBidProvision(2, 2);
+      // Assert
+      mockito.verify(mockedMarket.getOfferProvision("bids", 2, 2)).once();
+      expect(result).to.be.equal(toBeReturned);
+    });
+
+    it("return offer provision for asks", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+
+      const toBeReturned = new Big(23);
+      mockito
+        .when(
+          mockedMarket.getOfferProvision(
+            mockito.anything(),
+            mockito.anything(),
+            mockito.anything()
+          )
+        )
+        .thenResolve(toBeReturned);
+      // Act
+      const result = await market.getAskProvision(2, 2);
+      // Assert
+      mockito.verify(mockedMarket.getOfferProvision("asks", 2, 2)).once();
+      expect(result).to.be.equal(toBeReturned);
+    });
+  });
+
+  describe("offerInfo", () => {
+    it("returns bids offer info", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const offer: Market.Offer = {
+        id: 0,
+        prev: undefined,
+        next: undefined,
+        gasprice: 0,
+        maker: "",
+        gasreq: 0,
+        offer_gasbase: 0,
+        wants: new Big(23),
+        gives: new Big(-12),
+        volume: new Big(23),
+        price: new Big(23),
+      };
+      mockito
+        .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
+        .thenResolve(offer);
+      // Act
+      const result = await market.bidInfo(23);
+      // Assert
+      mockito.verify(mockedMarket.offerInfo("bids", 23)).once();
+      expect(result).to.be.equal(offer);
+    });
+
+    it("returns asks offer info", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const offer: Market.Offer = {
+        id: 0,
+        prev: undefined,
+        next: undefined,
+        gasprice: 0,
+        maker: "",
+        gasreq: 0,
+        offer_gasbase: 0,
+        wants: new Big(23),
+        gives: new Big(-12),
+        volume: new Big(23),
+        price: new Big(23),
+      };
+      mockito
+        .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
+        .thenResolve(offer);
+      // Act
+      const result = await market.askInfo(23);
+      // Assert
+      mockito.verify(mockedMarket.offerInfo("asks", 23)).once();
+      expect(result).to.be.equal(offer);
+    });
+
+    it("return offer from ba semi book", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const semiBook = mockito.mock(Semibook);
+      const ba = "asks";
+      const offer: Market.Offer = {
+        id: 0,
+        prev: undefined,
+        next: undefined,
+        gasprice: 0,
+        maker: "",
+        gasreq: 0,
+        offer_gasbase: 0,
+        wants: new Big(23),
+        gives: new Big(-12),
+        volume: new Big(23),
+        price: new Big(23),
+      };
+      mockito
+        .when(mockedMarket.getSemibook(ba))
+        .thenReturn(mockito.instance(semiBook));
+      mockito.when(semiBook.offerInfo(20)).thenResolve(offer);
+
+      // Act
+      const result = await market.offerInfo(ba, 20);
+
+      // Assert
+      mockito.verify(mockedMarket.getSemibook(ba)).once();
+      mockito.verify(semiBook.offerInfo(20)).once();
+      expect(result).to.be.eq(offer);
+    });
+  });
+
+  describe("estimateVolumeTest", () => {
+    it("return estimate value for sell", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const params: Market.DirectionlessVolumeParams = {
+        what: "quote",
+        given: "",
+      };
+      const volumeEstimate: Market.VolumeEstimate = {
+        estimatedVolume: new Big(12),
+        givenResidue: new Big(12),
+      };
+      mockito
+        .when(mockedMarket.estimateVolume(mockito.anything()))
+        .thenResolve(volumeEstimate);
+
+      // Act
+      const result = await market.estimateVolumeToReceive(params);
+      const paramsUsed = mockito.capture(mockedMarket.estimateVolume).last();
+
+      // Assert
+      expect(paramsUsed[0].to).to.be.eq("sell");
+      expect(result).to.be.eq(volumeEstimate);
+    });
+
+    it("return estimate value for sell", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const params: Market.DirectionlessVolumeParams = {
+        what: "quote",
+        given: "",
+      };
+      const volumeEstimate: Market.VolumeEstimate = {
+        estimatedVolume: new Big(12),
+        givenResidue: new Big(12),
+      };
+      mockito
+        .when(mockedMarket.estimateVolume(mockito.anything()))
+        .thenResolve(volumeEstimate);
+
+      // Actƒ
+      const result = await market.estimateVolumeToReceive(params);
+      const paramsUsed = mockito.capture(mockedMarket.estimateVolume).last();
+
+      // Assert
+      expect(paramsUsed[0].to).to.be.eq("sell");
+      expect(result).to.be.eq(volumeEstimate);
+    });
+
+    it("return estimate value for buy", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const mockedMarket = mockito.spy(market);
+      const params: Market.DirectionlessVolumeParams = {
+        what: "quote",
+        given: "",
+      };
+      const volumeEstimate: Market.VolumeEstimate = {
+        estimatedVolume: new Big(12),
+        givenResidue: new Big(12),
+      };
+      mockito
+        .when(mockedMarket.estimateVolume(mockito.anything()))
+        .thenResolve(volumeEstimate);
+
+      // Act
+      const result = await market.estimateVolumeToSpend(params);
+      const paramsUsed = mockito.capture(mockedMarket.estimateVolume).last();
+
+      // Assert
+      expect(paramsUsed[0].to).to.be.eq("buy");
+      expect(result).to.be.eq(volumeEstimate);
+    });
+  });
+
   it("listens to blocks", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
     const pro = market.afterBlock(1, (n) => {});
@@ -93,6 +599,7 @@ describe("Market integration tests suite", () => {
     });
     await pro;
     await pro2;
+    //Failure for this test is a timeout, do to promises never being resolved.
   });
 
   it("subscribes", async function () {
@@ -100,8 +607,8 @@ describe("Market integration tests suite", () => {
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    let latestAsks: Market.Offer[];
-    let latestBids: Market.Offer[];
+    let latestAsks: Market.Offer[] = [];
+    let latestBids: Market.Offer[] = [];
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
       queue.put(evt);
@@ -171,7 +678,7 @@ describe("Market integration tests suite", () => {
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
-    //TODO test offerRetract, offerfail, setGasbase
+    //TODO: test offerRetract, offerFail, setGasbase
   });
 
   it("returns correct data when taking offers", async function () {
@@ -190,7 +697,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
-    await mgvTestUtil.eventsForLastTxHaveBeenGenerated;
+    await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
     const events = [await queue.get()];
     expect(events).to.have.lengthOf(1);
 
@@ -225,6 +732,162 @@ describe("Market integration tests suite", () => {
     expect(result_.successes[0].got.toNumber()).to.be.greaterThan(0);
     expect(result_.successes[0].gave.toNumber()).to.be.greaterThan(0);
     expect(result_.successes[0].offerId).to.be.equal(2);
+  });
+
+  it("buying uses best price", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+    });
+
+    const result = await market.buy(
+      { wants: 0.000000000002, gives: 10 },
+      { gasLimit: 6500000 }
+    );
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+  });
+
+  it("selling uses best price", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 2000000,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+
+    // estimated gas limit is too low, so we set it explicitly
+    const result = await market.sell(
+      { volume: "0.00000000000000001", price: null },
+      { gasLimit: 6500000 }
+    );
+
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+    expect(result.successes[0].got.toNumber()).to.be.equal(2e-13);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
+  });
+
+  it("buying offerId snipes offer", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+    });
+
+    // get not-best offer
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+    const notBest = asks[1].id;
+
+    // make a buy of the not-best offer
+    // a standard buy would give us 2e-12, but due to snipe we only get 1e-12.
+    const result = await market.buy({
+      offerId: notBest,
+      total: 1,
+      price: null,
+    });
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+
+    expect(result.successes[0].got.toNumber()).to.be.equal(1e-12);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+    expect(result.successes[0].offerId).to.be.equal(notBest);
+  });
+
+  it("selling offerId snipes offer", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 2000000,
+    });
+
+    // get not-best offer
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    market.consoleBids();
+    const bids = [...market.getBook().bids];
+    const notBest = bids[1].id;
+
+    // make a sell of the not-best offer
+    // a standard sell would give us 2e-13, but due to snipe we only get 1e-13.
+    const result = await market.sell(
+      {
+        offerId: notBest,
+        wants: "0.00000000000000001",
+        gives: "0.0000000000000001",
+      },
+      { gasLimit: 6500000 }
+    );
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+
+    expect(result.successes[0].got.toNumber()).to.be.equal(1e-13);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
+    expect(result.successes[0].offerId).to.be.equal(notBest);
   });
 
   it("gets config", async function () {
@@ -454,94 +1117,5 @@ describe("Market integration tests suite", () => {
     });
 
     await done.promise;
-  });
-});
-
-describe("Market unit tests suite", () => {
-  describe("getDisplayDecimalsForPriceDifferences", () => {
-    function makeOfferWithPrice(price: number) {
-      return {
-        id: 0,
-        prev: undefined,
-        next: undefined,
-        gasprice: 1,
-        maker: "",
-        gasreq: 1,
-        offer_gasbase: 1,
-        wants: Big(1),
-        gives: Big(1),
-        volume: Big(1),
-        price: Big(price),
-      };
-    }
-
-    function makeOffersWithPrices(...prices: number[]): Market.Offer[] {
-      return prices.map(makeOfferWithPrice);
-    }
-
-    it("returns no decimals for empty list", async function () {
-      const offers = makeOffersWithPrices();
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns no decimals for list with one offer", async function () {
-      const offers = makeOffersWithPrices(1);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns no decimals for list with offers with same price", async function () {
-      const offers = makeOffersWithPrices(1, 1);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns no decimals when price differences are integers", async function () {
-      const offers = makeOffersWithPrices(1, 2);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns one decimal when difference is 0.1", async function () {
-      const offers = makeOffersWithPrices(1, 1.1);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns one decimal when difference is 0.9999999", async function () {
-      const offers = makeOffersWithPrices(1, 1.9999999);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns one decimal when difference is -0.1", async function () {
-      const offers = makeOffersWithPrices(1, 0.9);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns one decimal when difference is -0.9999999", async function () {
-      const offers = makeOffersWithPrices(1, 0.1111111);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns 7 decimals when difference is 1e-7", async function () {
-      const offers = makeOffersWithPrices(1, 1 + 1e-7);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
-    });
-
-    it("returns 7 decimals when difference is 9e-7", async function () {
-      const offers = makeOffersWithPrices(1, 1 + 9e-7);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
-    });
-
-    it("returns 7 decimals when difference is 9e-7", async function () {
-      const offers = makeOffersWithPrices(1, 1 + 9e-7);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
-    });
-
-    it("returns the decimals for the first difference when that is smallest", async function () {
-      const offers = makeOffersWithPrices(1.19, 1.2, 1.3);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(2);
-    });
-
-    it("returns the decimals for the last difference when that is smallest", async function () {
-      const offers = makeOffersWithPrices(1.1, 1.3, 1.31);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(2);
-    });
   });
 });

@@ -13,7 +13,17 @@
     "baseUrl": ".",
     "paths": {
       "*": ["node_modules/*"]
-    }
+    },
+    "composite": true,
+    "rootDir": "src/"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../commonlib.js"
+    },
+    {
+      "path": "../mangrove.js"
+    }
+  ]
 }

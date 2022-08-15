@@ -16,7 +16,9 @@
     "paths": {
       "*": ["node_modules/*"]
     },
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "composite": true,
+    "rootDir": "src/"
   },
   "include": ["src/**/*.ts"]
 }

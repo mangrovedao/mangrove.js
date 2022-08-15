@@ -4,13 +4,28 @@
     "esModuleInterop": true,
     "lib": ["ES2020", "dom"],
     "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2020",
+    //"strict": true,
+    //"noImplicitAny": true,
+    "noErrorTruncation": true,
     "moduleResolution": "node",
-    "target": "es2015",
-    "rootDir": ".",
-    "outDir": "./dist",  // if out path for a file is same as its src path, nothing will be emitted
-    "composite": true  // required on the dependency project for references to work
+    "sourceMap": true,
+    "declaration": true,
+    "incremental": true,
+    "declarationMap": true,
+    "outDir": "./dist/nodejs", // if out path for a file is same as its src path, nothing will be emitted
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*"]
+    },
+    "composite": true,
+    "rootDir": "src/"
   },
-  "files": [         // by whitelisting the files to include, TS won't automatically
-    "package.json"   // include all source below root, which is the default.
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/*.json"],
+  "references": [
+    {
+      "path": "../commonlib.js"
+    }
   ]
 }

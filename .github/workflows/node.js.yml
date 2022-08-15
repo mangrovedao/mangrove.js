@@ -597,17 +597,30 @@ jobs:
     - name: Save status of build
       run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
 
-    # == run and report tests == 
-    - name: Mangrove.js Tests
-      run: yarn run test
+    # == run and report unit tests == 
+    - name: Mangrove.js Unit Tests
+      run: yarn run test:unit
 
-    - name: Mangrove.js Test Report
+    - name: Mangrove.js Unit Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.mangrove_js_built && (success() || failure()) }}
       with:
-        name: Mangrove.js Tests               # Name of the check run which will be created
+        name: Mangrove.js Unit Tests               # Name of the check run which will be created
+        path: ${{env.working-directory}}/unit-tests-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # == run and report integration tests == 
+    - name: Mangrove.js Integration Tests
+      run: yarn run test:integration
+
+    - name: Mangrove.js Integration Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.mangrove_js_built && (success() || failure()) }}
+      with:
+        name: Mangrove.js Integration Tests               # Name of the check run which will be created
         path: ${{env.working-directory}}/integration-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
+
 
     # save artifacts for later stages
     - name: Zip output
