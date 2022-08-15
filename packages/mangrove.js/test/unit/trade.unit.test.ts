@@ -12,9 +12,9 @@ import {
   verify,
   when,
 } from "ts-mockito";
-import { Market, MgvToken } from "../../dist/nodejs";
-import { Bigish } from "../../dist/nodejs/types";
-import Trade from "../../dist/nodejs/util/trade";
+import { Market, MgvToken } from "../../src";
+import { Bigish } from "../../src/types";
+import Trade from "../../src/util/trade"
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {

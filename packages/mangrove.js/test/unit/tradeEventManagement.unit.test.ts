@@ -4,10 +4,10 @@ import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
 import { describe, it } from "mocha";
 import { anything, instance, mock, spy, verify, when } from "ts-mockito";
-import { Market, MgvToken } from "../../dist/nodejs";
-import { OrderSummaryEvent } from "../../dist/nodejs/types/typechain/MangroveOrder";
-import TradeEventManagement from "../../dist/nodejs/util/tradeEventManagement";
-import UnitCalculations from "../../dist/nodejs/util/unitCalculations";
+import { Market, MgvToken } from "../../src";
+import { OrderSummaryEvent } from "../../src/types/typechain/MangroveOrder";
+import TradeEventManagement from "../../src/util/tradeEventManagement";
+import UnitCalculations from "../../src/util/unitCalculations";
 import {
   OfferFailEvent,
   OfferSuccessEvent,

@@ -1,7 +1,5 @@
 import assert = require("assert");
-import { Semibook } from "../../src";
-import Market from "../../src/market";
-
+import { Semibook, Market } from "../../";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
     it("returns false, when desiredVolume is undefined", async function () {
