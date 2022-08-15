@@ -960,15 +960,27 @@ jobs:
     - name: Save status of build
       run: echo "updategas_bot_built=true" >> $GITHUB_ENV    
 
-    # == run and report tests == 
-    - name: Update Gas Bot - Tests
-      run: yarn run test
+    # == run and report unit tests == 
+    - name: Update Gas Bot - Unit Tests
+      run: yarn run test:unit
 
-    - name: Update Gas Bot - Test Report
+    - name: Update Gas Bot - Unit Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.updategas_bot_built && (success() || failure()) }}
       with:
-        name: Update Gas Bot - Tests                   # Name of the check run which will be created
+        name: Update Gas Bot - Unit Tests                   # Name of the check run which will be created
+        path: packages/bot-updategas/unit-tests-report.json # Path to test results
+        reporter: mocha-json                               # Format of test results
+
+    # == run and report integration tests == 
+    - name: Update Gas Bot - Integration Tests
+      run: yarn run test:integration
+
+    - name: Update Gas Bot - Integration Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.updategas_bot_built && (success() || failure()) }}
+      with:
+        name: Update Gas Bot - Integration Tests                   # Name of the check run which will be created
         path: packages/bot-updategas/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
