@@ -1,3 +1,18 @@
+/* 
+
+This file contains the information needed to create a Toy ENS (Ethereum Name Service) contract from mangrove.js.
+The address is pre-agreed to out-of-band, and mangrove.js (see testServer.ts) will use the RPC method 'setCode' to set the code at this address. The abi allows interaction with the contract through ethers.
+
+See ToyENS.sol in mangrove-solidity: this toy ENS contract works as a bus between the deployment (that uses foundry scripts) and the testing contracts (that need to know Mangrove addresses). $
+
+Before deployment, mangrove.js creates a toy ENS at 0xdecaf000..0 and then the deploy script registers each newly created contract that that toy ENS.
+
+Note: since we know which private keys we talk to anvil with, we could compute in advance the address of the first deploy of the deployer address, then store that as the address of the toy ENS. But it seems less stable over time than just deciding once for all (arbitrarily) what the address is.
+
+TODO: a slower but maybe cleaner way would be to: 1) deploy ToyENS to any address 2) copy its code 3) setCode(ensCode) to 0xdecaf. Now the ToyENS code does not have to be stored in mangrove.js.
+
+*/
+
 export const address = "0xdecaf" + "0".repeat(35);
 
 export const abi = [
