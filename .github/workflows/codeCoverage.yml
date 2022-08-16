@@ -1,0 +1,157 @@
+name: Code Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, feature/**, issue/**, dev-solidity, dev ]
+    paths-ignore: 
+      - '**.md'
+  pull_request_target:
+    branches: [ master ]
+    types: [opened, synchronize, reopened, labeled]
+    paths-ignore: 
+      - '**.md'
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: test
+  # Ternary-esque expression hack: The first line is the condition,
+  # the 2nd line is the value if `true`, the 3rd line is the value if `false`.
+  GIT_REF_TO_TEST: >
+                   ${{  (   github.event_name != 'pull_request_target'
+                         && github.ref )
+                      || format('refs/pull/{0}/merge', github.event.number) }}
+  NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN: ${{ github.ref_name == 'master' && github.event_name != 'pull_request_target' }}
+jobs:
+
+
+  mangrove-js:
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/mangrove.js
+
+    defaults:
+      run:
+        working-directory: ${{env.working-directory}}
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v3
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    # == foundry setup ==
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+        
+    
+    # == build == 
+    - name: Mangrove.js build
+      run: yarn run build
+      env:
+        NODE_OPTIONS: "--max_old_space_size=8192"
+
+    - name: Save status of build
+      run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
+
+    # == run and report unit tests == 
+    - name: Mangrove.js Unit Tests
+      run: yarn run test:unit
+
+    - name: Mangrove.js Unit Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.mangrove_js_built && (success() || failure()) }}
+      with:
+        name: Mangrove.js Unit Tests               # Name of the check run which will be created
+        path: ${{env.working-directory}}/unit-tests-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # == run and report integration tests == 
+    - name: Mangrove.js Integration Tests
+      run: yarn run test:integration
+
+    - name: Mangrove.js Integration Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.mangrove_js_built && (success() || failure()) }}
+      with:
+        name: Mangrove.js Integration Tests               # Name of the check run which will be created
+        path: ${{env.working-directory}}/integration-tests-report.json # Path to test results
+        reporter: mocha-json                  # Format of test results
+
+    # == Send coverage report to Coveralls == 
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
+
+    # save artifacts for later stages
+    - name: Zip output
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r mangrove-js-out.zip ${{env.working-directory}}/dist
+
+    - name: Cache mangrove-js output as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mangrove-js-out.zip
+        path: mangrove-js-out.zip
+
+    - name: Zip src (some of which is generated) for doc generation
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r mangrove-js-src.zip ${{env.working-directory}}/src
+
+    - name: Cache mangrove-js-src as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mangrove-js-src.zip
+        path: mangrove-js-src.zip
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+  # ==== End job: mangrove-js ====
+
+
+  # ==== final "check" job, using alls-green to have one single job to check for green workflow ====
+  # see https://github.com/re-actors/alls-green
+
+  
