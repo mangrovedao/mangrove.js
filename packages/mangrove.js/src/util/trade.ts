@@ -160,8 +160,8 @@ class Trade {
             targets: [
               {
                 offerId: params.offerId,
-                gives: gives,
-                wants: wants,
+                takerGives: gives,
+                takerWants: wants,
                 gasLimit: null,
               },
             ],
@@ -232,8 +232,8 @@ class Trade {
             targets: [
               {
                 offerId: params.offerId,
-                gives: wants,
-                wants: gives,
+                takerGives: wants,
+                takerWants: gives,
                 gasLimit: null,
               },
             ],
@@ -252,6 +252,53 @@ class Trade {
     }
   }
 
+  /**
+   * Snipe specific offers.
+   * Params are:
+   * `targets`: an array of
+   *    `offerId`: the offer to snipe
+   *    `takerWants`: the amount of base token (buy order) or quote token (sell order) the taker wants
+   *    `takerGives`: the amount of quote token (buy order) or base token (sell order) the take gives
+   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
+   * `orderType`: whether to use the base/quote (buy) or quote/base (sell) market
+   * `fillWants?`: fillWants specifies whether you are acting as a buyer of outbound tokens, in which case you will buy at most takerWants, or a seller of inbound tokens, in which case you will buy as many tokens as possible as long as you don't spend more than takerGives.
+   */
+  snipe(
+    params: Market.SnipeParams,
+    overrides: ethers.Overrides = {},
+    market: Market
+  ): Promise<Market.OrderResult> {
+    const fillWants = "fillWants" in params ? params.fillWants : true;
+
+    const [outboundTkn, inboundTkn] =
+      params.orderType === "buy"
+        ? [market.base, market.quote]
+        : [market.quote, market.base];
+
+    const _targets = params.targets.map<{
+      offerId: ethers.BigNumberish;
+      takerWants: ethers.BigNumber;
+      takerGives: ethers.BigNumber;
+      gasLimit?: ethers.BigNumberish;
+    }>((t) => {
+      return {
+        offerId: t.offerId,
+        takerWants: outboundTkn.toUnits(t.takerWants),
+        takerGives: inboundTkn.toUnits(t.takerGives),
+        gasLimit: t.gasLimit,
+      };
+    });
+
+    return this.snipes(
+      {
+        targets: _targets,
+        fillWants: fillWants,
+        market: market,
+        orderType: params.orderType,
+      },
+      overrides
+    );
+  }
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
@@ -456,7 +503,7 @@ class Trade {
    * If `orderType` is `"buy"`, the base/quote market will be used,
    * If `orderType` is `"sell"`, the quote/base market will be used,
    *
-   * `fillWants` defines whether the market order stops immediately once `wants` tokens have been purchased or whether it tries to keep going until `gives` tokens have been spent.
+   * `fillWants` defines whether the market order stops immediately once `takerWants` tokens have been purchased or whether it tries to keep going until `takerGives` tokens have been spent.
    *
    * Returns a promise for snipes result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
@@ -470,9 +517,9 @@ class Trade {
     }: {
       targets: {
         offerId: ethers.BigNumberish;
-        wants: ethers.BigNumber;
-        gives: ethers.BigNumber;
-        gasLimit?: ethers.BigNumber;
+        takerWants: ethers.BigNumber;
+        takerGives: ethers.BigNumber;
+        gasLimit?: ethers.BigNumberish;
       }[];
       orderType: "buy" | "sell";
       fillWants: boolean;
@@ -504,11 +551,11 @@ class Trade {
       ]
     >((t) => [
       t.offerId,
-      t.wants,
-      t.gives,
+      t.takerWants,
+      t.takerGives,
       t.gasLimit ??
         overrides.gasLimit ??
-        market.estimateGas(orderType, t.wants),
+        market.estimateGas(orderType, t.takerWants),
     ]);
 
     const response = await market.mgv.contract.snipes(

@@ -117,6 +117,7 @@ describe("TradeEventManagement unit tests suite", () => {
         gave: Big(2),
         partialFill: false,
         penalty: Big(3),
+        feePaid: Big(4),
       };
       const expectedOfferId = BigNumber.from(20);
       const args: any = { restingOrderId: expectedOfferId };

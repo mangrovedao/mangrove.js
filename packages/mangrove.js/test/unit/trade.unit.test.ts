@@ -14,7 +14,7 @@ import {
 } from "ts-mockito";
 import { Market, MgvToken } from "../../src";
 import { Bigish } from "../../src/types";
-import Trade from "../../src/util/trade"
+import Trade from "../../src/util/trade";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {
