@@ -24,6 +24,7 @@
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "npm-run-all \"test:*\"",
     "test:integration": "cross-env NODE_ENV=test mocha --max-old-space-size=8192 --config test/mocha/config/integration-tests.json",
+    "test:unit": "cross-env NODE_ENV=test mocha --max-old-space-size=8192 --config test/mocha/config/unit-tests.json",
     "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
     "start": "node build/index.js",
     "local-hardhat:start-node": "hardhat node --no-deploy",
@@ -82,6 +83,7 @@
     "prettier-eslint": "^15.0.1",
     "rimraf": "^3.0.2",
     "shelljs": "^0.8.4",
+    "ts-mockito": "^2.0.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
     "typescript": "^4.7.0"
