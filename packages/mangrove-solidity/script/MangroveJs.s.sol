@@ -11,6 +11,16 @@ import {MangroveOrder} from "mgv_src/periphery/MangroveOrderEnriched.sol";
 import {SimpleTestMaker} from "mgv_test/lib/agents/TestMaker.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 
+/* 
+This script prepares a local server for testing by mangrove.js.
+
+In the future it should a) Use mostly the normal deploy file, so there is as
+little discrepancy between real deploys and deploys that mangrove.js tests
+interact with.  b) For any additional deployments needed, those files should be
+hosted in mangrove.js.
+
+*/
+
 contract MangroveJsDeploy is MangroveDeployer {
   IERC20 tokenA;
   IERC20 tokenB;
