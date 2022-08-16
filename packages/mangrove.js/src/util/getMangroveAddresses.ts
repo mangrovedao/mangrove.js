@@ -9,11 +9,11 @@ Warning: since we use foundry's broadcast logs, contract instance names are just
 Args:
 
   [--debug] Add --debug flag to get debug output.
-  [--noop] Do not actually update addresses.json.
+  [--dry-run] Do not actually update addresses.json.
 
 Example:
 
-  ts-node getMangroveAddresses.ts --noop
+  ts-node getMangroveAddresses.ts --dry-run
 */
 
 import fs from "fs";
@@ -40,7 +40,7 @@ const chainkeys = {
 
 /* Argument parsing */
 const args = minimist(process.argv.slice(2), {
-  boolean: ["debug", "noop"],
+  boolean: ["debug", "dry-run"],
   unknown: (a) => {
     console.error(`Unexpected argument '${a}'- ignoring.`);
     return false;
@@ -118,15 +118,15 @@ for (const [chainkey, requiredContracts] of Object.entries(chainkeys)) {
   addresses[chainkey] = { ...addresses[chainkey], ...chainAddresses };
 }
 
-if (args.debug || args.noop) {
+if (args.debug || args.dryRun) {
   console.debug(
     `New address file, which ${
-      args.noop ? "would" : "will"
+      args.dryRun ? "would" : "will"
     } be written to file at ${addressesFile}:`
   );
   console.dir(addresses);
 }
 
-if (!args.noop) {
+if (!args.dryRun) {
   fs.writeFileSync(addressesFile, JSON.stringify(addresses, null, 2) + "\n");
 }
