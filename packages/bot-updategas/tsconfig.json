@@ -15,7 +15,7 @@
       "*": ["node_modules/*"]
     },
     "composite": true,
-    "rootDir": "src/",
+    "rootDir": "src/"
   },
   "include": ["src/**/*.ts"],
   "references": [
@@ -23,7 +23,7 @@
       "path": "../commonlib.js"
     },
     {
-      "path": "../mangrove.js",
+      "path": "../mangrove.js"
     }
   ]
 }

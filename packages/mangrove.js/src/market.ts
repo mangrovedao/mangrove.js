@@ -467,7 +467,7 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    return this.trade.buy(params, overrides, this)
+    return this.trade.buy(params, overrides, this);
   }
 
   /**
@@ -496,9 +496,8 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    return this.trade.sell(params, overrides, this)
-  } 
-
+    return this.trade.sell(params, overrides, this);
+  }
 
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
     const semibook = bs === "buy" ? this.#asksSemibook : this.#bidsSemibook;

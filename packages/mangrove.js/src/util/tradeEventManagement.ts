@@ -17,7 +17,7 @@ class TradeEventManagement {
     this.mangroveUtils = mangroveUtils ? mangroveUtils : new UnitCalculations();
   }
 
-   createSummaryFromEvent(
+  createSummaryFromEvent(
     event: {
       args: {
         takerGot: ethers.BigNumber;
@@ -40,7 +40,7 @@ class TradeEventManagement {
     };
   }
   createSummaryFromOrderCompleteEvent(
-    evt:OrderCompleteEvent,
+    evt: OrderCompleteEvent,
     got: MgvToken,
     gave: MgvToken,
     partialFillFunc: (
@@ -51,7 +51,11 @@ class TradeEventManagement {
     return this.createSummaryFromEvent(evt, got, gave, partialFillFunc);
   }
 
-  createSuccessFromEvent(evt: OfferSuccessEvent, got: MgvToken, gave: MgvToken) {
+  createSuccessFromEvent(
+    evt: OfferSuccessEvent,
+    got: MgvToken,
+    gave: MgvToken
+  ) {
     const success = {
       offerId: evt.args.id.toNumber(),
       got: got.fromUnits(evt.args.takerWants),
@@ -60,7 +64,11 @@ class TradeEventManagement {
     return success;
   }
 
-  createTradeFailureFromEvent(evt: OfferFailEvent, got: MgvToken, gave: MgvToken) {
+  createTradeFailureFromEvent(
+    evt: OfferFailEvent,
+    got: MgvToken,
+    gave: MgvToken
+  ) {
     const tradeFailure = {
       offerId: evt.args.id.toNumber(),
       reason: evt.args.mgvData,
@@ -70,7 +78,7 @@ class TradeEventManagement {
     return tradeFailure;
   }
 
-  createPosthookFailureFromEvent(evt:  PosthookFailEvent) {
+  createPosthookFailureFromEvent(evt: PosthookFailEvent) {
     const posthookFailure = {
       offerId: evt.args.offerId.toNumber(),
       reason: evt.args.posthookData,
@@ -86,10 +94,15 @@ class TradeEventManagement {
       takerGot: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean
-  ) : Market.Summary {
-    const summary = this.createSummaryFromEvent(evt, got, gave, partialFillFunc);
+  ): Market.Summary {
+    const summary = this.createSummaryFromEvent(
+      evt,
+      got,
+      gave,
+      partialFillFunc
+    );
 
-    return { ...summary, offerId: evt.args.restingOrderId.toNumber()};
+    return { ...summary, offerId: evt.args.restingOrderId.toNumber() };
   }
 
   partialFill(
@@ -97,7 +110,7 @@ class TradeEventManagement {
     takerWants: ethers.ethers.BigNumber,
     takerGives: ethers.ethers.BigNumber
   ) {
-    return (takerGot:ethers.BigNumber, takerGave:ethers.BigNumber) =>
+    return (takerGot: ethers.BigNumber, takerGave: ethers.BigNumber) =>
       fillWants ? takerGot.lt(takerWants) : takerGave.lt(takerGives);
   }
 
@@ -109,7 +122,7 @@ class TradeEventManagement {
     takerWants: ethers.BigNumber,
     takerGives: ethers.BigNumber,
     result: Market.OrderResult,
-    market:Market
+    market: Market
   ): Market.OrderResult {
     return this.resultOfEventCore(
       evt,
@@ -125,9 +138,12 @@ class TradeEventManagement {
     evt: ethers.Event,
     got_bq: "base" | "quote",
     gave_bq: "base" | "quote",
-    partialFillFunc: (takerGot: ethers.BigNumber, takerGave: ethers.BigNumber) => boolean,
+    partialFillFunc: (
+      takerGot: ethers.BigNumber,
+      takerGave: ethers.BigNumber
+    ) => boolean,
     result: Market.OrderResult,
-    market:Market
+    market: Market
   ): Market.OrderResult {
     const got = market[got_bq];
     const gave = market[gave_bq];
@@ -142,7 +158,9 @@ class TradeEventManagement {
         return result;
       }
       case "OfferSuccess": {
-        result.successes.push(this.createSuccessFromEvent(evt as OfferSuccessEvent, got, gave));
+        result.successes.push(
+          this.createSuccessFromEvent(evt as OfferSuccessEvent, got, gave)
+        );
         return result;
       }
       case "OfferFail": {

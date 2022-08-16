@@ -325,7 +325,6 @@ class Semibook implements Iterable<Market.Offer> {
     return this.tradeManagement.isPriceWorse(price, referencePrice, this.ba);
   }
 
-
   async getMaxGasReq(): Promise<number | undefined> {
     // TODO: The implementation of the following predicate is work-in-progress
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -932,8 +931,6 @@ class Semibook implements Iterable<Market.Offer> {
           opts.desiredVolume.to === "buy"))
     );
   }
-  
-
 }
 
 class CacheIterator implements Semibook.CacheIterator {

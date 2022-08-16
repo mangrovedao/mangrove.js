@@ -178,7 +178,7 @@ describe("Semibook integration tests suite", () => {
       const mgv = await Mangrove.connect({ signer: (await deployer).signer });
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      const fee = 1
+      const fee = 1;
       const density = BigNumber.from("2000000000000000000");
       const gasbase = 3;
       const active = await waitForTransaction(
@@ -201,7 +201,7 @@ describe("Semibook integration tests suite", () => {
       );
       const config = await semibook.getConfig(active.blockNumber);
 
-      expect(config.fee ).to.be.eq(fee);
+      expect(config.fee).to.be.eq(fee);
       expect(config.density.eq(2)).to.be.eq(true);
       expect(config.offer_gasbase).to.be.eq(gasbase);
     });
@@ -211,7 +211,7 @@ describe("Semibook integration tests suite", () => {
       const mgv = await Mangrove.connect({ signer: (await deployer).signer });
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      const fee = 1
+      const fee = 1;
       const density = BigNumber.from("2000000000000000000");
       const gasbase = 3;
       await waitForTransaction(
@@ -234,7 +234,7 @@ describe("Semibook integration tests suite", () => {
       );
       const config = await semibook.getConfig();
 
-      expect(config.fee ).to.be.eq(fee);
+      expect(config.fee).to.be.eq(fee);
       expect(config.density.eq(2)).to.be.eq(true);
       expect(config.offer_gasbase).to.be.eq(gasbase);
     });
@@ -250,50 +250,52 @@ describe("Semibook integration tests suite", () => {
       );
       await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
       const bestInCache = market.getSemibook("asks").getBestInCache();
-      expect(bestInCache).to.be.undefined
-
-    })
+      expect(bestInCache).to.be.undefined;
+    });
     it("returns offer id 1, because market made after offer", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
-        );
+      );
       await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const bestInCache = market.getSemibook("asks").getBestInCache();
-      expect(bestInCache).to.be.eq(1)
-
-    })
-  } )
+      expect(bestInCache).to.be.eq(1);
+    });
+  });
 
   describe("lastReadBlockNumber", () => {
     it("returns block number of offer, when offer made before semibook/market", async function () {
       const receipt = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
-        );
+      );
       await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const lastReadBlockNumber = market.getSemibook("asks").lastReadBlockNumber();
-      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber)
-    })
+      const lastReadBlockNumber = market
+        .getSemibook("asks")
+        .lastReadBlockNumber();
+      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber);
+    });
 
     it("returns block number before offer, when offer made after semibook/market", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const receipt = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
-        );
+      );
       await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
-      const lastReadBlockNumber = market.getSemibook("asks").lastReadBlockNumber();
-      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber-1)
-    })
-  })
+      const lastReadBlockNumber = market
+        .getSemibook("asks")
+        .lastReadBlockNumber();
+      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber - 1);
+    });
+  });
 
   describe("getRawConfig", () => {
     it("returns the config of a block as Mangrove.RawConfig, when given blocknumber", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      const fee = 1
+      const fee = 1;
       const density = BigNumber.from("2000000000000000000");
       const gasbase = 3;
       const hre = require("hardhat");
@@ -320,7 +322,7 @@ describe("Semibook integration tests suite", () => {
       );
       const config = await semibook.getRawConfig(active.blockNumber);
 
-      expect(config.local.fee.toNumber() ).to.be.eq(fee);
+      expect(config.local.fee.toNumber()).to.be.eq(fee);
       expect(config.local.density.eq(density)).to.be.eq(true);
       expect(config.local.offer_gasbase.toNumber()).to.be.eq(gasbase);
     });
@@ -328,7 +330,7 @@ describe("Semibook integration tests suite", () => {
     it("returns the config of the latest block as Mangrove.RawConfig, when given no blocknumber", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
-      const fee = 1
+      const fee = 1;
       const density = BigNumber.from("2000000000000000000");
       const gasbase = 3;
       const hre = require("hardhat");
@@ -355,7 +357,7 @@ describe("Semibook integration tests suite", () => {
       );
       const config = await semibook.getConfig();
 
-      expect(config.fee ).to.be.eq(fee);
+      expect(config.fee).to.be.eq(fee);
       expect(config.density.eq(2)).to.be.eq(true);
       expect(config.offer_gasbase).to.be.eq(gasbase);
     });
@@ -1031,5 +1033,4 @@ describe("Semibook integration tests suite", () => {
       expect(actualBidsMaxGasReq).to.be.equal(expectedBidsMaxGasReq);
     });
   });
-
 });

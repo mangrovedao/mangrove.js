@@ -1,11 +1,6 @@
 import Mangrove from "@mangrovedao/mangrove.js";
 import { ContractTransaction } from "ethers";
-import {
-    anything, capture, instance,
-    mock,
-    spy,
-    when
-} from "ts-mockito";
+import { anything, capture, instance, mock, spy, when } from "ts-mockito";
 import GasHelper from "../../src/GasHelper";
 import { MgvOracle } from "../../src/types/typechain";
 import assert = require("assert");

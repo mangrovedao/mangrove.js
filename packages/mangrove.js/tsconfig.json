@@ -12,9 +12,9 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "declaration": true,
-    "incremental":true,
+    "incremental": true,
     "declarationMap": true,
-    "outDir": "./dist/nodejs",  // if out path for a file is same as its src path, nothing will be emitted
+    "outDir": "./dist/nodejs", // if out path for a file is same as its src path, nothing will be emitted
     "baseUrl": ".",
     "paths": {
       "*": ["node_modules/*"]
@@ -22,14 +22,10 @@
     "composite": true,
     "rootDir": "src/"
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/constants/*.json"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/*.json"],
   "references": [
-	  {
-		  "path": "../commonlib.js"
-	  }
-  ],
+    {
+      "path": "../commonlib.js"
+    }
+  ]
 }

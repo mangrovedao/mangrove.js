@@ -108,12 +108,12 @@ class MgvToken {
     return loadedDecimals[tokenName] as number;
   }
 
-    /**
+  /**
    * Set decimals for `tokenName` on current network.
    */
-     static setDecimals(tokenName: string, dec: number): void {
-      loadedDecimals[tokenName] = dec;
-    }
+  static setDecimals(tokenName: string, dec: number): void {
+    loadedDecimals[tokenName] = dec;
+  }
 
   /**
    * Set approval for Mangrove on `amount`.

@@ -31,7 +31,7 @@ class GasHelper {
       logger.debug(`Received this data from oracle.`, { data: data });
       const keyData = data[params.oracleURL_Key];
       logger.debug(`Received this data from oracleKey.`, { data: keyData });
-      if(!params.oracleURL_subKey) {
+      if (!params.oracleURL_subKey) {
         return keyData;
       }
       if (params.oracleURL_subKey) return keyData[params.oracleURL_subKey];

@@ -3,9 +3,7 @@ import * as ethers from "ethers";
 import Mangrove from "../mangrove";
 import { Bigish } from "../types";
 
-
 class UnitCalculations {
-
   /** Convert public token amount to internal token representation.
    *
    * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
@@ -38,7 +36,7 @@ class UnitCalculations {
    *  mgv.fromUnits("1e19",18) // 10
    *  ```
    */
-   fromUnits(
+  fromUnits(
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
@@ -55,4 +53,4 @@ class UnitCalculations {
   }
 }
 
-export default UnitCalculations
+export default UnitCalculations;

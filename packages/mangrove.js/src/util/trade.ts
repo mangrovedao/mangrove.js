@@ -9,9 +9,8 @@ import UnitCalculations from "./unitCalculations";
 
 class Trade {
   mangroveUtils = new UnitCalculations();
-  tradeEventManagement= new TradeEventManagement()
+  tradeEventManagement = new TradeEventManagement();
 
-  
   getParamsForBuy(
     params: Market.TradeParams,
     baseToken: MgvToken,
@@ -108,7 +107,6 @@ class Trade {
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
-
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    * Params can be of the form:
@@ -151,9 +149,9 @@ class Trade {
           orderType: "buy",
           fillWants,
           params: params.restingOrder,
-          market: market
+          market: market,
         },
-        overrides,
+        overrides
       );
     } else {
       if ("offerId" in params && params.offerId) {
@@ -169,9 +167,9 @@ class Trade {
             ],
             fillWants: fillWants,
             orderType: "buy",
-            market: market
+            market: market,
           },
-          overrides,
+          overrides
         );
       } else {
         return this.marketOrder(
@@ -207,7 +205,7 @@ class Trade {
   sell(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {},
-    market:Market
+    market: Market
   ): Promise<Market.OrderResult> {
     const { gives, wants, wantsWithoutSlippage, fillWants } =
       this.getParamsForSell(params, market.base, market.quote);
@@ -241,7 +239,7 @@ class Trade {
             ],
             orderType: "sell",
             fillWants: fillWants,
-            market: market
+            market: market,
           },
           overrides
         );
@@ -254,7 +252,6 @@ class Trade {
     }
   }
 
-  
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
@@ -280,12 +277,14 @@ class Trade {
       gives: ethers.BigNumber;
       orderType: "buy" | "sell";
       fillWants: boolean;
-      market:Market;
+      market: Market;
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
     const [outboundTkn, inboundTkn] =
-      orderType === "buy" ? [market.base, market.quote] : [market.quote, market.base];
+      orderType === "buy"
+        ? [market.base, market.quote]
+        : [market.quote, market.base];
 
     // user defined gasLimit overrides estimates
     if (!overrides.gasLimit) {
@@ -352,7 +351,7 @@ class Trade {
       orderType: "buy" | "sell";
       fillWants: boolean;
       params: Market.RestingOrderParams;
-      market:Market;
+      market: Market;
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
@@ -420,7 +419,7 @@ class Trade {
     wants: ethers.BigNumber,
     gives: ethers.BigNumber,
     address: string,
-    market,
+    market
   ) {
     let result: Market.OrderResult = {
       txReceipt: receipt,
@@ -451,7 +450,6 @@ class Trade {
     return result;
   }
 
-
   /**
    * Low level sniping of `targets`.
    *
@@ -463,7 +461,7 @@ class Trade {
    * Returns a promise for snipes result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
    */
-   async snipes(
+  async snipes(
     {
       targets,
       orderType,
@@ -478,12 +476,14 @@ class Trade {
       }[];
       orderType: "buy" | "sell";
       fillWants: boolean;
-      market:Market;
+      market: Market;
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
     const [outboundTkn, inboundTkn] =
-      orderType === "buy" ? [market.base, market.quote] : [market.quote, market.base];
+      orderType === "buy"
+        ? [market.base, market.quote]
+        : [market.quote, market.base];
 
     logger.debug("Creating snipes", {
       contextInfo: "market.snipes",
@@ -506,7 +506,9 @@ class Trade {
       t.offerId,
       t.wants,
       t.gives,
-      t.gasLimit ?? overrides.gasLimit ?? market.estimateGas(orderType, t.wants),
+      t.gasLimit ??
+        overrides.gasLimit ??
+        market.estimateGas(orderType, t.wants),
     ]);
 
     const response = await market.mgv.contract.snipes(
@@ -553,7 +555,6 @@ class Trade {
     }
     return result;
   }
-
 }
 
 export default Trade;

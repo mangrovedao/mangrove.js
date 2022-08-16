@@ -1,7 +1,11 @@
 import pick from "object.pick";
 import { LiquidityProvider, Market, MgvToken, OfferLogic } from ".";
 import {
-  addresses, defaultDisplayedDecimals, defaultDisplayedPriceDecimals, displayedDecimals as loadedDisplayedDecimals, displayedPriceDecimals as loadedDisplayedPriceDecimals
+  addresses,
+  defaultDisplayedDecimals,
+  defaultDisplayedPriceDecimals,
+  displayedDecimals as loadedDisplayedDecimals,
+  displayedPriceDecimals as loadedDisplayedPriceDecimals,
 } from "./constants";
 import * as eth from "./eth";
 import { Bigish, Provider, Signer, typechain } from "./types";
@@ -405,7 +409,7 @@ class Mangrove {
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
-    MgvToken.setDecimals(tokenName, dec)
+    MgvToken.setDecimals(tokenName, dec);
   }
 
   /**

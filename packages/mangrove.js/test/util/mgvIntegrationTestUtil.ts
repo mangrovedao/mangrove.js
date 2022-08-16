@@ -99,11 +99,14 @@ export enum AccountName {
   Deployer = "deployer", // Owner of deployed MGV and token contracts
   Maker = "maker", // Owner of SimpleTestMaker contract
   Cleaner = "cleaner", // Owner of cleaner EOA
-  Taker = "taker"
+  Taker = "taker",
 }
 
 export const getAccount = async (name: AccountName): Promise<Account> => {
-  const signer = name === AccountName.Taker ? (await hardhatEthers.getSigners())[0] : await hardhatEthers.getNamedSigner(name);
+  const signer =
+    name === AccountName.Taker
+      ? (await hardhatEthers.getSigners())[0]
+      : await hardhatEthers.getNamedSigner(name);
   return {
     name: name,
     address: signer.address,
@@ -227,10 +230,12 @@ export async function waitForBooksForLastTx(market: Market) {
 
 export function eventsForLastTxHaveBeenGenerated() {
   if (!eventsForLastTxHaveBeenGeneratedPromise) {
-    throw Error("call initPollOfTransactionTracking before trying to await eventsForLastTxHaveBeenGenerated");
+    throw Error(
+      "call initPollOfTransactionTracking before trying to await eventsForLastTxHaveBeenGenerated"
+    );
   }
   return eventsForLastTxHaveBeenGeneratedPromise;
-};
+}
 
 // Handler for ethers.js "poll" events:
 // "emitted during each poll cycle after `blockNumber` is updated (if changed) and
