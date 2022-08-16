@@ -120,6 +120,7 @@ function readAndValidateConfig(): OracleConfig {
   let constantOracleGasPrice: number | undefined;
   let oracleURL = "";
   let oracleURL_Key = "";
+  let oracleURL_subKey = "";
 
   if (config.has("constantOracleGasPrice")) {
     constantOracleGasPrice = config.get<number>("constantOracleGasPrice");
@@ -131,6 +132,10 @@ function readAndValidateConfig(): OracleConfig {
 
   if (config.has("oracleURL_Key")) {
     oracleURL_Key = config.get<string>("oracleURL_Key");
+  }
+
+  if (config.has("oracleURL_subKey")) {
+    oracleURL_subKey = config.get<string>("oracleURL_subKey");
   }
 
   let oracleSourceConfiguration: OracleSourceConfiguration;
@@ -154,7 +159,7 @@ function readAndValidateConfig(): OracleConfig {
       oracleURL_Key == ""
     ) {
       configErrors.push(
-        `Either 'constantOracleGasPrice' or the pair ('oracleURL', 'oracleURL_Key') must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', oracleURL: '${oracleURL}', oracleURL_Key: '${oracleURL_Key}'`
+        `Either 'constantOracleGasPrice' or the pair ('oracleURL', 'oracleURL_Key') must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', oracleURL: '${oracleURL}', oracleURL_Key: '${oracleURL_Key}', oracleURL_subKey: '${oracleURL_subKey}'`
       );
     }
     logger.info(
@@ -173,6 +178,7 @@ function readAndValidateConfig(): OracleConfig {
     oracleSourceConfiguration = {
       oracleEndpointURL: oracleURL,
       oracleEndpointKey: oracleURL_Key,
+      oracleEndpointSubKey: oracleURL_subKey,
       _tag: "Endpoint",
     };
   }

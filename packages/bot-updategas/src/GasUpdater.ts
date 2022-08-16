@@ -1,8 +1,7 @@
-import { logger } from "./util/logger";
 import Mangrove from "@mangrovedao/mangrove.js";
-import Big from "big.js";
-import get from "axios";
+import GasHelper from "./GasHelper";
 import * as typechain from "./types/typechain";
+import { logger } from "./util/logger";
 
 /**
  * Configuration for an external oracle JSON REST endpoint.
@@ -13,6 +12,7 @@ type OracleEndpointConfiguration = {
   readonly _tag: "Endpoint";
   readonly oracleEndpointURL: string;
   readonly oracleEndpointKey: string;
+  readonly oracleEndpointSubKey: string;
 };
 
 /**
@@ -42,8 +42,9 @@ export class GasUpdater {
   #constantOracleGasPrice: number | undefined;
   #oracleURL = "";
   #oracleURL_Key = "";
+  #oracleURL_subKey = "";
   oracleContract: typechain.MgvOracle;
-
+  gasHelper = new GasHelper();
 
   /**
    * Constructs a GasUpdater bot.
@@ -67,6 +68,7 @@ export class GasUpdater {
       case "Endpoint":
         this.#oracleURL = oracleSourceConfiguration.oracleEndpointURL;
         this.#oracleURL_Key = oracleSourceConfiguration.oracleEndpointKey;
+        this.#oracleURL_subKey = oracleSourceConfiguration.oracleEndpointSubKey;
         break;
       default:
         throw new Error(
@@ -74,7 +76,10 @@ export class GasUpdater {
         );
     }
     // Using the mangrove.js address functionallity, since there is no reason to recreate the significant infastructure for only one Contract.
-    const oracleAddress = Mangrove.getAddress("MgvOracle", mangrove._network.name); 
+    const oracleAddress = Mangrove.getAddress(
+      "MgvOracle",
+      mangrove._network.name
+    );
     this.oracleContract = typechain.MgvOracle__factory.connect(
       oracleAddress,
       mangrove._signer
@@ -102,116 +107,43 @@ export class GasUpdater {
 
     const currentMangroveGasPrice = globalConfig.gasprice;
 
-    const oracleGasPriceEstimate = await this.#getGasPriceEstimateFromOracle();
+    const oracleGasPriceEstimate =
+      await this.gasHelper.getGasPriceEstimateFromOracle({
+        constantGasPrice: this.#constantOracleGasPrice,
+        oracleURL: this.#oracleURL,
+        oracleURL_Key: this.#oracleURL_Key,
+        oracleURL_subKey: this.#oracleURL_subKey,
+        mangrove: this.#mangrove,
+      });
 
     if (oracleGasPriceEstimate !== undefined) {
       const [shouldUpdateGasPrice, newGasPrice] =
-        this.#shouldUpdateMangroveGasPrice(
+        this.gasHelper.shouldUpdateMangroveGasPrice(
           currentMangroveGasPrice,
-          oracleGasPriceEstimate
+          oracleGasPriceEstimate,
+          this.#acceptableGasGapToOracle
         );
 
       if (shouldUpdateGasPrice) {
         logger.debug(`Determined gas price update needed. `, {
           data: newGasPrice,
         });
-        await this.#updateMangroveGasPrice(newGasPrice);
+        await this.gasHelper.updateMangroveGasPrice(
+          newGasPrice,
+          this.oracleContract,
+          this.#mangrove
+        );
       } else {
         logger.debug(`Determined gas price update not needed.`);
       }
     } else {
       const url = this.#oracleURL;
       const key = this.#oracleURL_Key;
+      const subKey = this.#oracleURL_subKey;
       logger.error(
         "Error getting gas price from oracle endpoint, skipping update. Oracle endpoint config:",
-        { data: { url, key } }
+        { data: { url, key, subKey } }
       );
-    }
-  }
-
-  /**
-   * Either returns a constant gas price, if set, or queries a dedicated
-   * external source for gas prices.
-   * @returns {number} Promise object representing the gas price from the
-   * external oracle
-   */
-  async #getGasPriceEstimateFromOracle(): Promise<number | undefined> {
-    if (this.#constantOracleGasPrice !== undefined) {
-      logger.debug(
-        `'constantOracleGasPrice' set. Using the configured value.`,
-        { data: this.#constantOracleGasPrice }
-      );
-      return this.#constantOracleGasPrice;
-    }
-
-    try {
-      const { data } = await get(this.#oracleURL);
-      logger.debug(`Received this data from oracle.`, { data: data });
-      return data[this.#oracleURL_Key];
-    } catch (error) {
-      logger.error("Getting gas price estimate from oracle failed", {
-        mangrove: this.#mangrove,
-        data: error,
-      });
-    }
-  }
-
-  /**
-   * Compare the current Mangrove gasprice with a gas price from the external
-   * oracle, and decide whether a gas price update should be sent.
-   * @param currentGasPrice Current gas price from Mangrove config.
-   * @param oracleGasPrice Gas price from external oracle.
-   * @returns {[boolean, number]} A pair representing (1) whether the Mangrove
-   * gas price should be updated, and (2) what gas price to update to.
-   */
-  #shouldUpdateMangroveGasPrice(
-    currentGasPrice: number,
-    oracleGasPrice: number
-  ): [boolean, number] {
-    //NOTE: Very basic implementation allowing a configurable gap between
-    //      Mangrove an oracle gas price.
-    const shouldUpdate =
-      Math.abs(currentGasPrice - oracleGasPrice) >
-      this.#acceptableGasGapToOracle;
-
-    if (shouldUpdate) {
-      logger.debug(
-        `shouldUpdateMangroveGasPrice: Determined update needed - to ${oracleGasPrice}`
-      );
-      return [true, oracleGasPrice];
-    } else {
-      logger.debug(
-        `shouldUpdateMangroveGasPrice: Determined no update needed.`
-      );
-      return [false, oracleGasPrice];
-    }
-  }
-
-  /**
-   * Send a gas price update to the oracle contract, which Mangrove uses.
-   * @param newGasPrice The new gas price.
-   */
-  async #updateMangroveGasPrice(newGasPrice: number): Promise<void> {
-    logger.debug(
-      "updateMangroveGasPrice: Sending gas update to oracle contract."
-    );
-
-    try {
-      // Round to closest integer before converting to BigNumber
-      const newGasPriceRounded = Math.round(newGasPrice);
-
-      await this.oracleContract
-        .setGasPrice(newGasPriceRounded)
-        .then((tx) => tx.wait());
-
-      logger.info(
-        `Succesfully sent Mangrove gas price update to oracle: ${newGasPriceRounded}.`
-      );
-    } catch (e) {
-      logger.error("setGasprice failed", {
-        mangrove: this.#mangrove,
-        data: e,
-      });
     }
   }
 }
