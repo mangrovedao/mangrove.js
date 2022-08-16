@@ -30,7 +30,7 @@ describe("Bot integration tests", () => {
   let mgv: Mangrove;
 
   before(async function () {
-    botSigner = new ethers.Wallet(this.accounts.deployer.key);
+    botSigner = new ethers.Wallet(this.accounts.tester.key);
   });
 
   beforeEach(async function () {
