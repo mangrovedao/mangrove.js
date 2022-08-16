@@ -5,7 +5,11 @@
 
 import { config } from "./util/config";
 import { logger } from "./util/logger";
-import { GasUpdater, OracleSourceConfiguration } from "./GasUpdater";
+import {
+  GasUpdater,
+  MaxUpdateConstraint,
+  OracleSourceConfiguration,
+} from "./GasUpdater";
 
 import Mangrove from "@mangrovedao/mangrove.js";
 import { getDefaultProvider } from "@ethersproject/providers";
@@ -121,6 +125,7 @@ function readAndValidateConfig(): OracleConfig {
   let oracleURL = "";
   let oracleURL_Key = "";
   let oracleURL_subKey = "";
+  let maxUpdateConstraint: MaxUpdateConstraint = {};
 
   if (config.has("constantOracleGasPrice")) {
     constantOracleGasPrice = config.get<number>("constantOracleGasPrice");
@@ -136,6 +141,21 @@ function readAndValidateConfig(): OracleConfig {
 
   if (config.has("oracleURL_subKey")) {
     oracleURL_subKey = config.get<string>("oracleURL_subKey");
+  }
+
+  if (config.has("maxUpdateConstraint")) {
+    maxUpdateConstraint = config.get<MaxUpdateConstraint>(
+      "maxUpdateConstraint"
+    );
+  }
+
+  if (
+    maxUpdateConstraint?.constant &&
+    acceptableGasGapToOracle > maxUpdateConstraint.constant
+  ) {
+    configErrors.push(
+      "The max update constraint is lower than the acceptableGasGap. With this config, the gas price will never be updated"
+    );
   }
 
   let oracleSourceConfiguration: OracleSourceConfiguration;

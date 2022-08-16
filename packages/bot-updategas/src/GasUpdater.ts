@@ -33,6 +33,23 @@ export type OracleSourceConfiguration =
   | OracleEndpointConfiguration;
 
 /**
+ * A Max update constraint6, controls how much a gasprice can change in one transaction
+ * This can either be controlled by a procentage and/or a constant value.
+ * Percentage is given as a numnber: e.g. percentage: 80 == 80%
+ * Constant is given as a number
+ * Example:
+ * If abs(newGasPrice-oldGasPrice)>oldGasPrice*80%,
+ *  then oldGasPrice*80%+oldGasPrice
+ *  else newGasPrice
+ *
+ *  If both constant and percentage is used, the minimum gas change of the 2 is used
+ */
+export type MaxUpdateConstraint = {
+  readonly percentage?: number;
+  readonly constant?: number;
+};
+
+/**
  * A GasUpdater bot, which queries an external oracle for gas prices, and sends
  * gas price updates to Mangrove, through a dedicated oracle contract.
  */
@@ -45,6 +62,7 @@ export class GasUpdater {
   #oracleURL_subKey = "";
   oracleContract: typechain.MgvOracle;
   gasHelper = new GasHelper();
+  #maxUpdateConstraint?: MaxUpdateConstraint;
 
   /**
    * Constructs a GasUpdater bot.
@@ -56,10 +74,12 @@ export class GasUpdater {
   constructor(
     mangrove: Mangrove,
     acceptableGasGapToOracle: number,
-    oracleSourceConfiguration: OracleSourceConfiguration
+    oracleSourceConfiguration: OracleSourceConfiguration,
+    maxUpdateConstraint?: MaxUpdateConstraint
   ) {
     this.#mangrove = mangrove;
     this.#acceptableGasGapToOracle = acceptableGasGapToOracle;
+    this.#maxUpdateConstraint = maxUpdateConstraint;
 
     switch (oracleSourceConfiguration._tag) {
       case "Constant":
@@ -126,10 +146,31 @@ export class GasUpdater {
 
       if (shouldUpdateGasPrice) {
         logger.debug(`Determined gas price update needed. `, {
-          data: newGasPrice,
+          data: { newGasPrice },
         });
+        const allowedNewGasPrice =
+          this.gasHelper.calculateNewGaspriceFromConstraints(
+            newGasPrice,
+            currentMangroveGasPrice,
+            this.#maxUpdateConstraint
+          );
+        logger.debug(`Determined new gas price from max constraints. `, {
+          data: { allowedNewGasPrice },
+        });
+        const [isAllowed] = this.gasHelper.shouldUpdateMangroveGasPrice(
+          currentMangroveGasPrice,
+          allowedNewGasPrice,
+          this.#acceptableGasGapToOracle
+        );
+        if (!isAllowed) {
+          logger.error(
+            "The max update constraint is lowering/increasing the gas price, so that it is within the the acceptableGasGap"
+          );
+          return;
+        }
+
         await this.gasHelper.updateMangroveGasPrice(
-          newGasPrice,
+          allowedNewGasPrice,
           this.oracleContract,
           this.#mangrove
         );

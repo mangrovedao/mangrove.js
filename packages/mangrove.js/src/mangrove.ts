@@ -384,7 +384,6 @@ class Mangrove {
    * Read decimals for `tokenName` on given network.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  //TODO: move to MgvToken
   static getDecimals(tokenName: string): number {
     return MgvToken.getDecimals(tokenName);
   }

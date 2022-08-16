@@ -51,9 +51,14 @@ Here's an example configuration file with instances of all possible configuratio
   "logLevel": "info",
   "acceptableGasGapToOracle": 0.5,
   "constantOracleGasPrice": 3,
-  "oracleURL": "https://gasstation-mainnet.matic.network/",
+  "oracleURL": "https://gasstation-mainnet.matic.network/v2",
   "oracleURL_Key": "standard",
-  "runEveryXHours": 8
+  "oracleURL_subKey": "maxFee",
+  "runEveryXHours": 8,
+  "maxUpdateConstraint": {
+    "constant": 20,
+    "percentage": 5
+  }
 }
 ```
 
@@ -63,6 +68,10 @@ Here's an example configuration file with instances of all possible configuratio
 - `oracleURL`: URL for an external oracle - expects a JSON REST endpoint a la <https://gasstation-mainnet.matic.network/>. _This setting is only used if `constantOracleGasPrice` is not given._
 - `oracleURL_Key`: Name of key to lookup in JSON returned by JSON REST endpoint at `oracleURL`.
 - `runEveryXHours`: Schedule bot to run with an interval of this many hours.
+- `maxUpdateConstraint`:
+  If both `constant` and `percentage` is used, the minimum gas change of the 2 is used.
+  - `constant`: This sets the max change to the gas price as a constant number.
+  - `percentage`: This sets the max change to the gas price as a percentage of the current gas price.
 
 It is possible to override parts of the configuration with environment variables. This is controlled by [./config/custom-environment-variables.json](./config/custom-environment-variables.json). The structure of this file mirrors the configuration structure but with names of environment variables in the places where these can override a part of the configuration.
 

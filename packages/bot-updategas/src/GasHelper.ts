@@ -1,7 +1,7 @@
 import Mangrove from "@mangrovedao/mangrove.js";
 import { typechain } from "@mangrovedao/mangrove.js/dist/nodejs/types";
 import get from "axios";
-import { isNumberObject } from "util/types";
+import { MaxUpdateConstraint } from "./GasUpdater";
 import logger from "./util/logger";
 
 class GasHelper {
@@ -76,6 +76,81 @@ class GasHelper {
       );
       return [false, oracleGasPrice];
     }
+  }
+  /**
+   * Use the max update constraint to check if the newGasPrice is allowed.
+   * If not allowed returns the max newGasPrice
+   * @param newGasPrice The new gas price
+   * @param oldGasPrice The old gas price
+   * @param maxUpdateConstraint The update constraint for the new gas price
+   */
+
+  calculateNewGaspriceFromConstraints(
+    newGasPrice: number,
+    oldGasPrice: number,
+    maxUpdateConstraint?: MaxUpdateConstraint
+  ) {
+    if (!maxUpdateConstraint) {
+      return newGasPrice;
+    }
+    if (maxUpdateConstraint.constant && maxUpdateConstraint.percentage) {
+      const allowConstPrice = this.getAllowedConstantGasPrice(
+        maxUpdateConstraint.constant,
+        oldGasPrice,
+        newGasPrice
+      );
+      const allowPercentagePrice = this.getAllowedPercentageGasPrice(
+        maxUpdateConstraint.percentage,
+        oldGasPrice,
+        newGasPrice
+      );
+      return Math.min(allowConstPrice, allowPercentagePrice);
+    }
+    if (maxUpdateConstraint.constant) {
+      return this.getAllowedConstantGasPrice(
+        maxUpdateConstraint.constant,
+        oldGasPrice,
+        newGasPrice
+      );
+    }
+    if (maxUpdateConstraint.percentage) {
+      return this.getAllowedPercentageGasPrice(
+        maxUpdateConstraint.percentage,
+        oldGasPrice,
+        newGasPrice
+      );
+    }
+    return newGasPrice;
+  }
+
+  private getGasDiff(newGasPrice: number, oldGasPrice: number) {
+    return Math.abs(newGasPrice - oldGasPrice);
+  }
+
+  getAllowedPercentageGasPrice(
+    maxUpdatePercentage: number,
+    oldGasPrice: number,
+    newGasPrice: number
+  ) {
+    const gasDiff = this.getGasDiff(newGasPrice, oldGasPrice);
+    const gasDiffPercentage = oldGasPrice * (maxUpdatePercentage / 100);
+    const allowPercentagePrice =
+      gasDiff > gasDiffPercentage
+        ? gasDiffPercentage + oldGasPrice
+        : newGasPrice;
+    return allowPercentagePrice;
+  }
+
+  getAllowedConstantGasPrice(
+    maxUpdateConstant: number,
+    oldGasPrice: number,
+    newGasPrice: number
+  ) {
+    const gasDiff = this.getGasDiff(newGasPrice, oldGasPrice);
+    const absConstant = Math.abs(maxUpdateConstant);
+    const allowConstPrice =
+      gasDiff > absConstant ? absConstant + oldGasPrice : newGasPrice;
+    return allowConstPrice;
   }
 
   /**
