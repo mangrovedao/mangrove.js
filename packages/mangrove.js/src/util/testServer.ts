@@ -23,7 +23,7 @@ const DUMPFILE = "mangroveJsTestServerState.dump";
 import yargs from "yargs/yargs";
 
 // default first three default anvil accounts,
-// TODO once --unlocked is added to forge script: use anvil's eth_accounts return value
+// TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
 const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
 const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
   address: mnemonic.address(i),
