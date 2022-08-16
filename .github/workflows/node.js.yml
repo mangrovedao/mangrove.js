@@ -621,6 +621,12 @@ jobs:
         path: ${{env.working-directory}}/integration-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
 
+    # == Send coverage report to Coveralls ==
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
 
     # save artifacts for later stages
     - name: Zip output
