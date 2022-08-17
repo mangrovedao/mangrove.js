@@ -474,7 +474,6 @@ class Market {
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
-  //TODO: move all trade methods to new Trade.ts
   buy(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}

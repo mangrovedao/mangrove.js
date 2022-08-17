@@ -1,9 +1,18 @@
 import Mangrove from "@mangrovedao/mangrove.js";
 import { ContractTransaction } from "ethers";
-import { anything, capture, instance, mock, spy, when } from "ts-mockito";
+import { describe, it } from "mocha";
+import {
+  anything,
+  capture,
+  instance,
+  mock,
+  spy,
+  verify,
+  when,
+} from "ts-mockito";
 import GasHelper from "../../src/GasHelper";
 import { MgvOracle } from "../../src/types/typechain";
-import assert = require("assert");
+import assert from "assert";
 
 describe("GasHelper unit test suite", () => {
   describe("getGasPriceEstimateFromOracle", () => {
@@ -153,6 +162,219 @@ describe("GasHelper unit test suite", () => {
 
       //Assert
       assert.equal(params, Math.round(newGasPrice));
+    });
+  });
+
+  describe("calculateNewGaspriceFromConstriants", () => {
+    it("returns new gas price, when max update constraint is undefined", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+
+      //Act
+      const result = gasHelper.calculateNewGaspriceFromConstraints(20, 30);
+
+      //Assert
+      assert.equal(result, 20);
+    });
+
+    it("returns min of allowed constant price and percentage price, when max update constraint has both constant and percentage", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const spyGasHelper = spy(gasHelper);
+      const maxUpdateConstraint = {
+        constant: 2,
+        percentage: 5,
+      };
+      const newGasPrice = 20;
+      const oldGasPrice = 30;
+      when(
+        spyGasHelper.getAllowedConstantGasPrice(
+          maxUpdateConstraint.constant,
+          oldGasPrice,
+          newGasPrice
+        )
+      ).thenReturn(5);
+      when(
+        spyGasHelper.getAllowedPercentageGasPrice(
+          maxUpdateConstraint.percentage,
+          oldGasPrice,
+          newGasPrice
+        )
+      ).thenReturn(6);
+
+      //Act
+      const result = gasHelper.calculateNewGaspriceFromConstraints(
+        newGasPrice,
+        oldGasPrice,
+        maxUpdateConstraint
+      );
+
+      //Assert
+      verify(
+        spyGasHelper.getAllowedConstantGasPrice(
+          maxUpdateConstraint.constant,
+          oldGasPrice,
+          newGasPrice
+        )
+      ).once();
+      verify(
+        spyGasHelper.getAllowedPercentageGasPrice(
+          maxUpdateConstraint.percentage,
+          oldGasPrice,
+          newGasPrice
+        )
+      ).once();
+      assert.equal(result, 5);
+    });
+
+    it("returns allowed constant price , when max update constraint has constant and not percentage", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const spyGasHelper = spy(gasHelper);
+      const maxUpdateConstraint = {
+        constant: 2,
+      };
+      const newGasPrice = 20;
+      const oldGasPrice = 30;
+      when(
+        spyGasHelper.getAllowedConstantGasPrice(
+          maxUpdateConstraint.constant,
+          oldGasPrice,
+          newGasPrice
+        )
+      ).thenReturn(5);
+
+      //Act
+      const result = gasHelper.calculateNewGaspriceFromConstraints(
+        newGasPrice,
+        oldGasPrice,
+        maxUpdateConstraint
+      );
+
+      //Assert
+      assert.equal(result, 5);
+    });
+
+    it("returns allowed percentage price, when max update constraint percentage and not constant", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const spyGasHelper = spy(gasHelper);
+      const maxUpdateConstraint = {
+        percentage: 5,
+      };
+      const newGasPrice = 20;
+      const oldGasPrice = 30;
+      when(
+        spyGasHelper.getAllowedPercentageGasPrice(
+          maxUpdateConstraint.percentage,
+          oldGasPrice,
+          newGasPrice
+        )
+      ).thenReturn(6);
+
+      //Act
+      const result = gasHelper.calculateNewGaspriceFromConstraints(
+        newGasPrice,
+        oldGasPrice,
+        maxUpdateConstraint
+      );
+
+      //Assert
+      assert.equal(result, 6);
+    });
+
+    it("returns new gas price, when max update constraint is empty", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const maxUpdateConstraint = {};
+      const newGasPrice = 20;
+      const oldGasPrice = 30;
+
+      //Act
+      const result = gasHelper.calculateNewGaspriceFromConstraints(
+        newGasPrice,
+        oldGasPrice,
+        maxUpdateConstraint
+      );
+
+      //Assert
+      assert.equal(result, 20);
+    });
+  });
+
+  describe("getAllowedPercentageGasPrice", () => {
+    it(" returns new gas price, when percentage constraint is higher than gas diff", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const percentage = 5;
+      const newGasPrice = 104;
+      const oldGasPrice = 100;
+
+      //Act
+      const result = gasHelper.getAllowedPercentageGasPrice(
+        percentage,
+        oldGasPrice,
+        newGasPrice
+      );
+
+      //Assert
+      assert.equal(result, newGasPrice);
+    });
+
+    it(" returns percentage of old gas price, when percentage constraint is lower than gas diff", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const percentage = 5;
+      const newGasPrice = 106;
+      const oldGasPrice = 100;
+
+      //Act
+      const result = gasHelper.getAllowedPercentageGasPrice(
+        percentage,
+        oldGasPrice,
+        newGasPrice
+      );
+
+      //Assert
+      assert.equal(result, oldGasPrice * (percentage / 100) + oldGasPrice);
+    });
+  });
+
+  describe("getAllowedConstantGasPrice", () => {
+    it(" returns new gas price, when constant constraint is higher than gas diff", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const constant = 5;
+      const newGasPrice = 104;
+      const oldGasPrice = 100;
+
+      //Act
+      const result = gasHelper.getAllowedConstantGasPrice(
+        constant,
+        oldGasPrice,
+        newGasPrice
+      );
+
+      //Assert
+      assert.equal(result, newGasPrice);
+    });
+
+    it(" returns constant + old gas price, when constant constraint is lower than gas diff", async function () {
+      //Arrange
+      const gasHelper = new GasHelper();
+      const constant = 5;
+      const newGasPrice = 106;
+      const oldGasPrice = 100;
+
+      //Act
+      const result = gasHelper.getAllowedConstantGasPrice(
+        constant,
+        oldGasPrice,
+        newGasPrice
+      );
+
+      //Assert
+      assert.equal(result, oldGasPrice + constant);
     });
   });
 });

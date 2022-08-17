@@ -44,7 +44,7 @@ class Trade {
       fillWants: fillWants,
     };
   }
-  // TODO: trade related
+
   getParamsForSell(
     params: Market.TradeParams,
     baseToken: MgvToken,
