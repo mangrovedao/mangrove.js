@@ -842,17 +842,30 @@ jobs:
     - name: Save status of build
       run: echo "cleaning_bot_built=true" >> $GITHUB_ENV    
 
-    # == run and report tests == 
-    - name: Cleaning Bot - Tests
-      run: yarn run test
+    # == run and report unit tests == 
+    - name: Cleaning Bot - Unit Tests
+      run: yarn run test:unit
 
-    - name: Cleaning Bot - Test Report
+    - name: Cleaning Bot - Unit Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.cleaning_bot_built && (success() || failure()) }}
+      with:
+        name: Cleaning Bot - Tests                   # Name of the check run which will be created
+        path: packages/bot-cleaning/unit-tests-report.json # Path to test results
+        reporter: mocha-json                               # Format of test results
+
+     # == run and report integration tests == 
+    - name: Cleaning Bot - Integration Tests
+      run: yarn run test:integration
+
+    - name: Cleaning Bot - Integration Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.cleaning_bot_built && (success() || failure()) }}
       with:
         name: Cleaning Bot - Tests                   # Name of the check run which will be created
         path: packages/bot-cleaning/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+
 
     # == Send coverage report to Coveralls == 
     - name: Coveralls
@@ -996,7 +1009,7 @@ jobs:
         name: Update Gas Bot - Integration Tests                   # Name of the check run which will be created
         path: packages/bot-updategas/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
-        
+
     # == Send coverage report to Coveralls == 
     - name: Coveralls
       uses: coverallsapp/github-action@master
@@ -1122,17 +1135,37 @@ jobs:
     - name: Save status of build
       run: echo "bot_maker_noise_built=true" >> $GITHUB_ENV    
 
-    # == run and report tests == 
-    - name: Noise Maker Bot - Tests
-      run: yarn run test
+    # == run and report unit tests == 
+    - name: Noise Maker Bot - Unit Tests
+      run: yarn run test:unit
 
-    - name: Noise Maker Bot - Test Report
+    - name: Noise Maker Bot - Unit Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_maker_noise_built && (success() || failure()) }}
       with:
-        name: Noise Maker Bot - Tests                                # Name of the check run which will be created
+        name: Noise Maker Bot - Unit Tests                                # Name of the check run which will be created
+        path: packages/bot-maker-noise/unit-tests-report.json # Path to test results
+        reporter: mocha-json                                         # Format of test results
+
+    # == run and report integration tests == 
+    - name: Noise Maker Bot - Integration Tests
+      run: yarn run test:integration
+
+    - name: Noise Maker Bot - Integration Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.bot_maker_noise_built && (success() || failure()) }}
+      with:
+        name: Noise Maker Bot - Integration Tests                                # Name of the check run which will be created
         path: packages/bot-maker-noise/integration-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
+        
+    # == Send coverage report to Coveralls == 
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1251,17 +1284,37 @@ jobs:
     - name: Save status of build
       run: echo "bot_taker_greedy_built=true" >> $GITHUB_ENV    
 
-    # == run and report tests == 
-    - name: Greedy Taker Bot - Tests
-      run: yarn run test
+    # == run and report unit tests == 
+    - name: Greedy Taker Bot - Unit Tests
+      run: yarn run test:unit
 
-    - name: Greedy Taker Bot - Test Report
+    - name: Greedy Taker Bot - Unit Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_taker_greedy_built && (success() || failure()) }}
       with:
-        name: Greedy Taker Bot - Tests                                # Name of the check run which will be created
+        name: Greedy Taker Bot - Unit Tests                                # Name of the check run which will be created
+        path: packages/bot-taker-greedy/unit-tests-report.json # Path to test results
+        reporter: mocha-json                                          # Format of test results
+
+    # == run and report integration tests == 
+    - name: Greedy Taker Bot - Integration Tests
+      run: yarn run test:integration
+
+    - name: Greedy Taker Bot - Integration Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.bot_taker_greedy_built && (success() || failure()) }}
+      with:
+        name: Greedy Taker Bot - Integration Tests                                # Name of the check run which will be created
         path: packages/bot-taker-greedy/integration-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
+    
+    # == Send coverage report to Coveralls == 
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1380,17 +1433,37 @@ jobs:
     - name: Save status of build
       run: echo "template_bot_built=true" >> $GITHUB_ENV    
 
-    # == run and report tests == 
-    - name: Template Bot - Tests
-      run: yarn run test
+    # == run and report unit tests == 
+    - name: Template Bot - Unit Tests
+      run: yarn run test:unit
 
-    - name: Template Bot - Test Report
+    - name: Template Bot - Unit Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.template_bot_built && (success() || failure()) }}
       with:
-        name: Template Bot - Tests                   # Name of the check run which will be created
+        name: Template Bot - Unit Tests                   # Name of the check run which will be created
+        path: packages/bot-template/unit-tests-report.json # Path to test results
+        reporter: mocha-json                               # Format of test results
+
+    # == run and report integration tests == 
+    - name: Template Bot - Integration Tests
+      run: yarn run test:integration
+
+    - name: Template Bot - Integration Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.template_bot_built && (success() || failure()) }}
+      with:
+        name: Template Bot - Integration Tests                   # Name of the check run which will be created
         path: packages/bot-template/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+
+    # == Send coverage report to Coveralls == 
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
