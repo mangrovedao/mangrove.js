@@ -153,6 +153,7 @@ jobs:
   # ==== final "check" job, using alls-green to have one single job to check for green workflow ====
   # see https://github.com/re-actors/alls-green
   finish:
+    needs: mangrove-js
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
