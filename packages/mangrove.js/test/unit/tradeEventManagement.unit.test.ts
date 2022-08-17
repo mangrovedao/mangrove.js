@@ -28,6 +28,7 @@ describe("TradeEventManagement unit tests suite", () => {
           takerGot: BigNumber.from(10),
           takerGave: BigNumber.from(20),
           penalty: BigNumber.from(1),
+          feePaid: BigNumber.from(2),
         },
       };
 
@@ -36,8 +37,12 @@ describe("TradeEventManagement unit tests suite", () => {
       const expectedPenalty = Big(10000);
       const expectedGot = Big(evt.args.takerGot.toNumber());
       const expectedGave = Big(evt.args.takerGave.toNumber());
+      const expectedFeePaid = Big(evt.args.feePaid.toNumber());
       when(mockedUnitCalculations.fromUnits(evt.args.penalty, 18)).thenReturn(
         expectedPenalty
+      );
+      when(mockedUnitCalculations.fromUnits(evt.args.feePaid, 18)).thenReturn(
+        expectedFeePaid
       );
       when(gotToken.fromUnits(evt.args.takerGot)).thenReturn(expectedGot);
       when(gaveToken.fromUnits(evt.args.takerGave)).thenReturn(expectedGave);
@@ -59,6 +64,7 @@ describe("TradeEventManagement unit tests suite", () => {
       assert.equal(result.gave, expectedGave);
       assert.equal(result.partialFill, true);
       assert.equal(result.penalty, expectedPenalty);
+      assert.equal(result.feePaid, expectedFeePaid);
     });
   });
 

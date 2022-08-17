@@ -924,7 +924,7 @@ describe("Market integration tests suite", () => {
 
     // use wants/gives from offer to verify unit conversion
     const result = await market.snipe({
-      orderType: "buy",
+      ba: "asks",
       targets: [
         {
           offerId: asks[1].id,
@@ -982,7 +982,7 @@ describe("Market integration tests suite", () => {
 
     // use wants/gives from offer to verify unit conversion
     const result = await market.snipe({
-      orderType: "sell",
+      ba: "bids",
       targets: [
         {
           offerId: bids[1].id,
@@ -1035,7 +1035,7 @@ describe("Market integration tests suite", () => {
     const asks = [...market.getBook().asks];
 
     const result = await market.snipe({
-      orderType: "buy",
+      ba: "asks",
       targets: [
         {
           offerId: asks[0].id,

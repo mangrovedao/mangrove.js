@@ -166,7 +166,7 @@ class Trade {
               },
             ],
             fillWants: fillWants,
-            orderType: "buy",
+            ba: "asks",
             market: market,
           },
           overrides
@@ -237,7 +237,7 @@ class Trade {
                 gasLimit: null,
               },
             ],
-            orderType: "sell",
+            ba: "bids",
             fillWants: fillWants,
             market: market,
           },
@@ -257,29 +257,29 @@ class Trade {
    * Params are:
    * `targets`: an array of
    *    `offerId`: the offer to snipe
-   *    `takerWants`: the amount of base token (buy order) or quote token (sell order) the taker wants
-   *    `takerGives`: the amount of quote token (buy order) or base token (sell order) the take gives
+   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
+   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
    *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `orderType`: whether to use the base/quote (buy) or quote/base (sell) market
-   * `fillWants?`: fillWants specifies whether you are acting as a buyer of outbound tokens, in which case you will buy at most takerWants, or a seller of inbound tokens, in which case you will buy as many tokens as possible as long as you don't spend more than takerGives.
+   * `ba`: whether to snipe `asks` or `bids`
+   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
    */
   snipe(
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {},
     market: Market
   ): Promise<Market.OrderResult> {
-    const fillWants = "fillWants" in params ? params.fillWants : true;
+    const fillWants = params.fillWants ?? true;
 
     const [outboundTkn, inboundTkn] =
-      params.orderType === "buy"
+      params.ba === "asks"
         ? [market.base, market.quote]
         : [market.quote, market.base];
 
     const _targets = params.targets.map<{
-      offerId: ethers.BigNumberish;
+      offerId: number;
       takerWants: ethers.BigNumber;
       takerGives: ethers.BigNumber;
-      gasLimit?: ethers.BigNumberish;
+      gasLimit?: number;
     }>((t) => {
       return {
         offerId: t.offerId,
@@ -294,7 +294,7 @@ class Trade {
         targets: _targets,
         fillWants: fillWants,
         market: market,
-        orderType: params.orderType,
+        ba: params.ba,
       },
       overrides
     );
@@ -497,6 +497,10 @@ class Trade {
     return result;
   }
 
+  baToBs(ba: "asks" | "bids"): "buy" | "sell" {
+    return ba === "asks" ? "buy" : "sell";
+  }
+
   /**
    * Low level sniping of `targets`.
    *
@@ -511,26 +515,24 @@ class Trade {
   async snipes(
     {
       targets,
-      orderType,
+      ba,
       fillWants,
       market,
     }: {
       targets: {
-        offerId: ethers.BigNumberish;
+        offerId: number;
         takerWants: ethers.BigNumber;
         takerGives: ethers.BigNumber;
-        gasLimit?: ethers.BigNumberish;
+        gasLimit?: number;
       }[];
-      orderType: "buy" | "sell";
+      ba: "asks" | "bids";
       fillWants: boolean;
       market: Market;
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
     const [outboundTkn, inboundTkn] =
-      orderType === "buy"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
+      ba === "asks" ? [market.base, market.quote] : [market.quote, market.base];
 
     logger.debug("Creating snipes", {
       contextInfo: "market.snipes",
@@ -555,7 +557,7 @@ class Trade {
       t.takerGives,
       t.gasLimit ??
         overrides.gasLimit ??
-        market.estimateGas(orderType, t.takerWants),
+        market.estimateGas(this.baToBs(ba), t.takerWants),
     ]);
 
     const response = await market.mgv.contract.snipes(
@@ -580,8 +582,8 @@ class Trade {
       contextInfo: "market.snipes",
       data: { receipt: receipt },
     });
-    const got_bq = orderType === "buy" ? "base" : "quote";
-    const gave_bq = orderType === "buy" ? "quote" : "base";
+    const got_bq = ba === "asks" ? "base" : "quote";
+    const gave_bq = ba === "asks" ? "quote" : "base";
     for (const evt of receipt.events) {
       if (
         evt.address === market.mgv._address &&
