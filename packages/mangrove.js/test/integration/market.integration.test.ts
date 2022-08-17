@@ -764,7 +764,7 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
-    // expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0); - we don't have fees setup
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
   });
 
   it("selling uses best price", async function () {
@@ -944,8 +944,10 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(2);
 
-    expect(result.summary.got.toNumber()).to.be.equal(3e-12);
+    // 5% fee configured in integration-test-root-hooks.js
+    expect(result.summary.got.toNumber()).to.be.equal(0.95 * 3e-12);
     expect(result.summary.gave.toNumber()).to.be.equal(2e-18);
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
   });
 
   it("snipe bids book for two successful orders succeeds", async function () {
@@ -1002,7 +1004,8 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(2);
 
-    expect(result.summary.got.toNumber()).to.be.equal(3e-12);
+    // 5% fee configured in integration-test-root-hooks.js
+    expect(result.summary.got.toNumber()).to.be.equal(3e-12 * 0.95);
     expect(result.summary.gave.toNumber()).to.be.equal(2e-16);
   });
 
