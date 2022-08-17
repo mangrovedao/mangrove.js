@@ -1,7 +1,7 @@
 {
   "require": [
     "ts-node/register",
-    "@mangrovedao/mangrove.js/dist/nodejs/util/mochaHooks.js"
+    "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks.js"
   ],
   "recursive": true,
   "spec": "test/integration/*integration.tests.{js,cjs,mjs,ts}",

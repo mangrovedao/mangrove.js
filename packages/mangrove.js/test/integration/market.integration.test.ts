@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { toWei } from "../util/helpers";
-import * as mgvTestUtil from "../../src/util/mgvIntegrationTestUtil";
+import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import assert from "assert";

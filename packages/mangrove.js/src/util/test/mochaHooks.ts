@@ -1,6 +1,6 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
-import { testServer, Mangrove } from "..";
+import { testServer, Mangrove } from "../..";
 
 const params = {
   host: "127.0.0.1",

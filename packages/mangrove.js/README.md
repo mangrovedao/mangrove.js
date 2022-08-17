@@ -368,7 +368,7 @@ yarn test -- -g 'subscribes'
 
 Tests are based on [Mocha](https://mochajs.org/). Mocha configuration can be found in `./test/mocha/config`.
 
-The integration tests use the Root Hooks provided by `src/util/mochaHooks.ts`, which spawn an anvil process with Mangrove deployed and add information to the `server` and `accounts` properties of the Mocha `Context`.
+The integration tests use the Root Hooks provided by `src/util/test/mochaHooks.ts`, which spawn an anvil process with Mangrove deployed and add information to the `server` and `accounts` properties of the Mocha `Context`.
 
 ## Build for Node.js & Web Browser
 

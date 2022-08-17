@@ -10,8 +10,8 @@ const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
 import { ethers } from "ethers";
-import * as eth from "../eth";
-import { Mangrove } from "../";
+import * as eth from "../../eth";
+import { Mangrove } from "../..";
 import * as ToyENS from "./ToyENSCode";
 
 const DEFAULT_HOST = "127.0.0.1";

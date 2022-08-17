@@ -15,8 +15,8 @@ import OfferLogic from "./offerLogic";
 import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
 import AaveV3Module from "./aaveV3Module";
-import testServer from "./util/testServer";
-import * as mgvTestUtil from "./util/mgvIntegrationTestUtil";
+import testServer from "./util/test/testServer";
+import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);

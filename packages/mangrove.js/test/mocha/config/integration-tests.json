@@ -1,5 +1,5 @@
 {
-  "require": ["ts-node/register", "src/util/mochaHooks.ts"],
+  "require": ["ts-node/register", "src/util/test/mochaHooks.ts"],
   "recursive": true,
   "spec": "test/integration/*integration.test.ts",
   "timeout": 60000,

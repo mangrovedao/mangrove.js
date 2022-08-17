@@ -1,10 +1,10 @@
 // TODO do not distribute in browser version
 // Utility functions for writing integration tests against Mangrove.
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import { Market, MgvToken, Mangrove } from "..";
-import * as typechain from "../types/typechain";
+import { Market, MgvToken, Mangrove } from "../..";
+import * as typechain from "../../types/typechain";
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
-import { Deferred } from "../util";
+import { Deferred } from "../../util";
 
 export type Account = {
   name: string;
