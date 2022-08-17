@@ -609,6 +609,14 @@ jobs:
         path: ${{env.working-directory}}/unit-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
 
+    # == Send unit coverage report to Coveralls == 
+    - name: Coveralls unit
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/unit/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
+
     # == run and report integration tests == 
     - name: Mangrove.js Integration Tests
       run: yarn run test:integration
@@ -620,7 +628,15 @@ jobs:
         name: Mangrove.js Integration Tests               # Name of the check run which will be created
         path: ${{env.working-directory}}/integration-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
-    
+
+     # == Send integration coverage report to Coveralls == 
+    - name: Coveralls integration
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/integration/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
+        
     # save artifacts for later stages
     - name: Zip output
       uses: montudor/action-zip@v1
@@ -848,6 +864,14 @@ jobs:
         path: packages/bot-cleaning/unit-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
+    # == Send unit coverage report to Coveralls == 
+    - name: Coveralls unit
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/unit/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
+
      # == run and report integration tests == 
     - name: Cleaning Bot - Integration Tests
       run: yarn run test:integration
@@ -860,8 +884,13 @@ jobs:
         path: packages/bot-cleaning/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
-
-    
+    # == Send integration coverage report to Coveralls == 
+    - name: Coveralls integration
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/integration/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -986,6 +1015,14 @@ jobs:
         path: packages/bot-updategas/unit-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
+    # == Send unit coverage report to Coveralls == 
+    - name: Coveralls unit
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/unit/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
+
     # == run and report integration tests == 
     - name: Update Gas Bot - Integration Tests
       run: yarn run test:integration
@@ -998,7 +1035,13 @@ jobs:
         path: packages/bot-updategas/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
-    
+    # == Send integration coverage report to Coveralls == 
+    - name: Coveralls integration
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/integration/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1128,6 +1171,14 @@ jobs:
         name: Noise Maker Bot - Unit Tests                                # Name of the check run which will be created
         path: packages/bot-maker-noise/unit-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
+    
+    # == Send unit coverage report to Coveralls == 
+    - name: Coveralls unit
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/unit/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     # == run and report integration tests == 
     - name: Noise Maker Bot - Integration Tests
@@ -1141,7 +1192,13 @@ jobs:
         path: packages/bot-maker-noise/integration-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
         
-    
+    # == Send integration coverage report to Coveralls == 
+    - name: Coveralls integration
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/integration/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1272,6 +1329,14 @@ jobs:
         path: packages/bot-taker-greedy/unit-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
 
+    # == Send unit coverage report to Coveralls == 
+    - name: Coveralls unit
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/unit/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
+
     # == run and report integration tests == 
     - name: Greedy Taker Bot - Integration Tests
       run: yarn run test:integration
@@ -1284,7 +1349,13 @@ jobs:
         path: packages/bot-taker-greedy/integration-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
     
-    
+    # == Send integration coverage report to Coveralls == 
+    - name: Coveralls integration
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/integration/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1414,6 +1485,14 @@ jobs:
         name: Template Bot - Unit Tests                   # Name of the check run which will be created
         path: packages/bot-template/unit-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+      
+    # == Send unit coverage report to Coveralls == 
+    - name: Coveralls unit
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/unit/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     # == run and report integration tests == 
     - name: Template Bot - Integration Tests
@@ -1427,7 +1506,13 @@ jobs:
         path: packages/bot-template/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
-    
+    # == Send integration coverage report to Coveralls == 
+    - name: Coveralls integration
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/test/integration/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1439,74 +1524,6 @@ jobs:
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-template ====
-
-  code-coverage:
-
-    needs:
-    - security-guard
-    - mangrove-solidity
-    - commonlib-js
-    - faucet
-    - hardhat-utils
-    - mangrove-solidity-doc
-    - mangrove-js
-    - mangrove-js-doc
-    - bot-cleaning
-    - bot-maker-noise
-    - bot-taker-greedy
-    - bot-template
-    - bot-updategas
-
-    runs-on: ubuntu-latest
-
-    env:
-      working-directory: .
-
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}
-
-    strategy:
-      matrix:
-        node-version: [14.x]
-
-    steps:
-
-    # == Git checkout ==
-    - name: Checkout
-      uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
-
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-
-    # == yarn setup ==
-    - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-        
-    - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
-
-
-    - name: Merge code coverage files
-      run: yarn run coverage
-  
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        path-to-lcov: ./merged.info
-
 
   # ==== final "check" job, using alls-green to have one single job to check for green workflow ====
   # see https://github.com/re-actors/alls-green
@@ -1528,12 +1545,10 @@ jobs:
     - bot-taker-greedy
     - bot-template
     - bot-updategas
-    - code-coverage
 
     runs-on: ubuntu-latest
 
     steps:
-    
     - name: Decide whether the needed jobs succeeded or failed
       uses: re-actors/alls-green@release/v1
       with:
