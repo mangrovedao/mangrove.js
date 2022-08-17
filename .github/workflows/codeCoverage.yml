@@ -110,11 +110,12 @@ jobs:
         reporter: mocha-json                  # Format of test results
 
     # == Send coverage report to Coveralls == 
+    - name: make test coverage
+      run: make test-coverage
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
 
     # save artifacts for later stages
     - name: Zip output
