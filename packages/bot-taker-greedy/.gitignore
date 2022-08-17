@@ -4,4 +4,6 @@ build/
 static/environmentInformation.json
 .env.local
 .env.*.local
+.nyc_output/
+coverage/
 tsconfig.tsbuildinfo
