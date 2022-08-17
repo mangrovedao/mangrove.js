@@ -14,7 +14,7 @@
         "build": "yarn install && yarn workspaces foreach --topological-dev run build-this-package",
         "clean": "yarn workspaces foreach --topological-dev run clean-this-package",
         "test": "yarn workspaces foreach --topological-dev run test",
-        "coverage": "yarn run lcov-result-merger 'packages/*/coverage/*' 'merged.info' --prepend-source-files"
+        "coverage": "yarn run lcov-result-merger 'packages/*/test/*/coverage/*' 'merged.info' --prepend-source-files"
     },
     "devDependencies": {
         "husky": "^7.0.2"

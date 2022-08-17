@@ -620,13 +620,7 @@ jobs:
         name: Mangrove.js Integration Tests               # Name of the check run which will be created
         path: ${{env.working-directory}}/integration-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
+    
     # save artifacts for later stages
     - name: Zip output
       uses: montudor/action-zip@v1
@@ -867,13 +861,7 @@ jobs:
         reporter: mocha-json                               # Format of test results
 
 
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
+    
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1010,13 +998,7 @@ jobs:
         path: packages/bot-updategas/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
+    
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1159,13 +1141,7 @@ jobs:
         path: packages/bot-maker-noise/integration-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
         
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
+    
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1308,13 +1284,7 @@ jobs:
         path: packages/bot-taker-greedy/integration-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
     
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
+    
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1457,13 +1427,7 @@ jobs:
         path: packages/bot-template/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
+    
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1504,10 +1468,12 @@ jobs:
       uses: re-actors/alls-green@release/v1
       with:
         jobs: ${{ toJSON(needs) }}
+
+    - name: Merge code coverage files
+      run: yarn run coverage
   
     - name: Coveralls Finished
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.github_token }}
-        path-to-lcov: ${{env.working-directory}}/merged.info
-        base-path	: ${{env.working-directory}}
+        path-to-lcov: ./merged.info
