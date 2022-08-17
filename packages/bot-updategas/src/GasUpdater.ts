@@ -164,7 +164,7 @@ export class GasUpdater {
         );
         if (!isAllowed) {
           logger.error(
-            "The max update constraint is lowering/increasing the gas price, so that it is within the the acceptableGasGap"
+            "The max update constraint is lowering/increasing the gas price, so that it is within the acceptableGasGap"
           );
           return;
         }
