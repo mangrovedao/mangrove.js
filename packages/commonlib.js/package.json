@@ -52,7 +52,7 @@
     "@typescript-eslint/parser": "^5.22.0",
     "eslint": "^8.14.0",
     "eslint-config-prettier": "^8.5.0",
-    "lint-staged": "^13.0.2",
+    "lint-staged": "^13.0.3",
     "mocha": "^10.0.0",
     "mocha-multi-reporters": "^1.5.1",
     "prettier": "2.7.1",
