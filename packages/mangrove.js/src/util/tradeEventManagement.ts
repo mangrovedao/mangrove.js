@@ -23,6 +23,7 @@ class TradeEventManagement {
         takerGot: ethers.BigNumber;
         takerGave: ethers.BigNumber;
         penalty: ethers.BigNumber;
+        feePaid?: ethers.BigNumber;
       };
     },
     got: MgvToken,
@@ -37,6 +38,10 @@ class TradeEventManagement {
       gave: gave.fromUnits(event.args.takerGave),
       partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
       penalty: this.mangroveUtils.fromUnits(event.args.penalty, 18),
+      feePaid:
+        "feePaid" in event.args
+          ? this.mangroveUtils.fromUnits(event.args.feePaid, 18)
+          : Big(0),
     };
   }
   createSummaryFromOrderCompleteEvent(

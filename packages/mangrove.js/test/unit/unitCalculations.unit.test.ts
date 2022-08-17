@@ -3,7 +3,7 @@ import { equal } from "assert";
 import Big from "big.js";
 import { BigNumber } from "ethers";
 import { describe, it } from "mocha";
-import UnitCalculations from "../../dist/nodejs/util/unitCalculations";
+import UnitCalculations from "../../src/util/unitCalculations";
 
 describe("UnitCalculations unit tests suite", () => {
   describe("fromUntis", () => {

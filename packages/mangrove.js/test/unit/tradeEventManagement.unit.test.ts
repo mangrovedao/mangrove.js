@@ -4,10 +4,10 @@ import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
 import { describe, it } from "mocha";
 import { anything, instance, mock, spy, verify, when } from "ts-mockito";
-import { Market, MgvToken } from "../../dist/nodejs";
-import { OrderSummaryEvent } from "../../dist/nodejs/types/typechain/MangroveOrder";
-import TradeEventManagement from "../../dist/nodejs/util/tradeEventManagement";
-import UnitCalculations from "../../dist/nodejs/util/unitCalculations";
+import { Market, MgvToken } from "../../src";
+import { OrderSummaryEvent } from "../../src/types/typechain/MangroveOrder";
+import TradeEventManagement from "../../src/util/tradeEventManagement";
+import UnitCalculations from "../../src/util/unitCalculations";
 import {
   OfferFailEvent,
   OfferSuccessEvent,
@@ -28,6 +28,7 @@ describe("TradeEventManagement unit tests suite", () => {
           takerGot: BigNumber.from(10),
           takerGave: BigNumber.from(20),
           penalty: BigNumber.from(1),
+          feePaid: BigNumber.from(2),
         },
       };
 
@@ -36,8 +37,12 @@ describe("TradeEventManagement unit tests suite", () => {
       const expectedPenalty = Big(10000);
       const expectedGot = Big(evt.args.takerGot.toNumber());
       const expectedGave = Big(evt.args.takerGave.toNumber());
+      const expectedFeePaid = Big(evt.args.feePaid.toNumber());
       when(mockedUnitCalculations.fromUnits(evt.args.penalty, 18)).thenReturn(
         expectedPenalty
+      );
+      when(mockedUnitCalculations.fromUnits(evt.args.feePaid, 18)).thenReturn(
+        expectedFeePaid
       );
       when(gotToken.fromUnits(evt.args.takerGot)).thenReturn(expectedGot);
       when(gaveToken.fromUnits(evt.args.takerGave)).thenReturn(expectedGave);
@@ -59,6 +64,7 @@ describe("TradeEventManagement unit tests suite", () => {
       assert.equal(result.gave, expectedGave);
       assert.equal(result.partialFill, true);
       assert.equal(result.penalty, expectedPenalty);
+      assert.equal(result.feePaid, expectedFeePaid);
     });
   });
 
@@ -117,6 +123,7 @@ describe("TradeEventManagement unit tests suite", () => {
         gave: Big(2),
         partialFill: false,
         penalty: Big(3),
+        feePaid: Big(4),
       };
       const expectedOfferId = BigNumber.from(20);
       const args: any = { restingOrderId: expectedOfferId };
