@@ -47,6 +47,7 @@ namespace Market {
     gave: Big;
     partialFill: boolean;
     penalty: Big;
+    feePaid: Big;
     offerId?: number; // id of resting order if any
   };
   export type OrderResult = {
@@ -78,6 +79,17 @@ namespace Market {
     gasForMarketOrder?: number;
     blocksToLiveForRestingOrder?: number;
     provision: Bigish;
+  };
+
+  export type SnipeParams = {
+    targets: {
+      offerId: number;
+      takerWants: Bigish;
+      takerGives: Bigish;
+      gasLimit?: number;
+    }[];
+    ba: "asks" | "bids";
+    fillWants?: boolean;
   };
 
   /**
@@ -498,6 +510,23 @@ class Market {
     return this.trade.sell(params, overrides, this);
   }
 
+  /**
+   * Snipe specific offers.
+   * Params are:
+   * `targets`: an array of
+   *    `offerId`: the offer to snipe
+   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
+   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
+   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
+   * `ba`: whether to snipe `asks` or `bids`
+   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
+   */
+  snipe(
+    params: Market.SnipeParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<Market.OrderResult> {
+    return this.trade.snipe(params, overrides, this);
+  }
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
     const semibook = bs === "buy" ? this.#asksSemibook : this.#bidsSemibook;
     const {

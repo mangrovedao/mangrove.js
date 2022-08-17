@@ -764,6 +764,7 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
   });
 
   it("selling uses best price", async function () {
@@ -868,7 +869,6 @@ describe("Market integration tests suite", () => {
 
     // get not-best offer
     await mgvTestUtil.waitForBooksForLastTx(market);
-    market.consoleBids();
     const bids = [...market.getBook().bids];
     const notBest = bids[1].id;
 
@@ -888,6 +888,187 @@ describe("Market integration tests suite", () => {
     expect(result.successes[0].got.toNumber()).to.be.equal(1e-13);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
     expect(result.successes[0].offerId).to.be.equal(notBest);
+  });
+
+  it("snipe asks book for two successful orders succeeds", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 3000000,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+
+    // use wants/gives from offer to verify unit conversion
+    const result = await market.snipe({
+      ba: "asks",
+      targets: [
+        {
+          offerId: asks[1].id,
+          takerGives: asks[1].wants,
+          takerWants: asks[1].gives,
+          gasLimit: 650000,
+        },
+        {
+          offerId: asks[2].id,
+          takerGives: asks[2].wants,
+          takerWants: asks[2].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(2);
+
+    // 5% fee configured in integration-test-root-hooks.js
+    expect(result.summary.got.toNumber()).to.be.equal(0.95 * 3e-12);
+    expect(result.summary.gave.toNumber()).to.be.equal(2e-18);
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
+  });
+
+  it("snipe bids book for two successful orders succeeds", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 2000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 3000000,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const bids = [...market.getBook().bids];
+
+    // use wants/gives from offer to verify unit conversion
+    const result = await market.snipe({
+      ba: "bids",
+      targets: [
+        {
+          offerId: bids[1].id,
+          takerGives: bids[1].wants,
+          takerWants: bids[1].gives,
+          gasLimit: 650000,
+        },
+        {
+          offerId: bids[2].id,
+          takerGives: bids[2].wants,
+          takerWants: bids[2].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(2);
+
+    // 5% fee configured in integration-test-root-hooks.js
+    expect(result.summary.got.toNumber()).to.be.equal(3e-12 * 0.95);
+    expect(result.summary.gave.toNumber()).to.be.equal(2e-16);
+  });
+
+  it("snipe failing offers collects bounty", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    // Note: shouldFail is for the entire maker and not per order
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+      shouldFail: true,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+      shouldFail: true,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+
+    const result = await market.snipe({
+      ba: "asks",
+      targets: [
+        {
+          offerId: asks[0].id,
+          takerGives: asks[0].wants,
+          takerWants: asks[0].gives,
+          gasLimit: 650000,
+        },
+        {
+          offerId: asks[1].id,
+          takerGives: asks[1].wants,
+          takerWants: asks[1].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    expect(result.tradeFailures).to.have.lengthOf(2);
+    expect(result.successes).to.have.lengthOf(0);
+
+    expect(result.summary.got.toNumber()).to.be.equal(0);
+    expect(result.summary.gave.toNumber()).to.be.equal(0);
+
+    expect(result.summary.penalty.toNumber()).to.be.equal(0.000095482);
+    expect(result.summary.feePaid.toNumber()).to.be.equal(0);
+
+    // Verify book gets updated to reflect offers have failed and are removed
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asksAfter = [...market.getBook().asks];
+
+    expect(asksAfter).to.have.lengthOf(0);
   });
 
   it("gets config", async function () {
