@@ -996,6 +996,14 @@ jobs:
         name: Update Gas Bot - Integration Tests                   # Name of the check run which will be created
         path: packages/bot-updategas/integration-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+        
+    # == Send coverage report to Coveralls == 
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
