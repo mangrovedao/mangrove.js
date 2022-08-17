@@ -23,8 +23,8 @@
     "rollup": "rollup -c rollup.config.ts",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "yarn run test:unit && yarn run test:integration",
-    "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/unit-tests.json --exit && cp -R ./coverage test/unit/coverage && rm -r ./coverage",
-    "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --max-old-space-size=8192 --config test/mocha/config/integration-tests.json --exit && cp -R ./coverage test/integration/coverage && rm -r ./coverage",
+    "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/unit-tests.json --exit && cp -R ./coverage test/unit/ && rm -r ./coverage",
+    "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --max-old-space-size=8192 --config test/mocha/config/integration-tests.json --exit && cp -R ./coverage test/integration/ && rm -r ./coverage",
     "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
     "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts"
   },
