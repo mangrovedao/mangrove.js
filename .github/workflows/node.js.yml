@@ -864,15 +864,9 @@ jobs:
         path: packages/bot-cleaning/unit-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
-    - name: Check if d folder is empty before proceeding
-      find:
-        paths:  ${{env.working-directory}}/test/unit/coverage/
-      register: filesFound
-
     # == Send unit coverage report to Coveralls == 
     - name: Coveralls unit
       uses: coverallsapp/github-action@master
-      if: filesFound.matched > 0
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ${{env.working-directory}}/test/unit/coverage/lcov.info
