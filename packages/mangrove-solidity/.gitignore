@@ -9,6 +9,5 @@ cache
 .env*
 
 
-# broadcast files
-**/broadcast/**/run-*.json
-!**/broadcast/**/maticmum/run-*.json
+# broadcast files, ignore local deploys
+broadcast/*/31337
