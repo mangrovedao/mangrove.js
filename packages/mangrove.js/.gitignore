@@ -16,4 +16,4 @@ src/types/typechain/*
 
 # deploy output by deploy script
 deploy_output.txt
-state.dump
+mangroveJsNodeState.dump

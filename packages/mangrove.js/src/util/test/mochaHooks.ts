@@ -1,6 +1,6 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
-import { testServer, Mangrove } from "../..";
+import { node, Mangrove } from "../..";
 
 const serverParams = {
   host: "127.0.0.1",
@@ -11,7 +11,7 @@ const serverParams = {
 
 export const mochaHooks = {
   async beforeAll() {
-    this.server = await testServer(serverParams).defaultRun();
+    this.server = await node(serverParams).defaultRun();
     this.accounts = {
       deployer: this.server.accounts[0],
       maker: this.server.accounts[1],

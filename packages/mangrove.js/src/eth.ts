@@ -208,7 +208,7 @@ export async function _createSigner(
       data: { signer: options.signer },
     });
     provider =
-      process.env["MGV_TEST_DEBUG"] === "true"
+      process.env["MGV_NODE_DEBUG"] === "true"
         ? new LoggingProvider(provider)
         : new providers.JsonRpcProvider(provider);
   } else if (provider instanceof ethers.providers.JsonRpcProvider) {

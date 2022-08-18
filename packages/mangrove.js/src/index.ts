@@ -15,7 +15,7 @@ import OfferLogic from "./offerLogic";
 import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
 import AaveV3Module from "./aaveV3Module";
-import testServer from "./util/test/testServer";
+import node from "./util/node";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
 
 // Turn off Ethers.js warnings
@@ -33,6 +33,6 @@ export {
   OfferLogic,
   LiquidityProvider,
   AaveV3Module,
-  testServer,
+  node,
   mgvTestUtil,
 };

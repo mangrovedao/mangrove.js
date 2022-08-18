@@ -27,7 +27,7 @@
     "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/unit-tests.json --exit",
     "typechain": "yarn run clean-typechain && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
     "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts",
-    "test-server": "ts-node src/util/test/testServer.ts"
+    "test-server": "ts-node src/util/test/node.ts"
   },
   "files": [
     "dist/",

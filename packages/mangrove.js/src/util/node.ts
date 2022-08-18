@@ -1,17 +1,18 @@
 // TODO do not distribute this in browser build
-/* Run an anvil node, deploy a toy ENS server, execute a script against it, gather its list of deployed contracts.
+/* Run an anvil node, deploy a toy ENS contract, execute a script against it, gather its list of deployed contracts.
  
   This is a Mangrove.js utility for its internal tests. It can also be used in standalone.
 
-  For rapid test cycles, use MGV_TEST_USE_CACHE=true,
-  then delete the state dump file every time you want to invalidate the cache.
+  For rapid test cycles, use MGV_NODE_USE_CACHE=true, this will cache the result
+  of deploying contracts in a file (see DUMPFILE below), then delete that file
+  every time you want to invalidate the cache.
 */
 const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
 import { ethers } from "ethers";
-import * as eth from "../../eth";
-import { Mangrove } from "../..";
+import * as eth from "../eth";
+import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
 import { default as nodeCleanup } from "node-cleanup";
 
@@ -19,7 +20,7 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8546;
 const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
-const DUMPFILE = "mangroveJsTestServerState.dump";
+const DUMPFILE = "mangroveJsNodeState.dump";
 
 import yargs from "yargs/yargs";
 
@@ -33,17 +34,10 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
 
 const stateCache = path.resolve(`./${DUMPFILE}`);
 
-const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
-  // ignore command line if not main module, but still read from env vars
-  // note: this changes yargs' default precedence, which is (high to low):
-  // cmdline args -> env vars -> config(obj) -> defaults
-  const cmdLineArgv = ignoreCmdLineArgs ? [] : process.argv.slice(2);
-  return yargs(cmdLineArgv)
-    .usage("Run a test Mangrove deployment on a server")
-    .version(false)
-    .config(params)
+export const builder = (yargs) => {
+  return yargs
     .option("host", {
-      describe: "The IP address the server will listen on",
+      describe: "The IP address the node will listen on",
       type: "string",
       default: DEFAULT_HOST,
     })
@@ -52,7 +46,7 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
       type: "string",
       default: DEFAULT_PORT,
     })
-    .option("spawn-server", {
+    .option("spawn-node", {
       describe: "Do not spawn a new node",
       type: "boolean",
       default: true,
@@ -74,14 +68,26 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
       type: "string",
     })
     .option("chain-id", {
-      describe: "Chain id to use in server (default is anvil's default)",
+      describe: "Chain id to use in node (default is anvil's default)",
       type: "number",
     })
-    .env("MGV_TEST") // allow env vars like MGV_TEST_DEPLOY=false
+    .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
+};
+
+const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
+  // ignore command line if not main module, but still read from env vars
+  // note: this changes yargs' default precedence, which is (high to low):
+  // cmdline args -> env vars -> config(obj) -> defaults
+  const cmdLineArgv = ignoreCmdLineArgs ? [] : process.argv.slice(2);
+  return builder(yargs(cmdLineArgv))
+    .usage("Run a test Mangrove deployment on a local node")
+    .version(false)
+    .config(params)
+    .env("MGV_NODE") // allow env vars like MGV_NODE_DEPLOY=false
     .help().argv;
 };
 
-/* Spawn a test server */
+/* Spawn a test node */
 const spawn = async (params: any) => {
   const chainIdArgs =
     typeof params.chainId === "undefined" ? [] : ["--chain-id", params.chainId];
@@ -114,8 +120,8 @@ const spawn = async (params: any) => {
     anvil.kill();
   });
 
-  const serverClosedPromise = new Promise<void>((ok) => {
-    if (params.spawnServer) {
+  const nodeClosedPromise = new Promise<void>((ok) => {
+    if (params.spawnNode) {
       anvil.on("close", ok);
     } else {
       ok();
@@ -123,7 +129,7 @@ const spawn = async (params: any) => {
   });
 
   // wait a while for anvil to be ready, then bail
-  const serverReady = new Promise<void>((ok, ko) => {
+  const nodeReady = new Promise<void>((ok, ko) => {
     let ready = null;
     setTimeout(() => {
       if (ready === null) {
@@ -148,13 +154,13 @@ const spawn = async (params: any) => {
     });
   });
 
-  await serverReady;
+  await nodeReady;
   // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
   await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
 
   return {
     accounts: anvilAccounts,
-    serverClosedPromise,
+    nodeClosedPromise,
     process: anvil,
   };
 };
@@ -166,7 +172,7 @@ const deploy = async (params: any) => {
     await params.provider.send("eth_chainId", []);
   } catch (err) {
     throw new Error(
-      "Could not get chain id, is the anvil server running?\nOriginal error: \n" +
+      "Could not get chain id, is the anvil node running?\nOriginal error: \n" +
         err.toString()
     );
   }
@@ -190,6 +196,7 @@ const deploy = async (params: any) => {
 
     console.log("Running forge script:");
     console.log(forgeScriptCmd);
+
     // Warning: using exec & awaiting promise instead of using the simpler `execSync`
     // due to the following issue: when too many transactions are broadcast by the script,
     // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
@@ -246,11 +253,11 @@ const deploy = async (params: any) => {
   };
 };
 
-/* Runs a server and/or a deploy, depending on commandline/environment parameters */
+/* Runs a node and/or a deploy, depending on commandline/environment parameters */
 const defaultRun = async (params: any) => {
   let spawnInfo;
 
-  if (params.spawnServer) {
+  if (params.spawnNode) {
     spawnInfo = await spawn(params);
   }
 
@@ -289,9 +296,9 @@ const getAllToyENSEntries = async (
   return contracts;
 };
 
-/* Generate initial parameters with yargs, add data, then return server actions. */
-const init = (argv: any) => {
-  const params: any = computeArgv(argv);
+/* Generate initial parameters with yargs, add data, then return node actions. */
+export const init = (argv: any, useYargs: boolean = true) => {
+  const params: any = useYargs ? computeArgv(argv) : argv;
 
   params.url = `http://${params.host}:${params.port}`;
   params.provider = new ethers.providers.StaticJsonRpcProvider(params.url);
@@ -321,12 +328,12 @@ export { getAllToyENSEntries };
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
-    const { serverClosedPromise } = await init({
+    const { nodeClosedPromise } = await init({
       pipeOut: true,
     }).defaultRun();
-    if (serverClosedPromise) {
-      console.log("Server ready.");
-      await serverClosedPromise;
+    if (nodeClosedPromise) {
+      console.log("Node ready.");
+      await nodeClosedPromise;
     }
   };
   main()
