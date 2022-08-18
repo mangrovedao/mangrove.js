@@ -13,6 +13,7 @@ import { ethers } from "ethers";
 import * as eth from "../../eth";
 import { Mangrove } from "../..";
 import * as ToyENS from "./ToyENSCode";
+import { default as nodeCleanup } from "node-cleanup";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8546;
@@ -109,7 +110,7 @@ const spawn = async (params: any) => {
     console.error(`anvil: stderr: ${data}`);
   });
 
-  process.on("exit", function () {
+  nodeCleanup((exitCode, signal) => {
     anvil.kill();
   });
 

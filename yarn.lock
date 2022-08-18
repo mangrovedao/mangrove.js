@@ -1712,6 +1712,7 @@ __metadata:
     minimist: ^1.2.6
     mocha: ^10.0.0
     mocha-multi-reporters: ^1.5.1
+    node-cleanup: ^2.1.2
     npm-run-all: ^4.1.5
     nyc: ^15.1.0
     object-inspect: ^1.12.0
@@ -6299,6 +6300,13 @@ fsevents@~2.3.2:
   dependencies:
     node-gyp: latest
   checksum: 52ea6ff01a882766ceec74a0752c0cf9571fa72559a7a3e8969779fa5ae113a2d63cb54dd267fa83a533ab2b7617131d4a6996114701f4ca27246d2513b0e5a5
+  languageName: node
+  linkType: hard
+
+"node-cleanup@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "node-cleanup@npm:2.1.2"
+  checksum: 584cdc3e42560a998b4579f91ed8f936b27011628f3102e5a1093205f0691cdf8d899287d1f2e4d2071ea4ab1d615810bad6dbe2b988ef173a1cbaa76d8165b3
   languageName: node
   linkType: hard
 
