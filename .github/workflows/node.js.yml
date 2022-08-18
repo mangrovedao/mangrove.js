@@ -844,14 +844,6 @@ jobs:
         path: packages/bot-cleaning/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
-
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
       uses: ravsamhq/notify-slack-action@v1
@@ -974,14 +966,6 @@ jobs:
         name: Update Gas Bot - Tests                   # Name of the check run which will be created
         path: packages/bot-updategas/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
-
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1112,14 +1096,6 @@ jobs:
         path: packages/bot-maker-noise/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
         
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
-
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
       uses: ravsamhq/notify-slack-action@v1
@@ -1249,15 +1225,6 @@ jobs:
         path: packages/bot-taker-greedy/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
     
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
-    
-
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
       uses: ravsamhq/notify-slack-action@v1
@@ -1386,14 +1353,6 @@ jobs:
         name: Template Bot - Tests                   # Name of the check run which will be created
         path: packages/bot-template/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
-
-    # == Send coverage report to Coveralls == 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
