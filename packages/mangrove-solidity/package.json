@@ -11,7 +11,7 @@
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "copy-distribution-assets": "node copyDistributionAssets.js",
     "copy-broadcast-files": "mkdir -p dist/broadcast/maticmum && cp -R broadcast/Mumbai.s.sol/80001/* dist/broadcast/maticmum/ ; echo 'Copied broadcast files if any.'",
-    "clean-this-package": "rimraf artifacts cache dist exported-abis out",
+    "clean-this-package": "rimraf artifacts cache dist exported-abis out tsconfig.tsbuildinfo",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
     "doc": "solcco -f doc/MgvDoc.html preprocessing/structs.js src/MgvLib.sol src/MgvRoot.sol src/MgvHasOffers.sol src/MgvOfferMaking.sol src/MgvOfferTaking.sol src/MgvOfferTakingWithPermit.sol src/MgvGovernable.sol src/AbstractMangrove.sol src/Mangrove.sol src/InvertedMangrove.sol",
     "preproc": "node preprocessing/run.js",
