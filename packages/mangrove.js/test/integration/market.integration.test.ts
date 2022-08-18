@@ -767,6 +767,7 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
   });
 
   it("selling uses best price", async function () {
@@ -871,7 +872,6 @@ describe("Market integration tests suite", () => {
 
     // get not-best offer
     await mgvTestUtil.waitForBooksForLastTx(market);
-    market.consoleBids();
     const bids = [...market.getBook().bids];
     const notBest = bids[1].id;
 
@@ -891,6 +891,187 @@ describe("Market integration tests suite", () => {
     expect(result.successes[0].got.toNumber()).to.be.equal(1e-13);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
     expect(result.successes[0].offerId).to.be.equal(notBest);
+  });
+
+  it("snipe asks book for two successful orders succeeds", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 3000000,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+
+    // use wants/gives from offer to verify unit conversion
+    const result = await market.snipe({
+      ba: "asks",
+      targets: [
+        {
+          offerId: asks[1].id,
+          takerGives: asks[1].wants,
+          takerWants: asks[1].gives,
+          gasLimit: 650000,
+        },
+        {
+          offerId: asks[2].id,
+          takerGives: asks[2].wants,
+          takerWants: asks[2].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(2);
+
+    // 5% fee configured in integration-test-root-hooks.js
+    expect(result.summary.got.toNumber()).to.be.equal(0.95 * 3e-12);
+    expect(result.summary.gave.toNumber()).to.be.equal(2e-18);
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
+  });
+
+  it("snipe bids book for two successful orders succeeds", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 2000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "bids",
+      maker,
+      wants: 100,
+      gives: 3000000,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const bids = [...market.getBook().bids];
+
+    // use wants/gives from offer to verify unit conversion
+    const result = await market.snipe({
+      ba: "bids",
+      targets: [
+        {
+          offerId: bids[1].id,
+          takerGives: bids[1].wants,
+          takerWants: bids[1].gives,
+          gasLimit: 650000,
+        },
+        {
+          offerId: bids[2].id,
+          takerGives: bids[2].wants,
+          takerWants: bids[2].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(2);
+
+    // 5% fee configured in integration-test-root-hooks.js
+    expect(result.summary.got.toNumber()).to.be.equal(3e-12 * 0.95);
+    expect(result.summary.gave.toNumber()).to.be.equal(2e-16);
+  });
+
+  it("snipe failing offers collects bounty", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    // Note: shouldFail is for the entire maker and not per order
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+      shouldFail: true,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+      shouldFail: true,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+
+    const result = await market.snipe({
+      ba: "asks",
+      targets: [
+        {
+          offerId: asks[0].id,
+          takerGives: asks[0].wants,
+          takerWants: asks[0].gives,
+          gasLimit: 650000,
+        },
+        {
+          offerId: asks[1].id,
+          takerGives: asks[1].wants,
+          takerWants: asks[1].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    expect(result.tradeFailures).to.have.lengthOf(2);
+    expect(result.successes).to.have.lengthOf(0);
+
+    expect(result.summary.got.toNumber()).to.be.equal(0);
+    expect(result.summary.gave.toNumber()).to.be.equal(0);
+
+    expect(result.summary.penalty.toNumber()).to.be.equal(0.00009591);
+    expect(result.summary.feePaid.toNumber()).to.be.equal(0);
+
+    // Verify book gets updated to reflect offers have failed and are removed
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asksAfter = [...market.getBook().asks];
+
+    expect(asksAfter).to.have.lengthOf(0);
   });
 
   it("gets config", async function () {
@@ -1120,203 +1301,5 @@ describe("Market integration tests suite", () => {
     });
 
     await done.promise;
-  });
-});
-
-describe("Market unit tests suite", () => {
-  describe("getGivesWantsForVolumeAtPrice", () => {
-    it("return gives = volume && wants = volume*price for undefined type", async function () {
-      // Arrange
-      const volume = Big(12);
-      const price = Big(13);
-      // Act
-      const { gives, wants } = Market.getGivesWantsForVolumeAtPrice(
-        "asks",
-        volume,
-        price
-      );
-      // Assert
-      assert.equal(volume, gives);
-      assert.ok(volume.mul(price).eq(wants));
-    });
-
-    it("return gives = volume*price && wants = volume for undefined type", async function () {
-      // Arrange
-      const volume = Big(12);
-      const price = Big(13);
-      // Act
-      const { gives, wants } = Market.getGivesWantsForVolumeAtPrice(
-        "bids",
-        volume,
-        price
-      );
-      // Assert
-      assert.equal(volume, wants);
-      assert.ok(volume.mul(price).eq(gives));
-    });
-  });
-
-  describe("getGivesForPrice", () => {
-    it("returns wants divided by price", async function () {
-      // Arrange
-      const wants = Big(12);
-      const price = Big(13);
-      // Act
-      const result = Market.getGivesForPrice("asks", wants, price);
-      // Assert
-      assert.ok(wants.div(price).eq(result));
-    });
-    it("returns wants multiplied by price", async function () {
-      // Arrange
-      const wants = Big(12);
-      const price = Big(13);
-      // Act
-      const result = Market.getGivesForPrice("bids", wants, price);
-      // Assert
-      assert.ok(wants.mul(price).eq(result));
-    });
-  });
-
-  describe("getWantsForPrice", () => {
-    it("returns gives multipled by price", async function () {
-      // Arrange
-      const gives = Big(12);
-      const price = Big(13);
-      // Act
-      const result = Market.getWantsForPrice("asks", gives, price);
-      // Assert
-      assert.ok(gives.mul(price).eq(result));
-    });
-    it("returns wants divided by price", async function () {
-      // Arrange
-      const wants = Big(12);
-      const price = Big(13);
-      // Act
-      const result = Market.getWantsForPrice("bids", wants, price);
-      // Assert
-      assert.ok(wants.div(price).eq(result));
-    });
-  });
-
-  describe("getPrice", () => {
-    it("returns quoteVolume divided by baseVolume", async function () {
-      // Arrange
-      const gives = Big(12);
-      const wants = Big(13);
-      // Act
-      const result = Market.getPrice("bids", gives, wants);
-      // Assert
-      assert.ok(gives.div(wants).eq(result));
-    });
-  });
-
-  describe("getBaseQuoteVolumes", () => {
-    it("returns gives as baseVolume and wants as quoteVolume", async function () {
-      // Arrange
-      const gives = Big(12);
-      const wants = Big(13);
-      // Act
-      const result = Market.getBaseQuoteVolumes("asks", gives, wants);
-      // Assert
-      assert.ok(gives.eq(result.baseVolume));
-      assert.ok(wants.eq(result.quoteVolume));
-    });
-    it("returns gives as quoteVolume and wants as baseVolume", async function () {
-      // Arrange
-      const gives = Big(12);
-      const wants = Big(13);
-      // Act
-      const result = Market.getBaseQuoteVolumes("bids", gives, wants);
-      // Assert
-      assert.ok(gives.eq(result.quoteVolume));
-      assert.ok(wants.eq(result.baseVolume));
-    });
-  });
-
-  describe("getDisplayDecimalsForPriceDifferences", () => {
-    function makeOfferWithPrice(price: number) {
-      return {
-        id: 0,
-        prev: undefined,
-        next: undefined,
-        gasprice: 1,
-        maker: "",
-        gasreq: 1,
-        offer_gasbase: 1,
-        wants: Big(1),
-        gives: Big(1),
-        volume: Big(1),
-        price: Big(price),
-      };
-    }
-
-    function makeOffersWithPrices(...prices: number[]): Market.Offer[] {
-      return prices.map(makeOfferWithPrice);
-    }
-
-    it("returns no decimals for empty list", async function () {
-      const offers = makeOffersWithPrices();
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns no decimals for list with one offer", async function () {
-      const offers = makeOffersWithPrices(1);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns no decimals for list with offers with same price", async function () {
-      const offers = makeOffersWithPrices(1, 1);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns no decimals when price differences are integers", async function () {
-      const offers = makeOffersWithPrices(1, 2);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(0);
-    });
-
-    it("returns one decimal when difference is 0.1", async function () {
-      const offers = makeOffersWithPrices(1, 1.1);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns one decimal when difference is 0.9999999", async function () {
-      const offers = makeOffersWithPrices(1, 1.9999999);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns one decimal when difference is -0.1", async function () {
-      const offers = makeOffersWithPrices(1, 0.9);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns one decimal when difference is -0.9999999", async function () {
-      const offers = makeOffersWithPrices(1, 0.1111111);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(1);
-    });
-
-    it("returns 7 decimals when difference is 1e-7", async function () {
-      const offers = makeOffersWithPrices(1, 1 + 1e-7);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
-    });
-
-    it("returns 7 decimals when difference is 9e-7", async function () {
-      const offers = makeOffersWithPrices(1, 1 + 9e-7);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
-    });
-
-    it("returns 7 decimals when difference is 9e-7", async function () {
-      const offers = makeOffersWithPrices(1, 1 + 9e-7);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(7);
-    });
-
-    it("returns the decimals for the first difference when that is smallest", async function () {
-      const offers = makeOffersWithPrices(1.19, 1.2, 1.3);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(2);
-    });
-
-    it("returns the decimals for the last difference when that is smallest", async function () {
-      const offers = makeOffersWithPrices(1.1, 1.3, 1.31);
-      expect(Market.getDisplayDecimalsForPriceDifferences(offers)).to.equal(2);
-    });
   });
 });

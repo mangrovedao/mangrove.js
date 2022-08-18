@@ -13,6 +13,7 @@ contract GenericFork is Script {
   address public AAVE;
   address public APOOL;
   address public WETH;
+  address public AUSDC;
   address public USDC;
   address public AWETH;
   address public DAI;
@@ -25,6 +26,7 @@ contract GenericFork is Script {
     vm.label(AAVE, "Aave");
     vm.label(APOOL, "Aave Pool");
     vm.label(WETH, "WETH");
+    vm.label(AUSDC, "AUSDC");
     vm.label(USDC, "USDC");
     vm.label(AWETH, "AWETH");
     vm.label(DAI, "DAI");

@@ -10,8 +10,19 @@
   },
   "oracleURL": "ORACLE_URL",
   "oracleURL_Key": "ORACLE_URL_KEY",
+  "oracleURL_subKey": "ORACLE_URL_SUBKEY",
   "runEveryXHours": {
     "__name": "RUN_EVERY_X_HOURS",
     "__format": "number"
+  },
+  "maxUpdateConstraint": {
+    "constant": {
+      "__name": "MAX_UPDATE_CONSTRAINT_CONSTANT",
+      "__format": "number"
+    },
+    "percentage": {
+      "__name": "MAX_UPDATE_CONSTRAINT_PERCENTAGE",
+      "__format": "number"
+    }
   }
 }

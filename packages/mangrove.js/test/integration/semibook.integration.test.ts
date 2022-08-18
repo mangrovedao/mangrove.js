@@ -9,6 +9,10 @@ import { newOffer, toWei } from "../util/helpers";
 import { Mangrove } from "../../src";
 
 import { Big } from "big.js";
+import { anything, spy, verify } from "ts-mockito";
+import { assert } from "console";
+import { BigNumber, providers } from "ethers";
+import { MgvCleaner__factory } from "../../dist/nodejs/types/typechain";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -17,12 +21,18 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 
 describe("Semibook integration tests suite", function () {
   let mgv: Mangrove;
+  let mgvAdmin: Mangrove;
 
   beforeEach(async function () {
     //set mgv object
     mgv = await Mangrove.connect({
       provider: this.server.url,
       privateKey: this.accounts.tester.key,
+    });
+
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: mgv._provider,
     });
 
     mgvTestUtil.setConfig(mgv, this.accounts);
@@ -130,6 +140,261 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
       expect(await semibook.getPivotId(Big(2.5))).to.equal(2);
+    });
+  });
+
+  describe("offerInfo", () => {
+    it("returns offer from cache, when offer is in cache", async function () {
+      // Put one offer on asks
+      // TODO: Can we explicitly get the id of this offer?
+      await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const asksSemibook = market.getSemibook("asks");
+      const offer = await asksSemibook.offerInfo(1);
+
+      expect(offer.id).to.be.eq(1);
+    });
+
+    it("returns offer from contract, when offer is not in cache", async function () {
+      // Put one offer on asks
+      // TODO: Can we explicitly get the id of this offer?
+      await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        bookOptions: { maxOffers: 0 },
+      });
+      const asksSemibook = market.getSemibook("asks");
+      const offer = await asksSemibook.offerInfo(1);
+
+      expect(offer.id).to.be.eq(1);
+    });
+  });
+
+  describe("getConfig", () => {
+    it("returns the config of a block as Mangrove.LocalConfig, when given blocknumber", async function () {
+      const deployer = mgvTestUtil.getAccount(mgvTestUtil.AccountName.Deployer);
+      const mgv = await Mangrove.connect({ signer: (await deployer).signer });
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const semibook = market.getSemibook("asks");
+      const fee = 1;
+      const density = BigNumber.from("2000000000000000000");
+      const gasbase = 3;
+      const active = await waitForTransaction(
+        mgv.contract.activate(
+          market.base.address,
+          market.quote.address,
+          fee,
+          density,
+          gasbase
+        )
+      );
+      await waitForTransaction(
+        mgv.contract.activate(
+          market.base.address,
+          market.quote.address,
+          3,
+          BigNumber.from("4000000000000000000"),
+          1
+        )
+      );
+      const config = await semibook.getConfig(active.blockNumber);
+
+      expect(config.fee).to.be.eq(fee);
+      expect(config.density.eq(2)).to.be.eq(true);
+      expect(config.offer_gasbase).to.be.eq(gasbase);
+    });
+
+    it("returns the config of the latest block as Mangrove.LocalConfig, when given no blocknumber", async function () {
+      const deployer = mgvTestUtil.getAccount(mgvTestUtil.AccountName.Deployer);
+      const mgv = await Mangrove.connect({ signer: (await deployer).signer });
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const semibook = market.getSemibook("asks");
+      const fee = 1;
+      const density = BigNumber.from("2000000000000000000");
+      const gasbase = 3;
+      await waitForTransaction(
+        mgv.contract.activate(
+          market.base.address,
+          market.quote.address,
+          3,
+          BigNumber.from("4000000000000000000"),
+          1
+        )
+      );
+      await waitForTransaction(
+        mgv.contract.activate(
+          market.base.address,
+          market.quote.address,
+          fee,
+          density,
+          gasbase
+        )
+      );
+      const config = await semibook.getConfig();
+
+      expect(config.fee).to.be.eq(fee);
+      expect(config.density.eq(2)).to.be.eq(true);
+      expect(config.offer_gasbase).to.be.eq(gasbase);
+    });
+  });
+
+  describe("getBestInCache", () => {
+    it("returns undefined, because market made before offer", async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      // Put one offer on asks
+      // TODO: Can we explicitly get the id of this offer?
+      await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+      const bestInCache = market.getSemibook("asks").getBestInCache();
+      expect(bestInCache).to.be.undefined;
+    });
+    it("returns offer id 1, because market made after offer", async function () {
+      // Put one offer on asks
+      // TODO: Can we explicitly get the id of this offer?
+      await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const bestInCache = market.getSemibook("asks").getBestInCache();
+      expect(bestInCache).to.be.eq(1);
+    });
+  });
+
+  describe("lastReadBlockNumber", () => {
+    it("returns block number of offer, when offer made before semibook/market", async function () {
+      const receipt = await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const lastReadBlockNumber = market
+        .getSemibook("asks")
+        .lastReadBlockNumber();
+      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber);
+    });
+
+    it("returns block number before offer, when offer made after semibook/market", async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const receipt = await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+      const lastReadBlockNumber = market
+        .getSemibook("asks")
+        .lastReadBlockNumber();
+      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber - 1);
+    });
+  });
+
+  describe("getRawConfig", () => {
+    it("returns the config of a block as Mangrove.RawConfig, when given blocknumber", async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const semibook = market.getSemibook("asks");
+      const fee = 1;
+      const density = BigNumber.from("2000000000000000000");
+      const gasbase = 3;
+      const active = await waitForTransaction(
+        mgvAdmin.contract.activate(
+          market.base.address,
+          market.quote.address,
+          fee,
+          density,
+          gasbase
+        )
+      );
+      await waitForTransaction(
+        mgvAdmin.contract.activate(
+          market.base.address,
+          market.quote.address,
+          3,
+          BigNumber.from("4000000000000000000"),
+          1
+        )
+      );
+      const config = await semibook.getRawConfig(active.blockNumber);
+
+      expect(config.local.fee.toNumber()).to.be.eq(fee);
+      expect(config.local.density.eq(density)).to.be.eq(true);
+      expect(config.local.offer_gasbase.toNumber()).to.be.eq(gasbase);
+    });
+
+    it("returns the config of the latest block as Mangrove.RawConfig, when given no blocknumber", async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const semibook = market.getSemibook("asks");
+      const fee = 1;
+      const density = BigNumber.from("2000000000000000000");
+      const gasbase = 3;
+      await waitForTransaction(
+        mgvAdmin.contract.activate(
+          market.base.address,
+          market.quote.address,
+          3,
+          BigNumber.from("4000000000000000000"),
+          1
+        )
+      );
+      await waitForTransaction(
+        mgvAdmin.contract.activate(
+          market.base.address,
+          market.quote.address,
+          fee,
+          density,
+          gasbase
+        )
+      );
+      const config = await semibook.getConfig();
+
+      expect(config.fee).to.be.eq(fee);
+      expect(config.density.eq(2)).to.be.eq(true);
+      expect(config.offer_gasbase).to.be.eq(gasbase);
+    });
+  });
+
+  describe("offerInfo", () => {
+    it("returns offer from cache, when offer is in cache", async function () {
+      // Put one offer on asks
+      // TODO: Can we explicitly get the id of this offer?
+      await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const asksSemibook = market.getSemibook("asks");
+      const offer = await asksSemibook.offerInfo(1);
+
+      expect(offer.id).to.be.eq(1);
+    });
+
+    it("returns offer from contract, when offer is not in cache", async function () {
+      // Put one offer on asks
+      // TODO: Can we explicitly get the id of this offer?
+      await waitForTransaction(
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
+      );
+      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
+
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        bookOptions: { maxOffers: 0 },
+      });
+      const asksSemibook = market.getSemibook("asks");
+      const offer = await asksSemibook.offerInfo(1);
+
+      expect(offer.id).to.be.eq(1);
     });
   });
 

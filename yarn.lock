@@ -595,14 +595,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/experimental@npm:^5.6.1":
-  version: 5.6.1
-  resolution: "@ethersproject/experimental@npm:5.6.1"
+"@ethersproject/experimental@npm:^5.6.3":
+  version: 5.6.3
+  resolution: "@ethersproject/experimental@npm:5.6.3"
   dependencies:
-    "@ethersproject/web": ^5.6.0
-    ethers: ^5.6.0
+    "@ethersproject/web": ^5.6.1
+    ethers: ^5.6.8
     scrypt-js: 3.0.1
-  checksum: d18d543dab73d1616f43b1e58a1958c767494f602cb8cc16b85ee4ea76de023fd411ce6a091a4571201bb38113b3cf8abd46fcd17b01b82c3c9315ea07d46d0a
+  checksum: 42828e0edc45abffb479250fedd91cd74b81165ee42aefbb27c8448ef4070344bbe5bdd8e6aedb3e88316c1f29ba5822efd2a03aee46ec53d07711b5f6397a8e
   languageName: node
   linkType: hard
 
@@ -1385,7 +1385,7 @@ __metadata:
   resolution: "@mangrovedao/bot-cleaning@workspace:packages/bot-cleaning"
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
-    "@ethersproject/experimental": ^5.6.1
+    "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
@@ -1393,12 +1393,12 @@ __metadata:
     "@types/big.js": ^6.1.3
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
-    "@types/config": ^0.0.41
+    "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
     "@types/finalhandler": ^1.1.1
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
-    "@types/serve-static": ^1.13.10
+    "@types/serve-static": ^1.15.0
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
@@ -1413,7 +1413,7 @@ __metadata:
     ethers: ^5.6.4
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     mocha: ^10.0.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1433,7 +1433,7 @@ __metadata:
   resolution: "@mangrovedao/bot-maker-noise@workspace:packages/bot-maker-noise"
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
-    "@ethersproject/experimental": ^5.6.1
+    "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
@@ -1441,12 +1441,12 @@ __metadata:
     "@types/big.js": ^6.1.3
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
-    "@types/config": ^0.0.41
+    "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
     "@types/finalhandler": ^1.1.1
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
-    "@types/serve-static": ^1.13.10
+    "@types/serve-static": ^1.15.0
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
@@ -1461,7 +1461,7 @@ __metadata:
     ethers: ^5.6.4
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     mocha: ^10.0.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1481,7 +1481,7 @@ __metadata:
   resolution: "@mangrovedao/bot-taker-greedy@workspace:packages/bot-taker-greedy"
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
-    "@ethersproject/experimental": ^5.6.1
+    "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
@@ -1489,12 +1489,12 @@ __metadata:
     "@types/big.js": ^6.1.3
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
-    "@types/config": ^0.0.41
+    "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
     "@types/finalhandler": ^1.1.1
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
-    "@types/serve-static": ^1.13.10
+    "@types/serve-static": ^1.15.0
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
@@ -1509,7 +1509,7 @@ __metadata:
     ethers: ^5.6.4
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     mocha: ^10.0.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1530,7 +1530,7 @@ __metadata:
   resolution: "@mangrovedao/bot-template@workspace:packages/bot-template"
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
-    "@ethersproject/experimental": ^5.6.1
+    "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
@@ -1538,12 +1538,12 @@ __metadata:
     "@types/big.js": ^6.1.3
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
-    "@types/config": ^0.0.41
+    "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
     "@types/finalhandler": ^1.1.1
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
-    "@types/serve-static": ^1.13.10
+    "@types/serve-static": ^1.15.0
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
@@ -1558,7 +1558,7 @@ __metadata:
     ethers: ^5.6.4
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     mocha: ^10.0.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1577,7 +1577,7 @@ __metadata:
   resolution: "@mangrovedao/bot-updategas@workspace:packages/bot-updategas"
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
-    "@ethersproject/experimental": ^5.6.1
+    "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.0
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
@@ -1586,12 +1586,12 @@ __metadata:
     "@types/big.js": ^6.1.3
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
-    "@types/config": ^0.0.41
+    "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
     "@types/finalhandler": ^1.1.1
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
-    "@types/serve-static": ^1.13.10
+    "@types/serve-static": ^1.15.0
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
@@ -1607,7 +1607,7 @@ __metadata:
     ethers: ^5.6.4
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     mocha: ^10.0.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1617,6 +1617,7 @@ __metadata:
     serve-static: ^1.15.0
     shelljs: ^0.8.4
     toad-scheduler: ^1.6.1
+    ts-mockito: ^2.0.0
     ts-node: ^10.9.1
     typechain: ^8.1.0
     typescript: ^4.7.0
@@ -1628,7 +1629,7 @@ __metadata:
   resolution: "@mangrovedao/commonlib.js@workspace:packages/commonlib.js"
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
-    "@types/config": ^0.0.41
+    "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
@@ -1641,7 +1642,7 @@ __metadata:
     eslint-config-prettier: ^8.5.0
     fast-safe-stringify: ^2.1.1
     json-truncate: ^3.0.0
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     logform: ^2.4.1
     loglevel: ^1.8.0
     mocha: ^10.0.0
@@ -1662,7 +1663,7 @@ __metadata:
     dotenv-cli: ^6.0.0
     dotenv-flow: ^3.2.0
     ethers: ^5.6.4
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     prettier: ^2.4.1
     prettier-plugin-solidity: ^1.0.0-beta.19
     rimraf: ^3.0.2
@@ -1680,12 +1681,12 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/abi": ^5.6.0
     "@ethersproject/bytes": ^5.0.0
-    "@ethersproject/experimental": ^5.6.1
+    "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
     "@ethersproject/providers": ^5.6.4
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
-    "@rollup/plugin-commonjs": ^22.0.0
+    "@rollup/plugin-commonjs": ^22.0.2
     "@rollup/plugin-json": ^4.1.0
     "@rollup/plugin-node-resolve": ^13.3.0
     "@typechain/ethers-v5": ^10.1.0
@@ -1694,7 +1695,7 @@ __metadata:
     "@types/mocha": ^9.1.1
     "@types/node": ^18.0.0
     "@types/shelljs": ^0.8.11
-    "@types/yargs": ^17.0.10
+    "@types/yargs": ^17.0.11
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
     async-mutex: ^0.3.2
@@ -1707,7 +1708,7 @@ __metadata:
     eslint: ^8.14.0
     eslint-config-prettier: ^8.5.0
     ethers: ^5.6.4
-    lint-staged: ^13.0.2
+    lint-staged: ^13.0.3
     minimist: ^1.2.6
     mocha: ^10.0.0
     mocha-multi-reporters: ^1.5.1
@@ -1723,7 +1724,7 @@ __metadata:
     ts-mockito: ^2.0.0
     ts-node: ^10.9.1
     typechain: ^8.1.0
-    typedoc: ^0.22.17
+    typedoc: ^0.23.10
     typescript: ^4.7.0
     yargs: ^17.3.0
   bin:
@@ -1778,9 +1779,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rollup/plugin-commonjs@npm:^22.0.0":
-  version: 22.0.0
-  resolution: "@rollup/plugin-commonjs@npm:22.0.0"
+"@rollup/plugin-commonjs@npm:^22.0.2":
+  version: 22.0.2
+  resolution: "@rollup/plugin-commonjs@npm:22.0.2"
   dependencies:
     "@rollup/pluginutils": ^3.1.0
     commondir: ^1.0.1
@@ -1791,7 +1792,7 @@ __metadata:
     resolve: ^1.17.0
   peerDependencies:
     rollup: ^2.68.0
-  checksum: fdcce2bf58875fde0e06f001544c0d9a0509a12929393862f72dcef8fcbf4d5d0ba0d5db6cf10ba4351335caf67a3dbdb95000678c468585e3972994f92e2ce9
+  checksum: 70098a4b91afe3f164f5d27cba65edf148c5ed146ee0e07a964b66940681553ac77391083114cdcf9427e7f2706bf0d61eab310b3a2caeab83b7452c0292fcae
   languageName: node
   linkType: hard
 
@@ -1935,10 +1936,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/config@npm:^0.0.41":
-  version: 0.0.41
-  resolution: "@types/config@npm:0.0.41"
-  checksum: 528eb5e5d60c48cf82a2b0988ee1e5e088472698ad25944131b0ba87b2e3bb0989f3b4d45edb9d49eefcc8bf158c267905c386aaec15857b9fb24be449c3f27c
+"@types/config@npm:^3.3.0":
+  version: 3.3.0
+  resolution: "@types/config@npm:3.3.0"
+  checksum: d9485041cfa05864d3b8095cf7b44fae910887f6782dc43ab1ba4ea78d9cdf4a8c9d697557318ede2b4b63a05b7f91e8571b8dbe048ad024e709d9e51e0487d8
   languageName: node
   linkType: hard
 
@@ -1999,10 +2000,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mime@npm:^1":
-  version: 1.3.2
-  resolution: "@types/mime@npm:1.3.2"
-  checksum: 0493368244cced1a69cb791b485a260a422e6fcc857782e1178d1e6f219f1b161793e9f87f5fae1b219af0f50bee24fcbe733a18b4be8fdd07a38a8fb91146fd
+"@types/mime@npm:*":
+  version: 3.0.1
+  resolution: "@types/mime@npm:3.0.1"
+  checksum: 4040fac73fd0cea2460e29b348c1a6173da747f3a87da0dbce80dd7a9355a3d0e51d6d9a401654f3e5550620e3718b5a899b2ec1debf18424e298a2c605346e7
   languageName: node
   linkType: hard
 
@@ -2096,13 +2097,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/serve-static@npm:^1.13.10":
-  version: 1.13.10
-  resolution: "@types/serve-static@npm:1.13.10"
+"@types/serve-static@npm:^1.15.0":
+  version: 1.15.0
+  resolution: "@types/serve-static@npm:1.15.0"
   dependencies:
-    "@types/mime": ^1
+    "@types/mime": "*"
     "@types/node": "*"
-  checksum: eaca858739483e3ded254cad7d7a679dc2c8b3f52c8bb0cd845b3b7eb1984bde0371fdcb0a5c83aa12e6daf61b6beb762545021f520f08a1fe882a3fa4ea5554
+  checksum: b6ac93d471fb0f53ddcac1f9b67572a09cd62806f7db5855244b28f6f421139626f24799392566e97d1ffc61b12f9de7f30380c39fcae3c8a161fe161d44edf2
   languageName: node
   linkType: hard
 
@@ -2130,12 +2131,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/yargs@npm:^17.0.10":
-  version: 17.0.10
-  resolution: "@types/yargs@npm:17.0.10"
+"@types/yargs@npm:^17.0.11":
+  version: 17.0.11
+  resolution: "@types/yargs@npm:17.0.11"
   dependencies:
     "@types/yargs-parser": "*"
-  checksum: f0673cbfc08e17239dc58952a88350d6c4db04a027a28a06fbad27d87b670e909f9cd9e66f9c64cebdd5071d1096261e33454a55868395f125297e5c50992ca8
+  checksum: 30a45f9e59a5cc3c967f76036bea6a456b1416175aa4c002b70e1f295772e2247ed8117f392b20eef4557ad761678df8c1fcb141852f2c7c44977130d802c855
   languageName: node
   linkType: hard
 
@@ -4085,7 +4086,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.6.0, ethers@npm:^5.6.4":
+"ethers@npm:^5.6.4":
   version: 5.6.4
   resolution: "ethers@npm:5.6.4"
   dependencies:
@@ -4620,19 +4621,6 @@ fsevents@~2.3.2:
     once: ^1.3.0
     path-is-absolute: ^1.0.0
   checksum: 78a8ea942331f08ed2e055cb5b9e40fe6f46f579d7fd3d694f3412fe5db23223d29b7fee1575440202e9a7ff9a72ab106a39fee39934c7bedafe5e5f8ae20134
-  languageName: node
-  linkType: hard
-
-"glob@npm:^8.0.3":
-  version: 8.0.3
-  resolution: "glob@npm:8.0.3"
-  dependencies:
-    fs.realpath: ^1.0.0
-    inflight: ^1.0.4
-    inherits: 2
-    minimatch: ^5.0.1
-    once: ^1.3.0
-  checksum: 50bcdea19d8e79d8de5f460b1939ffc2b3299eac28deb502093fdca22a78efebc03e66bf54f0abc3d3d07d8134d19a32850288b7440d77e072aa55f9d33b18c5
   languageName: node
   linkType: hard
 
@@ -5558,9 +5546,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^13.0.2":
-  version: 13.0.2
-  resolution: "lint-staged@npm:13.0.2"
+"lint-staged@npm:^13.0.3":
+  version: 13.0.3
+  resolution: "lint-staged@npm:13.0.3"
   dependencies:
     cli-truncate: ^3.1.0
     colorette: ^2.0.17
@@ -5577,7 +5565,7 @@ fsevents@~2.3.2:
     yaml: ^2.1.1
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: b5ccf8e11b69f6fd8b79b629580c1463524aeca069a8f97a28291de2fafa474c28871428b56f251cf95a02d84e7b0fc0dfd6443532e16fdac3f9cba9228cfc9e
+  checksum: 53d585007df06e162febab6b0836b55016d902586a267823c8a1158529d8c742dc7297e523f7023dff02250bef3eb0d6934f4ec4f9961adfc2ebbed5f54162d0
   languageName: node
   linkType: hard
 
@@ -5847,12 +5835,12 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"marked@npm:^4.0.16":
-  version: 4.0.17
-  resolution: "marked@npm:4.0.17"
+"marked@npm:^4.0.18":
+  version: 4.0.18
+  resolution: "marked@npm:4.0.18"
   bin:
     marked: bin/marked.js
-  checksum: 33a3c43a20b47bddaf045a59bfc7c3d41cc321931cc663ed231ca3b5b3b195fb2ac2973e687c2afd65b79539c14619baa07d19793f70130160f0af80c06d9b3a
+  checksum: a13e886d5059a8500a6fd552feecc16e18fc3636aa491fce372384b1fdea67e323d67ac49f7618f6977e66ca96e39f27400eb5c1273d5ee9c2301e8c33e90dce
   languageName: node
   linkType: hard
 
@@ -6001,7 +5989,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"minimatch@npm:5.0.1, minimatch@npm:^5.0.1":
+"minimatch@npm:5.0.1":
   version: 5.0.1
   resolution: "minimatch@npm:5.0.1"
   dependencies:
@@ -8518,20 +8506,19 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.22.17":
-  version: 0.22.17
-  resolution: "typedoc@npm:0.22.17"
+"typedoc@npm:^0.23.10":
+  version: 0.23.10
+  resolution: "typedoc@npm:0.23.10"
   dependencies:
-    glob: ^8.0.3
     lunr: ^2.3.9
-    marked: ^4.0.16
+    marked: ^4.0.18
     minimatch: ^5.1.0
     shiki: ^0.10.1
   peerDependencies:
-    typescript: 4.0.x || 4.1.x || 4.2.x || 4.3.x || 4.4.x || 4.5.x || 4.6.x || 4.7.x
+    typescript: 4.6.x || 4.7.x
   bin:
     typedoc: bin/typedoc
-  checksum: 3a2f492477989855fa43afc0ebfb84dca819436ec5c868ca175cb02485c6347c04dbb2d11669a8be04fc6860a8f3d29d124300b5718ba17174622ace29a0276a
+  checksum: 58dd8bc12856801c4f315812d03f209f706435e5f56edceeb3e01e456c7d058a127f3dee1674529d62b64dcc04847d8be5e4ce06921b9c5388b901dd976b92bf
   languageName: node
   linkType: hard
 

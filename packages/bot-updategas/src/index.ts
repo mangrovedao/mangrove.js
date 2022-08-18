@@ -5,7 +5,11 @@
 
 import { config } from "./util/config";
 import { logger } from "./util/logger";
-import { GasUpdater, OracleSourceConfiguration } from "./GasUpdater";
+import {
+  GasUpdater,
+  MaxUpdateConstraint,
+  OracleSourceConfiguration,
+} from "./GasUpdater";
 
 import Mangrove from "@mangrovedao/mangrove.js";
 import { getDefaultProvider } from "@ethersproject/providers";
@@ -120,6 +124,8 @@ function readAndValidateConfig(): OracleConfig {
   let constantOracleGasPrice: number | undefined;
   let oracleURL = "";
   let oracleURL_Key = "";
+  let oracleURL_subKey = "";
+  let maxUpdateConstraint: MaxUpdateConstraint = {};
 
   if (config.has("constantOracleGasPrice")) {
     constantOracleGasPrice = config.get<number>("constantOracleGasPrice");
@@ -131,6 +137,25 @@ function readAndValidateConfig(): OracleConfig {
 
   if (config.has("oracleURL_Key")) {
     oracleURL_Key = config.get<string>("oracleURL_Key");
+  }
+
+  if (config.has("oracleURL_subKey")) {
+    oracleURL_subKey = config.get<string>("oracleURL_subKey");
+  }
+
+  if (config.has("maxUpdateConstraint")) {
+    maxUpdateConstraint = config.get<MaxUpdateConstraint>(
+      "maxUpdateConstraint"
+    );
+  }
+
+  if (
+    maxUpdateConstraint?.constant &&
+    acceptableGasGapToOracle > maxUpdateConstraint.constant
+  ) {
+    configErrors.push(
+      "The max update constraint is lower than the acceptableGasGap. With this config, the gas price will never be updated"
+    );
   }
 
   let oracleSourceConfiguration: OracleSourceConfiguration;
@@ -154,7 +179,7 @@ function readAndValidateConfig(): OracleConfig {
       oracleURL_Key == ""
     ) {
       configErrors.push(
-        `Either 'constantOracleGasPrice' or the pair ('oracleURL', 'oracleURL_Key') must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', oracleURL: '${oracleURL}', oracleURL_Key: '${oracleURL_Key}'`
+        `Either 'constantOracleGasPrice' or the pair ('oracleURL', 'oracleURL_Key') must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', oracleURL: '${oracleURL}', oracleURL_Key: '${oracleURL_Key}', oracleURL_subKey: '${oracleURL_subKey}'`
       );
     }
     logger.info(
@@ -173,6 +198,7 @@ function readAndValidateConfig(): OracleConfig {
     oracleSourceConfiguration = {
       oracleEndpointURL: oracleURL,
       oracleEndpointKey: oracleURL_Key,
+      oracleEndpointSubKey: oracleURL_subKey,
       _tag: "Endpoint",
     };
   }

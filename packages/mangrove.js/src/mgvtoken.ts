@@ -1,8 +1,10 @@
+import Big from "big.js";
 import * as ethers from "ethers";
+import { decimals as loadedDecimals } from "./constants";
 import Mangrove from "./mangrove";
 import { Bigish } from "./types";
 import * as typechain from "./types/typechain";
-import Big from "big.js";
+import UnitCalculations from "./util/unitCalculations";
 
 class MgvToken {
   mgv: Mangrove;
@@ -12,6 +14,7 @@ class MgvToken {
   decimals: number;
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
+  unitCalculations: UnitCalculations;
   constructor(name: string, mgv: Mangrove) {
     this.mgv = mgv;
     this.name = name;
@@ -22,6 +25,7 @@ class MgvToken {
       this.address,
       this.mgv._signer
     );
+    this.unitCalculations = new UnitCalculations();
   }
 
   /**
@@ -37,7 +41,7 @@ class MgvToken {
    * ```
    */
   fromUnits(amount: string | number | ethers.BigNumber): Big {
-    return this.mgv.fromUnits(amount, this.decimals);
+    return this.unitCalculations.fromUnits(amount, this.decimals);
   }
   /**
    * Convert base/quote from public amount to internal contract amount.
@@ -54,7 +58,7 @@ class MgvToken {
    * ```
    */
   toUnits(amount: Bigish): ethers.BigNumber {
-    return this.mgv.toUnits(amount, this.decimals);
+    return this.unitCalculations.toUnits(amount, this.decimals);
   }
 
   /**
@@ -90,6 +94,25 @@ class MgvToken {
     }
     const amount = await this.contract.allowance(params.owner, params.spender);
     return this.fromUnits(amount);
+  }
+
+  /**
+   * Read decimals for `tokenName` on given network.
+   * To read decimals directly onchain, use `fetchDecimals`.
+   */
+  static getDecimals(tokenName: string): number {
+    if (typeof loadedDecimals[tokenName] !== "number") {
+      throw Error(`No decimals on record for token ${tokenName}`);
+    }
+
+    return loadedDecimals[tokenName] as number;
+  }
+
+  /**
+   * Set decimals for `tokenName` on current network.
+   */
+  static setDecimals(tokenName: string, dec: number): void {
+    loadedDecimals[tokenName] = dec;
   }
 
   /**

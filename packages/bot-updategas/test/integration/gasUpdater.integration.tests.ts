@@ -7,7 +7,11 @@ const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { Mangrove } from "@mangrovedao/mangrove.js";
-import { GasUpdater, OracleSourceConfiguration } from "../../src/GasUpdater";
+import {
+  GasUpdater,
+  MaxUpdateConstraint,
+  OracleSourceConfiguration,
+} from "../../src/GasUpdater";
 import { config } from "../../src/util/config";
 import * as typechain from "../../src/types/typechain";
 import { Signer, ethers } from "ethers";
@@ -64,6 +68,9 @@ describe("GasUpdater integration tests", () => {
     );
 
     const constantGasPrice = config.get<number>("constantOracleGasPrice");
+    const maxUpdateConstraint = config.get<MaxUpdateConstraint>(
+      "maxUpdateConstraint"
+    );
 
     const oracleSourceConfiguration: OracleSourceConfiguration = {
       OracleGasPrice: constantGasPrice,
@@ -74,7 +81,8 @@ describe("GasUpdater integration tests", () => {
     const gasUpdater = new GasUpdater(
       mgv,
       acceptableGasGapToOracle,
-      oracleSourceConfiguration
+      oracleSourceConfiguration,
+      maxUpdateConstraint
     );
 
     // Test
@@ -85,5 +93,71 @@ describe("GasUpdater integration tests", () => {
     return Promise.all([
       expect(globalConfig.gasprice).to.equal(constantGasPrice),
     ]);
+  });
+
+  it("should not set the gas price in Mangrove, when the max update constraint constant is lower than the acceptableGasGap", async function () {
+    // read in configured test config - skipping gas oracle URL, as we use constant here
+    const acceptableGasGapToOracle = config.get<number>(
+      "acceptableGasGapToOracle"
+    );
+
+    const constantGasPrice = config.get<number>("constantOracleGasPrice");
+
+    const oracleSourceConfiguration: OracleSourceConfiguration = {
+      OracleGasPrice: constantGasPrice,
+      _tag: "Constant",
+    };
+
+    const maxUpdateConstraint: MaxUpdateConstraint = {
+      constant: 0.4,
+    };
+
+    // setup gasUpdater
+    const gasUpdater = new GasUpdater(
+      mgv,
+      acceptableGasGapToOracle,
+      oracleSourceConfiguration,
+      maxUpdateConstraint
+    );
+
+    // Test
+    await gasUpdater.checkSetGasprice();
+
+    // Assert
+    const globalConfig = await mgv.config();
+    return Promise.all([expect(globalConfig.gasprice).to.equal(0)]);
+  });
+
+  it("should not set the gas price in Mangrove, when the max update constraint percentage is lower than the acceptableGasGap", async function () {
+    // read in configured test config - skipping gas oracle URL, as we use constant here
+    const acceptableGasGapToOracle = config.get<number>(
+      "acceptableGasGapToOracle"
+    );
+
+    const constantGasPrice = config.get<number>("constantOracleGasPrice");
+
+    const oracleSourceConfiguration: OracleSourceConfiguration = {
+      OracleGasPrice: constantGasPrice,
+      _tag: "Constant",
+    };
+
+    const maxUpdateConstraint: MaxUpdateConstraint = {
+      percentage: 5,
+    };
+
+    // setup gasUpdater
+    const gasUpdater = new GasUpdater(
+      mgv,
+      acceptableGasGapToOracle,
+      oracleSourceConfiguration,
+      maxUpdateConstraint
+    );
+
+    // Test
+    await gasUpdater.checkSetGasprice();
+
+    // Assert
+    const globalConfig = await mgv.config();
+    return Promise.all([expect(globalConfig.gasprice).to.equal(0)]);
   });
 });

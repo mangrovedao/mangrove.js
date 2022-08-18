@@ -36,10 +36,10 @@ export const mochaHooks = {
     // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
 
     await mgv.contract
-      .activate(tokenA.address, tokenB.address, 0, 10, 20000)
+      .activate(tokenA.address, tokenB.address, 500, 10, 20000)
       .then((tx) => tx.wait());
     await mgv.contract
-      .activate(tokenB.address, tokenA.address, 0, 10, 20000)
+      .activate(tokenB.address, tokenA.address, 500, 10, 20000)
       .then((tx) => tx.wait());
 
     await tokenA.contract.mint(
