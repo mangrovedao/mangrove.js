@@ -1,16 +1,17 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.13;
 
 import {ToyENS} from "./lib/ToyENS.sol";
 import {MangroveDeployer} from "./lib/MangroveDeployer.sol";
+import {Deployer} from "./lib/Deployer.sol";
 
-contract MumbaiDeploy is MangroveDeployer {
+contract MumbaiDeploy is Deployer {
   function run() public {
-    deployMangrove({
+    new MangroveDeployer().deploy({
       chief: msg.sender,
       gasprice: 50,
-      gasmax: 1_000_000,
-      useENS: false
+      gasmax: 1_000_000
     });
+    outputDeployment();
   }
 }
