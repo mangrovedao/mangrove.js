@@ -92,7 +92,7 @@ describe("SimpleMaker", () => {
         );
       });
 
-      it("checks allowance for AOE provider", async () => {
+      it("checks allowance for EOA provider", async () => {
         let allowanceForEOA = await eoa_lp.mangroveAllowance("TokenB");
         assert.strictEqual(
           allowanceForEOA.toNumber(),
