@@ -33,14 +33,10 @@ describe("GasUpdater integration tests", () => {
       provider: this.server.url,
     });
 
-    const deployer = new ethers.Wallet(
-      this.accounts.deployer.key,
-      mgv._provider
-    );
     mgvAdmin = await Mangrove.connect({
       //provider: this.test?.parent?.parent?.ctx.provider,
-      signer: deployer,
-      provider: this.server.url,
+      privateKey: this.accounts.deployer.key,
+      provider: mgv._provider,
     });
 
     // Using the mangrove.js address functionallity, since there is no reason to recreate the significant infastructure for only one Contract.
