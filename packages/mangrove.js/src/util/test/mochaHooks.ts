@@ -2,16 +2,16 @@
 import { ethers } from "ethers";
 import { testServer, Mangrove } from "../..";
 
-const params = {
+const serverParams = {
   host: "127.0.0.1",
   port: 8546,
-  pipeAnvil: false,
+  pipeOut: false,
   script: "MangroveJsDeploy",
 };
 
 export const mochaHooks = {
   async beforeAll() {
-    this.server = await testServer(params).defaultRun();
+    this.server = await testServer(serverParams).defaultRun();
     this.accounts = {
       deployer: this.server.accounts[0],
       maker: this.server.accounts[1],

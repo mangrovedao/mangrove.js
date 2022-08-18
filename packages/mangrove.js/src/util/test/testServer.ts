@@ -131,7 +131,7 @@ const spawn = async (params: any) => {
       }
     }, 3000);
     anvil.stdout.on("data", (data) => {
-      if (params.pipeAnvil) {
+      if (params.pipeOut) {
         console.log(data);
       }
       if (ready !== null) {
@@ -202,8 +202,10 @@ const deploy = async (params: any) => {
           env: process.env,
         },
         (error, stdout, stderr) => {
-          console.error("forge cmd stdout:");
-          console.error(stdout);
+          if (params.pipeOut || error) {
+            console.error("forge cmd stdout:");
+            console.error(stdout);
+          }
           if (stderr.length > 0) {
             console.error("forge cmd stderr:");
             console.error(stderr);
@@ -319,7 +321,7 @@ export { getAllToyENSEntries };
 if (require.main === module) {
   const main = async () => {
     const { serverClosedPromise } = await init({
-      pipeAnvil: true,
+      pipeOut: true,
     }).defaultRun();
     if (serverClosedPromise) {
       console.log("Server ready.");
