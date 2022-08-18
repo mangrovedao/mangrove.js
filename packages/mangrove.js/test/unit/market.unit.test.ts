@@ -3,7 +3,7 @@ import assert from "assert";
 import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
-import { Market } from "../..";
+import { Market } from "../../src";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {

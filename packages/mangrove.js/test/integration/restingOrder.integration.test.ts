@@ -122,7 +122,8 @@ describe("RestingOrder", () => {
           restingOrder: { provision: provision },
         });
       assert(
-        orderResult.summary.got.eq(10),
+        // 5% fee configured in integration-test-root-hooks.js
+        orderResult.summary.got.eq(10 * 0.95),
         "Taker received an incorrect amount"
       );
       assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
@@ -168,7 +169,8 @@ describe("RestingOrder", () => {
       await w(mgv.token("TokenA").approveMangrove());
 
       const result = await market.sell({ wants: 5, gives: 5 });
-      assert(result.summary.got.eq(5), "Sell order went wrong");
+      // 5% fee configured in integration-test-root-hooks.js
+      assert(result.summary.got.eq(5 * 0.95), "Sell order went wrong");
       assert(
         await orderContractAsLP.market.isLive(
           "bids",
