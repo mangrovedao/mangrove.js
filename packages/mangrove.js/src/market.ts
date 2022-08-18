@@ -90,6 +90,7 @@ namespace Market {
     }[];
     ba: "asks" | "bids";
     fillWants?: boolean;
+    requireOffersToFail?: boolean;
   };
 
   /**
@@ -520,6 +521,9 @@ class Market {
    *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
    * `ba`: whether to snipe `asks` or `bids`
    * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
+   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   *     Note: Setting `requireOffersToFail=true` uses the cleaner contract and the taker needs to approve spending, with
+   *     `await mgv.contract.approve(market.base.address, market.quote.address, mgv.cleanerContract.address, amount);`
    */
   snipe(
     params: Market.SnipeParams,
@@ -527,6 +531,7 @@ class Market {
   ): Promise<Market.OrderResult> {
     return this.trade.snipe(params, overrides, this);
   }
+
   async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
     const semibook = bs === "buy" ? this.#asksSemibook : this.#bidsSemibook;
     const {
