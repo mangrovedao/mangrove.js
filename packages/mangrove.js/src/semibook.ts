@@ -26,14 +26,18 @@ namespace Semibook {
    * Specification of how much volume to (potentially) trade on the semibook.
    *
    * `{given:100, to:"buy"}` means buying 100 base tokens.
+   * `{given:100, to:"buy", boundary: 10})` means buying 100 quote tokens for a max. avg. price of 1/10 (boundary/given).
    *
    * `{given:10, to:"sell"})` means selling 10 quote tokens.
+   * `{given:10, to:"sell", boundary: 5})` means selling 10 quote tokens for a min. avg. price of 0.5 (given/boundary).
    */
   export type VolumeParams = {
     /** Amount of token to trade. */
     given: Bigish;
     /** Whether `given` is base to be bought or quote to be sold. */
     to: "buy" | "sell";
+    /** Optional: induce a max avg. price after which to stop buying/selling. */
+    boundary?: Bigish;
   };
 
   /**
@@ -281,36 +285,100 @@ class Semibook implements Iterable<Market.Offer> {
    * The returned `givenResidue` is how much of the given token that cannot be
    * traded due to insufficient volume on the book.
    */
+
   async estimateVolume(
     params: Semibook.VolumeParams
   ): Promise<Market.VolumeEstimate> {
-    const TRADE_OPERATION_FILLER_DRAINER_DICT = {
-      buy: { drainer: "gives", filler: "wants" },
-      sell: { drainer: "wants", filler: "gives" },
-    } as const;
+    const buying = params.to == "buy";
+    // normalize params, if no limit given then:
+    // if 'buying N units' set max sell to max(uint256),
+    // if 'selling N units' set buy desire to 0
+    const boundary =
+      "boundary" in params
+        ? params.boundary
+        : buying
+        ? Big(2).pow(256).minus(1)
+        : 0;
+    const initialWants = Big(buying ? params.given : boundary);
+    const initialGives = Big(buying ? boundary : params.given);
 
-    const { drainer, filler } = TRADE_OPERATION_FILLER_DRAINER_DICT[params.to];
+    const { wants, gives, totalGot, totalGave } =
+      await this.simulateMarketOrder(initialWants, initialGives, buying);
 
-    return await this.#foldLeftUntil(
-      { estimatedVolume: Big(0), givenResidue: Big(params.given) },
-      (accumulator) => accumulator.givenResidue.eq(0),
-      (offer, accumulator) => {
-        const offerDrainerVolume = offer[drainer];
-        const offerVolumeDrained = accumulator.givenResidue.gt(
-          offerDrainerVolume
-        )
-          ? offerDrainerVolume
-          : accumulator.givenResidue;
-        const offerFillerVolume = offer[filler];
-        const offerPercentageUsed = offerVolumeDrained.div(offerDrainerVolume);
-        const offerVolumeFilled = offerFillerVolume.times(offerPercentageUsed);
-        accumulator.givenResidue =
-          accumulator.givenResidue.minus(offerVolumeDrained);
-        accumulator.estimatedVolume =
-          accumulator.estimatedVolume.plus(offerVolumeFilled);
-        return accumulator;
+    const estimatedVolume = buying ? totalGave : totalGot;
+    const givenResidue = buying ? wants : gives;
+
+    return { estimatedVolume, givenResidue };
+  }
+
+  /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */
+
+  async simulateMarketOrder(
+    initialWants: Big,
+    initialGives: Big,
+    fillWants: boolean
+  ): Promise<{ wants: Big; gives: Big; totalGot: Big; totalGave: Big }> {
+    // reproduce solidity behavior
+    const previousBigRm = Big.RM;
+    Big.RM = Big.roundDown;
+
+    const initialAccumulator = {
+      stop: false,
+      wants: initialWants,
+      gives: initialGives,
+      totalGot: Big(0),
+      totalGave: Big(0),
+    };
+
+    const res = await this.#foldLeftUntil(
+      initialAccumulator,
+      (acc) => {
+        return !(!acc.stop && (fillWants ? acc.wants.gt(0) : acc.gives.gt(0)));
+      },
+      (offer, acc) => {
+        const takerWants = acc.wants;
+        const takerGives = acc.gives;
+
+        // bad price
+        if (takerWants.mul(offer.wants).gt(takerGives.mul(offer.gives))) {
+          acc.stop = true;
+        } else {
+          if (
+            (fillWants && takerWants.gt(offer.gives)) ||
+            (!fillWants && takerGives.gt(offer.wants))
+          ) {
+            acc.wants = offer.gives;
+            acc.gives = offer.wants;
+          } else {
+            if (fillWants) {
+              const product = takerWants.mul(offer.wants);
+              acc.gives = product
+                .div(offer.gives)
+                .add(product.mod(offer.gives).eq(0) ? 0 : 1);
+            } else {
+              if (offer.wants.eq(0)) {
+                acc.wants = offer.gives;
+              } else {
+                acc.wants = takerGives.mul(offer.gives).div(offer.wants);
+              }
+            }
+          }
+        }
+        if (!acc.stop) {
+          acc.totalGot = acc.totalGot.add(acc.wants);
+          acc.totalGave = acc.totalGave.add(acc.gives);
+          acc.wants = initialWants.gt(acc.totalGot)
+            ? initialWants.sub(acc.totalGot)
+            : Big(0);
+          acc.gives = initialGives.sub(acc.totalGave);
+        }
+        return acc;
       }
     );
+
+    Big.RM = previousBigRm;
+
+    return res;
   }
 
   /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
