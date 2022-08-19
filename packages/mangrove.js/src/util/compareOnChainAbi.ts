@@ -30,7 +30,7 @@ class CompareOnChainAbis {
     );
     const localAbi = localAbiJson.abi;
     const onchainAbi = JSON.parse(data.result);
-    //FIXME: workaround for the onchain abi using slightly different types
+    // workaround for the onchain abi using slightly different types
     const trimmedOnchainAbi = JSON.stringify(onchainAbi)
       .replaceAll("Local.t", "t")
       .replaceAll("Global.t", "t")
@@ -92,6 +92,6 @@ compareAbis
           polygonscanApiKey,
           "MangroveOrderEnriched"
         ),
-      1000
+      1000 // timeout needed to get github workflow to work
     )
   );

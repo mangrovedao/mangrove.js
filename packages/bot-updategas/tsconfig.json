@@ -3,7 +3,7 @@
     "module": "CommonJS",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2020",
+    "target": "ES2021",
     "strict": true,
     "noImplicitAny": true,
     "noErrorTruncation": true,

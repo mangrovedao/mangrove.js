@@ -4,7 +4,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": false, // this is the default. Calling it out since esbuild does not support it.
-    "target": "es2020",
+    "target": "ES2021",
     "strict": true,
     "noImplicitAny": true,
     "noErrorTruncation": true,
