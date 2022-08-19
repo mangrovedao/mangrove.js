@@ -4,7 +4,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2020",
+    "target": "ES2021",
     "strict": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,

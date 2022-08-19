@@ -28,7 +28,8 @@
     "typechain": "(rimraf \"src/types/typechain/*\" || exit 0) && npx typechain --target=ethers-v5 --out-dir=src/types/typechain \"src/abis/*.json\"",
     "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts",
     "tscbuild": "tsc --build",
-    "esbuild": "node esbuild.mjs"
+    "esbuild": "node esbuild.mjs",
+    "compareAbis": "npx ts-node ./src/compareOnChainAbi.ts"
   },
   "files": [
     "dist/",
@@ -70,6 +71,7 @@
     "big.js": "^6.1.1",
     "esbuild-plugin-resolve": "^1.0.3",
     "ethers": "^5.6.4",
+    "lodash": "^4.17.21",
     "node-cleanup": "^2.1.2"
   },
   "devDependencies": {
