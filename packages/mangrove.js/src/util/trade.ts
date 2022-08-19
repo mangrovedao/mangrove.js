@@ -97,12 +97,12 @@ class Trade {
     return Big(price)[priceComparison](Big(referencePrice));
   }
 
-  isPriceBetter(price: Bigish, referencePrice: Bigish, ba: "asks" | "bids") {
+  isPriceBetter(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
     const priceComparison = ba === "asks" ? "lt" : "gt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
-  isPriceWorse(price: Bigish, referencePrice: Bigish, ba: "asks" | "bids") {
+  isPriceWorse(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
     const priceComparison = ba === "asks" ? "gt" : "lt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
@@ -324,7 +324,7 @@ class Trade {
     }: {
       wants: ethers.BigNumber;
       gives: ethers.BigNumber;
-      orderType: "buy" | "sell";
+      orderType: Market.BS;
       fillWants: boolean;
       market: Market;
     },
@@ -397,7 +397,7 @@ class Trade {
       makerWants: ethers.BigNumber;
       gives: ethers.BigNumber;
       makerGives: ethers.BigNumber;
-      orderType: "buy" | "sell";
+      orderType: Market.BS;
       fillWants: boolean;
       params: Market.RestingOrderParams;
       market: Market;
@@ -499,7 +499,7 @@ class Trade {
     return result;
   }
 
-  baToBs(ba: "asks" | "bids"): "buy" | "sell" {
+  baToBs(ba: Market.BA): Market.BS {
     return ba === "asks" ? "buy" : "sell";
   }
 
@@ -529,7 +529,7 @@ class Trade {
         takerGives: ethers.BigNumber;
         gasLimit?: number;
       }[];
-      ba: "asks" | "bids";
+      ba: Market.BA;
       fillWants: boolean;
       requireOffersToFail?: boolean;
       market: Market;

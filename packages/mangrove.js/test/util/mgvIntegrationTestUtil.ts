@@ -26,9 +26,7 @@ export type Balances = {
   tokenB: ethers.BigNumber;
 };
 
-export type BA = "bids" | "asks";
-
-export const bidsAsks: BA[] = ["bids", "asks"];
+export const bidsAsks: Market.BA[] = ["bids", "asks"];
 
 export type AddressAndSigner = { address: string; signer: string };
 
@@ -188,7 +186,7 @@ export const logBalances = async (
 
 export const getTokens = (
   market: Market,
-  ba: BA
+  ba: Market.BA
 ): {
   inboundToken: MgvToken;
   outboundToken: MgvToken;
@@ -201,7 +199,7 @@ export const getTokens = (
 
 export type NewOffer = {
   market: Market;
-  ba: BA;
+  ba: Market.BA;
   maker: Account;
   wants?: ethers.BigNumberish;
   gives?: ethers.BigNumberish;
@@ -352,7 +350,7 @@ export const postNewOffer = async ({
 
 export const postNewRevertingOffer = async (
   market: Market,
-  ba: BA,
+  ba: Market.BA,
   maker: Account
 ): Promise<void> => {
   await postNewOffer({
@@ -367,7 +365,7 @@ export const postNewRevertingOffer = async (
 
 export const postNewSucceedingOffer = async (
   market: Market,
-  ba: BA,
+  ba: Market.BA,
   maker: Account
 ): Promise<void> => {
   await postNewOffer({ market, ba, maker });
@@ -375,7 +373,7 @@ export const postNewSucceedingOffer = async (
 
 export const postNewFailingOffer = async (
   market: Market,
-  ba: BA,
+  ba: Market.BA,
   maker: Account
 ): Promise<void> => {
   await postNewOffer({ market, ba, maker, shouldFail: true });
