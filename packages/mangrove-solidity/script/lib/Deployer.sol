@@ -18,39 +18,24 @@ import {ToyENS} from "./ToyENS.sol";
    .deploy();
 */
 abstract contract Deployer is Script {
-  ToyENS localEns; // singleton local ens instance
+  ToyENS ens; // singleton local ens instance
   ToyENS remoteEns; // out-of-band agreed upon toy ens address
 
   constructor() {
     // enforce singleton ENS, so all deploys can be collected in outputDeployment
     // otherwise Deployer scripts would need to inherit from one another
     // which would prevent deployer script composition
-    localEns = ToyENS(address(bytes20(hex"decaf1")));
+    ens = ToyENS(address(bytes20(hex"decaf1")));
     remoteEns = ToyENS(address(bytes20(hex"decaf0")));
 
-    if (address(localEns).code.length == 0) {
-      vm.etch(address(localEns), address(new ToyENS()).code);
+    if (address(ens).code.length == 0) {
+      vm.etch(address(ens), address(new ToyENS()).code);
     }
   }
 
-  function register(string memory name, address addr) internal {
-    register(name, addr, false);
-  }
-
-  function register(
-    string memory name,
-    address addr,
-    bool isToken
-  ) internal {
-    localEns.set(name, addr, isToken);
-  }
-
   function outputDeployment() internal {
-    (
-      string[] memory names,
-      address[] memory addrs,
-      bool[] memory isToken
-    ) = localEns.all();
+    (string[] memory names, address[] memory addrs, bool[] memory isToken) = ens
+      .all();
 
     // toy ens is set, use it
     if (address(remoteEns).code.length > 0) {

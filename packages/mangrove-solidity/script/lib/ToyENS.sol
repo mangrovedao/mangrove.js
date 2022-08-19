@@ -15,6 +15,10 @@ contract ToyENS {
     isToken = _isToken[name];
   }
 
+  function set(string calldata name, address addr) public {
+    set(name, addr, false);
+  }
+
   function set(
     string calldata name,
     address addr,
