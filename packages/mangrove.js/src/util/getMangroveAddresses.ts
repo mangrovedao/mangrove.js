@@ -27,16 +27,7 @@ const addressesFile = path.resolve("src/constants/addresses.json");
 const addresses = JSON.parse(fs.readFileSync(addressesFile, "utf8"));
 const logName = "run-latest.json";
 
-const chainkeys = {
-  maticmum: [
-    "Mangrove",
-    "MgvCleaner",
-    "MgvReader",
-    "MgvOracle",
-    "MangroveOrder",
-    "MangroveOrderEnriched",
-  ],
-};
+const chainkeys = ["maticmum"];
 
 /* Argument parsing */
 const args = minimist(process.argv.slice(2), {
@@ -71,40 +62,29 @@ Broadcast logs are the form:
   ]
 
 */
-const readBroadcast = function (
-  broadcastLog: any,
-  contractNames: string[]
-): Record<string, string> | undefined {
-  const fullAddressMap: Record<string, string[]> = {};
-  const addressMap: Record<string, string> = {};
+const readBroadcast = function (broadcastLog: any): Record<string, string> {
+  const addresses: Record<string, string> = {};
 
   for (const tx of broadcastLog.transactions) {
     if (tx.transactionType === "CREATE" && tx.contractName !== null) {
-      fullAddressMap[tx.contractName] ??= [];
-      fullAddressMap[tx.contractName].push(tx.contractAddress);
+      if (addresses[tx.contractName]) {
+        throw new Error(
+          `Expected exactly one address for contract ${tx.contractName}. Had ${
+            addresses[tx.contractName]
+          }, now also ${tx.contractAddress}`
+        );
+      }
+
+      addresses[tx.contractName] = tx.contractAddress;
     }
   }
 
-  for (const contractName of contractNames) {
-    if (!fullAddressMap[contractName]) {
-      console.warn(
-        `No contract ${contractName} deployed in this broadcast, skipping.`
-      );
-    } else if (fullAddressMap[contractName].length !== 1) {
-      console.error(
-        `Error: expected exactly one address for contract ${contractName}. Got: ${fullAddressMap[contractName]}`
-      );
-      process.exit(1);
-    } else {
-      addressMap[contractName] = fullAddressMap[contractName][0];
-    }
-  }
-  return addressMap;
+  return addresses;
 };
 
 /* Main program */
 
-for (const [chainkey, requiredContracts] of Object.entries(chainkeys)) {
+for (const chainkey of chainkeys) {
   const broadcast = path.join(broadcastDir, chainkey, logName);
   let latestData: string;
   try {
@@ -114,7 +94,7 @@ for (const [chainkey, requiredContracts] of Object.entries(chainkeys)) {
     continue;
   }
   const latest = JSON.parse(latestData);
-  const chainAddresses = readBroadcast(latest, requiredContracts);
+  const chainAddresses = readBroadcast(latest);
   addresses[chainkey] = { ...addresses[chainkey], ...chainAddresses };
 }
 
