@@ -1147,8 +1147,6 @@ jobs:
     - security-guard
     - mangrove-solidity
     - commonlib-js
-    - faucet
-    - hardhat-utils
     - mangrove-solidity-doc
     - mangrove-js
     - mangrove-js-doc
