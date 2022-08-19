@@ -29,7 +29,7 @@
     "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts",
     "tscbuild": "tsc --build",
     "esbuild": "node esbuild.mjs",
-    "compareAbis": "npx ts-node ./src/compareOnChainAbi.ts"
+    "compareAbis": "npx ts-node ./src/util/compareOnChainAbi.ts"
   },
   "files": [
     "dist/",

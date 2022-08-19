@@ -411,10 +411,6 @@ jobs:
     - name: Abi check
       run: yarn run compareAbis
 
-    - name: Check that the AbiAreEqual.json exists
-      run: |
-        [ -f AbiAreEqual.json ] && echo "File exist" || echo "::warning :: The abi onchain is not equal to mangrove.js local version"
-
     # == run and report tests == 
     - name: Mangrove.js Tests
       run: yarn run test:coverage
