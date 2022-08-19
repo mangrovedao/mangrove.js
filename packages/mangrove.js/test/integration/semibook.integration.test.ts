@@ -243,11 +243,13 @@ describe("Semibook integration tests suite", () => {
   describe("getBestInCache", () => {
     it("returns undefined, because market made before offer", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      market.getSemibook("asks").disconnect();
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
+
       await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
       const bestInCache = market.getSemibook("asks").getBestInCache();
       expect(bestInCache).to.be.undefined;
@@ -258,8 +260,8 @@ describe("Semibook integration tests suite", () => {
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
-      await mgvTestUtil.eventsForLastTxHaveBeenGenerated();
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      await mgvTestUtil.waitForBooksForLastTx(market);
       const bestInCache = market.getSemibook("asks").getBestInCache();
       expect(bestInCache).to.be.eq(1);
     });
