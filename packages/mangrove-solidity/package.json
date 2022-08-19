@@ -16,7 +16,7 @@
     "doc": "solcco -f doc/MgvDoc.html preprocessing/structs.js src/MgvLib.sol src/MgvRoot.sol src/MgvHasOffers.sol src/MgvOfferMaking.sol src/MgvOfferTaking.sol src/MgvOfferTakingWithPermit.sol src/MgvGovernable.sol src/AbstractMangrove.sol src/Mangrove.sol src/InvertedMangrove.sol",
     "preproc": "node preprocessing/run.js",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
-    "test": "dotenv -e .env.test.local -- forge test -vvv"
+    "test": "forge test -vvv"
   },
   "lint-staged": {
     "*.{js,css,md,sol,json}": "prettier --write --ignore-unknown"
