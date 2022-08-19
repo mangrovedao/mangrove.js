@@ -1,5 +1,13 @@
 # next version
 
+# 0.9.1 (August 2022)
+
+- Add ability in `market.ts` to snipe a list of targets
+- Testing: Refactor to greatly improve ability to unit test, and add a considerable amount of tests
+- Generalize volume estimations to better match mangrove's contract core
+- Bump version of a number of dependencies
+- Update out-of-date ABIs
+
 # 0.9.0 (August 2022)
 
 - several bugfixes

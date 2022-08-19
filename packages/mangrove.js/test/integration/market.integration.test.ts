@@ -947,7 +947,7 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(2);
 
-    // 5% fee configured in integration-test-root-hooks.js
+    // 5% fee configured in mochaHooks.js
     expect(result.summary.got.toNumber()).to.be.equal(0.95 * 3e-12);
     expect(result.summary.gave.toNumber()).to.be.equal(2e-18);
     expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
@@ -1007,7 +1007,7 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(2);
 
-    // 5% fee configured in integration-test-root-hooks.js
+    // 5% fee configured in mochaHooks.js
     expect(result.summary.got.toNumber()).to.be.equal(3e-12 * 0.95);
     expect(result.summary.gave.toNumber()).to.be.equal(2e-16);
   });

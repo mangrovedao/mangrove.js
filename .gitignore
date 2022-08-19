@@ -30,3 +30,4 @@ packages/mangrove-solidity/*-mumbai.sh
 
 # js tests state dumps
 **/mangroveJsTestServerState.dump
+merged.info

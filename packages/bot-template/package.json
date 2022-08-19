@@ -20,8 +20,10 @@
     "clean-this-package": "rimraf build tsconfig.tsbuildinfo",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
-    "test": "npm-run-all \"test:*\"",
-    "test:integration": "cross-env NODE_ENV=test mocha --max-old-space-size=8192 --config test/mocha/config/integration-tests.json",
+    "test": "yarn run test:unit && yarn run test:integration",
+    "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/unit-tests.json --exit",
+    "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --max-old-space-size=8192 --config test/mocha/config/integration-tests.json --exit ",
+    "test:coverage": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --max-old-space-size=8192 --config test/mocha/config/coverage-tests.json --exit ",
     "start": "node build/index.js",
     "write-env-info-file": "node ./scripts/writeEnvInfoFile.js"
   },
@@ -41,6 +43,7 @@
     "ethers": "^5.6.4",
     "fast-safe-stringify": "^2.1.1",
     "finalhandler": "^1.2.0",
+    "nyc": "^15.1.0",
     "serve-static": "^1.15.0"
   },
   "devDependencies": {
