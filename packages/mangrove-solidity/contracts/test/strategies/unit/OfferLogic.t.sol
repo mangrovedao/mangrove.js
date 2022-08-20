@@ -165,6 +165,8 @@ contract OfferLogicTest is MangroveTest {
   }
 
   function test_ReserveUpdatedWhenTradeSucceeds() public {
+    // for multi user contract `tokenBalance` returns the balance of msg.sender's reserve
+    // so one needs to impersonate maker to obtain the correct balance
     vm.startPrank(maker);
     uint balOut = makerContract.tokenBalance(mko.outbound_tkn);
     uint balIn = makerContract.tokenBalance(mko.inbound_tkn);
