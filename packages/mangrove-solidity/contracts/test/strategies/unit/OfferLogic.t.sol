@@ -6,13 +6,15 @@ import "mgv_test/lib/Fork.sol";
 
 import "mgv_src/strategies/single_user/SimpleMaker.sol";
 
+// unit tests for (single /\ multi) user strats (i.e unit tests that are non specific to either single or multi user feature)
+
 contract OfferLogicTest is MangroveTest {
   TestToken weth;
   TestToken usdc;
   address payable maker;
   address payable taker;
   address reserve;
-  SimpleMaker makerContract;
+  IOfferLogic makerContract;
   IOfferLogic.MakerOrder mko;
   bool forked;
 
@@ -72,13 +74,14 @@ contract OfferLogicTest is MangroveTest {
     // instanciates makerContract
     setupMakerContract();
     setupRouter();
+    vm.startPrank(maker);
     deal($(weth), makerContract.reserve(), 1 ether);
     deal($(usdc), makerContract.reserve(), cash(usdc, 2000));
-
-    vm.prank(maker);
     makerContract.activate(tkn_pair(weth, usdc));
+    vm.stopPrank();
   }
 
+  // override this to use MultiUser strats
   function setupMakerContract() internal virtual prank(maker) {
     makerContract = new SimpleMaker({
       _MGV: IMangrove($(mgv)), // TODO: remove IMangrove dependency?
@@ -86,25 +89,29 @@ contract OfferLogicTest is MangroveTest {
     });
   }
 
+  // override this function to use a specific router for the strat
   function setupRouter() internal virtual {}
 
-  function test_checkList() public view {
+  function test_checkList() public {
+    vm.startPrank(maker);
     makerContract.checkList(tkn_pair(weth, usdc));
+    vm.stopPrank();
   }
 
-  function test_AdminCanSetReserve() public {
+  function test_MakerCanSetReserve() public {
     address new_reserve = freshAddress();
-    vm.prank(maker);
+    vm.startPrank(maker);
     makerContract.set_reserve(new_reserve);
     assertEq(makerContract.reserve(), new_reserve, "Incorrect reserve");
+    vm.stopPrank();
   }
 
-  function test_AdminCanPostNewOffer() public {
+  function test_MakerCanPostNewOffer() public {
     vm.prank(maker);
     makerContract.newOffer{value: 0.1 ether}(mko);
   }
 
-  function test_AdminCanRetractOffer() public {
+  function test_MakerCanRetractOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
     uint makerBalWei = maker.balance;
@@ -122,7 +129,7 @@ contract OfferLogicTest is MangroveTest {
     );
   }
 
-  function test_AdminCanUpdateOffer() public {
+  function test_MakerCanUpdateOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
     mko.offerId = offerId;
@@ -158,11 +165,15 @@ contract OfferLogicTest is MangroveTest {
   }
 
   function test_ReserveUpdatedWhenTradeSucceeds() public {
+    vm.startPrank(maker);
     uint balOut = makerContract.tokenBalance(mko.outbound_tkn);
     uint balIn = makerContract.tokenBalance(mko.inbound_tkn);
+    vm.stopPrank();
 
     (uint takergot, uint takergave, uint bounty, uint fee) = performTrade();
     assertTrue(bounty == 0 && takergot > 0, "trade failed");
+
+    vm.startPrank(maker);
     assertEq(
       makerContract.tokenBalance(mko.outbound_tkn),
       balOut - (takergot + fee),
@@ -173,9 +184,10 @@ contract OfferLogicTest is MangroveTest {
       balIn + takergave,
       "incorrect in balance"
     );
+    vm.stopPrank();
   }
 
-  function test_AdminCanWithdrawTokens() public {
+  function test_MakerCanWithdrawTokens() public {
     // note in order to be routing strategy agnostic one cannot easily mockup a trade
     // for aave routers reserve will hold overlying while for simple router reserve will hold the asset
     uint balusdc = usdc.balanceOf(maker);
