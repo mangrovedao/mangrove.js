@@ -242,8 +242,8 @@ class Mangrove {
   }
 
   /* Return MgvToken instance tied. */
-  token(name: string): MgvToken {
-    return new MgvToken(name, this);
+  token(name: string, options?: MgvToken.ConstructorOptions): MgvToken {
+    return new MgvToken(name, this, options);
   }
 
   /**
