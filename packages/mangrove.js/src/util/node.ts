@@ -67,6 +67,10 @@ export const builder = (yargs) => {
       requiresArg: true,
       type: "string",
     })
+    .option("fork-url", {
+      describe: "Fork URL",
+      type: "string",
+    })
     .option("chain-id", {
       describe: "Chain id to use in node (default is anvil's default)",
       type: "number",
@@ -89,8 +93,8 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
 
 /* Spawn a test node */
 const spawn = async (params: any) => {
-  const chainIdArgs =
-    typeof params.chainId === "undefined" ? [] : ["--chain-id", params.chainId];
+  const chainIdArgs = "chainId" in params ? ["--chain-id", params.chainId] : [];
+  const forkUrlArgs = "forkUrl" in params ? ["--fork-url", params.forkUrl] : [];
   const anvil = childProcess.spawn(
     "anvil",
     [
@@ -102,7 +106,9 @@ const spawn = async (params: any) => {
       "fifo", // just mine as you receive
       "--mnemonic",
       LOCAL_MNEMONIC,
-    ].concat(chainIdArgs)
+    ]
+      .concat(chainIdArgs)
+      .concat(forkUrlArgs)
   );
 
   anvil.stdout.setEncoding("utf8");
