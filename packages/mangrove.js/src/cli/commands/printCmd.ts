@@ -1,6 +1,6 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
-import { Mangrove, Semibook } from "../..";
+import { Mangrove, Semibook, Market } from "../..";
 
 export const command = "print <base> <quote>";
 export const aliases = [];
@@ -47,7 +47,7 @@ export async function handler(argv: Arguments): Promise<void> {
   process.exit(0);
 }
 
-function printOfferList(ba: "asks" | "bids", semibook: Semibook) {
+function printOfferList(ba: Market.BA, semibook: Semibook) {
   console.group(ba);
   console.table([...semibook]);
   console.groupEnd();
