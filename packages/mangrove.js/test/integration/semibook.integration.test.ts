@@ -2,11 +2,11 @@
 import { describe, beforeEach, afterEach, it } from "mocha";
 import { expect } from "chai";
 
-import * as mgvTestUtil from "../util/mgvIntegrationTestUtil";
+import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 import { newOffer, toWei } from "../util/helpers";
 
-import { Mangrove } from "../..";
+import { Mangrove } from "../../src";
 
 import { Big } from "big.js";
 import { anything, spy, verify } from "ts-mockito";
@@ -19,19 +19,26 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
   return `<Big>${this.toString()}`; // previously just Big.prototype.toString;
 };
 
-describe("Semibook integration tests suite", () => {
+describe("Semibook integration tests suite", function () {
   let mgv: Mangrove;
+  let mgvAdmin: Mangrove;
 
   beforeEach(async function () {
     //set mgv object
     mgv = await Mangrove.connect({
-      provider: "http://localhost:8546",
+      provider: this.server.url,
+      privateKey: this.accounts.tester.key,
     });
 
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: mgv._provider,
+    });
+
+    mgvTestUtil.setConfig(mgv, this.accounts);
+
     //shorten polling for faster tests
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    mgv._provider.pollingInterval = 250;
+    (mgv._provider as any).pollingInterval = 10;
     await mgv.contract["fund()"]({ value: toWei(10) });
 
     mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
@@ -299,12 +306,8 @@ describe("Semibook integration tests suite", () => {
       const fee = 1;
       const density = BigNumber.from("2000000000000000000");
       const gasbase = 3;
-      const hre = require("hardhat");
-      const ethers = hre.ethers;
-      const deployer = (await ethers.getNamedSigners()).deployer;
-      const mgvContract = await hre.ethers.getContract("Mangrove", deployer);
       const active = await waitForTransaction(
-        mgvContract.activate(
+        mgvAdmin.contract.activate(
           market.base.address,
           market.quote.address,
           fee,
@@ -313,7 +316,7 @@ describe("Semibook integration tests suite", () => {
         )
       );
       await waitForTransaction(
-        mgvContract.activate(
+        mgvAdmin.contract.activate(
           market.base.address,
           market.quote.address,
           3,
@@ -334,12 +337,8 @@ describe("Semibook integration tests suite", () => {
       const fee = 1;
       const density = BigNumber.from("2000000000000000000");
       const gasbase = 3;
-      const hre = require("hardhat");
-      const ethers = hre.ethers;
-      const deployer = (await ethers.getNamedSigners()).deployer;
-      const mgvContract = await hre.ethers.getContract("Mangrove", deployer);
       await waitForTransaction(
-        mgvContract.activate(
+        mgvAdmin.contract.activate(
           market.base.address,
           market.quote.address,
           3,
@@ -348,7 +347,7 @@ describe("Semibook integration tests suite", () => {
         )
       );
       await waitForTransaction(
-        mgvContract.activate(
+        mgvAdmin.contract.activate(
           market.base.address,
           market.quote.address,
           fee,
