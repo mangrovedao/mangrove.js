@@ -75,7 +75,19 @@ contract Test2 is Test, Utilities {
 
   uint keyIterator = 1;
 
-  // create addr/key pairs, with/without label
+  /* Create addr/key pairs, with/without label.
+
+     Used in favor of std-forge's makeAddrAndKey/makeAddr,
+     because it ensures freshness, the label is optional, and
+     does not have to be unique.
+
+     Variants:
+     freshAccount()     :         key,address
+     freshAccount(label): labeled key,address
+     freshKey()         :         key
+     freshAddress()     :         address
+     freshAddress(label): labeled address
+  */
   function freshAccount() internal returns (uint, address payable) {
     uint key = keyIterator++;
     address payable addr = payable(vm.addr(key));
