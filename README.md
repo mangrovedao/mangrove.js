@@ -1,4 +1,4 @@
-[![CI](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml)
+[![CI](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove)
 
 This is the Mangrove monorepo which contains most of the packages developed for the Mangrove.
 

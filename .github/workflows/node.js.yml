@@ -597,31 +597,27 @@ jobs:
     - name: Save status of build
       run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
 
-    # == run and report unit tests == 
-    - name: Mangrove.js Unit Tests
-      run: yarn run test:unit
+    # == run and report tests == 
+    - name: Mangrove.js Tests
+      run: yarn run test:coverage
 
-    - name: Mangrove.js Unit Test Report
+    - name: Mangrove.js Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.mangrove_js_built && (success() || failure()) }}
       with:
-        name: Mangrove.js Unit Tests               # Name of the check run which will be created
-        path: ${{env.working-directory}}/unit-tests-report.json # Path to test results
+        name: Mangrove.js Tests               # Name of the check run which will be created
+        path: ${{env.working-directory}}/coverage-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
 
-    # == run and report integration tests == 
-    - name: Mangrove.js Integration Tests
-      run: yarn run test:integration
-
-    - name: Mangrove.js Integration Test Report
-      uses: dorny/test-reporter@v1
-      if: ${{ env.mangrove_js_built && (success() || failure()) }}
+     # == Send coverage report to Coveralls == 
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      if: github.event_name != 'pull_request_target' 
       with:
-        name: Mangrove.js Integration Tests               # Name of the check run which will be created
-        path: ${{env.working-directory}}/integration-tests-report.json # Path to test results
-        reporter: mocha-json                  # Format of test results
-
-
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
+        base-path	: ${{env.working-directory}}
+        
     # save artifacts for later stages
     - name: Zip output
       uses: montudor/action-zip@v1
@@ -837,16 +833,16 @@ jobs:
     - name: Save status of build
       run: echo "cleaning_bot_built=true" >> $GITHUB_ENV    
 
-    # == run and report tests == 
+     # == run and report tests == 
     - name: Cleaning Bot - Tests
-      run: yarn run test
+      run: yarn run test:coverage
 
     - name: Cleaning Bot - Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.cleaning_bot_built && (success() || failure()) }}
       with:
         name: Cleaning Bot - Tests                   # Name of the check run which will be created
-        path: packages/bot-cleaning/integration-tests-report.json # Path to test results
+        path: packages/bot-cleaning/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
     - name: Report Failure to Slack
@@ -960,28 +956,16 @@ jobs:
     - name: Save status of build
       run: echo "updategas_bot_built=true" >> $GITHUB_ENV    
 
-    # == run and report unit tests == 
-    - name: Update Gas Bot - Unit Tests
-      run: yarn run test:unit
+    # == run and report tests == 
+    - name: Update Gas Bot - Tests
+      run: yarn run test:coverage
 
-    - name: Update Gas Bot - Unit Test Report
+    - name: Update Gas Bot - Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.updategas_bot_built && (success() || failure()) }}
       with:
-        name: Update Gas Bot - Unit Tests                   # Name of the check run which will be created
-        path: packages/bot-updategas/unit-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
-
-    # == run and report integration tests == 
-    - name: Update Gas Bot - Integration Tests
-      run: yarn run test:integration
-
-    - name: Update Gas Bot - Integration Test Report
-      uses: dorny/test-reporter@v1
-      if: ${{ env.updategas_bot_built && (success() || failure()) }}
-      with:
-        name: Update Gas Bot - Integration Tests                   # Name of the check run which will be created
-        path: packages/bot-updategas/integration-tests-report.json # Path to test results
+        name: Update Gas Bot - Tests                   # Name of the check run which will be created
+        path: packages/bot-updategas/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
     - name: Report Failure to Slack
@@ -1103,16 +1087,16 @@ jobs:
 
     # == run and report tests == 
     - name: Noise Maker Bot - Tests
-      run: yarn run test
+      run: yarn run test:coverage
 
     - name: Noise Maker Bot - Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_maker_noise_built && (success() || failure()) }}
       with:
         name: Noise Maker Bot - Tests                                # Name of the check run which will be created
-        path: packages/bot-maker-noise/integration-tests-report.json # Path to test results
+        path: packages/bot-maker-noise/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
-
+        
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
       uses: ravsamhq/notify-slack-action@v1
@@ -1232,16 +1216,16 @@ jobs:
 
     # == run and report tests == 
     - name: Greedy Taker Bot - Tests
-      run: yarn run test
+      run: yarn run test:coverage
 
     - name: Greedy Taker Bot - Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_taker_greedy_built && (success() || failure()) }}
       with:
         name: Greedy Taker Bot - Tests                                # Name of the check run which will be created
-        path: packages/bot-taker-greedy/integration-tests-report.json # Path to test results
+        path: packages/bot-taker-greedy/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
-
+    
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
       uses: ravsamhq/notify-slack-action@v1
@@ -1360,15 +1344,15 @@ jobs:
       run: echo "template_bot_built=true" >> $GITHUB_ENV    
 
     # == run and report tests == 
-    - name: Template Bot - Tests
-      run: yarn run test
+    - name: Template Bot -  Tests
+      run: yarn run test:coverage
 
     - name: Template Bot - Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.template_bot_built && (success() || failure()) }}
       with:
         name: Template Bot - Tests                   # Name of the check run which will be created
-        path: packages/bot-template/integration-tests-report.json # Path to test results
+        path: packages/bot-template/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
 
     - name: Report Failure to Slack
