@@ -27,6 +27,7 @@ import type { Awaited } from "ts-essentials";
 import ThresholdBlockSubscriptions from "./ThresholdBlockSubscriptions";
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
+import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -221,6 +222,7 @@ class Market {
   #initClosure?: () => Promise<void>;
   trade: Trade = new Trade();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
+  prettyP = new PrettyPrint();
 
   static async connect(params: {
     mgv: Mangrove;
@@ -610,67 +612,19 @@ class Market {
   }
 
   /** Pretty prints the current state of the asks of the market */
-  consoleAsks(
-    filter?: Array<
-      | "id"
-      | "prev"
-      | "next"
-      | "gasprice"
-      | "maker"
-      | "gasreq"
-      | "offer_gasbase"
-      | "wants"
-      | "gives"
-      | "volume"
-      | "price"
-    >
-  ): void {
-    let column = [];
-    column = filter ? filter : ["id", "maker", "volume", "price"];
-    this.prettyPrint("asks", column);
+  consoleAsks(filter?: prettyPrintFilter): void {
+    this.prettyP.consoleOffers(this.getSemibook("asks"), filter);
   }
 
   /** Pretty prints the current state of the bids of the market */
-  consoleBids(
-    filter?: Array<
-      | "id"
-      | "prev"
-      | "next"
-      | "gasprice"
-      | "maker"
-      | "gasreq"
-      | "offer_gasbase"
-      | "wants"
-      | "gives"
-      | "volume"
-      | "price"
-    >
-  ): void {
-    let column = [];
-    column = filter ? filter : ["id", "maker", "volume", "price"];
-    this.prettyPrint("bids", column);
+  consoleBids(filter?: prettyPrintFilter): void {
+    this.prettyP.consoleOffers(this.getSemibook("bids"), filter);
   }
 
   /** Pretty prints the current state of the asks or bids of the market */
-  prettyPrint(
-    ba: Market.BA,
-    filter: Array<
-      | "id"
-      | "prev"
-      | "next"
-      | "gasprice"
-      | "maker"
-      | "gasreq"
-      | "overhead_gasbase"
-      | "offer_gasbase"
-      | "wants"
-      | "gives"
-      | "volume"
-      | "price"
-    >
-  ): void {
+  prettyPrint(ba: Market.BA, filter: prettyPrintFilter): void {
     const offers = this.getSemibook(ba);
-    console.table([...offers], filter);
+    this.prettyP.prettyPrint(offers, filter);
   }
 
   /**
