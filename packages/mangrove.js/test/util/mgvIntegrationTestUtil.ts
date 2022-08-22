@@ -220,13 +220,21 @@ let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
  */
 export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
 
-export async function waitForBooksForLastTx(market: Market) {
+/**
+ * Waits for last tx to be generated and optionally the market's books to be synced
+ * @param market wait for books in this market to be in sync
+ */
+export async function waitForBooksForLastTx(market?: Market) {
+  // Wait for txs so we can get the right block number for them
   await eventsForLastTxHaveBeenGenerated();
-  const lastBlock = await market.mgv._provider.getBlockNumber();
-  await market.afterBlock(lastBlock, () => {});
+  if (market) {
+    // this may be a block number slightly larger, but for tests that is ok.
+    const lastBlock = await market.mgv._provider.getBlockNumber();
+    await market.afterBlock(lastBlock, () => {});
+  }
 }
 
-export function eventsForLastTxHaveBeenGenerated() {
+function eventsForLastTxHaveBeenGenerated() {
   if (!eventsForLastTxHaveBeenGeneratedPromise) {
     throw Error(
       "call initPollOfTransactionTracking before trying to await eventsForLastTxHaveBeenGenerated"
