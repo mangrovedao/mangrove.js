@@ -432,7 +432,6 @@ jobs:
         path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
         base-path	: ${{env.working-directory}}
         git-commit: ${{github.event.pull_request.head.sha}}
-        git-branch: ${{ github.head_ref }}
         
     # save artifacts for later stages
     - name: Zip output
