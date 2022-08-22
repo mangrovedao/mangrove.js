@@ -77,13 +77,14 @@ compareAbis
       "MgvOracle"
     )
   )
-  .then(() =>
-    compareAbis.compare(
-      contractAddress.MangroveOrder,
-      polygonscanApiKey,
-      "MangroveOrder"
-    )
-  )
+  // MangroveOrder is not used at the moment. Instead MangroverOrderEnriched is used
+  // .then(() =>
+  //   compareAbis.compare(
+  //     contractAddress.MangroveOrder,
+  //     polygonscanApiKey,
+  //     "MangroveOrder"
+  //   )
+  // )
   .then(() =>
     setTimeout(
       () =>
@@ -92,6 +93,6 @@ compareAbis
           polygonscanApiKey,
           "MangroveOrderEnriched"
         ),
-      1000 // timeout needed to get github workflow to work
+      100 // timeout needed to get github workflow to work
     )
   );
