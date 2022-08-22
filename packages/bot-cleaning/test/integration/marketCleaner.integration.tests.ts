@@ -95,7 +95,7 @@ describe("MarketCleaner integration tests", () => {
       ]);
     });
 
-    it(`should not clean offer suceeding to trade 0 wants on the '${ba}' offer list`, async function () {
+    it(`should not clean offer succeeding to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
       await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
       await mgvTestUtil.waitForBooksForLastTx(market);

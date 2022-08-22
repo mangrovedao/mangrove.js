@@ -36,7 +36,7 @@ namespace LiquidityProvider {
     | ({ wants: Bigish; gives: Bigish } & OptParams);
 
   export type OfferActionResult = {
-    offerType: "bids" | "asks";
+    offerType: Market.BA;
     market: string;
     txReceipt: ethers.ContractReceipt;
     id: number;
@@ -70,7 +70,7 @@ class LiquidityProvider {
   }
 
   computeOfferProvision(
-    ba: "bids" | "asks",
+    ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision(ba, opts);
@@ -125,9 +125,7 @@ class LiquidityProvider {
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
    *  return {price,wants,gives}
    */
-  #normalizeOfferParams(
-    p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams
-  ): {
+  #normalizeOfferParams(p: { ba: Market.BA } & LiquidityProvider.OfferParams): {
     price: Big;
     wants: Big;
     gives: Big;
@@ -262,7 +260,7 @@ class LiquidityProvider {
   }
 
   #resultOfOfferAction(
-    ba: "bids" | "asks",
+    ba: Market.BA,
     type: "OfferWrite" | "OfferRetract",
     receipt: ethers.ContractReceipt
   ): LiquidityProvider.OfferActionResult {
@@ -286,7 +284,7 @@ class LiquidityProvider {
 
   /* Returns an easy to use promise of a view of the new offer. You can also catch any error thrown if the transaction was rejected/replaced. */
   async newOffer(
-    p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
+    p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     overrides: ethers.Overrides = {}
   ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
     const { wants, gives, price, gasreq, gasprice, fund } =
@@ -361,7 +359,7 @@ class LiquidityProvider {
      */
   async updateOffer(
     id: number,
-    p: { ba: "bids" | "asks" } & LiquidityProvider.OfferParams,
+    p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.providers.Log }> {
     const offerList = p.ba === "asks" ? this.asks() : this.bids();
@@ -433,7 +431,7 @@ class LiquidityProvider {
 
   /* Cancel an offer. Return a promise fulfilled when mangrove.js has received the tx and updated itself. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
   async retractOffer(
-    ba: "bids" | "asks",
+    ba: Market.BA,
     id: number,
     deprovision = false,
     overrides: ethers.Overrides = {}
@@ -555,7 +553,7 @@ class LiquidityProvider {
 
   //TODO handle multi maker case
   async getMissingProvision(
-    ba: "bids" | "asks",
+    ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     const gasreq = opts.gasreq ? opts.gasreq : await this.#gasreq();

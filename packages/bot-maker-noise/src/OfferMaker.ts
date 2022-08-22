@@ -7,9 +7,6 @@ import { MakerConfig } from "./MarketConfig";
 import { fetchJson } from "ethers/lib/utils";
 import { clearTimeout, setTimeout } from "timers";
 
-// FIXME Move to mangrove.js
-export type BA = "bids" | "asks";
-
 /**
  * An offer maker for a single Mangrove market which posts offers
  * at times following a Poisson distribution.
@@ -107,7 +104,7 @@ export class OfferMaker {
   }
 
   async #postNewOfferOnBidsOrAsks(): Promise<void> {
-    let ba: BA;
+    let ba: Market.BA;
     let offerList: Market.Offer[];
     const book = this.#market.getBook();
     if (random.float(0, 1) < this.#bidProbability) {
@@ -143,7 +140,7 @@ export class OfferMaker {
   }
 
   async #getReferencePrice(
-    ba: BA,
+    ba: Market.BA,
     offerList: Market.Offer[]
   ): Promise<Big | undefined> {
     let bestOffer: Market.Offer | undefined = undefined;
@@ -217,7 +214,7 @@ export class OfferMaker {
   }
 
   async #retractWorstOfferIfTotalLiquidityPublishedExceedsMax(
-    ba: BA,
+    ba: Market.BA,
     offerList: Market.Offer[]
   ): Promise<void> {
     if (offerList.length === 0) return;
@@ -283,7 +280,7 @@ export class OfferMaker {
     }
   }
 
-  #choosePrice(ba: BA, referencePrice: Big, lambda: Big): Big {
+  #choosePrice(ba: Market.BA, referencePrice: Big, lambda: Big): Big {
     const u = random.float(0, 1) - 0.5;
     const plug = lambda.mul(u);
 
@@ -294,7 +291,7 @@ export class OfferMaker {
   }
 
   async #postOffer(
-    ba: BA,
+    ba: Market.BA,
     quantity: Big,
     price: Big,
     referencePrice: Big,

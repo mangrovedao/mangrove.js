@@ -97,12 +97,12 @@ class Trade {
     return Big(price)[priceComparison](Big(referencePrice));
   }
 
-  isPriceBetter(price: Bigish, referencePrice: Bigish, ba: "asks" | "bids") {
+  isPriceBetter(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
     const priceComparison = ba === "asks" ? "lt" : "gt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
-  isPriceWorse(price: Bigish, referencePrice: Bigish, ba: "asks" | "bids") {
+  isPriceWorse(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
     const priceComparison = ba === "asks" ? "gt" : "lt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
@@ -262,6 +262,7 @@ class Trade {
    *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
    * `ba`: whether to snipe `asks` or `bids`
    * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
+   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
    */
   snipe(
     params: Market.SnipeParams,
@@ -295,6 +296,7 @@ class Trade {
         fillWants: fillWants,
         market: market,
         ba: params.ba,
+        requireOffersToFail: params.requireOffersToFail,
       },
       overrides
     );
@@ -322,7 +324,7 @@ class Trade {
     }: {
       wants: ethers.BigNumber;
       gives: ethers.BigNumber;
-      orderType: "buy" | "sell";
+      orderType: Market.BS;
       fillWants: boolean;
       market: Market;
     },
@@ -395,7 +397,7 @@ class Trade {
       makerWants: ethers.BigNumber;
       gives: ethers.BigNumber;
       makerGives: ethers.BigNumber;
-      orderType: "buy" | "sell";
+      orderType: Market.BS;
       fillWants: boolean;
       params: Market.RestingOrderParams;
       market: Market;
@@ -497,7 +499,7 @@ class Trade {
     return result;
   }
 
-  baToBs(ba: "asks" | "bids"): "buy" | "sell" {
+  baToBs(ba: Market.BA): Market.BS {
     return ba === "asks" ? "buy" : "sell";
   }
 
@@ -508,6 +510,7 @@ class Trade {
    * If `orderType` is `"sell"`, the quote/base market will be used,
    *
    * `fillWants` defines whether the market order stops immediately once `takerWants` tokens have been purchased or whether it tries to keep going until `takerGives` tokens have been spent.
+   * `requireOffersToFail` defines whether a successful offer will cause the call to fail without sniping anything.
    *
    * Returns a promise for snipes result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
@@ -517,6 +520,7 @@ class Trade {
       targets,
       ba,
       fillWants,
+      requireOffersToFail,
       market,
     }: {
       targets: {
@@ -525,8 +529,9 @@ class Trade {
         takerGives: ethers.BigNumber;
         gasLimit?: number;
       }[];
-      ba: "asks" | "bids";
+      ba: Market.BA;
       fillWants: boolean;
+      requireOffersToFail?: boolean;
       market: Market;
     },
     overrides: ethers.Overrides
@@ -560,7 +565,19 @@ class Trade {
         market.estimateGas(this.baToBs(ba), t.takerWants),
     ]);
 
-    const response = await market.mgv.contract.snipes(
+    // Invoking the cleanerContract does not populate receipt.events, so we instead parse receipt.logs
+    const snipeFunction = requireOffersToFail
+      ? market.mgv.cleanerContract.collect
+      : market.mgv.contract.snipes;
+    const parseLogs = requireOffersToFail
+      ? (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+          logs
+            .filter((x) => x.address === market.mgv._address)
+            .map((l) => market.mgv.contract.interface.parseLog(l))
+      : (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+          events.filter((x) => x.address === market.mgv._address);
+
+    const response = await snipeFunction(
       outboundTkn.address,
       inboundTkn.address,
       _targets,
@@ -584,11 +601,9 @@ class Trade {
     });
     const got_bq = ba === "asks" ? "base" : "quote";
     const gave_bq = ba === "asks" ? "quote" : "base";
-    for (const evt of receipt.events) {
-      if (
-        evt.address === market.mgv._address &&
-        (!evt.args.taker || receipt.from === evt.args.taker)
-      ) {
+    const parsedEvents = parseLogs(receipt.events, receipt.logs);
+    for (const evt of parsedEvents) {
+      if (evt.args && (!evt.args.taker || receipt.from === evt.args.taker)) {
         result = this.tradeEventManagement.resultOfEventCore(
           evt,
           got_bq,
