@@ -30,6 +30,8 @@ import TradeEventManagement from "./util/tradeEventManagement";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
+  export type BA = "bids" | "asks";
+  export type BS = "buy" | "sell";
   export type MgvReader = typechain.MgvReader;
   export type Failure = {
     offerId: number;
@@ -88,8 +90,9 @@ namespace Market {
       takerGives: Bigish;
       gasLimit?: number;
     }[];
-    ba: "asks" | "bids";
+    ba: Market.BA;
     fillWants?: boolean;
+    requireOffersToFail?: boolean;
   };
 
   /**
@@ -156,7 +159,7 @@ namespace Market {
   }
 
   export type BookSubscriptionCbArgument = {
-    ba: "asks" | "bids";
+    ba: Market.BA;
     offerId: number;
     offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
@@ -280,9 +283,7 @@ class Market {
         ? undefined
         : { given: opts.desiredVolume.given, to: opts.desiredVolume.to };
 
-    const getSemibookOpts: (ba: "bids" | "asks") => Semibook.Options = (
-      ba
-    ) => ({
+    const getSemibookOpts: (ba: Market.BA) => Semibook.Options = (ba) => ({
       maxOffers: opts.maxOffers,
       chunkSize: opts.chunkSize,
       desiredPrice: opts.desiredPrice,
@@ -382,7 +383,7 @@ class Market {
   /**
    * Return the asks or bids semibook
    */
-  getSemibook(ba: "bids" | "asks"): Semibook {
+  getSemibook(ba: Market.BA): Semibook {
     return ba === "asks" ? this.#asksSemibook : this.#bidsSemibook;
   }
 
@@ -402,7 +403,7 @@ class Market {
     return config.asks.active && config.bids.active;
   }
 
-  async isLive(ba: "bids" | "asks", offerId: number): Promise<boolean> {
+  async isLive(ba: Market.BA, offerId: number): Promise<boolean> {
     const offer: Market.Offer = await this.getSemibook(ba).offerInfo(offerId);
     return offer.gives.gt(0);
   }
@@ -410,15 +411,12 @@ class Market {
   /** Given a price, find the id of the immediately-better offer in the
    * book. If there is no offer with a better price, `undefined` is returned.
    */
-  async getPivotId(
-    ba: "asks" | "bids",
-    price: Bigish
-  ): Promise<number | undefined> {
+  async getPivotId(ba: Market.BA, price: Bigish): Promise<number | undefined> {
     return this.getSemibook(ba).getPivotId(price);
   }
 
   async getOfferProvision(
-    ba: "bids" | "asks",
+    ba: Market.BA,
     gasreq: number,
     gasprice: number
   ): Promise<Big> {
@@ -448,7 +446,7 @@ class Market {
   }
 
   /** Returns struct containing offer details in the current market */
-  async offerInfo(ba: "bids" | "asks", offerId: number): Promise<Market.Offer> {
+  async offerInfo(ba: Market.BA, offerId: number): Promise<Market.Offer> {
     return this.getSemibook(ba).offerInfo(offerId);
   }
 
@@ -520,6 +518,9 @@ class Market {
    *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
    * `ba`: whether to snipe `asks` or `bids`
    * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
+   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   *     Note: Setting `requireOffersToFail=true` uses the cleaner contract and the taker needs to approve spending, with
+   *     `await mgv.contract.approve(market.base.address, market.quote.address, mgv.cleanerContract.address, amount);`
    */
   snipe(
     params: Market.SnipeParams,
@@ -527,7 +528,8 @@ class Market {
   ): Promise<Market.OrderResult> {
     return this.trade.snipe(params, overrides, this);
   }
-  async estimateGas(bs: "buy" | "sell", volume: BigNumber): Promise<BigNumber> {
+
+  async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = bs === "buy" ? this.#asksSemibook : this.#bidsSemibook;
     const {
       local: { density, offer_gasbase },
@@ -651,7 +653,7 @@ class Market {
 
   /** Pretty prints the current state of the asks or bids of the market */
   prettyPrint(
-    ba: "bids" | "asks",
+    ba: Market.BA,
     filter: Array<
       | "id"
       | "prev"
@@ -799,7 +801,7 @@ class Market {
   }
 
   /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
-  getOutboundInbound(ba: "bids" | "asks"): {
+  getOutboundInbound(ba: Market.BA): {
     outbound_tkn: MgvToken;
     inbound_tkn: MgvToken;
   } {
@@ -808,7 +810,7 @@ class Market {
 
   /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
   static getOutboundInbound(
-    ba: "bids" | "asks",
+    ba: Market.BA,
     base: MgvToken,
     quote: MgvToken
   ): {
@@ -823,7 +825,7 @@ class Market {
 
   /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
   static getBaseQuoteVolumes(
-    ba: "asks" | "bids",
+    ba: Market.BA,
     gives: Big,
     wants: Big
   ): { baseVolume: Big; quoteVolume: Big } {
@@ -834,7 +836,7 @@ class Market {
   }
 
   /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
-  static getPrice(ba: "asks" | "bids", gives: Big, wants: Big): Big {
+  static getPrice(ba: Market.BA, gives: Big, wants: Big): Big {
     const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
       ba,
       gives,
@@ -844,18 +846,18 @@ class Market {
   }
 
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
-  static getWantsForPrice(ba: "asks" | "bids", gives: Big, price: Big): Big {
+  static getWantsForPrice(ba: Market.BA, gives: Big, price: Big): Big {
     return ba === "asks" ? gives.mul(price) : gives.div(price);
   }
 
   /** Determine the gives from wants and price depending on whether you're working with bids or asks. */
-  static getGivesForPrice(ba: "asks" | "bids", wants: Big, price: Big): Big {
+  static getGivesForPrice(ba: Market.BA, wants: Big, price: Big): Big {
     return ba === "asks" ? wants.div(price) : wants.mul(price);
   }
 
   /** Determine gives and wants from a volume (in base) and a price depending on whether you're working with bids or asks. */
   static getGivesWantsForVolumeAtPrice(
-    ba: "asks" | "bids",
+    ba: Market.BA,
     volume: Big,
     price: Big
   ): { gives: Big; wants: Big } {

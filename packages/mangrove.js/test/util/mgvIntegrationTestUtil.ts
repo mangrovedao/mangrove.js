@@ -26,9 +26,7 @@ export type Balances = {
   tokenB: ethers.BigNumber;
 };
 
-export type BA = "bids" | "asks";
-
-export const bidsAsks: BA[] = ["bids", "asks"];
+export const bidsAsks: Market.BA[] = ["bids", "asks"];
 
 export type AddressAndSigner = { address: string; signer: string };
 
@@ -188,7 +186,7 @@ export const logBalances = async (
 
 export const getTokens = (
   market: Market,
-  ba: BA
+  ba: Market.BA
 ): {
   inboundToken: MgvToken;
   outboundToken: MgvToken;
@@ -201,7 +199,7 @@ export const getTokens = (
 
 export type NewOffer = {
   market: Market;
-  ba: BA;
+  ba: Market.BA;
   maker: Account;
   wants?: ethers.BigNumberish;
   gives?: ethers.BigNumberish;
@@ -222,13 +220,21 @@ let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
  */
 export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
 
-export async function waitForBooksForLastTx(market: Market) {
+/**
+ * Waits for last tx to be generated and optionally the market's books to be synced
+ * @param market wait for books in this market to be in sync
+ */
+export async function waitForBooksForLastTx(market?: Market) {
+  // Wait for txs so we can get the right block number for them
   await eventsForLastTxHaveBeenGenerated();
-  const lastBlock = await market.mgv._provider.getBlockNumber();
-  await market.afterBlock(lastBlock, () => {});
+  if (market) {
+    // this may be a block number slightly larger, but for tests that is ok.
+    const lastBlock = await market.mgv._provider.getBlockNumber();
+    await market.afterBlock(lastBlock, () => {});
+  }
 }
 
-export function eventsForLastTxHaveBeenGenerated() {
+function eventsForLastTxHaveBeenGenerated() {
   if (!eventsForLastTxHaveBeenGeneratedPromise) {
     throw Error(
       "call initPollOfTransactionTracking before trying to await eventsForLastTxHaveBeenGenerated"
@@ -352,7 +358,7 @@ export const postNewOffer = async ({
 
 export const postNewRevertingOffer = async (
   market: Market,
-  ba: BA,
+  ba: Market.BA,
   maker: Account
 ): Promise<void> => {
   await postNewOffer({
@@ -367,7 +373,7 @@ export const postNewRevertingOffer = async (
 
 export const postNewSucceedingOffer = async (
   market: Market,
-  ba: BA,
+  ba: Market.BA,
   maker: Account
 ): Promise<void> => {
   await postNewOffer({ market, ba, maker });
@@ -375,7 +381,7 @@ export const postNewSucceedingOffer = async (
 
 export const postNewFailingOffer = async (
   market: Market,
-  ba: BA,
+  ba: Market.BA,
   maker: Account
 ): Promise<void> => {
   await postNewOffer({ market, ba, maker, shouldFail: true });

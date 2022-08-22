@@ -35,7 +35,7 @@ namespace Semibook {
     /** Amount of token to trade. */
     given: Bigish;
     /** Whether `given` is base to be bought or quote to be sold. */
-    to: "buy" | "sell";
+    to: Market.BS;
     /** Optional: induce a max avg. price after which to stop buying/selling. */
     boundary?: Bigish;
   };
@@ -119,7 +119,7 @@ type RawOfferData = {
 class Semibook implements Iterable<Market.Offer> {
   static readonly DEFAULT_MAX_OFFERS = 50;
 
-  readonly ba: "bids" | "asks";
+  readonly ba: Market.BA;
   readonly market: Market;
   readonly options: Semibook.Options; // complete and validated
 
@@ -141,7 +141,7 @@ class Semibook implements Iterable<Market.Offer> {
   tradeManagement: Trade = new Trade();
   static async connect(
     market: Market,
-    ba: "bids" | "asks",
+    ba: Market.BA,
     eventListener: Semibook.EventListener,
     blockListener: Semibook.BlockListener,
     options: Semibook.Options
@@ -513,7 +513,7 @@ class Semibook implements Iterable<Market.Offer> {
 
   private constructor(
     market: Market,
-    ba: "bids" | "asks",
+    ba: Market.BA,
     eventListener: Semibook.EventListener,
     blockListener: Semibook.BlockListener,
     options: Semibook.Options
