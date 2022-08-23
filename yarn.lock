@@ -1720,7 +1720,7 @@ __metadata:
     object-inspect: ^1.12.0
     prettier: ^2.4.1
     rimraf: ^3.0.2
-    rollup: ^2.75.7
+    rollup: ^2.78.1
     rollup-plugin-terser: ^7.0.2
     shx: ^0.3.4
     ts-essentials: ^9.1.2
@@ -7347,9 +7347,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"rollup@npm:^2.75.7":
-  version: 2.75.7
-  resolution: "rollup@npm:2.75.7"
+"rollup@npm:^2.78.1":
+  version: 2.78.1
+  resolution: "rollup@npm:2.78.1"
   dependencies:
     fsevents: ~2.3.2
   dependenciesMeta:
@@ -7357,7 +7357,7 @@ fsevents@~2.3.2:
       optional: true
   bin:
     rollup: dist/bin/rollup
-  checksum: a6331d46b01062b184efdcb42ce12caf2e1575f989963944534b02f5855f6f3bc239ed0c1a18893572d7695af6d83166f3aef59dbd0365084e1531cb67824674
+  checksum: 9034814383ca5bdb4bea6d499270aeb31cdb0bb884f81b0c6a1d19c63cc973f040e6ee09b7af8a7169dd231c090f4b44ef8b99c4bfdf884aceeb3dcefb8cfa14
   languageName: node
   linkType: hard
 
