@@ -3,8 +3,6 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 import chalk from "chalk";
 
 import { utils } from "ethers";
-const hre = require("hardhat");
-//const { ethers } = require("hardhat");
 
 import assert from "assert";
 import { Mangrove, LiquidityProvider, Market } from "../../src";
@@ -23,15 +21,14 @@ describe("RestingOrder", () => {
     mgv.disconnect();
   });
 
-  describe("RestingOrder connectivity", () => {
-    it("deploys and connects", async () => {
+  describe("RestingOrder connectivity", function () {
+    it("deploys and connects", async function () {
       mgv = await Mangrove.connect({
-        provider: "http://localhost:8546",
+        provider: this.server.url,
+        privateKey: this.accounts.tester.key,
       });
       //shorten polling for faster tests
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      mgv._provider.pollingInterval = 250;
+      (mgv._provider as any).pollingInterval = 10;
 
       // interpreting mangroveOrder as a multi user maker contract
       const logic = mgv.offerLogic(mgv.orderContract.address, true);
@@ -57,14 +54,14 @@ describe("RestingOrder", () => {
       //set mgv object
 
       mgv = await Mangrove.connect({
-        provider: "http://localhost:8546",
-        signer: (await hre.ethers.getNamedSigners()).deployer,
+        provider: this.server.url,
+        privateKey: this.accounts.deployer.key,
       });
 
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      mgv._provider.pollingInterval = 250;
+      mgv._provider.pollingInterval = 10;
       const logic = mgv.offerLogic(mgv.orderContract.address, true);
       const market = await mgv.market({
         base: "TokenA",
@@ -122,7 +119,7 @@ describe("RestingOrder", () => {
           restingOrder: { provision: provision },
         });
       assert(
-        // 5% fee configured in integration-test-root-hooks.js
+        // 5% fee configured in mochaHooks.js
         orderResult.summary.got.eq(10 * 0.95),
         "Taker received an incorrect amount"
       );
@@ -139,7 +136,7 @@ describe("RestingOrder", () => {
       // dirty trick to advance blocks as automine will do so every time a signed tx is sent
       const advanceBlocks = async (blocks: number) => {
         for (let i = 0; i < blocks; i++) {
-          await hre.network.provider.send("hardhat_mine", ["0x100"]);
+          await (mgv._provider as any).send("anvil_mine", ["0x100"]);
         }
       };
       const provision = await orderContractAsLP.computeBidProvision();
@@ -169,7 +166,7 @@ describe("RestingOrder", () => {
       await w(mgv.token("TokenA").approveMangrove());
 
       const result = await market.sell({ wants: 5, gives: 5 });
-      // 5% fee configured in integration-test-root-hooks.js
+      // 5% fee configured in mochaHooks.js
       assert(result.summary.got.eq(5 * 0.95), "Sell order went wrong");
       assert(
         await orderContractAsLP.market.isLive(

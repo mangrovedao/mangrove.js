@@ -6,6 +6,15 @@ import { Bigish } from "./types";
 import * as typechain from "./types/typechain";
 import UnitCalculations from "./util/unitCalculations";
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace MgvToken {
+  export type ConstructorOptions = {
+    address?: string;
+    decimals?: number;
+    displayedDecimals?: number;
+  };
+}
+
 class MgvToken {
   mgv: Mangrove;
   name: string;
@@ -15,12 +24,31 @@ class MgvToken {
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
   unitCalculations: UnitCalculations;
-  constructor(name: string, mgv: Mangrove) {
+  constructor(
+    name: string,
+    mgv: Mangrove,
+    options: MgvToken.ConstructorOptions
+  ) {
     this.mgv = mgv;
     this.name = name;
+    if (options) {
+      if ("address" in options) {
+        this.mgv.setAddress(name, options.address);
+      }
+
+      if ("decimals" in options) {
+        Mangrove.setDecimals(name, options.decimals);
+      }
+
+      if ("displayedDecimals" in options) {
+        Mangrove.setDisplayedDecimals(name, options.displayedDecimals);
+      }
+    }
+
     this.address = this.mgv.getAddress(this.name);
     this.decimals = Mangrove.getDecimals(this.name);
     this.displayedDecimals = Mangrove.getDisplayedDecimals(this.name);
+
     this.contract = typechain.TestToken__factory.connect(
       this.address,
       this.mgv._signer
