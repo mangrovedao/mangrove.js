@@ -14,7 +14,7 @@
     "heroku-build-this-package": "yarn typechain && yarn lint && yarn tscbuild && yarn esbuild",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- ../../node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
-    "get-mangrove-abis": "cp ../../node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
+    "get-mangrove-abis": "(rimraf \"src/abis/*\" || exit 0) && cp ../../node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
     "get-mangrove-addresses": "ts-node --transpileOnly src/util/getMangroveAddresses.ts",
     "make-cli-executable": "shx chmod u+x ./dist/nodejs/cli/mgv.js",
     "clean-this-package": "yarn run clean-typechain && rimraf dist",
