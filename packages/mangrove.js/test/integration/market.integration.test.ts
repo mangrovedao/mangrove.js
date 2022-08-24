@@ -1125,6 +1125,48 @@ describe("Market integration tests suite", () => {
     //   .contain("'mgvCleaner/anOfferDidNotFail'");
   });
 
+  it(`snipe via callStatic for failing offers returns bounty`, async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    // Note: shouldFail is for the entire maker and not per order
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+      shouldFail: true,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+
+    const raw = await market.getRawSnipeParams({
+      ba: "asks",
+      targets: [
+        {
+          offerId: asks[0].id,
+          takerGives: asks[0].wants,
+          takerWants: asks[0].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    const result = await market.mgv.cleanerContract.callStatic.collect(
+      raw.outboundTkn,
+      raw.inboundTkn,
+      raw.targets,
+      raw.fillWants
+    );
+
+    expect(mgv.fromUnits(result, 18).toNumber()).to.be.equal(0.000053454);
+  });
+
   it("gets config", async function () {
     const mgvAsAdmin = await Mangrove.connect({
       provider: this.server.url,

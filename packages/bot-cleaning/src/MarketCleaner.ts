@@ -1,7 +1,7 @@
 import { logger } from "./util/logger";
 import { Market, Semibook } from "@mangrovedao/mangrove.js";
 import { Provider } from "@ethersproject/providers";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber } from "ethers";
 
 type OfferCleaningEstimates = {
   bounty: BigNumber; // wei
@@ -13,7 +13,7 @@ type OfferCleaningEstimates = {
 
 // FIXME move to Mangrove.js
 // const maxWantsOrGives = BigNumber.from(2).pow(96).sub(1);
-const maxGasReq = BigNumber.from(2).pow(256).sub(1);
+const maxGasReq = Number.MAX_SAFE_INTEGER - 1;
 
 /**
  * A cleaner class for a single Mangrove market which snipes offers that fail and collects the bounty.
@@ -175,9 +175,15 @@ export class MarketCleaner {
     ba: Market.BA,
     contextInfo?: string
   ): Promise<{ willOfferFail: boolean; bounty?: BigNumber }> {
-    // FIXME move to mangrove.js API
+    const raw = await this.#market.getRawSnipeParams({
+      ba: ba,
+      targets: this.#createCollectParams(offer),
+      requireOffersToFail: true,
+      fillWants: false,
+    });
+
     return this.#market.mgv.cleanerContract.callStatic
-      .collect(...this.#createCollectParams(ba, offer))
+      .collect(raw.outboundTkn, raw.inboundTkn, raw.targets, raw.fillWants)
       .then((bounty) => {
         logger.debug("Static collect of offer succeeded", {
           base: this.#market.base.name,
@@ -215,11 +221,13 @@ export class MarketCleaner {
       contextInfo: contextInfo,
     });
 
-    // FIXME move to mangrove.js API
-    return this.#market.mgv.cleanerContract
-      .collect(...this.#createCollectParams(ba, offer))
-      .then((tx) => tx.wait())
-      .then((txReceipt) => {
+    return this.#market
+      .snipe({
+        ba: ba,
+        targets: this.#createCollectParams(offer),
+        requireOffersToFail: true,
+      })
+      .then((result) => {
         logger.info("Successfully cleaned offer", {
           base: this.#market.base.name,
           quote: this.#market.quote.name,
@@ -233,7 +241,7 @@ export class MarketCleaner {
           ba: ba,
           offer: offer,
           contextInfo: contextInfo,
-          data: { txReceipt },
+          data: { result },
         });
       })
       .catch((e) => {
@@ -255,21 +263,9 @@ export class MarketCleaner {
       });
   }
 
-  #createCollectParams(
-    ba: Market.BA,
-    offer: Market.Offer
-  ): [
-    string,
-    string,
-    [BigNumberish, BigNumberish, BigNumberish, BigNumberish][],
-    boolean
-  ] {
-    const { outbound_tkn, inbound_tkn } = this.#market.getOutboundInbound(ba);
+  #createCollectParams(offer: Market.Offer): Market.SnipeParams["targets"] {
     return [
-      outbound_tkn.address,
-      inbound_tkn.address,
-      [[offer.id, 0, 0, maxGasReq]], // (offer id, taker wants, taker gives, gas requirement)
-      false,
+      { offerId: offer.id, takerWants: 0, takerGives: 0, gasLimit: maxGasReq },
     ];
     // FIXME 2021-12-01: The below result may have been affected by wrong order of inbound/outbound tokens
     // FIXME The following are the result of different strategies per 2021-10-26:
@@ -329,15 +325,24 @@ export class MarketCleaner {
   }
 
   async #estimateGasPrice(provider: Provider): Promise<BigNumber> {
-    // We use the simple pre EIP-1559 model of gas prices for estimatation
+    // We use the simple pre EIP-1559 model of gas prices for estimation
     const gasPrice = await provider.getGasPrice();
     return gasPrice;
   }
 
   async #estimateGas(offer: Market.Offer, ba: Market.BA): Promise<BigNumber> {
+    const raw = await this.#market.getRawSnipeParams({
+      ba: ba,
+      targets: this.#createCollectParams(offer),
+      requireOffersToFail: true,
+    });
+
     const gasEstimate =
       await this.#market.mgv.cleanerContract.estimateGas.collect(
-        ...this.#createCollectParams(ba, offer)
+        raw.outboundTkn,
+        raw.inboundTkn,
+        raw.targets,
+        raw.fillWants
       );
     return gasEstimate;
   }
