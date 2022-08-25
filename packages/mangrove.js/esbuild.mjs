@@ -5,13 +5,12 @@ import { build } from "esbuild";
 import resolve from "esbuild-plugin-resolve";
 
 build({
-    entryPoints: ['./src/index.ts'],
+    entryPoints: ['./dist/nodejs/index.js'],
     bundle: true,
     minify: true,
     outfile: BrowserBuildPath,
     platform: 'browser',
-    format: 'iife',
-    globalName: 'Mangrove',
+    format: 'cjs',
     // FIXME either polyfill or create a browser-build that does not embark node.ts e.g. through a browser-index.ts
     external: ['path','child_process','fs','os','util','url','assert'],
     plugins: [
