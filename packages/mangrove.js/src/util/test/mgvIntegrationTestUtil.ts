@@ -14,8 +14,8 @@ export type Account = {
     // Contracts connected with the signer for setting chain state in test case setup
     mangrove: typechain.Mangrove;
     testMaker: typechain.SimpleTestMaker;
-    tokenA: typechain.TestTokenWithDecimals;
-    tokenB: typechain.TestTokenWithDecimals;
+    tokenA: typechain.TestToken;
+    tokenB: typechain.TestToken;
   };
 };
 
@@ -83,8 +83,8 @@ export const logAddresses = async (): Promise<void> => {
 export type Contracts = {
   mangrove: typechain.Mangrove;
   testMaker: typechain.SimpleTestMaker;
-  tokenA: typechain.TestTokenWithDecimals;
-  tokenB: typechain.TestTokenWithDecimals;
+  tokenA: typechain.TestToken;
+  tokenB: typechain.TestToken;
 };
 
 export const getContracts = async (
@@ -100,11 +100,11 @@ export const getContracts = async (
       addresses.testMaker.address,
       signer
     ),
-    tokenA: typechain.TestTokenWithDecimals__factory.connect(
+    tokenA: typechain.TestToken__factory.connect(
       addresses.tokenA.address,
       signer
     ),
-    tokenB: typechain.TestTokenWithDecimals__factory.connect(
+    tokenB: typechain.TestToken__factory.connect(
       addresses.tokenB.address,
       signer
     ),
