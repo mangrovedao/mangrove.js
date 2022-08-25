@@ -61,7 +61,7 @@
     ]
   },
   "lint-staged": {
-    "*.{js,ts,css,md,json}": "prettier --write"
+    "*.{js,ts,css,md,json,mjs}": "prettier --write"
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.6.3",
