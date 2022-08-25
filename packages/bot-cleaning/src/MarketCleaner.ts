@@ -11,9 +11,6 @@ type OfferCleaningEstimates = {
   netResult: BigNumber; // wei
 };
 
-// FIXME Move to mangrove.js
-export type BA = "bids" | "asks";
-
 // FIXME move to Mangrove.js
 // const maxWantsOrGives = BigNumber.from(2).pow(96).sub(1);
 const maxGasReq = BigNumber.from(2).pow(256).sub(1);
@@ -119,7 +116,7 @@ export class MarketCleaner {
 
   async #cleanSemibook(
     semibook: Semibook,
-    ba: BA,
+    ba: Market.BA,
     gasPrice: BigNumber,
     contextInfo?: string
   ): Promise<PromiseSettledResult<void>[]> {
@@ -132,7 +129,7 @@ export class MarketCleaner {
 
   async #cleanOffer(
     offer: Market.Offer,
-    ba: BA,
+    ba: Market.BA,
     gasPrice: BigNumber,
     contextInfo?: string
   ): Promise<void> {
@@ -175,7 +172,7 @@ export class MarketCleaner {
 
   async #willOfferFail(
     offer: Market.Offer,
-    ba: BA,
+    ba: Market.BA,
     contextInfo?: string
   ): Promise<{ willOfferFail: boolean; bounty?: BigNumber }> {
     // FIXME move to mangrove.js API
@@ -207,7 +204,7 @@ export class MarketCleaner {
 
   async #collectOffer(
     offer: Market.Offer,
-    ba: BA,
+    ba: Market.BA,
     contextInfo?: string
   ): Promise<void> {
     logger.debug("Cleaning offer", {
@@ -259,7 +256,7 @@ export class MarketCleaner {
   }
 
   #createCollectParams(
-    ba: BA,
+    ba: Market.BA,
     offer: Market.Offer
   ): [
     string,
@@ -315,7 +312,7 @@ export class MarketCleaner {
 
   async #estimateCostsAndGains(
     offer: Market.Offer,
-    ba: BA,
+    ba: Market.BA,
     bounty: BigNumber,
     gasPrice: BigNumber
   ): Promise<OfferCleaningEstimates> {
@@ -337,7 +334,7 @@ export class MarketCleaner {
     return gasPrice;
   }
 
-  async #estimateGas(offer: Market.Offer, ba: BA): Promise<BigNumber> {
+  async #estimateGas(offer: Market.Offer, ba: Market.BA): Promise<BigNumber> {
     const gasEstimate =
       await this.#market.mgv.cleanerContract.estimateGas.collect(
         ...this.#createCollectParams(ba, offer)

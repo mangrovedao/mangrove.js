@@ -1,5 +1,6 @@
 import Big from "big.js";
 import * as ethers from "ethers";
+import { LogDescription } from "ethers/lib/utils";
 import Market from "../market";
 import MgvToken from "../mgvtoken";
 import {
@@ -140,7 +141,7 @@ class TradeEventManagement {
   }
 
   resultOfEventCore(
-    evt: ethers.Event,
+    evt: ethers.Event | LogDescription,
     got_bq: "base" | "quote",
     gave_bq: "base" | "quote",
     partialFillFunc: (
@@ -152,7 +153,8 @@ class TradeEventManagement {
   ): Market.OrderResult {
     const got = market[got_bq];
     const gave = market[gave_bq];
-    switch (evt.event) {
+    const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
+    switch (name) {
       case "OrderComplete": {
         result.summary = this.createSummaryFromOrderCompleteEvent(
           evt as OrderCompleteEvent,
