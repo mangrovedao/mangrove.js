@@ -5,6 +5,7 @@
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
   "main": "dist/nodejs/index.js",
+  "browser": "dist/browser/mangrove.min.js",
   "scripts": {
     "package-version": "echo $npm_package_version",
     "precommit": "lint-staged",
