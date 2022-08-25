@@ -4,7 +4,7 @@
     "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks.js"
   ],
   "recursive": true,
-  "spec": "test/integration/*integration.tests.{js,cjs,mjs,ts}",
+  "spec": "test/integration/*integration.test.ts",
   "timeout": 180000,
   "reporter": "mocha-multi-reporters",
   "reporterOptions": "configFile=test/mocha/config/integration-tests-multi-reporters.json"
