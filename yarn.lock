@@ -1410,7 +1410,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
     big.js: ^6.1.1
-    chai: ^4.3.4
+    chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.7
     cross-env: ^7.0.3
@@ -1459,7 +1459,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
     big.js: ^6.1.1
-    chai: ^4.3.4
+    chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.7
     cross-env: ^7.0.3
@@ -1508,7 +1508,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
     big.js: ^6.1.1
-    chai: ^4.3.4
+    chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.7
     cross-env: ^7.0.3
@@ -1558,7 +1558,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.29.0
     "@typescript-eslint/parser": ^5.22.0
     big.js: ^6.1.1
-    chai: ^4.3.4
+    chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.7
     cross-env: ^7.0.3
@@ -1608,7 +1608,7 @@ __metadata:
     "@typescript-eslint/parser": ^5.22.0
     axios: ^0.27.2
     big.js: ^6.1.1
-    chai: ^4.3.4
+    chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.7
     cross-env: ^7.0.3
@@ -1674,7 +1674,7 @@ __metadata:
   dependencies:
     lint-staged: ^13.0.3
     prettier: ^2.4.1
-    prettier-plugin-solidity: ^1.0.0-dev.23
+    prettier-plugin-solidity: 1.0.0-beta.18
     rimraf: ^3.0.2
     shelljs: ^0.8.4
     solcco: ">=1.0.11"
@@ -1706,7 +1706,7 @@ __metadata:
     "@typescript-eslint/parser": ^5.22.0
     async-mutex: ^0.3.2
     big.js: ^6.1.1
-    chai: ^4.3.4
+    chai: ^4.3.6
     chai-as-promised: ^7.1.1
     chalk: ^4.1.2
     cross-env: ^7.0.3
@@ -1785,12 +1785,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solidity-parser/parser@npm:^0.14.3":
-  version: 0.14.3
-  resolution: "@solidity-parser/parser@npm:0.14.3"
+"@solidity-parser/parser@npm:^0.13.2":
+  version: 0.13.2
+  resolution: "@solidity-parser/parser@npm:0.13.2"
   dependencies:
     antlr4ts: ^0.5.0-alpha.4
-  checksum: 9a27eb961c22a3b8732bd9782ce3b7912e67b2e2183acada552116dd0bbe637c33265177ab3db9610063da48aa57299d67afdeb0616450b631a0e3da865c4e88
+  checksum: bfdd8ec7f7b88f3cc75e333e03202cde5e5dacbec7f00612f22dec5e22b0995713637872ce202064d182bae56a274fcb2ca8715ad5482af5e8b38728a0216cf7
   languageName: node
   linkType: hard
 
@@ -2913,17 +2913,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chai@npm:^4.3.4":
-  version: 4.3.4
-  resolution: "chai@npm:4.3.4"
+"chai@npm:^4.3.6":
+  version: 4.3.6
+  resolution: "chai@npm:4.3.6"
   dependencies:
     assertion-error: ^1.1.0
     check-error: ^1.0.2
     deep-eql: ^3.0.1
     get-func-name: ^2.0.0
+    loupe: ^2.3.1
     pathval: ^1.1.1
     type-detect: ^4.0.5
-  checksum: 772c522b3bfe3fcf0e0e74edfe584cd886b0e85a73126dec750095300e023d4e1ec6d40e3c35a80d2bd8f33dca46c42767a36f5f50f32dca6fa31c88b5f49ab8
+  checksum: acff93fd537f96d4a4d62dd83810285dffcfccb5089e1bf2a1205b28ec82d93dff551368722893cf85004282df10ee68802737c33c90c5493957ed449ed7ce71
   languageName: node
   linkType: hard
 
@@ -3548,13 +3549,6 @@ __metadata:
     minimalistic-assert: ^1.0.1
     minimalistic-crypto-utils: ^1.0.1
   checksum: d56d21fd04e97869f7ffcc92e18903b9f67f2d4637a23c860492fbbff5a3155fd9ca0184ce0c865dd6eb2487d234ce9551335c021c376cd2d3b7cb749c7d10f4
-  languageName: node
-  linkType: hard
-
-"emoji-regex@npm:^10.1.0":
-  version: 10.1.0
-  resolution: "emoji-regex@npm:10.1.0"
-  checksum: 5bc780fc4d75f89369155a87c55f7e83a0bf72bcccda7df7f2c570cde4738d8b17d112d12afdadfec16647d1faef6501307b4304f81d35c823a938fe6547df0f
   languageName: node
   linkType: hard
 
@@ -5764,6 +5758,15 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
+"loupe@npm:^2.3.1":
+  version: 2.3.4
+  resolution: "loupe@npm:2.3.4"
+  dependencies:
+    get-func-name: ^2.0.0
+  checksum: 5af91db61aa18530f1749a64735ee194ac263e65e9f4d1562bf3036c591f1baa948289c193e0e34c7b5e2c1b75d3c1dc4fce87f5edb3cee10b0c0df46bc9ffb3
+  languageName: node
+  linkType: hard
+
 "lru-cache@npm:^6.0.0":
   version: 6.0.0
   resolution: "lru-cache@npm:6.0.0"
@@ -6986,19 +6989,19 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"prettier-plugin-solidity@npm:^1.0.0-dev.23":
-  version: 1.0.0-dev.23
-  resolution: "prettier-plugin-solidity@npm:1.0.0-dev.23"
+"prettier-plugin-solidity@npm:1.0.0-beta.18":
+  version: 1.0.0-beta.18
+  resolution: "prettier-plugin-solidity@npm:1.0.0-beta.18"
   dependencies:
-    "@solidity-parser/parser": ^0.14.3
-    emoji-regex: ^10.1.0
+    "@solidity-parser/parser": ^0.13.2
+    emoji-regex: ^9.2.2
     escape-string-regexp: ^4.0.0
-    semver: ^7.3.7
+    semver: ^7.3.5
     solidity-comments-extractor: ^0.0.7
-    string-width: ^4.2.3
+    string-width: ^4.2.2
   peerDependencies:
     prettier: ^2.3.0
-  checksum: bf068bcd763b2c2be48859abca5f2aee9543c38e875039470c8c0a850de4218292c7ec46fb63ef6866f51e8c87e80f8de015446ebd9f407712b26a9e30c41050
+  checksum: 9082f949275b5b4b8e78cb70b384e759b29f6b7ffaf35ec42db400ed0b4ce93c1453cffcb98c8d071dd8578a3aed2420000674c8aedaf8bb486b3bbc9d7d9457
   languageName: node
   linkType: hard
 
@@ -7928,7 +7931,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"string-width@npm:^1.0.2 || 2 || 3 || 4, string-width@npm:^4.1.0, string-width@npm:^4.2.0, string-width@npm:^4.2.3":
+"string-width@npm:^1.0.2 || 2 || 3 || 4, string-width@npm:^4.1.0, string-width@npm:^4.2.0, string-width@npm:^4.2.2, string-width@npm:^4.2.3":
   version: 4.2.3
   resolution: "string-width@npm:4.2.3"
   dependencies:
