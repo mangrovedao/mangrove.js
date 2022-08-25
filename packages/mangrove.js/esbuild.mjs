@@ -11,8 +11,6 @@ build({
   outfile: BrowserBuildPath,
   platform: "browser",
   format: "cjs",
-  // FIXME either polyfill or create a browser-build that does not embark node.ts e.g. through a browser-index.ts
-  external: ["path", "child_process", "fs", "os", "util", "url", "assert"],
   plugins: [
     resolve({
       "@mangrovedao/commonlib.js": "../../../shims/commonlib.ts",
