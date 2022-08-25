@@ -6,7 +6,7 @@
 import { ethers, providers } from "ethers";
 import { Provider, Signer } from "./types";
 import { logger, logdataLimiter } from "./util/logger";
-import fs from "fs";
+import { readJsonWallet } from "./util/readJsonWallet";
 
 interface JsonWalletOptions {
   // local path to json wallet file
@@ -296,12 +296,9 @@ export async function _createSigner(
       );
     }
   } else if (options.jsonWallet) {
-    const jsonWalletFile = fs.readFileSync(options.jsonWallet.path, "utf8");
-    signer = new ethers.Wallet(
-      await ethers.Wallet.fromEncryptedJson(
-        jsonWalletFile,
-        options.jsonWallet.password
-      ),
+    signer = await readJsonWallet(
+      options.jsonWallet.path,
+      options.jsonWallet.password,
       provider
     );
   } else if (!signer) {
