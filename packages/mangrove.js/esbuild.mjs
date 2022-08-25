@@ -16,6 +16,7 @@ build({
     external: ['path','child_process','fs','os','util','url','assert'],
     plugins: [
         resolve({
+        "@mangrovedao/commonlib.js": "../../../shims/commonlib.ts",
         "./util/readJsonWallet": "../../shims/readJsonWallet.ts",
         }),
     ],

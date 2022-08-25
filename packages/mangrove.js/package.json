@@ -70,8 +70,7 @@
     "big.js": "^6.1.1",
     "esbuild-plugin-resolve": "^1.0.3",
     "ethers": "^5.6.4",
-    "node-cleanup": "^2.1.2",
-    "object-inspect": "^1.12.0"
+    "node-cleanup": "^2.1.2"
   },
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
