@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/commonlib.js",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "Mangrove DAO",
   "description": "Common javascript and typescript library code employed in the Mangrove mono-repo.",
   "license": "BSD-2-Clause",
@@ -11,6 +11,7 @@
     "lib"
   ],
   "scripts": {
+    "package-version": "echo $npm_package_version",
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
