@@ -5,12 +5,13 @@
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
   "main": "dist/nodejs/index.js",
+  "browser": "dist/browser/mangrove.min.js",
   "scripts": {
     "package-version": "echo $npm_package_version",
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "npm-run-all -pn --aggregate-output get-mangrove-abis get-mangrove-addresses && npm-run-all -pn --aggregate-output typechain lint && npm-run-all -pn --aggregate-output tscbuild esbuild && yarn make-cli-executable",
+    "build-this-package": "npm-run-all -pn --aggregate-output get-mangrove-abis get-mangrove-addresses && npm-run-all -pn --aggregate-output typechain lint && yarn tscbuild && yarn esbuild && yarn make-cli-executable",
     "heroku-build-this-package": "yarn typechain && yarn lint && yarn tscbuild && yarn esbuild",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- ../../node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",
@@ -60,16 +61,16 @@
     ]
   },
   "lint-staged": {
-    "*.{js,ts,css,md,json}": "prettier --write"
+    "*.{js,ts,css,md,json,mjs}": "prettier --write"
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.6.3",
     "@mangrovedao/commonlib.js": "workspace:*",
     "async-mutex": "^0.3.2",
     "big.js": "^6.1.1",
+    "esbuild-plugin-resolve": "^1.0.3",
     "ethers": "^5.6.4",
-    "node-cleanup": "^2.1.2",
-    "object-inspect": "^1.12.0"
+    "node-cleanup": "^2.1.2"
   },
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",

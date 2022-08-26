@@ -15,6 +15,7 @@ import * as eth from "../eth";
 import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
 import { default as nodeCleanup } from "node-cleanup";
+import { getAllToyENSEntries } from "./toyEnsEntries";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8546;
@@ -286,20 +287,6 @@ const defaultRun = async (params: any) => {
     ...spawnInfo,
     ...deployInfo,
   };
-};
-
-type fetchedContract = { name: string; address: string; isToken: boolean };
-
-/* Fetch all Toy ENS entries, used to give contract addresses to Mangrove */
-const getAllToyENSEntries = async (
-  provider: ethers.providers.Provider
-): Promise<fetchedContract[]> => {
-  const ens = new ethers.Contract(ToyENS.address, ToyENS.abi, provider);
-  const [names, addresses, isTokens] = await ens.all();
-  const contracts = names.map((name, index) => {
-    return { name, address: addresses[index], isToken: isTokens[index] };
-  });
-  return contracts;
 };
 
 /* Generate initial parameters with yargs, add data, then return node actions. */

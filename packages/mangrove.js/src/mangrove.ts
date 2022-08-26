@@ -7,7 +7,7 @@ import {
   displayedPriceDecimals as loadedDisplayedPriceDecimals,
 } from "./constants";
 import * as eth from "./eth";
-import { getAllToyENSEntries } from "./util/node";
+import { getAllToyENSEntries } from "./util/toyEnsEntries";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
 
