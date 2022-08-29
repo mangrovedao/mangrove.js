@@ -5,7 +5,7 @@ import { sleep } from "./promiseUtil";
 
 export {
   ErrorWithData,
-  CommonLogger,
+  type CommonLogger,
   createLogger,
   createConsoleLogger,
   logdataLimiter,

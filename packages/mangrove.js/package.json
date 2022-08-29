@@ -11,7 +11,7 @@
     "precommit": "lint-staged",
     "prepack": "yarn run build",
     "lint": "npx eslint ./src/*.ts",
-    "build-this-package": "npm-run-all -pn --aggregate-output get-mangrove-abis get-mangrove-addresses && npm-run-all -pn --aggregate-output typechain lint && yarn tscbuild && yarn esbuild && yarn make-cli-executable",
+    "build-this-package": "npm-run-all -pn --aggregate-output get-mangrove-abis get-mangrove-addresses && npm-run-all -pn --aggregate-output typechain lint && npm-run-all -pn --aggregate-output tscbuild esbuild && yarn make-cli-executable",
     "heroku-build-this-package": "yarn typechain && yarn lint && yarn tscbuild && yarn esbuild",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "check-mangrove-abis": "ts-node warnIfDifferent.ts -- ../../node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis src/abis \"Warning! Mangrove ABIs in src/abis do not match ABIs in mangrove-solidity\"",

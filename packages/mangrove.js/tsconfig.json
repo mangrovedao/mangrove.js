@@ -5,6 +5,7 @@
     "lib": ["ES2020", "dom"],
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
+    "emitDecoratorMetadata": false, // this is the default. Calling it out since esbuild does not support it.
     "target": "es2020",
     //"strict": true,
     //"noImplicitAny": true,
@@ -20,7 +21,8 @@
       "*": ["node_modules/*"]
     },
     "composite": true,
-    "rootDir": "src/"
+    "rootDir": "src/",
+    "isolatedModules": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/*.json"],
   "references": [
