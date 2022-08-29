@@ -439,7 +439,25 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
         base-path	: ${{env.working-directory}}
-        
+        flag-name: js
+
+    - name: Create coverage report for mangrove-solidity
+      if: github.event_name != 'pull_request_target' 
+      run: forge coverage --report lcov
+      working-directory: . # coverage cannot find contracts if executed inside mangrove-solidity
+      env:
+        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
+
+    - name: Upload to Coveralls for mangrove-solidity
+      uses: coverallsapp/github-action@master
+      if: github.event_name != 'pull_request_target' 
+      with:
+        git-commit: ${{ steps.coveralls_vars.outputs.sha_for_head }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: lcov.info
+        base-path	: .
+        flag-name: solidity
+
     # save artifacts for later stages
     - name: Zip output
       uses: montudor/action-zip@v1
