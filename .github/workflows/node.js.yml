@@ -419,6 +419,10 @@ jobs:
         path: ${{env.working-directory}}/coverage-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
 
+    # == verify cli can start ==
+    - name: Mgv cli Tests
+      run: yarn mgv help
+
      # == Send coverage report to Coveralls == 
     - name: Coveralls
       uses: coverallsapp/github-action@master
