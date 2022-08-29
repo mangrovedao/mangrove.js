@@ -424,10 +424,18 @@ jobs:
       run: yarn mgv help
 
      # == Send coverage report to Coveralls == 
-    - name: Coveralls
+     # Coverallsapp by default uses GITHUB_SHA but that does not necessarily correspond
+     # to HEAD because a branch is checked out. We here find the actual SHA for HEAD.
+    - name: Set Coveralls vars
+      id: coveralls_vars
+      if: github.event_name != 'pull_request_target' 
+      run: echo "::set-output name=sha_for_head::$(git rev-parse HEAD)"
+
+    - name: Upload to Coveralls for mangrove.js
       uses: coverallsapp/github-action@master
       if: github.event_name != 'pull_request_target' 
       with:
+        git-commit: ${{ steps.coveralls_vars.outputs.sha_for_head }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
         base-path	: ${{env.working-directory}}
