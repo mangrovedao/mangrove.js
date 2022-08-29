@@ -10,7 +10,11 @@ build({
   minify: true,
   outfile: BrowserBuildPath,
   platform: "browser",
-  format: "cjs",
+  format: "iife",
+  globalName: "_Mangrove",
+  footer: {
+    js: "module.exports = _Mangrove; module.exports.default = _Mangrove;",
+  },
   plugins: [
     resolve({
       "@mangrovedao/commonlib.js": "../../../shims/commonlib.ts",
