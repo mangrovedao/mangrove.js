@@ -18,7 +18,7 @@
     "get-mangrove-abis": "(rimraf \"src/abis/*\" || exit 0) && cp ../../node_modules/@mangrovedao/mangrove-solidity/dist/mangrove-abis/*.json ./src/abis/",
     "get-mangrove-addresses": "ts-node --transpileOnly src/util/getMangroveAddresses.ts",
     "make-cli-executable": "shx chmod u+x ./dist/nodejs/cli/mgv.js",
-    "clean-this-package": "yarn run clean-typechain && rimraf dist",
+    "clean-this-package": "rimraf dist",
     "clean": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run clean-this-package",
     "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "yarn run test:unit && yarn run test:integration",
