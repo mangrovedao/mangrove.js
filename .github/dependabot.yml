@@ -7,12 +7,4 @@ updates:
     schedule:
       interval: "daily"
     reviewers:
-      - "dontrolle"      
-
-  # Maintain dependencies for npm and yarn
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    reviewers:
-      - "dontrolle"      
+      - "dontrolle"
