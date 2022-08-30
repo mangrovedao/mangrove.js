@@ -1103,26 +1103,36 @@ describe("Market integration tests suite", () => {
       mgv.cleanerContract.address,
       100000000
     );
-    // Actual snipe
-    /* FIXME Temporarily disabled this test */
-    // let s = market.snipe({
-    //     ba: "asks",
-    //     targets: [
-    //       {
-    //         offerId: ask.id,
-    //         takerGives: ask.wants,
-    //         takerWants: ask.gives,
-    //         gasLimit: 650000,
-    //       },
-    //     ],
-    //     requireOffersToFail: true,
-    //   },{gasLimit:10000})
 
-    // await expect(s
-    // )
-    //   .to.be.eventually.rejected.and.has.property("error")
-    //   .with.property("message")
-    //   .contain("'mgvCleaner/anOfferDidNotFail'");
+    // Actual snipe
+    var didThrow = false;
+    try {
+      await market.snipe(
+        {
+          ba: "asks",
+          targets: [
+            {
+              offerId: ask.id,
+              takerGives: ask.wants,
+              takerWants: ask.gives,
+              gasLimit: 650000,
+            },
+          ],
+          requireOffersToFail: true,
+        },
+        { gasLimit: 600000 }
+      );
+    } catch (e) {
+      didThrow = true;
+      const callResult = await mgv._provider.call(e.transaction);
+      expect(() =>
+        mgv.cleanerContract.interface.decodeFunctionResult(
+          "collect",
+          callResult
+        )
+      ).to.throw("mgvCleaner/anOfferDidNotFail");
+    }
+    expect(didThrow).to.be.equal(true);
   });
 
   it(`snipe via callStatic for failing offers returns bounty`, async function () {
