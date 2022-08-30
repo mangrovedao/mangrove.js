@@ -195,7 +195,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    - uses: .github/actions/foundry-setup
+    - name: Foundry Setup
+      uses: .github/actions/foundry-setup
 
     # == build ==
     - name: Solidity Compile
