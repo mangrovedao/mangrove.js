@@ -1,7 +1,7 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
 import { Mangrove, Semibook } from "../..";
-import { builder, init } from "../../util/node";
+import { builder, node } from "../../util/node";
 
 export const command = "node";
 export const aliases = [];
@@ -14,15 +14,15 @@ type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
 export { builder };
 
 export async function handler(argv: Arguments): Promise<void> {
-  const { nodeClosedPromise } = await init(
+  const { spawnEndedPromise } = await node(
     {
       ...argv,
-      pipeOut: true,
+      pipe: true,
     },
     false
-  ).defaultRun();
-  if (nodeClosedPromise) {
+  ).connect();
+  if (spawnEndedPromise) {
     console.log("Node ready.");
-    await nodeClosedPromise;
+    await spawnEndedPromise;
   }
 }
