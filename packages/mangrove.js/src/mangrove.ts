@@ -1,4 +1,3 @@
-import pick from "object.pick";
 import { LiquidityProvider, Market, MgvToken, OfferLogic } from ".";
 import {
   addresses,
@@ -8,6 +7,7 @@ import {
   displayedPriceDecimals as loadedDisplayedPriceDecimals,
 } from "./constants";
 import * as eth from "./eth";
+import { getAllToyENSEntries } from "./util/toyEnsEntries";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
 
@@ -65,6 +65,7 @@ class Mangrove {
   // orderContract: typechain.MangroveOrder;
   orderContract: typechain.MangroveOrderEnriched;
   static typechain = typechain;
+  static addresses = addresses;
   unitCalculations = new UnitCalculations();
 
   /**
@@ -98,6 +99,9 @@ class Mangrove {
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
+    if (network.name === "local" && !Mangrove.addresses[network.name]) {
+      Mangrove.fetchAllAddresses(signer.provider);
+    }
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
@@ -187,7 +191,11 @@ class Mangrove {
   }): Promise<Market> {
     logger.debug("Initialize Market", {
       contextInfo: "mangrove.base",
-      data: pick(params, ["base", "quote", "bookOptions"]),
+      data: {
+        base: params.base,
+        quote: params.quote,
+        bookOptions: params.bookOptions,
+      },
     });
     return await Market.connect({ ...params, mgv: this });
   }
@@ -234,8 +242,8 @@ class Mangrove {
   }
 
   /* Return MgvToken instance tied. */
-  token(name: string): MgvToken {
-    return new MgvToken(name, this);
+  token(name: string, options?: MgvToken.ConstructorOptions): MgvToken {
+    return new MgvToken(name, this, options);
   }
 
   /**
@@ -352,32 +360,32 @@ class Mangrove {
       throw Error(`No addresses for network ${network}.`);
     }
 
-    return Object.entries(addresses[network]);
+    return Object.entries(Mangrove.addresses[network]);
   }
 
   /**
    * Read a contract address on a given network.
    */
   static getAddress(name: string, network: string): string {
-    if (!addresses[network]) {
+    if (!Mangrove.addresses[network]) {
       throw Error(`No addresses for network ${network}.`);
     }
 
-    if (!addresses[network][name]) {
+    if (!Mangrove.addresses[network][name]) {
       throw Error(`No address for ${name} on network ${network}.`);
     }
 
-    return addresses[network]?.[name] as string;
+    return Mangrove.addresses[network]?.[name] as string;
   }
 
   /**
    * Set a contract address on the given network.
    */
   static setAddress(name: string, address: string, network: string): void {
-    if (!addresses[network]) {
-      addresses[network] = {};
+    if (!Mangrove.addresses[network]) {
+      Mangrove.addresses[network] = {};
     }
-    addresses[network][name] = address;
+    Mangrove.addresses[network][name] = address;
   }
 
   /**
@@ -440,6 +448,23 @@ class Mangrove {
     const decimals = await token.decimals();
     this.setDecimals(tokenName, decimals);
     return decimals;
+  }
+
+  /**
+   * Returns all addresses registered at the local server's Toy ENS contract.
+   * Assumes provider is connected to a local server (typically for testing/experimentation).
+   */
+  static async fetchAllAddresses(provider: ethers.providers.Provider) {
+    const network = await eth.getProviderNetwork(provider);
+    try {
+      const contracts = await getAllToyENSEntries(provider);
+      for (const { name, address, isToken } of contracts) {
+        Mangrove.setAddress(name, address, network.name);
+        if (isToken) {
+          Mangrove.fetchDecimals(name, provider);
+        }
+      }
+    } catch (err) {}
   }
 }
 

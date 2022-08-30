@@ -7,3 +7,4 @@ static/environmentInformation.json
 .nyc_output/
 coverage/
 tsconfig.tsbuildinfo
+src/types/typechain/*

@@ -7,6 +7,17 @@ import logger from "./logger";
 import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
 
+type SnipeUnitParams = {
+  ba: Market.BA;
+  targets: {
+    offerId: number;
+    takerWants: ethers.BigNumber;
+    takerGives: ethers.BigNumber;
+    gasLimit?: number;
+  }[];
+  fillWants?: boolean;
+};
+
 class Trade {
   mangroveUtils = new UnitCalculations();
   tradeEventManagement = new TradeEventManagement();
@@ -167,8 +178,8 @@ class Trade {
             ],
             fillWants: fillWants,
             ba: "asks",
-            market: market,
           },
+          market,
           overrides
         );
       } else {
@@ -239,8 +250,8 @@ class Trade {
             ],
             ba: "bids",
             fillWants: fillWants,
-            market: market,
           },
+          market,
           overrides
         );
       } else {
@@ -264,43 +275,61 @@ class Trade {
    * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
    * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
    */
-  snipe(
+  async snipe(
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {},
     market: Market
   ): Promise<Market.OrderResult> {
-    const fillWants = params.fillWants ?? true;
+    const raw = await this.getRawSnipeParams(params, overrides, market);
 
+    return this.snipesWithRawParameters(
+      raw,
+      market,
+      overrides,
+      params.requireOffersToFail
+    );
+  }
+
+  /**
+   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
+   * Params are:
+   * `targets`: an array of
+   *    `offerId`: the offer to snipe
+   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
+   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
+   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
+   * `ba`: whether to snipe `asks` or `bids`
+   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
+   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   */
+  getRawSnipeParams(
+    params: Market.SnipeParams,
+    overrides: ethers.Overrides = {},
+    market: Market
+  ): Promise<Market.RawSnipeParams> {
     const [outboundTkn, inboundTkn] =
       params.ba === "asks"
         ? [market.base, market.quote]
         : [market.quote, market.base];
 
-    const _targets = params.targets.map<{
-      offerId: number;
-      takerWants: ethers.BigNumber;
-      takerGives: ethers.BigNumber;
-      gasLimit?: number;
-    }>((t) => {
-      return {
-        offerId: t.offerId,
-        takerWants: outboundTkn.toUnits(t.takerWants),
-        takerGives: inboundTkn.toUnits(t.takerGives),
-        gasLimit: t.gasLimit,
-      };
-    });
+    const _targets = params.targets.map<SnipeUnitParams["targets"][number]>(
+      (t) => {
+        return {
+          offerId: t.offerId,
+          takerWants: outboundTkn.toUnits(t.takerWants),
+          takerGives: inboundTkn.toUnits(t.takerGives),
+          gasLimit: t.gasLimit,
+        };
+      }
+    );
 
-    return this.snipes(
-      {
-        targets: _targets,
-        fillWants: fillWants,
-        market: market,
-        ba: params.ba,
-        requireOffersToFail: params.requireOffersToFail,
-      },
+    return this.getSnipesRawParamsFromUnitParams(
+      { targets: _targets, ba: params.ba, fillWants: params.fillWants },
+      market,
       overrides
     );
   }
+
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
@@ -468,7 +497,7 @@ class Trade {
     wants: ethers.BigNumber,
     gives: ethers.BigNumber,
     address: string,
-    market
+    market: Market
   ) {
     let result: Market.OrderResult = {
       txReceipt: receipt,
@@ -504,67 +533,64 @@ class Trade {
   }
 
   /**
-   * Low level sniping of `targets`.
-   *
-   * If `orderType` is `"buy"`, the base/quote market will be used,
-   * If `orderType` is `"sell"`, the quote/base market will be used,
-   *
-   * `fillWants` defines whether the market order stops immediately once `takerWants` tokens have been purchased or whether it tries to keep going until `takerGives` tokens have been spent.
-   * `requireOffersToFail` defines whether a successful offer will cause the call to fail without sniping anything.
-   *
-   * Returns a promise for snipes result after 1 confirmation.
-   * Will throw on same conditions as ethers.js `transaction.wait`.
+   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
    */
-  async snipes(
-    {
-      targets,
-      ba,
-      fillWants,
-      requireOffersToFail,
-      market,
-    }: {
-      targets: {
-        offerId: number;
-        takerWants: ethers.BigNumber;
-        takerGives: ethers.BigNumber;
-        gasLimit?: number;
-      }[];
-      ba: Market.BA;
-      fillWants: boolean;
-      requireOffersToFail?: boolean;
-      market: Market;
-    },
+  async getSnipesRawParamsFromUnitParams(
+    unitParams: SnipeUnitParams,
+    market: Market,
     overrides: ethers.Overrides
-  ): Promise<Market.OrderResult> {
+  ): Promise<Market.RawSnipeParams> {
+    const _fillWants = unitParams.fillWants ?? true;
+
     const [outboundTkn, inboundTkn] =
-      ba === "asks" ? [market.base, market.quote] : [market.quote, market.base];
+      unitParams.ba === "asks"
+        ? [market.base, market.quote]
+        : [market.quote, market.base];
 
     logger.debug("Creating snipes", {
       contextInfo: "market.snipes",
       data: {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
-        fillWants: fillWants,
+        fillWants: _fillWants,
       },
     });
 
     // user defined gasLimit overrides estimates
-    const _targets = targets.map<
-      [
-        ethers.BigNumberish | Promise<ethers.BigNumberish>,
-        ethers.BigNumberish | Promise<ethers.BigNumberish>,
-        ethers.BigNumberish | Promise<ethers.BigNumberish>,
-        ethers.BigNumberish | Promise<ethers.BigNumberish>
-      ]
+    const _targets = unitParams.targets.map<
+      Market.RawSnipeParams["targets"][number]
     >((t) => [
       t.offerId,
       t.takerWants,
       t.takerGives,
       t.gasLimit ??
         overrides.gasLimit ??
-        market.estimateGas(this.baToBs(ba), t.takerWants),
+        market.estimateGas(this.baToBs(unitParams.ba), t.takerWants),
     ]);
 
+    return {
+      ba: unitParams.ba,
+      outboundTkn: outboundTkn.address,
+      inboundTkn: inboundTkn.address,
+      targets: _targets,
+      fillWants: _fillWants,
+    };
+  }
+
+  /**
+   * Low level sniping of `targets`.
+   *
+   * `requireOffersToFail`: if true, then a successful offer will cause the call to fail without sniping anything.
+   *
+   * Returns a promise for snipes result after 1 confirmation.
+   * Will throw on same conditions as ethers.js `transaction.wait`.
+   */
+  async snipesWithRawParameters(
+    raw: Market.RawSnipeParams,
+    market: Market,
+    overrides: ethers.Overrides,
+    requireOffersToFail?: boolean
+  ): Promise<Market.OrderResult> {
     // Invoking the cleanerContract does not populate receipt.events, so we instead parse receipt.logs
     const snipeFunction = requireOffersToFail
       ? market.mgv.cleanerContract.collect
@@ -578,10 +604,10 @@ class Trade {
           events.filter((x) => x.address === market.mgv._address);
 
     const response = await snipeFunction(
-      outboundTkn.address,
-      inboundTkn.address,
-      _targets,
-      fillWants,
+      raw.outboundTkn,
+      raw.inboundTkn,
+      raw.targets,
+      raw.fillWants,
       overrides
     );
 
@@ -599,8 +625,8 @@ class Trade {
       contextInfo: "market.snipes",
       data: { receipt: receipt },
     });
-    const got_bq = ba === "asks" ? "base" : "quote";
-    const gave_bq = ba === "asks" ? "quote" : "base";
+    const got_bq = raw.ba === "asks" ? "base" : "quote";
+    const gave_bq = raw.ba === "asks" ? "quote" : "base";
     const parsedEvents = parseLogs(receipt.events, receipt.logs);
     for (const evt of parsedEvents) {
       if (evt.args && (!evt.args.taker || receipt.from === evt.args.taker)) {
@@ -618,6 +644,26 @@ class Trade {
       throw Error("snipes went wrong");
     }
     return result;
+  }
+
+  /**
+   * Low level sniping of `targets`.
+   *
+   * Returns a promise for snipes result after 1 confirmation.
+   * Will throw on same conditions as ethers.js `transaction.wait`.
+   */
+  async snipes(
+    unitParams: SnipeUnitParams,
+    market: Market,
+    overrides: ethers.Overrides
+  ): Promise<Market.OrderResult> {
+    const raw = await this.getSnipesRawParamsFromUnitParams(
+      unitParams,
+      market,
+      overrides
+    );
+
+    return this.snipesWithRawParameters(raw, market, overrides);
   }
 }
 
