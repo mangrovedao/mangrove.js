@@ -5,8 +5,8 @@
   ],
   "packageRules": [
     {
-      "matchPackagePatterns": ["@ethersproject"],
-      "groupName": "@ethersproject"
+      "matchPackagePatterns": ["ethersproject"],
+      "groupName": "ethersproject"
     }
   ]
 }
