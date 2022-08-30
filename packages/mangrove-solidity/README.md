@@ -88,9 +88,7 @@ To run specific test suites, use the `testSuites` package script:
 
 # Deployment
 
-## FIXME
-
-No deployment story with foundry yet -- but foundry has the features, we just need to write the deployments and the tooling around it.
+Deployment scripts are in `script/`, and should be run with `forge script Script.s.sol [args]`. See the [`forge script`](https://book.getfoundry.sh/reference/forge/forge-script) documentation.
 
 # Generate documentation
 
