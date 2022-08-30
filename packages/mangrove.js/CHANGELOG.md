@@ -1,5 +1,8 @@
 # next version
 
+
+# 0.10.0 (August 2022)
+
 - Update address for `MangroveOrderEnriched`
 
 # 0.9.2 (August 2022)
