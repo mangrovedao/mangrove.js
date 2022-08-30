@@ -37,8 +37,8 @@ module.exports = async (hre) => {
       `Mango deployed (${Mango.address}) on market (${baseName},${quoteName}) of Mangrove (${MgvAPI.contract.address})`
     );
   };
-  await deployOnMarket("WETH", "USDC", 1, 200, 36); // [500 USD/ETH,...,|2500|..., 3800 USD/ETH] inc 36 USD
-  await deployOnMarket("WETH", "DAI", 1, 200, 36); // [500 DAI/ETH,..,|2500|,... 3800 USD/ETH] inc 36 DAI
+  await deployOnMarket("WETH", "USDC", 1, 200, 36); // [200 USD/ETH,...,|1900|..., 3800 USD/ETH] inc 36 USD
+  await deployOnMarket("WETH", "DAI", 1, 200, 36); // [200 DAI/ETH,..,|1900|,... 3800 USD/ETH] inc 36 DAI
   await deployOnMarket("DAI", "USDC", 1000, 997, 0.12); // Pmin=997/1000, inc=0.12/1000, Pmax= 997/1000 + 0.12*50/1000 = 1003/1000
 };
 
