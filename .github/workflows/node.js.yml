@@ -352,30 +352,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-
-    - name: Get Foundry RPC cache
-      uses: actions/cache@v3
-      with:
-        path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
-        restore-keys: |
-          foundry-rpc-cache-
-
-    - name: Get Foundry build cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ format('{0}/cache',env.working-directory) }}
-          ${{ format('{0}/out', env.working-directory) }}
-        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
-        restore-keys: |
-          foundry-build-cache-
-        
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
@@ -587,29 +565,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-        
-    - name: Get Foundry RPC cache
-      uses: actions/cache@v3
-      with:
-        path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
-        restore-keys: |
-          foundry-rpc-cache-
-
-    - name: Get Foundry build cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ format('{0}/cache',env.working-directory) }}
-          ${{ format('{0}/out', env.working-directory) }}
-        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
-        restore-keys: |
-          foundry-build-cache-
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
@@ -717,30 +674,9 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-        
-    - name: Get Foundry RPC cache
-      uses: actions/cache@v3
-      with:
-        path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
-        restore-keys: |
-          foundry-rpc-cache-
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
 
-    - name: Get Foundry build cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ format('{0}/cache',env.working-directory) }}
-          ${{ format('{0}/out', env.working-directory) }}
-        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
-        restore-keys: |
-          foundry-build-cache-
-        
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -847,30 +783,9 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-
-    - name: Get Foundry RPC cache
-      uses: actions/cache@v3
-      with:
-        path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
-        restore-keys: |
-          foundry-rpc-cache-
-
-    - name: Get Foundry build cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ format('{0}/cache',env.working-directory) }}
-          ${{ format('{0}/out', env.working-directory) }}
-        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
-        restore-keys: |
-          foundry-build-cache-
-        
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
+      
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -977,29 +892,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-
-    - name: Get Foundry RPC cache
-      uses: actions/cache@v3
-      with:
-        path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
-        restore-keys: |
-          foundry-rpc-cache-
-
-    - name: Get Foundry build cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ format('{0}/cache',env.working-directory) }}
-          ${{ format('{0}/out', env.working-directory) }}
-        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
-        restore-keys: |
-          foundry-build-cache-
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
@@ -1107,29 +1001,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-
-    - name: Get Foundry RPC cache
-      uses: actions/cache@v3
-      with:
-        path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
-        restore-keys: |
-          foundry-rpc-cache-
-
-    - name: Get Foundry build cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ format('{0}/cache',env.working-directory) }}
-          ${{ format('{0}/out', env.working-directory) }}
-        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
-        restore-keys: |
-          foundry-build-cache-
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
