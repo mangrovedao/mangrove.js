@@ -5,7 +5,7 @@
   ],
   "recursive": true,
   "spec": "test/integration/*integration.test.ts",
-  "timeout": 180000,
+  "timeout": 60000,
   "reporter": "mocha-multi-reporters",
   "reporterOptions": "configFile=test/mocha/config/integration-tests-multi-reporters.json"
 }
