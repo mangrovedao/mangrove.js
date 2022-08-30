@@ -3,7 +3,9 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: [ master, run-ci/** ]
+    branches: 
+      - master
+      - 'run-ci/**'
     paths-ignore: 
       - '**.md'
   pull_request_target:
