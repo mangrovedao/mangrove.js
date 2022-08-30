@@ -17,6 +17,7 @@ module.exports = async (hre) => {
       `Mango_${baseName}_${quoteName}`,
       {
         contract: "Mango",
+        gasPrice: ethers.utils.parseUnits("30", "gwei"),
         from: deployer,
         args: [
           MgvAPI.contract.address,

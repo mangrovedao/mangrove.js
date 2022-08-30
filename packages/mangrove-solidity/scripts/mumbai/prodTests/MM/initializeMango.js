@@ -52,6 +52,8 @@ async function main() {
     }
 
     MangoRaw = MangoRaw.connect(tester);
+    tx = await MangoRaw.set_reserve(tester.address, overrides);
+    await tx.wait();
 
     let [pendingBase, pendingQuote] = await MangoRaw.pending();
     if (pendingBase.gt(0) || pendingQuote.gt(0)) {
@@ -71,10 +73,32 @@ async function main() {
     // activating Mango for BASE and QUOTE trading is already done at deploy time
     // admin still needs to approve router for pulling its funds
     const router = await Mango.logic.router();
-    tx = await MgvAPI.token(baseName).approve(router.address, {}, overrides);
-    await tx.wait();
-    tx = await MgvAPI.token(quoteName).approve(router.address, {}, overrides);
-    await tx.wait();
+    if (
+      (
+        await MgvAPI.token(baseName).allowance({
+          owner: MgvAPI._signer.address,
+          spender: router.address,
+        })
+      ).eq(0)
+    ) {
+      // maker has to approve liquidity router of Mango for base and quote transfer
+      console.log(
+        `* Approving router to transfer ${baseName} from tester wallet`
+      );
+      tx = await MgvAPI.token(baseName).approve(router.address, {}, overrides);
+      await tx.wait();
+    }
+    if (
+      (await MgvAPI.token(quoteName).allowance({ spender: router.address })).eq(
+        0
+      )
+    ) {
+      console.log(
+        `* Approving router to transfer ${quoteName} from tester wallet`
+      );
+      tx = await MgvAPI.token(quoteName).approve(router.address, {}, overrides);
+      await tx.wait();
+    }
 
     const provBid = await Mango.computeBidProvision();
     console.log(
@@ -88,13 +112,13 @@ async function main() {
 
     if (totalFund.gt(0)) {
       console.log(`* Funding mangrove (${totalFund} MATIC for Mango)`);
-      tx = await Mango.fundMangrove(totalFund);
+      tx = await Mango.fundMangrove(totalFund, overrides);
       await tx.wait();
     }
 
     if (await MangoRaw.is_paused()) {
       console.log("* Mango was previously paused. Restarting now...");
-      tx = await MangoRaw.restart();
+      tx = await MangoRaw.restart(overrides);
       await tx.wait();
     }
 
@@ -120,11 +144,12 @@ async function main() {
     for (let i = 0; i < slices; i++) {
       const receipt = await MangoRaw.initialize(
         true,
-        NSLOTS / 2 - 1,
+        NSLOTS / 2 - 1, // last bid position
         offers_per_slice * i, // from
         offers_per_slice * (i + 1), // to
         [pivotIds, pivotIds],
-        amounts
+        amounts,
+        overrides
       );
       console.log(
         `Slice [${offers_per_slice * i},${
@@ -143,6 +168,11 @@ async function main() {
         )} pending quotes)`
       );
     }
+    // this will throw if something is missing to market make on (base,quote) market
+    await Mango.logic.contract.checkList([
+      MgvAPI.token(baseName).address,
+      MgvAPI.token(quoteName).address,
+    ]);
   }
 }
 
