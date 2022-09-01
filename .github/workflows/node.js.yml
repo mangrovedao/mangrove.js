@@ -3,7 +3,9 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: [ master ]
+    branches: 
+      - master
+      - 'run-ci/**'
     paths-ignore: 
       - '**.md'
   pull_request_target:
@@ -195,30 +197,9 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
 
-    - name: Get Foundry RPC cache
-      uses: actions/cache@v3
-      with:
-        path: "~/.foundry/cache"
-        key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
-        restore-keys: |
-          foundry-rpc-cache-
-
-    - name: Get Foundry build cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ${{ format('{0}/cache',env.working-directory) }}
-          ${{ format('{0}/out', env.working-directory) }}
-        key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
-        restore-keys: |
-          foundry-build-cache-
-        
     # == build ==
     - name: Solidity Compile
       run: yarn run build-this-package
@@ -371,11 +352,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
@@ -419,15 +397,45 @@ jobs:
         path: ${{env.working-directory}}/coverage-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
 
+    # == verify cli can start ==
+    - name: Mgv cli Tests
+      run: yarn mgv help
+
      # == Send coverage report to Coveralls == 
-    - name: Coveralls
+     # Coverallsapp by default uses GITHUB_SHA but that does not necessarily correspond
+     # to HEAD because a branch is checked out. We here find the actual SHA for HEAD.
+    - name: Set Coveralls vars
+      id: coveralls_vars
+      if: github.event_name != 'pull_request_target' 
+      run: echo "::set-output name=sha_for_head::$(git rev-parse HEAD)"
+
+    - name: Upload to Coveralls for mangrove.js
       uses: coverallsapp/github-action@master
       if: github.event_name != 'pull_request_target' 
       with:
+        git-commit: ${{ steps.coveralls_vars.outputs.sha_for_head }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
         base-path	: ${{env.working-directory}}
-        
+        flag-name: js
+
+    - name: Create coverage report for mangrove-solidity
+      if: github.event_name != 'pull_request_target' 
+      run: forge coverage --report lcov
+      working-directory: . # coverage cannot find contracts if executed inside mangrove-solidity
+      env:
+        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
+
+    - name: Upload to Coveralls for mangrove-solidity
+      uses: coverallsapp/github-action@master
+      if: github.event_name != 'pull_request_target' 
+      with:
+        git-commit: ${{ steps.coveralls_vars.outputs.sha_for_head }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: lcov.info
+        base-path	: .
+        flag-name: solidity
+
     # save artifacts for later stages
     - name: Zip output
       uses: montudor/action-zip@v1
@@ -587,11 +595,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
@@ -699,12 +704,9 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-        
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
+
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -811,18 +813,9 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-        
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-        
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
+      
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -929,18 +922,9 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact
       uses: actions/download-artifact@v3
@@ -1047,17 +1031,8 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-        
-    # == foundry setup ==
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
     - name: Download cached mangrove-solidity artifact

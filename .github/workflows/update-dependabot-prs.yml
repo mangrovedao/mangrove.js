@@ -2,7 +2,9 @@
 
 name: Update yarn.lock in Dependabot PRs
 on:
-  - pull_request_target
+  pull_request_target:
+    branches:
+      - 'dependabot/**'
 
 jobs:
   fix-lockfile:
