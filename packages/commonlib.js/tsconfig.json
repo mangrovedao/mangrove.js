@@ -3,6 +3,7 @@
     "module": "CommonJS",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "emitDecoratorMetadata": false, // this is the default. Calling it out since esbuild does not support it.
     "target": "es2020",
     "strict": true,
     "noImplicitAny": true,
@@ -18,7 +19,8 @@
     },
     "typeRoots": ["./types", "./node_modules/@types"],
     "composite": true,
-    "rootDir": "src/"
+    "rootDir": "src/",
+    "isolatedModules": true
   },
   "include": ["src/**/*.ts"]
 }

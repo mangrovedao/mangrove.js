@@ -26,7 +26,6 @@ import {AccessControlled} from "mgv_src/strategies/utils/AccessControlled.sol";
  */
 
 contract MangroveTest is Test2, HasMgvEvents {
-  using stdStorage for StdStorage;
   // Configure the initial setup.
   // Add fields here to make MangroveTest more configurable.
   struct TokenOptions {
@@ -39,12 +38,6 @@ contract MangroveTest is Test2, HasMgvEvents {
     TokenOptions base;
     TokenOptions quote;
     uint defaultFee;
-  }
-
-  modifier prank(address a) {
-    vm.startPrank(a);
-    _;
-    vm.stopPrank();
   }
 
   AbstractMangrove mgv;
@@ -192,20 +185,6 @@ contract MangroveTest is Test2, HasMgvEvents {
     console.log(unicode"└────┴─────────────────────");
   }
 
-  event GasCost(string callname, uint value);
-
-  function execWithCost(
-    string memory callname,
-    address addr,
-    bytes memory data
-  ) internal returns (bytes memory) {
-    uint g0 = gasleft();
-    (bool noRevert, bytes memory retdata) = addr.delegatecall(data);
-    require(noRevert, "execWithCost should not revert");
-    emit GasCost(callname, g0 - gasleft());
-    return retdata;
-  }
-
   struct Balances {
     uint mgvBalanceWei;
     uint mgvBalanceFees;
@@ -321,8 +300,8 @@ contract MangroveTest is Test2, HasMgvEvents {
     address $b,
     AbstractMangrove _mgv
   ) internal {
-    not0x($a);
-    not0x($b);
+    assertNot0x($a);
+    assertNot0x($b);
     _mgv.activate($a, $b, options.defaultFee, 0, 20_000);
     _mgv.activate($b, $a, options.defaultFee, 0, 20_000);
     // logging
@@ -353,7 +332,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     public
     returns (MakerDeployer)
   {
-    not0x($(mgv));
+    assertNot0x($(mgv));
     return (new MakerDeployer(mgv, $out, $in));
   }
 
@@ -368,8 +347,13 @@ contract MangroveTest is Test2, HasMgvEvents {
     return tt;
   }
 
-  /* **** Token conversion */
-  /* return underlying amount with correct number of decimals */
+  /* **** Token conversion *** */
+  /* Interpret amount as a user-friendly amount, convert to real underlying
+   * amount using token decimals.
+   * Example:
+   * cash(usdc,1) = 1e6
+   * cash(dai,1?) = 1e18
+   */
   function cash(IERC20 t, uint amount) public returns (uint) {
     savePrank();
     uint decimals = t.decimals();
@@ -377,7 +361,9 @@ contract MangroveTest is Test2, HasMgvEvents {
     return amount * 10**decimals;
   }
 
-  /* return underlying amount divided by 10**power */
+  /* Same as earlier, but divide result by 10**power */
+  /* Useful to convert noninteger amounts, e.g.
+     to convert 3.15 USDC, use cash(usdc,315,2) */
   function cash(
     IERC20 t,
     uint amount,
@@ -405,15 +391,5 @@ contract MangroveTest is Test2, HasMgvEvents {
 
   function $(IERC20 t) internal pure returns (address payable) {
     return payable(address(t));
-  }
-
-  function tkn_pair(IERC20 t, IERC20 s)
-    internal
-    pure
-    returns (IERC20[] memory ret)
-  {
-    ret = new IERC20[](2);
-    ret[0] = t;
-    ret[1] = s;
   }
 }

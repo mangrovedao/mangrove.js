@@ -2,11 +2,38 @@
 pragma solidity ^0.8.13;
 import {console2 as console} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
+import {IERC20} from "mgv_src/MgvLib.sol";
 
 /* Some general utility methods.
 /* You mostly want to inherit `MangroveTest` (which inherits Test2` which inherits `Utilities`) rather than inherit `Utilities` directly */
 contract Utilities is Script {
-  /* units to e-18 units */
+  /* *** Logging *** */
+  /* Log arrays */
+
+  function logary(uint[] memory uints) public view {
+    string memory s = "";
+    for (uint i = 0; i < uints.length; i++) {
+      s = string.concat(s, vm.toString(uints[i]));
+      if (i < uints.length - 1) {
+        s = string.concat(s, ", ");
+      }
+    }
+    console.log(s);
+  }
+
+  function logary(int[] memory ints) public view {
+    string memory s = "";
+    for (uint i = 0; i < ints.length; i++) {
+      s = string.concat(s, vm.toString(uint(ints[i])));
+      if (i < ints.length - 1) {
+        s = string.concat(s, ", ");
+      }
+    }
+    console.log(s);
+  }
+
+  /* *** Unit conversion *** */
+
   function toEthUnits(uint w, string memory units)
     internal
     pure
@@ -364,6 +391,156 @@ contract Utilities is Script {
 
   function dynamic(int[10] memory a) internal pure returns (int[] memory ret) {
     ret = new int[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[1] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[2] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[3] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[4] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[5] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[6] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[7] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[8] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[9] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
+    uint i_ptr;
+    uint o_ptr;
+    assembly {
+      i_ptr := a
+      o_ptr := add(ret, 32)
+    }
+    memcpy(i_ptr, a.length, o_ptr);
+  }
+
+  function dynamic(IERC20[10] memory a)
+    internal
+    pure
+    returns (IERC20[] memory ret)
+  {
+    ret = new IERC20[](a.length);
     uint i_ptr;
     uint o_ptr;
     assembly {

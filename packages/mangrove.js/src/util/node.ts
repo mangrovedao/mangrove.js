@@ -15,14 +15,15 @@ import * as eth from "../eth";
 import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
 import { default as nodeCleanup } from "node-cleanup";
+import { getAllToyENSEntries } from "./toyEnsEntries";
 
 const DEFAULT_HOST = "127.0.0.1";
-const DEFAULT_PORT = 8546;
+const DEFAULT_PORT = 8545;
 const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 const DUMPFILE = "mangroveJsNodeState.dump";
 
-import yargs from "yargs/yargs";
+import yargs from "yargs";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
@@ -46,12 +47,12 @@ export const builder = (yargs) => {
       type: "string",
       default: DEFAULT_PORT,
     })
-    .option("spawn-node", {
+    .option("spawn", {
       describe: "Do not spawn a new node",
       type: "boolean",
       default: true,
     })
-    .option("use-cache", {
+    .option("caching", {
       describe: `Read/write ./${DUMPFILE} file when possible`,
       type: "boolean",
       default: false,
@@ -74,6 +75,11 @@ export const builder = (yargs) => {
     .option("chain-id", {
       describe: "Chain id to use in node (default is anvil's default)",
       type: "number",
+    })
+    .option("pipe", {
+      describe: "Pipe all internal anvil/script data to stdout",
+      default: false,
+      type: "boolean",
     })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
@@ -126,16 +132,12 @@ const spawn = async (params: any) => {
     anvil.kill();
   });
 
-  const nodeClosedPromise = new Promise<void>((ok) => {
-    if (params.spawnNode) {
-      anvil.on("close", ok);
-    } else {
-      ok();
-    }
+  const spawnEndedPromise = new Promise<void>((ok) => {
+    anvil.on("close", ok);
   });
 
   // wait a while for anvil to be ready, then bail
-  const nodeReady = new Promise<void>((ok, ko) => {
+  const ready = new Promise<void>((ok, ko) => {
     let ready = null;
     setTimeout(() => {
       if (ready === null) {
@@ -144,7 +146,7 @@ const spawn = async (params: any) => {
       }
     }, 3000);
     anvil.stdout.on("data", (data) => {
-      if (params.pipeOut) {
+      if (params.pipe) {
         console.log(data);
       }
       if (ready !== null) {
@@ -160,19 +162,26 @@ const spawn = async (params: any) => {
     });
   });
 
-  await nodeReady;
-  // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-  await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
+  await ready;
 
   return {
-    accounts: anvilAccounts,
-    nodeClosedPromise,
+    spawnEndedPromise,
     process: anvil,
   };
 };
 
 /* Run a deployment, populate Mangrove addresses */
 const deploy = async (params: any) => {
+  // setup Toy ENS if needed
+  const toyENSCode = await params.provider.send("eth_getCode", [
+    ToyENS.address,
+    "latest",
+  ]);
+  if (toyENSCode === "0x") {
+    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
+    await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
+  }
+
   // test connectivity
   try {
     await params.provider.send("eth_chainId", []);
@@ -183,7 +192,7 @@ const deploy = async (params: any) => {
     );
   }
 
-  if (params.useCache && fs.existsSync(stateCache)) {
+  if (params.caching && fs.existsSync(stateCache)) {
     const state = fs.readFileSync(stateCache, "utf8");
     console.log("Loading state from cache...");
     await params.provider.send("anvil_loadState", [state]);
@@ -216,7 +225,7 @@ const deploy = async (params: any) => {
           env: process.env,
         },
         (error, stdout, stderr) => {
-          if (params.pipeOut || error) {
+          if (params.pipe || error) {
             console.error("forge cmd stdout:");
             console.error(stdout);
           }
@@ -233,11 +242,26 @@ const deploy = async (params: any) => {
       );
     });
     await scriptPromise;
-    const stateData = await params.provider.send("anvil_dumpState", []);
-    if (params.useCache) {
+    if (params.caching) {
+      const stateData = await params.provider.send("anvil_dumpState", []);
       fs.writeFileSync(stateCache, stateData);
       console.log(`Wrote state cache to ${stateCache}`);
     }
+  }
+};
+
+/* 
+  Connect to a node. Optionally spawns it before connecting. Optionally runs
+  initial deployment before connecting.
+ */
+const connect = async (params: any) => {
+  let spawnInfo = { process: null, spawnEndedPromise: null };
+  if (params.spawn) {
+    spawnInfo = await spawn(params);
+  }
+
+  if (params.deploy) {
+    await deploy(params);
   }
 
   // convenience: try to populate global Mangrove instance if possible
@@ -246,9 +270,11 @@ const deploy = async (params: any) => {
     await Mangrove.fetchAllAddresses(params.provider);
   }
 
+  /* Track node snapshot ids for easy snapshot/revert */
   let lastSnapshotId;
 
   return {
+    ...spawnInfo,
     url: params.url,
     accounts: anvilAccounts,
     params,
@@ -259,65 +285,16 @@ const deploy = async (params: any) => {
   };
 };
 
-/* Runs a node and/or a deploy, depending on commandline/environment parameters */
-const defaultRun = async (params: any) => {
-  let spawnInfo;
-
-  if (params.spawnNode) {
-    spawnInfo = await spawn(params);
-  }
-
-  let deployInfo;
-  if (params.deploy) {
-    deployInfo = await deploy(params);
-  }
-
-  if (!params.deploy) {
-    // fetch always, even if deploy did not occur
-    if (require.main !== module) {
-      // assume we will use mangrove.js soon
-      await Mangrove.fetchAllAddresses(params.provider);
-    }
-  }
-
-  return {
-    params,
-    accounts: anvilAccounts,
-    ...spawnInfo,
-    ...deployInfo,
-  };
-};
-
-type fetchedContract = { name: string; address: string; isToken: boolean };
-
-/* Fetch all Toy ENS entries, used to give contract addresses to Mangrove */
-const getAllToyENSEntries = async (
-  provider: ethers.providers.Provider
-): Promise<fetchedContract[]> => {
-  const ens = new ethers.Contract(ToyENS.address, ToyENS.abi, provider);
-  const [names, addresses, isTokens] = await ens.all();
-  const contracts = names.map((name, index) => {
-    return { name, address: addresses[index], isToken: isTokens[index] };
-  });
-  return contracts;
-};
-
 /* Generate initial parameters with yargs, add data, then return node actions. */
-export const init = (argv: any, useYargs: boolean = true) => {
+export const node = (argv: any, useYargs: boolean = true) => {
   const params: any = useYargs ? computeArgv(argv) : argv;
 
   params.url = `http://${params.host}:${params.port}`;
   params.provider = new ethers.providers.StaticJsonRpcProvider(params.url);
 
   return {
-    spawn() {
-      return spawn(params);
-    },
-    deploy() {
-      return deploy(params);
-    },
-    defaultRun() {
-      return defaultRun(params);
+    connect() {
+      return connect(params);
     },
     getAllToyENSEntries() {
       return getAllToyENSEntries(params.provider);
@@ -325,21 +302,21 @@ export const init = (argv: any, useYargs: boolean = true) => {
   };
 };
 
-init.getAllToyENSEntries = getAllToyENSEntries;
+node.getAllToyENSEntries = getAllToyENSEntries;
 
-export default init;
+export default node;
 
 export { getAllToyENSEntries };
 
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
-    const { nodeClosedPromise } = await init({
-      pipeOut: true,
-    }).defaultRun();
-    if (nodeClosedPromise) {
+    const { spawnEndedPromise } = await node({
+      pipe: true,
+    }).connect();
+    if (spawnEndedPromise) {
       console.log("Node ready.");
-      await nodeClosedPromise;
+      await spawnEndedPromise;
     }
   };
   main()

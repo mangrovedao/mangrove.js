@@ -57,7 +57,7 @@ describe("Market integration tests suite", () => {
 
     beforeEach(async function () {
       mgvro = await Mangrove.connect({
-        provider: "http://localhost:8546",
+        provider: "http://localhost:8545",
         forceReadOnly: true,
       });
       //shorten polling for faster tests
@@ -1103,26 +1103,78 @@ describe("Market integration tests suite", () => {
       mgv.cleanerContract.address,
       100000000
     );
-    // Actual snipe
-    /* FIXME Temporarily disabled this test */
-    // let s = market.snipe({
-    //     ba: "asks",
-    //     targets: [
-    //       {
-    //         offerId: ask.id,
-    //         takerGives: ask.wants,
-    //         takerWants: ask.gives,
-    //         gasLimit: 650000,
-    //       },
-    //     ],
-    //     requireOffersToFail: true,
-    //   },{gasLimit:10000})
 
-    // await expect(s
-    // )
-    //   .to.be.eventually.rejected.and.has.property("error")
-    //   .with.property("message")
-    //   .contain("'mgvCleaner/anOfferDidNotFail'");
+    // Actual snipe
+    var didThrow = false;
+    try {
+      await market.snipe(
+        {
+          ba: "asks",
+          targets: [
+            {
+              offerId: ask.id,
+              takerGives: ask.wants,
+              takerWants: ask.gives,
+              gasLimit: 650000,
+            },
+          ],
+          requireOffersToFail: true,
+        },
+        { gasLimit: 600000 }
+      );
+    } catch (e) {
+      didThrow = true;
+      const callResult = await mgv._provider.call(e.transaction);
+      expect(() =>
+        mgv.cleanerContract.interface.decodeFunctionResult(
+          "collect",
+          callResult
+        )
+      ).to.throw("mgvCleaner/anOfferDidNotFail");
+    }
+    expect(didThrow).to.be.equal(true);
+  });
+
+  it(`snipe via callStatic for failing offers returns bounty`, async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post progressively worse offers.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    // Note: shouldFail is for the entire maker and not per order
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+      shouldFail: true,
+    });
+
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asks = [...market.getBook().asks];
+
+    const raw = await market.getRawSnipeParams({
+      ba: "asks",
+      targets: [
+        {
+          offerId: asks[0].id,
+          takerGives: asks[0].wants,
+          takerWants: asks[0].gives,
+          gasLimit: 650000,
+        },
+      ],
+    });
+
+    const result = await market.mgv.cleanerContract.callStatic.collect(
+      raw.outboundTkn,
+      raw.inboundTkn,
+      raw.targets,
+      raw.fillWants
+    );
+
+    expect(mgv.fromUnits(result, 18).toNumber()).to.be.equal(0.000053454);
   });
 
   it("gets config", async function () {

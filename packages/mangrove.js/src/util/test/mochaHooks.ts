@@ -1,17 +1,18 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
-import { node, Mangrove } from "../..";
+import { Mangrove } from "../../";
+import node from "../../util/node";
 
 const serverParams = {
   host: "127.0.0.1",
-  port: 8546,
+  port: 8545,
   pipeOut: false,
   script: "MangroveJsDeploy",
 };
 
 export const mochaHooks = {
   async beforeAll() {
-    this.server = await node(serverParams).defaultRun();
+    this.server = await node(serverParams).connect();
     this.accounts = {
       deployer: this.server.accounts[0],
       maker: this.server.accounts[1],

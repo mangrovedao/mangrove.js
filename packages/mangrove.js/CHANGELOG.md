@@ -1,5 +1,18 @@
 # next version
 
+# 0.10.0 (August 2022)
+
+- Update address for `MangroveOrderEnriched`
+
+# 0.9.2 (August 2022)
+
+- Update commonlib.js dependency
+- Bug fix: Remove node dependencies from browser bundle
+- mgv.token can specify address/(displayed)decimals
+- Remove all hardhat dependencies
+- mgv can host a local node, see `mgv node --help`
+- Add parameter to `snipe` to force failing on successful orders (using MgvCleaner contract)
+
 # 0.9.1 (August 2022)
 
 - Add ability in `market.ts` to snipe a list of targets

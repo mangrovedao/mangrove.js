@@ -96,6 +96,19 @@ namespace Market {
     requireOffersToFail?: boolean;
   };
 
+  export type RawSnipeParams = {
+    ba: Market.BA;
+    outboundTkn: string;
+    inboundTkn: string;
+    targets: [
+      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
+      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
+      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
+      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish
+    ][];
+    fillWants: boolean;
+  };
+
   /**
    * Specification of how much volume to (potentially) trade on the market.
    *
@@ -520,7 +533,7 @@ class Market {
    *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
    * `ba`: whether to snipe `asks` or `bids`
    * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   * `requireOffersToFail`: if true, then a successful offer will cause the call to fail without sniping anything.
    *     Note: Setting `requireOffersToFail=true` uses the cleaner contract and the taker needs to approve spending, with
    *     `await mgv.contract.approve(market.base.address, market.quote.address, mgv.cleanerContract.address, amount);`
    */
@@ -529,6 +542,25 @@ class Market {
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
     return this.trade.snipe(params, overrides, this);
+  }
+
+  /**
+   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
+   * Params are:
+   * `targets`: an array of
+   *    `offerId`: the offer to snipe
+   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
+   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
+   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
+   * `ba`: whether to snipe `asks` or `bids`
+   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
+   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   */
+  getRawSnipeParams(
+    params: Market.SnipeParams,
+    overrides: ethers.Overrides = {}
+  ): Promise<Market.RawSnipeParams> {
+    return this.trade.getRawSnipeParams(params, overrides, this);
   }
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
