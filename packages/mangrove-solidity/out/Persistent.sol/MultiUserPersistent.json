@@ -556,6 +556,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "reserve",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "contract IERC20",
@@ -624,6 +637,19 @@
         }
       ],
       "name": "set_gasreq",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "__reserve",
+          "type": "address"
+        }
+      ],
+      "name": "set_reserve",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -792,10 +818,12 @@
     "offerOwners(address,address,uint256[])": "dec8c86b",
     "ofr_gasreq()": "d1baa1ef",
     "ownerOf(address,address,uint256)": "f92495e5",
+    "reserve()": "cd3293de",
     "retractOffer(address,address,uint256,bool)": "ad97db1b",
     "router()": "f887ea40",
     "set_admin(address)": "e9333fab",
     "set_gasreq(uint256)": "fc488a38",
+    "set_reserve(address)": "3d77fcde",
     "set_router(address)": "db11851e",
     "tokenBalance(address)": "eedc966a",
     "updateOffer((address,address,uint256,uint256,uint256,uint256,uint256,uint256))": "10aded60",
@@ -804,66 +832,66 @@
   },
   "ast": {
     "absolutePath": "packages/mangrove-solidity/src/strategies/multi_user/abstract/Persistent.sol",
-    "id": 37792,
+    "id": 38534,
     "exportedSymbols": {
-      "ACS": [42713],
-      "ARSt": [38707],
-      "AbstractRouter": [38682],
-      "AccessControlled": [42692],
-      "IERC20": [24224],
-      "IMaker": [24106],
-      "IMangrove": [22819],
-      "IOfferLogic": [36388],
-      "IOfferLogicMulti": [36457],
-      "ML": [23913],
-      "MOS": [33533],
-      "MangroveLike": [29294],
-      "MangroveOffer": [33507],
-      "MgvReader": [29724],
-      "MultiUser": [37672],
-      "MultiUserPersistent": [37791],
-      "P": [23884]
+      "ACS": [43438],
+      "ARSt": [39449],
+      "AbstractRouter": [39424],
+      "AccessControlled": [43417],
+      "IERC20": [24851],
+      "IMaker": [24733],
+      "IMangrove": [23446],
+      "IOfferLogic": [37078],
+      "IOfferLogicMulti": [37147],
+      "ML": [24540],
+      "MOS": [34207],
+      "MangroveLike": [29921],
+      "MangroveOffer": [34177],
+      "MgvReader": [30351],
+      "MultiUser": [38414],
+      "MultiUserPersistent": [38533],
+      "P": [24511]
     },
     "nodeType": "SourceUnit",
-    "src": "1361:1679:45",
+    "src": "1361:1679:51",
     "nodes": [
       {
-        "id": 37674,
+        "id": 38416,
         "nodeType": "PragmaDirective",
-        "src": "1361:24:45",
+        "src": "1361:24:51",
         "literals": ["solidity", "^", "0.8", ".10"]
       },
       {
-        "id": 37675,
+        "id": 38417,
         "nodeType": "PragmaDirective",
-        "src": "1386:19:45",
+        "src": "1386:19:51",
         "literals": ["abicoder", "v2"]
       },
       {
-        "id": 37676,
+        "id": 38418,
         "nodeType": "ImportDirective",
-        "src": "1406:25:45",
+        "src": "1406:25:51",
         "absolutePath": "packages/mangrove-solidity/src/strategies/multi_user/abstract/MultiUser.sol",
         "file": "./MultiUser.sol",
         "nameLocation": "-1:-1:-1",
-        "scope": 37792,
-        "sourceUnit": 37673,
+        "scope": 38534,
+        "sourceUnit": 38415,
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "id": 37791,
+        "id": 38533,
         "nodeType": "ContractDefinition",
-        "src": "1543:1496:45",
+        "src": "1543:1496:51",
         "nodes": [
           {
-            "id": 37696,
+            "id": 38438,
             "nodeType": "FunctionDefinition",
-            "src": "1598:116:45",
+            "src": "1598:116:51",
             "body": {
-              "id": 37695,
+              "id": 38437,
               "nodeType": "Block",
-              "src": "1712:2:45",
+              "src": "1712:2:51",
               "statements": []
             },
             "implemented": true,
@@ -872,90 +900,90 @@
               {
                 "arguments": [
                   {
-                    "id": 37690,
+                    "id": 38432,
                     "name": "_mgv",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 37682,
-                    "src": "1689:4:45",
+                    "referencedDeclaration": 38424,
+                    "src": "1689:4:51",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IMangrove_$22819",
+                      "typeIdentifier": "t_contract$_IMangrove_$23446",
                       "typeString": "contract IMangrove"
                     }
                   },
                   {
-                    "id": 37691,
+                    "id": 38433,
                     "name": "_router",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 37685,
-                    "src": "1695:7:45",
+                    "referencedDeclaration": 38427,
+                    "src": "1695:7:51",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_AbstractRouter_$38682",
+                      "typeIdentifier": "t_contract$_AbstractRouter_$39424",
                       "typeString": "contract AbstractRouter"
                     }
                   },
                   {
-                    "id": 37692,
+                    "id": 38434,
                     "name": "gasreq",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 37687,
-                    "src": "1704:6:45",
+                    "referencedDeclaration": 38429,
+                    "src": "1704:6:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     }
                   }
                 ],
-                "id": 37693,
+                "id": 38435,
                 "kind": "baseConstructorSpecifier",
                 "modifierName": {
-                  "id": 37689,
+                  "id": 38431,
                   "name": "MultiUser",
                   "nodeType": "IdentifierPath",
-                  "referencedDeclaration": 37672,
-                  "src": "1679:9:45"
+                  "referencedDeclaration": 38414,
+                  "src": "1679:9:51"
                 },
                 "nodeType": "ModifierInvocation",
-                "src": "1679:32:45"
+                "src": "1679:32:51"
               }
             ],
             "name": "",
             "nameLocation": "-1:-1:-1",
             "parameters": {
-              "id": 37688,
+              "id": 38430,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 37682,
+                  "id": 38424,
                   "mutability": "mutable",
                   "name": "_mgv",
-                  "nameLocation": "1625:4:45",
+                  "nameLocation": "1625:4:51",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37696,
-                  "src": "1615:14:45",
+                  "scope": 38438,
+                  "src": "1615:14:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IMangrove_$22819",
+                    "typeIdentifier": "t_contract$_IMangrove_$23446",
                     "typeString": "contract IMangrove"
                   },
                   "typeName": {
-                    "id": 37681,
+                    "id": 38423,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 37680,
+                      "id": 38422,
                       "name": "IMangrove",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 22819,
-                      "src": "1615:9:45"
+                      "referencedDeclaration": 23446,
+                      "src": "1615:9:51"
                     },
-                    "referencedDeclaration": 22819,
-                    "src": "1615:9:45",
+                    "referencedDeclaration": 23446,
+                    "src": "1615:9:51",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IMangrove_$22819",
+                      "typeIdentifier": "t_contract$_IMangrove_$23446",
                       "typeString": "contract IMangrove"
                     }
                   },
@@ -963,33 +991,33 @@
                 },
                 {
                   "constant": false,
-                  "id": 37685,
+                  "id": 38427,
                   "mutability": "mutable",
                   "name": "_router",
-                  "nameLocation": "1650:7:45",
+                  "nameLocation": "1650:7:51",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37696,
-                  "src": "1635:22:45",
+                  "scope": 38438,
+                  "src": "1635:22:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_AbstractRouter_$38682",
+                    "typeIdentifier": "t_contract$_AbstractRouter_$39424",
                     "typeString": "contract AbstractRouter"
                   },
                   "typeName": {
-                    "id": 37684,
+                    "id": 38426,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 37683,
+                      "id": 38425,
                       "name": "AbstractRouter",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 38682,
-                      "src": "1635:14:45"
+                      "referencedDeclaration": 39424,
+                      "src": "1635:14:51"
                     },
-                    "referencedDeclaration": 38682,
-                    "src": "1635:14:45",
+                    "referencedDeclaration": 39424,
+                    "src": "1635:14:51",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_AbstractRouter_$38682",
+                      "typeIdentifier": "t_contract$_AbstractRouter_$39424",
                       "typeString": "contract AbstractRouter"
                     }
                   },
@@ -997,13 +1025,13 @@
                 },
                 {
                   "constant": false,
-                  "id": 37687,
+                  "id": 38429,
                   "mutability": "mutable",
                   "name": "gasreq",
-                  "nameLocation": "1668:6:45",
+                  "nameLocation": "1668:6:51",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37696,
-                  "src": "1663:11:45",
+                  "scope": 38438,
+                  "src": "1663:11:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1011,10 +1039,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 37686,
+                    "id": 38428,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1663:4:45",
+                    "src": "1663:4:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1023,27 +1051,27 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1609:69:45"
+              "src": "1609:69:51"
             },
             "returnParameters": {
-              "id": 37694,
+              "id": 38436,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "1712:0:45"
+              "src": "1712:0:51"
             },
-            "scope": 37791,
+            "scope": 38533,
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "internal"
           },
           {
-            "id": 37713,
+            "id": 38455,
             "nodeType": "FunctionDefinition",
-            "src": "1718:155:45",
+            "src": "1718:155:51",
             "body": {
-              "id": 37712,
+              "id": 38454,
               "nodeType": "Block",
-              "src": "1822:51:45",
+              "src": "1822:51:51",
               "statements": [
                 {
                   "expression": {
@@ -1051,7 +1079,7 @@
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     },
-                    "id": 37710,
+                    "id": 38452,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1062,46 +1090,46 @@
                         "argumentTypes": [],
                         "expression": {
                           "expression": {
-                            "id": 37704,
+                            "id": 38446,
                             "name": "order",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 37699,
-                            "src": "1835:5:45",
+                            "referencedDeclaration": 38441,
+                            "src": "1835:5:51",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                              "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                               "typeString": "struct MgvLib.SingleOrder calldata"
                             }
                           },
-                          "id": 37705,
+                          "id": 38447,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": false,
                           "lValueRequested": false,
                           "memberName": "offer",
                           "nodeType": "MemberAccess",
-                          "referencedDeclaration": 23893,
-                          "src": "1835:11:45",
+                          "referencedDeclaration": 24520,
+                          "src": "1835:11:51",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_userDefinedValueType$_t_$31540",
+                            "typeIdentifier": "t_userDefinedValueType$_t_$32167",
                             "typeString": "t"
                           }
                         },
-                        "id": 37706,
+                        "id": 38448,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
                         "lValueRequested": false,
                         "memberName": "wants",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 31903,
-                        "src": "1835:17:45",
+                        "referencedDeclaration": 32530,
+                        "src": "1835:17:51",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$31540_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$31540_$",
+                          "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$32167_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$32167_$",
                           "typeString": "function (t) pure returns (uint256)"
                         }
                       },
-                      "id": 37707,
+                      "id": 38449,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -1109,7 +1137,7 @@
                       "lValueRequested": false,
                       "names": [],
                       "nodeType": "FunctionCall",
-                      "src": "1835:19:45",
+                      "src": "1835:19:51",
                       "tryCall": false,
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
@@ -1120,41 +1148,41 @@
                     "operator": "-",
                     "rightExpression": {
                       "expression": {
-                        "id": 37708,
+                        "id": 38450,
                         "name": "order",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 37699,
-                        "src": "1857:5:45",
+                        "referencedDeclaration": 38441,
+                        "src": "1857:5:51",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                          "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                           "typeString": "struct MgvLib.SingleOrder calldata"
                         }
                       },
-                      "id": 37709,
+                      "id": 38451,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "gives",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 23897,
-                      "src": "1857:11:45",
+                      "referencedDeclaration": 24524,
+                      "src": "1857:11:51",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
                         "typeString": "uint256"
                       }
                     },
-                    "src": "1835:33:45",
+                    "src": "1835:33:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     }
                   },
-                  "functionReturnParameters": 37703,
-                  "id": 37711,
+                  "functionReturnParameters": 38445,
+                  "id": 38453,
                   "nodeType": "Return",
-                  "src": "1828:40:45"
+                  "src": "1828:40:51"
                 }
               ]
             },
@@ -1162,61 +1190,61 @@
             "kind": "function",
             "modifiers": [],
             "name": "__residualWants__",
-            "nameLocation": "1727:17:45",
+            "nameLocation": "1727:17:51",
             "parameters": {
-              "id": 37700,
+              "id": 38442,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 37699,
+                  "id": 38441,
                   "mutability": "mutable",
                   "name": "order",
-                  "nameLocation": "1769:5:45",
+                  "nameLocation": "1769:5:51",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37713,
-                  "src": "1745:29:45",
+                  "scope": 38455,
+                  "src": "1745:29:51",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                     "typeString": "struct MgvLib.SingleOrder"
                   },
                   "typeName": {
-                    "id": 37698,
+                    "id": 38440,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 37697,
+                      "id": 38439,
                       "name": "ML.SingleOrder",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 23907,
-                      "src": "1745:14:45"
+                      "referencedDeclaration": 24534,
+                      "src": "1745:14:51"
                     },
-                    "referencedDeclaration": 23907,
-                    "src": "1745:14:45",
+                    "referencedDeclaration": 24534,
+                    "src": "1745:14:51",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_struct$_SingleOrder_$23907_storage_ptr",
+                      "typeIdentifier": "t_struct$_SingleOrder_$24534_storage_ptr",
                       "typeString": "struct MgvLib.SingleOrder"
                     }
                   },
                   "visibility": "internal"
                 }
               ],
-              "src": "1744:31:45"
+              "src": "1744:31:51"
             },
             "returnParameters": {
-              "id": 37703,
+              "id": 38445,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 37702,
+                  "id": 38444,
                   "mutability": "mutable",
                   "name": "",
                   "nameLocation": "-1:-1:-1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37713,
-                  "src": "1814:4:45",
+                  "scope": 38455,
+                  "src": "1814:4:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1224,10 +1252,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 37701,
+                    "id": 38443,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1814:4:45",
+                    "src": "1814:4:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1236,21 +1264,21 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1813:6:45"
+              "src": "1813:6:51"
             },
-            "scope": 37791,
+            "scope": 38533,
             "stateMutability": "nonpayable",
             "virtual": true,
             "visibility": "internal"
           },
           {
-            "id": 37730,
+            "id": 38472,
             "nodeType": "FunctionDefinition",
-            "src": "1877:155:45",
+            "src": "1877:155:51",
             "body": {
-              "id": 37729,
+              "id": 38471,
               "nodeType": "Block",
-              "src": "1981:51:45",
+              "src": "1981:51:51",
               "statements": [
                 {
                   "expression": {
@@ -1258,7 +1286,7 @@
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     },
-                    "id": 37727,
+                    "id": 38469,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1269,46 +1297,46 @@
                         "argumentTypes": [],
                         "expression": {
                           "expression": {
-                            "id": 37721,
+                            "id": 38463,
                             "name": "order",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 37716,
-                            "src": "1994:5:45",
+                            "referencedDeclaration": 38458,
+                            "src": "1994:5:51",
                             "typeDescriptions": {
-                              "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                              "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                               "typeString": "struct MgvLib.SingleOrder calldata"
                             }
                           },
-                          "id": 37722,
+                          "id": 38464,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": false,
                           "lValueRequested": false,
                           "memberName": "offer",
                           "nodeType": "MemberAccess",
-                          "referencedDeclaration": 23893,
-                          "src": "1994:11:45",
+                          "referencedDeclaration": 24520,
+                          "src": "1994:11:51",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_userDefinedValueType$_t_$31540",
+                            "typeIdentifier": "t_userDefinedValueType$_t_$32167",
                             "typeString": "t"
                           }
                         },
-                        "id": 37723,
+                        "id": 38465,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
                         "lValueRequested": false,
                         "memberName": "gives",
                         "nodeType": "MemberAccess",
-                        "referencedDeclaration": 31961,
-                        "src": "1994:17:45",
+                        "referencedDeclaration": 32588,
+                        "src": "1994:17:51",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$31540_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$31540_$",
+                          "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$32167_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$32167_$",
                           "typeString": "function (t) pure returns (uint256)"
                         }
                       },
-                      "id": 37724,
+                      "id": 38466,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -1316,7 +1344,7 @@
                       "lValueRequested": false,
                       "names": [],
                       "nodeType": "FunctionCall",
-                      "src": "1994:19:45",
+                      "src": "1994:19:51",
                       "tryCall": false,
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
@@ -1327,41 +1355,41 @@
                     "operator": "-",
                     "rightExpression": {
                       "expression": {
-                        "id": 37725,
+                        "id": 38467,
                         "name": "order",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 37716,
-                        "src": "2016:5:45",
+                        "referencedDeclaration": 38458,
+                        "src": "2016:5:51",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                          "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                           "typeString": "struct MgvLib.SingleOrder calldata"
                         }
                       },
-                      "id": 37726,
+                      "id": 38468,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "wants",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 23895,
-                      "src": "2016:11:45",
+                      "referencedDeclaration": 24522,
+                      "src": "2016:11:51",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
                         "typeString": "uint256"
                       }
                     },
-                    "src": "1994:33:45",
+                    "src": "1994:33:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     }
                   },
-                  "functionReturnParameters": 37720,
-                  "id": 37728,
+                  "functionReturnParameters": 38462,
+                  "id": 38470,
                   "nodeType": "Return",
-                  "src": "1987:40:45"
+                  "src": "1987:40:51"
                 }
               ]
             },
@@ -1369,61 +1397,61 @@
             "kind": "function",
             "modifiers": [],
             "name": "__residualGives__",
-            "nameLocation": "1886:17:45",
+            "nameLocation": "1886:17:51",
             "parameters": {
-              "id": 37717,
+              "id": 38459,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 37716,
+                  "id": 38458,
                   "mutability": "mutable",
                   "name": "order",
-                  "nameLocation": "1928:5:45",
+                  "nameLocation": "1928:5:51",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37730,
-                  "src": "1904:29:45",
+                  "scope": 38472,
+                  "src": "1904:29:51",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                     "typeString": "struct MgvLib.SingleOrder"
                   },
                   "typeName": {
-                    "id": 37715,
+                    "id": 38457,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 37714,
+                      "id": 38456,
                       "name": "ML.SingleOrder",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 23907,
-                      "src": "1904:14:45"
+                      "referencedDeclaration": 24534,
+                      "src": "1904:14:51"
                     },
-                    "referencedDeclaration": 23907,
-                    "src": "1904:14:45",
+                    "referencedDeclaration": 24534,
+                    "src": "1904:14:51",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_struct$_SingleOrder_$23907_storage_ptr",
+                      "typeIdentifier": "t_struct$_SingleOrder_$24534_storage_ptr",
                       "typeString": "struct MgvLib.SingleOrder"
                     }
                   },
                   "visibility": "internal"
                 }
               ],
-              "src": "1903:31:45"
+              "src": "1903:31:51"
             },
             "returnParameters": {
-              "id": 37720,
+              "id": 38462,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 37719,
+                  "id": 38461,
                   "mutability": "mutable",
                   "name": "",
                   "nameLocation": "-1:-1:-1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37730,
-                  "src": "1973:4:45",
+                  "scope": 38472,
+                  "src": "1973:4:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1431,10 +1459,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 37718,
+                    "id": 38460,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1973:4:45",
+                    "src": "1973:4:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1443,34 +1471,34 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1972:6:45"
+              "src": "1972:6:51"
             },
-            "scope": 37791,
+            "scope": 38533,
             "stateMutability": "nonpayable",
             "virtual": true,
             "visibility": "internal"
           },
           {
-            "id": 37790,
+            "id": 38532,
             "nodeType": "FunctionDefinition",
-            "src": "2186:851:45",
+            "src": "2186:851:51",
             "body": {
-              "id": 37789,
+              "id": 38531,
               "nodeType": "Block",
-              "src": "2305:732:45",
+              "src": "2305:732:51",
               "statements": [
                 {
-                  "assignments": [37741],
+                  "assignments": [38483],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 37741,
+                      "id": 38483,
                       "mutability": "mutable",
                       "name": "new_gives",
-                      "nameLocation": "2316:9:45",
+                      "nameLocation": "2316:9:51",
                       "nodeType": "VariableDeclaration",
-                      "scope": 37789,
-                      "src": "2311:14:45",
+                      "scope": 38531,
+                      "src": "2311:14:51",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
@@ -1478,10 +1506,10 @@
                         "typeString": "uint256"
                       },
                       "typeName": {
-                        "id": 37740,
+                        "id": 38482,
                         "name": "uint",
                         "nodeType": "ElementaryTypeName",
-                        "src": "2311:4:45",
+                        "src": "2311:4:51",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint256",
                           "typeString": "uint256"
@@ -1490,18 +1518,18 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 37745,
+                  "id": 38487,
                   "initialValue": {
                     "arguments": [
                       {
-                        "id": 37743,
+                        "id": 38485,
                         "name": "order",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 37734,
-                        "src": "2346:5:45",
+                        "referencedDeclaration": 38476,
+                        "src": "2346:5:51",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                          "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                           "typeString": "struct MgvLib.SingleOrder calldata"
                         }
                       }
@@ -1509,22 +1537,22 @@
                     "expression": {
                       "argumentTypes": [
                         {
-                          "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                          "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                           "typeString": "struct MgvLib.SingleOrder calldata"
                         }
                       ],
-                      "id": 37742,
+                      "id": 38484,
                       "name": "__residualGives__",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 37730,
-                      "src": "2328:17:45",
+                      "referencedDeclaration": 38472,
+                      "src": "2328:17:51",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_SingleOrder_$23907_calldata_ptr_$returns$_t_uint256_$",
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_SingleOrder_$24534_calldata_ptr_$returns$_t_uint256_$",
                         "typeString": "function (struct MgvLib.SingleOrder calldata) returns (uint256)"
                       }
                     },
-                    "id": 37744,
+                    "id": 38486,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1532,7 +1560,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "2328:24:45",
+                    "src": "2328:24:51",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
@@ -1540,20 +1568,20 @@
                     }
                   },
                   "nodeType": "VariableDeclarationStatement",
-                  "src": "2311:41:45"
+                  "src": "2311:41:51"
                 },
                 {
-                  "assignments": [37747],
+                  "assignments": [38489],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 37747,
+                      "id": 38489,
                       "mutability": "mutable",
                       "name": "new_wants",
-                      "nameLocation": "2363:9:45",
+                      "nameLocation": "2363:9:51",
                       "nodeType": "VariableDeclaration",
-                      "scope": 37789,
-                      "src": "2358:14:45",
+                      "scope": 38531,
+                      "src": "2358:14:51",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
@@ -1561,10 +1589,10 @@
                         "typeString": "uint256"
                       },
                       "typeName": {
-                        "id": 37746,
+                        "id": 38488,
                         "name": "uint",
                         "nodeType": "ElementaryTypeName",
-                        "src": "2358:4:45",
+                        "src": "2358:4:51",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint256",
                           "typeString": "uint256"
@@ -1573,18 +1601,18 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 37751,
+                  "id": 38493,
                   "initialValue": {
                     "arguments": [
                       {
-                        "id": 37749,
+                        "id": 38491,
                         "name": "order",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 37734,
-                        "src": "2393:5:45",
+                        "referencedDeclaration": 38476,
+                        "src": "2393:5:51",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                          "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                           "typeString": "struct MgvLib.SingleOrder calldata"
                         }
                       }
@@ -1592,22 +1620,22 @@
                     "expression": {
                       "argumentTypes": [
                         {
-                          "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                          "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                           "typeString": "struct MgvLib.SingleOrder calldata"
                         }
                       ],
-                      "id": 37748,
+                      "id": 38490,
                       "name": "__residualWants__",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 37713,
-                      "src": "2375:17:45",
+                      "referencedDeclaration": 38455,
+                      "src": "2375:17:51",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_SingleOrder_$23907_calldata_ptr_$returns$_t_uint256_$",
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_SingleOrder_$24534_calldata_ptr_$returns$_t_uint256_$",
                         "typeString": "function (struct MgvLib.SingleOrder calldata) returns (uint256)"
                       }
                     },
-                    "id": 37750,
+                    "id": 38492,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1615,7 +1643,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "2375:24:45",
+                    "src": "2375:24:51",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
@@ -1623,7 +1651,7 @@
                     }
                   },
                   "nodeType": "VariableDeclarationStatement",
-                  "src": "2358:41:45"
+                  "src": "2358:41:51"
                 },
                 {
                   "condition": {
@@ -1631,18 +1659,18 @@
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     },
-                    "id": 37754,
+                    "id": 38496,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftExpression": {
-                      "id": 37752,
+                      "id": 38494,
                       "name": "new_gives",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 37741,
-                      "src": "2409:9:45",
+                      "referencedDeclaration": 38483,
+                      "src": "2409:9:51",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
                         "typeString": "uint256"
@@ -1652,55 +1680,55 @@
                     "operator": "==",
                     "rightExpression": {
                       "hexValue": "30",
-                      "id": 37753,
+                      "id": 38495,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": true,
                       "kind": "number",
                       "lValueRequested": false,
                       "nodeType": "Literal",
-                      "src": "2422:1:45",
+                      "src": "2422:1:51",
                       "typeDescriptions": {
                         "typeIdentifier": "t_rational_0_by_1",
                         "typeString": "int_const 0"
                       },
                       "value": "0"
                     },
-                    "src": "2409:14:45",
+                    "src": "2409:14:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
                     }
                   },
-                  "id": 37758,
+                  "id": 38500,
                   "nodeType": "IfStatement",
-                  "src": "2405:66:45",
+                  "src": "2405:66:51",
                   "trueBody": {
-                    "id": 37757,
+                    "id": 38499,
                     "nodeType": "Block",
-                    "src": "2425:46:45",
+                    "src": "2425:46:51",
                     "statements": [
                       {
                         "expression": {
                           "hexValue": "74727565",
-                          "id": 37755,
+                          "id": 38497,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": true,
                           "kind": "bool",
                           "lValueRequested": false,
                           "nodeType": "Literal",
-                          "src": "2460:4:45",
+                          "src": "2460:4:51",
                           "typeDescriptions": {
                             "typeIdentifier": "t_bool",
                             "typeString": "bool"
                           },
                           "value": "true"
                         },
-                        "functionReturnParameters": 37739,
-                        "id": 37756,
+                        "functionReturnParameters": 38481,
+                        "id": 38498,
                         "nodeType": "Return",
-                        "src": "2453:11:45"
+                        "src": "2453:11:51"
                       }
                     ]
                   }
@@ -1714,26 +1742,26 @@
                             "arguments": [
                               {
                                 "expression": {
-                                  "id": 37762,
+                                  "id": 38504,
                                   "name": "order",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 37734,
-                                  "src": "2614:5:45",
+                                  "referencedDeclaration": 38476,
+                                  "src": "2614:5:51",
                                   "typeDescriptions": {
-                                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                                     "typeString": "struct MgvLib.SingleOrder calldata"
                                   }
                                 },
-                                "id": 37763,
+                                "id": 38505,
                                 "isConstant": false,
                                 "isLValue": false,
                                 "isPure": false,
                                 "lValueRequested": false,
                                 "memberName": "outbound_tkn",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 23886,
-                                "src": "2614:18:45",
+                                "referencedDeclaration": 24513,
+                                "src": "2614:18:51",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_address",
                                   "typeString": "address"
@@ -1747,18 +1775,18 @@
                                   "typeString": "address"
                                 }
                               ],
-                              "id": 37761,
+                              "id": 38503,
                               "name": "IERC20",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 24224,
-                              "src": "2607:6:45",
+                              "referencedDeclaration": 24851,
+                              "src": "2607:6:51",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_type$_t_contract$_IERC20_$24224_$",
+                                "typeIdentifier": "t_type$_t_contract$_IERC20_$24851_$",
                                 "typeString": "type(contract IERC20)"
                               }
                             },
-                            "id": 37764,
+                            "id": 38506,
                             "isConstant": false,
                             "isLValue": false,
                             "isPure": false,
@@ -1766,10 +1794,10 @@
                             "lValueRequested": false,
                             "names": [],
                             "nodeType": "FunctionCall",
-                            "src": "2607:26:45",
+                            "src": "2607:26:51",
                             "tryCall": false,
                             "typeDescriptions": {
-                              "typeIdentifier": "t_contract$_IERC20_$24224",
+                              "typeIdentifier": "t_contract$_IERC20_$24851",
                               "typeString": "contract IERC20"
                             }
                           },
@@ -1777,26 +1805,26 @@
                             "arguments": [
                               {
                                 "expression": {
-                                  "id": 37766,
+                                  "id": 38508,
                                   "name": "order",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 37734,
-                                  "src": "2665:5:45",
+                                  "referencedDeclaration": 38476,
+                                  "src": "2665:5:51",
                                   "typeDescriptions": {
-                                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                                     "typeString": "struct MgvLib.SingleOrder calldata"
                                   }
                                 },
-                                "id": 37767,
+                                "id": 38509,
                                 "isConstant": false,
                                 "isLValue": false,
                                 "isPure": false,
                                 "lValueRequested": false,
                                 "memberName": "inbound_tkn",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 23888,
-                                "src": "2665:17:45",
+                                "referencedDeclaration": 24515,
+                                "src": "2665:17:51",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_address",
                                   "typeString": "address"
@@ -1810,18 +1838,18 @@
                                   "typeString": "address"
                                 }
                               ],
-                              "id": 37765,
+                              "id": 38507,
                               "name": "IERC20",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 24224,
-                              "src": "2658:6:45",
+                              "referencedDeclaration": 24851,
+                              "src": "2658:6:51",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_type$_t_contract$_IERC20_$24224_$",
+                                "typeIdentifier": "t_type$_t_contract$_IERC20_$24851_$",
                                 "typeString": "type(contract IERC20)"
                               }
                             },
-                            "id": 37768,
+                            "id": 38510,
                             "isConstant": false,
                             "isLValue": false,
                             "isPure": false,
@@ -1829,32 +1857,32 @@
                             "lValueRequested": false,
                             "names": [],
                             "nodeType": "FunctionCall",
-                            "src": "2658:25:45",
+                            "src": "2658:25:51",
                             "tryCall": false,
                             "typeDescriptions": {
-                              "typeIdentifier": "t_contract$_IERC20_$24224",
+                              "typeIdentifier": "t_contract$_IERC20_$24851",
                               "typeString": "contract IERC20"
                             }
                           },
                           {
-                            "id": 37769,
+                            "id": 38511,
                             "name": "new_wants",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 37747,
-                            "src": "2702:9:45",
+                            "referencedDeclaration": 38489,
+                            "src": "2702:9:51",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
                               "typeString": "uint256"
                             }
                           },
                           {
-                            "id": 37770,
+                            "id": 38512,
                             "name": "new_gives",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 37741,
-                            "src": "2730:9:45",
+                            "referencedDeclaration": 38483,
+                            "src": "2730:9:51",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
                               "typeString": "uint256"
@@ -1866,46 +1894,46 @@
                               "argumentTypes": [],
                               "expression": {
                                 "expression": {
-                                  "id": 37771,
+                                  "id": 38513,
                                   "name": "order",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 37734,
-                                  "src": "2759:5:45",
+                                  "referencedDeclaration": 38476,
+                                  "src": "2759:5:51",
                                   "typeDescriptions": {
-                                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                                     "typeString": "struct MgvLib.SingleOrder calldata"
                                   }
                                 },
-                                "id": 37772,
+                                "id": 38514,
                                 "isConstant": false,
                                 "isLValue": false,
                                 "isPure": false,
                                 "lValueRequested": false,
                                 "memberName": "offerDetail",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 23900,
-                                "src": "2759:17:45",
+                                "referencedDeclaration": 24527,
+                                "src": "2759:17:51",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_userDefinedValueType$_t_$32093",
+                                  "typeIdentifier": "t_userDefinedValueType$_t_$32720",
                                   "typeString": "t"
                                 }
                               },
-                              "id": 37773,
+                              "id": 38515,
                               "isConstant": false,
                               "isLValue": false,
                               "isPure": false,
                               "lValueRequested": false,
                               "memberName": "gasreq",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 32422,
-                              "src": "2759:24:45",
+                              "referencedDeclaration": 33049,
+                              "src": "2759:24:51",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$32093_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$32093_$",
+                                "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$32720_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$32720_$",
                                 "typeString": "function (t) pure returns (uint256)"
                               }
                             },
-                            "id": 37774,
+                            "id": 38516,
                             "isConstant": false,
                             "isLValue": false,
                             "isPure": false,
@@ -1913,7 +1941,7 @@
                             "lValueRequested": false,
                             "names": [],
                             "nodeType": "FunctionCall",
-                            "src": "2759:26:45",
+                            "src": "2759:26:51",
                             "tryCall": false,
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
@@ -1926,46 +1954,46 @@
                               "argumentTypes": [],
                               "expression": {
                                 "expression": {
-                                  "id": 37775,
+                                  "id": 38517,
                                   "name": "order",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 37734,
-                                  "src": "2834:5:45",
+                                  "referencedDeclaration": 38476,
+                                  "src": "2834:5:51",
                                   "typeDescriptions": {
-                                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                                     "typeString": "struct MgvLib.SingleOrder calldata"
                                   }
                                 },
-                                "id": 37776,
+                                "id": 38518,
                                 "isConstant": false,
                                 "isLValue": false,
                                 "isPure": false,
                                 "lValueRequested": false,
                                 "memberName": "offerDetail",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 23900,
-                                "src": "2834:17:45",
+                                "referencedDeclaration": 24527,
+                                "src": "2834:17:51",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_userDefinedValueType$_t_$32093",
+                                  "typeIdentifier": "t_userDefinedValueType$_t_$32720",
                                   "typeString": "t"
                                 }
                               },
-                              "id": 37777,
+                              "id": 38519,
                               "isConstant": false,
                               "isLValue": false,
                               "isPure": false,
                               "lValueRequested": false,
                               "memberName": "gasprice",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 32538,
-                              "src": "2834:26:45",
+                              "referencedDeclaration": 33165,
+                              "src": "2834:26:51",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$32093_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$32093_$",
+                                "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$32720_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$32720_$",
                                 "typeString": "function (t) pure returns (uint256)"
                               }
                             },
-                            "id": 37778,
+                            "id": 38520,
                             "isConstant": false,
                             "isLValue": false,
                             "isPure": false,
@@ -1973,7 +2001,7 @@
                             "lValueRequested": false,
                             "names": [],
                             "nodeType": "FunctionCall",
-                            "src": "2834:28:45",
+                            "src": "2834:28:51",
                             "tryCall": false,
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
@@ -1986,46 +2014,46 @@
                               "argumentTypes": [],
                               "expression": {
                                 "expression": {
-                                  "id": 37779,
+                                  "id": 38521,
                                   "name": "order",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 37734,
-                                  "src": "2912:5:45",
+                                  "referencedDeclaration": 38476,
+                                  "src": "2912:5:51",
                                   "typeDescriptions": {
-                                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                                     "typeString": "struct MgvLib.SingleOrder calldata"
                                   }
                                 },
-                                "id": 37780,
+                                "id": 38522,
                                 "isConstant": false,
                                 "isLValue": false,
                                 "isPure": false,
                                 "lValueRequested": false,
                                 "memberName": "offer",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 23893,
-                                "src": "2912:11:45",
+                                "referencedDeclaration": 24520,
+                                "src": "2912:11:51",
                                 "typeDescriptions": {
-                                  "typeIdentifier": "t_userDefinedValueType$_t_$31540",
+                                  "typeIdentifier": "t_userDefinedValueType$_t_$32167",
                                   "typeString": "t"
                                 }
                               },
-                              "id": 37781,
+                              "id": 38523,
                               "isConstant": false,
                               "isLValue": false,
                               "isPure": false,
                               "lValueRequested": false,
                               "memberName": "next",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 31845,
-                              "src": "2912:16:45",
+                              "referencedDeclaration": 32472,
+                              "src": "2912:16:51",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$31540_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$31540_$",
+                                "typeIdentifier": "t_function_internal_pure$_t_userDefinedValueType$_t_$32167_$returns$_t_uint256_$bound_to$_t_userDefinedValueType$_t_$32167_$",
                                 "typeString": "function (t) pure returns (uint256)"
                               }
                             },
-                            "id": 37782,
+                            "id": 38524,
                             "isConstant": false,
                             "isLValue": false,
                             "isPure": false,
@@ -2033,7 +2061,7 @@
                             "lValueRequested": false,
                             "names": [],
                             "nodeType": "FunctionCall",
-                            "src": "2912:18:45",
+                            "src": "2912:18:51",
                             "tryCall": false,
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
@@ -2042,26 +2070,26 @@
                           },
                           {
                             "expression": {
-                              "id": 37783,
+                              "id": 38525,
                               "name": "order",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 37734,
-                              "src": "2977:5:45",
+                              "referencedDeclaration": 38476,
+                              "src": "2977:5:51",
                               "typeDescriptions": {
-                                "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                                "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                                 "typeString": "struct MgvLib.SingleOrder calldata"
                               }
                             },
-                            "id": 37784,
+                            "id": 38526,
                             "isConstant": false,
                             "isLValue": false,
                             "isPure": false,
                             "lValueRequested": false,
                             "memberName": "offerId",
                             "nodeType": "MemberAccess",
-                            "referencedDeclaration": 23890,
-                            "src": "2977:13:45",
+                            "referencedDeclaration": 24517,
+                            "src": "2977:13:51",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
                               "typeString": "uint256"
@@ -2071,11 +2099,11 @@
                         "expression": {
                           "argumentTypes": [
                             {
-                              "typeIdentifier": "t_contract$_IERC20_$24224",
+                              "typeIdentifier": "t_contract$_IERC20_$24851",
                               "typeString": "contract IERC20"
                             },
                             {
-                              "typeIdentifier": "t_contract$_IERC20_$24224",
+                              "typeIdentifier": "t_contract$_IERC20_$24851",
                               "typeString": "contract IERC20"
                             },
                             {
@@ -2103,18 +2131,18 @@
                               "typeString": "uint256"
                             }
                           ],
-                          "id": 37760,
+                          "id": 38502,
                           "name": "MakerOrder",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 36358,
-                          "src": "2570:10:45",
+                          "referencedDeclaration": 37032,
+                          "src": "2570:10:51",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_type$_t_struct$_MakerOrder_$36358_storage_ptr_$",
+                            "typeIdentifier": "t_type$_t_struct$_MakerOrder_$37032_storage_ptr_$",
                             "typeString": "type(struct IOfferLogic.MakerOrder storage pointer)"
                           }
                         },
-                        "id": 37785,
+                        "id": 38527,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
@@ -2131,23 +2159,23 @@
                           "offerId"
                         ],
                         "nodeType": "FunctionCall",
-                        "src": "2570:431:45",
+                        "src": "2570:431:51",
                         "tryCall": false,
                         "typeDescriptions": {
-                          "typeIdentifier": "t_struct$_MakerOrder_$36358_memory_ptr",
+                          "typeIdentifier": "t_struct$_MakerOrder_$37032_memory_ptr",
                           "typeString": "struct IOfferLogic.MakerOrder memory"
                         }
                       },
                       {
                         "hexValue": "30",
-                        "id": 37786,
+                        "id": 38528,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": true,
                         "kind": "number",
                         "lValueRequested": false,
                         "nodeType": "Literal",
-                        "src": "3011:1:45",
+                        "src": "3011:1:51",
                         "typeDescriptions": {
                           "typeIdentifier": "t_rational_0_by_1",
                           "typeString": "int_const 0"
@@ -2158,7 +2186,7 @@
                     "expression": {
                       "argumentTypes": [
                         {
-                          "typeIdentifier": "t_struct$_MakerOrder_$36358_memory_ptr",
+                          "typeIdentifier": "t_struct$_MakerOrder_$37032_memory_ptr",
                           "typeString": "struct IOfferLogic.MakerOrder memory"
                         },
                         {
@@ -2166,18 +2194,18 @@
                           "typeString": "int_const 0"
                         }
                       ],
-                      "id": 37759,
+                      "id": 38501,
                       "name": "updateOfferInternal",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 37237,
-                      "src": "2541:19:45",
+                      "referencedDeclaration": 37965,
+                      "src": "2541:19:51",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_MakerOrder_$36358_memory_ptr_$_t_uint256_$returns$_t_bool_$",
+                        "typeIdentifier": "t_function_internal_nonpayable$_t_struct$_MakerOrder_$37032_memory_ptr_$_t_uint256_$returns$_t_bool_$",
                         "typeString": "function (struct IOfferLogic.MakerOrder memory,uint256) returns (bool)"
                       }
                     },
-                    "id": 37787,
+                    "id": 38529,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -2185,92 +2213,92 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "2541:491:45",
+                    "src": "2541:491:51",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
                     }
                   },
-                  "functionReturnParameters": 37739,
-                  "id": 37788,
+                  "functionReturnParameters": 38481,
+                  "id": 38530,
                   "nodeType": "Return",
-                  "src": "2528:504:45"
+                  "src": "2528:504:51"
                 }
               ]
             },
-            "baseFunctions": [33361],
+            "baseFunctions": [34031],
             "documentation": {
-              "id": 37731,
+              "id": 38473,
               "nodeType": "StructuredDocumentation",
-              "src": "2036:147:45",
+              "src": "2036:147:51",
               "text": "@dev posthook takes care of reposting offer residual\n@param order is a reminder of the taker order that was processed during `makerExecute`"
             },
             "implemented": true,
             "kind": "function",
             "modifiers": [],
             "name": "__posthookSuccess__",
-            "nameLocation": "2195:19:45",
+            "nameLocation": "2195:19:51",
             "overrides": {
-              "id": 37736,
+              "id": 38478,
               "nodeType": "OverrideSpecifier",
               "overrides": [],
-              "src": "2275:8:45"
+              "src": "2275:8:51"
             },
             "parameters": {
-              "id": 37735,
+              "id": 38477,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 37734,
+                  "id": 38476,
                   "mutability": "mutable",
                   "name": "order",
-                  "nameLocation": "2239:5:45",
+                  "nameLocation": "2239:5:51",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37790,
-                  "src": "2215:29:45",
+                  "scope": 38532,
+                  "src": "2215:29:51",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_struct$_SingleOrder_$23907_calldata_ptr",
+                    "typeIdentifier": "t_struct$_SingleOrder_$24534_calldata_ptr",
                     "typeString": "struct MgvLib.SingleOrder"
                   },
                   "typeName": {
-                    "id": 37733,
+                    "id": 38475,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 37732,
+                      "id": 38474,
                       "name": "ML.SingleOrder",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 23907,
-                      "src": "2215:14:45"
+                      "referencedDeclaration": 24534,
+                      "src": "2215:14:51"
                     },
-                    "referencedDeclaration": 23907,
-                    "src": "2215:14:45",
+                    "referencedDeclaration": 24534,
+                    "src": "2215:14:51",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_struct$_SingleOrder_$23907_storage_ptr",
+                      "typeIdentifier": "t_struct$_SingleOrder_$24534_storage_ptr",
                       "typeString": "struct MgvLib.SingleOrder"
                     }
                   },
                   "visibility": "internal"
                 }
               ],
-              "src": "2214:31:45"
+              "src": "2214:31:51"
             },
             "returnParameters": {
-              "id": 37739,
+              "id": 38481,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 37738,
+                  "id": 38480,
                   "mutability": "mutable",
                   "name": "",
                   "nameLocation": "-1:-1:-1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 37790,
-                  "src": "2297:4:45",
+                  "scope": 38532,
+                  "src": "2297:4:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -2278,10 +2306,10 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 37737,
+                    "id": 38479,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
-                    "src": "2297:4:45",
+                    "src": "2297:4:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
@@ -2290,9 +2318,9 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "2296:6:45"
+              "src": "2296:6:51"
             },
-            "scope": 37791,
+            "scope": 38533,
             "stateMutability": "nonpayable",
             "virtual": true,
             "visibility": "internal"
@@ -2302,37 +2330,37 @@
         "baseContracts": [
           {
             "baseName": {
-              "id": 37678,
+              "id": 38420,
               "name": "MultiUser",
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 37672,
-              "src": "1584:9:45"
+              "referencedDeclaration": 38414,
+              "src": "1584:9:51"
             },
-            "id": 37679,
+            "id": 38421,
             "nodeType": "InheritanceSpecifier",
-            "src": "1584:9:45"
+            "src": "1584:9:51"
           }
         ],
         "canonicalName": "MultiUserPersistent",
         "contractDependencies": [],
         "contractKind": "contract",
         "documentation": {
-          "id": 37677,
+          "id": 38419,
           "nodeType": "StructuredDocumentation",
-          "src": "1433:110:45",
+          "src": "1433:110:51",
           "text": "MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove"
         },
         "fullyImplemented": true,
         "linearizedBaseContracts": [
-          37791, 37672, 33507, 36457, 36388, 24106, 42692
+          38533, 38414, 34177, 37147, 37078, 24733, 43417
         ],
         "name": "MultiUserPersistent",
-        "nameLocation": "1561:19:45",
-        "scope": 37792,
+        "nameLocation": "1561:19:51",
+        "scope": 38534,
         "usedErrors": []
       }
     ],
     "license": "BSD-2-Clause"
   },
-  "id": 45
+  "id": 51
 }

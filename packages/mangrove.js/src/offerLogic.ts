@@ -71,7 +71,6 @@ class OfferLogic {
    *
    * @note Approve Mangrove to spend tokens on the contract's behalf.
    * @dev Contract admin only. This has to be performed for each outbound token the contract might send to takers.
-   * @param arg optional `arg.amount` for allowance is by default max uint256
    */
   approveMangrove(
     tokenName: string,
@@ -122,26 +121,21 @@ class OfferLogic {
     }
   }
 
-  /**
-   * @note Approves router to pull and push `tokenName` on maker contract.
-   * @dev admin only. Call will throw if contract doesn't have a router
-   * This function has to be called once by admin for each outbound token the logic is going to send
-   */
-  approveRouter(
-    tokenName: string,
-    overrides: ethers.Overrides = {}
-  ): Promise<TransactionResponse> {
-    return this.contract.approveRouter(
-      this.mgv.getAddress(tokenName),
-      overrides
-    );
-  }
-
-  async routerAllowance(tokenName: string): Promise<Big> {
-    const router_address = (await this.router()).address;
-    return await this.mgv
-      .token(tokenName)
-      .allowance({ owner: this.address, spender: router_address });
+  /**@note returns logic allowance to trade `tokenName` on signer's behalf */
+  async allowance(tokenName: string): Promise<Big> {
+    const router: typechain.AbstractRouter | undefined = await this.router();
+    const token = this.mgv.token(tokenName);
+    if (router) {
+      return token.allowance({
+        owner: await this.mgv._signer.getAddress(),
+        spender: router.address,
+      });
+    } else {
+      return token.allowance({
+        owner: await this.mgv._signer.getAddress(),
+        spender: this.address,
+      });
+    }
   }
 
   /**
@@ -243,7 +237,10 @@ class OfferLogic {
     return this.contract.admin();
   }
 
-  // admin action for contract
+  /**
+   * @note (contract admin action) activates logic
+   * @param tokenNames the names of the tokens one wishes the logic to trade
+   * */
   activate(
     tokenNames: string[],
     overrides: ethers.Overrides = {}

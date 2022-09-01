@@ -1,79 +1,79 @@
 {
   "abi": [],
   "bytecode": {
-    "object": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220725946762b54ab7534bab15c2252a2295b6fe9cb784bb99b8f23f253c422f76b64736f6c634300080e0033",
-    "sourceMap": "1876:326:33:-:0;;;;;;;;;;;;;;;-1:-1:-1;;;1876:326:33;;;;;;;;;;;;;;;;;",
+    "object": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220fa6cf4e4df3e180c93a3a5e4269b6c8224b1f9e1824d18ba0d8bab00d7dc8e6564736f6c634300080e0033",
+    "sourceMap": "1876:368:39:-:0;;;;;;;;;;;;;;;-1:-1:-1;;;1876:368:39;;;;;;;;;;;;;;;;;",
     "linkReferences": {}
   },
   "deployedBytecode": {
-    "object": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220725946762b54ab7534bab15c2252a2295b6fe9cb784bb99b8f23f253c422f76b64736f6c634300080e0033",
-    "sourceMap": "1876:326:33:-:0;;;;;;;;",
+    "object": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220fa6cf4e4df3e180c93a3a5e4269b6c8224b1f9e1824d18ba0d8bab00d7dc8e6564736f6c634300080e0033",
+    "sourceMap": "1876:368:39:-:0;;;;;;;;",
     "linkReferences": {}
   },
   "methodIdentifiers": {},
   "ast": {
     "absolutePath": "packages/mangrove-solidity/src/strategies/MangroveOfferStorage.sol",
-    "id": 33534,
+    "id": 34208,
     "exportedSymbols": {
-      "ACS": [42713],
-      "ARSt": [38707],
-      "AbstractRouter": [38682],
-      "AccessControlled": [42692],
-      "IERC20": [24224],
-      "IMaker": [24106],
-      "IMangrove": [22819],
-      "IOfferLogic": [36388],
-      "ML": [23913],
-      "MangroveOfferStorage": [33533],
-      "P": [23884]
+      "ACS": [43438],
+      "ARSt": [39449],
+      "AbstractRouter": [39424],
+      "AccessControlled": [43417],
+      "IERC20": [24851],
+      "IMaker": [24733],
+      "IMangrove": [23446],
+      "IOfferLogic": [37078],
+      "ML": [24540],
+      "MangroveOfferStorage": [34207],
+      "P": [24511]
     },
     "nodeType": "SourceUnit",
-    "src": "1364:839:33",
+    "src": "1364:881:39",
     "nodes": [
       {
-        "id": 33509,
+        "id": 34179,
         "nodeType": "PragmaDirective",
-        "src": "1364:24:33",
+        "src": "1364:24:39",
         "literals": ["solidity", "^", "0.8", ".10"]
       },
       {
-        "id": 33510,
+        "id": 34180,
         "nodeType": "PragmaDirective",
-        "src": "1389:19:33",
+        "src": "1389:19:39",
         "literals": ["abicoder", "v2"]
       },
       {
-        "id": 33511,
+        "id": 34181,
         "nodeType": "ImportDirective",
-        "src": "1410:55:33",
+        "src": "1410:55:39",
         "absolutePath": "packages/mangrove-solidity/src/strategies/interfaces/IOfferLogic.sol",
         "file": "mgv_src/strategies/interfaces/IOfferLogic.sol",
         "nameLocation": "-1:-1:-1",
-        "scope": 33534,
-        "sourceUnit": 36389,
+        "scope": 34208,
+        "sourceUnit": 37079,
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "id": 33533,
+        "id": 34207,
         "nodeType": "ContractDefinition",
-        "src": "1876:326:33",
+        "src": "1876:368:39",
         "nodes": [
           {
-            "id": 33518,
+            "id": 34192,
             "nodeType": "StructDefinition",
-            "src": "1909:89:33",
+            "src": "1909:131:39",
             "canonicalName": "MangroveOfferStorage.Layout",
             "members": [
               {
                 "constant": false,
-                "id": 33514,
+                "id": 34184,
                 "mutability": "mutable",
                 "name": "ofr_gasreq",
-                "nameLocation": "1956:10:33",
+                "nameLocation": "1956:10:39",
                 "nodeType": "VariableDeclaration",
-                "scope": 33518,
-                "src": "1951:15:33",
+                "scope": 34192,
+                "src": "1951:15:39",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -81,10 +81,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 33513,
+                  "id": 34183,
                   "name": "uint",
                   "nodeType": "ElementaryTypeName",
-                  "src": "1951:4:33",
+                  "src": "1951:4:39",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -94,65 +94,112 @@
               },
               {
                 "constant": false,
-                "id": 33517,
+                "id": 34187,
                 "mutability": "mutable",
                 "name": "router",
-                "nameLocation": "1987:6:33",
+                "nameLocation": "1987:6:39",
                 "nodeType": "VariableDeclaration",
-                "scope": 33518,
-                "src": "1972:21:33",
+                "scope": 34192,
+                "src": "1972:21:39",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
-                  "typeIdentifier": "t_contract$_AbstractRouter_$38682",
+                  "typeIdentifier": "t_contract$_AbstractRouter_$39424",
                   "typeString": "contract AbstractRouter"
                 },
                 "typeName": {
-                  "id": 33516,
+                  "id": 34186,
                   "nodeType": "UserDefinedTypeName",
                   "pathNode": {
-                    "id": 33515,
+                    "id": 34185,
                     "name": "AbstractRouter",
                     "nodeType": "IdentifierPath",
-                    "referencedDeclaration": 38682,
-                    "src": "1972:14:33"
+                    "referencedDeclaration": 39424,
+                    "src": "1972:14:39"
                   },
-                  "referencedDeclaration": 38682,
-                  "src": "1972:14:33",
+                  "referencedDeclaration": 39424,
+                  "src": "1972:14:39",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_AbstractRouter_$38682",
+                    "typeIdentifier": "t_contract$_AbstractRouter_$39424",
                     "typeString": "contract AbstractRouter"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 34191,
+                "mutability": "mutable",
+                "name": "reserves",
+                "nameLocation": "2027:8:39",
+                "nodeType": "VariableDeclaration",
+                "scope": 34192,
+                "src": "1999:36:39",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_address_$_t_address_$",
+                  "typeString": "mapping(address => address)"
+                },
+                "typeName": {
+                  "id": 34190,
+                  "keyType": {
+                    "id": 34188,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2007:7:39",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "nodeType": "Mapping",
+                  "src": "1999:27:39",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_mapping$_t_address_$_t_address_$",
+                    "typeString": "mapping(address => address)"
+                  },
+                  "valueType": {
+                    "id": 34189,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2018:7:39",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
                   }
                 },
                 "visibility": "internal"
               }
             ],
             "name": "Layout",
-            "nameLocation": "1916:6:33",
-            "scope": 33533,
+            "nameLocation": "1916:6:39",
+            "scope": 34207,
             "visibility": "public"
           },
           {
-            "id": 33532,
+            "id": 34206,
             "nodeType": "FunctionDefinition",
-            "src": "2002:198:33",
+            "src": "2044:198:39",
             "body": {
-              "id": 33531,
+              "id": 34205,
               "nodeType": "Block",
-              "src": "2067:133:33",
+              "src": "2109:133:39",
               "statements": [
                 {
-                  "assignments": [33525],
+                  "assignments": [34199],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 33525,
+                      "id": 34199,
                       "mutability": "mutable",
                       "name": "storagePosition",
-                      "nameLocation": "2081:15:33",
+                      "nameLocation": "2123:15:39",
                       "nodeType": "VariableDeclaration",
-                      "scope": 33531,
-                      "src": "2073:23:33",
+                      "scope": 34205,
+                      "src": "2115:23:39",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
@@ -160,10 +207,10 @@
                         "typeString": "bytes32"
                       },
                       "typeName": {
-                        "id": 33524,
+                        "id": 34198,
                         "name": "bytes32",
                         "nodeType": "ElementaryTypeName",
-                        "src": "2073:7:33",
+                        "src": "2115:7:39",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bytes32",
                           "typeString": "bytes32"
@@ -172,19 +219,19 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 33529,
+                  "id": 34203,
                   "initialValue": {
                     "arguments": [
                       {
                         "hexValue": "4d616e67726f76652e4d616e67726f76654f6666657253746f72616765",
-                        "id": 33527,
+                        "id": 34201,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": true,
                         "kind": "string",
                         "lValueRequested": false,
                         "nodeType": "Literal",
-                        "src": "2109:31:33",
+                        "src": "2151:31:39",
                         "typeDescriptions": {
                           "typeIdentifier": "t_stringliteral_ae7e31c3220e851db9f204a28b279dfe52b973600b0a456991089c220ae72224",
                           "typeString": "literal_string \"Mangrove.MangroveOfferStorage\""
@@ -199,18 +246,18 @@
                           "typeString": "literal_string \"Mangrove.MangroveOfferStorage\""
                         }
                       ],
-                      "id": 33526,
+                      "id": 34200,
                       "name": "keccak256",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
                       "referencedDeclaration": -8,
-                      "src": "2099:9:33",
+                      "src": "2141:9:39",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
                         "typeString": "function (bytes memory) pure returns (bytes32)"
                       }
                     },
-                    "id": 33528,
+                    "id": 34202,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": true,
@@ -218,7 +265,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "2099:42:33",
+                    "src": "2141:42:39",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes32",
@@ -226,26 +273,26 @@
                     }
                   },
                   "nodeType": "VariableDeclarationStatement",
-                  "src": "2073:68:33"
+                  "src": "2115:68:39"
                 },
                 {
                   "AST": {
                     "nodeType": "YulBlock",
-                    "src": "2156:40:33",
+                    "src": "2198:40:39",
                     "statements": [
                       {
                         "nodeType": "YulAssignment",
-                        "src": "2164:26:33",
+                        "src": "2206:26:39",
                         "value": {
                           "name": "storagePosition",
                           "nodeType": "YulIdentifier",
-                          "src": "2175:15:33"
+                          "src": "2217:15:39"
                         },
                         "variableNames": [
                           {
                             "name": "st.slot",
                             "nodeType": "YulIdentifier",
-                            "src": "2164:7:33"
+                            "src": "2206:7:39"
                           }
                         ]
                       }
@@ -254,24 +301,24 @@
                   "evmVersion": "london",
                   "externalReferences": [
                     {
-                      "declaration": 33522,
+                      "declaration": 34196,
                       "isOffset": false,
                       "isSlot": true,
-                      "src": "2164:7:33",
+                      "src": "2206:7:39",
                       "suffix": "slot",
                       "valueSize": 1
                     },
                     {
-                      "declaration": 33525,
+                      "declaration": 34199,
                       "isOffset": false,
                       "isSlot": false,
-                      "src": "2175:15:33",
+                      "src": "2217:15:39",
                       "valueSize": 1
                     }
                   ],
-                  "id": 33530,
+                  "id": 34204,
                   "nodeType": "InlineAssembly",
-                  "src": "2147:49:33"
+                  "src": "2189:49:39"
                 }
               ]
             },
@@ -279,55 +326,55 @@
             "kind": "function",
             "modifiers": [],
             "name": "get_storage",
-            "nameLocation": "2011:11:33",
+            "nameLocation": "2053:11:39",
             "parameters": {
-              "id": 33519,
+              "id": 34193,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "2022:2:33"
+              "src": "2064:2:39"
             },
             "returnParameters": {
-              "id": 33523,
+              "id": 34197,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 33522,
+                  "id": 34196,
                   "mutability": "mutable",
                   "name": "st",
-                  "nameLocation": "2063:2:33",
+                  "nameLocation": "2105:2:39",
                   "nodeType": "VariableDeclaration",
-                  "scope": 33532,
-                  "src": "2048:17:33",
+                  "scope": 34206,
+                  "src": "2090:17:39",
                   "stateVariable": false,
                   "storageLocation": "storage",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_struct$_Layout_$33518_storage_ptr",
+                    "typeIdentifier": "t_struct$_Layout_$34192_storage_ptr",
                     "typeString": "struct MangroveOfferStorage.Layout"
                   },
                   "typeName": {
-                    "id": 33521,
+                    "id": 34195,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 33520,
+                      "id": 34194,
                       "name": "Layout",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 33518,
-                      "src": "2048:6:33"
+                      "referencedDeclaration": 34192,
+                      "src": "2090:6:39"
                     },
-                    "referencedDeclaration": 33518,
-                    "src": "2048:6:33",
+                    "referencedDeclaration": 34192,
+                    "src": "2090:6:39",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_struct$_Layout_$33518_storage_ptr",
+                      "typeIdentifier": "t_struct$_Layout_$34192_storage_ptr",
                       "typeString": "struct MangroveOfferStorage.Layout"
                     }
                   },
                   "visibility": "internal"
                 }
               ],
-              "src": "2047:19:33"
+              "src": "2089:19:39"
             },
-            "scope": 33533,
+            "scope": 34207,
             "stateMutability": "pure",
             "virtual": false,
             "visibility": "internal"
@@ -339,20 +386,20 @@
         "contractDependencies": [],
         "contractKind": "library",
         "documentation": {
-          "id": 33512,
+          "id": 34182,
           "nodeType": "StructuredDocumentation",
-          "src": "1766:110:33",
+          "src": "1766:110:39",
           "text": "MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove"
         },
         "fullyImplemented": true,
-        "linearizedBaseContracts": [33533],
+        "linearizedBaseContracts": [34207],
         "name": "MangroveOfferStorage",
-        "nameLocation": "1884:20:33",
-        "scope": 33534,
+        "nameLocation": "1884:20:39",
+        "scope": 34208,
         "usedErrors": []
       }
     ],
     "license": "BSD-2-Clause"
   },
-  "id": 33
+  "id": 39
 }

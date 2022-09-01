@@ -1,57 +1,57 @@
 {
   "abi": [],
   "bytecode": {
-    "object": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220fefd03677e5319aee523bb24133bb3c572543cc56d53f5728235a20679e1019164736f6c634300080e0033",
-    "sourceMap": "1470:281:59:-:0;;;;;;;;;;;;;;;-1:-1:-1;;;1470:281:59;;;;;;;;;;;;;;;;;",
+    "object": "0x60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212205c83ac627debee8005011a1e562b379c28c4aa2a5d6e20075b9431243cf2a83764736f6c634300080e0033",
+    "sourceMap": "1470:281:64:-:0;;;;;;;;;;;;;;;-1:-1:-1;;;1470:281:64;;;;;;;;;;;;;;;;;",
     "linkReferences": {}
   },
   "deployedBytecode": {
-    "object": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220fefd03677e5319aee523bb24133bb3c572543cc56d53f5728235a20679e1019164736f6c634300080e0033",
-    "sourceMap": "1470:281:59:-:0;;;;;;;;",
+    "object": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212205c83ac627debee8005011a1e562b379c28c4aa2a5d6e20075b9431243cf2a83764736f6c634300080e0033",
+    "sourceMap": "1470:281:64:-:0;;;;;;;;",
     "linkReferences": {}
   },
   "methodIdentifiers": {},
   "ast": {
     "absolutePath": "packages/mangrove-solidity/src/strategies/utils/AccessControlledStorage.sol",
-    "id": 42714,
+    "id": 43439,
     "exportedSymbols": {
-      "AccessControlledStorage": [42713]
+      "AccessControlledStorage": [43438]
     },
     "nodeType": "SourceUnit",
-    "src": "1369:383:59",
+    "src": "1369:383:64",
     "nodes": [
       {
-        "id": 42694,
+        "id": 43419,
         "nodeType": "PragmaDirective",
-        "src": "1369:24:59",
+        "src": "1369:24:64",
         "literals": ["solidity", "^", "0.8", ".10"]
       },
       {
-        "id": 42695,
+        "id": 43420,
         "nodeType": "PragmaDirective",
-        "src": "1394:19:59",
+        "src": "1394:19:64",
         "literals": ["abicoder", "v2"]
       },
       {
-        "id": 42713,
+        "id": 43438,
         "nodeType": "ContractDefinition",
-        "src": "1470:281:59",
+        "src": "1470:281:64",
         "nodes": [
           {
-            "id": 42698,
+            "id": 43423,
             "nodeType": "StructDefinition",
-            "src": "1506:38:59",
+            "src": "1506:38:64",
             "canonicalName": "AccessControlledStorage.Layout",
             "members": [
               {
                 "constant": false,
-                "id": 42697,
+                "id": 43422,
                 "mutability": "mutable",
                 "name": "admin",
-                "nameLocation": "1534:5:59",
+                "nameLocation": "1534:5:64",
                 "nodeType": "VariableDeclaration",
-                "scope": 42698,
-                "src": "1526:13:59",
+                "scope": 43423,
+                "src": "1526:13:64",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -59,10 +59,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 42696,
+                  "id": 43421,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "1526:7:59",
+                  "src": "1526:7:64",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -73,31 +73,31 @@
               }
             ],
             "name": "Layout",
-            "nameLocation": "1513:6:59",
-            "scope": 42713,
+            "nameLocation": "1513:6:64",
+            "scope": 43438,
             "visibility": "public"
           },
           {
-            "id": 42712,
+            "id": 43437,
             "nodeType": "FunctionDefinition",
-            "src": "1548:201:59",
+            "src": "1548:201:64",
             "body": {
-              "id": 42711,
+              "id": 43436,
               "nodeType": "Block",
-              "src": "1613:136:59",
+              "src": "1613:136:64",
               "statements": [
                 {
-                  "assignments": [42705],
+                  "assignments": [43430],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 42705,
+                      "id": 43430,
                       "mutability": "mutable",
                       "name": "storagePosition",
-                      "nameLocation": "1627:15:59",
+                      "nameLocation": "1627:15:64",
                       "nodeType": "VariableDeclaration",
-                      "scope": 42711,
-                      "src": "1619:23:59",
+                      "scope": 43436,
+                      "src": "1619:23:64",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
@@ -105,10 +105,10 @@
                         "typeString": "bytes32"
                       },
                       "typeName": {
-                        "id": 42704,
+                        "id": 43429,
                         "name": "bytes32",
                         "nodeType": "ElementaryTypeName",
-                        "src": "1619:7:59",
+                        "src": "1619:7:64",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bytes32",
                           "typeString": "bytes32"
@@ -117,19 +117,19 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 42709,
+                  "id": 43434,
                   "initialValue": {
                     "arguments": [
                       {
                         "hexValue": "4d616e67726f76652e416363657373436f6e74726f6c6c656453746f72616765",
-                        "id": 42707,
+                        "id": 43432,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": true,
                         "kind": "string",
                         "lValueRequested": false,
                         "nodeType": "Literal",
-                        "src": "1655:34:59",
+                        "src": "1655:34:64",
                         "typeDescriptions": {
                           "typeIdentifier": "t_stringliteral_7d382ebca3e46505071795e192d28166a3d4bd0685585591bc6c5b8df6769fd2",
                           "typeString": "literal_string \"Mangrove.AccessControlledStorage\""
@@ -144,18 +144,18 @@
                           "typeString": "literal_string \"Mangrove.AccessControlledStorage\""
                         }
                       ],
-                      "id": 42706,
+                      "id": 43431,
                       "name": "keccak256",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
                       "referencedDeclaration": -8,
-                      "src": "1645:9:59",
+                      "src": "1645:9:64",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
                         "typeString": "function (bytes memory) pure returns (bytes32)"
                       }
                     },
-                    "id": 42708,
+                    "id": 43433,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": true,
@@ -163,7 +163,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "1645:45:59",
+                    "src": "1645:45:64",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes32",
@@ -171,26 +171,26 @@
                     }
                   },
                   "nodeType": "VariableDeclarationStatement",
-                  "src": "1619:71:59"
+                  "src": "1619:71:64"
                 },
                 {
                   "AST": {
                     "nodeType": "YulBlock",
-                    "src": "1705:40:59",
+                    "src": "1705:40:64",
                     "statements": [
                       {
                         "nodeType": "YulAssignment",
-                        "src": "1713:26:59",
+                        "src": "1713:26:64",
                         "value": {
                           "name": "storagePosition",
                           "nodeType": "YulIdentifier",
-                          "src": "1724:15:59"
+                          "src": "1724:15:64"
                         },
                         "variableNames": [
                           {
                             "name": "st.slot",
                             "nodeType": "YulIdentifier",
-                            "src": "1713:7:59"
+                            "src": "1713:7:64"
                           }
                         ]
                       }
@@ -199,24 +199,24 @@
                   "evmVersion": "london",
                   "externalReferences": [
                     {
-                      "declaration": 42702,
+                      "declaration": 43427,
                       "isOffset": false,
                       "isSlot": true,
-                      "src": "1713:7:59",
+                      "src": "1713:7:64",
                       "suffix": "slot",
                       "valueSize": 1
                     },
                     {
-                      "declaration": 42705,
+                      "declaration": 43430,
                       "isOffset": false,
                       "isSlot": false,
-                      "src": "1724:15:59",
+                      "src": "1724:15:64",
                       "valueSize": 1
                     }
                   ],
-                  "id": 42710,
+                  "id": 43435,
                   "nodeType": "InlineAssembly",
-                  "src": "1696:49:59"
+                  "src": "1696:49:64"
                 }
               ]
             },
@@ -224,55 +224,55 @@
             "kind": "function",
             "modifiers": [],
             "name": "get_storage",
-            "nameLocation": "1557:11:59",
+            "nameLocation": "1557:11:64",
             "parameters": {
-              "id": 42699,
+              "id": 43424,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "1568:2:59"
+              "src": "1568:2:64"
             },
             "returnParameters": {
-              "id": 42703,
+              "id": 43428,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 42702,
+                  "id": 43427,
                   "mutability": "mutable",
                   "name": "st",
-                  "nameLocation": "1609:2:59",
+                  "nameLocation": "1609:2:64",
                   "nodeType": "VariableDeclaration",
-                  "scope": 42712,
-                  "src": "1594:17:59",
+                  "scope": 43437,
+                  "src": "1594:17:64",
                   "stateVariable": false,
                   "storageLocation": "storage",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_struct$_Layout_$42698_storage_ptr",
+                    "typeIdentifier": "t_struct$_Layout_$43423_storage_ptr",
                     "typeString": "struct AccessControlledStorage.Layout"
                   },
                   "typeName": {
-                    "id": 42701,
+                    "id": 43426,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 42700,
+                      "id": 43425,
                       "name": "Layout",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 42698,
-                      "src": "1594:6:59"
+                      "referencedDeclaration": 43423,
+                      "src": "1594:6:64"
                     },
-                    "referencedDeclaration": 42698,
-                    "src": "1594:6:59",
+                    "referencedDeclaration": 43423,
+                    "src": "1594:6:64",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_struct$_Layout_$42698_storage_ptr",
+                      "typeIdentifier": "t_struct$_Layout_$43423_storage_ptr",
                       "typeString": "struct AccessControlledStorage.Layout"
                     }
                   },
                   "visibility": "internal"
                 }
               ],
-              "src": "1593:19:59"
+              "src": "1593:19:64"
             },
-            "scope": 42713,
+            "scope": 43438,
             "stateMutability": "pure",
             "virtual": false,
             "visibility": "internal"
@@ -284,14 +284,14 @@
         "contractDependencies": [],
         "contractKind": "library",
         "fullyImplemented": true,
-        "linearizedBaseContracts": [42713],
+        "linearizedBaseContracts": [43438],
         "name": "AccessControlledStorage",
-        "nameLocation": "1478:23:59",
-        "scope": 42714,
+        "nameLocation": "1478:23:64",
+        "scope": 43439,
         "usedErrors": []
       }
     ],
     "license": "BSD-2-Clause"
   },
-  "id": 59
+  "id": 64
 }

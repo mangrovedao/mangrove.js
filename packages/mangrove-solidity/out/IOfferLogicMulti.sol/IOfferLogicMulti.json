@@ -517,6 +517,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "reserve",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "contract IERC20",
@@ -551,6 +564,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "router",
+      "outputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -559,6 +585,19 @@
         }
       ],
       "name": "set_gasreq",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "reserve",
+          "type": "address"
+        }
+      ],
+      "name": "set_reserve",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -720,8 +759,11 @@
     "offerOwners(address,address,uint256[])": "dec8c86b",
     "ofr_gasreq()": "d1baa1ef",
     "ownerOf(address,address,uint256)": "f92495e5",
+    "reserve()": "cd3293de",
     "retractOffer(address,address,uint256,bool)": "ad97db1b",
+    "router()": "f887ea40",
     "set_gasreq(uint256)": "fc488a38",
+    "set_reserve(address)": "3d77fcde",
     "set_router(address)": "db11851e",
     "tokenBalance(address)": "eedc966a",
     "updateOffer((address,address,uint256,uint256,uint256,uint256,uint256,uint256))": "10aded60",
@@ -730,100 +772,100 @@
   },
   "ast": {
     "absolutePath": "packages/mangrove-solidity/src/strategies/interfaces/IOfferLogicMulti.sol",
-    "id": 36458,
+    "id": 37148,
     "exportedSymbols": {
-      "ACS": [42713],
-      "ARSt": [38707],
-      "AbstractRouter": [38682],
-      "AccessControlled": [42692],
-      "IERC20": [24224],
-      "IMaker": [24106],
-      "IMangrove": [22819],
-      "IOfferLogic": [36388],
-      "IOfferLogicMulti": [36457],
-      "ML": [23913],
-      "P": [23884]
+      "ACS": [43438],
+      "ARSt": [39449],
+      "AbstractRouter": [39424],
+      "AccessControlled": [43417],
+      "IERC20": [24851],
+      "IMaker": [24733],
+      "IMangrove": [23446],
+      "IOfferLogic": [37078],
+      "IOfferLogicMulti": [37147],
+      "ML": [24540],
+      "P": [24511]
     },
     "nodeType": "SourceUnit",
-    "src": "1368:931:41",
+    "src": "1368:931:47",
     "nodes": [
       {
-        "id": 36390,
+        "id": 37080,
         "nodeType": "PragmaDirective",
-        "src": "1368:24:41",
+        "src": "1368:24:47",
         "literals": ["solidity", ">=", "0.7", ".0"]
       },
       {
-        "id": 36391,
+        "id": 37081,
         "nodeType": "PragmaDirective",
-        "src": "1393:19:41",
+        "src": "1393:19:47",
         "literals": ["abicoder", "v2"]
       },
       {
-        "id": 36392,
+        "id": 37082,
         "nodeType": "ImportDirective",
-        "src": "1414:27:41",
+        "src": "1414:27:47",
         "absolutePath": "packages/mangrove-solidity/src/strategies/interfaces/IOfferLogic.sol",
         "file": "./IOfferLogic.sol",
         "nameLocation": "-1:-1:-1",
-        "scope": 36458,
-        "sourceUnit": 36389,
+        "scope": 37148,
+        "sourceUnit": 37079,
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "id": 36457,
+        "id": 37147,
         "nodeType": "ContractDefinition",
-        "src": "1443:855:41",
+        "src": "1443:855:47",
         "nodes": [
           {
-            "id": 36410,
+            "id": 37100,
             "nodeType": "EventDefinition",
-            "src": "1548:158:41",
+            "src": "1548:158:47",
             "anonymous": false,
             "documentation": {
-              "id": 36395,
+              "id": 37085,
               "nodeType": "StructuredDocumentation",
-              "src": "1489:34:41",
+              "src": "1489:34:47",
               "text": "Multi offer specific Events "
             },
             "eventSelector": "460a431c86ecaea27134277388c72021356689d9eb62c3b25a5e4a97da7a8a14",
             "name": "NewOwnedOffer",
-            "nameLocation": "1554:13:41",
+            "nameLocation": "1554:13:47",
             "parameters": {
-              "id": 36409,
+              "id": 37099,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 36398,
+                  "id": 37088,
                   "indexed": false,
                   "mutability": "mutable",
                   "name": "mangrove",
-                  "nameLocation": "1583:8:41",
+                  "nameLocation": "1583:8:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36410,
-                  "src": "1573:18:41",
+                  "scope": 37100,
+                  "src": "1573:18:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IMangrove_$22819",
+                    "typeIdentifier": "t_contract$_IMangrove_$23446",
                     "typeString": "contract IMangrove"
                   },
                   "typeName": {
-                    "id": 36397,
+                    "id": 37087,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36396,
+                      "id": 37086,
                       "name": "IMangrove",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 22819,
-                      "src": "1573:9:41"
+                      "referencedDeclaration": 23446,
+                      "src": "1573:9:47"
                     },
-                    "referencedDeclaration": 22819,
-                    "src": "1573:9:41",
+                    "referencedDeclaration": 23446,
+                    "src": "1573:9:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IMangrove_$22819",
+                      "typeIdentifier": "t_contract$_IMangrove_$23446",
                       "typeString": "contract IMangrove"
                     }
                   },
@@ -831,34 +873,34 @@
                 },
                 {
                   "constant": false,
-                  "id": 36401,
+                  "id": 37091,
                   "indexed": true,
                   "mutability": "mutable",
                   "name": "outbound_tkn",
-                  "nameLocation": "1612:12:41",
+                  "nameLocation": "1612:12:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36410,
-                  "src": "1597:27:41",
+                  "scope": 37100,
+                  "src": "1597:27:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IERC20_$24224",
+                    "typeIdentifier": "t_contract$_IERC20_$24851",
                     "typeString": "contract IERC20"
                   },
                   "typeName": {
-                    "id": 36400,
+                    "id": 37090,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36399,
+                      "id": 37089,
                       "name": "IERC20",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 24224,
-                      "src": "1597:6:41"
+                      "referencedDeclaration": 24851,
+                      "src": "1597:6:47"
                     },
-                    "referencedDeclaration": 24224,
-                    "src": "1597:6:41",
+                    "referencedDeclaration": 24851,
+                    "src": "1597:6:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC20_$24224",
+                      "typeIdentifier": "t_contract$_IERC20_$24851",
                       "typeString": "contract IERC20"
                     }
                   },
@@ -866,34 +908,34 @@
                 },
                 {
                   "constant": false,
-                  "id": 36404,
+                  "id": 37094,
                   "indexed": true,
                   "mutability": "mutable",
                   "name": "inbound_tkn",
-                  "nameLocation": "1645:11:41",
+                  "nameLocation": "1645:11:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36410,
-                  "src": "1630:26:41",
+                  "scope": 37100,
+                  "src": "1630:26:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IERC20_$24224",
+                    "typeIdentifier": "t_contract$_IERC20_$24851",
                     "typeString": "contract IERC20"
                   },
                   "typeName": {
-                    "id": 36403,
+                    "id": 37093,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36402,
+                      "id": 37092,
                       "name": "IERC20",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 24224,
-                      "src": "1630:6:41"
+                      "referencedDeclaration": 24851,
+                      "src": "1630:6:47"
                     },
-                    "referencedDeclaration": 24224,
-                    "src": "1630:6:41",
+                    "referencedDeclaration": 24851,
+                    "src": "1630:6:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC20_$24224",
+                      "typeIdentifier": "t_contract$_IERC20_$24851",
                       "typeString": "contract IERC20"
                     }
                   },
@@ -901,14 +943,14 @@
                 },
                 {
                   "constant": false,
-                  "id": 36406,
+                  "id": 37096,
                   "indexed": true,
                   "mutability": "mutable",
                   "name": "offerId",
-                  "nameLocation": "1675:7:41",
+                  "nameLocation": "1675:7:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36410,
-                  "src": "1662:20:41",
+                  "scope": 37100,
+                  "src": "1662:20:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -916,10 +958,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 36405,
+                    "id": 37095,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1662:4:41",
+                    "src": "1662:4:47",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -929,14 +971,14 @@
                 },
                 {
                   "constant": false,
-                  "id": 36408,
+                  "id": 37098,
                   "indexed": false,
                   "mutability": "mutable",
                   "name": "owner",
-                  "nameLocation": "1696:5:41",
+                  "nameLocation": "1696:5:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36410,
-                  "src": "1688:13:41",
+                  "scope": 37100,
+                  "src": "1688:13:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -944,10 +986,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 36407,
+                    "id": 37097,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1688:7:41",
+                    "src": "1688:7:47",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -957,51 +999,51 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1567:138:41"
+              "src": "1567:138:47"
             }
           },
           {
-            "id": 36419,
+            "id": 37109,
             "nodeType": "EventDefinition",
-            "src": "1756:99:41",
+            "src": "1756:99:47",
             "anonymous": false,
             "eventSelector": "23d894830a97b148f17c5fea5f968145dbc040b3d819c030ac7cc80c71c92ed9",
             "name": "CreditMgvUser",
-            "nameLocation": "1762:13:41",
+            "nameLocation": "1762:13:47",
             "parameters": {
-              "id": 36418,
+              "id": 37108,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 36413,
+                  "id": 37103,
                   "indexed": true,
                   "mutability": "mutable",
                   "name": "mangrove",
-                  "nameLocation": "1799:8:41",
+                  "nameLocation": "1799:8:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36419,
-                  "src": "1781:26:41",
+                  "scope": 37109,
+                  "src": "1781:26:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IMangrove_$22819",
+                    "typeIdentifier": "t_contract$_IMangrove_$23446",
                     "typeString": "contract IMangrove"
                   },
                   "typeName": {
-                    "id": 36412,
+                    "id": 37102,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36411,
+                      "id": 37101,
                       "name": "IMangrove",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 22819,
-                      "src": "1781:9:41"
+                      "referencedDeclaration": 23446,
+                      "src": "1781:9:47"
                     },
-                    "referencedDeclaration": 22819,
-                    "src": "1781:9:41",
+                    "referencedDeclaration": 23446,
+                    "src": "1781:9:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IMangrove_$22819",
+                      "typeIdentifier": "t_contract$_IMangrove_$23446",
                       "typeString": "contract IMangrove"
                     }
                   },
@@ -1009,14 +1051,14 @@
                 },
                 {
                   "constant": false,
-                  "id": 36415,
+                  "id": 37105,
                   "indexed": true,
                   "mutability": "mutable",
                   "name": "user",
-                  "nameLocation": "1829:4:41",
+                  "nameLocation": "1829:4:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36419,
-                  "src": "1813:20:41",
+                  "scope": 37109,
+                  "src": "1813:20:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1024,10 +1066,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 36414,
+                    "id": 37104,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1813:7:41",
+                    "src": "1813:7:47",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -1038,14 +1080,14 @@
                 },
                 {
                   "constant": false,
-                  "id": 36417,
+                  "id": 37107,
                   "indexed": false,
                   "mutability": "mutable",
                   "name": "amount",
-                  "nameLocation": "1844:6:41",
+                  "nameLocation": "1844:6:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36419,
-                  "src": "1839:11:41",
+                  "scope": 37109,
+                  "src": "1839:11:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1053,10 +1095,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 36416,
+                    "id": 37106,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1839:4:41",
+                    "src": "1839:4:47",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1065,51 +1107,51 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1775:79:41"
+              "src": "1775:79:47"
             }
           },
           {
-            "id": 36428,
+            "id": 37118,
             "nodeType": "EventDefinition",
-            "src": "1905:98:41",
+            "src": "1905:98:47",
             "anonymous": false,
             "eventSelector": "8b11a64c87f3bbe8de83349295a7b8d0d7ca9e7555365548fb47748cf4c1cfc7",
             "name": "DebitMgvUser",
-            "nameLocation": "1911:12:41",
+            "nameLocation": "1911:12:47",
             "parameters": {
-              "id": 36427,
+              "id": 37117,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 36422,
+                  "id": 37112,
                   "indexed": true,
                   "mutability": "mutable",
                   "name": "mangrove",
-                  "nameLocation": "1947:8:41",
+                  "nameLocation": "1947:8:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36428,
-                  "src": "1929:26:41",
+                  "scope": 37118,
+                  "src": "1929:26:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IMangrove_$22819",
+                    "typeIdentifier": "t_contract$_IMangrove_$23446",
                     "typeString": "contract IMangrove"
                   },
                   "typeName": {
-                    "id": 36421,
+                    "id": 37111,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36420,
+                      "id": 37110,
                       "name": "IMangrove",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 22819,
-                      "src": "1929:9:41"
+                      "referencedDeclaration": 23446,
+                      "src": "1929:9:47"
                     },
-                    "referencedDeclaration": 22819,
-                    "src": "1929:9:41",
+                    "referencedDeclaration": 23446,
+                    "src": "1929:9:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IMangrove_$22819",
+                      "typeIdentifier": "t_contract$_IMangrove_$23446",
                       "typeString": "contract IMangrove"
                     }
                   },
@@ -1117,14 +1159,14 @@
                 },
                 {
                   "constant": false,
-                  "id": 36424,
+                  "id": 37114,
                   "indexed": true,
                   "mutability": "mutable",
                   "name": "user",
-                  "nameLocation": "1977:4:41",
+                  "nameLocation": "1977:4:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36428,
-                  "src": "1961:20:41",
+                  "scope": 37118,
+                  "src": "1961:20:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1132,10 +1174,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 36423,
+                    "id": 37113,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1961:7:41",
+                    "src": "1961:7:47",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -1146,14 +1188,14 @@
                 },
                 {
                   "constant": false,
-                  "id": 36426,
+                  "id": 37116,
                   "indexed": false,
                   "mutability": "mutable",
                   "name": "amount",
-                  "nameLocation": "1992:6:41",
+                  "nameLocation": "1992:6:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36428,
-                  "src": "1987:11:41",
+                  "scope": 37118,
+                  "src": "1987:11:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1161,10 +1203,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 36425,
+                    "id": 37115,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1987:4:41",
+                    "src": "1987:4:47",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1173,52 +1215,52 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1923:79:41"
+              "src": "1923:79:47"
             }
           },
           {
-            "id": 36443,
+            "id": 37133,
             "nodeType": "FunctionDefinition",
-            "src": "2007:159:41",
+            "src": "2007:159:47",
             "functionSelector": "dec8c86b",
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "offerOwners",
-            "nameLocation": "2016:11:41",
+            "nameLocation": "2016:11:47",
             "parameters": {
-              "id": 36438,
+              "id": 37128,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 36431,
+                  "id": 37121,
                   "mutability": "mutable",
                   "name": "outbound_tkn",
-                  "nameLocation": "2040:12:41",
+                  "nameLocation": "2040:12:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36443,
-                  "src": "2033:19:41",
+                  "scope": 37133,
+                  "src": "2033:19:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IERC20_$24224",
+                    "typeIdentifier": "t_contract$_IERC20_$24851",
                     "typeString": "contract IERC20"
                   },
                   "typeName": {
-                    "id": 36430,
+                    "id": 37120,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36429,
+                      "id": 37119,
                       "name": "IERC20",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 24224,
-                      "src": "2033:6:41"
+                      "referencedDeclaration": 24851,
+                      "src": "2033:6:47"
                     },
-                    "referencedDeclaration": 24224,
-                    "src": "2033:6:41",
+                    "referencedDeclaration": 24851,
+                    "src": "2033:6:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC20_$24224",
+                      "typeIdentifier": "t_contract$_IERC20_$24851",
                       "typeString": "contract IERC20"
                     }
                   },
@@ -1226,33 +1268,33 @@
                 },
                 {
                   "constant": false,
-                  "id": 36434,
+                  "id": 37124,
                   "mutability": "mutable",
                   "name": "inbound_tkn",
-                  "nameLocation": "2065:11:41",
+                  "nameLocation": "2065:11:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36443,
-                  "src": "2058:18:41",
+                  "scope": 37133,
+                  "src": "2058:18:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IERC20_$24224",
+                    "typeIdentifier": "t_contract$_IERC20_$24851",
                     "typeString": "contract IERC20"
                   },
                   "typeName": {
-                    "id": 36433,
+                    "id": 37123,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36432,
+                      "id": 37122,
                       "name": "IERC20",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 24224,
-                      "src": "2058:6:41"
+                      "referencedDeclaration": 24851,
+                      "src": "2058:6:47"
                     },
-                    "referencedDeclaration": 24224,
-                    "src": "2058:6:41",
+                    "referencedDeclaration": 24851,
+                    "src": "2058:6:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC20_$24224",
+                      "typeIdentifier": "t_contract$_IERC20_$24851",
                       "typeString": "contract IERC20"
                     }
                   },
@@ -1260,13 +1302,13 @@
                 },
                 {
                   "constant": false,
-                  "id": 36437,
+                  "id": 37127,
                   "mutability": "mutable",
                   "name": "offerIds",
-                  "nameLocation": "2098:8:41",
+                  "nameLocation": "2098:8:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36443,
-                  "src": "2082:24:41",
+                  "scope": 37133,
+                  "src": "2082:24:47",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -1275,18 +1317,18 @@
                   },
                   "typeName": {
                     "baseType": {
-                      "id": 36435,
+                      "id": 37125,
                       "name": "uint",
                       "nodeType": "ElementaryTypeName",
-                      "src": "2082:4:41",
+                      "src": "2082:4:47",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
                         "typeString": "uint256"
                       }
                     },
-                    "id": 36436,
+                    "id": 37126,
                     "nodeType": "ArrayTypeName",
-                    "src": "2082:6:41",
+                    "src": "2082:6:47",
                     "typeDescriptions": {
                       "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
                       "typeString": "uint256[]"
@@ -1295,21 +1337,21 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "2027:83:41"
+              "src": "2027:83:47"
             },
             "returnParameters": {
-              "id": 36442,
+              "id": 37132,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 36441,
+                  "id": 37131,
                   "mutability": "mutable",
                   "name": "__offerOwners",
-                  "nameLocation": "2151:13:41",
+                  "nameLocation": "2151:13:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36443,
-                  "src": "2134:30:41",
+                  "scope": 37133,
+                  "src": "2134:30:47",
                   "stateVariable": false,
                   "storageLocation": "memory",
                   "typeDescriptions": {
@@ -1318,19 +1360,19 @@
                   },
                   "typeName": {
                     "baseType": {
-                      "id": 36439,
+                      "id": 37129,
                       "name": "address",
                       "nodeType": "ElementaryTypeName",
-                      "src": "2134:7:41",
+                      "src": "2134:7:47",
                       "stateMutability": "nonpayable",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address",
                         "typeString": "address"
                       }
                     },
-                    "id": 36440,
+                    "id": 37130,
                     "nodeType": "ArrayTypeName",
-                    "src": "2134:9:41",
+                    "src": "2134:9:47",
                     "typeDescriptions": {
                       "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
                       "typeString": "address[]"
@@ -1339,56 +1381,56 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "2133:32:41"
+              "src": "2133:32:47"
             },
-            "scope": 36457,
+            "scope": 37147,
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           },
           {
-            "id": 36456,
+            "id": 37146,
             "nodeType": "FunctionDefinition",
-            "src": "2170:126:41",
+            "src": "2170:126:47",
             "functionSelector": "f92495e5",
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "ownerOf",
-            "nameLocation": "2179:7:41",
+            "nameLocation": "2179:7:47",
             "parameters": {
-              "id": 36452,
+              "id": 37142,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 36446,
+                  "id": 37136,
                   "mutability": "mutable",
                   "name": "outbound_tkn",
-                  "nameLocation": "2199:12:41",
+                  "nameLocation": "2199:12:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36456,
-                  "src": "2192:19:41",
+                  "scope": 37146,
+                  "src": "2192:19:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IERC20_$24224",
+                    "typeIdentifier": "t_contract$_IERC20_$24851",
                     "typeString": "contract IERC20"
                   },
                   "typeName": {
-                    "id": 36445,
+                    "id": 37135,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36444,
+                      "id": 37134,
                       "name": "IERC20",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 24224,
-                      "src": "2192:6:41"
+                      "referencedDeclaration": 24851,
+                      "src": "2192:6:47"
                     },
-                    "referencedDeclaration": 24224,
-                    "src": "2192:6:41",
+                    "referencedDeclaration": 24851,
+                    "src": "2192:6:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC20_$24224",
+                      "typeIdentifier": "t_contract$_IERC20_$24851",
                       "typeString": "contract IERC20"
                     }
                   },
@@ -1396,33 +1438,33 @@
                 },
                 {
                   "constant": false,
-                  "id": 36449,
+                  "id": 37139,
                   "mutability": "mutable",
                   "name": "inbound_tkn",
-                  "nameLocation": "2224:11:41",
+                  "nameLocation": "2224:11:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36456,
-                  "src": "2217:18:41",
+                  "scope": 37146,
+                  "src": "2217:18:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_contract$_IERC20_$24224",
+                    "typeIdentifier": "t_contract$_IERC20_$24851",
                     "typeString": "contract IERC20"
                   },
                   "typeName": {
-                    "id": 36448,
+                    "id": 37138,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 36447,
+                      "id": 37137,
                       "name": "IERC20",
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 24224,
-                      "src": "2217:6:41"
+                      "referencedDeclaration": 24851,
+                      "src": "2217:6:47"
                     },
-                    "referencedDeclaration": 24224,
-                    "src": "2217:6:41",
+                    "referencedDeclaration": 24851,
+                    "src": "2217:6:47",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC20_$24224",
+                      "typeIdentifier": "t_contract$_IERC20_$24851",
                       "typeString": "contract IERC20"
                     }
                   },
@@ -1430,13 +1472,13 @@
                 },
                 {
                   "constant": false,
-                  "id": 36451,
+                  "id": 37141,
                   "mutability": "mutable",
                   "name": "offerId",
-                  "nameLocation": "2246:7:41",
+                  "nameLocation": "2246:7:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36456,
-                  "src": "2241:12:41",
+                  "scope": 37146,
+                  "src": "2241:12:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1444,10 +1486,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 36450,
+                    "id": 37140,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "2241:4:41",
+                    "src": "2241:4:47",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1456,21 +1498,21 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "2186:71:41"
+              "src": "2186:71:47"
             },
             "returnParameters": {
-              "id": 36455,
+              "id": 37145,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 36454,
+                  "id": 37144,
                   "mutability": "mutable",
                   "name": "owner",
-                  "nameLocation": "2289:5:41",
+                  "nameLocation": "2289:5:47",
                   "nodeType": "VariableDeclaration",
-                  "scope": 36456,
-                  "src": "2281:13:41",
+                  "scope": 37146,
+                  "src": "2281:13:47",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1478,10 +1520,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 36453,
+                    "id": 37143,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "2281:7:41",
+                    "src": "2281:7:47",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -1491,9 +1533,9 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "2280:15:41"
+              "src": "2280:15:47"
             },
-            "scope": 36457,
+            "scope": 37147,
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
@@ -1503,29 +1545,29 @@
         "baseContracts": [
           {
             "baseName": {
-              "id": 36393,
+              "id": 37083,
               "name": "IOfferLogic",
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 36388,
-              "src": "1473:11:41"
+              "referencedDeclaration": 37078,
+              "src": "1473:11:47"
             },
-            "id": 36394,
+            "id": 37084,
             "nodeType": "InheritanceSpecifier",
-            "src": "1473:11:41"
+            "src": "1473:11:47"
           }
         ],
         "canonicalName": "IOfferLogicMulti",
         "contractDependencies": [],
         "contractKind": "interface",
         "fullyImplemented": false,
-        "linearizedBaseContracts": [36457, 36388, 24106],
+        "linearizedBaseContracts": [37147, 37078, 24733],
         "name": "IOfferLogicMulti",
-        "nameLocation": "1453:16:41",
-        "scope": 36458,
+        "nameLocation": "1453:16:47",
+        "scope": 37148,
         "usedErrors": []
       }
     ],
     "license": "BSD-2-Clause"
   },
-  "id": 41
+  "id": 47
 }
