@@ -113,7 +113,7 @@ contract Mango is Persistent {
     uint to, // last price position to be populated
     uint[][2] calldata pivotIds, // `pivotIds[0][i]` ith pivots for bids, `pivotIds[1][i]` ith pivot for asks
     uint[] calldata tokenAmounts // `tokenAmounts[i]` is the amount of `BASE` or `QUOTE` tokens (dePENDING on `withBase` flag) that is used to fixed one parameter of the price at position `from+i`.
-  ) public mgvOrAdmin {
+  ) external onlyAdmin {
     // making sure a router has been defined between deployment and initialization
     require(address(router()) != address(0), "Mango/initialize/0xRouter");
 
@@ -301,6 +301,7 @@ contract Mango is Persistent {
     if (residual == 0) {
       return 0;
     }
+    // computes residualWants in order to respect price imposed by residualGives computed above
     (bool success, bytes memory retdata) = IMPLEMENTATION.delegatecall(
       abi.encodeWithSelector(
         MangoImplementation.$residualWants.selector,
@@ -322,6 +323,8 @@ contract Mango is Persistent {
     returns (bool)
   {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    // reposting residual of offer following Persistent strategy
+    // NB __residualWants/Gives__ is overriden by Mango strat to take into account potential pending tokens
     bool reposted = super.__posthookSuccess__(order);
 
     if (order.outbound_tkn == address(BASE)) {
@@ -339,7 +342,7 @@ contract Mango is Persistent {
         mStr.pending_quote = 0;
       }
     }
-
+    // Now that residual was taken care of, Mango publishes new liquidit as a dual offer (a bid if an ask was taken and conversly)
     (bool success, bytes memory retdata) = IMPLEMENTATION.delegatecall(
       abi.encodeWithSelector(
         MangoImplementation.$postDualOffer.selector,
