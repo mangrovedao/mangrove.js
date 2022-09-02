@@ -525,21 +525,6 @@ class LiquidityProvider {
     }
   }
 
-  // admin only. Approves router to pull and push liquidity on maker contract
-  approveAsksRouting(
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    this.#logicOnly("EOA liquidity provider cannot route liquidity");
-    return this.logic.approveRouter(this.market.base.name, overrides);
-  }
-
-  approveBidsRouting(
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    this.#logicOnly("EOA liquidity provider cannot route liquidity");
-    return this.logic.approveRouter(this.market.quote.name, overrides);
-  }
-
   #approveToken(
     tokenName: string,
     overrides: ethers.Overrides = {}
