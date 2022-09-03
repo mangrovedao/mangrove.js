@@ -15,7 +15,7 @@ import {Mango, IERC20, IMangrove} from "mgv_src/strategies/single_user/market_ma
 // --sig "run(address, uint, uint)" \
 // --broadcast \
 // StopMango \
-// 0xe548d5cee04e3308d74f4a0c2a8354538cdb2360 0 100
+// 0x1C9f224c402233006C438Ae081Ed35697b2A4919 0 100
 
 contract StopMango is Script {
   function run(

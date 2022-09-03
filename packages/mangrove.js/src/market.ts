@@ -28,6 +28,7 @@ import ThresholdBlockSubscriptions from "./ThresholdBlockSubscriptions";
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
+import LiquidityProvider from "./liquidityProvider";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -657,6 +658,26 @@ class Market {
   prettyPrint(ba: Market.BA, filter: prettyPrintFilter): void {
     const offers = this.getSemibook(ba);
     this.prettyP.prettyPrint(offers, filter);
+  }
+
+  /** Returns a liquidity provider API to the contract that manages a given offer */
+  /** This will only make sense is offer maker is a contract */
+  async offerProvider(
+    ba: Market.BA,
+    offerId: number
+  ): Promise<LiquidityProvider> {
+    const offer = await this.offerInfo(ba, offerId);
+    return this.mgv.offerLogic(offer.maker).liquidityProvider(this);
+  }
+
+  async bidProvider(offerId: number): Promise<LiquidityProvider> {
+    const offer = await this.offerInfo("bids", offerId);
+    return this.mgv.offerLogic(offer.maker).liquidityProvider(this);
+  }
+
+  async askProvider(offerId: number): Promise<LiquidityProvider> {
+    const offer = await this.offerInfo("asks", offerId);
+    return this.mgv.offerLogic(offer.maker).liquidityProvider(this);
   }
 
   /**

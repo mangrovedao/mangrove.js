@@ -11,15 +11,16 @@ import {Deployer} from "../lib/Deployer.sol";
 // --private-key $MUMBAI_DEPLOYER_PRIVATE_KEY \
 // --sig "run(address, address, address, uint, uint, uint, uint, address)" \
 // --etherscan-api-key $POLYGONSCAN_API \
+// --broadcast \
 // --verify \
 // MangoDeployer \
-// 0xF3e339d8a0B989114412fa157Cc846ebaf4BCbd8 \
-// 0x63e537a69b3f5b03f4f46c5765c82861bd874b6e \
-// 0xF61Cffd6071a8DB7cD5E8DF1D3A5450D9903cF1c \
+// $MANGROVE \
+// $WETH \
+// $USDC \
 // $(cast ff 18 1) \
-// $(cast ff 18 200) \
+// $(cast ff 6 200) \
 // 100 \
-// 36 \
+// $(cast ff 6 30) \
 // $MUMBAI_TESTER_ADDRESS
 
 contract MangoDeployer is Deployer {

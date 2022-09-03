@@ -11,7 +11,7 @@ import {Mango, IERC20, IMangrove} from "mgv_src/strategies/single_user/market_ma
 // --private-key $MUMBAI_TESTER_PRIVATE_KEY \
 // --sig "run(address, uint, uint, uint, uint, uint)" \
 // InitMango \
-// 0x851f2c234850780a9371787777dbd65c157cb13e \
+// 0x7D63939ce0Fa80cC69C129D337a978D0E1F354A1 \
 // $(cast ff 18 0.25) \
 // $(cast ff 6 1000) \
 // 50 \
