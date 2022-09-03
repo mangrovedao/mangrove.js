@@ -1,5 +1,7 @@
 # next version
 
+- `market.ts` now allows one to get a `liquidityProvider` to interact with the maker contrat that posted a specific offer
+
 # 0.10.0 (August 2022)
 
 - Update address for `MangroveOrderEnriched`
