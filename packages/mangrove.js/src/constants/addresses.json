@@ -5,10 +5,10 @@
   "kovan": {},
   "ropsten": {},
   "maticmum": {
-    "Mangrove": "0x64d0f471e1ef64efeec8ed06945ab873f168d2c3",
-    "MgvCleaner": "0xfcfed75a2ff68dcfa20ba23f651025878834676c",
-    "MgvReader": "0x3bbbfbc071fd4ac8b370a4e5390d64e9ea479741",
-    "MgvOracle": "0x12cc9e099d802645d6523f8824729f6d0ffb11e5",
+    "Mangrove": "0xF3e339d8a0B989114412fa157Cc846ebaf4BCbd8",
+    "MgvCleaner": "0xEb05Ace3574B0a6f4696c5CcD09e730d6d5ED3b0",
+    "MgvReader": "0xfAB31d37f8DF5bff07Bb3c16B33416eCd4Aab76F",
+    "MgvOracle": "0xd38c02425da847584eeDA72387DAAA2E8f3b90c8",
     "MGV": "0x81C635A3909c8d68B4CA648bb180FFD9F3750beF",
     "DAI_AAVE": "0x9A753f0F7886C9fbF63cF59D0D4423C5eFaCE95B",
     "USDC_AAVE": "0x9aa7fEc87CA69695Dd1f879567CcF49F3ba417E2",
@@ -21,7 +21,7 @@
     "USDC": "0xF61Cffd6071a8DB7cD5E8DF1D3A5450D9903cF1c",
     "WETH": "0x63e537a69b3f5b03f4f46c5765c82861bd874b6e",
     "MangroveOrder": "0x1fA0d582B8aA298f634cdCDCCcB7972E913b2D8f",
-    "MangroveOrderEnriched": "0x178496087946f348587247328c278295b5f75276",
+    "MangroveOrderEnriched": "0xE84519D38bAaD858d827B7F27A936c8447eDDD20",
     "AaveProvider": "0x5343b5bA672Ae99d627A1C87866b8E53F47Db2E6"
   }
 }
