@@ -30,25 +30,25 @@ contract MangroveDeployer is Deployer {
   ) public {
     vm.broadcast();
     mgv = new Mangrove({governance: chief, gasprice: gasprice, gasmax: gasmax});
-    ens.set("Mangrove", address(mgv));
+    register("Mangrove", address(mgv));
 
     vm.broadcast();
     reader = new MgvReader({_mgv: payable(mgv)});
-    ens.set("MgvReader", address(reader));
+    register("MgvReader", address(reader));
 
     vm.broadcast();
     cleaner = new MgvCleaner({_MGV: address(mgv)});
-    ens.set("MgvCleaner", address(cleaner));
+    register("MgvCleaner", address(cleaner));
 
     vm.broadcast();
     oracle = new MgvOracle({_governance: chief, _initialMutator: chief});
-    ens.set("MgvOracle", address(oracle));
+    register("MgvOracle", address(oracle));
 
     vm.broadcast();
     mgoe = new MangroveOrderEnriched({
       _MGV: IMangrove(payable(mgv)),
       deployer: chief
     });
-    ens.set("MangroveOrderEnriched", address(mgoe));
+    register("MangroveOrderEnriched", address(mgoe));
   }
 }

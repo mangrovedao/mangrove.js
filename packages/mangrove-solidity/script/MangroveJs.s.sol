@@ -53,7 +53,7 @@ contract MangroveJsDeploy is Deployer {
       symbol: "TokenA",
       _decimals: 18
     });
-    ens.set("TokenA", address(tokenA), true);
+    register("TokenA", address(tokenA), true);
 
     vm.broadcast();
     tokenB = new TestToken({
@@ -62,7 +62,7 @@ contract MangroveJsDeploy is Deployer {
       symbol: "TokenB",
       _decimals: 18
     });
-    ens.set("TokenB", address(tokenB), true);
+    register("TokenB", address(tokenB), true);
 
     vm.broadcast();
     dai = new TestToken({
@@ -71,7 +71,7 @@ contract MangroveJsDeploy is Deployer {
       symbol: "DAI",
       _decimals: 18
     });
-    ens.set("DAI", address(dai), true);
+    register("DAI", address(dai), true);
 
     vm.broadcast();
     usdc = new TestToken({
@@ -80,7 +80,7 @@ contract MangroveJsDeploy is Deployer {
       symbol: "USDC",
       _decimals: 6
     });
-    ens.set("USDC", address(usdc), true);
+    register("USDC", address(usdc), true);
 
     vm.broadcast();
     weth = new TestToken({
@@ -89,7 +89,7 @@ contract MangroveJsDeploy is Deployer {
       symbol: "WETH",
       _decimals: 18
     });
-    ens.set("WETH", address(weth), true);
+    register("WETH", address(weth), true);
 
     vm.broadcast();
     simpleTestMaker = new SimpleTestMaker({
@@ -97,10 +97,10 @@ contract MangroveJsDeploy is Deployer {
       base: tokenA,
       quote: tokenB
     });
-    ens.set("SimpleTestMaker", address(simpleTestMaker));
+    register("SimpleTestMaker", address(simpleTestMaker));
 
     vm.broadcast();
     mgo = new MangroveOrder({_MGV: IMangrove(payable(mgv)), deployer: chief});
-    ens.set("MangroveOrder", address(mgo));
+    register("MangroveOrder", address(mgo));
   }
 }
