@@ -15,6 +15,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 */
 import Big from "big.js";
 import { OfferLogic } from ".";
+import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -55,6 +56,7 @@ class LiquidityProvider {
   logic?: OfferLogic; // API abstraction of the underlying offer logic ethers.js contract
   eoa?: string; // signer's address
   market: Market; // API market abstraction over Mangrove's offer lists
+  prettyP = new PrettyPrint();
 
   constructor(p: LiquidityProvider.ConstructionParams) {
     if (p.eoa || p.logic) {
@@ -119,6 +121,16 @@ class LiquidityProvider {
       .bids.iter()
       .filter((ofr) => ofr.maker === address)
       .toArray();
+  }
+
+  /** Pretty prints the current state of the asks for the maker */
+  consoleAsks(filter?: prettyPrintFilter): void {
+    this.prettyP.consoleOffers(this.asks(), filter);
+  }
+
+  /** Pretty prints the current state of the bids for the maker */
+  consoleBids(filter?: prettyPrintFilter): void {
+    this.prettyP.consoleOffers(this.bids(), filter);
   }
 
   /**
@@ -511,21 +523,6 @@ class LiquidityProvider {
         overrides
       );
     }
-  }
-
-  // admin only. Approves router to pull and push liquidity on maker contract
-  approveAsksRouting(
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    this.#logicOnly("EOA liquidity provider cannot route liquidity");
-    return this.logic.approveRouter(this.market.base.name, overrides);
-  }
-
-  approveBidsRouting(
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    this.#logicOnly("EOA liquidity provider cannot route liquidity");
-    return this.logic.approveRouter(this.market.quote.name, overrides);
   }
 
   #approveToken(

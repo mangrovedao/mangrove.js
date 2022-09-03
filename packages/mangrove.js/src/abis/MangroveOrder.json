@@ -662,6 +662,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "reserve",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "contract IERC20",
@@ -730,6 +743,19 @@
         }
       ],
       "name": "set_gasreq",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "__reserve",
+          "type": "address"
+        }
+      ],
+      "name": "set_reserve",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
