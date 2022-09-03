@@ -548,7 +548,6 @@ class LiquidityProvider {
     return this.#approveToken(this.market.quote.name, overrides);
   }
 
-  //TODO handle multi maker case
   async getMissingProvision(
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}

@@ -31,15 +31,9 @@ class OfferLogic {
   address: string;
   isMultiMaker: boolean;
 
-  constructor(
-    mgv: Mangrove,
-    logic: string,
-    multiMaker: boolean,
-    signer?: SignerOrProvider
-  ) {
+  constructor(mgv: Mangrove, logic: string, signer?: SignerOrProvider) {
     this.mgv = mgv;
     this.address = logic;
-    this.isMultiMaker = multiMaker;
     this.contract = typechain.MultiMaker__factory.connect(
       logic,
       signer ? signer : this.mgv._signer
