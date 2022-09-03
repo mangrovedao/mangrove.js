@@ -2,6 +2,7 @@ import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
 import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
+import LiquidityProvider from "./liquidityProvider";
 import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
 import { Deferred } from "./util";
@@ -657,6 +658,26 @@ class Market {
   prettyPrint(ba: Market.BA, filter: prettyPrintFilter): void {
     const offers = this.getSemibook(ba);
     this.prettyP.prettyPrint(offers, filter);
+  }
+
+  /** Returns a liquidity provider API to the contract that manages a given offer */
+  /** This will only make sense is offer maker is a contract */
+  async offerProvider(
+    ba: Market.BA,
+    offerId: number
+  ): Promise<LiquidityProvider> {
+    const offer = await this.offerInfo(ba, offerId);
+    return this.mgv.offerLogic(offer.maker).liquidityProvider(this);
+  }
+
+  async bidProvider(offerId: number): Promise<LiquidityProvider> {
+    const offer = await this.offerInfo("bids", offerId);
+    return this.mgv.offerLogic(offer.maker).liquidityProvider(this);
+  }
+
+  async askProvider(offerId: number): Promise<LiquidityProvider> {
+    const offer = await this.offerInfo("asks", offerId);
+    return this.mgv.offerLogic(offer.maker).liquidityProvider(this);
   }
 
   /**

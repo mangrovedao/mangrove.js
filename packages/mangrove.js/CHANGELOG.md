@@ -1,5 +1,7 @@
 # next version
 
+- `market.ts` offers `bid/askProvider` for a specific market offer. This allows one to obtain a `LiquidityProvider` instance connected to the maker contract in charge of a particular offer id.
+
 # 0.10.0 (August 2022)
 
 - Update address for `MangroveOrderEnriched`
