@@ -215,11 +215,12 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
     internal
     virtual
     override
-    returns (bool noFailure)
+    returns (bool success)
   {
-    noFailure = super.__posthookSuccess__(order);
-    if (!noFailure) {
+    success = super.__posthookSuccess__(order);
+    if (!success) {
       // if offer failed to be reposted, if is now off the book but provision is still locked
+      // calling retract offer will recover the provision and transfer them to offer owner
       retractOffer(
         IERC20(order.outbound_tkn),
         IERC20(order.inbound_tkn),

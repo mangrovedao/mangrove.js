@@ -322,7 +322,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
         owner: od.owner,
         wei_balance: 0
       });
-      (bool noRevert, ) = msg.sender.call{value: free_wei}("");
+      // sending WEI's to offer owner. Note that this call could occur nested inside a call to `makerExecute` originating from Mangrove
+      // this is still safe because WEI's are being sent to offer owner who has no incentive to make current trade fail. 
+      (bool noRevert, ) = od.owner.call{value: free_wei}("");
       require(noRevert, "Forwarder/weiTransferFail");
     }
   }

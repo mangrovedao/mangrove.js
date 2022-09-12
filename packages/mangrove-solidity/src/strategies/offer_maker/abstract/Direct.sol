@@ -143,6 +143,8 @@ abstract contract Direct is MangroveOffer {
         MGV.withdraw(free_wei),
         "Direct/withdrawFromMgv/withdrawFail"
       );
+      // sending native tokens to msg.sender prevents reentrancy issues 
+      // (the context call of `retractOffer` could be coming from `makerExecute` and recipient of transfer could use this call to make offer fail)
       (bool noRevert, ) = msg.sender.call{value: free_wei}("");
       require(noRevert, "Direct/weiTransferFail");
     }

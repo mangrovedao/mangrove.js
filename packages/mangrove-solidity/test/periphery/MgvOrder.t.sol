@@ -454,7 +454,7 @@ contract MangroveOrder_Test is MangroveTest {
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
       buyOrder
     );
-    // test runner quote balance on the gateway
+    // test runner native balance
     uint oldWeiBalance = $(this).balance;
 
     // increasing density on mangrove so that resting offer can no longer repost
@@ -466,7 +466,7 @@ contract MangroveOrder_Test is MangroveTest {
       takerWants: 0
     });
     assertTrue(success, "snipe failed");
-    assertEq($(this).balance, oldWeiBalance, "retract should not deprovision");
+    assertEq($(this).balance, oldWeiBalance, "retract did not deprovision");
   }
 
   function test_user_can_retract_resting_offer() public {
