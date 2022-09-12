@@ -40,7 +40,7 @@ contract AaveDeepRouter is AaveRouter {
     uint amount,
     bool strict
   ) internal virtual override returns (uint pulled) {
-    return redeemThenBorrow(token, reserve, amount, strict, maker);
+    return _redeemThenBorrow(token, reserve, amount, strict, maker);
   }
 
   function __checkList__(IERC20 token, address reserve)

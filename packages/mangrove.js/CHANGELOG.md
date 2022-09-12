@@ -185,13 +185,13 @@ This version number was inadvertently skipped.
 
 # 0.0.8
 
-- SimpleMaker constructor is called Maker
+- OfferMaker constructor is called Maker
 - `market.consoleAsk` and `market.consoleBids` now allows for pretty printing semi OB
 - `bids` and `asks` allows for optional parameters `gasreq` and `gasprice` if one wants to change their values
 
 # 0.0.5 (December 2021)
 
-- Add `bookOptions` to SimpleMaker constructor.
+- Add `bookOptions` to OfferMaker constructor.
 - Allow initializing markets&makers after construction.
 - Uncertain pivot ids when pushing an offer will throw.
   - TODO: allow giving bookOptions later

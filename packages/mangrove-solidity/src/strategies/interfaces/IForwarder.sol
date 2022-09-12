@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:	BSD-2-Clause
 
-// IOfferLogicMulti.sol
+// IForwarder.sol
 
 // Copyright (c) 2021 Giry SAS. All rights reserved.
 
@@ -12,11 +12,12 @@
 
 pragma solidity >=0.7.0;
 pragma abicoder v2;
+import { IMangrove } from "mgv_src/IMangrove.sol";
+import { IERC20 } from "mgv_src/MgvLib.sol";
 
-import "./IOfferLogic.sol";
-
-interface IOfferLogicMulti is IOfferLogic {
-  /** Multi offer specific Events */
+interface IForwarder {
+  
+  /** Forwarder logic specific Events */
   // Offer management
   event NewOwnedOffer(
     IMangrove mangrove,
@@ -51,4 +52,5 @@ interface IOfferLogicMulti is IOfferLogic {
     IERC20 inbound_tkn,
     uint offerId
   ) external view returns (address owner);
+
 }

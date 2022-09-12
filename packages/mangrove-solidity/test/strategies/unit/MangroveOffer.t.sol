@@ -2,7 +2,7 @@
 pragma solidity ^0.8.10;
 
 import "mgv_test/lib/MangroveTest.sol";
-import "mgv_src/strategies/single_user/SimpleMaker.sol";
+import "mgv_src/strategies/offer_maker/OfferMaker.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
 
 contract MangroveOfferTest is MangroveTest {
@@ -10,7 +10,7 @@ contract MangroveOfferTest is MangroveTest {
   TestToken usdc;
   address payable maker;
   address payable taker;
-  SimpleMaker makerContract;
+  OfferMaker makerContract;
 
   // tracking IOfferLogic logs
   event LogIncident(
@@ -40,9 +40,9 @@ contract MangroveOfferTest is MangroveTest {
     deal($(weth), taker, cash(weth, 50));
     deal($(usdc), taker, cash(usdc, 100_000));
 
-    vm.prank(maker);
-    makerContract = new SimpleMaker({
-      _MGV: IMangrove($(mgv)), // TODO: remove IMangrove dependency?
+    makerContract = new OfferMaker({
+      _MGV: IMangrove($(mgv)), 
+      _router: SimpleRouter(address(0)), // no router
       deployer: maker
     });
   }
@@ -54,8 +54,8 @@ contract MangroveOfferTest is MangroveTest {
   function test_DefaultGasReq() public {
     assertEq(
       makerContract.ofr_gasreq(),
-      50_000,
-      "Incorrect default gasreq for simple maker"
+      25_000,
+      "Incorrect default gasreq for offer maker"
     );
   }
 

@@ -27,20 +27,20 @@ type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 // OfferLogic.deposit(n)
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.MultiMaker;
+  contract: typechain.IMakerLogic;
   address: string;
-  isMultiMaker: boolean;
+  isForwarder: boolean;
 
   constructor(
     mgv: Mangrove,
     logic: string,
-    multiMaker: boolean,
+    isForwarder: boolean,
     signer?: SignerOrProvider
   ) {
     this.mgv = mgv;
     this.address = logic;
-    this.isMultiMaker = multiMaker;
-    this.contract = typechain.MultiMaker__factory.connect(
+    this.isForwarder = isForwarder;
+    this.contract = typechain.IMakerLogic__factory.connect(
       logic,
       signer ? signer : this.mgv._signer
     );
@@ -192,22 +192,17 @@ class OfferLogic {
   }
 
   // returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
-  connect(sOp: SignerOrProvider, isMulti: boolean): OfferLogic {
-    return new OfferLogic(this.mgv, this.contract.address, isMulti, sOp);
+  connect(sOp: SignerOrProvider, isForwarder: boolean): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.address, isForwarder, sOp);
   }
 
   /** Fund the current contract balance with ethers sent from current signer. */
+  //TODO maybe this should be removed since one should not fund mangrove like this when using a forwarder
   fundMangrove(
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    if (this.isMultiMaker) {
-      throw Error(
-        "Multi user start must be provisioned at new/update offer time"
-      );
-    } else {
-      return this.mgv.fundMangrove(amount, this.address, overrides);
-    }
+    return this.mgv.fundMangrove(amount, this.address, overrides);
   }
 
   setDefaultGasreq(

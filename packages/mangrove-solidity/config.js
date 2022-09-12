@@ -13,10 +13,11 @@ exports.abi_exports = [
   "AaveDeepRouter",
   "AaveV3Module",
   "ICreditDelegationToken",
+  "IMakerLogic"
 ];
 
 // Contracts that should export their ABI + bytecode
-exports.full_exports = ["SimpleMaker", "MultiMaker"];
+exports.full_exports = ["OfferMaker", "OfferForwarder"];
 
 // Deployment files that should be distributed, this object is a mapping
 // from broadcast directory to the dist/broadcast directory

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:	BSD-2-Clause
 
-// SingleUser.sol
+// Direct.sol
 
 // Copyright (c) 2021 Giry SAS. All rights reserved.
 
@@ -16,12 +16,11 @@ import "../../MangroveOffer.sol";
 import "mgv_src/strategies/utils/TransferLib.sol";
 
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
-abstract contract SingleUser is MangroveOffer {
+abstract contract Direct is MangroveOffer {
   constructor(
     IMangrove _mgv,
-    uint strat_gasreq,
     AbstractRouter _router
-  ) MangroveOffer(_mgv, strat_gasreq) {
+  ) MangroveOffer(_mgv) {
     // default reserve is router's address if router is defined
     // if not then default reserve is `this` contract
     if (address(_router) == address(0)) {
@@ -45,7 +44,7 @@ abstract contract SingleUser is MangroveOffer {
     address receiver,
     uint amount
   ) external override onlyAdmin returns (bool success) {
-    require(receiver != address(0), "SingleUser/withdrawToken/0xReceiver");
+    require(receiver != address(0), "Direct/withdrawToken/0xReceiver");
     if (!has_router()) {
       return TransferLib.transferToken(IERC20(token), receiver, amount);
     } else {
@@ -94,53 +93,33 @@ abstract contract SingleUser is MangroveOffer {
     }
   }
 
-  // Posting a new offer on the (`outbound_tkn,inbound_tkn`) Offer List of Mangrove.
-  // NB #1: Offer maker maker MUST:
-  // * Approve Mangrove for at least `gives` amount of `outbound_tkn`.
-  // * Make sure that `this` contract has enough WEI provision on Mangrove to cover for the new offer bounty (function is payable so that caller can increase provision prior to posting the new offer)
-  // * Make sure that `gasreq` and `gives` yield a sufficient offer density
-  // NB #2: This function will revert when the above points are not met
-  function newOffer(MakerOrder memory mko)
-    external
-    payable
-    override
-    onlyAdmin
-    returns (uint)
-  {
-    mko.offerId = MGV.newOffer{value: msg.value}(
-      address(mko.outbound_tkn),
-      address(mko.inbound_tkn),
-      mko.wants,
-      mko.gives,
-      mko.gasreq >= type(uint24).max ? ofr_gasreq() : mko.gasreq,
-      mko.gasprice,
-      mko.pivotId
-    );
-    return mko.offerId;
-  }
-
   // Updates offer `offerId` on the (`outbound_tkn,inbound_tkn`) Offer List of Mangrove.
   // NB #1: Offer maker MUST:
   // * Make sure that offer maker has enough WEI provision on Mangrove to cover for the new offer bounty in case Mangrove gasprice has increased (function is payable so that caller can increase provision prior to updating the offer)
   // * Make sure that `gasreq` and `gives` yield a sufficient offer density
   // NB #2: This function will revert when the above points are not met
-  function updateOffer(MakerOrder memory mko)
-    external
-    payable
-    override
-    onlyAdmin
+  function updateOffer(
+    IERC20 outbound_tkn,
+    IERC20 inbound_tkn,
+    uint wants,
+    uint gives,
+    uint gasreq,
+    uint gasprice,
+    uint pivotId,
+    uint offerId
+    ) external payable override onlyAdmin returns (bool)
   {
-    return
-      MGV.updateOffer{value: msg.value}(
-        address(mko.outbound_tkn),
-        address(mko.inbound_tkn),
-        mko.wants,
-        mko.gives,
-        mko.gasreq > type(uint24).max ? ofr_gasreq() : mko.gasreq,
-        mko.gasprice,
-        mko.pivotId,
-        mko.offerId
-      );
+    MGV.updateOffer{value: msg.value}(
+      address(outbound_tkn),
+      address(inbound_tkn),
+      wants,
+      gives,
+      gasreq > type(uint24).max ? ofr_gasreq() : gasreq,
+      gasprice,
+      pivotId,
+      offerId
+    );
+    return true;
   }
 
   // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove.
@@ -162,10 +141,10 @@ abstract contract SingleUser is MangroveOffer {
     if (free_wei > 0) {
       require(
         MGV.withdraw(free_wei),
-        "SingleUser/withdrawFromMgv/withdrawFail"
+        "Direct/withdrawFromMgv/withdrawFail"
       );
       (bool noRevert, ) = msg.sender.call{value: free_wei}("");
-      require(noRevert, "SingleUser/weiTransferFail");
+      require(noRevert, "Direct/weiTransferFail");
     }
   }
 
@@ -178,7 +157,7 @@ abstract contract SingleUser is MangroveOffer {
     return 0;
   }
 
-  // default `__get__` hook for `SingleUser` is to pull liquidity from immutable `reserve()`
+  // default `__get__` hook for `Direct` is to pull liquidity from immutable `reserve()`
   // letting router handle the specifics if any
   function __get__(uint amount, ML.SingleOrder calldata order)
     internal

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.14;
 
 import "mgv_test/lib/MangroveTest.sol";
-import "mgv_src/strategies/single_user/market_making/mango/Mango.sol";
+import "mgv_src/strategies/offer_maker/market_making/mango/Mango.sol";
 import "mgv_src/strategies/routers/AaveRouter.sol";
 import "mgv_test/lib/forks/Polygon.sol";
 

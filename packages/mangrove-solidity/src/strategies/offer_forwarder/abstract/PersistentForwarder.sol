@@ -1,6 +1,6 @@
 // SPDX-License-Identifier:	BSD-2-Clause
 
-// Reposting.sol
+// PersistentForwarder.sol
 
 // Copyright (c) 2021 Giry SAS. All rights reserved.
 
@@ -11,18 +11,55 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
+import "./Forwarder.sol";
 
-import "mgv_src/strategies/single_user/abstract/Persistent.sol";
-import "mgv_src/strategies/routers/SimpleRouter.sol";
+abstract contract PersistentForwarder is Forwarder {
+  constructor(
+    IMangrove _mgv,
+    AbstractRouter _router
+  ) Forwarder(_mgv, _router) {}
 
-/* Simply inherits Persistent and is deployable. No additional internal logic. */
-contract Reposting is Persistent {
-  constructor(IMangrove _MGV, address deployer)
-    Persistent(_MGV, 50_000, new SimpleRouter())
+  function __residualWants__(ML.SingleOrder calldata order)
+    internal
+    virtual
+    returns (uint)
   {
-    if (deployer != msg.sender) {
-      set_admin(deployer);
-      router().set_admin(deployer);
+    return order.offer.wants() - order.gives;
+  }
+
+  function __residualGives__(ML.SingleOrder calldata order)
+    internal
+    virtual
+    returns (uint)
+  {
+    return order.offer.gives() - order.wants;
+  }
+
+  ///@dev posthook takes care of reposting offer residual
+  ///@param order is a reminder of the taker order that was processed during `makerExecute`
+  function __posthookSuccess__(ML.SingleOrder calldata order)
+    internal
+    virtual
+    override
+    returns (bool)
+  {
+    uint new_gives = __residualGives__(order);
+    uint new_wants = __residualWants__(order);
+    if (new_gives == 0) {
+      // gas saving
+      return true;
     }
+    // if updateOffer fails offer will be retracted
+    return
+      updateOffer({
+        outbound_tkn: IERC20(order.outbound_tkn),
+        inbound_tkn: IERC20(order.inbound_tkn),
+        wants: new_wants,
+        gives: new_gives,
+        gasreq: order.offerDetail.gasreq(), // keeping the same gasreq
+        gasprice: 0, // ignored
+        pivotId: order.offer.next(), // best guess for pivotId
+        offerId: order.offerId
+      });
   }
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.10;
 
 import "mgv_test/lib/MangroveTest.sol";
-import "mgv_src/strategies/single_user/market_making/mango/Mango.sol";
+import "mgv_src/strategies/offer_maker/market_making/mango/Mango.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
 
 contract MangoTest is MangroveTest {
@@ -65,14 +65,23 @@ contract MangoTest is MangroveTest {
   /* combine all tests wince they rely on non-zero state */
   function test_all() public {
     part_deploy_strat();
+    console.log("* deploy test");
     part_market_order();
+    console.log("* market order test");
     part_negative_shift();
+    console.log("* negative shift test");
     part_positive_shift();
+    console.log("* positive shift test");
     part_partial_fill();
+    console.log("* partial fill test");
     part_text_residual_1();
+    console.log("* residual 1 test");
     part_text_residual_2();
+    console.log("* residual 2 test");
     part_kill();
+    console.log("* kill test");
     part_restart_fixed_shift();
+    console.log("* restart test");
   }
 
   function part_deploy_strat() public prank(maker) {

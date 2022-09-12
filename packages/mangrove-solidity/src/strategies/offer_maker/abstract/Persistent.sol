@@ -11,17 +11,15 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import "./SingleUser.sol";
+import "./Direct.sol";
 
 /** Strat class with specialized hooks that repost offer residual after a partial fill */
-/** (Single user variant) */
 
-abstract contract Persistent is SingleUser {
+abstract contract Persistent is Direct {
   constructor(
     IMangrove _mgv,
-    uint strat_gasreq,
     AbstractRouter _router
-  ) SingleUser(_mgv, strat_gasreq, _router) {}
+  ) Direct(_mgv, _router) {} // additional gas for reposting offers
 
   /** Persistent class specific hooks. */
 
@@ -79,7 +77,8 @@ abstract contract Persistent is SingleUser {
     {
       return true;
     } catch (bytes memory reason) {
-      // `newOffer` can fail when Mango is under provisioned or if `offer.gives` is below density
+      // `newOffer` can fail when this contract is under provisioned 
+      // or if `offer.gives` is below density
       // Log incident only if under provisioned
       if (keccak256(reason) == keccak256("mgv/insufficientProvision")) {
         emit LogIncident(
@@ -90,7 +89,7 @@ abstract contract Persistent is SingleUser {
           "Persistent/hook/outOfProvision"
         );
       }
-      return false;
+      return false; // offer not reposted
     }
   }
 }

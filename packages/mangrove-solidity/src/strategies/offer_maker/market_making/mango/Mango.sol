@@ -51,7 +51,6 @@ contract Mango is Persistent {
   )
     Persistent(
       mgv,
-      250_000, // gas cost for trade execution (w/o taking routing specific gas cost)
       new SimpleRouter() // routes liqudity from (to) reserve to (from) this contract
     )
   {
@@ -97,6 +96,9 @@ contract Mango is Persistent {
 
     // `this` deployed the router, letting admin take control over it.
     router().set_admin(deployer);
+
+    // should cover cost of reposting the offer + dual offer
+    set_gasreq(150_000);
 
     // setting admin of contract if a static address deployment was used
     if (deployer != msg.sender) {

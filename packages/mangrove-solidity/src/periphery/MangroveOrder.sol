@@ -11,17 +11,18 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import "mgv_src/strategies/multi_user/abstract/Persistent.sol";
+import "mgv_src/strategies/offer_forwarder/abstract/PersistentForwarder.sol";
 import "mgv_src/strategies/interfaces/IOrderLogic.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
 
-contract MangroveOrder is MultiUserPersistent, IOrderLogic {
+contract MangroveOrder is PersistentForwarder, IOrderLogic {
   // `blockToLive[token1][token2][offerId]` gives block number beyond which the offer should renege on trade.
   mapping(IERC20 => mapping(IERC20 => mapping(uint => uint))) public expiring;
 
   constructor(IMangrove _MGV, address deployer)
-    MultiUserPersistent(_MGV, new SimpleRouter(), 90_000)
+    PersistentForwarder(_MGV, new SimpleRouter())
   {
+    set_gasreq(90_000);
     if (deployer != msg.sender) {
       set_admin(deployer);
       router().set_admin(deployer);
@@ -116,8 +117,8 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
       // this call will credit offer owner virtual account on Mangrove with msg.value before trying to post the offer
       // `offerId_==0` if mangrove rejects the update because of low density.
       // If user does not have enough funds, call will revert
-      res.offerId = newOfferInternal({
-        mko: MakerOrder({
+      res.offerId = _newOffer(
+        NewOfferData({
           outbound_tkn: inbound_tkn,
           inbound_tkn: outbound_tkn,
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
@@ -125,11 +126,10 @@ contract MangroveOrder is MultiUserPersistent, IOrderLogic {
           gasreq: ofr_gasreq(),
           gasprice: 0,
           pivotId: 0,
-          offerId: 0 // irrelevant for new offer
-        }), // offer should be best in the book
-        owner: msg.sender,
-        provision: msg.value
-      });
+          fund: msg.value,
+          caller: msg.sender
+        })
+      );
 
       // if one wants to maintain an inverse mapping owner => offerIds
       __logOwnerShipRelation__({

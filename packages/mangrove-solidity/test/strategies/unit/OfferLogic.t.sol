@@ -3,8 +3,7 @@ pragma solidity ^0.8.10;
 
 import "mgv_test/lib/MangroveTest.sol";
 import {GenericFork} from "mgv_test/lib/forks/Generic.sol";
-
-import "mgv_src/strategies/single_user/SimpleMaker.sol";
+import "mgv_src/strategies/offer_maker/OfferMaker.sol";
 
 // unit tests for (single /\ multi) user strats (i.e unit tests that are non specific to either single or multi user feature)
 
@@ -14,8 +13,7 @@ contract OfferLogicTest is MangroveTest {
   address payable maker;
   address payable taker;
   address reserve;
-  IOfferLogic makerContract;
-  IOfferLogic.MakerOrder mko;
+  IMakerLogic makerContract;
   GenericFork fork;
 
   // tracking IOfferLogic logs
@@ -49,17 +47,6 @@ contract OfferLogicTest is MangroveTest {
       weth = base;
       usdc = quote;
     }
-    // ask 2000 USDC for 1 ETH
-    mko = IOfferLogic.MakerOrder({
-      outbound_tkn: weth,
-      inbound_tkn: usdc,
-      wants: 2000 * 10**6,
-      gives: 1 * 10**18,
-      gasreq: type(uint).max,
-      gasprice: 0,
-      pivotId: 0,
-      offerId: 0
-    });
     maker = freshAddress("maker");
     vm.deal(maker, 10 ether);
 
@@ -85,8 +72,9 @@ contract OfferLogicTest is MangroveTest {
 
   // override this to use MultiUser strats
   function setupMakerContract() internal virtual prank(maker) {
-    makerContract = new SimpleMaker({
-      _MGV: IMangrove($(mgv)), // TODO: remove IMangrove dependency?
+    makerContract = new OfferMaker({
+      _MGV: IMangrove($(mgv)),
+      _router: AbstractRouter(address(0)),
       deployer: maker
     });
   }
@@ -110,17 +98,34 @@ contract OfferLogicTest is MangroveTest {
 
   function test_MakerCanPostNewOffer() public {
     vm.prank(maker);
-    makerContract.newOffer{value: 0.1 ether}(mko);
+    uint offerId = makerContract.newOffer{value: 0.1 ether}({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
+    assertTrue(offerId != 0);
   }
 
   function test_MakerCanRetractOffer() public {
     vm.prank(maker);
-    uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
+    uint offerId = makerContract.newOffer{value: 0.1 ether}({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
     uint makerBalWei = maker.balance;
     vm.prank(maker);
     uint deprovisioned = makerContract.retractOffer(
-      mko.outbound_tkn,
-      mko.inbound_tkn,
+      weth,
+      usdc,
       offerId,
       true
     );
@@ -133,11 +138,27 @@ contract OfferLogicTest is MangroveTest {
 
   function test_MakerCanUpdateOffer() public {
     vm.prank(maker);
-    uint offerId = makerContract.newOffer{value: 0.1 ether}(mko);
-    mko.offerId = offerId;
+    uint offerId = makerContract.newOffer{value: 0.1 ether}({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
 
     vm.prank(maker);
-    makerContract.updateOffer(mko);
+    makerContract.updateOffer({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0,
+      offerId: offerId
+    });
   }
 
   function performTrade()
@@ -151,13 +172,21 @@ contract OfferLogicTest is MangroveTest {
   {
     vm.prank(maker);
     // ask 2000 USDC for 1 weth
-    makerContract.newOffer{value: 0.1 ether}(mko);
+    makerContract.newOffer{value: 0.1 ether}({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
 
     // taker has approved mangrove in the setUp
     vm.startPrank(taker);
     (takergot, takergave, bounty, fee) = mgv.marketOrder({
-      outbound_tkn: $(mko.outbound_tkn),
-      inbound_tkn: $(mko.inbound_tkn),
+      outbound_tkn: address(weth),
+      inbound_tkn: address(usdc),
       takerWants: 0.5 ether,
       takerGives: cash(usdc, 1000),
       fillWants: true
@@ -170,8 +199,8 @@ contract OfferLogicTest is MangroveTest {
     // for multi user contract `tokenBalance` returns the balance of msg.sender's reserve
     // so one needs to impersonate maker to obtain the correct balance
     vm.startPrank(maker);
-    uint balOut = makerContract.tokenBalance(mko.outbound_tkn);
-    uint balIn = makerContract.tokenBalance(mko.inbound_tkn);
+    uint balOut = makerContract.tokenBalance(weth);
+    uint balIn = makerContract.tokenBalance(usdc);
     vm.stopPrank();
 
     (uint takergot, uint takergave, uint bounty, uint fee) = performTrade();
@@ -179,12 +208,12 @@ contract OfferLogicTest is MangroveTest {
 
     vm.startPrank(maker);
     assertEq(
-      makerContract.tokenBalance(mko.outbound_tkn),
+      makerContract.tokenBalance(weth),
       balOut - (takergot + fee),
       "incorrect out balance"
     );
     assertEq(
-      makerContract.tokenBalance(mko.inbound_tkn),
+      makerContract.tokenBalance(usdc),
       balIn + takergave,
       "incorrect in balance"
     );

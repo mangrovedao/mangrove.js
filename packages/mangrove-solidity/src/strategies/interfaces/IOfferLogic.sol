@@ -12,9 +12,9 @@
 
 pragma solidity >=0.8.0;
 pragma abicoder v2;
-import "mgv_src/IMangrove.sol";
-import {IERC20} from "mgv_src/MgvLib.sol";
-import "mgv_src/strategies/routers/AbstractRouter.sol";
+import { IMangrove } from "mgv_src/IMangrove.sol";
+import { IERC20, IMaker } from "mgv_src/MgvLib.sol";
+import { AbstractRouter } from "mgv_src/strategies/routers/AbstractRouter.sol";
 
 interface IOfferLogic is IMaker {
   ///////////////////
@@ -71,7 +71,7 @@ interface IOfferLogic is IMaker {
   function checkList(IERC20[] calldata tokens) external view;
 
   ///@return balance the  `token` amount that `msg.sender` has in the contract's reserve
-  function tokenBalance(IERC20 token) external returns (uint balance);
+  function tokenBalance(IERC20 token) external view returns (uint balance);
 
   // allow this contract to act as a LP for Mangrove on `outbound_tkn`
   function approveMangrove(IERC20 outbound_tkn) external;
@@ -82,24 +82,16 @@ interface IOfferLogic is IMaker {
   // pulls available free wei from Mangrove balance to `this`
   function withdrawFromMangrove(uint amount, address payable receiver) external;
 
-  struct MakerOrder {
-    IERC20 outbound_tkn; // address of the ERC20 contract managing outbound tokens
-    IERC20 inbound_tkn; // address of the ERC20 contract managing outbound tokens
-    uint wants; // amount of `inbound_tkn` required for full delivery
-    uint gives; // max amount of `outbound_tkn` promised by the offer
-    uint gasreq; // max gas required by the offer when called. If maxUint256 is used here, default `ofr_gasreq` will be considered instead
-    uint gasprice; // gasprice that should be consider to compute the bounty (Mangrove's gasprice will be used if this value is lower)
-    uint pivotId;
-    uint offerId; // 0 if new offer order
-  }
-
-  function newOffer(MakerOrder memory mko)
-    external
-    payable
-    returns (uint offerId);
-
-  //returns 0 if updateOffer failed (for instance if offer is underprovisioned) otherwise returns `offerId`
-  function updateOffer(MakerOrder memory mko) external payable;
+  function updateOffer(
+    IERC20 outbound_tkn, // address of the ERC20 contract managing outbound tokens
+    IERC20 inbound_tkn, // address of the ERC20 contract managing outbound tokens
+    uint wants, // amount of `inbound_tkn` required for full delivery
+    uint gives, // max amount of `outbound_tkn` promised by the offer
+    uint gasreq, // max gas required by the offer when called. If maxUint256 is used here, default `ofr_gasreq` will be considered instead
+    uint gasprice, // gasprice that should be consider to compute the bounty (Mangrove's gasprice will be used if this value is lower)
+    uint pivotId,
+    uint offerId // 0 if new offer order
+  ) external payable returns (bool);
 
   function retractOffer(
     IERC20 outbound_tkn,
@@ -115,6 +107,8 @@ interface IOfferLogic is IMaker {
 
   // allow one to change the reserve holding maker's liquidity
   function set_reserve(address reserve) external;
+
+  function has_router() external view returns (bool);
 
   function router() external view returns (AbstractRouter);
 }

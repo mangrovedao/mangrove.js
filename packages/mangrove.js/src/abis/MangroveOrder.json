@@ -532,67 +532,6 @@
     {
       "inputs": [
         {
-          "components": [
-            {
-              "internalType": "contract IERC20",
-              "name": "outbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "contract IERC20",
-              "name": "inbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "wants",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gives",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasreq",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasprice",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "pivotId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "offerId",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct IOfferLogic.MakerOrder",
-          "name": "mko",
-          "type": "tuple"
-        }
-      ],
-      "name": "newOffer",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "offerId",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "contract IERC20",
           "name": "outbound_tkn",
           "type": "address"
@@ -903,55 +842,54 @@
     {
       "inputs": [
         {
-          "components": [
-            {
-              "internalType": "contract IERC20",
-              "name": "outbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "contract IERC20",
-              "name": "inbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "wants",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gives",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasreq",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasprice",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "pivotId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "offerId",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct IOfferLogic.MakerOrder",
-          "name": "mko",
-          "type": "tuple"
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "wants",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gives",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasprice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pivotId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
         }
       ],
       "name": "updateOffer",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
       "stateMutability": "payable",
       "type": "function"
     },

@@ -40,13 +40,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   // necessary function to withdraw funds from Mangrove
   receive() external payable virtual {}
 
-  constructor(IMangrove _mgv, uint strat_gasreq) AccessControlled(msg.sender) {
-    require(
-      strat_gasreq == uint24(strat_gasreq),
-      "MangroveOffer/gasreqTooHigh"
-    );
+  constructor(IMangrove _mgv) AccessControlled(msg.sender) {
     MGV = _mgv;
-    MOS.get_storage().ofr_gasreq = strat_gasreq;
   }
 
   function ofr_gasreq() public view returns (uint) {
