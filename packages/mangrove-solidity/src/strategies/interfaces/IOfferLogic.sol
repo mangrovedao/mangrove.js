@@ -16,11 +16,9 @@ import { IMangrove } from "mgv_src/IMangrove.sol";
 import { IERC20, IMaker } from "mgv_src/MgvLib.sol";
 import { AbstractRouter } from "mgv_src/strategies/routers/AbstractRouter.sol";
 
+// Basis interface for offer management.
 interface IOfferLogic is IMaker {
-  ///////////////////
-  // MangroveOffer //
-  ///////////////////
-
+  
   /** @notice Events */
 
   // Log incident (during post trade execution)

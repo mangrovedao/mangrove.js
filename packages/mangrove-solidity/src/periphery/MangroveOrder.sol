@@ -109,14 +109,13 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
     // at this points the following invariants hold:
     // 1. taker received `takerGot` outbound tokens
     // 2. `this` contract inbound token balance is now equal to `tko.gives - takerGave`.
-    // NB: this amount cannot be redeemed by taker since `creditToken` was not called
     // 3. `this` contract's WEI balance is credited of `msg.value + bounty`
 
     if (tko.restingOrder && !isComplete) {
       // resting limit order for the residual of the taker order
       // this call will credit offer owner virtual account on Mangrove with msg.value before trying to post the offer
       // `offerId_==0` if mangrove rejects the update because of low density.
-      // If user does not have enough funds, call will revert
+      // call may not revert because of insufficient funds
       res.offerId = _newOffer(
         NewOfferData({
           outbound_tkn: inbound_tkn,
@@ -124,10 +123,10 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
           gives: tko.makerGives - res.takerGave,
           gasreq: ofr_gasreq(),
-          gasprice: 0,
           pivotId: 0,
           fund: msg.value,
-          caller: msg.sender
+          caller: msg.sender,
+          noRevert: true // returns offerId == 0 when MGV reverts
         })
       );
 

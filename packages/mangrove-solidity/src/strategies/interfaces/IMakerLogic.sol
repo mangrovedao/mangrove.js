@@ -14,6 +14,7 @@ pragma solidity >=0.8.0;
 pragma abicoder v2;
 import "./IOfferLogic.sol";
 
+// Completes IOfferLogic with the ability to post new offer in a minimalistic way.
 interface IMakerLogic is IOfferLogic {
   
   function newOffer(

@@ -105,15 +105,15 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint wants;
     uint gives;
     uint gasreq;
-    uint gasprice;
     uint pivotId;
     address caller;
     uint fund;
+    bool noRevert; // whether newOffer should revert in case call to mangrove reverts
   }
 
   function _newOffer(
     NewOfferData memory offData
-  ) internal returns (uint offerId) {
+  ) internal returns (uint) {
     (P.Global.t global, P.Local.t local) = MGV.config(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn)
@@ -121,7 +121,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // convention for default gasreq value
     offData.gasreq = (offData.gasreq > type(uint24).max) ? ofr_gasreq() : offData.gasreq;
     // computing gasprice implied by offer provision
-    offData.gasprice = derive_gasprice(
+    uint gasprice = derive_gasprice(
       offData.gasreq,
       offData.fund,
       local.offer_gasbase()
@@ -131,22 +131,26 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // this would potentially take native tokens that have been released after some offer managed by this contract have failed
     // so one needs to make sure here that only provision of this call will be used to provision the offer on mangrove
     require(
-      offData.gasprice >= global.gasprice(),
+      gasprice >= global.gasprice(),
       "Forwarder/newOffer/NotEnoughProvision"
     );
 
     // this call cannot revert for lack of provision (by design)
-    offerId = MGV.newOffer{value: offData.fund}(
+    try MGV.newOffer{value: offData.fund}(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn),
       offData.wants,
       offData.gives,
       offData.gasreq,
-      offData.gasprice,
+      gasprice,
       offData.pivotId
-    );
-    //setting owner of offerId
-    addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId, offData.caller);
+    ) returns (uint offerId) {
+      addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId, offData.caller); 
+      return offerId;
+    } catch Error(string memory reason){
+      require (offData.noRevert, reason);
+      return 0;
+    }
   }
 
   struct UpdateOfferData {
