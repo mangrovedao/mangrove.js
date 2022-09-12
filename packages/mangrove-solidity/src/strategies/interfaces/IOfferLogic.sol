@@ -12,13 +12,12 @@
 
 pragma solidity >=0.8.0;
 pragma abicoder v2;
-import { IMangrove } from "mgv_src/IMangrove.sol";
-import { IERC20, IMaker } from "mgv_src/MgvLib.sol";
-import { AbstractRouter } from "mgv_src/strategies/routers/AbstractRouter.sol";
+import {IMangrove} from "mgv_src/IMangrove.sol";
+import {IERC20, IMaker} from "mgv_src/MgvLib.sol";
+import {AbstractRouter} from "mgv_src/strategies/routers/AbstractRouter.sol";
 
 // Basis interface for offer management.
 interface IOfferLogic is IMaker {
-  
   /** @notice Events */
 
   // Log incident (during post trade execution)
@@ -36,7 +35,7 @@ interface IOfferLogic is IMaker {
   event SetGasreq(uint);
 
   // Offer logic default gas required --value is used in update and new offer if maxUint is given
-  function ofr_gasreq() external returns (uint);
+  function ofr_gasreq() external view returns (uint);
 
   // returns missing provision on Mangrove, should `offerId` be reposted using `gasreq` and `gasprice` parameters
   // if `offerId` is not in the `outbound_tkn,inbound_tkn` offer list, the totality of the necessary provision is returned

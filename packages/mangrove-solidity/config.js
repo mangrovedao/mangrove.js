@@ -13,7 +13,6 @@ exports.abi_exports = [
   "AaveDeepRouter",
   "AaveV3Module",
   "ICreditDelegationToken",
-  "IMakerLogic"
 ];
 
 // Contracts that should export their ABI + bytecode

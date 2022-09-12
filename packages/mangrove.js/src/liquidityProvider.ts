@@ -186,7 +186,7 @@ class LiquidityProvider {
   }
 
   #singleUserOnly(message: string): void {
-    if (this.logic && this.logic.isMultiMaker) {
+    if (this.logic && this.logic.isForwarder) {
       throw new Error(message);
     }
   }
@@ -566,7 +566,7 @@ class LiquidityProvider {
     }
     let balance: Bigish = 0;
     if (this.logic) {
-      balance = this.logic.isMultiMaker ? 0 : await this.balanceOnMangrove();
+      balance = this.logic.isForwarder ? 0 : await this.balanceOnMangrove();
     }
     const currentOfferProvision = lockedProvision.add(balance);
     logger.debug(`Get missing provision`, {

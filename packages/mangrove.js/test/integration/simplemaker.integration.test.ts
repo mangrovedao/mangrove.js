@@ -14,14 +14,14 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
   return `<Big>${this.toString()}`; // previously just Big.prototype.toString;
 };
 
-describe("SimpleMaker", () => {
+describe("OfferMaker", () => {
   let mgv: Mangrove;
 
   afterEach(async () => {
     mgv.disconnect();
   });
 
-  describe("SimpleMaker connectivity", () => {
+  describe("OfferMaker connectivity", () => {
     it("deploys and connects", async function () {
       mgv = await Mangrove.connect({
         provider: this.server.url,
@@ -31,7 +31,7 @@ describe("SimpleMaker", () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       mgv._provider.pollingInterval = 10;
-      const mkr_address = await OfferLogic.deploy(mgv, "SimpleMaker");
+      const mkr_address = await OfferLogic.deploy(mgv);
       const logic = mgv.offerLogic(mkr_address, false);
       const lp = await logic.liquidityProvider({
         base: "TokenA",
@@ -42,7 +42,7 @@ describe("SimpleMaker", () => {
     });
   });
 
-  describe("SimpleMaker integration tests suite", () => {
+  describe("OfferMaker integration tests suite", () => {
     let onchain_lp: LiquidityProvider;
     let eoa_lp: LiquidityProvider;
 
@@ -58,7 +58,7 @@ describe("SimpleMaker", () => {
       // @ts-ignore
       mgv._provider.pollingInterval = 10;
 
-      const mkr_address = await OfferLogic.deploy(mgv, "SimpleMaker");
+      const mkr_address = await OfferLogic.deploy(mgv);
       const logic = mgv.offerLogic(mkr_address, false);
       const market = await mgv.market({
         base: "TokenA",

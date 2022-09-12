@@ -27,7 +27,7 @@ type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 // OfferLogic.deposit(n)
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.IMakerLogic;
+  contract: typechain.OfferForwarder;
   address: string;
   isForwarder: boolean;
 
@@ -40,7 +40,7 @@ class OfferLogic {
     this.mgv = mgv;
     this.address = logic;
     this.isForwarder = isForwarder;
-    this.contract = typechain.IMakerLogic__factory.connect(
+    this.contract = typechain.OfferForwarder__factory.connect(
       logic,
       signer ? signer : this.mgv._signer
     );
@@ -49,10 +49,14 @@ class OfferLogic {
    * @note Deploys a fresh MangroveOffer contract
    * @returns The new contract address
    */
-  static async deploy(mgv: Mangrove, contractName: string): Promise<string> {
-    const contract = await new typechain[`${contractName}__factory`](
+  static async deploy(mgv: Mangrove): Promise<string> {
+    const contract = await new typechain[`OfferMaker__factory`](
       mgv._signer
-    ).deploy(mgv._address, await mgv._signer.getAddress());
+    ).deploy(
+      mgv._address,
+      ethers.constants.AddressZero,
+      await mgv._signer.getAddress()
+    );
     return contract.address;
   }
 
@@ -259,7 +263,7 @@ class OfferLogic {
     const gasreq_bn = gasreq ? gasreq : ethers.constants.MaxUint256;
     const gasprice_bn = gasprice ? gasprice : 0;
     const fund: BigNumberish = overrides.value ? await overrides.value : 0;
-    if (this.isMultiMaker) {
+    if (this.isForwarder) {
       // checking transfered native tokens are enough to cover gasprice
       const provision = await this.contract.getMissingProvision(
         outbound_tkn.address,
@@ -279,16 +283,13 @@ class OfferLogic {
       }
     }
     const response = await this.contract.newOffer(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        wants: inbound_tkn.toUnits(wants),
-        gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq_bn,
-        gasprice: gasprice_bn,
-        pivotId: pivot ? pivot : 0,
-        offerId: 0,
-      },
+      outbound_tkn.address,
+      inbound_tkn.address,
+      inbound_tkn.toUnits(wants),
+      outbound_tkn.toUnits(gives),
+      gasreq_bn,
+      gasprice_bn,
+      pivot ? pivot : 0,
       overrides
     );
     return response;
@@ -306,16 +307,14 @@ class OfferLogic {
     overrides: ethers.PayableOverrides
   ): Promise<TransactionResponse> {
     return this.contract.updateOffer(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        wants: inbound_tkn.toUnits(wants),
-        gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq ? gasreq : ethers.constants.MaxUint256,
-        gasprice: gasprice ? gasprice : 0,
-        pivotId: pivot,
-        offerId: offerId,
-      },
+      outbound_tkn.address,
+      inbound_tkn.address,
+      inbound_tkn.toUnits(wants),
+      outbound_tkn.toUnits(gives),
+      gasreq ? gasreq : ethers.constants.MaxUint256,
+      gasprice ? gasprice : 0,
+      pivot,
+      offerId,
       overrides
     );
   }
