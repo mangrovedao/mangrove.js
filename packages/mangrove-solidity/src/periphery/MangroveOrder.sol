@@ -167,7 +167,7 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
       } else {
         // offer was successfully posted
         // if one wants to maintain an inverse mapping owner => offerIds
-        __logOwnerShipRelation__({
+        __logOwnershipRelation__({
           owner: msg.sender,
           outbound_tkn: inbound_tkn,
           inbound_tkn: outbound_tkn,
