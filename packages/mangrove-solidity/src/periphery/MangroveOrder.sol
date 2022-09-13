@@ -131,7 +131,7 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
       );
 
       // if one wants to maintain an inverse mapping owner => offerIds
-      __logOwnerShipRelation__({
+      __logOwnershipRelation__({
         owner: msg.sender,
         outbound_tkn: inbound_tkn,
         inbound_tkn: outbound_tkn,
@@ -230,7 +230,14 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
     }
   }
 
-  function __logOwnerShipRelation__(
+  /**
+  @notice This is invoked for each new offer created for resting orders, e.g., to maintain an inverse mapping from owner to offers.
+  @param owner the owner of the offer new offer
+  @param outbound_tkn the outbound token used to identify the offer book
+  @param inbound_tkn the inbound token used to identify the offer book
+  @param offerId the id of the new offer
+  */
+  function __logOwnershipRelation__(
     address owner,
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
