@@ -33,12 +33,12 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
     internal
     virtual
     override
-    returns (bool)
+    returns (bytes32 ret)
   {
     uint exp = expiring[IERC20(order.outbound_tkn)][IERC20(order.inbound_tkn)][
       order.offerId
     ];
-    return (exp == 0 || block.number <= exp);
+    require(exp == 0 || block.number <= exp, "mgvOrder/expired");
   }
 
   // revert when order was partially filled and it is not allowed
