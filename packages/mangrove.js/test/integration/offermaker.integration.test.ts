@@ -84,7 +84,7 @@ describe("OfferMaker", () => {
         );
 
         // test default approve amount
-        await w(onchain_lp.logic?.approveMangrove("TokenB"));
+        await w(onchain_lp.logic?.activate(["TokenB"]));
         allowanceForLogic /*:Big*/ = await onchain_lp.mangroveAllowance(
           "TokenB"
         );
