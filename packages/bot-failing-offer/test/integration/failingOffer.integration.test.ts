@@ -12,7 +12,6 @@ import { ethers } from "ethers";
 import * as mockito from "ts-mockito";
 import { FailingOffer } from "../../src/FailingOffer";
 import assert from "assert";
-const getRevertReason = require("eth-revert-reason");
 
 let deployer: mgvTestUtil.Account; // Owner of SimpleTestMaker contract
 let maker: mgvTestUtil.Account; // Owner of SimpleTestMaker contract
