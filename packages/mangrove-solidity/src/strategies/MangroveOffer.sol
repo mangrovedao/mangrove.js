@@ -17,17 +17,18 @@ import {MangroveOfferStorage as MOS} from "./MangroveOfferStorage.sol";
 import "mgv_src/strategies/interfaces/IOfferLogic.sol";
 import "mgv_src/IMangrove.sol";
 
-// Naming scheme:
-// `f() public`: can be used as is in all descendants of `this` contract
-// `_f() internal`: descendant of this contract should provide a public wrapper of this function
-// `__f__() virtual internal`: descendant of this contract may override this function to specialize the strat
+/**
+@title This contract is the basic building block for Mangrove strats. 
+@notice It contains the mandatory interface expected by Mangove (`IOfferLogic` is `IMaker`) and enforces additional functions implementations (via `IOfferLogic`).
+@dev Naming scheme:
+`f() public`: can be used, as is, in all descendants of `this` contract
+`_f() internal`: descendant of this contract should provide a public wrapper of this function
+`__f__() virtual internal`: descendant of this contract may override this function to specialize the calls to `makerExecute`
+*/
 
-/// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
 abstract contract MangroveOffer is AccessControlled, IOfferLogic {
-  // immutable does not impact storage layout
+  /** @notice Mangrove contract */
   IMangrove public immutable MGV;
-  // `this` contract entypoint is `makerExecute` or `makerPosthook` if `msg.sender == address(MGV)`
-  // `this` contract was called on an admin function iff `msg.sender = admin`
 
   modifier mgvOrAdmin() {
     require(
@@ -37,13 +38,22 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     _;
   }
 
-  // necessary function to withdraw funds from Mangrove
+  /**@notice Mandatory function to allow `this` contract to receive native tokens from Mangrove after a call to `MGV.withdraw()`*/
+  /**@dev override this function if `this` contract needs to handle local accounting of user funds.*/
   receive() external payable virtual {}
 
+  /**
+  @notice `MangroveOffer`'s constructor
+  @param _mgv The Mangrove deployment that is allowed to call `this` contract for trade execution and posthook and on which `this` contract will post offers.
+  */
   constructor(IMangrove _mgv) AccessControlled(msg.sender) {
     MGV = _mgv;
   }
 
+  /**
+  @notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated. 
+  @return total gas cost including router specific costs (if any).
+  */
   function ofr_gasreq() public view returns (uint) {
     if (has_router()) {
       return MOS.get_storage().ofr_gasreq + router().gas_overhead();
@@ -52,26 +62,29 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     }
   }
 
-  /////// Mandatory callback functions
+  /*********************************** 
+  @notice Mandatory callback functions 
+  ***********************************/
 
-  // `makerExecute` is the callback function to execute all offers that were posted on Mangrove by `this` contract.
-  // it may not be overriden although it can be customized using `__lastLook__`, `__put__` and `__get__` hooks.
-  // NB #1: When overriding the above hooks, the Offer Makers should make sure they do not revert in order if they wish to post logs in case of bad executions.
-  // NB #2: if `makerExecute` does revert, the offer will be considered to be refusing the trade.
-  // NB #3: `makerExecute` must return the empty bytes to signal to MGV it wishes to perform the trade. Any other returned byes will signal to MGV that `this` contract does not wish to proceed with the trade
-  // NB #4: Reneging on trade by either reverting or returning non empty bytes will have the following effects:
+  /**
+  @notice `makerExecute` is the callback function to execute all offers that were posted on Mangrove by `this` contract.
+  @param order a data structure that recapitulates the taker order and the offer as it was posted on mangrove
+  @return ret a bytes32 word to pass information (if needed) to the posthook
+  @dev it may not be overriden although it can be customized using `__lastLook__`, `__put__` and `__get__` hooks.
+  // NB #1: if `makerExecute` reverts, the offer will be considered to be refusing the trade.
+  // NB #2: `makerExecute` may return a `bytes32` word to pass information to posthook w/o using storage reads/writes.
+  // NB #3: Reneging on trade will have the following effects:
   // * Offer is removed from the Order Book
   // * Offer bounty will be withdrawn from offer provision and sent to the offer taker. The remaining provision will be credited to the maker account on Mangrove
+  */
+
   function makerExecute(ML.SingleOrder calldata order)
     external
     override
     onlyCaller(address(MGV))
     returns (bytes32 ret)
   {
-    if (!__lastLook__(order)) {
-      // hook to check order details and decide whether `this` contract should renege on the offer.
-      revert("mgvOffer/abort/reneged");
-    }
+    ret = __lastLook__(order);
     if (__put__(order.gives, order) > 0) {
       revert("mgvOffer/abort/putFailed");
     }
@@ -237,15 +250,13 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     returns (uint missingGet);
 
   // Override this hook to implement a last look check during Taker Order's execution.
-  // Return value should be `true` if Taker Order is acceptable.
-  // Returning `false` will cause `MakerExecute` to return the "RENEGED" bytes, which are interpreted by MGV as a signal that `this` contract wishes to cancel the trade
+  // __lastLook__ should revert if trade is to be reneged on.
   function __lastLook__(ML.SingleOrder calldata order)
     internal
     virtual
-    returns (bool proceed)
+    returns (bytes32)
   {
     order; //shh
-    proceed = true;
   }
 
   //utils
