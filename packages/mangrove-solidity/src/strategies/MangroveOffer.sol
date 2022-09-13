@@ -94,9 +94,14 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return ret;
   }
 
-  // `makerPosthook` is the callback function that is called by Mangrove *after* the offer execution.
-  // It may not be overriden although it can be customized via the post-hooks `__posthookSuccess__` and `__posthookFallback__` (see below).
-  // Offer Maker SHOULD make sure the overriden posthooks do not revert in order to be able to post logs in case of bad executions.
+  /**
+  @notice `makerPosthook` is the callback function that is called by Mangrove *after* the offer execution.
+  @param order a data structure that recapitulates the taker order and the offer as it was posted on mangrove
+  @param result a data structure that gathers information about trade execution
+  @dev It may not be overriden although it can be customized via the post-hooks `__posthookSuccess__` and `__posthookFallback__` (see below).
+  NB: If `makerPosthook` reverts, mangrove will log the first 32 bytes of the revert reason in the `PosthookFail` log. 
+  NB: Reverting posthook does not revert trade execution.
+  */
   function makerPosthook(
     ML.SingleOrder calldata order,
     ML.OrderResult calldata result
@@ -116,30 +121,28 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     }
   }
 
-  // sets default gasreq for `new/updateOffer`
+  /**
+  @notice sets `this` contract's default gasreq for `new/updateOffer`.
+  @param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs. 
+  @dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofr_gasreq()`
+  */
   function set_gasreq(uint gasreq) public override mgvOrAdmin {
     require(uint24(gasreq) == gasreq, "mgvOffer/gasreq/overflow");
     MOS.get_storage().ofr_gasreq = gasreq;
     emit SetGasreq(gasreq);
   }
 
-  /** Sets the account from which base (resp. quote) tokens need to be fetched or put during trade execution*/
-  /** */
-  /** NB Router might need further approval to work as intended*/
-  /** `this` contract must be admin of router to do this */
-  function set_router(AbstractRouter router_) public override mgvOrAdmin {
-    require(address(router_) != address(0), "mgvOffer/set_router/0xRouter");
+  /** 
+  @notice sets a new router to pull outbound tokens from contract's reserve to `this` and push inbound tokens to reserve. 
+  @param router_ the new router contract that this contract should use. Use `AbstractRouter(address(0))` for no router.
+  @dev new router needs to be approved by `this` contract to push funds to reserve (see `activate` function). It also needs to be approved by reserve to pull from it.
+  */
+  function set_router(AbstractRouter router_) external override onlyAdmin {
     MOS.get_storage().router = router_;
-    router_.bind(address(this));
+    if (address(router_) != address(0)) {
+      router_.bind(address(this));
+    }
     emit SetRouter(router_);
-  }
-
-  // maker contract need to approve router for reserve push and pull
-  function approveRouter(IERC20 token) public {
-    require(
-      token.approve(address(router()), type(uint).max),
-      "mgvOffer/approveRouter/Fail"
-    );
   }
 
   function has_router() public view returns (bool) {
@@ -184,7 +187,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     approveMangrove(token);
     if (has_router()) {
       // allowing router to pull `token` from this contract (for the `push` function of the router)
-      approveRouter(token);
+      require(
+        token.approve(address(router()), type(uint).max),
+        "mgvOffer/activate/approveRouterFail"
+      );
       // letting router performs additional necessary approvals (if any)
       router().activate(token);
     }
