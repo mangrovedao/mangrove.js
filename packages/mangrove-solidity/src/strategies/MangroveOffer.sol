@@ -17,18 +17,16 @@ import {MangroveOfferStorage as MOS} from "./MangroveOfferStorage.sol";
 import "mgv_src/strategies/interfaces/IOfferLogic.sol";
 import "mgv_src/IMangrove.sol";
 
-/**
-@title This contract is the basic building block for Mangrove strats. 
-@notice It contains the mandatory interface expected by Mangove (`IOfferLogic` is `IMaker`) and enforces additional functions implementations (via `IOfferLogic`).
-@dev Naming scheme:
-`f() public`: can be used, as is, in all descendants of `this` contract
-`_f() internal`: descendant of this contract should provide a public wrapper of this function
-`__f__() virtual internal`: descendant of this contract may override this function to specialize the calls to `makerExecute`
-*/
+/// @title This contract is the basic building block for Mangrove strats.
+/// @notice It contains the mandatory interface expected by Mangove (`IOfferLogic` is `IMaker`) and enforces additional functions implementations (via `IOfferLogic`).
+/// @dev Naming scheme:
+/// `f() public`: can be used, as is, in all descendants of `this` contract
+/// `_f() internal`: descendant of this contract should provide a public wrapper of this function
+/// `__f__() virtual internal`: descendant of this contract may override this function to specialize the calls to `makerExecute`
 
 abstract contract MangroveOffer is AccessControlled, IOfferLogic {
-  /** @notice Mangrove contract */
   IMangrove public immutable MGV;
+  AbstractRouter public constant NO_ROUTER = AbstractRouter(address(0));
 
   modifier mgvOrAdmin() {
     require(
@@ -38,8 +36,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     _;
   }
 
-  /**@notice Mandatory function to allow `this` contract to receive native tokens from Mangrove after a call to `MGV.withdraw()`*/
-  /**@dev override this function if `this` contract needs to handle local accounting of user funds.*/
+  ///@notice Mandatory function to allow `this` contract to receive native tokens from Mangrove after a call to `MGV.withdraw()`
+  ///@dev override this function if `this` contract needs to handle local accounting of user funds.
   receive() external payable virtual {}
 
   /**
@@ -50,34 +48,30 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     MGV = mgv;
   }
 
-  /**
-  @notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated. 
-  @return total gas cost including router specific costs (if any).
-  */
+  ///@notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated.
+  ///@return total gas cost including router specific costs (if any).
   function ofr_gasreq() public view returns (uint) {
-    if (has_router()) {
-      return MOS.get_storage().ofr_gasreq + router().gas_overhead();
+    AbstractRouter router_ = router();
+    if (router_ != NO_ROUTER) {
+      return MOS.get_storage().ofr_gasreq + router_.gas_overhead();
     } else {
       return MOS.get_storage().ofr_gasreq;
     }
   }
 
-  /*********************************** 
-  @notice Mandatory callback functions 
-  ***********************************/
+  ///*****************************
+  /// Mandatory callback functions
+  ///*****************************
 
-  /**
-  @notice `makerExecute` is the callback function to execute all offers that were posted on Mangrove by `this` contract.
-  @param order a data structure that recapitulates the taker order and the offer as it was posted on mangrove
-  @return ret a bytes32 word to pass information (if needed) to the posthook
-  @dev it may not be overriden although it can be customized using `__lastLook__`, `__put__` and `__get__` hooks.
-  // NB #1: if `makerExecute` reverts, the offer will be considered to be refusing the trade.
-  // NB #2: `makerExecute` may return a `bytes32` word to pass information to posthook w/o using storage reads/writes.
-  // NB #3: Reneging on trade will have the following effects:
-  // * Offer is removed from the Order Book
-  // * Offer bounty will be withdrawn from offer provision and sent to the offer taker. The remaining provision will be credited to the maker account on Mangrove
-  */
-
+  ///@notice `makerExecute` is the callback function to execute all offers that were posted on Mangrove by `this` contract.
+  ///@param order a data structure that recapitulates the taker order and the offer as it was posted on mangrove
+  ///@return ret a bytes32 word to pass information (if needed) to the posthook
+  ///@dev it may not be overriden although it can be customized using `__lastLook__`, `__put__` and `__get__` hooks.
+  /// NB #1: if `makerExecute` reverts, the offer will be considered to be refusing the trade.
+  /// NB #2: `makerExecute` may return a `bytes32` word to pass information to posthook w/o using storage reads/writes.
+  /// NB #3: Reneging on trade will have the following effects:
+  /// * Offer is removed from the Order Book
+  /// * Offer bounty will be withdrawn from offer provision and sent to the offer taker. The remaining provision will be credited to the maker account on Mangrove
   function makerExecute(ML.SingleOrder calldata order)
     external
     override
@@ -94,14 +88,12 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return ret;
   }
 
-  /**
-  @notice `makerPosthook` is the callback function that is called by Mangrove *after* the offer execution.
-  @param order a data structure that recapitulates the taker order and the offer as it was posted on mangrove
-  @param result a data structure that gathers information about trade execution
-  @dev It may not be overriden although it can be customized via the post-hooks `__posthookSuccess__` and `__posthookFallback__` (see below).
-  NB: If `makerPosthook` reverts, mangrove will log the first 32 bytes of the revert reason in the `PosthookFail` log. 
-  NB: Reverting posthook does not revert trade execution.
-  */
+  /// @notice `makerPosthook` is the callback function that is called by Mangrove *after* the offer execution.
+  /// @param order a data structure that recapitulates the taker order and the offer as it was posted on mangrove
+  /// @param result a data structure that gathers information about trade execution
+  /// @dev It may not be overriden although it can be customized via the post-hooks `__posthookSuccess__` and `__posthookFallback__` (see below).
+  /// NB: If `makerPosthook` reverts, mangrove will log the first 32 bytes of the revert reason in the `PosthookFail` log.
+  /// NB: Reverting posthook does not revert trade execution
   function makerPosthook(
     ML.SingleOrder calldata order,
     ML.OrderResult calldata result
@@ -121,23 +113,19 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     }
   }
 
-  /**
-  @notice sets `this` contract's default gasreq for `new/updateOffer`.
-  @param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs. 
-  @dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofr_gasreq()`
-  */
-  function set_gasreq(uint gasreq) public override mgvOrAdmin {
+  /// @notice sets `this` contract's default gasreq for `new/updateOffer`.
+  /// @param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs.
+  /// @dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofr_gasreq()`
+  function set_gasreq(uint gasreq) public override onlyAdmin {
     require(uint24(gasreq) == gasreq, "mgvOffer/gasreq/overflow");
     MOS.get_storage().ofr_gasreq = gasreq;
     emit SetGasreq(gasreq);
   }
 
-  /** 
-  @notice sets a new router to pull outbound tokens from contract's reserve to `this` and push inbound tokens to reserve. 
-  @param router_ the new router contract that this contract should use. Use `AbstractRouter(address(0))` for no router.
-  @dev new router needs to be approved by `this` contract to push funds to reserve (see `activate` function). It also needs to be approved by reserve to pull from it.
-  */
-  function set_router(AbstractRouter router_) external override onlyAdmin {
+  /// @notice sets a new router to pull outbound tokens from contract's reserve to `this` and push inbound tokens to reserve.
+  /// @param router_ the new router contract that this contract should use. Use `NO_ROUTER` for no router.
+  /// @dev new router needs to be approved by `this` contract to push funds to reserve (see `activate` function). It also needs to be approved by reserve to pull from it.
+  function set_router(AbstractRouter router_) public override onlyAdmin {
     MOS.get_storage().router = router_;
     if (address(router_) != address(0)) {
       router_.bind(address(this));
@@ -145,70 +133,51 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     emit SetRouter(router_);
   }
 
-  function has_router() public view returns (bool) {
-    return address(MOS.get_storage().router) != address(0);
-  }
-
+  /// @notice Contract's router getter.
+  /// @dev contract has a router if `this.router() != this.NO_ROUTER()`
   function router() public view returns (AbstractRouter) {
-    AbstractRouter router_ = MOS.get_storage().router;
-    require(address(router_) != address(0), "mgvOffer/0xRouter");
-    return router_;
+    return MOS.get_storage().router;
   }
 
+  /// @notice getter of the address where a maker using this contract is storing its liquidity
+  /// @dev if `this` contract is not acting of behalf of some user, `_reserve(address(this))` must be defined at all time.
   function _reserve(address maker) internal view returns (address) {
     return MOS.get_storage().reserves[maker];
   }
 
+  /// @notice sets reserve of a particular maker this contract is acting for.
+  /// @dev use `_set_reserve(address(this))` to set the reserve of `this` contract when it is not acting on behalf of a user.
   function _set_reserve(address maker, address __reserve) internal {
     require(__reserve != address(0), "SingleUser/0xReserve");
     MOS.get_storage().reserves[maker] = __reserve;
   }
 
-  /// `this` contract needs to approve Mangrove to let it perform outbound token transfer at the end of the `makerExecute` function
-  /// NB if anyone can call this function someone could reset it to 0 for griefing
-  function approveMangrove(IERC20 outbound_tkn) public {
-    require(
-      outbound_tkn.approve(address(MGV), type(uint).max),
-      "mgvOffer/approveMangrove/Fail"
-    );
-  }
-
-  ///@notice gas efficient external call to activate several tokens in a single transaction
-  function activate(IERC20[] calldata tokens) external override onlyAdmin {
+  /// @notice allows `this` contract to be a liquidity provider for a particular asset by performing the necessary approvals
+  /// @param tokens the ERC20 `this` contract will approve to be able to trade on Mangrove's corresponding markets.
+  function activate(IERC20[] calldata tokens) public override onlyAdmin {
     for (uint i = 0; i < tokens.length; i++) {
+      // any strat requires `this` contract to approve Mangrove for pulling funds at the end of `makerExecute`
       __activate__(tokens[i]);
-    }
-  }
-
-  ///@notice allows this contract to be a liquidity provider for a particular asset by performing the necessary approvals
-  ///@param token the ERC20 one wishes this contract to be a provider of
-  function __activate__(IERC20 token) internal virtual {
-    // approves Mangrove for pulling funds at the end of `makerExecute`
-    approveMangrove(token);
-    if (has_router()) {
-      // allowing router to pull `token` from this contract (for the `push` function of the router)
-      require(
-        token.approve(address(router()), type(uint).max),
-        "mgvOffer/activate/approveRouterFail"
-      );
-      // letting router performs additional necessary approvals (if any)
-      router().activate(token);
     }
   }
 
   ///@notice verifies that this contract's current state is ready to be used by msg.sender to post offers on Mangrove
   ///@dev throws with a reason when there is a missing approval
   function checkList(IERC20[] calldata tokens) external view override {
+    AbstractRouter router_ = router();
     for (uint i = 0; i < tokens.length; i++) {
+      require(
+        tokens[i].allowance(address(this), address(MGV)) > 0,
+        "MangroveOffer/LogicMustApproveMangrove"
+      );
+      if (router_ != NO_ROUTER) {
+        require(
+          tokens[i].allowance(address(this), address(router_)) > 0,
+          "MangroveOffer/LogicMustApproveRouter"
+        );
+      }
       __checkList__(tokens[i]);
     }
-  }
-
-  function __checkList__(IERC20 token) internal view virtual {
-    require(
-      token.allowance(address(this), address(MGV)) > 0,
-      "MangroveOffer/AdminMustApproveMangrove"
-    );
   }
 
   ///@notice withdraws ETH from the provision account on Mangrove and sends collected WEIs to `receiver`
@@ -231,7 +200,30 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     require(noRevert, "mgvOffer/withdrawFromMgv/payableCallFail");
   }
 
-  ////// Default Customizable hooks for Taker Order'execution
+  ///Default Customizable hooks for Taker Order'execution
+
+  ///@notice strat-specific additional activation steps (override if needed).
+  ///@param token the ERC20 one wishes this contract to trade on.
+  function __activate__(IERC20 token) internal virtual {
+    AbstractRouter router_ = router();
+    require(
+      token.approve(address(MGV), type(uint).max),
+      "mgvOffer/approveMangrove/Fail"
+    );
+    if (router_ != NO_ROUTER) {
+      // allowing router to pull `token` from this contract (for the `push` function of the router)
+      require(
+        token.approve(address(router_), type(uint).max),
+        "mgvOffer/activate/approveRouterFail"
+      );
+      // letting router performs additional necessary approvals (if any)
+      router_.activate(token);
+    }
+  }
+
+  function __checkList__(IERC20 token) internal view virtual {
+    token; //ssh
+  }
 
   // Define this hook to describe where the inbound token, which are brought by the Offer Taker, should go during Taker Order's execution.
   // Usage of this hook is the following:
@@ -263,6 +255,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     returns (bytes32)
   {
     order; //shh
+    return "";
   }
 
   //utils
