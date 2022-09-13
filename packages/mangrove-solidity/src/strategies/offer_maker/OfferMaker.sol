@@ -18,8 +18,8 @@ import "mgv_src/strategies/interfaces/IMakerLogic.sol";
 
 contract OfferMaker is IMakerLogic, Persistent {
 
-  constructor(IMangrove _MGV, AbstractRouter _router, address deployer)
-    Persistent(_MGV, _router) 
+  constructor(IMangrove mgv, AbstractRouter _router, address deployer)
+    Persistent(mgv, _router) 
   {
     set_gasreq(25_000);
     // stores total gas requirement of this strat (depends on router gas requirements)

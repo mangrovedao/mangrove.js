@@ -29,9 +29,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     internal ownerData;
 
   constructor(
-    IMangrove _mgv,
+    IMangrove mgv,
     AbstractRouter _router
-  ) MangroveOffer(_mgv) { // additional gas required for reading `ownerData` at each trade
+  ) MangroveOffer(mgv) { // additional gas required for reading `ownerData` at each trade
     // define `_router` as the liquidity router for `this` and declare that `this` is allowed to call router.
     // NB router also needs to be approved for outbound/inbound token transfers by each user of this contract.
     set_router(_router);

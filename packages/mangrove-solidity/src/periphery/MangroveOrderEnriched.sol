@@ -18,7 +18,7 @@ contract MangroveOrderEnriched is MangroveOrder {
   // `next[out_tkn][in_tkn][owner][id] = id'` with `next[out_tkn][in_tkn][owner][0]==0` iff owner has now offers on the semi book (out,in)
   mapping(IERC20 => mapping(IERC20 => mapping(address => mapping(uint => uint)))) next;
 
-  constructor(IMangrove _MGV, address deployer) MangroveOrder(_MGV, deployer) {}
+  constructor(IMangrove mgv, address deployer) MangroveOrder(mgv, deployer) {}
 
   function __logOwnerShipRelation__(
     address owner,

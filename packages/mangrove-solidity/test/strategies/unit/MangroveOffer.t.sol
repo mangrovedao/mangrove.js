@@ -41,7 +41,7 @@ contract MangroveOfferTest is MangroveTest {
     deal($(usdc), taker, cash(usdc, 100_000));
 
     makerContract = new OfferMaker({
-      _MGV: IMangrove($(mgv)), 
+      mgv: IMangrove($(mgv)), 
       _router: SimpleRouter(address(0)), // no router
       deployer: maker
     });

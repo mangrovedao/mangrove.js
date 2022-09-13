@@ -8,7 +8,7 @@ import "mgv_src/strategies/offer_forwarder/OfferForwarder.sol";
 contract OfferForwarderTest is OfferLogicTest {
   function setupMakerContract() internal virtual override prank(maker) {
     makerContract = new OfferForwarder({
-      _MGV: IMangrove($(mgv)),  
+      mgv: IMangrove($(mgv)),  
       deployer: maker
     });
     // reserve (which is maker here) approves contract's router

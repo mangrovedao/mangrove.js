@@ -22,8 +22,8 @@ abstract contract Ghost is OfferMaker {
     uint offerId2; // id of the offer on stable 2 
     
 
-    constructor(IMangrove _mgv, IERC20 stable1, IERC20 stable2) 
-    OfferMaker(_mgv, new SimpleRouter(), msg.sender) {
+    constructor(IMangrove mgv, IERC20 stable1, IERC20 stable2) 
+    OfferMaker(mgv, new SimpleRouter(), msg.sender) {
         STABLE1 = stable1;
         STABLE2 = stable2;
     }

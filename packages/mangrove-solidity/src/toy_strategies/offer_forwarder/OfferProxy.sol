@@ -17,11 +17,11 @@ import "mgv_src/strategies/routers/AaveDeepRouter.sol";
 contract OfferProxy is OfferForwarder {
   constructor(
     address _addressesProvider,
-    IMangrove _MGV,
+    IMangrove mgv,
     address deployer
   )
     OfferForwarder(
-      _MGV,
+      mgv,
       msg.sender
     )
   {

@@ -17,9 +17,9 @@ import "./Direct.sol";
 
 abstract contract Persistent is Direct {
   constructor(
-    IMangrove _mgv,
+    IMangrove mgv,
     AbstractRouter _router
-  ) Direct(_mgv, _router) {} // additional gas for reposting offers
+  ) Direct(mgv, _router) {} // additional gas for reposting offers
 
   /** Persistent class specific hooks. */
 

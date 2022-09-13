@@ -18,9 +18,9 @@ import "mgv_src/strategies/utils/TransferLib.sol";
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
 abstract contract Direct is MangroveOffer {
   constructor(
-    IMangrove _mgv,
+    IMangrove mgv,
     AbstractRouter _router
-  ) MangroveOffer(_mgv) {
+  ) MangroveOffer(mgv) {
     // default reserve is router's address if router is defined
     // if not then default reserve is `this` contract
     if (address(_router) == address(0)) {

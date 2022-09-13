@@ -16,8 +16,8 @@ import "mgv_src/strategies/interfaces/IMakerLogic.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
 
 contract OfferForwarder is IMakerLogic, PersistentForwarder {
-  constructor(IMangrove _MGV, address deployer)
-    PersistentForwarder(_MGV, new SimpleRouter())
+  constructor(IMangrove mgv, address deployer)
+    PersistentForwarder(mgv, new SimpleRouter())
   {
     set_gasreq(50_000);
     if (deployer != msg.sender) {

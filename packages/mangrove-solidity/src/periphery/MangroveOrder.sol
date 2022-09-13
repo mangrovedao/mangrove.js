@@ -19,8 +19,8 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
   // `blockToLive[token1][token2][offerId]` gives block number beyond which the offer should renege on trade.
   mapping(IERC20 => mapping(IERC20 => mapping(uint => uint))) public expiring;
 
-  constructor(IMangrove _MGV, address deployer)
-    PersistentForwarder(_MGV, new SimpleRouter())
+  constructor(IMangrove mgv, address deployer)
+    PersistentForwarder(mgv, new SimpleRouter())
   {
     set_gasreq(90_000);
     if (deployer != msg.sender) {

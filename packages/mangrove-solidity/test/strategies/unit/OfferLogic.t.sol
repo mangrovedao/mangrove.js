@@ -73,7 +73,7 @@ contract OfferLogicTest is MangroveTest {
   // override this to use MultiUser strats
   function setupMakerContract() internal virtual prank(maker) {
     makerContract = new OfferMaker({
-      _MGV: IMangrove($(mgv)),
+      mgv: IMangrove($(mgv)),
       _router: AbstractRouter(address(0)),
       deployer: maker
     });

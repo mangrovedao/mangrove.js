@@ -48,10 +48,10 @@ interface MangroveLike {
 }
 
 contract MgvReader {
-  MangroveLike immutable mgv;
+  MangroveLike immutable MGV;
 
-  constructor(address _mgv) {
-    mgv = MangroveLike(payable(_mgv));
+  constructor(address mgv) {
+    MGV = MangroveLike(payable(mgv));
   }
 
   /*
@@ -71,9 +71,9 @@ contract MgvReader {
   ) public view returns (uint startId, uint length) {
     unchecked {
       if (fromId == 0) {
-        startId = mgv.best(outbound_tkn, inbound_tkn);
+        startId = MGV.best(outbound_tkn, inbound_tkn);
       } else {
-        startId = mgv.offers(outbound_tkn, inbound_tkn, fromId).gives() > 0
+        startId = MGV.offers(outbound_tkn, inbound_tkn, fromId).gives() > 0
           ? fromId
           : 0;
       }
@@ -81,7 +81,7 @@ contract MgvReader {
       uint currentId = startId;
 
       while (currentId != 0 && length < maxOffers) {
-        currentId = mgv.offers(outbound_tkn, inbound_tkn, currentId).next();
+        currentId = MGV.offers(outbound_tkn, inbound_tkn, currentId).next();
         length = length + 1;
       }
 
@@ -121,8 +121,8 @@ contract MgvReader {
 
       while (currentId != 0 && i < length) {
         offerIds[i] = currentId;
-        offers[i] = mgv.offers(outbound_tkn, inbound_tkn, currentId);
-        details[i] = mgv.offerDetails(outbound_tkn, inbound_tkn, currentId);
+        offers[i] = MGV.offers(outbound_tkn, inbound_tkn, currentId);
+        details[i] = MGV.offerDetails(outbound_tkn, inbound_tkn, currentId);
         currentId = offers[i].next();
         i = i + 1;
       }
@@ -162,7 +162,7 @@ contract MgvReader {
       uint i = 0;
       while (currentId != 0 && i < length) {
         offerIds[i] = currentId;
-        (offers[i], details[i]) = mgv.offerInfo(
+        (offers[i], details[i]) = MGV.offerInfo(
           outbound_tkn,
           inbound_tkn,
           currentId
@@ -182,7 +182,7 @@ contract MgvReader {
     uint ofr_gasprice
   ) external view returns (uint) {
     unchecked {
-      (P.Global.t global, P.Local.t local) = mgv.config(
+      (P.Global.t global, P.Local.t local) = MGV.config(
         outbound_tkn,
         inbound_tkn
       );

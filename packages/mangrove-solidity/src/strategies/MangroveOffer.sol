@@ -40,8 +40,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   // necessary function to withdraw funds from Mangrove
   receive() external payable virtual {}
 
-  constructor(IMangrove _mgv) AccessControlled(msg.sender) {
-    MGV = _mgv;
+  constructor(IMangrove mgv) AccessControlled(msg.sender) {
+    MGV = mgv;
   }
 
   function ofr_gasreq() public view returns (uint) {
