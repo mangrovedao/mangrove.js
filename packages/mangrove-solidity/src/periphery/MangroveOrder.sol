@@ -33,12 +33,13 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
     internal
     virtual
     override
-    returns (bytes32 ret)
+    returns (bytes32)
   {
     uint exp = expiring[IERC20(order.outbound_tkn)][IERC20(order.inbound_tkn)][
       order.offerId
     ];
     require(exp == 0 || block.number <= exp, "mgvOrder/expired");
+    return "";
   }
 
   // revert when order was partially filled and it is not allowed
@@ -126,17 +127,9 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
           pivotId: 0,
           fund: msg.value,
           caller: msg.sender,
-          noRevert: true // returns offerId == 0 when MGV reverts
+          noRevert: true // returns 0 when MGV reverts
         })
       );
-
-      // if one wants to maintain an inverse mapping owner => offerIds
-      __logOwnershipRelation__({
-        owner: msg.sender,
-        outbound_tkn: inbound_tkn,
-        inbound_tkn: outbound_tkn,
-        offerId: res.offerId
-      });
 
       emit OrderSummary({
         mangrove: MGV,
@@ -173,6 +166,13 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
         return res;
       } else {
         // offer was successfully posted
+        // if one wants to maintain an inverse mapping owner => offerIds
+        __logOwnerShipRelation__({
+          owner: msg.sender,
+          outbound_tkn: inbound_tkn,
+          inbound_tkn: outbound_tkn,
+          offerId: res.offerId
+        });
         // crediting caller's balance with amount of offered tokens (transfered from caller at the begining of this function)
         // NB `inbount_tkn` is now the outbound token for the resting order
         router().push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
