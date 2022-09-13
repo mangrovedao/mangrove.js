@@ -231,7 +231,7 @@ contract AddressSet {
   function bytes32ArrayToStringArray(bytes32[] memory bs) internal pure returns (string[] memory) {
     string[] memory ss = new string[](bs.length);
     for (uint i = 0; i < bs.length; i++) { 
-      ss[i] = string(bytes.concat(bs[i])); 
+      ss[i] = string.concat(bs[i]); 
     }
     return ss;
   }
