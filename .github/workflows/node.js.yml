@@ -551,9 +551,118 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job mangrove-js-doc ====
 
+  # ==== Job: Build and test bot-utils ====
+  bot-utils:
+    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js]
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/bot-utils
+
+    defaults:
+      run:
+        working-directory: ${{env.working-directory}}
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v3
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
+        
+    # == download and unzip artefacts ==
+    - name: Download cached mangrove-solidity artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: mangrove-solidity-out.zip
+
+    - name: Unzip mangrove-solidity artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-solidity-out.zip
+
+    - name: Download cached mangrove-js artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: mangrove-js-out.zip
+
+    - name: Unzip mangrove-js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-js-out.zip
+
+    - name: Download cached commonlib.js artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: commonlib-out.zip
+
+    - name: Unzip commonlib.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq commonlib-out.zip
+
+    # == build ==
+
+    - name: Bot Utils - Build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "bot_utils_built=true" >> $GITHUB_ENV    
+
+     # == run and report tests == 
+    - name: Bot Utils - Tests
+      run: yarn run test:coverage
+
+    - name: Bot Utils - Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.bot_utils_built && (success() || failure()) }}
+      with:
+        name: Bot Utils - Tests                   # Name of the check run which will be created
+        path: packages/bot-utils/coverage-tests-report.json # Path to test results
+        reporter: mocha-json                               # Format of test results
+
+    - name: Report Failure to Slack
+      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
+      uses: ravsamhq/notify-slack-action@v1
+      with:
+        status: ${{ job.status }}
+        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
+        footer: '<{run_url}|View Run>'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+  # ==== End job: bot-utils ====        
+
   # ==== Job: Build and test bot-cleaning ====
   bot-cleaning:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -662,7 +771,7 @@ jobs:
 
   # ==== Job: Build and test bot-updategas ====
   bot-updategas:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -771,7 +880,7 @@ jobs:
           
   # ==== Job: Build and test bot-maker-noise ====
   bot-maker-noise:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -880,7 +989,7 @@ jobs:
           
   # ==== Job: Build and test bot-taker-greedy ====
   bot-taker-greedy:
-    needs: [security-guard, commonlib-js, mangrove-solidity,  mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity,  mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -989,7 +1098,7 @@ jobs:
 
   # ==== Job: Build and test bot-template ====
   bot-template:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
