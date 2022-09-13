@@ -59,8 +59,8 @@ interface MangroveLike {
 contract MgvCleaner {
   MangroveLike immutable MGV;
 
-  constructor(address _MGV) {
-    MGV = MangroveLike(_MGV);
+  constructor(address mgv) {
+    MGV = MangroveLike(mgv);
   }
 
   receive() external payable {}

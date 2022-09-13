@@ -44,10 +44,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
 
   /**
   @notice `MangroveOffer`'s constructor
-  @param _mgv The Mangrove deployment that is allowed to call `this` contract for trade execution and posthook and on which `this` contract will post offers.
+  @param mgv The Mangrove deployment that is allowed to call `this` contract for trade execution and posthook and on which `this` contract will post offers.
   */
-  constructor(IMangrove _mgv) AccessControlled(msg.sender) {
-    MGV = _mgv;
+  constructor(IMangrove mgv) AccessControlled(msg.sender) {
+    MGV = mgv;
   }
 
   /**

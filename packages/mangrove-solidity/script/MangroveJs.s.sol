@@ -100,7 +100,7 @@ contract MangroveJsDeploy is Deployer {
     ens.set("SimpleTestMaker", address(simpleTestMaker));
 
     vm.broadcast();
-    mgo = new MangroveOrder({_MGV: IMangrove(payable(mgv)), deployer: chief});
+    mgo = new MangroveOrder({mgv: IMangrove(payable(mgv)), deployer: chief});
     ens.set("MangroveOrder", address(mgo));
   }
 }

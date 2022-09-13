@@ -29,7 +29,7 @@ contract MakerPermissionTest is MangroveTest {
     maker = freshAddress("maker");
     deal(maker, 1 ether);
     makerContract = new OfferMaker({
-      _MGV: IMangrove($(mgv)),
+      mgv: IMangrove($(mgv)),
       _router: AbstractRouter(address(0)),
       deployer: maker
     });

@@ -15,9 +15,9 @@ import "./Forwarder.sol";
 
 abstract contract PersistentForwarder is Forwarder {
   constructor(
-    IMangrove _mgv,
+    IMangrove mgv,
     AbstractRouter _router
-  ) Forwarder(_mgv, _router) {}
+  ) Forwarder(mgv, _router) {}
 
   function __residualWants__(ML.SingleOrder calldata order)
     internal

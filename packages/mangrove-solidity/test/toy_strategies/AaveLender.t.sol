@@ -70,7 +70,7 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
 
   function deployStrat() public {
     strat = new AdvancedAaveRetail({
-      _mgv: IMangrove($(mgv)),
+      mgv: IMangrove($(mgv)),
       _addressesProvider: fork.AAVE(),
       deployer: $(this)
     });

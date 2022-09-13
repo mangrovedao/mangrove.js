@@ -16,8 +16,8 @@ import "mgv_src/strategies/routers/AaveRouter.sol";
 
 contract SimpleAaveRetail is OfferMaker {
   constructor(
-    IMangrove _mgv,
+    IMangrove mgv,
     address _addressesProvider,
     address deployer
-  ) OfferMaker(_mgv, new AaveRouter(_addressesProvider, 0, 2), deployer) {}
+  ) OfferMaker(mgv, new AaveRouter(_addressesProvider, 0, 2), deployer) {}
 }
