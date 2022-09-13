@@ -72,27 +72,12 @@ class OfferLogic {
   }
 
   /**
-   *
-   * @note Approve Mangrove to spend tokens on the contract's behalf.
-   * @dev Contract admin only. This has to be performed for each outbound token the contract might send to takers.
-   */
-  approveMangrove(
-    tokenName: string,
-    overrides: ethers.Overrides = {}
-  ): Promise<TransactionResponse> {
-    return this.contract.approveMangrove(
-      this.mgv.getAddress(tokenName),
-      overrides
-    );
-  }
-
-  /**
    * @note Returns this logic's router. If logic has no router this call will return `undefined`
    * @returns the router ethers.js contract responding to the `AbstractRouter` abi.
    */
   async router(): Promise<typechain.AbstractRouter | undefined> {
-    if (await this.contract.has_router()) {
-      const router_address = await this.contract.router();
+    const router_address = await this.contract.router();
+    if (router_address != ethers.constants.AddressZero) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
         this.mgv._signer
