@@ -59,17 +59,6 @@ contract MangroveOfferTest is MangroveTest {
     );
   }
 
-  function test_CheckList() public {
-    IERC20[] memory tokens = dynamic([IERC20(weth), usdc]);
-    vm.expectRevert("MangroveOffer/AdminMustApproveMangrove");
-    makerContract.checkList(tokens);
-    vm.prank(maker);
-    makerContract.approveMangrove(weth);
-    makerContract.approveMangrove(usdc);
-    // after approval, checkList should no longer revert
-    makerContract.checkList(tokens);
-  }
-
   function testCannot_ActivateIfNotAdmin() public {
     vm.expectRevert("AccessControlled/Invalid");
     makerContract.activate(dynamic([IERC20(weth), usdc]));
@@ -83,10 +72,7 @@ contract MangroveOfferTest is MangroveTest {
   }
 
   function test_HasNoRouter() public {
-    assertTrue(!makerContract.has_router());
-    vm.expectRevert("mgvOffer/0xRouter");
-    // accessing router throws if no router is defined for makerContract
-    makerContract.router();
+    assertTrue(makerContract.router() == makerContract.NO_ROUTER());
   }
 
   function testCannot_callMakerExecuteIfNotMangrove() public {
@@ -183,7 +169,7 @@ contract MangroveOfferTest is MangroveTest {
     makerContract.set_router(router);
 
     IERC20[] memory tokens = dynamic([IERC20(weth), usdc]);
-    vm.expectRevert("Router/NotApprovedByMakerContract");
+    vm.expectRevert("MangroveOffer/LogicMustApproveMangrove");
     makerContract.checkList(tokens);
 
     makerContract.activate(tokens);

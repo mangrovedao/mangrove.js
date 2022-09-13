@@ -451,7 +451,7 @@ contract MangroveOrder_Test is MangroveTest {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
+    IOrderLogic.TakerOrderResult memory res = mgo.take{value: 1 ether}(
       buyOrder
     );
     // test runner native balance

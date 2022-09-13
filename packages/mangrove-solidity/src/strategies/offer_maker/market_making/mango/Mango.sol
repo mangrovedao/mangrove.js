@@ -266,10 +266,11 @@ contract Mango is Persistent {
     internal
     virtual
     override
-    returns (bytes32 ret)
+    returns (bytes32)
   {
     order; //shh
     require(!MangoStorage.get_storage().paused, "Mango/paused");
+    return "";
   }
 
   // residual gives is default (i.e offer.gives - order.wants) + PENDING

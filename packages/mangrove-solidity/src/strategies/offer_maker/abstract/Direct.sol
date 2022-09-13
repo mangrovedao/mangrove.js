@@ -45,10 +45,11 @@ abstract contract Direct is MangroveOffer {
     uint amount
   ) external override onlyAdmin returns (bool success) {
     require(receiver != address(0), "Direct/withdrawToken/0xReceiver");
-    if (!has_router()) {
+    AbstractRouter router_ = router();
+    if (router_ == NO_ROUTER) {
       return TransferLib.transferToken(IERC20(token), receiver, amount);
     } else {
-      return router().withdrawToken(token, reserve(), receiver, amount);
+      return router_.withdrawToken(token, reserve(), receiver, amount);
     }
   }
 
@@ -107,8 +108,7 @@ abstract contract Direct is MangroveOffer {
     uint gasprice,
     uint pivotId,
     uint offerId
-    ) external payable override onlyAdmin returns (bool)
-  {
+  ) external payable override onlyAdmin returns (bool) {
     MGV.updateOffer{value: msg.value}(
       address(outbound_tkn),
       address(inbound_tkn),
@@ -139,11 +139,8 @@ abstract contract Direct is MangroveOffer {
       deprovision
     );
     if (free_wei > 0) {
-      require(
-        MGV.withdraw(free_wei),
-        "Direct/withdrawFromMgv/withdrawFail"
-      );
-      // sending native tokens to msg.sender prevents reentrancy issues 
+      require(MGV.withdraw(free_wei), "Direct/withdrawFromMgv/withdrawFail");
+      // sending native tokens to msg.sender prevents reentrancy issues
       // (the context call of `retractOffer` could be coming from `makerExecute` and recipient of transfer could use this call to make offer fail)
       (bool noRevert, ) = msg.sender.call{value: free_wei}("");
       require(noRevert, "Direct/weiTransferFail");
@@ -198,7 +195,8 @@ abstract contract Direct is MangroveOffer {
   }
 
   function __checkList__(IERC20 token) internal view virtual override {
-    if (has_router()) {
+    AbstractRouter router_ = router();
+    if (router_ != NO_ROUTER) {
       router().checkList(token, reserve());
     }
     super.__checkList__(token);
