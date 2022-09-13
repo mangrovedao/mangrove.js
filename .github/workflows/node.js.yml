@@ -658,6 +658,29 @@ jobs:
         footer: '<{run_url}|View Run>'
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+
+     # save artifacts for later stages
+    - name: Zip output
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r bot-utils-out.zip ${{env.working-directory}}/build
+
+    - name: Cache bot-utils output as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: bot-utils-out.zip
+        path: bot-utils-out.zip
+
+    - name: Zip src 
+      uses: montudor/action-zip@v1
+      with: 
+        args: zip -qq -r bot-utils-src.zip ${{env.working-directory}}/src
+
+    - name: Cache bot-utils-src as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: bot-utils-src.zip
+        path: bot-utils-src.zip
   # ==== End job: bot-utils ====        
 
   # ==== Job: Build and test bot-cleaning ====
@@ -737,6 +760,16 @@ jobs:
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq commonlib-out.zip
+
+    - name: Download cached bot-utils artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: bot-utils-out.zip
+
+    - name: Unzip bot-utils artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq bot-utils-out.zip
 
     # == build ==
 
@@ -955,6 +988,16 @@ jobs:
       uses: montudor/action-zip@v1
       with:
         args: unzip -qq commonlib-out.zip
+    
+    - name: Download cached bot-utils artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: bot-utils-out.zip
+
+    - name: Unzip bot-utils artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq bot-utils-out.zip
 
     # == build ==
 
