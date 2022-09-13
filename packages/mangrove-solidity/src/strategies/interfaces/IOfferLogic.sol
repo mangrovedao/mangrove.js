@@ -53,9 +53,6 @@ interface IOfferLogic is IMaker {
   // changing liqudity router of the logic
   function set_router(AbstractRouter router) external;
 
-  // maker contract approves router for push and pull operations
-  function approveRouter(IERC20 token) external;
-
   // withdraw `amount` `token` form the contract's (owner) reserve and sends them to `receiver`'s balance
   function withdrawToken(
     IERC20 token,
@@ -69,9 +66,6 @@ interface IOfferLogic is IMaker {
 
   ///@return balance the  `token` amount that `msg.sender` has in the contract's reserve
   function tokenBalance(IERC20 token) external view returns (uint balance);
-
-  // allow this contract to act as a LP for Mangrove on `outbound_tkn`
-  function approveMangrove(IERC20 outbound_tkn) external;
 
   // contract's activation sequence for a specific ERC
   function activate(IERC20[] calldata tokens) external;
@@ -104,8 +98,6 @@ interface IOfferLogic is IMaker {
 
   // allow one to change the reserve holding maker's liquidity
   function set_reserve(address reserve) external;
-
-  function has_router() external view returns (bool);
 
   function router() external view returns (AbstractRouter);
 }
