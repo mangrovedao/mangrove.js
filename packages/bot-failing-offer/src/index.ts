@@ -1,11 +1,10 @@
 /**
- * A simple cleaning bot for Mangrove which monitors select markets and
- * snipes and collects the bounty of offers that fail.
+ * A simple failing offer bot for Mangrove which post offers on the orderbook
+ * that will always fail.
  * @module
  */
 
-import { logger as botLogger, setup } from "@mangrovedao/bot-utils";
-const logger = botLogger.logger;
+import { setup } from "@mangrovedao/bot-utils";
 
 import { NonceManager } from "@ethersproject/experimental";
 import { getDefaultProvider } from "@ethersproject/providers";
@@ -20,6 +19,7 @@ import http from "http";
 import serveStatic from "serve-static";
 import { FailingOffer } from "./FailingOffer";
 import config from "./util/config";
+import logger from "./util/logger";
 
 enum ExitCode {
   Normal = 0,
@@ -57,9 +57,7 @@ const main = async () => {
     },
   });
 
-  await setup.exitIfMangroveIsKilled(mgv, "init", scheduler, server);
-
-  await setup.exitIfMangroveIsKilled(mgv, "init", scheduler, server);
+  await setup.exitIfMangroveIsKilled(mgv, "init", server, scheduler);
 
   await setup.provisionMakerOnMangrove(mgv, signer.address, "init", config);
 
@@ -91,15 +89,15 @@ server.listen(process.env.PORT || 8080);
 // Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
 process.on("unhandledRejection", (reason) => {
   logger.error("Unhandled Rejection", { data: reason });
-  setup.stopAndExit(ExitCode.UnhandledRejection, scheduler, server);
+  setup.stopAndExit(ExitCode.UnhandledRejection, server, scheduler);
 });
 
 process.on("uncaughtException", (err) => {
   logger.error(`Uncaught Exception: ${err.message}`);
-  setup.stopAndExit(ExitCode.UncaughtException, scheduler, server);
+  setup.stopAndExit(ExitCode.UncaughtException, server, scheduler);
 });
 
 main().catch((e) => {
   logger.error(e);
-  setup.stopAndExit(ExitCode.ExceptionInMain, scheduler, server);
+  setup.stopAndExit(ExitCode.ExceptionInMain, server, scheduler);
 });

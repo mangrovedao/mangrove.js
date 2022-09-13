@@ -27,26 +27,26 @@ export type TokenConfig = {
 export async function exitIfMangroveIsKilled(
   mgv: Mangrove,
   contextInfo: string,
-  scheduler: ToadScheduler,
-  server: http.Server
+  server: http.Server,
+  scheduler?: ToadScheduler
 ): Promise<void> {
   const globalConfig = await mgv.config();
   // FIXME maybe this should be a property/method on Mangrove.
   if (globalConfig.dead) {
     logger.warn("Mangrove is dead, stopping the bot", { contextInfo });
-    stopAndExit(ExitCode.MangroveIsKilled, scheduler, server);
+    stopAndExit(ExitCode.MangroveIsKilled, server, scheduler);
   }
 }
 
 export function stopAndExit(
   exitStatusCode: number,
-  scheduler: ToadScheduler,
-  server: http.Server
+  server: http.Server,
+  scheduler?: ToadScheduler
 ) {
   // Stop gracefully
   logger.info("Stopping and exiting", { data: { exitCode: exitStatusCode } });
   process.exitCode = exitStatusCode;
-  scheduler.stop();
+  scheduler?.stop();
   server.close();
 }
 
