@@ -1,4 +1,4 @@
-import { postOfferUtils } from "@mangrovedao/bot-utils";
+import { postOfferUtils, priceUtils } from "@mangrovedao/bot-utils";
 import { Market } from "@mangrovedao/mangrove.js";
 import Big from "big.js";
 import random from "random";
@@ -75,58 +75,69 @@ export class FailingOffer {
   }
 
   public async postFailingOffer() {
-    const offerData = await postOfferUtils.getNewOfferDataBidsOrAsks(
-      this.#market,
-      this.#makerAddress,
-      this.#bidProbability,
-      this.#lambda,
-      this.#maxQuantity
-    );
-    if (!("price" in offerData)) {
-      return;
-    }
-    if (!(await offerData.market.isActive())) {
+    if (!(await this.#market.isActive())) {
       logger.warn(
         `Market is closed so ignoring request to post failing offer`,
         {
-          base: offerData.market.base.name,
-          quote: offerData.market.quote.name,
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
         }
       );
       return;
     }
+
+    let ba: Market.BA =
+      random.float(0, 1) < this.#bidProbability ? "bids" : "asks";
+    const referencePrice = await priceUtils.getReferencePrice(
+      this.#market,
+      ba,
+      [...this.#market.getBook()[ba]]
+    );
+    if (referencePrice === undefined) {
+      logger.warn(
+        `Unable to determine reference price, so not posthing an offer`,
+        {
+          contextInfo: "maker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
+        }
+      );
+      return;
+    }
+
     const offerDataDetailed = await postOfferUtils.getOfferDataDetialed(
-      offerData.market,
-      offerData.makerAddress,
-      offerData.ba,
-      offerData.price,
-      offerData.quantity,
-      offerData.referencePrice,
+      this.#market,
+      this.#makerAddress,
+      ba,
+      priceUtils.choosePrice(ba, referencePrice, this.#lambda),
+      Big(random.float(1, this.#maxQuantity)),
+      referencePrice,
       100_000,
       1
     );
     postOfferUtils.logOffer(
       "Posting offer",
       "debug",
-      offerData.market,
+      this.#market,
       offerDataDetailed
     );
 
     await postOfferUtils
-      .postFailing(offerData)
+      .postFailing(offerDataDetailed)
       .then((txInfo) => {
         // FIXME We should include the offer ID. mangrove.js Maker.ts will have a function for posting offers that returns the ID, so we should use that once available
         postOfferUtils.logOffer(
           "Successfully posted offer",
           "info",
-          offerData.market,
+          this.#market,
           offerDataDetailed
         );
         logger.debug("Details for posted offer", {
           contextInfo: "maker",
-          base: offerData.market.base.name,
-          quote: offerData.market.quote.name,
-          ba: offerData.ba,
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba: ba,
           data: { txInfo },
         });
       })
@@ -134,7 +145,7 @@ export class FailingOffer {
         postOfferUtils.logOffer(
           "Post of offer failed",
           "error",
-          offerData.market,
+          this.#market,
           offerDataDetailed
         );
       });

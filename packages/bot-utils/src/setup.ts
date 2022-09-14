@@ -4,8 +4,14 @@ import { IConfig } from "config";
 import http from "http";
 import { ToadScheduler } from "toad-scheduler";
 import logger from "./util/logger";
+import { getDefaultProvider } from "@ethersproject/providers";
+import { BaseProvider } from "@ethersproject/providers";
+import { Wallet } from "@ethersproject/wallet";
+import { NonceManager } from "@ethersproject/experimental";
+import finalhandler from "finalhandler";
+import serveStatic from "serve-static";
 
-enum ExitCode {
+export enum ExitCode {
   Normal = 0,
   UncaughtException = 1,
   UnhandledRejection = 2,
@@ -231,4 +237,81 @@ export function getTokenConfigsOrThrow(config: IConfig): TokenConfig[] {
   }
   // FIXME Validate that the token configs are actually TokenConfig's
   return tokenConfigs;
+}
+
+export async function startBot(
+  name: string,
+  botFunction: (
+    mgv: Mangrove,
+    signer: Wallet,
+    provider: BaseProvider
+  ) => Promise<void>,
+  server: http.Server,
+  scheduler?: ToadScheduler
+) {
+  logger.info(`Starting ${name}...`, { contextInfo: "init" });
+
+  // Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
+  process.on("unhandledRejection", (reason) => {
+    logger.error("Unhandled Rejection", { data: reason });
+    stopAndExit(ExitCode.UnhandledRejection, server, scheduler);
+  });
+
+  process.on("uncaughtException", (err) => {
+    logger.error(`Uncaught Exception: ${err.message}`);
+    stopAndExit(ExitCode.UncaughtException, server, scheduler);
+  });
+
+  if (!process.env["ETHEREUM_NODE_URL"]) {
+    throw new Error("No URL for a node has been provided in ETHEREUM_NODE_URL");
+  }
+  if (!process.env["PRIVATE_KEY"]) {
+    throw new Error("No private key provided in PRIVATE_KEY");
+  }
+  const provider = getDefaultProvider(process.env["ETHEREUM_NODE_URL"]);
+  const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
+  const nonceManager = new NonceManager(signer);
+  const mgv = await Mangrove.connect({ signer: nonceManager });
+
+  logger.info("Connected to Mangrove", {
+    contextInfo: "init",
+    data: {
+      network: mgv._network,
+      addresses: Mangrove.getAllAddresses(mgv._network.name),
+    },
+  });
+
+  await exitIfMangroveIsKilled(mgv, "init", server, scheduler);
+
+  await botFunction(mgv, signer, provider);
+}
+
+export function createServer() {
+  // The node http server is used solely to serve static information files for environment management
+  const staticBasePath = "./static";
+  const serve = serveStatic(staticBasePath, { index: false });
+
+  const server = http.createServer(function (req, res) {
+    const done = finalhandler(req, res);
+    serve(req, res, () => done(undefined)); // 'undefined' means no error
+  });
+  server.listen(process.env.PORT || 8080);
+  return server;
+}
+
+export function getMarketConfigsOrThrow<MarketConfig>(
+  config: IConfig
+): MarketConfig[] {
+  if (!config.has("markets")) {
+    throw new Error("No markets have been configured");
+  }
+  const marketsConfig = config.get<Array<MarketConfig>>("markets");
+  if (!Array.isArray(marketsConfig)) {
+    throw new ErrorWithData(
+      "Markets configuration is malformed, should be an array of MarketConfig's",
+      marketsConfig
+    );
+  }
+  // FIXME Validate that the market configs are actually MarketConfig's
+  return marketsConfig;
 }
