@@ -1394,6 +1394,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
+    "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1543,6 +1544,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
+    "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1593,6 +1595,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.1
+    "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
@@ -1641,6 +1644,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.6.3
     "@ethersproject/hardware-wallets": ^5.6.0
+    "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-solidity": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"

@@ -1,7 +1,7 @@
 import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib.js";
 import os from "os";
 import safeStringify from "fast-safe-stringify";
-import config from "./config";
+import { IConfig } from "config";
 
 const consoleLogFormat = format.printf(
   ({ level, message, timestamp, ...metadata }) => {
@@ -36,7 +36,10 @@ const consoleLogFormat = format.printf(
   }
 );
 
-const logLevel = config.get<string>("logLevel");
-export const logger: CommonLogger = createLogger(consoleLogFormat, logLevel);
+export function logger(config: IConfig): CommonLogger {
+  const logLevel = config.get<string>("logLevel");
+
+  return createLogger(consoleLogFormat, logLevel);
+}
 
 export default logger;

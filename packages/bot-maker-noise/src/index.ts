@@ -3,7 +3,6 @@
  * @module
  */
 
-import { setup, balanceUtils } from "@mangrovedao/bot-utils";
 import config from "./util/config";
 import { logger } from "./util/logger";
 
@@ -14,15 +13,20 @@ import { Wallet } from "@ethersproject/wallet";
 import { BaseProvider } from "@ethersproject/providers";
 import { OfferMaker } from "./OfferMaker";
 import { MarketConfig } from "./MarketConfig";
+import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
+import { BalanceUtils } from "@mangrovedao/bot-utils/build/util/balanceUtils";
 
 type TokenPair = { token1: string; token2: string };
+
+const setup = new Setup(config);
+const balanceUtils = new BalanceUtils(config);
 
 async function startMakersForMarkets(
   mgv: Mangrove,
   address: string
 ): Promise<void> {
   const offerMakerMap = new Map<TokenPair, OfferMaker>();
-  const marketConfigs = setup.getMarketConfigsOrThrow<MarketConfig>(config);
+  const marketConfigs = setup.getMarketConfigsOrThrow<MarketConfig>();
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -48,9 +52,9 @@ const botFunction = async (
   signer: Wallet,
   provider: BaseProvider
 ) => {
-  await setup.provisionMakerOnMangrove(mgv, signer.address, "init", config);
+  await setup.provisionMakerOnMangrove(mgv, signer.address, "init");
 
-  const tokenConfigs = setup.getTokenConfigsOrThrow(config);
+  const tokenConfigs = setup.getTokenConfigsOrThrow();
 
   await setup.approveMangroveForTokens(mgv, tokenConfigs, "init");
 
@@ -71,5 +75,5 @@ const main = async () => {
 
 main().catch((e) => {
   logger.error(e);
-  setup.stopAndExit(setup.ExitCode.ExceptionInMain, server);
+  setup.stopAndExit(ExitCode.ExceptionInMain, server);
 });

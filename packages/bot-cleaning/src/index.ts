@@ -8,16 +8,16 @@ import config from "./util/config";
 import { logger } from "./util/logger";
 import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
-import { setup } from "@mangrovedao/bot-utils";
 import Mangrove from "@mangrovedao/mangrove.js";
 import http from "http";
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
 import { MarketCleaner } from "./MarketCleaner";
-import { getAndValidateConfig } from "@mangrovedao/bot-utils/build/setup";
+import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 
 type MarketPair = { base: string; quote: string };
 
 const scheduler = new ToadScheduler();
+const setup = new Setup(config);
 
 function createAsyncMarketCleaner(
   mgv: Mangrove,
@@ -45,7 +45,7 @@ function createAsyncMarketCleaner(
     },
     (err: Error) => {
       logger.error(err);
-      setup.stopAndExit(setup.ExitCode.ErrorInAsyncTask, server, scheduler);
+      setup.stopAndExit(ExitCode.ErrorInAsyncTask, server, scheduler);
     }
   );
 }
@@ -55,7 +55,7 @@ async function botFunction(
   signer: Wallet,
   provider: BaseProvider
 ) {
-  const botConfig = getAndValidateConfig(config);
+  const botConfig = setup.getAndValidateConfig();
 
   const marketConfigs = botConfig.markets;
   const marketCleanerMap = new Map<MarketPair, MarketCleaner>();
@@ -104,5 +104,5 @@ const main = async () => {
 
 main().catch((e) => {
   logger.error(e);
-  setup.stopAndExit(setup.ExitCode.ExceptionInMain, server, scheduler);
+  setup.stopAndExit(ExitCode.ExceptionInMain, server, scheduler);
 });

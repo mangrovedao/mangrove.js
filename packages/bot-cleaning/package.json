@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.6.3",
+    "@mangrovedao/bot-utils": "workspace:*",
     "@mangrovedao/commonlib.js": "workspace:*",
     "@mangrovedao/mangrove.js": "workspace:*",
     "@types/big.js": "^6.1.3",

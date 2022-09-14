@@ -4,17 +4,18 @@
  */
 
 import { GasUpdater } from "./GasUpdater";
-import { OracleConfig, readAndValidateConfig } from "./util/config";
+import config, { OracleConfig, readAndValidateConfig } from "./util/config";
 import { logger } from "./util/logger";
 
 import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
-import { setup } from "@mangrovedao/bot-utils";
 import Mangrove from "@mangrovedao/mangrove.js";
 
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
+import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 
 const scheduler = new ToadScheduler();
+const setup = new Setup(config);
 
 async function botFunction(
   mgv: Mangrove,
@@ -48,7 +49,7 @@ async function botFunction(
     },
     (err: Error) => {
       logger.error(err);
-      setup.stopAndExit(setup.ExitCode.ErrorInAsyncTask, server, scheduler);
+      setup.stopAndExit(ExitCode.ErrorInAsyncTask, server, scheduler);
     }
   );
 
@@ -71,5 +72,5 @@ const main = async () => {
 
 main().catch((e) => {
   logger.error(e);
-  setup.stopAndExit(setup.ExitCode.ExceptionInMain, server, scheduler);
+  setup.stopAndExit(ExitCode.ExceptionInMain, server, scheduler);
 });

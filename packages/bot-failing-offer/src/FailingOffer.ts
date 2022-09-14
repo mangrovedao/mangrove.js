@@ -1,9 +1,14 @@
-import { postOfferUtils, priceUtils } from "@mangrovedao/bot-utils";
 import { Market } from "@mangrovedao/mangrove.js";
 import Big from "big.js";
+import config from "./util/config";
 import random from "random";
 import { MakerConfig } from "./util/failingOfferUtils";
 import logger from "./util/logger";
+import { PriceUtils } from "@mangrovedao/bot-utils/build/util/priceUtils";
+import { PostOfferUtils } from "@mangrovedao/bot-utils/build/util/postOfferUtils";
+
+const priceUtils = new PriceUtils(config);
+const postOfferUtils = new PostOfferUtils(config);
 
 export class FailingOffer {
   #market: Market;
