@@ -27,10 +27,10 @@ contract Ghost is Persistent {
   // OfferForwarder     OfferMaker <-- new offer posting
 
   constructor(
-    IMangrove _mgv,
+    IMangrove mgv,
     IERC20 stable1,
     IERC20 stable2
-  ) Persistent(_mgv, new SimpleRouter()) {
+  ) Persistent(mgv, new SimpleRouter()) {
     STABLE1 = stable1;
     STABLE2 = stable2;
   }

@@ -16,10 +16,10 @@ import "contracts/toy_strategies/single_user/abstract/CompoundLender.sol";
 contract SimpleCompoundRetail is CompoundLender {
   constructor(
     address _unitroller,
-    IMangrove _MGV,
+    IMangrove mgv,
     address wethAddress,
     address deployer
-  ) CompoundModule(_unitroller, wethAddress) MangroveOffer(_MGV) {
+  ) CompoundModule(_unitroller, wethAddress) MangroveOffer(mgv) {
     set_gasreq(1_000_000);
     if (deployer != msg.sender) {
       setAdmin(deployer);

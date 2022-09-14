@@ -93,9 +93,9 @@ contract MangroveJsDeploy is Deployer {
 
     vm.broadcast();
     simpleTestMaker = new SimpleTestMaker({
-      mgv: AbstractMangrove(payable(mgv)),
-      base: tokenA,
-      quote: tokenB
+      _mgv: AbstractMangrove(payable(mgv)),
+      _base: tokenA,
+      _quote: tokenB
     });
     ens.set("SimpleTestMaker", address(simpleTestMaker));
 
