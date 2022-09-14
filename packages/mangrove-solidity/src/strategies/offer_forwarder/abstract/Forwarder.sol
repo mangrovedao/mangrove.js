@@ -67,7 +67,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   /// @param gasreq the gas required by the offer
   /// @param provision the amount of native token one is using to provision the offer
   /// @return gasprice that the `provision` can cover for
-  /// @dev the returned gasprice is slightly lower than the real gasprice that the provision can cover because of the rouding error due to division
+  /// @dev the returned gasprice is slightly lower than the real gasprice that the provision can cover because of the rounding error due to division
   function derive_gasprice(
     uint gasreq,
     uint provision,
@@ -111,6 +111,13 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     bool noRevert; // whether newOffer should revert in case call to mangrove reverts
   }
 
+  /// @notice inserts a new offer on a Mangrove Offer List
+  /// @dev offer forwarders do not manage user funds on Mangrove, as a consequence:
+  /// user provision on Mangrove is the sum of locked provision in all live offers it owns + the sum of free wei's in all dead offers it owns (see `OwnerData.free_wei`)
+  /// locked provision in an offer is offer.gasprice * (offer.gasreq + gasbase) * 10**9
+  /// therefore offer.gasprice is derived from msg.value. 
+  /// Because of potential rounding errors in `derive_gasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
+  /// this dust tokens are not burned since they can be retrieved by admin using `withdrawFromMangrove` 
   function _newOffer(
     NewOfferData memory offData
   ) internal returns (uint) {
@@ -134,7 +141,6 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       gasprice >= global.gasprice(),
       "Forwarder/newOffer/NotEnoughProvision"
     );
-
     // this call cannot revert for lack of provision (by design)
     try MGV.newOffer{value: offData.fund}(
       address(offData.outbound_tkn),
@@ -170,7 +176,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     address owner;
   }
 
-  ///@notice update offer with parameters given in `mko`.
+  ///@notice updates an offer existing on Mangrove (not necessarily live).
   ///@dev gasreq == max_int indicates one wishes to use ofr_gasreq (default value)
   ///@dev gasprice is overriden by the value computed by taking into account :
   /// * value transfered on current tx
@@ -195,6 +201,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     );
     gasprice; // ssh
     UpdateOfferData memory upd; 
+    // upd.gasprice is deliberately left at 0
     upd.offer_detail = MGV.offerDetails(
       address(outbound_tkn),
       address(inbound_tkn),
@@ -228,7 +235,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
 
 
   function _updateOffer(UpdateOfferData memory upd)
-    internal
+    private
     returns (bool)
   { 
     // storing current offer gasprice into `upd` struct
@@ -308,8 +315,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       free_wei = deprovision ? od.wei_balance : 0;
     } else {
       free_wei = MGV.retractOffer(
-        $(outbound_tkn),
-        $(inbound_tkn),
+        address(outbound_tkn),
+        address(inbound_tkn),
         offerId,
         deprovision
       );

@@ -81,8 +81,8 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
       }
       (uint takerGot_, uint takerGave_, uint bounty_, uint fee_) = MGV
         .marketOrder({
-          outbound_tkn: $(outbound_tkn), // expecting quote (outbound) when selling
-          inbound_tkn: $(inbound_tkn),
+          outbound_tkn: address(outbound_tkn), // expecting quote (outbound) when selling
+          inbound_tkn: address(inbound_tkn),
           takerWants: tko.wants, // `tko.wants` includes user defined slippage
           takerGives: tko.gives,
           fillWants: tko.selling ? false : true // only buy order should try to fill takerWants
@@ -211,13 +211,13 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
     }
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
     override
     returns (bool success)
   {
-    success = super.__posthookSuccess__(order);
+    success = super.__posthookSuccess__(order, makerData);
     if (!success) {
       // if offer failed to be reposted, if is now off the book but provision is still locked
       // calling retract offer will recover the provision and transfer them to offer owner

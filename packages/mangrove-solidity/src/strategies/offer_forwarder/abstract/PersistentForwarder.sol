@@ -37,7 +37,7 @@ abstract contract PersistentForwarder is Forwarder {
 
   ///@dev posthook takes care of reposting offer residual
   ///@param order is a reminder of the taker order that was processed during `makerExecute`
-  function __posthookSuccess__(ML.SingleOrder calldata order)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32)
     internal
     virtual
     override

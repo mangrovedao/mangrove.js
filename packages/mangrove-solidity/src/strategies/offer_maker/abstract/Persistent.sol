@@ -45,14 +45,14 @@ abstract contract Persistent is Direct {
   }
 
   // Specializing this hook to repost offer residual when trade was a success
-  function __posthookSuccess__(ML.SingleOrder calldata order)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
     override
     returns (bool)
   {
     // flushing inbound and remaining outbound tokens to reserve
-    super.__posthookSuccess__(order);
+    super.__posthookSuccess__(order, makerData);
 
     // now trying to repost residual
     uint new_gives = __residualGives__(order);

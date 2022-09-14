@@ -87,13 +87,13 @@ contract Ghost is Persistent {
     });
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     override
     returns (bool)
   {
     // reposts residual if any
-    bool reposted = super.__posthookSuccess__(order);
+    bool reposted = super.__posthookSuccess__(order, makerData);
     // write here what you want to do if not `reposted`
     // reasons for not ok are:
     // - residual below density (dust)

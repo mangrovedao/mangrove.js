@@ -69,7 +69,7 @@ contract MangroveOrderEnriched is MangroveOrder {
     uint n_live = 0;
     uint n_dead = 0;
     while (id != 0) {
-      if (MGV.isLive(MGV.offers($(outbound_tkn), $(inbound_tkn), id))) {
+      if (MGV.isLive(MGV.offers(address(outbound_tkn), address(inbound_tkn), id))) {
         n_live++;
       } else {
         n_dead++;
@@ -82,7 +82,7 @@ contract MangroveOrderEnriched is MangroveOrder {
     n_live = 0;
     n_dead = 0;
     while (id != 0) {
-      if (MGV.isLive(MGV.offers($(outbound_tkn), $(inbound_tkn), id))) {
+      if (MGV.isLive(MGV.offers(address(outbound_tkn), address(inbound_tkn), id))) {
         live[n_live++] = id;
       } else {
         dead[n_dead++] = id;

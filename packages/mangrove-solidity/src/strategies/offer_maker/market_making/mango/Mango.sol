@@ -318,14 +318,14 @@ contract Mango is Persistent {
     }
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
     override
     returns (bool)
   {
     MangoStorage.Layout storage mStr = MangoStorage.get_storage();
-    bool reposted = super.__posthookSuccess__(order);
+    bool reposted = super.__posthookSuccess__(order, makerData);
 
     if (order.outbound_tkn == address(BASE)) {
       if (!reposted) {

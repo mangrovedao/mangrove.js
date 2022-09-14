@@ -19,15 +19,15 @@ import "mgv_src/strategies/utils/TransferLib.sol";
 abstract contract Direct is MangroveOffer {
   constructor(
     IMangrove mgv,
-    AbstractRouter _router
+    AbstractRouter router_
   ) MangroveOffer(mgv) {
     // default reserve is router's address if router is defined
     // if not then default reserve is `this` contract
-    if (address(_router) == address(0)) {
+    if (router_ == NO_ROUTER) {
       set_reserve(address(this));
     } else {
-      set_reserve(address(_router));
-      set_router(_router);
+      set_reserve(address(router_));
+      set_router(router_);
     }
   }
 
@@ -35,8 +35,8 @@ abstract contract Direct is MangroveOffer {
     return _reserve(address(this));
   }
 
-  function set_reserve(address __reserve) public override onlyAdmin {
-    _set_reserve(address(this), __reserve);
+  function set_reserve(address reserve_) public override onlyAdmin {
+    _set_reserve(address(this), reserve_);
   }
 
   function withdrawToken(
@@ -58,31 +58,31 @@ abstract contract Direct is MangroveOffer {
     uint amount,
     bool strict
   ) internal returns (uint) {
-    AbstractRouter _router = MOS.get_storage().router;
-    if (address(_router) == address(0)) {
+    AbstractRouter router_ = router();
+    if (router_ == NO_ROUTER) {
       return 0; // nothing to do
     } else {
       // letting specific router pull the funds from reserve
-      return _router.pull(outbound_tkn, reserve(), amount, strict);
+      return router_.pull(outbound_tkn, reserve(), amount, strict);
     }
   }
 
   function push(IERC20 token, uint amount) internal {
-    AbstractRouter _router = MOS.get_storage().router;
-    if (address(_router) == address(0)) {
+    AbstractRouter router_ = router();
+    if (router_ == NO_ROUTER) {
       return; // nothing to do
     } else {
       // noop if reserve == address(this)
-      _router.push(token, reserve(), amount);
+      router_.push(token, reserve(), amount);
     }
   }
 
   function tokenBalance(IERC20 token) external view override returns (uint) {
-    AbstractRouter _router = MOS.get_storage().router;
+    AbstractRouter router_ = router();
     return
-      address(_router) == address(0)
+      router_ == NO_ROUTER
         ? token.balanceOf(reserve())
-        : _router.reserveBalance(token, reserve());
+        : router_.reserveBalance(token, reserve());
   }
 
   function flush(IERC20[] memory tokens) internal {
@@ -156,7 +156,7 @@ abstract contract Direct is MangroveOffer {
     return 0;
   }
 
-  // default `__get__` hook for `Direct` is to pull liquidity from immutable `reserve()`
+  // default `__get__` hook for `Direct` is to pull liquidity from `reserve()`
   // letting router handle the specifics if any
   function __get__(uint amount, ML.SingleOrder calldata order)
     internal
@@ -180,7 +180,7 @@ abstract contract Direct is MangroveOffer {
 
   // Override this post-hook to implement what `this` contract should do when called back after a successfully executed order.
   // In this posthook, contract will flush its liquidity towards the reserve (noop if reserve is this contract)
-  function __posthookSuccess__(ML.SingleOrder calldata order)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32)
     internal
     virtual
     override
