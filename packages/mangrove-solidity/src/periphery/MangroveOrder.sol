@@ -233,8 +233,8 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
   /**
   @notice This is invoked for each new offer created for resting orders, e.g., to maintain an inverse mapping from owner to offers.
   @param owner the owner of the offer new offer
-  @param outbound_tkn the outbound token used to identify the offer book
-  @param inbound_tkn the inbound token used to identify the offer book
+  @param outbound_tkn the outbound token used to identify the order book
+  @param inbound_tkn the inbound token used to identify the order book
   @param offerId the id of the new offer
   */
   function __logOwnershipRelation__(
