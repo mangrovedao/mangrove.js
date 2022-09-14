@@ -466,7 +466,8 @@ contract MangroveOrder_Test is MangroveTest {
       takerWants: 0
     });
     assertTrue(success, "snipe failed");
-    assertEq($(this).balance, oldWeiBalance, "retract did not deprovision");
+    // one cannot require this.balance == oldWeiBalance because of the rounding error in the computation of offer's gasprice
+    assertTrue($(this).balance > oldWeiBalance, "retract did not deprovision");
   }
 
   function test_user_can_retract_resting_offer() public {
