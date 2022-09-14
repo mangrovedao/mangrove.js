@@ -1,6 +1,7 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.13;
-import {Script, console} from "forge-std/Script.sol";
+import {console, stdJson} from "forge-std/Script.sol";
+import {Script2} from "mgv_test/lib/Script2.sol";
 import {ToyENS} from "./ToyENS.sol";
 
 /* Outputs deployments as follows:
@@ -17,7 +18,7 @@ import {ToyENS} from "./ToyENS.sol";
    Do not inherit other deployer scripts, just instantiate them and call their
    .deploy();
 */
-abstract contract Deployer is Script {
+abstract contract Deployer is Script2 {
   ToyENS ens; // singleton local ens instance
   ToyENS remoteEns; // out-of-band agreed upon toy ens address
 
