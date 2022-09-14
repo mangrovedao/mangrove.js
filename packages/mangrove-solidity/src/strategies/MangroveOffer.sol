@@ -18,7 +18,7 @@ import "mgv_src/strategies/interfaces/IOfferLogic.sol";
 import "mgv_src/IMangrove.sol";
 
 /// @title This contract is the basic building block for Mangrove strats.
-/// @notice It contains the mandatory interface expected by Mangove (`IOfferLogic` is `IMaker`) and enforces additional functions implementations (via `IOfferLogic`).
+/// @notice It contains the mandatory interface expected by Mangrove (`IOfferLogic` is `IMaker`) and enforces additional functions implementations (via `IOfferLogic`).
 /// @dev Naming scheme:
 /// `f() public`: can be used, as is, in all descendants of `this` contract
 /// `_f() internal`: descendant of this contract should provide a public wrapper of this function

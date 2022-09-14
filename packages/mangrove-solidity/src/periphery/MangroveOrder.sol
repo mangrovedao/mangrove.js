@@ -60,7 +60,7 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
   // provision for posting a resting order MAY be sent when calling this function
   // gasLimit of this `tx` MUST be at least `(retryNumber+1)*gasForMarketOrder`
   // msg.value SHOULD contain enough native token to cover for the resting order provision
-  // msg.value MUST be 0 if `!restingOrder` otherwise tranfered WEIs are burnt.
+  // msg.value MUST be 0 if `!restingOrder` otherwise transferred WEIs are burnt.
 
   function take(TakerOrder calldata tko)
     external
@@ -74,7 +74,7 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
     // so pulling funds from taker's reserve (note this can be the taker's wallet depending on the router)
     uint pulled = router().pull(inbound_tkn, msg.sender, tko.gives, true);
     require(pulled == tko.gives, "mgvOrder/mo/transferInFail");
-    // passing an iterated market order with the transfered funds
+    // passing an iterated market order with the transferred funds
     for (uint i = 0; i < tko.retryNumber + 1; i++) {
       if (tko.gasForMarketOrder != 0 && gasleft() < tko.gasForMarketOrder) {
         break;
@@ -173,8 +173,8 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
           inbound_tkn: outbound_tkn,
           offerId: res.offerId
         });
-        // crediting caller's balance with amount of offered tokens (transfered from caller at the begining of this function)
-        // NB `inbount_tkn` is now the outbound token for the resting order
+        // crediting caller's balance with amount of offered tokens (transferred from caller at the beginning of this function)
+        // NB `inbound_tkn` is now the outbound token for the resting order
         router().push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
 
         // setting a time to live for the resting order
@@ -187,10 +187,10 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
       }
     } else {
       // either fill was complete or taker does not want to post residual as a resting order
-      // transfering remaining inbound tokens to msg.sender
+      // transferring remaining inbound tokens to msg.sender
       router().push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
 
-      // transfering potential bounty and msg.value back to the taker
+      // transferring potential bounty and msg.value back to the taker
       if (msg.value + res.bounty > 0) {
         // NB this calls gives reentrancy power to caller
         (bool noRevert, ) = msg.sender.call{value: msg.value + res.bounty}("");
