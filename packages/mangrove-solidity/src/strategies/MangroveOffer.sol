@@ -100,7 +100,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ) external override onlyCaller(address(MGV)) {
     if (result.mgvData == "mgv/tradeSuccess") {
       // toplevel posthook may ignore returned value which is only usefull for (vertical) compositionality
-      __posthookSuccess__(order);
+      __posthookSuccess__(order, result.makerData);
     } else {
       emit LogIncident(
         MGV,
@@ -184,7 +184,6 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@dev for multi user strats, the contract provision account on Mangrove is pooled amongst offer owners so admin should only call this function to recover WEIs (e.g. that were erroneously transferred to Mangrove using `MGV.fund()`)
   /// This contract's balance on Mangrove may contain deprovisioned WEIs after an offer has failed (complement between provision and the bounty that was sent to taker)
   /// those free WEIs can be retrieved by offer owners by calling `retractOffer` with the `deprovsion` flag. Not by calling this function which is admin only.
-
   function withdrawFromMangrove(uint amount, address payable receiver)
     external
     onlyAdmin
@@ -221,34 +220,35 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     }
   }
 
+  ///@notice strat-specific additional activation check list
+  ///@param token the ERC20 one wishes this contract to trade on.
   function __checkList__(IERC20 token) internal view virtual {
     token; //ssh
   }
 
-  // Define this hook to describe where the inbound token, which are brought by the Offer Taker, should go during Taker Order's execution.
-  // Usage of this hook is the following:
-  // * `amount` is the amount of `inbound` tokens whose deposit location is to be defined when entering this function
-  // * `order` is a recall of the taker order that is at the origin of the current trade.
-  // * Function must return `missingPut` (<=`amount`), which is the amount of `inbound` tokens whose deposit location has not been decided (possibly because of a failure) during this function execution
-  // NB in case of preceding executions of descendant specific `__put__` implementations, `amount` might be lower than `order.gives` (how much `inbound` tokens the taker gave)
+  ///@notice Hook that implements where the inbound token, which are brought by the Offer Taker, should go during Taker Order's execution.
+  ///@param amount of `inbound` tokens that are on `this` contract's balance and still need to be deposited somewhere
+  ///@param order is a recall of the taker order that is at the origin of the current trade.
+  ///@return missingPut (<=`amount`) is the amount of `inbound` tokens whose deposit location has not been decided (possibly because of a failure) during this function execution
+  ///@dev if the last nested call to `__put__` returns a non zero value, trade execution will revert
   function __put__(uint amount, ML.SingleOrder calldata order)
     internal
     virtual
     returns (uint missingPut);
 
-  // Define this hook to implement fetching `amount` of outbound tokens, possibly from another source than `this` contract during Taker Order's execution.
-  // Usage of this hook is the following:
-  // * `amount` is the amount of `outbound` tokens that still needs to be brought to the balance of `this` contract when entering this function
-  // * `order` is a recall of the taker order that is at the origin of the current trade.
-  // * Function must return `missingGet` (<=`amount`), which is the amount of `outbound` tokens still need to be fetched at the end of this function
-  // NB in case of preceding executions of descendant specific `__get__` implementations, `amount` might be lower than `order.wants` (how much `outbound` tokens the taker wants)
+  ///@notice Hook that implements where the outbound token, which are promised to the taker, should be fetched from, during Taker Order's execution.
+  ///@param amount of `outbound` tokens that still needs to be brought to the balance of `this` contract when entering this function
+  ///@param order is a recall of the taker order that is at the origin of the current trade.
+  ///@return missingGet (<=`amount`), which is the amount of `outbound` tokens still need to be fetched at the end of this function
+  ///@dev if the last nested call to `__get__` returns a non zero value, trade execution will revert
   function __get__(uint amount, ML.SingleOrder calldata order)
     internal
     virtual
     returns (uint missingGet);
 
-  // Override this hook to implement a last look check during Taker Order's execution.
-  // __lastLook__ should revert if trade is to be reneged on.
+  ///@notice Hook that implements a last look check during Taker Order's execution.
+  ///@param order is a recall of the taker order that is at the origin of the current trade.
+  ///@dev __lastLook__ should revert if trade is to be reneged on. If not, returned `bytes32` are passed to `makerPosthook` in the `makerData` field.
   function __lastLook__(ML.SingleOrder calldata order)
     internal
     virtual
@@ -258,12 +258,11 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return "";
   }
 
-  //utils
-  function $(IERC20 token) internal pure returns (address) {
-    return address(token);
-  }
-
-  // Override this post-hook to implement fallback behavior when Taker Order's execution failed unexpectedly. Information from Mangrove is accessible in `result.mgvData` for logging purpose.
+  ///@notice Post-hook that implements fallback behavior when Taker Order's execution failed unexpectedly.
+  ///@param order is a recall of the taker order that is at the origin of the current trade.
+  ///@param result contains information about trade.
+  ///@dev `result.mgvData` is Mangrove's verdict about trade success
+  /// `result.makerData` either contains the first 32 bytes of revert reason if `makerExecute` reverted
   function __posthookFallback__(
     ML.SingleOrder calldata order,
     ML.OrderResult calldata result
@@ -273,12 +272,13 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return true;
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
     returns (bool)
   {
-    order;
+    order; // ssh
+    makerData; // ssh
     return true;
   }
 
@@ -293,12 +293,12 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     uint offerId // set this to 0 if one is not reposting an offer
   ) public view returns (uint) {
     (P.Global.t globalData, P.Local.t localData) = MGV.config(
-      $(outbound_tkn),
-      $(inbound_tkn)
+      address(outbound_tkn),
+      address(inbound_tkn)
     );
     P.OfferDetail.t offerDetailData = MGV.offerDetails(
-      $(outbound_tkn),
-      $(inbound_tkn),
+      address(outbound_tkn),
+      address(inbound_tkn),
       offerId
     );
     uint _gp;
