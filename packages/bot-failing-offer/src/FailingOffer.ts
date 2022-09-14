@@ -7,9 +7,6 @@ import logger from "./util/logger";
 import { PriceUtils } from "@mangrovedao/bot-utils/build/util/priceUtils";
 import { PostOfferUtils } from "@mangrovedao/bot-utils/build/util/postOfferUtils";
 
-const priceUtils = new PriceUtils(config);
-const postOfferUtils = new PostOfferUtils(config);
-
 export class FailingOffer {
   #market: Market;
   #makerAddress: string;
@@ -19,6 +16,8 @@ export class FailingOffer {
   #bidProbability: number;
   #offerTimeRng: () => number;
   #maxQuantity: number;
+  priceUtils = new PriceUtils(config);
+  postOfferUtils = new PostOfferUtils(config);
   /**
    * Constructs the bot.
    * @param mangrove A mangrove.js Mangrove object.
@@ -93,7 +92,7 @@ export class FailingOffer {
 
     let ba: Market.BA =
       random.float(0, 1) < this.#bidProbability ? "bids" : "asks";
-    const referencePrice = await priceUtils.getReferencePrice(
+    const referencePrice = await this.priceUtils.getReferencePrice(
       this.#market,
       ba,
       [...this.#market.getBook()[ba]]
@@ -111,28 +110,28 @@ export class FailingOffer {
       return;
     }
 
-    const offerDataDetailed = await postOfferUtils.getOfferDataDetialed(
+    const offerDataDetailed = await this.postOfferUtils.getOfferDataDetialed(
       this.#market,
       this.#makerAddress,
       ba,
-      priceUtils.choosePrice(ba, referencePrice, this.#lambda),
+      this.priceUtils.choosePrice(ba, referencePrice, this.#lambda),
       Big(random.float(1, this.#maxQuantity)),
       referencePrice,
       100_000,
       1
     );
-    postOfferUtils.logOffer(
+    this.postOfferUtils.logOffer(
       "Posting offer",
       "debug",
       this.#market,
       offerDataDetailed
     );
 
-    await postOfferUtils
+    await this.postOfferUtils
       .postFailing(offerDataDetailed)
       .then((txInfo) => {
         // FIXME We should include the offer ID. mangrove.js Maker.ts will have a function for posting offers that returns the ID, so we should use that once available
-        postOfferUtils.logOffer(
+        this.postOfferUtils.logOffer(
           "Successfully posted offer",
           "info",
           this.#market,
@@ -147,7 +146,7 @@ export class FailingOffer {
         });
       })
       .catch((e) => {
-        postOfferUtils.logOffer(
+        this.postOfferUtils.logOffer(
           "Post of offer failed",
           "error",
           this.#market,

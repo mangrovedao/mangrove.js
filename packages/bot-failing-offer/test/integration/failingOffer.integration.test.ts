@@ -111,7 +111,7 @@ describe("Failing offer integration tests", () => {
       makerConfig
     );
 
-    const spyFailingOffer = mockito.spy(priceUtils);
+    const spyFailingOffer = mockito.spy(failingOffer.priceUtils);
 
     mockito
       .when(

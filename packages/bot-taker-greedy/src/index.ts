@@ -14,9 +14,10 @@ import { MarketConfig } from "./MarketConfig";
 import { OfferTaker } from "./OfferTaker";
 
 import { BaseProvider } from "@ethersproject/providers";
-import { ToadScheduler } from "toad-scheduler";
+import { approveMangroveUtils, configUtils } from "@mangrovedao/bot-utils";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 import { BalanceUtils } from "@mangrovedao/bot-utils/build/util/balanceUtils";
+import { ToadScheduler } from "toad-scheduler";
 
 type TokenPair = { token1: string; token2: string };
 const offerTakerMap = new Map<TokenPair, OfferTaker>();
@@ -24,13 +25,15 @@ const offerTakerMap = new Map<TokenPair, OfferTaker>();
 const scheduler = new ToadScheduler();
 const setup = new Setup(config);
 const balanceUtils = new BalanceUtils(config);
+const approvalUtil = new approveMangroveUtils.ApproveMangroveUtils(config);
+const configUtil = new configUtils.ConfigUtils(config);
 
 async function startTakersForMarkets(
   mgv: Mangrove,
   address: string,
   scheduler: ToadScheduler
 ): Promise<void> {
-  const marketConfigs = setup.getMarketConfigsOrThrow<MarketConfig>();
+  const marketConfigs = configUtil.getMarketConfigsOrThrow<MarketConfig>();
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -59,9 +62,9 @@ async function botFunction(
   signer: Wallet,
   provider: BaseProvider
 ) {
-  const tokenConfigs = setup.getTokenConfigsOrThrow();
+  const tokenConfigs = configUtil.getTokenConfigsOrThrow();
 
-  await setup.approveMangroveForTokens(mgv, tokenConfigs, "init");
+  await approvalUtil.approveMangroveForTokens(mgv, tokenConfigs, "init");
 
   await balanceUtils.logTokenBalances(
     mgv,

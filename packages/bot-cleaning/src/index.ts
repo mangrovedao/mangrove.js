@@ -4,20 +4,22 @@
  * @module
  */
 
-import config from "./util/config";
-import { logger } from "./util/logger";
 import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
+import { configUtils } from "@mangrovedao/bot-utils";
+import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 import Mangrove from "@mangrovedao/mangrove.js";
 import http from "http";
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
 import { MarketCleaner } from "./MarketCleaner";
-import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
+import config from "./util/config";
+import { logger } from "./util/logger";
 
 type MarketPair = { base: string; quote: string };
 
 const scheduler = new ToadScheduler();
 const setup = new Setup(config);
+const configUtil = new configUtils.ConfigUtils(config);
 
 function createAsyncMarketCleaner(
   mgv: Mangrove,
@@ -55,7 +57,7 @@ async function botFunction(
   signer: Wallet,
   provider: BaseProvider
 ) {
-  const botConfig = setup.getAndValidateConfig();
+  const botConfig = configUtil.getAndValidateConfig();
 
   const marketConfigs = botConfig.markets;
   const marketCleanerMap = new Map<MarketPair, MarketCleaner>();

@@ -1,7 +1,8 @@
-import config from "./config";
 import Mangrove from "@mangrovedao/mangrove.js";
+import config from "./config";
 
-import { ErrorWithData } from "@mangrovedao/commonlib.js";
+import { Setup } from "@mangrovedao/bot-utils/build/setup";
+import { ConfigUtils } from "@mangrovedao/bot-utils/build/util/configUtils";
 import Big from "big.js";
 import { FailingOffer } from "../FailingOffer";
 import { TokenPair } from "../index";
@@ -20,11 +21,14 @@ export type MarketConfig = {
   makerConfig: MakerConfig;
 };
 
+const setup = new Setup(config);
+const configUtil = new ConfigUtils(config);
+
 export async function startFailingOffersForMarkets(
   mgv: Mangrove,
   address: string
 ): Promise<Map<TokenPair, FailingOffer>> {
-  const marketConfigs = getMarketConfigsOrThrow();
+  const marketConfigs = configUtil.getMarketConfigsOrThrow<MarketConfig>();
   const failingOfferMap = new Map<TokenPair, FailingOffer>();
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
@@ -45,19 +49,4 @@ export async function startFailingOffersForMarkets(
     failingOffer.start();
   }
   return failingOfferMap;
-}
-
-export function getMarketConfigsOrThrow(): MarketConfig[] {
-  if (!config.has("markets")) {
-    throw new Error("No markets have been configured");
-  }
-  const marketsConfig = config.get<Array<MarketConfig>>("markets");
-  if (!Array.isArray(marketsConfig)) {
-    throw new ErrorWithData(
-      "Markets configuration is malformed, should be an array of MarketConfig's",
-      marketsConfig
-    );
-  }
-  // FIXME Validate that the market configs are actually MarketConfig's
-  return marketsConfig;
 }

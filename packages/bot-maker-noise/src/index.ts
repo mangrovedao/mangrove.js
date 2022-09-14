@@ -15,18 +15,26 @@ import { OfferMaker } from "./OfferMaker";
 import { MarketConfig } from "./MarketConfig";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 import { BalanceUtils } from "@mangrovedao/bot-utils/build/util/balanceUtils";
+import {
+  approveMangroveUtils,
+  configUtils,
+  provisionMangroveUtils,
+} from "@mangrovedao/bot-utils";
 
 type TokenPair = { token1: string; token2: string };
 
 const setup = new Setup(config);
 const balanceUtils = new BalanceUtils(config);
+const provisionUtil = new provisionMangroveUtils.ProvisionMangroveUtils(config);
+const approvalUtil = new approveMangroveUtils.ApproveMangroveUtils(config);
+const configUtil = new configUtils.ConfigUtils(config);
 
 async function startMakersForMarkets(
   mgv: Mangrove,
   address: string
 ): Promise<void> {
   const offerMakerMap = new Map<TokenPair, OfferMaker>();
-  const marketConfigs = setup.getMarketConfigsOrThrow<MarketConfig>();
+  const marketConfigs = configUtil.getMarketConfigsOrThrow<MarketConfig>();
   for (const marketConfig of marketConfigs) {
     const tokenPair = {
       token1: marketConfig.baseToken,
@@ -52,11 +60,11 @@ const botFunction = async (
   signer: Wallet,
   provider: BaseProvider
 ) => {
-  await setup.provisionMakerOnMangrove(mgv, signer.address, "init");
+  await provisionUtil.provisionMakerOnMangrove(mgv, signer.address, "init");
 
-  const tokenConfigs = setup.getTokenConfigsOrThrow();
+  const tokenConfigs = configUtil.getTokenConfigsOrThrow();
 
-  await setup.approveMangroveForTokens(mgv, tokenConfigs, "init");
+  await approvalUtil.approveMangroveForTokens(mgv, tokenConfigs, "init");
 
   await balanceUtils.logTokenBalances(
     mgv,
