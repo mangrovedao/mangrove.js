@@ -41,10 +41,11 @@ contract MangroveOrderEnriched is MangroveOrder {
   ) internal virtual override {
     //TODO: [lnist] Nothing trims the list, so it just grows indefinitely for each owner.
     // Push new offerId as the new head
-    uint head = next[outbound_tkn][inbound_tkn][owner][0];
-    next[outbound_tkn][inbound_tkn][owner][0] = offerId;
+    mapping(uint => uint) storage offers = next[outbound_tkn][inbound_tkn][owner];
+    uint head = offers[0];
+    offers[0] = offerId;
     if (head != 0) {
-      next[outbound_tkn][inbound_tkn][owner][offerId] = head;
+      offers[offerId] = head;
     }
   }
 
@@ -61,33 +62,34 @@ contract MangroveOrderEnriched is MangroveOrder {
     IERC20 outbound_tkn,
     IERC20 inbound_tkn
   ) external view returns (uint[] memory live, uint[] memory dead) {
-    // Iterate all offers for owner twice.
+    // Iterate all offers for owner twice since we cannot use array.push on memory arrays.
     // First to get number of live and dead to allocate arrays.
-    // Second to populate arrays.
-    uint head = next[outbound_tkn][inbound_tkn][owner][0];
+    mapping(uint => uint) storage offers = next[outbound_tkn][inbound_tkn][owner];
+    uint head = offers[0];
     uint id = head;
-    uint n_live = 0;
-    uint n_dead = 0;
+    uint nLive = 0;
+    uint nDead = 0;
     while (id != 0) {
       if (MGV.isLive(MGV.offers(address(outbound_tkn), address(inbound_tkn), id))) {
-        n_live++;
+        nLive++;
       } else {
-        n_dead++;
+        nDead++;
       }
-      id = next[outbound_tkn][inbound_tkn][owner][id];
+      id = offers[id];
     }
-    live = new uint[](n_live);
-    dead = new uint[](n_dead);
+    // Repeat the loop with same logic, but now populate live and dead arrays.
+    live = new uint[](nLive);
+    dead = new uint[](nDead);
     id = head;
-    n_live = 0;
-    n_dead = 0;
+    nLive = 0;
+    nDead = 0;
     while (id != 0) {
       if (MGV.isLive(MGV.offers(address(outbound_tkn), address(inbound_tkn), id))) {
-        live[n_live++] = id;
+        live[nLive++] = id;
       } else {
-        dead[n_dead++] = id;
+        dead[nDead++] = id;
       }
-      id = next[outbound_tkn][inbound_tkn][owner][id];
+      id = offers[id];
     }
     return (live, dead);
   }

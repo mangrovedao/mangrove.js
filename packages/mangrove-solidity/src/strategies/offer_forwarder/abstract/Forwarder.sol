@@ -87,7 +87,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint offerId
   ) public view override returns (address owner) {
     owner = ownerData[outbound_tkn][inbound_tkn][offerId].owner;
-    require(owner != address(0), "multiUser/unkownOffer");
+    require(owner != address(0), "multiUser/unknownOffer");
   }
 
   function reserve() public view override returns (address) {
@@ -134,7 +134,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       local.offer_gasbase()
     );
     // mangrove will take max(`mko.gasprice`, `global.gasprice`)
-    // if `mko.gapsrice < global.gasprice` Mangrove will use availble provision of this contract to provision the offer
+    // if `mko.gasprice < global.gasprice` Mangrove will use available provision of this contract to provision the offer
     // this would potentially take native tokens that have been released after some offer managed by this contract have failed
     // so one needs to make sure here that only provision of this call will be used to provision the offer on mangrove
     require(
@@ -178,8 +178,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
 
   ///@notice updates an offer existing on Mangrove (not necessarily live).
   ///@dev gasreq == max_int indicates one wishes to use ofr_gasreq (default value)
-  ///@dev gasprice is overriden by the value computed by taking into account :
-  /// * value transfered on current tx
+  ///@dev gasprice is overridden by the value computed by taking into account :
+  /// * value transferred on current tx
   /// * if offer was deprovisioned after a fail, amount of wei (still on this contract balance on Mangrove) that should be counted as offer owner's
   /// * if offer is still live, its current locked provision
   function updateOffer(
@@ -230,8 +230,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   // not doing this would allow a user to submit an `new/updateOffer` underprovisioned for the announced gasprice
   // Mangrove would then erroneously take missing WEIs in `this` contract free balance (possibly coming from uncollected deprovisioned offers after a fail).
   // need to treat 2 cases:
-  // * if offer is deprovisioned one needs to use msg.value and `ownerData.wei_balance` to derive gasprice (deprovioning sets offer.gasprice to 0)
-  // * if offer is still live one should compute its currenlty locked provision $P$ and derive gasprice based on msg.value + $P$ (note if msg.value = 0 offer can be reposted with offer.gasprice)
+  // * if offer is deprovisioned one needs to use msg.value and `ownerData.wei_balance` to derive gasprice (deprovisioning sets offer.gasprice to 0)
+  // * if offer is still live one should compute its currently locked provision $P$ and derive gasprice based on msg.value + $P$ (note if msg.value = 0 offer can be reposted with offer.gasprice)
 
 
   function _updateOffer(UpdateOfferData memory upd)
@@ -273,7 +273,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       // if value == 0  we keep upd.gasprice unchanged
     }
     // if `upd.fund` is too low, offer gasprice might be below mangrove gasprice
-    // Mangrove will then take its own gasprice for the offer and would possibily tap into `this` contract's pool to cover for the missing provision
+    // Mangrove will then take its own gasprice for the offer and would possibly tap into `this` contract's pool to cover for the missing provision
     require(
       upd.gasprice >= upd.global.gasprice(),
       "Forwarder/updateOffer/NotEnoughProvision"
@@ -401,7 +401,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     result; // ssh
     IERC20 outTkn = IERC20(order.outbound_tkn);
     IERC20 inTkn = IERC20(order.inbound_tkn);
-    OwnerData memory od = ownerData[outTkn][inTkn][order.offerId];
+    mapping(uint => OwnerData) storage semiBookOwnerData = ownerData[outTkn][inTkn];
+    OwnerData memory od = semiBookOwnerData[order.offerId];
     // NB if several offers of `this` contract have failed during the market order, the balance of this contract on Mangrove will contain cumulated free provision
 
     // computing an under approximation of returned provision because of this offer's failure
@@ -426,7 +427,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
 
     // storing the portion of this contract's balance on Mangrove that should be attributed back to the failing offer's owner
     // those free WEIs can be retrieved by offer owner, by calling `retractOffer` with the `deprovision` flag.
-    ownerData[outTkn][inTkn][order.offerId] = OwnerData({
+    semiBookOwnerData[order.offerId] = OwnerData({
       owner: od.owner,
       wei_balance: uint96(approxReturnedProvision) // previous wei_balance is always 0 here: if offer failed in the past, `updateOffer` did reuse it
     });

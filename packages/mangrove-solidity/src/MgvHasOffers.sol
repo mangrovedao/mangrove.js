@@ -37,7 +37,7 @@ contract MgvHasOffers is MgvRoot {
 
        Offers specify the amount of gas they require for successful execution ([`gasreq`](#structs.js/gasreq)). To minimize book spamming, market makers must provision a *penalty*, which depends on their `gasreq` and on the pair's [`offer_gasbase`](#structs.js/gasbase). This provision is deducted from their `balanceOf`. If an offer fails, part of that provision is given to the taker, as retribution. The exact amount depends on the gas used by the offer before failing.
 
-       The Mangrove keeps track of their available balance in the `balanceOf` map, which is decremented every time a maker creates a new offer, and may be modified on offer updates/cancelations/takings.
+       The Mangrove keeps track of their available balance in the `balanceOf` map, which is decremented every time a maker creates a new offer, and may be modified on offer updates/cancellations/takings.
      */
   mapping(address => uint) public balanceOf;
 
@@ -133,18 +133,15 @@ contract MgvHasOffers is MgvRoot {
     P.Local.t local
   ) internal returns (P.Local.t) {
     unchecked {
+      mapping(uint => P.Offer.t) storage semiBook = offers[outbound_tkn][inbound_tkn];
       if (betterId != 0) {
-        offers[outbound_tkn][inbound_tkn][betterId] = offers[outbound_tkn][
-          inbound_tkn
-        ][betterId].next(worseId);
+        semiBook[betterId] = semiBook[betterId].next(worseId);
       } else {
         local = local.best(worseId);
       }
 
       if (worseId != 0) {
-        offers[outbound_tkn][inbound_tkn][worseId] = offers[outbound_tkn][
-          inbound_tkn
-        ][worseId].prev(betterId);
+        semiBook[worseId] = semiBook[worseId].prev(betterId);
       }
 
       return local;
