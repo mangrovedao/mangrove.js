@@ -48,8 +48,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     MGV = mgv;
   }
 
-  ///@notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated.
-  ///@return total gas cost including router specific costs (if any).
+  /// @inheritdoc IOfferLogic
   function ofr_gasreq() public view returns (uint) {
     AbstractRouter router_ = router();
     if (router_ != NO_ROUTER) {
@@ -272,6 +271,9 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return true;
   }
 
+  ///@notice Post-hook that implements fallback behavior when Taker Order's execution failed unexpectedly.
+  ///@param order is a recall of the taker order that is at the origin of the current trade.
+  ///@param makerData contains a message emitted by `__lastLook__` hook during `makerExecute`.
   function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
@@ -282,9 +284,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return true;
   }
 
-  // returns missing provision to repost `offerId` at given `gasreq` and `gasprice`
-  // if `offerId` is not in the Order Book, will simply return how much is needed to post
-  // NB in the case of a multi user contract, this function does not take into account a potential partition of the provision of `this` amongst offer owners
+  ///@notice computes missing provision to repost `offerId` at given `gasreq` and `gasprice` ignoring current contract's balance on Mangrove
+  ///@dev if `offerId` is not in the Order Book, will simply return how much is needed to post
   function getMissingProvision(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -316,8 +317,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       offerDetailData.offer_gasbase()) *
       offerDetailData.gasprice() *
       10**9;
-    uint currentProvision = currentProvisionLocked +
-      MGV.balanceOf(address(this));
-    return (currentProvision >= bounty ? 0 : bounty - currentProvision);
+    return (
+      currentProvisionLocked >= bounty ? 0 : bounty - currentProvisionLocked
+    );
   }
 }
