@@ -13,7 +13,7 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 import "./MangoStorage.sol";
 import "./MangoImplementation.sol";
-import "../../abstract/Persistent.sol";
+import "../../abstract/Direct.sol";
 import "../../../routers/AbstractRouter.sol";
 import "../../../routers/SimpleRouter.sol";
 
@@ -27,7 +27,7 @@ import "../../../routers/SimpleRouter.sol";
 /** Each time this strat receives q `QUOTE` tokens (ask was taken) at price position i, it increases the offered (`QUOTE`) volume of the bid at position i-1 of 'q'*/
 /** In case of a partial fill of an offer at position i, the offer residual is reposted (see `Persistent` strat class)*/
 
-contract Mango is Persistent {
+contract Mango is Direct {
   // emitted when init function has been called and AMM becomes active
   event Initialized(uint from, uint to);
 
@@ -49,7 +49,7 @@ contract Mango is Persistent {
     uint price_incr,
     address deployer
   )
-    Persistent(
+    Direct(
       mgv,
       new SimpleRouter() // routes liqudity from (to) reserve to (from) this contract
     )
@@ -318,24 +318,27 @@ contract Mango is Persistent {
     }
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 maker_data)
     internal
     virtual
     override
-    returns (bool)
+    returns (bytes32)
   {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
-    bool reposted = super.__posthookSuccess__(order, makerData);
+    bytes32 posthook_data = super.__posthookSuccess__(order, maker_data);
+    // checking whether repost failed
+    bool repost_success = (posthook_data == "posthook/reposted" || posthook_data == "posthook/completeFill") ;
+
 
     if (order.outbound_tkn == address(BASE)) {
-      if (!reposted) {
+      if (!repost_success) {
         // residual could not be reposted --either below density or Mango went out of provision on Mangrove
         mStr.pending_base = __residualGives__(order); // this includes previous `pending_base`
       } else {
         mStr.pending_base = 0;
       }
     } else {
-      if (!reposted) {
+      if (!repost_success) {
         // residual could not be reposted --either below density or Mango went out of provision on Mangrove
         mStr.pending_quote = __residualGives__(order); // this includes previous `pending_base`
       } else {
@@ -353,7 +356,7 @@ contract Mango is Persistent {
     if (!success) {
       MangoStorage.revertWithData(retdata);
     } else {
-      return abi.decode(retdata, (bool));
+      return abi.decode(retdata, (bytes32));
     }
   }
 }

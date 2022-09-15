@@ -108,7 +108,7 @@ abstract contract Direct is MangroveOffer {
     uint gasprice,
     uint pivotId,
     uint offerId
-  ) external payable override onlyAdmin returns (bool) {
+  ) public payable override mgvOrAdmin {
     MGV.updateOffer{value: msg.value}(
       address(outbound_tkn),
       address(inbound_tkn),
@@ -119,7 +119,6 @@ abstract contract Direct is MangroveOffer {
       pivotId,
       offerId
     );
-    return true;
   }
 
   // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove.
@@ -176,22 +175,19 @@ abstract contract Direct is MangroveOffer {
     }
   }
 
-  ////// Customizable post-hooks.
-
-  // Override this post-hook to implement what `this` contract should do when called back after a successfully executed order.
-  // In this posthook, contract will flush its liquidity towards the reserve (noop if reserve is this contract)
-  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32)
+  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
     override
-    returns (bool success)
+    returns (bytes32)
   {
     IERC20[] memory tokens = new IERC20[](2);
     tokens[0] = IERC20(order.outbound_tkn); // flushing outbound tokens if this contract pulled more liquidity than required during `makerExecute`
     tokens[1] = IERC20(order.inbound_tkn); // flushing liquidity brought by taker
     // sends all tokens to the reserve (noop if reserve() == address(this))
     flush(tokens);
-    success = true;
+    // reposting offer residual if any
+    return super.__posthookSuccess__(order, makerData);
   }
 
   function __checkList__(IERC20 token) internal view virtual override {

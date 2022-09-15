@@ -37,9 +37,7 @@ interface IOfferLogic is IMaker {
   ///@notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated.
   ///@return total gas cost including router specific costs (if any).
   function ofrGasreq() external view returns (uint);
-
-  // returns missing provision on Mangrove, should `offerId` be reposted using `gasreq` and `gasprice` parameters
-  // if `offerId` is not in the `outbound_tkn,inbound_tkn` offer list, the totality of the necessary provision is returned
+  
   function getMissingProvision(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -48,13 +46,15 @@ interface IOfferLogic is IMaker {
     uint offerId
   ) external view returns (uint);
 
-  /// @notice sets `this` contract's default gasreq for `new/updateOffer`.
-  /// @param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs.
-  /// @dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofrGasreq()`
+  ///@notice sets `this` contract's default gasreq for `new/updateOffer`.
+  ///@param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs.
+  ///@dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofrGasreq()`
   function setGasreq(uint gasreq) external;
 
-  // changing liqudity router of the logic
-  function setRouter(AbstractRouter router) external;
+  ///@notice sets a new router to pull outbound tokens from contract's reserve to `this` and push inbound tokens to reserve.
+  ///@param router_ the new router contract that this contract should use. Use `NO_ROUTER` for no router.
+  ///@dev new router needs to be approved by `this` contract to push funds to reserve (see `activate` function). It also needs to be approved by reserve to pull from it.
+  function setRouter(AbstractRouter router_) external;
 
   // withdraw `amount` `token` form the contract's (owner) reserve and sends them to `receiver`'s balance
   function withdrawToken(
@@ -63,17 +63,22 @@ interface IOfferLogic is IMaker {
     uint amount
   ) external returns (bool success);
 
-  ///@notice throws if this maker contract is missing approval to be used by caller to trade on the given asset
-  ///@param tokens the assets the caller wishes to trade
+  ///@notice verifies that this contract's current state is ready to be used by msg.sender to post offers on Mangrove
+  ///@dev throws with a reason when there is a missing approval
   function checkList(IERC20[] calldata tokens) external view;
 
   ///@return balance the  `token` amount that `msg.sender` has in the contract's reserve
   function tokenBalance(IERC20 token) external view returns (uint balance);
 
-  // contract's activation sequence for a specific ERC
+  /// @notice allows `this` contract to be a liquidity provider for a particular asset by performing the necessary approvals
+  /// @param tokens the ERC20 `this` contract will approve to be able to trade on Mangrove's corresponding markets.
   function activate(IERC20[] calldata tokens) external;
 
-  // pulls available free wei from Mangrove balance to `this`
+  ///@notice withdraws ETH from the provision account on Mangrove and sends collected WEIs to `receiver`
+  ///@dev for multi user strats, the contract provision account on Mangrove is pooled amongst offer owners so admin should only call this function to recover WEIs (e.g. that were erroneously transferred to Mangrove using `MGV.fund()`)
+  /// This contract's balance on Mangrove may contain deprovisioned WEIs after an offer has failed (complement between provision and the bounty that was sent to taker)
+  /// those free WEIs can be retrieved by offer owners by calling `retractOffer` with the `deprovsion` flag. Not by calling this function which is admin only.
+  
   function withdrawFromMangrove(uint amount, address payable receiver) external;
 
   function updateOffer(
@@ -85,7 +90,7 @@ interface IOfferLogic is IMaker {
     uint gasprice, // gasprice that should be consider to compute the bounty (Mangrove's gasprice will be used if this value is lower)
     uint pivotId,
     uint offerId // 0 if new offer order
-  ) external payable returns (bool);
+  ) external payable;
 
   function retractOffer(
     IERC20 outbound_tkn,
@@ -99,8 +104,12 @@ interface IOfferLogic is IMaker {
   // for multi users, the maker is `msg.sender`
   function reserve() external view returns (address);
 
-  // allow one to change the reserve holding maker's liquidity
+  /** @notice sets the address of the reserve of maker(s). 
+  If `this` contract is a forwarder the call sets the reserve for `msg.sender`. Otherwise it sets the reserve for `address(this)`.*/
+  /// @param reserve the address of maker's reserve
   function setReserve(address reserve) external;
 
+  /// @notice Contract's router getter.
+  /// @dev contract has a router if `this.router() != this.NO_ROUTER()`
   function router() external view returns (AbstractRouter);
 }

@@ -11,8 +11,8 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
+import "mgv_src/IMangrove.sol";
 import "./MangoStorage.sol";
-import "../../abstract/Persistent.sol";
 import "mgv_src/strategies/utils/TransferLib.sol";
 
 //import "../routers/AbstractRouter.sol";
@@ -550,7 +550,7 @@ contract MangoImplementation {
   function $postDualOffer(ML.SingleOrder calldata order, uint gasreq)
     external
     delegated
-    returns (bool success)
+    returns (bytes32 status)
   {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
 
@@ -573,9 +573,10 @@ contract MangoImplementation {
         if (pos - 1 <= mStr.min_buffer) {
           emit BidAtMaxPosition();
         }
-        return true;
+        return "Mango/BidPosted";
       } else {
         // Ask cannot be at Pmin unless a shift has eliminated all bids
+        // reverting so that Mangrove's logs the problem
         revert("Mango/BidOutOfRange");
       }
     } else {
@@ -597,7 +598,7 @@ contract MangoImplementation {
         if (pos + 1 >= NSLOTS - mStr.min_buffer) {
           emit AskAtMinPosition();
         }
-        return true;
+        return "Mango";
       } else {
         revert("Mango/AskOutOfRange");
       }

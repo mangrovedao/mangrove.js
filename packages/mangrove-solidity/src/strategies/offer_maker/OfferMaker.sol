@@ -12,14 +12,14 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-import "mgv_src/strategies/offer_maker/abstract/Persistent.sol";
+import "mgv_src/strategies/offer_maker/abstract/Direct.sol";
 import "mgv_src/strategies/routers/AbstractRouter.sol";
 import "mgv_src/strategies/interfaces/IMakerLogic.sol";
 
-contract OfferMaker is IMakerLogic, Persistent {
+contract OfferMaker is IMakerLogic, Direct {
 
   constructor(IMangrove mgv, AbstractRouter _router, address deployer)
-    Persistent(mgv, _router) 
+    Direct(mgv, _router) 
   {
     setGasreq(25_000);
     // stores total gas requirement of this strat (depends on router gas requirements)

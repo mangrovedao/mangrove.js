@@ -95,8 +95,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     return mkr_reserve == address(0) ? msg.sender : mkr_reserve;
   }
 
-  function setReserve(address __reserve) public override {
-    _setReserve(msg.sender, __reserve);
+  function setReserve(address reserve_) external override {
+    _setReserve(msg.sender, reserve_);
   }
 
   struct NewOfferData {
@@ -191,12 +191,12 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint gasprice, // value ignored but kept to maintain compatibility with `Direct` offers
     uint pivotId,
     uint offerId
-    ) public payable override returns (bool success) {
+    ) external payable override {
     OwnerData memory od = ownerData[outbound_tkn][inbound_tkn][
       offerId
     ];
     require(
-      msg.sender == od.owner || msg.sender == address(MGV),
+      msg.sender == od.owner,
       "Multi/updateOffer/unauthorized"
     );
     gasprice; // ssh
@@ -223,7 +223,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
 
     // if `wei_balance` > 0 then `this` contract has a balance on Mangrove >= `wei_balance`.
     upd.wei_balance = od.wei_balance;
-    success = _updateOffer(upd);
+    _updateOffer(upd);
   }
 
   // upd.gasprice is kept to 0 because it will be derived from `msg.value` 
@@ -233,10 +233,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   // * if offer is deprovisioned one needs to use msg.value and `ownerData.wei_balance` to derive gasprice (deprovisioning sets offer.gasprice to 0)
   // * if offer is still live one should compute its currently locked provision $P$ and derive gasprice based on msg.value + $P$ (note if msg.value = 0 offer can be reposted with offer.gasprice)
 
-
   function _updateOffer(UpdateOfferData memory upd)
     private
-    returns (bool)
   { 
     // storing current offer gasprice into `upd` struct
     upd.gasprice = upd.offer_detail.gasprice();
@@ -278,22 +276,16 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       upd.gasprice >= upd.global.gasprice(),
       "Forwarder/updateOffer/NotEnoughProvision"
     );
-    try
-      MGV.updateOffer{value: upd.fund}(
-        address(upd.outbound_tkn),
-        address(upd.inbound_tkn),
-        upd.wants,
-        upd.gives,
-        upd.gasreq,
-        upd.gasprice,
-        upd.pivotId,
-        upd.offerId
-      )
-    {
-      return true;
-    } catch {
-      return false;
-    }
+    MGV.updateOffer{value: upd.fund}(
+      address(upd.outbound_tkn),
+      address(upd.inbound_tkn),
+      upd.wants,
+      upd.gives,
+      upd.gasreq,
+      upd.gasprice,
+      upd.pivotId,
+      upd.offerId
+    );
   }
 
   // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove. Function call will throw if `this` contract is not the owner of `offerId`.
@@ -397,7 +389,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   function __posthookFallback__(
     ML.SingleOrder calldata order,
     ML.OrderResult calldata result
-  ) internal virtual override returns (bool success) {
+  ) internal virtual override returns (bytes32) {
     result; // ssh
     IERC20 outTkn = IERC20(order.outbound_tkn);
     IERC20 inTkn = IERC20(order.inbound_tkn);
@@ -431,7 +423,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       owner: od.owner,
       wei_balance: uint96(approxReturnedProvision) // previous wei_balance is always 0 here: if offer failed in the past, `updateOffer` did reuse it
     });
-    success = true;
+    return "";
   }
 
   function __checkList__(IERC20 token) internal view virtual override {

@@ -11,10 +11,10 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import "mgv_src/strategies/offer_maker/abstract/Persistent.sol";
+import "mgv_src/strategies/offer_maker/abstract/Direct.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
 
-contract Ghost is Persistent {
+contract Ghost is Direct {
   IERC20 public immutable STABLE1;
   IERC20 public immutable STABLE2;
 
@@ -30,7 +30,7 @@ contract Ghost is Persistent {
     IMangrove mgv,
     IERC20 stable1,
     IERC20 stable2
-  ) Persistent(mgv, new SimpleRouter()) {
+  ) Direct (mgv, new SimpleRouter()) {
     STABLE1 = stable1;
     STABLE2 = stable2;
   }
@@ -90,10 +90,10 @@ contract Ghost is Persistent {
   function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
     internal
     override
-    returns (bool)
+    returns (bytes32)
   {
     // reposts residual if any
-    bool reposted = super.__posthookSuccess__(order, makerData);
+    bytes32 repost_status = super.__posthookSuccess__(order, makerData);
     // write here what you want to do if not `reposted`
     // reasons for not ok are:
     // - residual below density (dust)
@@ -102,7 +102,8 @@ contract Ghost is Persistent {
     (IERC20 alt_stable, uint alt_offerId) = IERC20(order.inbound_tkn) == STABLE1
       ? (STABLE2, offerId2)
       : (STABLE1, offerId1);
-    if (reposted) {
+
+    if (repost_status == "posthook/reposted") {
       uint new_alt_gives = __residualGives__(order); // in base units
       P.Offer.t alt_offer = MGV.offers(
         order.outbound_tkn,
@@ -129,7 +130,7 @@ contract Ghost is Persistent {
         pivotId: alt_offer.next(),
         gasprice: 0
       });
-    } else {
+    } else { // repost failed or offer was entirely taken
       MGV.retractOffer({
         outbound_tkn: address(order.outbound_tkn),
         inbound_tkn: address(order.inbound_tkn),
@@ -143,5 +144,6 @@ contract Ghost is Persistent {
         deprovision: true
       });
     }
+    return "";
   }
 }
