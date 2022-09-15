@@ -6,12 +6,11 @@ import { afterEach, before, beforeEach, describe, it } from "mocha";
 import { Mangrove, Market, mgvTestUtil } from "@mangrovedao/mangrove.js";
 
 import { Provider } from "@ethersproject/abstract-provider";
-import { priceUtils } from "@mangrovedao/bot-utils";
+import assert from "assert";
 import Big from "big.js";
 import { ethers } from "ethers";
 import * as mockito from "ts-mockito";
 import { FailingOffer } from "../../src/FailingOffer";
-import assert from "assert";
 
 let deployer: mgvTestUtil.Account; // Owner of SimpleTestMaker contract
 let maker: mgvTestUtil.Account; // Owner of SimpleTestMaker contract
