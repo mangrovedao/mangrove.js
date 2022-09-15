@@ -19,10 +19,10 @@ contract OfferForwarder is IMakerLogic, PersistentForwarder {
   constructor(IMangrove mgv, address deployer)
     PersistentForwarder(mgv, new SimpleRouter())
   {
-    set_gasreq(50_000);
+    setGasreq(50_000);
     if (deployer != msg.sender) {
-      set_admin(deployer);
-      router().set_admin(deployer);
+      setAdmin(deployer);
+      router().setAdmin(deployer);
     }
   }
   

@@ -70,7 +70,7 @@ contract Ghost is Persistent {
       inbound_tkn: address(STABLE1),
       wants: wants1,
       gives: gives,
-      gasreq: ofr_gasreq(),
+      gasreq: ofrGasreq(),
       gasprice: 0,
       pivotId: pivot1
     });
@@ -81,7 +81,7 @@ contract Ghost is Persistent {
       inbound_tkn: address(STABLE2),
       wants: wants2,
       gives: gives,
-      gasreq: ofr_gasreq(),
+      gasreq: ofrGasreq(),
       gasprice: 0,
       pivotId: pivot2
     });
@@ -125,7 +125,7 @@ contract Ghost is Persistent {
         gives: new_alt_gives,
         wants: new_alt_wants,
         offerId: alt_offerId,
-        gasreq: ofr_gasreq(),
+        gasreq: ofrGasreq(),
         pivotId: alt_offer.next(),
         gasprice: 0
       });

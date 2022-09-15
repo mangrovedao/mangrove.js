@@ -198,7 +198,7 @@ class OfferLogic {
     amount: number,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const tx = this.contract.set_gasreq(
+    const tx = this.contract.setGasreq(
       ethers.BigNumber.from(amount),
       overrides
     );
@@ -206,7 +206,7 @@ class OfferLogic {
   }
 
   async getDefaultGasreq(): Promise<number> {
-    const gr = await this.contract.ofr_gasreq();
+    const gr = await this.contract.ofrGasreq();
     return gr.toNumber();
   }
 
@@ -214,7 +214,7 @@ class OfferLogic {
     newAdmin: string,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    return this.contract.set_admin(newAdmin, overrides);
+    return this.contract.setAdmin(newAdmin, overrides);
   }
 
   getAdmin(): Promise<string> {

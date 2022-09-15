@@ -53,7 +53,7 @@ contract MangroveOfferTest is MangroveTest {
 
   function test_DefaultGasReq() public {
     assertEq(
-      makerContract.ofr_gasreq(),
+      makerContract.ofrGasreq(),
       25_000,
       "Incorrect default gasreq for offer maker"
     );
@@ -127,33 +127,14 @@ contract MangroveOfferTest is MangroveTest {
     assertEq(maker.balance, balMaker + 0.5 ether, "incorrect balance");
   }
 
-  function test_GetMissingProvisionTakesBalanceIntoAccount() public {
-    uint missing = makerContract.getMissingProvision(
-      weth,
-      usdc,
-      type(uint).max,
-      0,
-      0
-    );
-    mgv.fund{value: missing - 1}(address(makerContract));
-    uint missing_ = makerContract.getMissingProvision(
-      weth,
-      usdc,
-      type(uint).max,
-      0,
-      0
-    );
-    assertEq(missing_, 1, "incorrect missing provision");
-  }
-
   function test_AdminCanSetRouter() public {
     vm.expectRevert("AccessControlled/Invalid");
-    makerContract.set_router(SimpleRouter(freshAddress()));
+    makerContract.setRouter(SimpleRouter(freshAddress()));
 
     vm.startPrank(maker);
     SimpleRouter router = new SimpleRouter();
-    router.set_admin(address(makerContract));
-    makerContract.set_router(router);
+    router.setAdmin(address(makerContract));
+    makerContract.setRouter(router);
     assertEq(
       address(makerContract.router()),
       address(router),
@@ -165,8 +146,8 @@ contract MangroveOfferTest is MangroveTest {
   function test_CheckListTakesNewRouterIntoAccount() public {
     vm.startPrank(maker);
     SimpleRouter router = new SimpleRouter();
-    router.set_admin(address(makerContract));
-    makerContract.set_router(router);
+    router.setAdmin(address(makerContract));
+    makerContract.setRouter(router);
 
     IERC20[] memory tokens = dynamic([IERC20(weth), usdc]);
     vm.expectRevert("MangroveOffer/LogicMustApproveMangrove");
@@ -177,14 +158,14 @@ contract MangroveOfferTest is MangroveTest {
   }
 
   function test_GasReqTakesNewRouterIntoAccount() public {
-    uint gasreq = makerContract.ofr_gasreq();
+    uint gasreq = makerContract.ofrGasreq();
     vm.startPrank(maker);
     SimpleRouter router = new SimpleRouter();
-    router.set_admin(address(makerContract));
-    makerContract.set_router(router);
+    router.setAdmin(address(makerContract));
+    makerContract.setRouter(router);
     assertEq(
-      makerContract.ofr_gasreq(),
-      gasreq + router.gas_overhead(),
+      makerContract.ofrGasreq(),
+      gasreq + router.gasOverhead(),
       "incorrect gasreq"
     );
   }

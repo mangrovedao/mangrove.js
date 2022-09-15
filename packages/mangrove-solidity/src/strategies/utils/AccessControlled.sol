@@ -24,7 +24,7 @@ contract AccessControlled {
   */
   constructor(address _admin) {
     require(_admin != address(0), "accessControlled/0xAdmin");
-    ACS.get_storage().admin = _admin;
+    ACS.getStorage().admin = _admin;
   }
 
   //TODO [lnist] It does not seem like onlyCaller is used with caller being address(0). To avoid accidents, it seems safer to remove the option.
@@ -44,7 +44,7 @@ contract AccessControlled {
   @notice Retrieves the current admin.
   */
   function admin() public view returns (address) {
-    return ACS.get_storage().admin;
+    return ACS.getStorage().admin;
   }
 
   /**
@@ -59,8 +59,8 @@ contract AccessControlled {
   @notice This sets the admin. Only the current admin can change the admin.
   @param _admin The new admin. Cannot be `address(0)`.
   */
-  function set_admin(address _admin) public onlyAdmin {
+  function setAdmin(address _admin) public onlyAdmin {
     require(_admin != address(0), "AccessControlled/0xAdmin");
-    ACS.get_storage().admin = _admin;
+    ACS.getStorage().admin = _admin;
   }
 }

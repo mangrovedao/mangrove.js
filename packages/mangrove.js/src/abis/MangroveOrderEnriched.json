@@ -4,7 +4,7 @@
       "inputs": [
         {
           "internalType": "contract IMangrove",
-          "name": "_MGV",
+          "name": "mgv",
           "type": "address"
         },
         {
@@ -241,6 +241,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "NO_ROUTER",
+      "outputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "contract IERC20[]",
@@ -264,32 +277,6 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC20",
-          "name": "outbound_tkn",
-          "type": "address"
-        }
-      ],
-      "name": "approveMangrove",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC20",
-          "name": "token",
-          "type": "address"
-        }
-      ],
-      "name": "approveRouter",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -368,19 +355,6 @@
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "has_router",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -594,7 +568,7 @@
     },
     {
       "inputs": [],
-      "name": "ofr_gasreq",
+      "name": "ofrGasreq",
       "outputs": [
         {
           "internalType": "uint256",
@@ -702,7 +676,7 @@
           "type": "address"
         }
       ],
-      "name": "set_admin",
+      "name": "setAdmin",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -715,7 +689,7 @@
           "type": "uint256"
         }
       ],
-      "name": "set_gasreq",
+      "name": "setGasreq",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -728,7 +702,7 @@
           "type": "address"
         }
       ],
-      "name": "set_reserve",
+      "name": "setReserve",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -741,7 +715,7 @@
           "type": "address"
         }
       ],
-      "name": "set_router",
+      "name": "setRouter",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

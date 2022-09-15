@@ -94,14 +94,14 @@ abstract contract GuaaveAbstractTest is MangroveTest {
     router.bind($(mgo));
 
     // liquidity router will pull funds from AAVE
-    mgo.set_router(router);
-    mgo.set_reserve($(router));
+    mgo.setRouter(router);
+    mgo.setReserve($(router));
 
     // computing necessary provision (which has changed because of new router GAS_OVERHEAD)
     uint prov = mgo.getMissingProvision({
       outbound_tkn: weth,
       inbound_tkn: usdc,
-      gasreq: mgo.ofr_gasreq(),
+      gasreq: mgo.ofrGasreq(),
       gasprice: 0,
       offerId: 0
     });

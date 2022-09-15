@@ -98,7 +98,7 @@ contract MangoTest is MangroveTest {
     uint prov = mgo.getMissingProvision({
       outbound_tkn: weth,
       inbound_tkn: usdc,
-      gasreq: mgo.ofr_gasreq(),
+      gasreq: mgo.ofrGasreq(),
       gasprice: 0,
       offerId: 0
     });
@@ -107,7 +107,7 @@ contract MangoTest is MangroveTest {
 
     init(cash(usdc, 1000), cash(weth, 3, 1));
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
 
     checkOB(
       $(usdc),
@@ -132,7 +132,7 @@ contract MangoTest is MangroveTest {
       true
     );
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
     assertEq(
       got,
       minusFee($(weth), $(usdc), 0.5 ether),
@@ -168,7 +168,7 @@ contract MangoTest is MangroveTest {
 
     assertEq(bounty, 0, "taker should not receive bounty");
 
-    book = get_offers(false);
+    book = getOffers(false);
 
     checkOB(
       $(usdc),
@@ -186,13 +186,13 @@ contract MangoTest is MangroveTest {
   }
 
   function part_negative_shift() public prank(maker) {
-    mgo.set_shift({
+    mgo.setShift({
       s: -2,
       withBase: false,
       amounts: dynamic([cash(usdc, 1000), cash(usdc, 1000)])
     });
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
 
     checkOB(
       $(usdc),
@@ -210,13 +210,13 @@ contract MangoTest is MangroveTest {
   }
 
   function part_positive_shift() public prank(maker) {
-    mgo.set_shift({
+    mgo.setShift({
       s: 3,
       withBase: true,
       amounts: dynamic([cash(weth, 3, 1), cash(weth, 3, 1), cash(weth, 3, 1)])
     });
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
 
     checkOB(
       $(usdc),
@@ -362,7 +362,7 @@ contract MangoTest is MangroveTest {
 
     // Offer 3 and 4 were unable to repost so they should be out of the book
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
     checkOB(
       $(usdc),
       $(weth),
@@ -399,7 +399,7 @@ contract MangoTest is MangroveTest {
       true
     );
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
     checkOB(
       $(usdc),
       $(weth),
@@ -452,7 +452,7 @@ contract MangoTest is MangroveTest {
     assertEq(got, 0, "got should be 0");
     assertEq(gave, 0, "gave should be 0");
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
     checkOB(
       $(usdc),
       $(weth),
@@ -473,7 +473,7 @@ contract MangoTest is MangroveTest {
     init(cash(usdc, 500), cash(weth, 15, 2));
     vm.stopPrank();
 
-    Book memory book = get_offers(false);
+    Book memory book = getOffers(false);
     checkOB(
       $(usdc),
       $(weth),
@@ -491,8 +491,8 @@ contract MangoTest is MangroveTest {
   /* ********* Utility methods ************ */
 
   // get internal view of mango's offers
-  function get_offers(bool liveOnly) internal view returns (Book memory) {
-    uint[][2] memory res = mgo.get_offers(liveOnly);
+  function getOffers(bool liveOnly) internal view returns (Book memory) {
+    uint[][2] memory res = mgo.getOffers(liveOnly);
     return Book({bids: res[0], asks: res[1]});
   }
 

@@ -39,17 +39,17 @@ contract MakerPermissionTest is MangroveTest {
 
   function testCannot_setAdmin() public {
     vm.expectRevert("AccessControlled/Invalid");
-    makerContract.set_admin(freshAddress());
+    makerContract.setAdmin(freshAddress());
   }
 
   function testCannot_setReserve() public {
     vm.expectRevert("AccessControlled/Invalid");
-    makerContract.set_reserve(freshAddress());
+    makerContract.setReserve(freshAddress());
   }
 
   function testCannot_setRouter() public {
     vm.expectRevert("AccessControlled/Invalid");
-    makerContract.set_router(AbstractRouter(freshAddress()));
+    makerContract.setRouter(AbstractRouter(freshAddress()));
   }
 
   function testCannot_PostNewOffer() public {

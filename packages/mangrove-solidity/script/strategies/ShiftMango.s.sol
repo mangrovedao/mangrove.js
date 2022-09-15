@@ -47,6 +47,6 @@ contract ShiftMango is Script {
       shift < 0 ? "down..." : "up..."
     );
     vm.broadcast();
-    MGO.set_shift(shift, shift < 0, amounts);
+    MGO.setShift(shift, shift < 0, amounts);
   }
 }

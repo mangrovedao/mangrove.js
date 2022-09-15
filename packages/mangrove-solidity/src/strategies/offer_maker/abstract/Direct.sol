@@ -24,10 +24,10 @@ abstract contract Direct is MangroveOffer {
     // default reserve is router's address if router is defined
     // if not then default reserve is `this` contract
     if (router_ == NO_ROUTER) {
-      set_reserve(address(this));
+      setReserve(address(this));
     } else {
-      set_reserve(address(router_));
-      set_router(router_);
+      setReserve(address(router_));
+      setRouter(router_);
     }
   }
 
@@ -35,8 +35,8 @@ abstract contract Direct is MangroveOffer {
     return _reserve(address(this));
   }
 
-  function set_reserve(address reserve_) public override onlyAdmin {
-    _set_reserve(address(this), reserve_);
+  function setReserve(address reserve_) public override onlyAdmin {
+    _setReserve(address(this), reserve_);
   }
 
   function withdrawToken(
@@ -86,7 +86,7 @@ abstract contract Direct is MangroveOffer {
   }
 
   function flush(IERC20[] memory tokens) internal {
-    AbstractRouter _router = MOS.get_storage().router;
+    AbstractRouter _router = MOS.getStorage().router;
     if (address(_router) == address(0)) {
       return; // nothing to do
     } else {
@@ -114,7 +114,7 @@ abstract contract Direct is MangroveOffer {
       address(inbound_tkn),
       wants,
       gives,
-      gasreq > type(uint24).max ? ofr_gasreq() : gasreq,
+      gasreq > type(uint24).max ? ofrGasreq() : gasreq,
       gasprice,
       pivotId,
       offerId

@@ -22,10 +22,10 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
   constructor(IMangrove mgv, address deployer)
     PersistentForwarder(mgv, new SimpleRouter())
   {
-    set_gasreq(90_000);
+    setGasreq(90_000);
     if (deployer != msg.sender) {
-      set_admin(deployer);
-      router().set_admin(deployer);
+      setAdmin(deployer);
+      router().setAdmin(deployer);
     }
   }
 
@@ -123,7 +123,7 @@ contract MangroveOrder is PersistentForwarder, IOrderLogic {
           inbound_tkn: outbound_tkn,
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
           gives: tko.makerGives - res.takerGave,
-          gasreq: ofr_gasreq(),
+          gasreq: ofrGasreq(),
           pivotId: 0,
           fund: msg.value,
           caller: msg.sender,

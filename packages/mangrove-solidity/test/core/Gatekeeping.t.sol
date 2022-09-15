@@ -127,19 +127,19 @@ contract GatekeepingTest is IMaker, MangroveTest {
     mgv.activate($(quote), $(base), 0, 100, 0);
   }
 
-  function test_only_gov_can_set_gasprice() public {
+  function test_only_gov_can_setGasprice() public {
     vm.expectRevert("mgv/unauthorized");
     vm.prank(notAdmin);
     mgv.setGasprice(0);
   }
 
-  function test_only_gov_can_set_gasmax() public {
+  function test_only_gov_can_setGasmax() public {
     vm.expectRevert("mgv/unauthorized");
     vm.prank(notAdmin);
     mgv.setGasmax(0);
   }
 
-  function test_only_gov_can_set_gasbase() public {
+  function test_only_gov_can_setGasbase() public {
     vm.expectRevert("mgv/unauthorized");
     vm.prank(notAdmin);
     mgv.setGasbase($(base), $(quote), 0);
@@ -159,7 +159,7 @@ contract GatekeepingTest is IMaker, MangroveTest {
     mgv.setDensity($(base), $(quote), uint(type(uint112).max) + 1);
   }
 
-  function test_set_gasprice_ceiling() public {
+  function test_setGasprice_ceiling() public {
     vm.expectRevert("mgv/config/gasprice/16bits");
     mgv.setGasprice(uint(type(uint16).max) + 1);
   }
@@ -168,12 +168,12 @@ contract GatekeepingTest is IMaker, MangroveTest {
     mgv.setGasbase($(base), $(quote), 0);
   }
 
-  function test_set_gasbase_ceiling() public {
+  function test_setGasbase_ceiling() public {
     vm.expectRevert("mgv/config/offer_gasbase/24bits");
     mgv.setGasbase($(base), $(quote), uint(type(uint24).max) + 1);
   }
 
-  function test_set_gasmax_ceiling() public {
+  function test_setGasmax_ceiling() public {
     vm.expectRevert("mgv/config/gasmax/24bits");
     mgv.setGasmax(uint(type(uint24).max) + 1);
   }

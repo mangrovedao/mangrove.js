@@ -29,11 +29,11 @@ contract OfferProxy is OfferForwarder {
     // replacing this router with an Aave one
     AaveDeepRouter _router = new AaveDeepRouter(_addressesProvider, 0, 2);
     // setting aave router to be the router of this contract (allowed since this contract is admin of the router)
-    set_router(_router);
+    setRouter(_router);
     // changing router admin for further modification
-    _router.set_admin(deployer);
+    _router.setAdmin(deployer);
     if (deployer != msg.sender) {
-      set_admin(deployer);
+      setAdmin(deployer);
     }
   }
 }

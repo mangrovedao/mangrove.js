@@ -78,7 +78,7 @@ contract MangoImplementation {
     uint[] calldata tokenAmounts, // `tokenAmounts[i]` is the amount of `BASE` or `QUOTE` tokens (dePENDING on `withBase` flag) that is used to fixed one parameter of the price at position `from+i`.
     uint gasreq // gas required for new offers
   ) external delegated {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     /** Initializing Asks and Bids */
     /** NB we assume Mangrove is already provisioned for posting NSLOTS asks and NSLOTS bids*/
     /** NB cannot post newOffer with infinite gasreq since fallback ofr_gasreq is not defined yet (and default is likely wrong) */
@@ -141,7 +141,7 @@ contract MangoImplementation {
   /** Shift the price (induced by quote amount) of n slots down or up */
   /** price at position i will be shifted (up or down dePENDING on the sign of `shift`) */
   /** New positions 0<= i < s are initialized with amount[i] in base tokens if `withBase`. In quote tokens otherwise*/
-  function $set_shift(
+  function $setShift(
     int s,
     bool withBase,
     uint[] calldata amounts,
@@ -149,7 +149,7 @@ contract MangoImplementation {
   ) external delegated {
     require(
       amounts.length == (s < 0 ? uint(-s) : uint(s)),
-      "Mango/set_shift/notEnoughAmounts"
+      "Mango/setShift/notEnoughAmounts"
     );
     if (s < 0) {
       negative_shift(uint(-s), withBase, amounts, gasreq);
@@ -159,12 +159,12 @@ contract MangoImplementation {
   }
 
   // return Mango offer Ids on Mangrove. If `liveOnly` will only return offer Ids that are live (0 otherwise).
-  function $get_offers(bool liveOnly)
+  function $getOffers(bool liveOnly)
     external
     view
     returns (uint[][2] memory offers)
   {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     offers[0] = new uint[](NSLOTS);
     offers[1] = new uint[](NSLOTS);
     for (uint i = 0; i < NSLOTS; i++) {
@@ -196,7 +196,7 @@ contract MangoImplementation {
   // returns the amount of `BASE` tokens that failed to be published at that position
   // `writeOffer` is split into `writeAsk` and `writeBid` to avoid stack too deep exception
   function writeAsk(WriteData memory wd) internal returns (uint) {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     if (mStr.asks[wd.index] == 0) {
       // offer slot not initialized yet
       try
@@ -247,7 +247,7 @@ contract MangoImplementation {
   }
 
   function writeBid(WriteData memory wd) internal returns (uint) {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     if (mStr.bids[wd.index] == 0) {
       try
         MGV.newOffer({
@@ -302,7 +302,7 @@ contract MangoImplementation {
     bool withPending, // whether `gives` amount includes current pending tokens
     uint pivotId
   ) internal {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     if (outbound_tkn == BASE) {
       uint not_published = writeAsk(
         WriteData({
@@ -360,7 +360,7 @@ contract MangoImplementation {
   /** If min price was not shifted this is just `QUOTE_0` */
   /** In general this is QUOTE_0 + shift*delta */
   function quote_min() internal view returns (uint) {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     int qm = int(uint(QUOTE_0)) + mStr.shift * int(mStr.delta);
     require(qm > 0, "Mango/quote_min/ShiftUnderflow");
     return (uint(qm));
@@ -369,12 +369,12 @@ contract MangoImplementation {
   /** Returns the price position in the order book of the offer associated to this index `i` */
   function position_of_index(uint i) internal view returns (uint) {
     // position(i) = (i+shift) % N
-    return modulo(int(i) - MangoStorage.get_storage().shift, NSLOTS);
+    return modulo(int(i) - MangoStorage.getStorage().shift, NSLOTS);
   }
 
   /** Returns the index in the ring of offers at which the offer Id at position `p` in the book is stored */
   function index_of_position(uint p) internal view returns (uint) {
-    return modulo(int(p) + MangoStorage.get_storage().shift, NSLOTS);
+    return modulo(int(p) + MangoStorage.getStorage().shift, NSLOTS);
   }
 
   /**Next index in the ring of offers */
@@ -392,7 +392,7 @@ contract MangoImplementation {
   function quote_progression(uint position) internal view returns (uint) {
     return
       MangoStorage.quote_price_jumps(
-        MangoStorage.get_storage().delta,
+        MangoStorage.getStorage().delta,
         position,
         quote_min()
       );
@@ -424,7 +424,7 @@ contract MangoImplementation {
     uint[] calldata amounts,
     uint gasreq
   ) internal {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     require(s < NSLOTS, "Mango/shift/positiveShiftTooLarge");
     uint index = index_of_position(0);
     mStr.shift += int(s); // updating new shift
@@ -481,7 +481,7 @@ contract MangoImplementation {
     uint[] calldata amounts,
     uint gasreq
   ) internal {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     require(s < NSLOTS, "Mango/shift/NegativeShiftTooLarge");
     uint index = index_of_position(NSLOTS - 1);
     mStr.shift -= int(s); // updating new shift
@@ -534,7 +534,7 @@ contract MangoImplementation {
     view
     returns (uint)
   {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     if (order.outbound_tkn == address(BASE)) {
       // Ask offer (wants QUOTE)
       uint index = mStr.index_of_ask[order.offerId];
@@ -552,7 +552,7 @@ contract MangoImplementation {
     delegated
     returns (bool success)
   {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
 
     // reposting residual of offer using override `__newWants__` and `__newGives__` for new price
     if (order.outbound_tkn == address(BASE)) {
@@ -611,7 +611,7 @@ contract MangoImplementation {
     uint pivotId,
     uint gasreq
   ) internal {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     // outbound : QUOTE, inbound: BASE
     P.Offer.t offer = MGV.offers(
       address(QUOTE),
@@ -660,7 +660,7 @@ contract MangoImplementation {
     uint pivotId,
     uint gasreq
   ) internal {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     // outbound : BASE, inbound: QUOTE
     P.Offer.t offer = MGV.offers(
       address(BASE),

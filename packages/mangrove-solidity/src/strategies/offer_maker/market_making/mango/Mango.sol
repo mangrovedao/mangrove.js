@@ -54,7 +54,7 @@ contract Mango is Persistent {
       new SimpleRouter() // routes liqudity from (to) reserve to (from) this contract
     )
   {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     // sanity check
     require(
       nslots > 0 &&
@@ -92,17 +92,17 @@ contract Mango is Persistent {
     __activate__(quote);
 
     // in order to let deployer's EOA have control over liquidity
-    set_reserve(deployer);
+    setReserve(deployer);
 
     // `this` deployed the router, letting admin take control over it.
-    router().set_admin(deployer);
+    router().setAdmin(deployer);
 
     // should cover cost of reposting the offer + dual offer
-    set_gasreq(150_000);
+    setGasreq(150_000);
 
     // setting admin of contract if a static address deployment was used
     if (deployer != msg.sender) {
-      set_admin(deployer);
+      setAdmin(deployer);
     }
   }
 
@@ -128,7 +128,7 @@ contract Mango is Persistent {
         to,
         pivotIds,
         tokenAmounts,
-        ofr_gasreq()
+        ofrGasreq()
       )
     );
     if (!success) {
@@ -138,27 +138,27 @@ contract Mango is Persistent {
     }
   }
 
-  function reset_pending() external onlyAdmin {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+  function resetPending() external onlyAdmin {
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     mStr.pending_base = 0;
     mStr.pending_quote = 0;
   }
 
   /** Setters and getters */
   function delta() external view onlyAdmin returns (uint) {
-    return MangoStorage.get_storage().delta;
+    return MangoStorage.getStorage().delta;
   }
 
-  function set_delta(uint _delta) public mgvOrAdmin {
-    MangoStorage.get_storage().delta = _delta;
+  function setDelta(uint _delta) public mgvOrAdmin {
+    MangoStorage.getStorage().delta = _delta;
   }
 
   function shift() external view onlyAdmin returns (int) {
-    return MangoStorage.get_storage().shift;
+    return MangoStorage.getStorage().shift;
   }
 
   function pending() external view onlyAdmin returns (uint[2] memory) {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     return [mStr.pending_base, mStr.pending_quote];
   }
 
@@ -169,7 +169,7 @@ contract Mango is Persistent {
     uint to
   ) external onlyAdmin returns (uint collected) {
     // with ba=0:bids only, ba=1: asks only ba>1 all
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     for (uint i = from; i < to; i++) {
       if (ba > 0) {
         // asks or bids+asks
@@ -189,18 +189,18 @@ contract Mango is Persistent {
   /** Shift the price (induced by quote amount) of n slots down or up */
   /** price at position i will be shifted (up or down dePENDING on the sign of `shift`) */
   /** New positions 0<= i < s are initialized with amount[i] in base tokens if `withBase`. In quote tokens otherwise*/
-  function set_shift(
+  function setShift(
     int s,
     bool withBase,
     uint[] calldata amounts
   ) public mgvOrAdmin {
     (bool success, bytes memory retdata) = IMPLEMENTATION.delegatecall(
       abi.encodeWithSelector(
-        MangoImplementation.$set_shift.selector,
+        MangoImplementation.$setShift.selector,
         s,
         withBase,
         amounts,
-        ofr_gasreq()
+        ofrGasreq()
       )
     );
     if (!success) {
@@ -208,8 +208,8 @@ contract Mango is Persistent {
     }
   }
 
-  function set_min_offer_type(uint m) external mgvOrAdmin {
-    MangoStorage.get_storage().min_buffer = m;
+  function setMinOfferType(uint m) external mgvOrAdmin {
+    MangoStorage.getStorage().min_buffer = m;
   }
 
   function _staticdelegatecall(bytes calldata data)
@@ -226,7 +226,7 @@ contract Mango is Persistent {
   }
 
   // return Mango offer Ids on Mangrove. If `liveOnly` will only return offer Ids that are live (0 otherwise).
-  function get_offers(bool liveOnly)
+  function getOffers(bool liveOnly)
     external
     view
     returns (uint[][2] memory offers)
@@ -235,7 +235,7 @@ contract Mango is Persistent {
       abi.encodeWithSelector(
         this._staticdelegatecall.selector,
         abi.encodeWithSelector(
-          MangoImplementation.$get_offers.selector,
+          MangoImplementation.$getOffers.selector,
           liveOnly
         )
       )
@@ -250,15 +250,15 @@ contract Mango is Persistent {
   // starts reneging all offers
   // NB reneged offers will not be reposted
   function pause() public mgvOrAdmin {
-    MangoStorage.get_storage().paused = true;
+    MangoStorage.getStorage().paused = true;
   }
 
   function restart() external onlyAdmin {
-    MangoStorage.get_storage().paused = false;
+    MangoStorage.getStorage().paused = false;
   }
 
-  function is_paused() external view returns (bool) {
-    return MangoStorage.get_storage().paused;
+  function isPaused() external view returns (bool) {
+    return MangoStorage.getStorage().paused;
   }
 
   // this overrides is read during `makerExecute` call (see `MangroveOffer`)
@@ -269,7 +269,7 @@ contract Mango is Persistent {
     returns (bytes32)
   {
     order; //shh
-    require(!MangoStorage.get_storage().paused, "Mango/paused");
+    require(!MangoStorage.getStorage().paused, "Mango/paused");
     return "";
   }
 
@@ -281,7 +281,7 @@ contract Mango is Persistent {
     override
     returns (uint)
   {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     if (order.outbound_tkn == address(BASE)) {
       // Ask offer
       return super.__residualGives__(order) + mStr.pending_base;
@@ -324,7 +324,7 @@ contract Mango is Persistent {
     override
     returns (bool)
   {
-    MangoStorage.Layout storage mStr = MangoStorage.get_storage();
+    MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     bool reposted = super.__posthookSuccess__(order, makerData);
 
     if (order.outbound_tkn == address(BASE)) {
@@ -347,7 +347,7 @@ contract Mango is Persistent {
       abi.encodeWithSelector(
         MangoImplementation.$postDualOffer.selector,
         order,
-        ofr_gasreq()
+        ofrGasreq()
       )
     );
     if (!success) {

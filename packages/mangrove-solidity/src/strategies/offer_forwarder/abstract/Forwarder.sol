@@ -34,7 +34,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   ) MangroveOffer(mgv) { // additional gas required for reading `ownerData` at each trade
     // define `_router` as the liquidity router for `this` and declare that `this` is allowed to call router.
     // NB router also needs to be approved for outbound/inbound token transfers by each user of this contract.
-    set_router(_router);
+    setRouter(_router);
   }
 
   /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
@@ -68,14 +68,14 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   /// @param provision the amount of native token one is using to provision the offer
   /// @return gasprice that the `provision` can cover for
   /// @dev the returned gasprice is slightly lower than the real gasprice that the provision can cover because of the rounding error due to division
-  function derive_gasprice(
+  function deriveGasprice(
     uint gasreq,
     uint provision,
     uint offer_gasbase
   ) internal pure returns (uint gasprice) {
     uint num = (offer_gasbase + gasreq) * 10**9;
     // pre-check to avoir underflow
-    require(provision >= num, "Forwarder/derive_gasprice/NotEnoughProvision");
+    require(provision >= num, "Forwarder/deriveGasprice/NotEnoughProvision");
     unchecked {
       gasprice = provision / num;
     }
@@ -95,8 +95,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     return mkr_reserve == address(0) ? msg.sender : mkr_reserve;
   }
 
-  function set_reserve(address __reserve) public override {
-    _set_reserve(msg.sender, __reserve);
+  function setReserve(address __reserve) public override {
+    _setReserve(msg.sender, __reserve);
   }
 
   struct NewOfferData {
@@ -116,7 +116,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   /// user provision on Mangrove is the sum of locked provision in all live offers it owns + the sum of free wei's in all dead offers it owns (see `OwnerData.free_wei`)
   /// locked provision in an offer is offer.gasprice * (offer.gasreq + gasbase) * 10**9
   /// therefore offer.gasprice is derived from msg.value. 
-  /// Because of potential rounding errors in `derive_gasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
+  /// Because of potential rounding errors in `deriveGasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
   /// this dust tokens are not burned since they can be retrieved by admin using `withdrawFromMangrove` 
   function _newOffer(
     NewOfferData memory offData
@@ -126,9 +126,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       address(offData.inbound_tkn)
     );
     // convention for default gasreq value
-    offData.gasreq = (offData.gasreq > type(uint24).max) ? ofr_gasreq() : offData.gasreq;
+    offData.gasreq = (offData.gasreq > type(uint24).max) ? ofrGasreq() : offData.gasreq;
     // computing gasprice implied by offer provision
-    uint gasprice = derive_gasprice(
+    uint gasprice = deriveGasprice(
       offData.gasreq,
       offData.fund,
       local.offer_gasbase()
@@ -216,7 +216,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     upd.inbound_tkn = inbound_tkn;
     upd.wants = wants;
     upd.gives = gives;
-    upd.gasreq = gasreq > type(uint24).max ? ofr_gasreq() : gasreq;
+    upd.gasreq = gasreq > type(uint24).max ? ofrGasreq() : gasreq;
     upd.pivotId = pivotId;
     upd.offerId = offerId;
     upd.owner = msg.sender;
@@ -250,7 +250,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
         });
       }
       // gasprice for this offer will be computed using msg.value and available funds on Mangrove attributed to `offerId`'s owner
-      upd.gasprice = derive_gasprice(
+      upd.gasprice = deriveGasprice(
         upd.gasreq,
         upd.fund,
         upd.local.offer_gasbase()
@@ -264,7 +264,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
           upd.gasprice *
           10**9 *
           (upd.offer_detail.gasreq() + upd.local.offer_gasbase());
-        upd.gasprice = derive_gasprice(
+        upd.gasprice = deriveGasprice(
           upd.gasreq,
           upd.fund,
           upd.local.offer_gasbase()

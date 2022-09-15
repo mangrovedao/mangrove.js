@@ -38,7 +38,7 @@ describe("OfferMaker", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
-      await lp.logic?.contract.ofr_gasreq();
+      await lp.logic?.contract.ofrGasreq();
     });
   });
 
@@ -266,7 +266,7 @@ describe("OfferMaker", () => {
         await tx?.wait();
         assert.strictEqual(
           50000,
-          (await onchain_lp.logic?.contract.ofr_gasreq()).toNumber(),
+          (await onchain_lp.logic?.contract.ofrGasreq()).toNumber(),
           "Offer default gasreq not updated"
         );
       });

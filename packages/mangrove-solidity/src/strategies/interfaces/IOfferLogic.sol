@@ -16,11 +16,10 @@ import {IMangrove} from "mgv_src/IMangrove.sol";
 import {IERC20, IMaker} from "mgv_src/MgvLib.sol";
 import {AbstractRouter} from "mgv_src/strategies/routers/AbstractRouter.sol";
 
-// Basis interface for offer management.
-interface IOfferLogic is IMaker {
-  /** @notice Events */
+///@title IOfferLogic interface for offer management
 
-  // Log incident (during post trade execution)
+interface IOfferLogic is IMaker {
+  ///@notice Log incident (during post trade execution)
   event LogIncident(
     IMangrove mangrove,
     IERC20 indexed outbound_tkn,
@@ -29,13 +28,15 @@ interface IOfferLogic is IMaker {
     bytes32 reason
   );
 
-  // Logging change of router address
+  ///@notice Logging change of router address
   event SetRouter(AbstractRouter);
-  // Logging change in default gasreq
+
+  ///@notice Logging change in default gasreq
   event SetGasreq(uint);
 
-  // Offer logic default gas required --value is used in update and new offer if maxUint is given
-  function ofr_gasreq() external view returns (uint);
+  ///@notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated.
+  ///@return total gas cost including router specific costs (if any).
+  function ofrGasreq() external view returns (uint);
 
   // returns missing provision on Mangrove, should `offerId` be reposted using `gasreq` and `gasprice` parameters
   // if `offerId` is not in the `outbound_tkn,inbound_tkn` offer list, the totality of the necessary provision is returned
@@ -47,11 +48,13 @@ interface IOfferLogic is IMaker {
     uint offerId
   ) external view returns (uint);
 
-  // Changing ofr_gasreq of the logic
-  function set_gasreq(uint gasreq) external;
+  /// @notice sets `this` contract's default gasreq for `new/updateOffer`.
+  /// @param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs.
+  /// @dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofrGasreq()`
+  function setGasreq(uint gasreq) external;
 
   // changing liqudity router of the logic
-  function set_router(AbstractRouter router) external;
+  function setRouter(AbstractRouter router) external;
 
   // withdraw `amount` `token` form the contract's (owner) reserve and sends them to `receiver`'s balance
   function withdrawToken(
@@ -97,7 +100,7 @@ interface IOfferLogic is IMaker {
   function reserve() external view returns (address);
 
   // allow one to change the reserve holding maker's liquidity
-  function set_reserve(address reserve) external;
+  function setReserve(address reserve) external;
 
   function router() external view returns (AbstractRouter);
 }

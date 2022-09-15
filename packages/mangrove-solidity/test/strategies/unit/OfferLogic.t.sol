@@ -13,7 +13,7 @@ contract OfferLogicTest is MangroveTest {
   address payable maker;
   address payable taker;
   address reserve;
-  IMakerLogic makerContract;
+  IMakerLogic makerContract; // can be either OfferMaker or OfferForwarder
   GenericFork fork;
 
   // tracking IOfferLogic logs
@@ -91,7 +91,7 @@ contract OfferLogicTest is MangroveTest {
   function test_MakerCanSetReserve() public {
     address new_reserve = freshAddress();
     vm.startPrank(maker);
-    makerContract.set_reserve(new_reserve);
+    makerContract.setReserve(new_reserve);
     assertEq(makerContract.reserve(), new_reserve, "Incorrect reserve");
     vm.stopPrank();
   }

@@ -21,11 +21,11 @@ contract OfferMaker is IMakerLogic, Persistent {
   constructor(IMangrove mgv, AbstractRouter _router, address deployer)
     Persistent(mgv, _router) 
   {
-    set_gasreq(25_000);
+    setGasreq(25_000);
     // stores total gas requirement of this strat (depends on router gas requirements)
     // if contract is deployed with static address, then one must set admin to something else than msg.sender
     if (deployer != msg.sender) {
-      set_admin(deployer);
+      setAdmin(deployer);
     }
   }
 
@@ -50,7 +50,7 @@ contract OfferMaker is IMakerLogic, Persistent {
       address(inbound_tkn),
       wants,
       gives,
-      gasreq >= type(uint24).max ? ofr_gasreq() : gasreq,
+      gasreq >= type(uint24).max ? ofrGasreq() : gasreq,
       gasprice,
       pivotId
     );

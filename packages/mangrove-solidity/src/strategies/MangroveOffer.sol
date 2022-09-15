@@ -49,12 +49,12 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   }
 
   /// @inheritdoc IOfferLogic
-  function ofr_gasreq() public view returns (uint) {
+  function ofrGasreq() public view returns (uint) {
     AbstractRouter router_ = router();
     if (router_ != NO_ROUTER) {
-      return MOS.get_storage().ofr_gasreq + router_.gas_overhead();
+      return MOS.getStorage().ofr_gasreq + router_.gasOverhead();
     } else {
-      return MOS.get_storage().ofr_gasreq;
+      return MOS.getStorage().ofr_gasreq;
     }
   }
 
@@ -112,20 +112,18 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     }
   }
 
-  /// @notice sets `this` contract's default gasreq for `new/updateOffer`.
-  /// @param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs.
-  /// @dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofr_gasreq()`
-  function set_gasreq(uint gasreq) public override onlyAdmin {
+  /// @inheritdoc IOfferLogic
+  function setGasreq(uint gasreq) public override onlyAdmin {
     require(uint24(gasreq) == gasreq, "mgvOffer/gasreq/overflow");
-    MOS.get_storage().ofr_gasreq = gasreq;
+    MOS.getStorage().ofr_gasreq = gasreq;
     emit SetGasreq(gasreq);
   }
 
   /// @notice sets a new router to pull outbound tokens from contract's reserve to `this` and push inbound tokens to reserve.
   /// @param router_ the new router contract that this contract should use. Use `NO_ROUTER` for no router.
   /// @dev new router needs to be approved by `this` contract to push funds to reserve (see `activate` function). It also needs to be approved by reserve to pull from it.
-  function set_router(AbstractRouter router_) public override onlyAdmin {
-    MOS.get_storage().router = router_;
+  function setRouter(AbstractRouter router_) public override onlyAdmin {
+    MOS.getStorage().router = router_;
     if (address(router_) != address(0)) {
       router_.bind(address(this));
     }
@@ -135,20 +133,20 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @notice Contract's router getter.
   /// @dev contract has a router if `this.router() != this.NO_ROUTER()`
   function router() public view returns (AbstractRouter) {
-    return MOS.get_storage().router;
+    return MOS.getStorage().router;
   }
 
   /// @notice getter of the address where a maker using this contract is storing its liquidity
   /// @dev if `this` contract is not acting of behalf of some user, `_reserve(address(this))` must be defined at all time.
   function _reserve(address maker) internal view returns (address) {
-    return MOS.get_storage().reserves[maker];
+    return MOS.getStorage().reserves[maker];
   }
 
   /// @notice sets reserve of a particular maker this contract is acting for.
-  /// @dev use `_set_reserve(address(this))` to set the reserve of `this` contract when it is not acting on behalf of a user.
-  function _set_reserve(address maker, address __reserve) internal {
-    require(__reserve != address(0), "SingleUser/0xReserve");
-    MOS.get_storage().reserves[maker] = __reserve;
+  /// @dev use `_setReserve(address(this))` to set the reserve of `this` contract when it is not acting on behalf of a user.
+  function _setReserve(address maker, address reserve_) internal {
+    require(reserve_ != address(0), "SingleUser/0xReserve");
+    MOS.getStorage().reserves[maker] = reserve_;
   }
 
   /// @notice allows `this` contract to be a liquidity provider for a particular asset by performing the necessary approvals
@@ -289,7 +287,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   function getMissingProvision(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
-    uint gasreq, // give > type(uint24).max to use `this.ofr_gasreq()`
+    uint gasreq, // give > type(uint24).max to use `this.ofrGasreq()`
     uint gasprice, // give 0 to use Mangrove's gasprice
     uint offerId // set this to 0 if one is not reposting an offer
   ) public view returns (uint) {
@@ -309,7 +307,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       _gp = gasprice;
     }
     if (gasreq >= type(uint24).max) {
-      gasreq = ofr_gasreq(); // this includes overhead of router if any
+      gasreq = ofrGasreq(); // this includes overhead of router if any
     }
     uint bounty = (gasreq + localData.offer_gasbase()) * _gp * 10**9; // in WEI
     // if `offerId` is not in the OfferList, all returned values will be 0

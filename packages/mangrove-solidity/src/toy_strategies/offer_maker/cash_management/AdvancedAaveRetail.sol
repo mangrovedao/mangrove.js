@@ -21,10 +21,10 @@ contract AdvancedAaveRetail is OfferMaker {
     address deployer
   ) OfferMaker(mgv, new AaveDeepRouter(_addressesProvider, 0, 2), deployer) {
     // Router reserve is by default `router.address`
-    // use `set_reserve(addr)` to change this
-    router().set_admin(deployer);
+    // use `setReserve(addr)` to change this
+    router().setAdmin(deployer);
     if (deployer != msg.sender) {
-      set_admin(deployer);
+      setAdmin(deployer);
     }
   }
 

@@ -29,19 +29,19 @@ abstract contract AbstractRouter is AccessControlled {
 
   constructor(uint overhead) AccessControlled(msg.sender) {
     require(uint24(overhead) == overhead, "Router/overheadTooHigh");
-    ARSt.get_storage().gas_overhead = overhead;
+    ARSt.getStorage().gas_overhead = overhead;
   }
 
   ///@notice getter for the `makers: addr => bool` mapping
   ///@param mkr the address of a maker
   ///@return true is `mkr` is bound to this router
   function makers(address mkr) public view returns (bool) {
-    return ARSt.get_storage().makers[mkr];
+    return ARSt.getStorage().makers[mkr];
   }
 
   ///@notice the amount of gas that will be added to `gasreq` of any maker contract using this router
-  function gas_overhead() public view returns (uint) {
-    return ARSt.get_storage().gas_overhead;
+  function gasOverhead() public view returns (uint) {
+    return ARSt.getStorage().gas_overhead;
   }
 
   ///@notice pulls `amount` of `token`s from reserve to calling maker contract's balance
@@ -149,12 +149,12 @@ abstract contract AbstractRouter is AccessControlled {
   ///@notice adds a maker contract address to the allowed callers of this router
   ///@dev this function is callable by router's admin to bootstrap, but later on an allowed maker contract can add another address
   function bind(address maker) public makersOrAdmin {
-    ARSt.get_storage().makers[maker] = true;
+    ARSt.getStorage().makers[maker] = true;
   }
 
   ///@notice removes a maker contract address from the allowed callers of this router
   function unbind(address maker) public makersOrAdmin {
-    ARSt.get_storage().makers[maker] = false;
+    ARSt.getStorage().makers[maker] = false;
   }
 
   ///@notice verifies all required approval involving `this` router (either as a spender or owner)
