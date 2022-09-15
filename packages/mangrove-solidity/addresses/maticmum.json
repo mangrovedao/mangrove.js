@@ -23,5 +23,10 @@
     "address": "0xE84519D38bAaD858d827B7F27A936c8447eDDD20",
     "isToken": false,
     "name": "MangroveOrderEnriched"
+  },
+  {
+    "address": "0x47897EE61498D02B18794601Ed3A71896A1Ff894",
+    "isToken": false,
+    "name": "Gasbot"
   }
 ]
