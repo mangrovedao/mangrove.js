@@ -1356,6 +1356,16 @@ jobs:
       with:
         args: unzip -qq commonlib-out.zip
 
+    - name: Download cached bot-utils artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: bot-utils-out.zip
+
+    - name: Unzip bot-utils artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq bot-utils-out.zip
+
     # == build ==
 
     - name: Template Bot - Build

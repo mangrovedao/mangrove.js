@@ -34,8 +34,6 @@ export class PostOfferUtils {
       offerData.price,
       offerData.quantity
     );
-    offerData.market.consoleAsks();
-    offerData.market.consoleBids();
     return post;
   }
 
