@@ -19,6 +19,8 @@ import "mgv_src/IMangrove.sol";
 
 /// @title This contract is the basic building block for Mangrove strats.
 /// @notice It contains the mandatory interface expected by Mangrove (`IOfferLogic` is `IMaker`) and enforces additional functions implementations (via `IOfferLogic`).
+/// In the comments we use the term "offer maker" to designate the address that controls updates of an offer on mangrove.
+/// In `Direct` strategies, `this` contract is the offer maker, in `Forwarder` strategies, the offer maker should be `msg.sender` of the annotated function.
 /// @dev Naming scheme:
 /// `f() public`: can be used, as is, in all descendants of `this` contract
 /// `_f() internal`: descendant of this contract should provide a public wrapper of this function
@@ -135,14 +137,19 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return MOS.getStorage().router;
   }
 
-  /// @notice getter of the address where a maker using this contract is storing its liquidity
+  /// @notice getter of the address where offer maker is storing its liquidity
+  /// @param maker the address of the offer maker one wishes to know the reserve of.
+  /// @return reserve_ the address of the offer maker's reserve of liquidity.
   /// @dev if `this` contract is not acting of behalf of some user, `_reserve(address(this))` must be defined at all time.
-  function _reserve(address maker) internal view returns (address) {
-    return MOS.getStorage().reserves[maker];
+  /// for `Direct` strategies, if  `_reserve(address(this)) != address(this)` then `this` contract must use a router to pull/push liquidity to its reserve.
+  function _reserve(address maker) internal view returns (address reserve_) {
+    reserve_ = MOS.getStorage().reserves[maker];
   }
 
-  /// @notice sets reserve of a particular maker this contract is acting for.
-  /// @dev use `_setReserve(address(this))` to set the reserve of `this` contract when it is not acting on behalf of a user.
+  /// @notice sets reserve of an offer maker.
+  /// @param maker the address of the offer maker
+  /// @param reserve_ the address of the offer maker's reserve of liquidity
+  /// @dev use `_setReserve(address(this), '0x...')` when `this` contract is the offer maker (`Direct` strats)
   function _setReserve(address maker, address reserve_) internal {
     require(reserve_ != address(0), "SingleUser/0xReserve");
     MOS.getStorage().reserves[maker] = reserve_;
@@ -159,6 +166,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @inheritdoc IOfferLogic
   function checkList(IERC20[] calldata tokens) external view override {
     AbstractRouter router_ = router();
+    require(
+      router_ != NO_ROUTER || _reserve(address(this)) == address(this),
+      "MangroveOffer/LogicHasNoRouter"
+    );
     for (uint i = 0; i < tokens.length; i++) {
       require(
         tokens[i].allowance(address(this), address(MGV)) > 0,
@@ -241,10 +252,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
 
   /// @notice Hook that implements a last look check during Taker Order's execution.
   /// @param order is a recall of the taker order that is at the origin of the current trade.
-  /** @return data is a message that will be passed to posthook provided `makerExecute` does not revert. 
-  Special `"lastLook/retract"` bytes32 word can be used to infrom posthook not to repost offer in case of a partial fill.*/
+  /// @return data is a message that will be passed to posthook provided `makerExecute` does not revert.
   /// @dev __lastLook__ should revert if trade is to be reneged on. If not, returned `bytes32` are passed to `makerPosthook` in the `makerData` field.
-  /** @custom:hook overrides of this hook should be used as a replacement of `super.__lastLook__` */
+  // @custom:hook Special `"lastLook/retract"` bytes32 word can be used to infrom `__posthookSuccess__` not to repost offer in case of a partial fill. Custom message can be used to customize `__posthookSuccess__` behavior*/
+
   function __lastLook__(ML.SingleOrder calldata order)
     internal
     virtual
@@ -269,17 +280,22 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return "";
   }
 
+  ///@notice Given the current taker order that (partially) consumes an offer, this hook is used to declare how much `order.inbound_tkn` the offer wants after it is reposted.
+  ///@param order is a recall of the taker order that is being treated.
+  ///@return new_wants the new volume of `inbound_tkn` the offer will ask for on Mangrove
+  ///@dev default is to require the original amount of tokens minus those that have been given by the taker during trade execution.
   function __residualWants__(ML.SingleOrder calldata order)
     internal
     virtual
-    returns (uint)
+    returns (uint new_wants)
   {
-    return order.offer.wants() - order.gives;
+    new_wants = order.offer.wants() - order.gives;
   }
 
-  // Hook that defines how much outbound tokens the residual offer should promise for when repositing itself on the Offer List.
-  // default is to repost the old required amount minus the partial fill
-  // NB this could produce an offer below the density. Offer Maker should perform a density check at repost time if not willing to fail reposting.
+  ///@notice Given the current taker order that (partially) consumes an offer, this hook is used to declare how much `order.outbound_tkn` the offer gives after it is reposted.
+  ///@param order is a recall of the taker order that is being treated.
+  ///@return new_gives the new volume of `outbound_tkn` the offer will give if fully taken.
+  ///@dev default is to require the original amount of tokens minus those that have been sent to the taker during trade execution.
   function __residualGives__(ML.SingleOrder calldata order)
     internal
     virtual
@@ -288,7 +304,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return order.offer.gives() - order.wants;
   }
 
-  // Specializing this hook to repost offer residual when trade was a success
+  ///@notice Post-hook that implements default behavior when Taker Order's execution succeeded.
+  ///@param order is a recall of the taker order that is at the origin of the current trade.
+  ///@param maker_data is the returned value of the `__lastLook__` hook, triggered during trade execution. The special value `"lastLook/retract"` should be treated as an instruction not to repost the offer on the book.
+  /// @custom:hook overrides of this hook should be conservative and call `super.__posthookSuccess__(order, maker_data)`
   function __posthookSuccess__(
     ML.SingleOrder calldata order,
     bytes32 maker_data
@@ -299,9 +318,9 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     }
     // now trying to repost residual
     uint new_gives = __residualGives__(order);
-    // Density check would be too gas costly.
+    // Density check at each repost would be too gas costly.
     // We only treat the special case of `gives==0` (total fill).
-    // Offer below the density will cause Mangrove to throw (revert is catched to log information)
+    // Offer below the density will cause Mangrove to throw so we encapsulate the call to `updateOffer` in order not to revert posthook for posting at dust level.
     if (new_gives == 0) {
       return "posthook/filled";
     }
@@ -324,20 +343,11 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       // or if `offer.gives` is below density
       // Log incident only if under provisioned
       bytes32 reason_hsh = keccak256(reason);
-      if (reason_hsh == OUT_OF_FUNDS) {
-        emit LogIncident(
-          MGV,
-          IERC20(order.outbound_tkn),
-          IERC20(order.inbound_tkn),
-          order.offerId,
-          "posthook/outOfProvision"
-        );
-        return "posthook/outOfProvision";
-      }
       if (reason_hsh == BELOW_DENSITY) {
         return "posthook/dustRemainder"; // offer not reposted
       } else {
-        return "posthook/repostFail";
+        // for all other reason we let the revert propagate (Mangrove logs revert reason in the `PosthookFail` event).
+        revert(reason);
       }
     }
   }

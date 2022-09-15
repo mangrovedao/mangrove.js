@@ -318,18 +318,15 @@ contract Mango is Direct {
     }
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 maker_data)
-    internal
-    virtual
-    override
-    returns (bytes32)
-  {
+  function __posthookSuccess__(
+    ML.SingleOrder calldata order,
+    bytes32 maker_data
+  ) internal virtual override returns (bytes32) {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     bytes32 posthook_data = super.__posthookSuccess__(order, maker_data);
     // checking whether repost failed
-    bool repost_success = (posthook_data == "posthook/reposted" || posthook_data == "posthook/completeFill") ;
-
-
+    bool repost_success = (posthook_data == "posthook/reposted" ||
+      posthook_data == "posthook/completeFill");
     if (order.outbound_tkn == address(BASE)) {
       if (!repost_success) {
         // residual could not be reposted --either below density or Mango went out of provision on Mangrove
