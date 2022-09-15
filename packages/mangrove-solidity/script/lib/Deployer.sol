@@ -45,6 +45,7 @@ abstract contract Deployer is Script2 {
     chainkeys[127] = "polygon";
     // chainkeys[31337] = "local"; // useful for debugging, but deactivated for now
 
+    // if another deployer contract has not already created a toy ens, make a singleton ENS and load it with the current network file contents if there is one.
     if (address(ens).code.length == 0) {
       vm.etch(address(ens), address(new ToyENS()).code);
       Record[] memory records = readAddresses();
@@ -61,7 +62,7 @@ abstract contract Deployer is Script2 {
         return (new Record[](0));
       }
       try vm.parseJson(addressesRaw) returns (bytes memory jsonBytes) {
-        /* We want to catch an abi.decode errors. Only way is through a call.
+        /* We want to catch abi.decode errors. Only way is through a call.
            For unknown reasons this.call does not work.
            So we create a gadget contract.  */
         try (new Parser()).parseJsonBytes(jsonBytes) returns (
@@ -70,7 +71,10 @@ abstract contract Deployer is Script2 {
           return records;
         } catch {
           revert(
-            string.concat("Deployer/error JSON as Record[]. File: ", file())
+            string.concat(
+              "Deployer/error parsing JSON as Record[]. File: ",
+              file()
+            )
           );
         }
       } catch {
