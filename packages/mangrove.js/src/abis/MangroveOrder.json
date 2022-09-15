@@ -664,7 +664,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "__reserve",
+          "name": "reserve_",
           "type": "address"
         }
       ],
@@ -857,13 +857,7 @@
         }
       ],
       "name": "updateOffer",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "success",
-          "type": "bool"
-        }
-      ],
+      "outputs": [],
       "stateMutability": "payable",
       "type": "function"
     },
