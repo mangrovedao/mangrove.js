@@ -6,6 +6,7 @@ import {ToyENS} from "./ToyENS.sol";
 import {GenericFork} from "mgv_test/lib/forks/Generic.sol";
 import {PolygonFork} from "mgv_test/lib/forks/Polygon.sol";
 import {MumbaiFork} from "mgv_test/lib/forks/Mumbai.sol";
+import {LocalFork} from "mgv_test/lib/forks/Local.sol";
 
 struct Record {
   address addr;
@@ -71,7 +72,7 @@ abstract contract Deployer is Script2 {
     } else if (block.chainid == 31337) {
       createFile = false;
       network = "local";
-      fork = new GenericFork();
+      fork = new LocalFork();
     } else {
       revert(
         string.concat(
