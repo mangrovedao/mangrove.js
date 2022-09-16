@@ -10,7 +10,6 @@ uint constant COVER_FACTOR = 100;
 
 /* 
   Activates a semibook on mangrove.
-    mgv: mangrove address
     outbound: outbound token
     inbound: inbound token,
     outbound_in_gwei: price of one outbound token (display units) in gwei
@@ -22,14 +21,25 @@ uint constant COVER_FACTOR = 100;
   3. Round to nearest integer
 */
 
-contract ActivateSemibook is Test2 {
-  function run(
-    Mangrove mgv,
+contract ActivateSemibook is Test2,Deployer {
+  function run() public {
+    inner_run({
+      outbound_tkn: vm.envAddress("OUTBOUND_TKN"),
+      inbound_tkn: vm.envAddress("INBOUND_TKN"),
+      outbound_in_gwei: vm.envUint("OUTBOUND_IN_GWEI"),
+      fee: vm.envUint("FEE")
+    });
+  }
+
+  function inner_run(
     address outbound_tkn,
     address inbound_tkn,
     uint outbound_in_gwei,
     uint fee
   ) public {
+
+    Mangrove mgv = Mangrove(ens.get("Mangrove"));
+
     /*
 
     The gasbase is the gas spent by Mangrove to manage one order execution.  We

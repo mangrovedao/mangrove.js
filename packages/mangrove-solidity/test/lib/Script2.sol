@@ -104,6 +104,15 @@ contract Script2 is Script {
   /* *********  ARRAY UTILITIES */
 
   /* *******
+     Convert T[] arrays to U[] arrays
+  */
+  function toIERC20(address[] memory addrs) internal pure returns (IERC20[] memory ierc20s) {
+    assembly {
+      ierc20s := addrs
+    }
+  }
+
+  /* *******
      wrap_dynamic(x) wraps x in a size-1 dynamic array
   */
 
@@ -844,4 +853,5 @@ contract Script2 is Script {
     }
     return bs;
   }
+
 }

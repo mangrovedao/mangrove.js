@@ -3,6 +3,9 @@ pragma solidity ^0.8.13;
 import {console, stdJson} from "forge-std/Script.sol";
 import {Script2} from "mgv_test/lib/Script2.sol";
 import {ToyENS} from "./ToyENS.sol";
+import {GenericFork} from "mgv_test/lib/forks/Generic.sol";
+import {PolygonFork} from "mgv_test/lib/forks/Polygon.sol";
+import {MumbaiFork} from "mgv_test/lib/forks/Mumbai.sol";
 
 struct Record {
   address addr;
@@ -29,10 +32,21 @@ struct Record {
 abstract contract Deployer is Script2 {
   ToyENS ens; // singleton local ens instance
   ToyENS remoteEns; // out-of-band agreed upon toy ens address
-  mapping(uint => string) chainkeys; // out-of-band agreed upon chain names
-  // deployment folder to write to
 
   using stdJson for string;
+
+  bool createFile; // whether to write a .json file with updated addresses
+  string network; // the name of the network, will be used to write <network>.json
+  /* FIXME: currently ther "fork contract" hold external addresses, and the local ToyENS holds mangrove addresses. Maybe we should merge them, because as of now getting an address works either by writing
+
+    ens.get("Name");
+
+  or by writing
+
+    fork.NAME()
+
+  but not both. Or maybe they should stay separate because they address different concerns? */
+  GenericFork fork; // get other known addresses
 
   constructor() {
     // enforce singleton ENS, so all deploys can be collected in outputDeployment
@@ -41,22 +55,43 @@ abstract contract Deployer is Script2 {
     ens = ToyENS(address(bytes20(hex"decaf1")));
     remoteEns = ToyENS(address(bytes20(hex"decaf0")));
 
-    chainkeys[80001] = "maticmum";
-    chainkeys[127] = "polygon";
-    // chainkeys[31337] = "local"; // useful for debugging, but deactivated for now
+    // depending on which fork the script is running on, choose whether to write the addresses to a file, get the right fork contract, and name the current network.
+    // TODO use a singleton fork contract instead of one per deployer instance, or stop inheriting 'deployer' and have every script refer to a singleton deployer
+    createFile = true;
+    if (block.chainid == 80001) {
+      network = "maticmum";
+      fork = new MumbaiFork();
+    } else if (block.chainid == 127) {
+      network = "polygon";
+      fork = new PolygonFork();
+    } else if (block.chainid == 31337) {
+      createFile = false;
+      network = "local";
+      fork = new GenericFork();
+    } else {
+      revert(string.concat("Unknown chain id ",vm.toString(block.chainid),", cannot deploy."));
+    }
+
+    if (address(fork) != address(0)) {
+      fork.setUp();
+    }
 
     // if another deployer contract has not already created a toy ens, make a singleton ENS and load it with the current network file contents if there is one.
     if (address(ens).code.length == 0) {
       vm.etch(address(ens), address(new ToyENS()).code);
-      Record[] memory records = readAddresses();
+      Record[] memory records = readAddresses(file_deployed());
+      for (uint i = 0; i < records.length; i++) {
+        ens.set(records[i].name, records[i].addr, records[i].isToken);
+      }
+      records = readAddresses(file_misc());
       for (uint i = 0; i < records.length; i++) {
         ens.set(records[i].name, records[i].addr, records[i].isToken);
       }
     }
   }
 
-  function readAddresses() internal returns (Record[] memory) {
-    try vm.readFile(file()) returns (string memory addressesRaw) {
+  function readAddresses(string memory fileName) internal returns (Record[] memory) {
+    try vm.readFile(fileName) returns (string memory addressesRaw) {
       if (bytes(addressesRaw).length == 0) {
         // allow empty file
         return (new Record[](0));
@@ -73,31 +108,40 @@ abstract contract Deployer is Script2 {
           revert(
             string.concat(
               "Deployer/error parsing JSON as Record[]. File: ",
-              file()
+              fileName
             )
           );
         }
       } catch {
         revert(
-          string.concat("Deployer/error parsing file as JSON. File: ", file())
+          string.concat("Deployer/error parsing file as JSON. File: ", fileName)
         );
       }
     } catch {
-      console.log("Deployer/cannot read file. Ignoring. File: %s", file());
+      console.log("Deployer/cannot read file. Ignoring. File: %s", fileName);
     }
 
     // return empty record array by default
     return (new Record[](0));
   }
 
-  function file() internal view returns (string memory) {
+  function file_generic(string memory subdir) internal view returns (string memory) {
     return
       string.concat(
         vm.projectRoot(),
         "/packages/mangrove-solidity/addresses/",
-        chainkeys[block.chainid],
+        subdir,
+        network,
         ".json"
       );
+  }
+
+  function file_misc() internal view returns (string memory) {
+    return file_generic('misc/');
+  }
+
+  function file_deployed() internal view returns (string memory) {
+    return file_generic('deployed/');
   }
 
   function outputDeployment() internal {
@@ -111,8 +155,8 @@ abstract contract Deployer is Script2 {
     }
 
     // known chain, write deployment file
-    if (bytes(chainkeys[block.chainid]).length != 0) {
-      vm.writeFile(file(), ""); // clear file
+    if (bytes(network).length != 0) {
+      vm.writeFile(file_deployed(), ""); // clear file
       line("[");
       for (uint i = 0; i < names.length; i++) {
         bool end = i + 1 == names.length;
@@ -129,7 +173,7 @@ abstract contract Deployer is Script2 {
   }
 
   function line(string memory s) internal {
-    vm.writeLine(file(), s);
+    vm.writeLine(file_deployed(), s);
   }
 }
 
