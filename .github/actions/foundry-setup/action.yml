@@ -7,6 +7,10 @@ runs:
     uses: foundry-rs/foundry-toolchain@v1
     with:
       version: nightly
+    
+  - name: Show Foundry version
+    shell: bash
+    run: forge --version
 
   - name: Get Foundry RPC cache
     uses: actions/cache@v3
@@ -20,9 +24,8 @@ runs:
     uses: actions/cache@v3
     with:
       path: |
-        ${{ format('{0}/cache',env.working-directory) }}
-        ${{ format('{0}/out', env.working-directory) }}
-      key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/',env.working-directory)) }}
+        packages/mangrove-solidity/cache
+        packages/mangrove-solidity/out
+      key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/','packages/mangrove-solidity')) }}
       restore-keys: |
         foundry-build-cache-
-    
