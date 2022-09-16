@@ -5,6 +5,9 @@ contract ToyENS {
   mapping(string => address) _addrs;
   mapping(string => bool) _isToken;
   string[] _names;
+  // addresses to not write
+  // useful for when only some addresses should be output to a file
+  mapping(string => bool) _noWrite;
 
   function get(string calldata name)
     public
@@ -41,6 +44,22 @@ contract ToyENS {
     if (_addrs[name] == address(0)) {
       _names.push(name);
     }
+    _noWrite[name] = false;
+    _addrs[name] = addr;
+    _isToken[name] = isToken;
+  }
+
+  function set_no_write(
+    string calldata name,
+    address addr,
+    bool isToken
+  ) public {
+    // 0 is a strong absence marker, can't lose that invariant
+    require(addr != address(0), "ToyENS: cannot record a name as 0x0");
+    if (_addrs[name] == address(0)) {
+      _names.push(name);
+    }
+    _noWrite[name] = true;
     _addrs[name] = addr;
     _isToken[name] = isToken;
   }
@@ -61,15 +80,18 @@ contract ToyENS {
     returns (
       string[] memory names,
       address[] memory addrs,
-      bool[] memory isToken
+      bool[] memory isToken,
+      bool[] memory noWrite
     )
   {
     names = _names;
     addrs = new address[](names.length);
     isToken = new bool[](names.length);
+    noWrite = new bool[](names.length);
     for (uint i = 0; i < _names.length; i++) {
       addrs[i] = _addrs[names[i]];
       isToken[i] = _isToken[names[i]];
+      noWrite[i] = _noWrite[names[i]];
     }
   }
 }

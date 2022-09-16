@@ -96,7 +96,7 @@ abstract contract Deployer is Script2 {
       }
       records = readAddresses(file_misc());
       for (uint i = 0; i < records.length; i++) {
-        ens.set(records[i].name, records[i].addr, records[i].isToken);
+        ens.set_no_write(records[i].name, records[i].addr, records[i].isToken);
       }
     }
   }
@@ -163,8 +163,12 @@ abstract contract Deployer is Script2 {
   }
 
   function outputDeployment() internal {
-    (string[] memory names, address[] memory addrs, bool[] memory isToken) = ens
-      .all();
+    (
+      string[] memory names,
+      address[] memory addrs,
+      bool[] memory isToken,
+      bool[] memory noWrite
+    ) = ens.all();
 
     // toy ens is set, use it
     if (address(remoteEns).code.length > 0) {
@@ -173,20 +177,20 @@ abstract contract Deployer is Script2 {
     }
 
     // known chain, write deployment file
-    if (bytes(network).length != 0) {
+    if (createFile) {
       vm.writeFile(file_deployed(), ""); // clear file
       line("[");
       for (uint i = 0; i < names.length; i++) {
-        bool end = i + 1 == names.length;
-        line("  {");
-        line(string.concat('    "address": "', vm.toString(addrs[i]), '",'));
-        line(string.concat('    "isToken": ', vm.toString(isToken[i]), ","));
-        line(string.concat('    "name": "', names[i], '"'));
-        line(string.concat("  }", end ? "" : ","));
+        if (!noWrite[i]) {
+          bool end = i + 1 == names.length;
+          line("  {");
+          line(string.concat('    "address": "', vm.toString(addrs[i]), '",'));
+          line(string.concat('    "isToken": ', vm.toString(isToken[i]), ","));
+          line(string.concat('    "name": "', names[i], '"'));
+          line(string.concat("  }", end ? "" : ","));
+        }
       }
       line("]");
-    } else {
-      console.log("Deployer: Unknown chain. Will not write an addresses file.");
     }
   }
 
