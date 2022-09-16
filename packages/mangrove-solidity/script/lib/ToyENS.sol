@@ -7,11 +7,23 @@ contract ToyENS {
   string[] _names;
 
   function get(string calldata name)
+    public
+    view
+    returns (address payable addr)
+  {
+    addr = payable(_addrs[name]);
+    require(
+      addr != address(0),
+      string.concat("ToyENS: address not found for ", name)
+    );
+  }
+
+  function entry(string calldata name)
     external
     view
-    returns (address addr, bool isToken)
+    returns (address payable addr, bool isToken)
   {
-    addr = _addrs[name];
+    addr = get(name);
     isToken = _isToken[name];
   }
 
