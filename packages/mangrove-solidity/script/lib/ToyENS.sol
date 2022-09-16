@@ -55,7 +55,7 @@ contract ToyENS {
     _isToken[name] = isToken;
   }
 
-  function set_no_write(
+  function set_transient(
     string calldata name,
     address addr,
     bool isToken

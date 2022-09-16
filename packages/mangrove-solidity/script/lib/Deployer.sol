@@ -96,7 +96,7 @@ abstract contract Deployer is Script2 {
       }
       records = readAddresses(file_misc());
       for (uint i = 0; i < records.length; i++) {
-        ens.set_no_write(records[i].name, records[i].addr, records[i].isToken);
+        ens.set_transient(records[i].name, records[i].addr, records[i].isToken);
       }
     }
   }
