@@ -338,11 +338,11 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       )
     {
       return "posthook/reposted";
-    } catch (bytes memory reason) {
+    } catch Error(string memory reason) {
       // `newOffer` can fail when this contract is under provisioned
       // or if `offer.gives` is below density
       // Log incident only if under provisioned
-      bytes32 reason_hsh = keccak256(reason);
+      bytes32 reason_hsh = keccak256(bytes(reason));
       if (reason_hsh == BELOW_DENSITY) {
         return "posthook/dustRemainder"; // offer not reposted
       } else {
