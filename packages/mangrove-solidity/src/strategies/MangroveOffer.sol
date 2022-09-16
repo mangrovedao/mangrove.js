@@ -94,7 +94,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @notice `makerPosthook` is the callback function that is called by Mangrove *after* the offer execution.
   /// @param order a data structure that recapitulates the taker order and the offer as it was posted on mangrove
   /// @param result a data structure that gathers information about trade execution
-  /// @dev It may not be overriden although it can be customized via the post-hooks `__posthookSuccess__` and `__posthookFallback__` (see below).
+  /// @dev It may not be overridden although it can be customized via the post-hooks `__posthookSuccess__` and `__posthookFallback__` (see below).
   /// NB: If `makerPosthook` reverts, mangrove will log the first 32 bytes of the revert reason in the `PosthookFail` log.
   /// NB: Reverting posthook does not revert trade execution
   function makerPosthook(
@@ -102,7 +102,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     ML.OrderResult calldata result
   ) external override onlyCaller(address(MGV)) {
     if (result.mgvData == "mgv/tradeSuccess") {
-      // toplevel posthook may ignore returned value which is only usefull for (vertical) compositionality
+      // toplevel posthook may ignore returned value which is only useful for (vertical) compositionality
       __posthookSuccess__(order, result.makerData);
     } else {
       emit LogIncident(
@@ -254,7 +254,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @param order is a recall of the taker order that is at the origin of the current trade.
   /// @return data is a message that will be passed to posthook provided `makerExecute` does not revert.
   /// @dev __lastLook__ should revert if trade is to be reneged on. If not, returned `bytes32` are passed to `makerPosthook` in the `makerData` field.
-  // @custom:hook Special `"lastLook/retract"` bytes32 word can be used to infrom `__posthookSuccess__` not to repost offer in case of a partial fill. Custom message can be used to customize `__posthookSuccess__` behavior*/
+  // @custom:hook Special `"lastLook/retract"` bytes32 word can be used to inform `__posthookSuccess__` not to repost offer in case of a partial fill. Custom message can be used to customize `__posthookSuccess__` behavior*/
 
   function __lastLook__(ML.SingleOrder calldata order)
     internal
@@ -312,7 +312,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     ML.SingleOrder calldata order,
     bytes32 maker_data
   ) internal virtual returns (bytes32 data) {
-    // if `this` contract's lastlook decides not to repost offer after a partial fill.
+    // if `this` contract's `__lastLook__` decides not to repost offer after a partial fill.
     if (maker_data == "lastLook/retract") {
       return "posthook/skipped";
     }
@@ -352,14 +352,19 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     }
   }
 
-  ///@notice computes missing provision to repost `offerId` at given `gasreq` and `gasprice` ignoring current contract's balance on Mangrove
+  ///@inheritdoc IOfferLogic
+  ///@param outbound_tkn the outbound token used to identify the offer book
+  ///@param inbound_tkn the inbound token used to identify the offer book
+  ///@param gasreq the gas required by the offer. Give > type(uint24).max to use `this.offerGasreq()`
+  ///@param gasprice the upper bound on gas price. Give 0 to use Mangrove's gasprice
+  ///@param offerId the offer id. Set this to 0 if one is not reposting an offer
   ///@dev if `offerId` is not in the Order Book, will simply return how much is needed to post
   function getMissingProvision(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
-    uint gasreq, // give > type(uint24).max to use `this.ofrGasreq()`
-    uint gasprice, // give 0 to use Mangrove's gasprice
-    uint offerId // set this to 0 if one is not reposting an offer
+    uint gasreq,
+    uint gasprice,
+    uint offerId
   ) public view returns (uint) {
     (P.Global.t globalData, P.Local.t localData) = MGV.config(
       address(outbound_tkn),
