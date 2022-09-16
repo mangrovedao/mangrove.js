@@ -120,12 +120,10 @@ contract MangroveOrder is Forwarder, IOrderLogic {
 
       // the taker gives inbound_tkn and wants outbound_tkn so for the offer these are reversed,
       // such that the taker receives outbound_tkn when the offer is taken.
-      IERC20 offerOutbound_tkn = takerInbound_tkn;
-      IERC20 offerInbound_tkn = takerOutbound_tkn;
       res.offerId = _newOffer(
         NewOfferData({
-          outbound_tkn: offerOutbound_tkn, 
-          inbound_tkn: offerInbound_tkn, 
+          outbound_tkn: takerInbound_tkn, 
+          inbound_tkn: takerOutbound_tkn, 
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
           gives: tko.makerGives - res.takerGave,
           gasreq: ofrGasreq(),
@@ -172,20 +170,23 @@ contract MangroveOrder is Forwarder, IOrderLogic {
       } else {
         // offer was successfully posted
         // if one wants to maintain an inverse mapping owner => offerIds
+        // NB: offer has reverse token direction
         __logOwnershipRelation__({
           owner: msg.sender,
-          outbound_tkn: offerOutbound_tkn,
-          inbound_tkn: offerInbound_tkn,
+          outbound_tkn: takerInbound_tkn,
+          inbound_tkn: takerOutbound_tkn,
           offerId: res.offerId
         });
 
         // crediting caller's balance with amount of offered tokens (transferred from caller at the beginning of this function)
         // so that the offered tokens can be transferred when the offer is taken.
-        router().push(offerOutbound_tkn, msg.sender, tko.gives - res.takerGave);
+        // NB `takerInbound_tkn` is the outbound token for the resting order
+        router().push(takerInbound_tkn, msg.sender, tko.gives - res.takerGave);
 
         // setting a time to live for the resting order
+        // NB: offer has reverse token direction
         if (tko.blocksToLiveForRestingOrder > 0) {
-          expiring[offerOutbound_tkn][offerInbound_tkn][res.offerId] =
+          expiring[takerInbound_tkn][takerOutbound_tkn][res.offerId] =
             block.number +
             tko.blocksToLiveForRestingOrder;
         }
