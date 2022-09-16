@@ -258,7 +258,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @param order is a recall of the taker order that is at the origin of the current trade.
   /// @return data is a message that will be passed to posthook provided `makerExecute` does not revert.
   /// @dev __lastLook__ should revert if trade is to be reneged on. If not, returned `bytes32` are passed to `makerPosthook` in the `makerData` field.
-  // @custom:hook Special `"lastLook/retract"` bytes32 word can be used to inform `__posthookSuccess__` not to repost offer in case of a partial fill. Custom message can be used to customize `__posthookSuccess__` behavior*/
+  // @custom:hook Special bytes32 word can be used to switch a particular behavior of `__posthookSuccess__`, e.g not to repost offer in case of a partial fill. */
 
   function __lastLook__(ML.SingleOrder calldata order)
     internal
@@ -316,10 +316,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     ML.SingleOrder calldata order,
     bytes32 maker_data
   ) internal virtual returns (bytes32 data) {
-    // if `this` contract's `__lastLook__` decides not to repost offer after a partial fill.
-    if (maker_data == "lastLook/retract") {
-      return "posthook/skipped";
-    }
+    maker_data; // maker_data can be used in overrides to skip reposting for instance. It is ignored in the default behavior.
     // now trying to repost residual
     uint new_gives = __residualGives__(order);
     // Density check at each repost would be too gas costly.
@@ -343,7 +340,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     {
       return "posthook/reposted";
     } catch Error(string memory reason) {
-      // `newOffer` can fail when this contract is under provisioned
+      // `updateOffer` can fail when this contract is under provisioned
       // or if `offer.gives` is below density
       // Log incident only if under provisioned
       bytes32 reason_hsh = keccak256(bytes(reason));

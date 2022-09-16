@@ -38,7 +38,7 @@ interface IOfferLogic is IMaker {
   ///@notice Actual gas requirement when posting offers via `this` strategy. Returned value may change if `this` contract's router is updated.
   ///@return total gas cost including router specific costs (if any).
   function offerGasreq() external view returns (uint);
-  
+
   ///@notice Computes missing provision to repost `offerId` at given `gasreq` and `gasprice` ignoring current contract's balance on Mangrove.
   ///@return missingProvision to repost `offerId`.
   function getMissingProvision(
@@ -47,7 +47,7 @@ interface IOfferLogic is IMaker {
     uint gasreq,
     uint gasprice,
     uint offerId
-  ) external view returns (uint);
+  ) external view returns (uint missingProvision);
 
   ///@notice sets `this` contract's default gasreq for `new/updateOffer`.
   ///@param gasreq an overapproximation of the gas required to handle trade and posthook without considering liquidity routing specific costs.
