@@ -24,7 +24,7 @@ import "mgv_src/IMangrove.sol";
 /// @dev Naming scheme:
 /// `f() public`: can be used, as is, in all descendants of `this` contract
 /// `_f() internal`: descendant of this contract should provide a public wrapper of this function
-/// `__f__() virtual internal`: descendant of this contract may override this function to specialize the calls to `makerExecute`
+/// `__f__() virtual internal`: descendant of this contract may override this function to specialize behaviour of `makerExecute` or `makerPosthook`
 
 abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   IMangrove public immutable MGV;
@@ -126,7 +126,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @inheritdoc IOfferLogic
   function setRouter(AbstractRouter router_) public override onlyAdmin {
     MOS.getStorage().router = router_;
-    if (address(router_) != address(0)) {
+    if (router_ != NO_ROUTER) {
       router_.bind(address(this));
     }
     emit SetRouter(router_);
@@ -166,15 +166,18 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @inheritdoc IOfferLogic
   function checkList(IERC20[] calldata tokens) external view override {
     AbstractRouter router_ = router();
+    // no router => reserve == this
     require(
       router_ != NO_ROUTER || _reserve(address(this)) == address(this),
       "MangroveOffer/LogicHasNoRouter"
     );
     for (uint i = 0; i < tokens.length; i++) {
+      // checking `this` contract's approval
       require(
         tokens[i].allowance(address(this), address(MGV)) > 0,
         "MangroveOffer/LogicMustApproveMangrove"
       );
+      // if contract has a router, checking router is allowed
       if (router_ != NO_ROUTER) {
         require(
           tokens[i].allowance(address(this), address(router_)) > 0,
@@ -217,6 +220,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
         "mgvOffer/activate/approveRouterFail"
       );
       // letting router performs additional necessary approvals (if any)
+      // this will only work is `this` contract is an authorized maker of the router (`router.bind(address(this))` has been called).
       router_.activate(token);
     }
   }
