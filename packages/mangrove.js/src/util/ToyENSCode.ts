@@ -19,7 +19,7 @@ export const abi = [
   "function set(string,address,bool) external ",
   "function set(string[],address[],bool[]) external",
   "function get(string) view external returns (address addr)",
-  "function all() view external returns (string[] names, address[] addrs, bool[] isToken)",
+  "function all() view external returns (string[] names, address[] addrs, bool[] isToken, bool[] transient)",
 ];
 
 export const code =

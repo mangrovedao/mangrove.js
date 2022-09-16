@@ -167,7 +167,7 @@ abstract contract Deployer is Script2 {
       string[] memory names,
       address[] memory addrs,
       bool[] memory isToken,
-      bool[] memory noWrite
+      bool[] memory transient
     ) = ens.all();
 
     // toy ens is set, use it
@@ -181,7 +181,7 @@ abstract contract Deployer is Script2 {
       vm.writeFile(file_deployed(), ""); // clear file
       line("[");
       for (uint i = 0; i < names.length; i++) {
-        if (!noWrite[i]) {
+        if (!transient[i]) {
           bool end = i + 1 == names.length;
           line("  {");
           line(string.concat('    "address": "', vm.toString(addrs[i]), '",'));

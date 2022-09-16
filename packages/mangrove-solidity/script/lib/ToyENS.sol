@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.13;
 
+/* Onchain contract registry with the following features:
+ * stores whether an address is a token or not through the _isToken mapping
+ * stores whether a name should be transient or permanent. Permanent names are expected to be written to files. permanent names can become transient and vice versa.
+ * stores the list of mapped names
+ */
+
 contract ToyENS {
   mapping(string => address) _addrs;
   mapping(string => bool) _isToken;
   string[] _names;
   // addresses to not write
   // useful for when only some addresses should be output to a file
-  mapping(string => bool) _noWrite;
+  mapping(string => bool) _transient;
 
   function get(string calldata name)
     public
@@ -44,7 +50,7 @@ contract ToyENS {
     if (_addrs[name] == address(0)) {
       _names.push(name);
     }
-    _noWrite[name] = false;
+    _transient[name] = false;
     _addrs[name] = addr;
     _isToken[name] = isToken;
   }
@@ -59,7 +65,7 @@ contract ToyENS {
     if (_addrs[name] == address(0)) {
       _names.push(name);
     }
-    _noWrite[name] = true;
+    _transient[name] = true;
     _addrs[name] = addr;
     _isToken[name] = isToken;
   }
@@ -81,17 +87,17 @@ contract ToyENS {
       string[] memory names,
       address[] memory addrs,
       bool[] memory isToken,
-      bool[] memory noWrite
+      bool[] memory transient
     )
   {
     names = _names;
     addrs = new address[](names.length);
     isToken = new bool[](names.length);
-    noWrite = new bool[](names.length);
+    transient = new bool[](names.length);
     for (uint i = 0; i < _names.length; i++) {
       addrs[i] = _addrs[names[i]];
       isToken[i] = _isToken[names[i]];
-      noWrite[i] = _noWrite[names[i]];
+      transient[i] = _transient[names[i]];
     }
   }
 }
