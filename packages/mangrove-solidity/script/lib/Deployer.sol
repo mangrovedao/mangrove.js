@@ -32,6 +32,10 @@ struct Record {
 abstract contract Deployer is Script2 {
   ToyENS ens; // singleton local ens instance
   ToyENS remoteEns; // out-of-band agreed upon toy ens address
+  mapping(uint => string) chainkeys; // out-of-band agreed upon chain names
+  // deployment folder to write to
+
+  using stdJson for string;
 
   using stdJson for string;
 
@@ -69,7 +73,13 @@ abstract contract Deployer is Script2 {
       network = "local";
       fork = new GenericFork();
     } else {
-      revert(string.concat("Unknown chain id ",vm.toString(block.chainid),", cannot deploy."));
+      revert(
+        string.concat(
+          "Unknown chain id ",
+          vm.toString(block.chainid),
+          ", cannot deploy."
+        )
+      );
     }
 
     if (address(fork) != address(0)) {
@@ -90,7 +100,10 @@ abstract contract Deployer is Script2 {
     }
   }
 
-  function readAddresses(string memory fileName) internal returns (Record[] memory) {
+  function readAddresses(string memory fileName)
+    internal
+    returns (Record[] memory)
+  {
     try vm.readFile(fileName) returns (string memory addressesRaw) {
       if (bytes(addressesRaw).length == 0) {
         // allow empty file
@@ -125,7 +138,11 @@ abstract contract Deployer is Script2 {
     return (new Record[](0));
   }
 
-  function file_generic(string memory subdir) internal view returns (string memory) {
+  function file_generic(string memory subdir)
+    internal
+    view
+    returns (string memory)
+  {
     return
       string.concat(
         vm.projectRoot(),
@@ -137,11 +154,11 @@ abstract contract Deployer is Script2 {
   }
 
   function file_misc() internal view returns (string memory) {
-    return file_generic('misc/');
+    return file_generic("misc/");
   }
 
   function file_deployed() internal view returns (string memory) {
-    return file_generic('deployed/');
+    return file_generic("deployed/");
   }
 
   function outputDeployment() internal {

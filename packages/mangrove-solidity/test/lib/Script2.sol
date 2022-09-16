@@ -106,7 +106,11 @@ contract Script2 is Script {
   /* *******
      Convert T[] arrays to U[] arrays
   */
-  function toIERC20(address[] memory addrs) internal pure returns (IERC20[] memory ierc20s) {
+  function toIERC20(address[] memory addrs)
+    internal
+    pure
+    returns (IERC20[] memory ierc20s)
+  {
     assembly {
       ierc20s := addrs
     }
@@ -853,5 +857,4 @@ contract Script2 is Script {
     }
     return bs;
   }
-
 }
