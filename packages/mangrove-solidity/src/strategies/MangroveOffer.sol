@@ -126,9 +126,6 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @inheritdoc IOfferLogic
   function setRouter(AbstractRouter router_) public override onlyAdmin {
     MOS.getStorage().router = router_;
-    if (router_ != NO_ROUTER) {
-      router_.bind(address(this));
-    }
     emit SetRouter(router_);
   }
 
