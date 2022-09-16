@@ -14,7 +14,9 @@ pragma abicoder v2;
 import "../../MangroveOffer.sol";
 import "mgv_src/strategies/interfaces/IForwarder.sol";
 
-///@title Class for maker contracts that forward external offer makers instructions to Mangrove.
+///@title Class for maker contracts that forward external offer makers instructions to Mangrove in a permissionless fashion.
+///@notice Each offer posted via this contract are managed by their offer maker, not by this contract's admin.
+///@notice This class implements IForwarder, which contains specific Forwarder logic functions in additions to IOfferlogic interface.
 abstract contract Forwarder is IForwarder, MangroveOffer {
   ///@notice data associated to each offer published on Mangrove by `this` contract.
   struct OwnerData {
@@ -30,23 +32,27 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   mapping(IERC20 => mapping(IERC20 => mapping(uint => OwnerData)))
     internal ownerData;
 
+  ///@notice Forwarder constructor
+  ///@param mgv the deployed Mangrove contract on which `this` contract will post offers.
+  ///@param router_ the router that `this` contract will use to pull/push liquidity from offer maker's reserve. This cannot be `NO_ROUTER`. 
   constructor(
     IMangrove mgv,
-    AbstractRouter _router
-  ) MangroveOffer(mgv) { 
-    setRouter(_router);
+    AbstractRouter router_
+  ) MangroveOffer(mgv) {
+    require (router_ != NO_ROUTER, "Forwarder logics must have a router");
+    setRouter(router_);
   }
 
   /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
-  /// @return _offerOwners an array of the same length where the address at position i is the owner of `offerIds[i]`
+  /// @return offerOwners_ an array of the same length where the address at position i is the owner of `offerIds[i]`
   function offerOwners(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
     uint[] calldata offerIds
-  ) public view override returns (address[] memory _offerOwners) {
-    _offerOwners = new address[](offerIds.length);
+  ) public view override returns (address[] memory offerOwners_) {
+    offerOwners_ = new address[](offerIds.length);
     for (uint i = 0; i < offerIds.length; i++) {
-      _offerOwners[i] = ownerOf(outbound_tkn, inbound_tkn, offerIds[i]);
+      offerOwners_[i] = ownerOf(outbound_tkn, inbound_tkn, offerIds[i]);
     }
   }
 
@@ -81,6 +87,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     }
   }
 
+  ///@inheritdoc IForwarder
   function ownerOf(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -90,11 +97,13 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     require(owner != address(0), "multiUser/unknownOffer");
   }
 
+  ///@inheritdoc IOfferLogic
   function reserve() public view override returns (address) {
     address mkr_reserve = _reserve(msg.sender);
     return mkr_reserve == address(0) ? msg.sender : mkr_reserve;
   }
 
+  ///@inheritdoc IOfferLogic
   function setReserve(address reserve_) external override {
     _setReserve(msg.sender, reserve_);
   }
@@ -427,7 +436,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   }
 
   function __checkList__(IERC20 token) internal view virtual override {
-    router().checkList(token, reserve());
+    AbstractRouter router_ = router();
+    require(router_ != NO_ROUTER, "Forwarder/MissingRouter");
+    router_.checkList(token, reserve());
     super.__checkList__(token);
   }
 }
