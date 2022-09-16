@@ -12,4 +12,5 @@ const outDir = path.resolve("./dist/addresses");
 
 shell.cd(sourceDir);
 shell.mkdir("-p", outDir);
-shell.cp("*", outDir);
+shell.rm("-rf", outDir);
+shell.cp("-R", sourceDir, outDir);
