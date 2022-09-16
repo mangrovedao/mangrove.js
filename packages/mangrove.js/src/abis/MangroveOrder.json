@@ -504,6 +504,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "offerGasreq",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "contract IERC20",
@@ -527,19 +540,6 @@
           "internalType": "address[]",
           "name": "_offerOwners",
           "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "ofrGasreq",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",
