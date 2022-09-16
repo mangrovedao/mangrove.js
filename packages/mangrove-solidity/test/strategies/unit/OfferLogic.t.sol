@@ -74,7 +74,7 @@ contract OfferLogicTest is MangroveTest {
   function setupMakerContract() internal virtual prank(maker) {
     makerContract = new OfferMaker({
       mgv: IMangrove($(mgv)),
-      _router: AbstractRouter(address(0)),
+      router_: AbstractRouter(address(0)),
       deployer: maker
     });
   }

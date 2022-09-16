@@ -18,10 +18,13 @@ import "mgv_src/strategies/interfaces/IMakerLogic.sol";
 
 contract OfferMaker is IMakerLogic, Direct {
 
-  constructor(IMangrove mgv, AbstractRouter _router, address deployer)
-    Direct(mgv, _router) 
+  constructor(IMangrove mgv, AbstractRouter router_, address deployer)
+    Direct(mgv, router_) 
   {
     setGasreq(25_000);
+    if (router_ != NO_ROUTER) {
+      router_.bind(address(this));
+    }
     // stores total gas requirement of this strat (depends on router gas requirements)
     // if contract is deployed with static address, then one must set admin to something else than msg.sender
     if (deployer != msg.sender) {

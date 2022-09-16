@@ -42,7 +42,7 @@ contract MangroveOfferTest is MangroveTest {
 
     makerContract = new OfferMaker({
       mgv: IMangrove($(mgv)), 
-      _router: SimpleRouter(address(0)), // no router
+      router_: SimpleRouter(address(0)), // no router
       deployer: maker
     });
   }

@@ -14,7 +14,9 @@ pragma abicoder v2;
 import "../../MangroveOffer.sol";
 import "mgv_src/strategies/interfaces/IForwarder.sol";
 
+///@title Class for maker contracts that forward external offer makers instructions to Mangrove.
 abstract contract Forwarder is IForwarder, MangroveOffer {
+  ///@notice data associated to each offer published on Mangrove by `this` contract.
   struct OwnerData {
     // offer owner address
     address owner;
@@ -23,6 +25,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint96 wei_balance;
   }
 
+  ///@notice Owner data mapping.
   ///@dev outbound_tkn => inbound_tkn => offerId => OwnerData
   mapping(IERC20 => mapping(IERC20 => mapping(uint => OwnerData)))
     internal ownerData;
@@ -30,9 +33,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   constructor(
     IMangrove mgv,
     AbstractRouter _router
-  ) MangroveOffer(mgv) { // additional gas required for reading `ownerData` at each trade
-    // define `_router` as the liquidity router for `this` and declare that `this` is allowed to call router.
-    // NB router also needs to be approved for outbound/inbound token transfers by each user of this contract.
+  ) MangroveOffer(mgv) { 
     setRouter(_router);
   }
 

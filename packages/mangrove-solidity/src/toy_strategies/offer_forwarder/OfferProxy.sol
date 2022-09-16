@@ -28,6 +28,8 @@ contract OfferProxy is OfferForwarder {
     // OfferForwarder has a SimpleRouter by default
     // replacing this router with an Aave one
     AaveDeepRouter _router = new AaveDeepRouter(_addressesProvider, 0, 2);
+    // adding `this` contract to the authorized makers of this router (this will work because `this` contract is the admin/deployer of `router_`)
+    _router.bind(address(this));
     // setting aave router to be the router of this contract (allowed since this contract is admin of the router)
     setRouter(_router);
     // changing router admin for further modification

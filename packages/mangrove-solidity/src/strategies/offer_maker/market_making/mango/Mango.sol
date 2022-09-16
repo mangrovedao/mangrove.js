@@ -55,6 +55,8 @@ contract Mango is Direct {
     )
   {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
+    AbstractRouter router_ = router();
+    
     // sanity check
     require(
       nslots > 0 &&
@@ -94,8 +96,10 @@ contract Mango is Direct {
     // in order to let deployer's EOA have control over liquidity
     setReserve(deployer);
 
+    // adding `this` to the authorized makers of the router.
+    router_.bind(address(this));
     // `this` deployed the router, letting admin take control over it.
-    router().setAdmin(deployer);
+    router_.setAdmin(deployer);
 
     // should cover cost of reposting the offer + dual offer
     setGasreq(150_000);
