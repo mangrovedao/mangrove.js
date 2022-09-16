@@ -53,7 +53,7 @@ contract MangroveOfferTest is MangroveTest {
 
   function test_DefaultGasReq() public {
     assertEq(
-      makerContract.ofrGasreq(),
+      makerContract.offerGasreq(),
       25_000,
       "Incorrect default gasreq for offer maker"
     );
@@ -158,13 +158,13 @@ contract MangroveOfferTest is MangroveTest {
   }
 
   function test_GasReqTakesNewRouterIntoAccount() public {
-    uint gasreq = makerContract.ofrGasreq();
+    uint gasreq = makerContract.offerGasreq();
     vm.startPrank(maker);
     SimpleRouter router = new SimpleRouter();
     router.setAdmin(address(makerContract));
     makerContract.setRouter(router);
     assertEq(
-      makerContract.ofrGasreq(),
+      makerContract.offerGasreq(),
       gasreq + router.gasOverhead(),
       "incorrect gasreq"
     );

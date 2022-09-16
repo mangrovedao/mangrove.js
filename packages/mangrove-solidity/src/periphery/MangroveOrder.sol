@@ -123,7 +123,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
           inbound_tkn: outbound_tkn,
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
           gives: tko.makerGives - res.takerGave,
-          gasreq: ofrGasreq(),
+          gasreq: offerGasreq(),
           pivotId: 0,
           fund: msg.value,
           caller: msg.sender,

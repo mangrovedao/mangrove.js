@@ -50,7 +50,7 @@ contract OfferMaker is IMakerLogic, Direct {
       address(inbound_tkn),
       wants,
       gives,
-      gasreq >= type(uint24).max ? ofrGasreq() : gasreq,
+      gasreq >= type(uint24).max ? offerGasreq() : gasreq,
       gasprice,
       pivotId
     );

@@ -34,7 +34,7 @@ contract OfferForwarderTest is OfferLogicTest {
     uint gasbase = mgv
       .offerDetails(address(weth), address(usdc), offerId)
       .offer_gasbase();
-    uint gasreq = makerContract.ofrGasreq();
+    uint gasreq = makerContract.offerGasreq();
     uint locked = derived_gp * (gasbase + gasreq) * 10**9;
     assertEq(
       mgv.balanceOf(address(makerContract)),

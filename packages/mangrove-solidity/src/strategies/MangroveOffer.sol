@@ -53,7 +53,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   }
 
   /// @inheritdoc IOfferLogic
-  function ofrGasreq() public view returns (uint) {
+  function offerGasreq() public view returns (uint) {
     AbstractRouter router_ = router();
     if (router_ != NO_ROUTER) {
       return MOS.getStorage().ofr_gasreq + router_.gasOverhead();
@@ -377,7 +377,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       _gp = gasprice;
     }
     if (gasreq >= type(uint24).max) {
-      gasreq = ofrGasreq(); // this includes overhead of router if any
+      gasreq = offerGasreq(); // this includes overhead of router if any
     }
     uint bounty = (gasreq + localData.offer_gasbase()) * _gp * 10**9; // in WEI
     // if `offerId` is not in the OfferList, all returned values will be 0

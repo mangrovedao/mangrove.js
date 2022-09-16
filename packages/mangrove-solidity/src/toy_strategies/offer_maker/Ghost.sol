@@ -70,7 +70,7 @@ contract Ghost is Direct {
       inbound_tkn: address(STABLE1),
       wants: wants1,
       gives: gives,
-      gasreq: ofrGasreq(),
+      gasreq: offerGasreq(),
       gasprice: 0,
       pivotId: pivot1
     });
@@ -81,7 +81,7 @@ contract Ghost is Direct {
       inbound_tkn: address(STABLE2),
       wants: wants2,
       gives: gives,
-      gasreq: ofrGasreq(),
+      gasreq: offerGasreq(),
       gasprice: 0,
       pivotId: pivot2
     });
@@ -126,7 +126,7 @@ contract Ghost is Direct {
         gives: new_alt_gives,
         wants: new_alt_wants,
         offerId: alt_offerId,
-        gasreq: ofrGasreq(),
+        gasreq: offerGasreq(),
         pivotId: alt_offer.next(),
         gasprice: 0
       });

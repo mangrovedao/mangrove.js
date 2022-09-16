@@ -128,7 +128,7 @@ contract Mango is Direct {
         to,
         pivotIds,
         tokenAmounts,
-        ofrGasreq()
+        offerGasreq()
       )
     );
     if (!success) {
@@ -200,7 +200,7 @@ contract Mango is Direct {
         s,
         withBase,
         amounts,
-        ofrGasreq()
+        offerGasreq()
       )
     );
     if (!success) {
@@ -347,7 +347,7 @@ contract Mango is Direct {
       abi.encodeWithSelector(
         MangoImplementation.$postDualOffer.selector,
         order,
-        ofrGasreq()
+        offerGasreq()
       )
     );
     if (!success) {

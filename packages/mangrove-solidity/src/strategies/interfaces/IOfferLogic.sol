@@ -34,9 +34,9 @@ interface IOfferLogic is IMaker {
   ///@notice Logging change in default gasreq
   event SetGasreq(uint);
 
-  ///@notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated.
+  ///@notice Actual gas requirement when posting offers via `this` strategy. Returned value may change if `this` contract's router is updated.
   ///@return total gas cost including router specific costs (if any).
-  function ofrGasreq() external view returns (uint);
+  function offerGasreq() external view returns (uint);
   
   function getMissingProvision(
     IERC20 outbound_tkn,

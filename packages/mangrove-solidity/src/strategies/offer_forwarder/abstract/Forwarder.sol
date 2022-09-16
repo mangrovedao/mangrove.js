@@ -12,7 +12,6 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 import "../../MangroveOffer.sol";
-import "mgv_src/periphery/MgvReader.sol";
 import "mgv_src/strategies/interfaces/IForwarder.sol";
 
 abstract contract Forwarder is IForwarder, MangroveOffer {
@@ -126,7 +125,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       address(offData.inbound_tkn)
     );
     // convention for default gasreq value
-    offData.gasreq = (offData.gasreq > type(uint24).max) ? ofrGasreq() : offData.gasreq;
+    offData.gasreq = (offData.gasreq > type(uint24).max) ? offerGasreq() : offData.gasreq;
     // computing gasprice implied by offer provision
     uint gasprice = deriveGasprice(
       offData.gasreq,
@@ -216,7 +215,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     upd.inbound_tkn = inbound_tkn;
     upd.wants = wants;
     upd.gives = gives;
-    upd.gasreq = gasreq > type(uint24).max ? ofrGasreq() : gasreq;
+    upd.gasreq = gasreq > type(uint24).max ? offerGasreq() : gasreq;
     upd.pivotId = pivotId;
     upd.offerId = offerId;
     upd.owner = msg.sender;
