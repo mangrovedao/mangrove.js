@@ -17,11 +17,12 @@ import "mgv_src/strategies/routers/AbstractRouter.sol";
 import "mgv_src/strategies/interfaces/IMakerLogic.sol";
 
 contract OfferMaker is IMakerLogic, Direct {
-
-  constructor(IMangrove mgv, AbstractRouter router_, address deployer)
-    Direct(mgv, router_) 
-  {
-    setGasreq(25_000);
+  constructor(
+    IMangrove mgv,
+    AbstractRouter router_,
+    address deployer
+  ) Direct(mgv, router_) {
+    setGasreq(16_000); // fails at <= 15K
     if (router_ != NO_ROUTER) {
       router_.bind(address(this));
     }
@@ -46,8 +47,7 @@ contract OfferMaker is IMakerLogic, Direct {
     uint gasreq,
     uint gasprice,
     uint pivotId
-    ) external payable override onlyAdmin returns (uint offerId)
-  {
+  ) external payable override onlyAdmin returns (uint offerId) {
     offerId = MGV.newOffer{value: msg.value}(
       address(outbound_tkn),
       address(inbound_tkn),
@@ -58,5 +58,4 @@ contract OfferMaker is IMakerLogic, Direct {
       pivotId
     );
   }
-
 }
