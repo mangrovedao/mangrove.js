@@ -84,6 +84,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     require(provision >= num, "Forwarder/deriveGasprice/NotEnoughProvision");
     unchecked {
       gasprice = provision / num;
+      // leftover = provision - num;
     }
   }
 
@@ -108,8 +109,17 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     _setReserve(msg.sender, reserve_);
   }
 
+  ///@notice Memory allocation of `_newOffer` variables
+  ///@param outbound_tkn token contract 
+  ///@param inbound_tkn token contract
+  ///@param wants the amount of inbound tokens the maker wants for a complete fill
+  ///@param gives the amount of outbound tokens the maker gives for a complete fill
+  ///@param pivotId a best pivot estimate for cheap offer insertion in the offer list
+  ///@param caller msg.sender of the calling external function
+  ///@param fund remainder of msg.value as received by the external function
+  ///@param noRevert is set to true if calling function does not wish `_newOffer` to revert on error. Out of gas exception is always possible though.
   struct NewOfferData {
-    IERC20 outbound_tkn;
+    IERC20 outbound_tkn; 
     IERC20 inbound_tkn;
     uint wants;
     uint gives;
@@ -117,19 +127,26 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint pivotId;
     address caller;
     uint fund;
-    bool noRevert; // whether newOffer should revert in case call to mangrove reverts
+    bool noRevert;
   }
 
-  /// @notice inserts a new offer on a Mangrove Offer List
+  /// @notice Inserts a new offer on a Mangrove Offer List
+  /// @param offData memory location of the function's arguments
+  /// @return offerId
   /// @dev offer forwarders do not manage user funds on Mangrove, as a consequence:
-  /// user provision on Mangrove is the sum of locked provision in all live offers it owns + the sum of free wei's in all dead offers it owns (see `OwnerData.free_wei`)
-  /// locked provision in an offer is offer.gasprice * (offer.gasreq + gasbase) * 10**9
-  /// therefore offer.gasprice is derived from msg.value. 
-  /// Because of potential rounding errors in `deriveGasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
-  /// this dust tokens are not burned since they can be retrieved by admin using `withdrawFromMangrove` 
+  /// An offer maker's recoverable provisions on Mangrove is just the sum $S_locked(maker)$ of locked provision in all live offers it owns 
+  /// plus the sum $S_free(maker)$ of `wei_balance`'s in all dead offers it owns (see `OwnerData.wei_balance`). 
+  /// Notice that $S_locked(maker)$ is not part of `this` contract's balance on Mangrove.
+  /// However $\sum_i S_free(maker_i)$ <= MGV.balanceOf(address(this))`. 
+  /// Any fund of an offer maker on Mangrove that is either not locked on Mangrove or stored in the `OwnerData` free wei's is thus not recoverable by offer maker.
+  /// Therefore we need to make sure that all `msg.value` is captured by the `gasprice` at which the offer will be posted.
+  /// To do so, we do not let offer maker fix a gasprice. Rather we derive the gasprice based on `msg.value`.
+  /// Because of rounding errors in `deriveGasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
+  /// We could assign this dust to the corresponding `wei_balance` of `OwnerData` but this would entail a storage write whose gas cost would exceed the saved dust.
+  /// Note that this dust is not burnt, as it can be retrieved by this contract's admin via `withdrawFromMangrove`.
   function _newOffer(
     NewOfferData memory offData
-  ) internal returns (uint) {
+  ) internal returns (uint offerId) {
     (P.Global.t global, P.Local.t local) = MGV.config(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn)
@@ -151,6 +168,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       "Forwarder/newOffer/NotEnoughProvision"
     );
     // this call cannot revert for lack of provision (by design)
+    // it may revert if `offData.fund` yiels a gasprice that is too high (mangrove's gasprice is uint16)
     try MGV.newOffer{value: offData.fund}(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn),
@@ -159,12 +177,13 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       offData.gasreq,
       gasprice,
       offData.pivotId
-    ) returns (uint offerId) {
-      addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId, offData.caller); 
-      return offerId;
+    ) returns (uint offerId_) {
+      // assign `offerId_` to caller
+      addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId_, offData.caller); 
+      offerId = offerId_;
     } catch Error(string memory reason){
       require (offData.noRevert, reason);
-      return 0;
+      offerId = 0;
     }
   }
 
