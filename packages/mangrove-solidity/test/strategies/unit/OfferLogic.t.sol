@@ -120,6 +120,45 @@ contract OfferLogicTest is MangroveTest {
     assertTrue(offerId != 0);
   }
 
+  function test_getMissingProvisionIsEnoughToPostNewOffer() public {
+    vm.startPrank(maker);
+    uint offerId = makerContract.newOffer{
+      value: makerContract.getMissingProvision(weth, usdc, type(uint).max, 0, 0)
+    }({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
+    vm.stopPrank();
+    assertTrue(offerId != 0);
+  }
+
+  function test_getMissingProvisionIsMinimal() public {
+    uint prov = makerContract.getMissingProvision(
+      weth,
+      usdc,
+      type(uint).max,
+      0,
+      0
+    );
+    vm.startPrank(maker);
+    vm.expectRevert("mgv/insufficientProvision");
+    makerContract.newOffer{value: prov - 1}({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 ether,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
+    vm.stopPrank();
+  }
+
   function test_makerCanRetractOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}({

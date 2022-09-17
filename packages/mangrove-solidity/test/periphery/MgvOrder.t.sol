@@ -247,7 +247,7 @@ contract MangroveOrder_Test is MangroveTest {
       gasForMarketOrder: 6_500_000,
       blocksToLiveForRestingOrder: 0 //NA
     });
-    vm.expectRevert("Forwarder/deriveGasprice/NotEnoughProvision");
+    vm.expectRevert("mgv/insufficientProvision");
     mgo.take{value: 0.0001 ether}(buyOrder);
   }
 
