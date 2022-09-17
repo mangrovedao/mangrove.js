@@ -383,7 +383,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
       gasreq = offerGasreq(); // this includes overhead of router if any
     }
     uint bounty = (gasreq + localData.offer_gasbase()) * _gp * 10**9; // in WEI
-    // if `offerId` is not in the OfferList, all returned values will be 0
+    // if `offerId` is not in the OfferList or deprovisioned, computed value below will be 0
     uint currentProvisionLocked = (offerDetailData.gasreq() +
       offerDetailData.offer_gasbase()) *
       offerDetailData.gasprice() *
