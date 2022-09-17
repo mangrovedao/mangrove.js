@@ -383,7 +383,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     IERC20 outTkn = IERC20(order.outbound_tkn);
     IERC20 inTkn = IERC20(order.inbound_tkn);
     address owner = ownerOf(outTkn, inTkn, order.offerId);
-    router().push(inTkn, owner, amount);
+    address target = _reserve(owner);
+    router().push(inTkn, target == address(0) ? owner : target, amount);
     return 0;
   }
 
