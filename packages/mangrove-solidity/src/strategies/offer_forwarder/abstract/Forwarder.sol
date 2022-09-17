@@ -79,12 +79,12 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint provision,
     uint offer_gasbase
   ) internal pure returns (uint gasprice) {
-    uint num = (offer_gasbase + gasreq) * 10**9;
-    // pre-check to avoir underflow
-    require(provision >= num, "Forwarder/deriveGasprice/NotEnoughProvision");
     unchecked {
+      uint num = (offer_gasbase + gasreq) * 10**9;
+      // pre-check to avoir underflow since 0 is interpreted as "use mangrove's gasprice"
+      require(provision >= num, "mgv/insufficientProvision");
       gasprice = provision / num;
-      // leftover = provision - num;
+      // leftover is provision - num;
     }
   }
 
@@ -165,7 +165,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // so one needs to make sure here that only provision of this call will be used to provision the offer on mangrove
     require(
       gasprice >= global.gasprice(),
-      "Forwarder/newOffer/NotEnoughProvision"
+      "mgv/insufficientProvision"
     );
     // this call cannot revert for lack of provision (by design)
     // it may revert if `offData.fund` yiels a gasprice that is too high (mangrove's gasprice is uint16)
