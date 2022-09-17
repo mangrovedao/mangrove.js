@@ -41,7 +41,7 @@ contract MangroveOfferTest is MangroveTest {
     deal($(usdc), taker, cash(usdc, 100_000));
 
     makerContract = new OfferMaker({
-      mgv: IMangrove($(mgv)), 
+      mgv: IMangrove($(mgv)),
       router_: SimpleRouter(address(0)), // no router
       deployer: maker
     });
@@ -49,14 +49,6 @@ contract MangroveOfferTest is MangroveTest {
 
   function test_AdminIsDeployer() public {
     assertEq(makerContract.admin(), maker, "Incorrect admin");
-  }
-
-  function test_DefaultGasReq() public {
-    assertEq(
-      makerContract.offerGasreq(),
-      25_000,
-      "Incorrect default gasreq for offer maker"
-    );
   }
 
   function testCannot_ActivateIfNotAdmin() public {
