@@ -17,7 +17,7 @@ import "mgv_src/strategies/routers/SimpleRouter.sol";
 import {MgvLib} from "mgv_src/MgvLib.sol";
 
 contract MangroveOrder is Forwarder, IOrderLogic {
-  // `blockToLive[outbound_tkn][inbound_tkn][offerId]` gives block number beyond which the offer should renege on trade.
+  // `expiring[outbound_tkn][inbound_tkn][offerId]` gives timestamp beyond which the offer should renege on trade.
   mapping(IERC20 => mapping(IERC20 => mapping(uint => uint))) public expiring;
 
   constructor(IMangrove mgv, address deployer)
@@ -41,7 +41,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     uint exp = expiring[IERC20(order.outbound_tkn)][IERC20(order.inbound_tkn)][
       order.offerId
     ];
-    require(exp == 0 || block.number <= exp, "mgvOrder/expired");
+    require(exp == 0 || block.timestamp <= exp, "mgvOrder/expired");
     return "";
   }
 
@@ -220,10 +220,10 @@ contract MangroveOrder is Forwarder, IOrderLogic {
       router().push(outbound_tkn, msg.sender, tko.gives - res.takerGave);
 
       // setting a time to live for the resting order
-      if (tko.blocksToLiveForRestingOrder > 0) {
+      if (tko.timeToLiveForRestingOrder > 0) {
         expiring[outbound_tkn][inbound_tkn][res.offerId] =
-          block.number +
-          tko.blocksToLiveForRestingOrder;
+          block.timestamp +
+          tko.timeToLiveForRestingOrder;
       }
     }
   }
