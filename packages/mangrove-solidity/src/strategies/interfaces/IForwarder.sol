@@ -15,11 +15,15 @@ pragma abicoder v2;
 import { IMangrove } from "mgv_src/IMangrove.sol";
 import { IERC20 } from "mgv_src/MgvLib.sol";
 
-// Interface for contracts that manage liquidity on Mangrove on behalf of several users
+///@title IForwarder 
+///@notice Interface for contracts that manage liquidity on Mangrove on behalf of multiple offer makers
 interface IForwarder {
   
-  /** Forwarder logic specific Events */
-  // Offer management
+  ///@notice Logging new offer owner
+  ///@param mangrove the Mangrove contract on which the offer is posted
+  ///@param outbound_tkn the outbound token of the offer list.
+  ///@param inbound_tkn the inbound token of the offer list.
+  ///@param owner the offer maker that can manage the offer.
   event NewOwnedOffer(
     IMangrove mangrove,
     IERC20 indexed outbound_tkn,
@@ -28,26 +32,23 @@ interface IForwarder {
     address owner
   );
 
-  // user provision on Mangrove has increased
-  event CreditMgvUser(
-    IMangrove indexed mangrove,
-    address indexed user,
-    uint amount
-  );
-
-  // user provision on Mangrove has decreased
-  event DebitMgvUser(
-    IMangrove indexed mangrove,
-    address indexed user,
-    uint amount
-  );
-
+  /// @notice view on offer owners.
+  /// @param outbound_tkn the outbound token of the offer list.
+  /// @param inbound_tkn the inbound token of the offer list.
+  /// @param offerIds an array of offer identifiers on the offer list.
+  /// @return offer_owners an array of the same length where the address at position i is the owner of `offerIds[i]`
+  /// @dev if `offerIds[i]==address(0)` if and only if this offer has no owner.
   function offerOwners(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
     uint[] calldata offerIds
-  ) external view returns (address[] memory __offerOwners);
+  ) external view returns (address[] memory offer_owners);
 
+  /// @notice view on an offer owner.
+  /// @param outbound_tkn the outbound token of the offer list.
+  /// @param inbound_tkn the inbound token of the offer list.
+  /// @param offerId the offer identifier on the offer list.
+  /// @dev `ownerOf(in,out,id)` is equivalent to `offerOwners(in, out, [id])` but more gas efficient.
   function ownerOf(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,

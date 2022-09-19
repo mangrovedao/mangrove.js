@@ -136,7 +136,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
           noRevert: true // returns 0 when MGV reverts
         })
       );
-
+      // we summarize the market order (if offerId == 0 no resting order was posted).
       emit OrderSummary({
         mangrove: MGV,
         base: tko.base,

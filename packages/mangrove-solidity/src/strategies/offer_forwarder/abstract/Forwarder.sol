@@ -47,8 +47,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     setRouter(router_);
   }
 
-  /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
-  /// @return offerOwners_ an array of the same length where the address at position i is the owner of `offerIds[i]`
+  ///@inheritdoc IForwarder
   function offerOwners(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -60,7 +59,11 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     }
   }
 
-  /// @notice assigns an `owner` to `offerId`  on the `(outbound_tkn, inbound_tkn)` offer list
+  /// @notice grants managing rights on a particular offer.
+  /// @param outbound_tkn the outbound token of the offer list.
+  /// @param inbound_tkn the inbound token of the offer list.
+  /// @param offerId the offer identifier in the offer list.
+  /// @param owner the address of the offer maker who will have ownership over the offer.
   function addOwner(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -74,9 +77,10 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     emit NewOwnedOffer(MGV, outbound_tkn, inbound_tkn, offerId, owner);
   }
 
+  /// @notice computes the `gasprice` that is covered by the provision given in argument.
   /// @param gasreq the gas required by the offer
   /// @param provision the amount of native token one is using to provision the offer
-  /// @return gasprice that the `provision` can cover for
+  /// @return gasprice the gas price that is covered by `provision`.
   /// @dev the returned gasprice is slightly lower than the real gasprice that the provision can cover because of the rounding error due to division
   function deriveGasprice(
     uint gasreq,
@@ -134,7 +138,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     bool noRevert;
   }
 
-  /// @notice Inserts a new offer on a Mangrove Offer List
+  /// @notice Inserts a new offer on a Mangrove Offer List. Should be called by any desendant of `Forwarder` wishing to post a new offer.
   /// @param offData memory location of the function's arguments
   /// @return offerId
   /// @dev offer forwarders do not manage user funds on Mangrove, as a consequence:
@@ -172,7 +176,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       "mgv/insufficientProvision"
     );
     // this call cannot revert for lack of provision (by design)
-    // it may revert if `offData.fund` yiels a gasprice that is too high (mangrove's gasprice is uint16)
+    // it may revert if `offData.fund` yields a gasprice that is too high (mangrove's gasprice is uint16)
+    // or if `offData.gives` is below density (dust)
     try MGV.newOffer{value: offData.fund}(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn),
@@ -186,6 +191,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId_, offData.caller); 
       offerId = offerId_;
     } catch Error(string memory reason){
+      /// letting revert bubble up unless `noRevert` is positioned.
       require (offData.noRevert, reason);
       offerId = 0;
     }
