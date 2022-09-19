@@ -98,7 +98,7 @@ contract ScenariiTest is MangroveTest {
     );
 
     snipe();
-    logOfferBook($(base), $(quote), 4);
+    logOrderBook($(base), $(quote), 4);
 
     // restore offer that was deleted after partial fill, minus taken amount
     makers.getMaker(2).updateOffer(
@@ -109,17 +109,17 @@ contract ScenariiTest is MangroveTest {
       2
     );
 
-    logOfferBook($(base), $(quote), 4);
+    logOrderBook($(base), $(quote), 4);
 
     saveBalances();
     saveOffers();
     mo();
-    logOfferBook($(base), $(quote), 4);
+    logOrderBook($(base), $(quote), 4);
 
     saveBalances();
     saveOffers();
     collectFailingOffer(offerOf[0]);
-    logOfferBook($(base), $(quote), 4);
+    logOrderBook($(base), $(quote), 4);
     saveBalances();
     saveOffers();
   }
@@ -412,6 +412,6 @@ contract DeepCollectTest is MangroveTest {
 
   function moWithFailures() internal {
     tkr.marketOrderWithFail({wants: 10 ether, gives: 30 ether});
-    assertTrue(isEmptyOB($(base), $(quote)), "Offer book should be empty");
+    assertTrue(isEmptyOB($(base), $(quote)), "Order book should be empty");
   }
 }

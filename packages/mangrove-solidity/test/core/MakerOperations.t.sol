@@ -506,7 +506,7 @@ contract MakerOperationsTest is MangroveTest, IMaker {
     assertEq(ofr0, cfg.best(), "Wrong best offer");
     mkr.updateOffer(1.0 ether, 1.0 ether, 99_999, ofr1, ofr1);
     (, cfg) = mgv.config($(base), $(quote));
-    logOfferBook($(base), $(quote), 2);
+    logOrderBook($(base), $(quote), 2);
     assertEq(cfg.best(), ofr1, "Best offer should have changed");
   }
 
@@ -529,7 +529,7 @@ contract MakerOperationsTest is MangroveTest, IMaker {
     assertEq(ofr0, cfg.best(), "Wrong best offer");
     mkr.updateOffer(1.0 ether, 1.0 ether, 99_999, ofr0, ofr1);
     (, cfg) = mgv.config($(base), $(quote));
-    logOfferBook($(base), $(quote), 2);
+    logOrderBook($(base), $(quote), 2);
     assertEq(cfg.best(), ofr1, "Best offer should have changed");
   }
 

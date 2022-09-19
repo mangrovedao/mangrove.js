@@ -92,7 +92,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     quote.approve($(mgv), type(uint).max);
   }
 
-  /* Log offer book */
+  /* Log order book */
 
   event OBState(
     address base,
@@ -106,9 +106,9 @@ contract MangroveTest is Test2, HasMgvEvents {
 
   /** Two different OB logging methods.
    *
-   *  `logOfferBook` will be easy to read in traces
+   *  `logOrderBook` will be easy to read in traces
    *
-   *  `printOfferBook` will be easy to read in the console.logs section
+   *  `printOrderBook` will be easy to read in the console.logs section
    */
 
   /* Log OB with events */
@@ -121,7 +121,7 @@ contract MangroveTest is Test2, HasMgvEvents {
     uint gasreq
   );
 
-  function logOfferBook(
+  function logOrderBook(
     address $out,
     address $in,
     uint size
@@ -156,7 +156,7 @@ contract MangroveTest is Test2, HasMgvEvents {
   }
 
   /* Log OB with console */
-  function printOfferBook(address $out, address $in) internal view {
+  function printOrderBook(address $out, address $in) internal view {
     uint offerId = mgv.best($out, $in);
     TestToken req_tk = TestToken($in);
     TestToken ofr_tk = TestToken($out);
