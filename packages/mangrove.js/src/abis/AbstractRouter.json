@@ -77,7 +77,7 @@
     },
     {
       "inputs": [],
-      "name": "gas_overhead",
+      "name": "gasOverhead",
       "outputs": [
         {
           "internalType": "uint256",
@@ -196,7 +196,7 @@
           "type": "address"
         }
       ],
-      "name": "set_admin",
+      "name": "setAdmin",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

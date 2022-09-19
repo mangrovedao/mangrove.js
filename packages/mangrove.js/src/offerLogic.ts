@@ -27,20 +27,20 @@ type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 // OfferLogic.deposit(n)
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.MultiMaker;
+  contract: typechain.OfferForwarder;
   address: string;
-  isMultiMaker: boolean;
+  isForwarder: boolean;
 
   constructor(
     mgv: Mangrove,
     logic: string,
-    multiMaker: boolean,
+    isForwarder: boolean,
     signer?: SignerOrProvider
   ) {
     this.mgv = mgv;
     this.address = logic;
-    this.isMultiMaker = multiMaker;
-    this.contract = typechain.MultiMaker__factory.connect(
+    this.isForwarder = isForwarder;
+    this.contract = typechain.OfferForwarder__factory.connect(
       logic,
       signer ? signer : this.mgv._signer
     );
@@ -49,10 +49,14 @@ class OfferLogic {
    * @note Deploys a fresh MangroveOffer contract
    * @returns The new contract address
    */
-  static async deploy(mgv: Mangrove, contractName: string): Promise<string> {
-    const contract = await new typechain[`${contractName}__factory`](
+  static async deploy(mgv: Mangrove): Promise<string> {
+    const contract = await new typechain[`OfferMaker__factory`](
       mgv._signer
-    ).deploy(mgv._address, await mgv._signer.getAddress());
+    ).deploy(
+      mgv._address,
+      ethers.constants.AddressZero,
+      await mgv._signer.getAddress()
+    );
     return contract.address;
   }
 
@@ -68,27 +72,12 @@ class OfferLogic {
   }
 
   /**
-   *
-   * @note Approve Mangrove to spend tokens on the contract's behalf.
-   * @dev Contract admin only. This has to be performed for each outbound token the contract might send to takers.
-   */
-  approveMangrove(
-    tokenName: string,
-    overrides: ethers.Overrides = {}
-  ): Promise<TransactionResponse> {
-    return this.contract.approveMangrove(
-      this.mgv.getAddress(tokenName),
-      overrides
-    );
-  }
-
-  /**
    * @note Returns this logic's router. If logic has no router this call will return `undefined`
    * @returns the router ethers.js contract responding to the `AbstractRouter` abi.
    */
   async router(): Promise<typechain.AbstractRouter | undefined> {
-    if (await this.contract.has_router()) {
-      const router_address = await this.contract.router();
+    const router_address = await this.contract.router();
+    if (router_address != ethers.constants.AddressZero) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
         this.mgv._signer
@@ -192,29 +181,24 @@ class OfferLogic {
   }
 
   // returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
-  connect(sOp: SignerOrProvider, isMulti: boolean): OfferLogic {
-    return new OfferLogic(this.mgv, this.contract.address, isMulti, sOp);
+  connect(sOp: SignerOrProvider, isForwarder: boolean): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.address, isForwarder, sOp);
   }
 
   /** Fund the current contract balance with ethers sent from current signer. */
+  //TODO maybe this should be removed since one should not fund mangrove like this when using a forwarder
   fundMangrove(
     amount: Bigish,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    if (this.isMultiMaker) {
-      throw Error(
-        "Multi user start must be provisioned at new/update offer time"
-      );
-    } else {
-      return this.mgv.fundMangrove(amount, this.address, overrides);
-    }
+    return this.mgv.fundMangrove(amount, this.address, overrides);
   }
 
   setDefaultGasreq(
     amount: number,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const tx = this.contract.set_gasreq(
+    const tx = this.contract.setGasreq(
       ethers.BigNumber.from(amount),
       overrides
     );
@@ -222,7 +206,7 @@ class OfferLogic {
   }
 
   async getDefaultGasreq(): Promise<number> {
-    const gr = await this.contract.ofr_gasreq();
+    const gr = await this.contract.offerGasreq();
     return gr.toNumber();
   }
 
@@ -230,7 +214,7 @@ class OfferLogic {
     newAdmin: string,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    return this.contract.set_admin(newAdmin, overrides);
+    return this.contract.setAdmin(newAdmin, overrides);
   }
 
   getAdmin(): Promise<string> {
@@ -264,7 +248,7 @@ class OfferLogic {
     const gasreq_bn = gasreq ? gasreq : ethers.constants.MaxUint256;
     const gasprice_bn = gasprice ? gasprice : 0;
     const fund: BigNumberish = overrides.value ? await overrides.value : 0;
-    if (this.isMultiMaker) {
+    if (this.isForwarder) {
       // checking transfered native tokens are enough to cover gasprice
       const provision = await this.contract.getMissingProvision(
         outbound_tkn.address,
@@ -284,16 +268,13 @@ class OfferLogic {
       }
     }
     const response = await this.contract.newOffer(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        wants: inbound_tkn.toUnits(wants),
-        gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq_bn,
-        gasprice: gasprice_bn,
-        pivotId: pivot ? pivot : 0,
-        offerId: 0,
-      },
+      outbound_tkn.address,
+      inbound_tkn.address,
+      inbound_tkn.toUnits(wants),
+      outbound_tkn.toUnits(gives),
+      gasreq_bn,
+      gasprice_bn,
+      pivot ? pivot : 0,
       overrides
     );
     return response;
@@ -311,16 +292,14 @@ class OfferLogic {
     overrides: ethers.PayableOverrides
   ): Promise<TransactionResponse> {
     return this.contract.updateOffer(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        wants: inbound_tkn.toUnits(wants),
-        gives: outbound_tkn.toUnits(gives),
-        gasreq: gasreq ? gasreq : ethers.constants.MaxUint256,
-        gasprice: gasprice ? gasprice : 0,
-        pivotId: pivot,
-        offerId: offerId,
-      },
+      outbound_tkn.address,
+      inbound_tkn.address,
+      inbound_tkn.toUnits(wants),
+      outbound_tkn.toUnits(gives),
+      gasreq ? gasreq : ethers.constants.MaxUint256,
+      gasprice ? gasprice : 0,
+      pivot,
+      offerId,
       overrides
     );
   }
