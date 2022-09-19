@@ -8,7 +8,7 @@ contract SimpleEOARouterTest is OfferLogicTest {
   function setupRouter() internal override {
     // OfferMaker has no router, replacing 0x router by a SimpleRouter
     SimpleRouter router = new SimpleRouter();
-    router.setAdmin(address(makerContract));
+    router.bind(address(makerContract));
     // maker must approve router
     vm.startPrank(maker);
     makerContract.setRouter(router);

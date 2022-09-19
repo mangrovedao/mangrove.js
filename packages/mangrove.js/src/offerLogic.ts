@@ -206,7 +206,7 @@ class OfferLogic {
   }
 
   async getDefaultGasreq(): Promise<number> {
-    const gr = await this.contract.ofrGasreq();
+    const gr = await this.contract.offerGasreq();
     return gr.toNumber();
   }
 

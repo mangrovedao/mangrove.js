@@ -17,6 +17,7 @@ import {IERC20, IMaker} from "mgv_src/MgvLib.sol";
 import {AbstractRouter} from "mgv_src/strategies/routers/AbstractRouter.sol";
 
 ///@title IOfferLogic interface for offer management
+///@notice It is an IMaker for Mangrove
 
 interface IOfferLogic is IMaker {
   ///@notice Log incident (during post trade execution)
@@ -34,21 +35,23 @@ interface IOfferLogic is IMaker {
   ///@notice Logging change in default gasreq
   event SetGasreq(uint);
 
-  ///@notice Actual gas requirement when posting via `this` strategy. Returned value may change if `this` contract's router is updated.
+  ///@notice Actual gas requirement when posting offers via `this` strategy. Returned value may change if `this` contract's router is updated.
   ///@return total gas cost including router specific costs (if any).
-  function ofrGasreq() external view returns (uint);
-  
+  function offerGasreq() external view returns (uint);
+
+  ///@notice Computes missing provision to repost `offerId` at given `gasreq` and `gasprice` ignoring current contract's balance on Mangrove.
+  ///@return missingProvision to repost `offerId`.
   function getMissingProvision(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
     uint gasreq,
     uint gasprice,
     uint offerId
-  ) external view returns (uint);
+  ) external view returns (uint missingProvision);
 
   ///@notice sets `this` contract's default gasreq for `new/updateOffer`.
-  ///@param gasreq an overapproximation of the gas required to handle trade and posthook withouth considering liquidity routing specific costs.
-  ///@dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `ofrGasreq()`
+  ///@param gasreq an overapproximation of the gas required to handle trade and posthook without considering liquidity routing specific costs.
+  ///@dev this should only take into account the gas cost of managing offer posting/updating during trade execution. Router specific gas cost are taken into account in the getter `offerGasreq()`
   function setGasreq(uint gasreq) external;
 
   ///@notice sets a new router to pull outbound tokens from contract's reserve to `this` and push inbound tokens to reserve.
@@ -77,8 +80,7 @@ interface IOfferLogic is IMaker {
   ///@notice withdraws ETH from the provision account on Mangrove and sends collected WEIs to `receiver`
   ///@dev for multi user strats, the contract provision account on Mangrove is pooled amongst offer owners so admin should only call this function to recover WEIs (e.g. that were erroneously transferred to Mangrove using `MGV.fund()`)
   /// This contract's balance on Mangrove may contain deprovisioned WEIs after an offer has failed (complement between provision and the bounty that was sent to taker)
-  /// those free WEIs can be retrieved by offer owners by calling `retractOffer` with the `deprovsion` flag. Not by calling this function which is admin only.
-  
+  /// those free WEIs can be retrieved by offer owners by calling `retractOffer` with the `deprovision` flag. Not by calling this function which is admin only.
   function withdrawFromMangrove(uint amount, address payable receiver) external;
 
   function updateOffer(

@@ -120,7 +120,7 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
       inbound_tkn: weth,
       wants: 0.15 ether,
       gives: 300 ether,
-      gasreq: strat.ofrGasreq(),
+      gasreq: strat.offerGasreq(),
       gasprice: 0,
       pivotId: 0
     });
@@ -142,7 +142,7 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
       inbound_tkn: dai,
       wants: 380 ether,
       gives: 0.2 ether,
-      gasreq: strat.ofrGasreq(),
+      gasreq: strat.offerGasreq(),
       gasprice: 0,
       pivotId: 0
     });
@@ -165,7 +165,7 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
       inbound_tkn: weth,
       wants: 0.63 ether,
       gives: 1500 ether,
-      gasreq: strat.ofrGasreq(),
+      gasreq: strat.offerGasreq(),
       gasprice: 0,
       pivotId: 0
     });

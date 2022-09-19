@@ -19,13 +19,15 @@ contract OfferForwarder is IMakerLogic, Forwarder {
   constructor(IMangrove mgv, address deployer)
     Forwarder(mgv, new SimpleRouter())
   {
-    setGasreq(50_000);
+    setGasreq(0);
+    AbstractRouter router_ = router();
+    router_.bind(address(this));
     if (deployer != msg.sender) {
       setAdmin(deployer);
-      router().setAdmin(deployer);
+      router_.setAdmin(deployer);
     }
   }
-  
+
   // As imposed by IMakerLogic we provide an implementation of newOffer for this contract
   function newOffer(
     IERC20 outbound_tkn,
@@ -34,11 +36,8 @@ contract OfferForwarder is IMakerLogic, Forwarder {
     uint gives,
     uint gasreq,
     uint gasprice, // keeping gasprice here in order to expose the same interface as `OfferMaker` contracts.
-    uint pivotId)
-    external
-    payable
-    returns (uint offerId)
-  {
+    uint pivotId
+  ) external payable returns (uint offerId) {
     gasprice; // ignoring gasprice that will be derived based on msg.value.
     offerId = _newOffer(
       NewOfferData({
@@ -51,7 +50,7 @@ contract OfferForwarder is IMakerLogic, Forwarder {
         caller: msg.sender,
         fund: msg.value,
         noRevert: false // propagates Mangrove's revert data in case of newOffer failure
-        })
+      })
     );
     require(offerId != 0, "OfferForwarder/newOfferFailed");
   }

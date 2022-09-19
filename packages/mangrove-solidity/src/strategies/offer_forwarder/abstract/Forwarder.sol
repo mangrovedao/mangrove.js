@@ -12,10 +12,13 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 import "../../MangroveOffer.sol";
-import "mgv_src/periphery/MgvReader.sol";
 import "mgv_src/strategies/interfaces/IForwarder.sol";
 
+///@title Class for maker contracts that forward external offer makers instructions to Mangrove in a permissionless fashion.
+///@notice Each offer posted via this contract are managed by their offer maker, not by this contract's admin.
+///@notice This class implements IForwarder, which contains specific Forwarder logic functions in additions to IOfferlogic interface.
 abstract contract Forwarder is IForwarder, MangroveOffer {
+  ///@notice data associated to each offer published on Mangrove by `this` contract.
   struct OwnerData {
     // offer owner address
     address owner;
@@ -24,29 +27,32 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint96 wei_balance;
   }
 
+  ///@notice Owner data mapping.
   ///@dev outbound_tkn => inbound_tkn => offerId => OwnerData
   mapping(IERC20 => mapping(IERC20 => mapping(uint => OwnerData)))
     internal ownerData;
 
+  ///@notice Forwarder constructor
+  ///@param mgv the deployed Mangrove contract on which `this` contract will post offers.
+  ///@param router_ the router that `this` contract will use to pull/push liquidity from offer maker's reserve. This cannot be `NO_ROUTER`. 
   constructor(
     IMangrove mgv,
-    AbstractRouter _router
-  ) MangroveOffer(mgv) { // additional gas required for reading `ownerData` at each trade
-    // define `_router` as the liquidity router for `this` and declare that `this` is allowed to call router.
-    // NB router also needs to be approved for outbound/inbound token transfers by each user of this contract.
-    setRouter(_router);
+    AbstractRouter router_
+  ) MangroveOffer(mgv) {
+    require (router_ != NO_ROUTER, "Forwarder logics must have a router");
+    setRouter(router_);
   }
 
   /// @param offerIds an array of offer ids from the `outbound_tkn, inbound_tkn` offer list
-  /// @return _offerOwners an array of the same length where the address at position i is the owner of `offerIds[i]`
+  /// @return offerOwners_ an array of the same length where the address at position i is the owner of `offerIds[i]`
   function offerOwners(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
     uint[] calldata offerIds
-  ) public view override returns (address[] memory _offerOwners) {
-    _offerOwners = new address[](offerIds.length);
+  ) public view override returns (address[] memory offerOwners_) {
+    offerOwners_ = new address[](offerIds.length);
     for (uint i = 0; i < offerIds.length; i++) {
-      _offerOwners[i] = ownerOf(outbound_tkn, inbound_tkn, offerIds[i]);
+      offerOwners_[i] = ownerOf(outbound_tkn, inbound_tkn, offerIds[i]);
     }
   }
 
@@ -73,14 +79,16 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint provision,
     uint offer_gasbase
   ) internal pure returns (uint gasprice) {
-    uint num = (offer_gasbase + gasreq) * 10**9;
-    // pre-check to avoir underflow
-    require(provision >= num, "Forwarder/deriveGasprice/NotEnoughProvision");
     unchecked {
+      uint num = (offer_gasbase + gasreq) * 10**9;
+      // pre-check to avoir underflow since 0 is interpreted as "use mangrove's gasprice"
+      require(provision >= num, "mgv/insufficientProvision");
       gasprice = provision / num;
+      // leftover is provision - num;
     }
   }
 
+  ///@inheritdoc IForwarder
   function ownerOf(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -90,17 +98,28 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     require(owner != address(0), "multiUser/unknownOffer");
   }
 
+  ///@inheritdoc IOfferLogic
   function reserve() public view override returns (address) {
     address mkr_reserve = _reserve(msg.sender);
     return mkr_reserve == address(0) ? msg.sender : mkr_reserve;
   }
 
+  ///@inheritdoc IOfferLogic
   function setReserve(address reserve_) external override {
     _setReserve(msg.sender, reserve_);
   }
 
+  ///@notice Memory allocation of `_newOffer` variables
+  ///@param outbound_tkn token contract 
+  ///@param inbound_tkn token contract
+  ///@param wants the amount of inbound tokens the maker wants for a complete fill
+  ///@param gives the amount of outbound tokens the maker gives for a complete fill
+  ///@param pivotId a best pivot estimate for cheap offer insertion in the offer list
+  ///@param caller msg.sender of the calling external function
+  ///@param fund remainder of msg.value as received by the external function
+  ///@param noRevert is set to true if calling function does not wish `_newOffer` to revert on error. Out of gas exception is always possible though.
   struct NewOfferData {
-    IERC20 outbound_tkn;
+    IERC20 outbound_tkn; 
     IERC20 inbound_tkn;
     uint wants;
     uint gives;
@@ -108,25 +127,32 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint pivotId;
     address caller;
     uint fund;
-    bool noRevert; // whether newOffer should revert in case call to mangrove reverts
+    bool noRevert;
   }
 
-  /// @notice inserts a new offer on a Mangrove Offer List
+  /// @notice Inserts a new offer on a Mangrove Offer List
+  /// @param offData memory location of the function's arguments
+  /// @return offerId
   /// @dev offer forwarders do not manage user funds on Mangrove, as a consequence:
-  /// user provision on Mangrove is the sum of locked provision in all live offers it owns + the sum of free wei's in all dead offers it owns (see `OwnerData.free_wei`)
-  /// locked provision in an offer is offer.gasprice * (offer.gasreq + gasbase) * 10**9
-  /// therefore offer.gasprice is derived from msg.value. 
-  /// Because of potential rounding errors in `deriveGasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
-  /// this dust tokens are not burned since they can be retrieved by admin using `withdrawFromMangrove` 
+  /// An offer maker's recoverable provisions on Mangrove is just the sum $S_locked(maker)$ of locked provision in all live offers it owns 
+  /// plus the sum $S_free(maker)$ of `wei_balance`'s in all dead offers it owns (see `OwnerData.wei_balance`). 
+  /// Notice that $S_locked(maker)$ is not part of `this` contract's balance on Mangrove.
+  /// However $\sum_i S_free(maker_i)$ <= MGV.balanceOf(address(this))`. 
+  /// Any fund of an offer maker on Mangrove that is either not locked on Mangrove or stored in the `OwnerData` free wei's is thus not recoverable by offer maker.
+  /// Therefore we need to make sure that all `msg.value` is captured by the `gasprice` at which the offer will be posted.
+  /// To do so, we do not let offer maker fix a gasprice. Rather we derive the gasprice based on `msg.value`.
+  /// Because of rounding errors in `deriveGasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
+  /// We could assign this dust to the corresponding `wei_balance` of `OwnerData` but this would entail a storage write whose gas cost would exceed the saved dust.
+  /// Note that this dust is not burnt, as it can be retrieved by this contract's admin via `withdrawFromMangrove`.
   function _newOffer(
     NewOfferData memory offData
-  ) internal returns (uint) {
+  ) internal returns (uint offerId) {
     (P.Global.t global, P.Local.t local) = MGV.config(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn)
     );
     // convention for default gasreq value
-    offData.gasreq = (offData.gasreq > type(uint24).max) ? ofrGasreq() : offData.gasreq;
+    offData.gasreq = (offData.gasreq > type(uint24).max) ? offerGasreq() : offData.gasreq;
     // computing gasprice implied by offer provision
     uint gasprice = deriveGasprice(
       offData.gasreq,
@@ -139,9 +165,10 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // so one needs to make sure here that only provision of this call will be used to provision the offer on mangrove
     require(
       gasprice >= global.gasprice(),
-      "Forwarder/newOffer/NotEnoughProvision"
+      "mgv/insufficientProvision"
     );
     // this call cannot revert for lack of provision (by design)
+    // it may revert if `offData.fund` yiels a gasprice that is too high (mangrove's gasprice is uint16)
     try MGV.newOffer{value: offData.fund}(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn),
@@ -150,12 +177,13 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       offData.gasreq,
       gasprice,
       offData.pivotId
-    ) returns (uint offerId) {
-      addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId, offData.caller); 
-      return offerId;
+    ) returns (uint offerId_) {
+      // assign `offerId_` to caller
+      addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId_, offData.caller); 
+      offerId = offerId_;
     } catch Error(string memory reason){
       require (offData.noRevert, reason);
-      return 0;
+      offerId = 0;
     }
   }
 
@@ -216,7 +244,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     upd.inbound_tkn = inbound_tkn;
     upd.wants = wants;
     upd.gives = gives;
-    upd.gasreq = gasreq > type(uint24).max ? ofrGasreq() : gasreq;
+    upd.gasreq = gasreq > type(uint24).max ? offerGasreq() : gasreq;
     upd.pivotId = pivotId;
     upd.offerId = offerId;
     upd.owner = msg.sender;
@@ -355,7 +383,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     IERC20 outTkn = IERC20(order.outbound_tkn);
     IERC20 inTkn = IERC20(order.inbound_tkn);
     address owner = ownerOf(outTkn, inTkn, order.offerId);
-    router().push(inTkn, owner, amount);
+    address target = _reserve(owner);
+    router().push(inTkn, target == address(0) ? owner : target, amount);
     return 0;
   }
 
@@ -427,7 +456,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   }
 
   function __checkList__(IERC20 token) internal view virtual override {
-    router().checkList(token, reserve());
+    AbstractRouter router_ = router();
+    require(router_ != NO_ROUTER, "Forwarder/MissingRouter");
+    router_.checkList(token, reserve());
     super.__checkList__(token);
   }
 }

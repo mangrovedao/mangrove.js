@@ -41,22 +41,14 @@ contract MangroveOfferTest is MangroveTest {
     deal($(usdc), taker, cash(usdc, 100_000));
 
     makerContract = new OfferMaker({
-      mgv: IMangrove($(mgv)), 
-      _router: SimpleRouter(address(0)), // no router
+      mgv: IMangrove($(mgv)),
+      router_: SimpleRouter(address(0)), // no router
       deployer: maker
     });
   }
 
   function test_AdminIsDeployer() public {
     assertEq(makerContract.admin(), maker, "Incorrect admin");
-  }
-
-  function test_DefaultGasReq() public {
-    assertEq(
-      makerContract.ofrGasreq(),
-      25_000,
-      "Incorrect default gasreq for offer maker"
-    );
   }
 
   function testCannot_ActivateIfNotAdmin() public {
@@ -158,13 +150,13 @@ contract MangroveOfferTest is MangroveTest {
   }
 
   function test_GasReqTakesNewRouterIntoAccount() public {
-    uint gasreq = makerContract.ofrGasreq();
+    uint gasreq = makerContract.offerGasreq();
     vm.startPrank(maker);
     SimpleRouter router = new SimpleRouter();
     router.setAdmin(address(makerContract));
     makerContract.setRouter(router);
     assertEq(
-      makerContract.ofrGasreq(),
+      makerContract.offerGasreq(),
       gasreq + router.gasOverhead(),
       "incorrect gasreq"
     );

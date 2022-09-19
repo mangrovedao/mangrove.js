@@ -74,7 +74,7 @@ contract OfferLogicTest is MangroveTest {
   function setupMakerContract() internal virtual prank(maker) {
     makerContract = new OfferMaker({
       mgv: IMangrove($(mgv)),
-      _router: AbstractRouter(address(0)),
+      router_: AbstractRouter(address(0)),
       deployer: maker
     });
   }
@@ -88,7 +88,7 @@ contract OfferLogicTest is MangroveTest {
     vm.stopPrank();
   }
 
-  function test_MakerCanSetReserve() public {
+  function test_makerCanSetReserve() public {
     address new_reserve = freshAddress();
     vm.startPrank(maker);
     makerContract.setReserve(new_reserve);
@@ -96,7 +96,17 @@ contract OfferLogicTest is MangroveTest {
     vm.stopPrank();
   }
 
-  function test_MakerCanPostNewOffer() public {
+  function test_changingReserveWithNoRouterMakesChecklistFail() public {
+    address new_reserve = freshAddress();
+    vm.startPrank(maker);
+    makerContract.setReserve(new_reserve);
+    makerContract.setRouter(AbstractRouter(address(0)));
+    vm.stopPrank();
+    vm.expectRevert("MangroveOffer/LogicHasNoRouter");
+    makerContract.checkList(dynamic([IERC20(weth), usdc]));
+  }
+
+  function test_makerCanPostNewOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}({
       outbound_tkn: weth,
@@ -110,7 +120,46 @@ contract OfferLogicTest is MangroveTest {
     assertTrue(offerId != 0);
   }
 
-  function test_MakerCanRetractOffer() public {
+  function test_getMissingProvisionIsEnoughToPostNewOffer() public {
+    vm.startPrank(maker);
+    uint offerId = makerContract.newOffer{
+      value: makerContract.getMissingProvision(weth, usdc, type(uint).max, 0, 0)
+    }({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 * 10**18,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
+    vm.stopPrank();
+    assertTrue(offerId != 0);
+  }
+
+  function test_getMissingProvisionIsMinimal() public {
+    uint prov = makerContract.getMissingProvision(
+      weth,
+      usdc,
+      type(uint).max,
+      0,
+      0
+    );
+    vm.startPrank(maker);
+    vm.expectRevert("mgv/insufficientProvision");
+    makerContract.newOffer{value: prov - 1}({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10**6,
+      gives: 1 ether,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
+    vm.stopPrank();
+  }
+
+  function test_makerCanRetractOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}({
       outbound_tkn: weth,
@@ -123,12 +172,7 @@ contract OfferLogicTest is MangroveTest {
     });
     uint makerBalWei = maker.balance;
     vm.prank(maker);
-    uint deprovisioned = makerContract.retractOffer(
-      weth,
-      usdc,
-      offerId,
-      true
-    );
+    uint deprovisioned = makerContract.retractOffer(weth, usdc, offerId, true);
     assertEq(
       maker.balance,
       makerBalWei + deprovisioned,
@@ -136,7 +180,7 @@ contract OfferLogicTest is MangroveTest {
     );
   }
 
-  function test_MakerCanUpdateOffer() public {
+  function test_makerCanUpdateOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}({
       outbound_tkn: weth,
@@ -195,7 +239,7 @@ contract OfferLogicTest is MangroveTest {
     assertTrue(bounty == 0 && takergot > 0, "trade failed");
   }
 
-  function test_ReserveUpdatedWhenTradeSucceeds() public {
+  function test_reserveUpdatedWhenTradeSucceeds() public {
     // for multi user contract `tokenBalance` returns the balance of msg.sender's reserve
     // so one needs to impersonate maker to obtain the correct balance
     vm.startPrank(maker);
@@ -220,7 +264,7 @@ contract OfferLogicTest is MangroveTest {
     vm.stopPrank();
   }
 
-  function test_MakerCanWithdrawTokens() public {
+  function test_makerCanWithdrawTokens() public {
     // note in order to be routing strategy agnostic one cannot easily mockup a trade
     // for aave routers reserve will hold overlying while for simple router reserve will hold the asset
     uint balusdc = usdc.balanceOf(maker);

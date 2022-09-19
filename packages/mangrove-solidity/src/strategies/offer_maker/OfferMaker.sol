@@ -17,11 +17,15 @@ import "mgv_src/strategies/routers/AbstractRouter.sol";
 import "mgv_src/strategies/interfaces/IMakerLogic.sol";
 
 contract OfferMaker is IMakerLogic, Direct {
-
-  constructor(IMangrove mgv, AbstractRouter _router, address deployer)
-    Direct(mgv, _router) 
-  {
-    setGasreq(25_000);
+  constructor(
+    IMangrove mgv,
+    AbstractRouter router_,
+    address deployer
+  ) Direct(mgv, router_) {
+    setGasreq(16_000); // fails at <= 15K
+    if (router_ != NO_ROUTER) {
+      router_.bind(address(this));
+    }
     // stores total gas requirement of this strat (depends on router gas requirements)
     // if contract is deployed with static address, then one must set admin to something else than msg.sender
     if (deployer != msg.sender) {
@@ -43,17 +47,15 @@ contract OfferMaker is IMakerLogic, Direct {
     uint gasreq,
     uint gasprice,
     uint pivotId
-    ) external payable override onlyAdmin returns (uint offerId)
-  {
+  ) external payable override onlyAdmin returns (uint offerId) {
     offerId = MGV.newOffer{value: msg.value}(
       address(outbound_tkn),
       address(inbound_tkn),
       wants,
       gives,
-      gasreq >= type(uint24).max ? ofrGasreq() : gasreq,
+      gasreq >= type(uint24).max ? offerGasreq() : gasreq,
       gasprice,
       pivotId
     );
   }
-
 }

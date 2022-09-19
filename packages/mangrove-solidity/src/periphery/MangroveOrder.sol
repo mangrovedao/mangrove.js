@@ -22,7 +22,9 @@ contract MangroveOrder is Forwarder, IOrderLogic {
   constructor(IMangrove mgv, address deployer)
     Forwarder(mgv, new SimpleRouter())
   {
-    setGasreq(90_000);
+    setGasreq(0);
+    // adding `this` contract to authorized makers of the router before setting admin rights of the router to deployer
+    router().bind(address(this));
     if (deployer != msg.sender) {
       setAdmin(deployer);
       router().setAdmin(deployer);
@@ -126,7 +128,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
           inbound_tkn: takerOutbound_tkn, 
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
           gives: tko.makerGives - res.takerGave,
-          gasreq: ofrGasreq(),
+          gasreq: offerGasreq(),
           pivotId: 0,
           fund: msg.value,
           caller: msg.sender,

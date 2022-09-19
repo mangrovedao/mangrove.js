@@ -101,7 +101,7 @@ abstract contract GuaaveAbstractTest is MangroveTest {
     uint prov = mgo.getMissingProvision({
       outbound_tkn: weth,
       inbound_tkn: usdc,
-      gasreq: mgo.ofrGasreq(),
+      gasreq: mgo.offerGasreq(),
       gasprice: 0,
       offerId: 0
     });
