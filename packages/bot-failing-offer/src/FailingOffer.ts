@@ -99,7 +99,7 @@ export class FailingOffer {
     );
     if (referencePrice === undefined) {
       logger.warn(
-        `Unable to determine reference price, so not posthing an offer`,
+        `Unable to determine reference price, so not posting an offer`,
         {
           contextInfo: "maker",
           base: this.#market.base.name,
@@ -110,7 +110,7 @@ export class FailingOffer {
       return;
     }
 
-    const offerDataDetailed = await this.postOfferUtils.getOfferDataDetialed(
+    const offerDataDetailed = await this.postOfferUtils.getOfferDataDetailed(
       this.#market,
       this.#makerAddress,
       ba,

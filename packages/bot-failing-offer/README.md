@@ -1,5 +1,5 @@
 A simple order book filling bot for the Mangrove to generate activity on a market by posting offers at random.
-The speciel thing about this bot, is that it only post failin offers.
+The speciel thing about this bot, is that it only post failing offers.
 
 # Strategy
 

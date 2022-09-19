@@ -50,7 +50,7 @@ export class PostOfferUtils {
     }
   }
 
-  public async getOfferDataDetialed(
+  public async getOfferDataDetailed(
     market: Market,
     makerAddress: string,
     ba: Market.BA,
