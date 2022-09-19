@@ -69,12 +69,12 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     payable
     returns (TakerOrderResult memory res)
   {
-    (IERC20 takerOutbound_tkn, IERC20 takerInbound_tkn) = tko.selling
+    (IERC20 outbound_tkn, IERC20 inbound_tkn) = tko.selling
       ? (tko.quote, tko.base)
       : (tko.base, tko.quote);
     // pulling directly from msg.sender would require caller to approve `this` in addition to the `this.router()`
     // so pulling funds from taker's reserve (note this can be the taker's wallet depending on the router)
-    uint pulled = router().pull(takerInbound_tkn, msg.sender, tko.gives, true);
+    uint pulled = router().pull(inbound_tkn, msg.sender, tko.gives, true);
     require(pulled == tko.gives, "mgvOrder/mo/transferInFail");
     // passing an iterated market order with the transferred funds
     for (uint i = 0; i < tko.retryNumber + 1; i++) {
@@ -83,8 +83,8 @@ contract MangroveOrder is Forwarder, IOrderLogic {
       }
       (uint takerGot_, uint takerGave_, uint bounty_, uint fee_) = MGV
         .marketOrder({
-          outbound_tkn: address(takerOutbound_tkn), // expecting quote (outbound) when selling
-          inbound_tkn: address(takerInbound_tkn),
+          outbound_tkn: address(outbound_tkn),
+          inbound_tkn: address(inbound_tkn),
           takerWants: tko.wants, // `tko.wants` includes user defined slippage
           takerGives: tko.gives,
           fillWants: tko.selling ? false : true // only buy order should try to fill takerWants
@@ -106,7 +106,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
 
     // sending received tokens to taker's reserve
     if (res.takerGot > 0) {
-      router().push(takerOutbound_tkn, msg.sender, res.takerGot);
+      router().push(outbound_tkn, msg.sender, res.takerGot);
     }
 
     // at this points the following invariants hold:
@@ -119,13 +119,13 @@ contract MangroveOrder is Forwarder, IOrderLogic {
       // this call will credit offer owner virtual account on Mangrove with msg.value before trying to post the offer
       // `offerId_==0` if mangrove rejects the update because of low density.
       // call may not revert because of insufficient funds
-
-      // the taker gives inbound_tkn and wants outbound_tkn so for the offer these are reversed,
-      // such that the taker receives outbound_tkn when the offer is taken.
+      // Here the taker becomes a maker, and `NewOfferData.inbound_tkn` is what the maker of an offer receives,
+      // so for the offer for this resting order this should be set to `outbound_tkn` such that the taker
+      // receives these when the offer is taken, and vice versa for the `NewOfferData.inbound_tkn` and `inbound_tkn`.
       res.offerId = _newOffer(
         NewOfferData({
-          outbound_tkn: takerInbound_tkn, 
-          inbound_tkn: takerOutbound_tkn, 
+          outbound_tkn: inbound_tkn,
+          inbound_tkn: outbound_tkn,
           wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
           gives: tko.makerGives - res.takerGave,
           gasreq: offerGasreq(),
@@ -152,10 +152,10 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         // unable to post resting order
         // reverting when partial fill is not an option
         require(!tko.partialFillNotAllowed, "mgvOrder/mo/noPartialFill");
-        // sending partial fill to taker --when partial fill is allowed
+        // sending remaining pulled funds back to taker --when partial fill is allowed
         require(
           TransferLib.transferToken(
-            takerInbound_tkn,
+            inbound_tkn,
             msg.sender,
             tko.gives - res.takerGave
           ),
@@ -175,20 +175,20 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         // NB: offer has reverse token direction
         __logOwnershipRelation__({
           owner: msg.sender,
-          outbound_tkn: takerInbound_tkn,
-          inbound_tkn: takerOutbound_tkn,
+          outbound_tkn: inbound_tkn,
+          inbound_tkn: outbound_tkn,
           offerId: res.offerId
         });
 
         // crediting caller's balance with amount of offered tokens (transferred from caller at the beginning of this function)
         // so that the offered tokens can be transferred when the offer is taken.
-        // NB `takerInbound_tkn` is the outbound token for the resting order
-        router().push(takerInbound_tkn, msg.sender, tko.gives - res.takerGave);
+        // NB `inbound_tkn` is the outbound token for the resting order.
+        router().push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
 
         // setting a time to live for the resting order
         // NB: offer has reverse token direction
         if (tko.blocksToLiveForRestingOrder > 0) {
-          expiring[takerInbound_tkn][takerOutbound_tkn][res.offerId] =
+          expiring[inbound_tkn][outbound_tkn][res.offerId] =
             block.number +
             tko.blocksToLiveForRestingOrder;
         }
@@ -197,7 +197,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     } else {
       // either fill was complete or taker does not want to post residual as a resting order
       // transferring remaining inbound tokens to msg.sender
-      router().push(takerInbound_tkn, msg.sender, tko.gives - res.takerGave);
+      router().push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
 
       // transferring potential bounty and msg.value back to the taker
       if (msg.value + res.bounty > 0) {
