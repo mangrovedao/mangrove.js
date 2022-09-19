@@ -14,7 +14,7 @@ pragma abicoder v2;
 import "mgv_src/strategies/offer_forwarder/abstract/Forwarder.sol";
 import "mgv_src/strategies/interfaces/IOrderLogic.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
-import { MgvLib } from "mgv_src/MgvLib.sol";
+import {MgvLib} from "mgv_src/MgvLib.sol";
 
 contract MangroveOrder is Forwarder, IOrderLogic {
   // `blockToLive[outbound_tkn][inbound_tkn][offerId]` gives block number beyond which the offer should renege on trade.
@@ -116,85 +116,15 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     // 3. `this` contract's WEI balance is credited of `msg.value + bounty`
 
     if (tko.restingOrder && !isComplete) {
-      // resting limit order for the residual of the taker order
-      // this call will credit offer owner virtual account on Mangrove with msg.value before trying to post the offer
-      // `offerId_==0` if mangrove rejects the update because of low density.
-      // call may not revert because of insufficient funds
-      // Here the taker becomes a maker, and `NewOfferData.inbound_tkn` is what the maker of an offer receives,
-      // so for the offer for this resting order this should be set to `outbound_tkn` such that the taker
-      // receives these when the offer is taken, and vice versa for the `NewOfferData.inbound_tkn` and `inbound_tkn`.
-      res.offerId = _newOffer(
-        NewOfferData({
-          outbound_tkn: inbound_tkn,
-          inbound_tkn: outbound_tkn,
-          wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
-          gives: tko.makerGives - res.takerGave,
-          gasreq: offerGasreq(),
-          pivotId: 0,
-          fund: msg.value,
-          caller: msg.sender,
-          noRevert: true // returns 0 when MGV reverts
-        })
-      );
-      // we summarize the market order (if offerId == 0 no resting order was posted).
-      emit OrderSummary({
-        mangrove: MGV,
-        base: tko.base,
-        quote: tko.quote,
-        selling: tko.selling,
-        taker: msg.sender,
-        takerGot: res.takerGot,
-        takerGave: res.takerGave,
-        penalty: res.bounty,
-        restingOrderId: res.offerId
+      // When posting a resting order the taker becomes a maker, and `inbound_tkn` for an offer is what the maker receives,
+      // so the offer for this resting order must have `inbound_tkn` set to `outbound_tkn` such that the taker
+      // receives these when the offer is taken, and the offer's `outbound_tkn` becomes `inbound_tkn`.
+      postRestingOrder({
+        tko: tko,
+        outbound_tkn: inbound_tkn,
+        inbound_tkn: outbound_tkn,
+        res: res
       });
-
-      if (res.offerId == 0) {
-        // unable to post resting order
-        // reverting when partial fill is not an option
-        require(!tko.partialFillNotAllowed, "mgvOrder/mo/noPartialFill");
-        // sending remaining pulled funds back to taker --when partial fill is allowed
-        require(
-          TransferLib.transferToken(
-            inbound_tkn,
-            msg.sender,
-            tko.gives - res.takerGave
-          ),
-          "mgvOrder/mo/transferInFail"
-        );
-        // msg.value is no longer needed so sending it back to msg.sender along with possible collected bounty
-        if (msg.value + res.bounty > 0) {
-          (bool noRevert, ) = msg.sender.call{value: msg.value + res.bounty}(
-            ""
-          );
-          require(noRevert, "mgvOrder/mo/refundProvisionFail");
-        }
-        return res;
-      } else {
-        // offer was successfully posted
-        // if one wants to maintain an inverse mapping owner => offerIds
-        // NB: offer has reverse token direction
-        __logOwnershipRelation__({
-          owner: msg.sender,
-          outbound_tkn: inbound_tkn,
-          inbound_tkn: outbound_tkn,
-          offerId: res.offerId
-        });
-
-        // crediting caller's balance with amount of offered tokens (transferred from caller at the beginning of this function)
-        // so that the offered tokens can be transferred when the offer is taken.
-        // NB `inbound_tkn` is the outbound token for the resting order.
-        router().push(inbound_tkn, msg.sender, tko.gives - res.takerGave);
-
-        // setting a time to live for the resting order
-        // NB: offer has reverse token direction
-        if (tko.blocksToLiveForRestingOrder > 0) {
-          expiring[inbound_tkn][outbound_tkn][res.offerId] =
-            block.number +
-            tko.blocksToLiveForRestingOrder;
-        }
-        return res;
-      }
     } else {
       // either fill was complete or taker does not want to post residual as a resting order
       // transferring remaining inbound tokens to msg.sender
@@ -221,12 +151,87 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     }
   }
 
-  function __posthookSuccess__(MgvLib.SingleOrder calldata order, bytes32 makerData)
-    internal
-    virtual
-    override
-    returns (bytes32)
-  {
+  function postRestingOrder(
+    TakerOrder calldata tko,
+    IERC20 inbound_tkn,
+    IERC20 outbound_tkn,
+    TakerOrderResult memory res
+  ) internal {
+    // resting limit order for the residual of the taker order
+    // this call will credit offer owner virtual account on Mangrove with msg.value before trying to post the offer
+    // `offerId_==0` if mangrove rejects the update because of low density.
+    // call may not revert because of insufficient funds
+    res.offerId = _newOffer(
+      NewOfferData({
+        outbound_tkn: outbound_tkn,
+        inbound_tkn: inbound_tkn,
+        wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
+        gives: tko.makerGives - res.takerGave,
+        gasreq: offerGasreq(),
+        pivotId: 0,
+        fund: msg.value,
+        caller: msg.sender,
+        noRevert: true // returns 0 when MGV reverts
+      })
+    );
+    // we summarize the market order (if offerId == 0 no resting order was posted).
+    emit OrderSummary({
+      mangrove: MGV,
+      base: tko.base,
+      quote: tko.quote,
+      selling: tko.selling,
+      taker: msg.sender,
+      takerGot: res.takerGot,
+      takerGave: res.takerGave,
+      penalty: res.bounty,
+      restingOrderId: res.offerId
+    });
+
+    if (res.offerId == 0) {
+      // unable to post resting order
+      // reverting when partial fill is not an option
+      require(!tko.partialFillNotAllowed, "mgvOrder/mo/noPartialFill");
+      // sending remaining pulled funds back to taker --when partial fill is allowed
+      require(
+        TransferLib.transferToken(
+          outbound_tkn,
+          msg.sender,
+          tko.gives - res.takerGave
+        ),
+        "mgvOrder/mo/transferInFail"
+      );
+      // msg.value is no longer needed so sending it back to msg.sender along with possible collected bounty
+      if (msg.value + res.bounty > 0) {
+        (bool noRevert, ) = msg.sender.call{value: msg.value + res.bounty}("");
+        require(noRevert, "mgvOrder/mo/refundProvisionFail");
+      }
+    } else {
+      // offer was successfully posted
+      // if one wants to maintain an inverse mapping owner => offerIds
+      __logOwnershipRelation__({
+        owner: msg.sender,
+        outbound_tkn: outbound_tkn,
+        inbound_tkn: inbound_tkn,
+        offerId: res.offerId
+      });
+
+      // crediting caller's balance with amount of offered tokens (transferred from caller at the beginning of this function)
+      // so that the offered tokens can be transferred when the offer is taken.
+      router().push(outbound_tkn, msg.sender, tko.gives - res.takerGave);
+
+      // setting a time to live for the resting order
+      if (tko.blocksToLiveForRestingOrder > 0) {
+        expiring[outbound_tkn][inbound_tkn][res.offerId] =
+          block.number +
+          tko.blocksToLiveForRestingOrder;
+      }
+    }
+  }
+
+  function __posthookSuccess__(
+    MgvLib.SingleOrder calldata order,
+    bytes32 makerData
+  ) internal virtual override returns (bytes32) {
     bytes32 repostData = super.__posthookSuccess__(order, makerData);
     if (repostData != "posthook/reposted") {
       // if offer was not to reposted, if is now off the book but provision is still locked
