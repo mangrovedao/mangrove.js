@@ -23,7 +23,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
   constructor(IMangrove mgv, address deployer)
     Forwarder(mgv, new SimpleRouter())
   {
-    setGasreq(20000); // fails < 20K
+    setGasreq(30000); // fails < 20K
     // adding `this` contract to authorized makers of the router before setting admin rights of the router to deployer
     router().bind(address(this));
     if (deployer != msg.sender) {
