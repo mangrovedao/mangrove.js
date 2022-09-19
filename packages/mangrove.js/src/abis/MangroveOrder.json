@@ -20,56 +20,6 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
-          "internalType": "contract IMangrove",
-          "name": "mangrove",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "CreditMgvUser",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "contract IMangrove",
-          "name": "mangrove",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "DebitMgvUser",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": false,
           "internalType": "contract IMangrove",
           "name": "mangrove",
@@ -538,7 +488,7 @@
       "outputs": [
         {
           "internalType": "address[]",
-          "name": "_offerOwners",
+          "name": "offerOwners_",
           "type": "address[]"
         }
       ],
@@ -747,7 +697,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "blocksToLiveForRestingOrder",
+              "name": "timeToLiveForRestingOrder",
               "type": "uint256"
             }
           ],

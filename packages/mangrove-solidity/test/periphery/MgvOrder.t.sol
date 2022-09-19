@@ -7,11 +7,9 @@ pragma abicoder v2;
 
 import {IMangrove} from "mgv_src/IMangrove.sol";
 
-
-
 import {MangroveOrderEnriched as MgvOrder} from "mgv_src/periphery/MangroveOrderEnriched.sol";
 import "mgv_src/strategies/interfaces/IOrderLogic.sol";
-import { Offer } from "mgv_src/preprocessed/MgvPack.post.sol";
+import {Offer} from "mgv_src/preprocessed/MgvPack.post.sol";
 
 contract MangroveOrder_Test is MangroveTest {
   // to check ERC20 logging
@@ -128,7 +126,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: false,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     expectFrom($(quote)); // checking quote is sent to mgv and remainder is sent back to taker
     emit Transfer($(this), $(mgo), 0.26 ether);
@@ -164,7 +162,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: false,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     vm.expectRevert("mgvOrder/mo/noPartialFill");
     mgo.take{value: 0.1 ether}(buyOrder);
@@ -184,7 +182,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: false,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
       buyOrder
@@ -213,7 +211,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: false,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
       buyOrder
@@ -239,7 +237,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     vm.expectRevert("mgv/insufficientProvision");
     mgo.take{value: 0.0001 ether}(buyOrder);
@@ -261,7 +259,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
       buyOrder
@@ -293,7 +291,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take(buyOrder);
     res; // ssh
@@ -313,7 +311,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     uint bal_quote_before = mgo.router().reserveBalance(quote, $(this));
     uint bal_base_before = mgo.router().reserveBalance(quote, $(this));
@@ -384,7 +382,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
       buyOrder
@@ -443,7 +441,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 1 ether}(
       buyOrder
@@ -477,7 +475,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
       buyOrder
@@ -504,7 +502,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 0,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
 
     uint provision = 5 ether;
@@ -582,7 +580,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 1,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(
       buyOrder
@@ -607,7 +605,7 @@ contract MangroveOrder_Test is MangroveTest {
       restingOrder: true,
       retryNumber: 1,
       gasForMarketOrder: 6_500_000,
-      blocksToLiveForRestingOrder: 0 //NA
+      timeToLiveForRestingOrder: 0 //NA
     });
     expectFrom($(mgo));
     emit OrderSummary(

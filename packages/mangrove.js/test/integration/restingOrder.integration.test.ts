@@ -133,12 +133,6 @@ describe("RestingOrder", () => {
     });
 
     it("resting order with deadline", async () => {
-      // dirty trick to advance blocks as automine will do so every time a signed tx is sent
-      const advanceBlocks = async (blocks: number) => {
-        for (let i = 0; i < blocks; i++) {
-          await (mgv._provider as any).send("anvil_mine", ["0x100"]);
-        }
-      };
       const provision = await orderContractAsLP.computeBidProvision();
       const market: Market = orderContractAsLP.market;
       // `me` buying base so should approve orderContract for quote
@@ -150,7 +144,7 @@ describe("RestingOrder", () => {
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
         gives: 20, // tokenB
-        restingOrder: { provision: provision, blocksToLiveForRestingOrder: 5 },
+        restingOrder: { provision: provision, timeToLiveForRestingOrder: 5 },
       });
 
       assert(orderResult.summary.offerId > 0, "Resting order was not posted");
@@ -175,11 +169,16 @@ describe("RestingOrder", () => {
         ),
         "Residual should still be in the book"
       );
-      await advanceBlocks(6);
+      // Advance time 6 seconds by changing clock and mining block
+      await (mgv._provider as any).send("evm_increaseTime", ["6"]);
+      await (mgv._provider as any).send("anvil_mine", ["0x100"]);
 
       assert(
-        ttl.lt(await mgv._provider.getBlockNumber()),
-        "Block number is incorrect"
+        ttl.lt(
+          (await mgv._provider.getBlock(mgv._provider.getBlockNumber()))
+            .timestamp
+        ),
+        "Timestamp did not advance"
       );
       const result_ = await market.sell({ wants: 5, gives: 5 });
       assert(result_.summary.penalty.gt(0), "Order should have reneged");

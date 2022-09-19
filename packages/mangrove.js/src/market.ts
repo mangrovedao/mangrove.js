@@ -80,7 +80,7 @@ namespace Market {
     partialFillNotAllowed?: boolean;
     retryNumber?: number;
     gasForMarketOrder?: number;
-    blocksToLiveForRestingOrder?: number;
+    timeToLiveForRestingOrder?: number;
     provision: Bigish;
   };
 
