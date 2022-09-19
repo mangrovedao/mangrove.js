@@ -14,6 +14,7 @@ pragma abicoder v2;
 import "mgv_src/strategies/offer_forwarder/abstract/Forwarder.sol";
 import "mgv_src/strategies/interfaces/IOrderLogic.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
+import { MgvLib } from "mgv_src/MgvLib.sol";
 
 contract MangroveOrder is Forwarder, IOrderLogic {
   // `blockToLive[outbound_tkn][inbound_tkn][offerId]` gives block number beyond which the offer should renege on trade.
@@ -31,7 +32,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     }
   }
 
-  function __lastLook__(ML.SingleOrder calldata order)
+  function __lastLook__(MgvLib.SingleOrder calldata order)
     internal
     virtual
     override
@@ -220,7 +221,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     }
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
+  function __posthookSuccess__(MgvLib.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
     override

@@ -14,6 +14,8 @@ pragma abicoder v2;
 import "mgv_src/IMangrove.sol";
 import "./MangoStorage.sol";
 import "mgv_src/strategies/utils/TransferLib.sol";
+import { MgvLib } from "mgv_src/MgvLib.sol";
+import { Offer } from "mgv_src/preprocessed/MgvPack.post.sol";
 
 //import "../routers/AbstractRouter.sol";
 
@@ -529,7 +531,7 @@ contract MangoImplementation {
     }
   }
 
-  function $residualWants(ML.SingleOrder calldata order, uint residual)
+  function $residualWants(MgvLib.SingleOrder calldata order, uint residual)
     external
     view
     returns (uint)
@@ -547,7 +549,7 @@ contract MangoImplementation {
   }
 
   // TODO add LogIncident and Bid/AskatMax logs
-  function $postDualOffer(ML.SingleOrder calldata order, uint gasreq)
+  function $postDualOffer(MgvLib.SingleOrder calldata order, uint gasreq)
     external
     delegated
     returns (bytes32 status)
@@ -614,7 +616,7 @@ contract MangoImplementation {
   ) internal {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     // outbound : QUOTE, inbound: BASE
-    P.Offer.t offer = MGV.offers(
+    Offer.t offer = MGV.offers(
       address(QUOTE),
       address(BASE),
       mStr.bids[index]
@@ -663,7 +665,7 @@ contract MangoImplementation {
   ) internal {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     // outbound : BASE, inbound: QUOTE
-    P.Offer.t offer = MGV.offers(
+    Offer.t offer = MGV.offers(
       address(BASE),
       address(QUOTE),
       mStr.asks[index]

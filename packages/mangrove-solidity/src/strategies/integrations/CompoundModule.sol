@@ -14,7 +14,7 @@ pragma abicoder v2;
 import "mgv_src/strategies/vendor/compound/ICompound.sol";
 import "mgv_src/strategies/vendor/compound/Exponential.sol";
 import "mgv_src/IMangrove.sol";
-import {IERC20} from "mgv_src/MgvLib.sol";
+import {IERC20, MgvLib } from "mgv_src/MgvLib.sol";
 
 interface WETH is IERC20 {
   function deposit() external payable;
@@ -206,7 +206,7 @@ contract CompoundModule is Exponential {
     );
   }
 
-  function compoundRedeem(uint amountToRedeem, ML.SingleOrder calldata order)
+  function compoundRedeem(uint amountToRedeem, MgvLib.SingleOrder calldata order)
     internal
     returns (uint)
   {
@@ -254,7 +254,7 @@ contract CompoundModule is Exponential {
 
   // adapted from https://medium.com/compound-finance/supplying-assets-to-the-compound-protocol-ec2cf5df5aa#afff
   // utility to supply erc20 to compound
-  function compoundMint(uint amount, ML.SingleOrder calldata order)
+  function compoundMint(uint amount, MgvLib.SingleOrder calldata order)
     internal
     returns (uint missing)
   {

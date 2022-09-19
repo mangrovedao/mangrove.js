@@ -11,8 +11,12 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import "../../MangroveOffer.sol";
+import { MangroveOffer } from "../../MangroveOffer.sol";
 import "mgv_src/strategies/interfaces/IForwarder.sol";
+import {AbstractRouter} from "mgv_src/strategies/routers/AbstractRouter.sol";
+import "mgv_src/strategies/interfaces/IOfferLogic.sol";
+import "mgv_src/preprocessed/MgvPack.post.sol" as MgvPack;
+import "mgv_src/MgvLib.sol";
 
 ///@title Class for maker contracts that forward external offer makers instructions to Mangrove in a permissionless fashion.
 ///@notice Each offer posted via this contract are managed by their offer maker, not by this contract's admin.
@@ -147,7 +151,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   function _newOffer(
     NewOfferData memory offData
   ) internal returns (uint offerId) {
-    (P.Global.t global, P.Local.t local) = MGV.config(
+    (MgvPack.Global.t global, MgvPack.Local.t local) = MGV.config(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn)
     );
@@ -188,9 +192,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   }
 
   struct UpdateOfferData {
-    P.Global.t global;
-    P.Local.t local;
-    P.OfferDetail.t offer_detail;
+    MgvPack.Global.t global;
+    MgvPack.Local.t local;
+    MgvPack.OfferDetail.t offer_detail;
     uint fund;
     IERC20 outbound_tkn;
     IERC20 inbound_tkn;
@@ -259,7 +263,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   // Mangrove would then erroneously take missing WEIs in `this` contract free balance (possibly coming from uncollected deprovisioned offers after a fail).
   // need to treat 2 cases:
   // * if offer is deprovisioned one needs to use msg.value and `ownerData.wei_balance` to derive gasprice (deprovisioning sets offer.gasprice to 0)
-  // * if offer is still live one should compute its currently locked provision $P$ and derive gasprice based on msg.value + $P$ (note if msg.value = 0 offer can be reposted with offer.gasprice)
+  // * if offer is still live one should compute its currently locked provision $MgvPack$ and derive gasprice based on msg.value + $MgvPack$ (note if msg.value = 0 offer can be reposted with offer.gasprice)
 
   function _updateOffer(UpdateOfferData memory upd)
     private
@@ -374,7 +378,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   // if nothing is done at that stage then it could still be done in the posthook but it cannot be a flush
   // since `this` contract balance would have the accumulated takers inbound tokens
   // here we make sure nothing remains unassigned after a trade
-  function __put__(uint amount, ML.SingleOrder calldata order)
+  function __put__(uint amount, MgvLib.SingleOrder calldata order)
     internal
     virtual
     override
@@ -389,7 +393,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   }
 
   // get outbound tokens from offer owner reserve
-  function __get__(uint amount, ML.SingleOrder calldata order)
+  function __get__(uint amount, MgvLib.SingleOrder calldata order)
     internal
     virtual
     override
@@ -416,8 +420,8 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   // this fallback returns an under approx of the provision that has been returned to this contract
   // being under approx implies `this` contract might accumulate a small amount of wei over time
   function __posthookFallback__(
-    ML.SingleOrder calldata order,
-    ML.OrderResult calldata result
+    MgvLib.SingleOrder calldata order,
+    MgvLib.OrderResult calldata result
   ) internal virtual override returns (bytes32) {
     result; // ssh
     IERC20 outTkn = IERC20(order.outbound_tkn);
@@ -427,7 +431,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // NB if several offers of `this` contract have failed during the market order, the balance of this contract on Mangrove will contain cumulated free provision
 
     // computing an under approximation of returned provision because of this offer's failure
-    (P.Global.t global, P.Local.t local) = MGV.config(
+    (MgvPack.Global.t global, MgvPack.Local.t local) = MGV.config(
       order.outbound_tkn,
       order.inbound_tkn
     );

@@ -70,7 +70,7 @@ interface IOfferLogic is IMaker {
   ///@dev throws with a reason when there is a missing approval
   function checkList(IERC20[] calldata tokens) external view;
 
-  ///@return balance the  `token` amount that `msg.sender` has in the contract's reserve
+  ///@return balance the `token` amount that `msg.sender` has in the contract's reserve
   function tokenBalance(IERC20 token) external view returns (uint balance);
 
   /// @notice allows `this` contract to be a liquidity provider for a particular asset by performing the necessary approvals

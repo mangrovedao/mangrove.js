@@ -12,7 +12,8 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-import "../../MangroveOffer.sol";
+import "mgv_src/strategies/MangroveOffer.sol";
+import { MgvLib  } from "mgv_src/MgvLib.sol";
 import "mgv_src/strategies/utils/TransferLib.sol";
 
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
@@ -148,7 +149,7 @@ abstract contract Direct is MangroveOffer {
 
   function __put__(
     uint, /*amount*/
-    ML.SingleOrder calldata
+    MgvLib.SingleOrder calldata
   ) internal virtual override returns (uint missing) {
     // singleUser contract do not need to do anything specific with incoming funds during trade
     // one should overrides this function if one wishes to leverage taker's fund during trade execution
@@ -157,7 +158,7 @@ abstract contract Direct is MangroveOffer {
 
   // default `__get__` hook for `Direct` is to pull liquidity from `reserve()`
   // letting router handle the specifics if any
-  function __get__(uint amount, ML.SingleOrder calldata order)
+  function __get__(uint amount, MgvLib.SingleOrder calldata order)
     internal
     virtual
     override
@@ -175,7 +176,7 @@ abstract contract Direct is MangroveOffer {
     }
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
+  function __posthookSuccess__(MgvLib.SingleOrder calldata order, bytes32 makerData)
     internal
     virtual
     override

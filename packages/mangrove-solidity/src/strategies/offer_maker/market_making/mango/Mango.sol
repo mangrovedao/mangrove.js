@@ -16,6 +16,7 @@ import "./MangoImplementation.sol";
 import "../../abstract/Direct.sol";
 import "../../../routers/AbstractRouter.sol";
 import "../../../routers/SimpleRouter.sol";
+import { MgvLib } from "mgv_src/MgvLib.sol";
 
 /** Discrete automated market making strat */
 /** This AMM is headless (no price model) and market makes on `NSLOTS` price ranges*/
@@ -266,7 +267,7 @@ contract Mango is Direct {
   }
 
   // this overrides is read during `makerExecute` call (see `MangroveOffer`)
-  function __lastLook__(ML.SingleOrder calldata order)
+  function __lastLook__(MgvLib.SingleOrder calldata order)
     internal
     virtual
     override
@@ -279,7 +280,7 @@ contract Mango is Direct {
 
   // residual gives is default (i.e offer.gives - order.wants) + PENDING
   // this overrides the corresponding function in `Persistent`
-  function __residualGives__(ML.SingleOrder calldata order)
+  function __residualGives__(MgvLib.SingleOrder calldata order)
     internal
     virtual
     override
@@ -298,7 +299,7 @@ contract Mango is Direct {
   // for reposting partial filled offers one always gives the residual (default behavior)
   // and adapts wants to the new price (if different).
   // this overrides the corresponding function in `Persistent`
-  function __residualWants__(ML.SingleOrder calldata order)
+  function __residualWants__(MgvLib.SingleOrder calldata order)
     internal
     virtual
     override
@@ -323,7 +324,7 @@ contract Mango is Direct {
   }
 
   function __posthookSuccess__(
-    ML.SingleOrder calldata order,
+    MgvLib.SingleOrder calldata order,
     bytes32 maker_data
   ) internal virtual override returns (bytes32) {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();

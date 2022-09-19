@@ -12,10 +12,13 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-import "mgv_src/strategies/utils/AccessControlled.sol";
-import {MangroveOfferStorage as MOS} from "./MangroveOfferStorage.sol";
-import "mgv_src/strategies/interfaces/IOfferLogic.sol";
-import "mgv_src/IMangrove.sol";
+import { AccessControlled } from "mgv_src/strategies/utils/AccessControlled.sol";
+import { MangroveOfferStorage as MOS } from "./MangroveOfferStorage.sol";
+import { IOfferLogic } from "mgv_src/strategies/interfaces/IOfferLogic.sol";
+import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
+import { MgvLib, IERC20 } from "mgv_src/MgvLib.sol";
+import { IMangrove } from "mgv_src/IMangrove.sol";
+import { AbstractRouter } from "mgv_src/strategies/routers/AbstractRouter.sol";
 
 /// @title This contract is the basic building block for Mangrove strats.
 /// @notice It contains the mandatory interface expected by Mangrove (`IOfferLogic` is `IMaker`) and enforces additional functions implementations (via `IOfferLogic`).
@@ -75,7 +78,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// NB #3: Reneging on trade will have the following effects:
   /// * Offer is removed from the Order Book
   /// * Offer bounty will be withdrawn from offer provision and sent to the offer taker. The remaining provision will be credited to the maker account on Mangrove
-  function makerExecute(ML.SingleOrder calldata order)
+  function makerExecute(MgvLib.SingleOrder calldata order)
     external
     override
     onlyCaller(address(MGV))
@@ -98,11 +101,11 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// NB: If `makerPosthook` reverts, mangrove will log the first 32 bytes of the revert reason in the `PosthookFail` log.
   /// NB: Reverting posthook does not revert trade execution
   function makerPosthook(
-    ML.SingleOrder calldata order,
-    ML.OrderResult calldata result
+    MgvLib.SingleOrder calldata order,
+    MgvLib.OrderResult calldata result
   ) external override onlyCaller(address(MGV)) {
     if (result.mgvData == "mgv/tradeSuccess") {
-      // toplevel posthook may ignore returned value which is only useful for (vertical) compositionality
+      // toplevel posthook may ignore returned value which is only usefull for (vertical) compositionality
       __posthookSuccess__(order, result.makerData);
     } else {
       emit LogIncident(
@@ -235,7 +238,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@return missingPut (<=`amount`) is the amount of `inbound` tokens whose deposit location has not been decided (possibly because of a failure) during this function execution
   ///@dev if the last nested call to `__put__` returns a non zero value, trade execution will revert
   ///@custom:hook overrides of this hook should be conservative and call `super.__put__(missing, order)`
-  function __put__(uint amount, ML.SingleOrder calldata order)
+  function __put__(uint amount, MgvLib.SingleOrder calldata order)
     internal
     virtual
     returns (uint missingPut);
@@ -246,7 +249,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@return missingGet (<=`amount`), which is the amount of `outbound` tokens still need to be fetched at the end of this function
   ///@dev if the last nested call to `__get__` returns a non zero value, trade execution will revert
   ///@custom:hook overrides of this hook should be conservative and call `super.__get__(missing, order)`
-  function __get__(uint amount, ML.SingleOrder calldata order)
+  function __get__(uint amount, MgvLib.SingleOrder calldata order)
     internal
     virtual
     returns (uint missingGet);
@@ -257,7 +260,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @dev __lastLook__ should revert if trade is to be reneged on. If not, returned `bytes32` are passed to `makerPosthook` in the `makerData` field.
   // @custom:hook Special bytes32 word can be used to switch a particular behavior of `__posthookSuccess__`, e.g not to repost offer in case of a partial fill. */
 
-  function __lastLook__(ML.SingleOrder calldata order)
+  function __lastLook__(MgvLib.SingleOrder calldata order)
     internal
     virtual
     returns (bytes32 data)
@@ -273,8 +276,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   `result.makerData` either contains the first 32 bytes of revert reason if `makerExecute` reverted */
   /// @custom:hook overrides of this hook should be conservative and call `super.__posthookFallback__(order, result)`
   function __posthookFallback__(
-    ML.SingleOrder calldata order,
-    ML.OrderResult calldata result
+    MgvLib.SingleOrder calldata order,
+    MgvLib.OrderResult calldata result
   ) internal virtual returns (bytes32) {
     order;
     result;
@@ -285,7 +288,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@param order is a recall of the taker order that is being treated.
   ///@return new_wants the new volume of `inbound_tkn` the offer will ask for on Mangrove
   ///@dev default is to require the original amount of tokens minus those that have been given by the taker during trade execution.
-  function __residualWants__(ML.SingleOrder calldata order)
+  function __residualWants__(MgvLib.SingleOrder calldata order)
     internal
     virtual
     returns (uint new_wants)
@@ -297,7 +300,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@param order is a recall of the taker order that is being treated.
   ///@return new_gives the new volume of `outbound_tkn` the offer will give if fully taken.
   ///@dev default is to require the original amount of tokens minus those that have been sent to the taker during trade execution.
-  function __residualGives__(ML.SingleOrder calldata order)
+  function __residualGives__(MgvLib.SingleOrder calldata order)
     internal
     virtual
     returns (uint)
@@ -310,7 +313,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@param maker_data is the returned value of the `__lastLook__` hook, triggered during trade execution. The special value `"lastLook/retract"` should be treated as an instruction not to repost the offer on the book.
   /// @custom:hook overrides of this hook should be conservative and call `super.__posthookSuccess__(order, maker_data)`
   function __posthookSuccess__(
-    ML.SingleOrder calldata order,
+    MgvLib.SingleOrder calldata order,
     bytes32 maker_data
   ) internal virtual returns (bytes32 data) {
     maker_data; // maker_data can be used in overrides to skip reposting for instance. It is ignored in the default behavior.
@@ -364,11 +367,11 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     uint gasprice,
     uint offerId
   ) public view returns (uint) {
-    (P.Global.t globalData, P.Local.t localData) = MGV.config(
+    (Global.t globalData, Local.t localData) = MGV.config(
       address(outbound_tkn),
       address(inbound_tkn)
     );
-    P.OfferDetail.t offerDetailData = MGV.offerDetails(
+    OfferDetail.t offerDetailData = MGV.offerDetails(
       address(outbound_tkn),
       address(inbound_tkn),
       offerId

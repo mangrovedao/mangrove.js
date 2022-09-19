@@ -3,11 +3,11 @@ pragma solidity ^0.8.13;
 pragma abicoder v2;
 
 import "mgv_src/AbstractMangrove.sol";
-import {IERC20, MgvLib as ML, P, IMaker} from "mgv_src/MgvLib.sol";
+import {IERC20, MgvLib, IMaker} from "mgv_src/MgvLib.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract TrivialTestMaker is IMaker {
-  function makerExecute(ML.SingleOrder calldata)
+  function makerExecute(MgvLib.SingleOrder calldata)
     external
     virtual
     returns (bytes32)
@@ -15,7 +15,7 @@ contract TrivialTestMaker is IMaker {
     return "";
   }
 
-  function makerPosthook(ML.SingleOrder calldata, ML.OrderResult calldata)
+  function makerPosthook(MgvLib.SingleOrder calldata, MgvLib.OrderResult calldata)
     external
     virtual
   {}
@@ -95,7 +95,7 @@ contract SimpleTestMaker is TrivialTestMaker {
     token.transfer(to, amount);
   }
 
-  function makerExecute(ML.SingleOrder calldata order)
+  function makerExecute(MgvLib.SingleOrder calldata order)
     public
     virtual
     override
@@ -137,8 +137,8 @@ contract SimpleTestMaker is TrivialTestMaker {
   }
 
   function makerPosthook(
-    ML.SingleOrder calldata order,
-    ML.OrderResult calldata result
+    MgvLib.SingleOrder calldata order,
+    MgvLib.OrderResult calldata result
   ) public virtual override {
     order; //shh
     result; //shh
@@ -304,8 +304,8 @@ contract TestMaker is SimpleTestMaker, Test {
   ) SimpleTestMaker(mgv, base, quote) {}
 
   function makerPosthook(
-    ML.SingleOrder calldata order,
-    ML.OrderResult calldata result
+    MgvLib.SingleOrder calldata order,
+    MgvLib.OrderResult calldata result
   ) public virtual override {
     if (expectedStatus != bytes32("")) {
       assertEq(result.mgvData, expectedStatus, "Incorrect status message");

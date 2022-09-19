@@ -3,6 +3,8 @@
 pragma solidity ^0.8.10;
 
 import "mgv_test/lib/MangroveTest.sol";
+import { OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct } from "mgv_src/preprocessed/MgvStructs.post.sol";
+import { Global } from "mgv_src/preprocessed/MgvPack.post.sol";
 
 contract ScenariiTest is MangroveTest {
   TestTaker taker;
@@ -18,7 +20,7 @@ contract ScenariiTest is MangroveTest {
   function saveOffers() internal {
     uint offerId = mgv.best($(base), $(quote));
     while (offerId != 0) {
-      (P.OfferStruct memory offer, P.OfferDetailStruct memory offerDetail) = mgv
+      (OfferStruct memory offer, OfferDetailStruct memory offerDetail) = mgv
         .offerInfo($(base), $(quote), offerId);
       offers[offerId][Info.makerWants] = offer.wants;
       offers[offerId][Info.makerGives] = offer.gives;
@@ -185,7 +187,7 @@ contract ScenariiTest is MangroveTest {
       gasreq: 90_000,
       pivotId: 72
     });
-    (P.Global.t cfg, ) = mgv.config($(base), $(quote));
+    (Global.t cfg, ) = mgv.config($(base), $(quote));
     _offerOf[0] = makers.getMaker(0).newOffer({ //failer offer 4
       wants: 20 ether,
       gives: 10 ether,
@@ -206,7 +208,7 @@ contract ScenariiTest is MangroveTest {
     uint offerId = mgv.best($(base), $(quote));
     uint expected_maker = 3;
     while (offerId != 0) {
-      (P.OfferStruct memory offer, P.OfferDetailStruct memory od) = mgv
+      (OfferStruct memory offer, OfferDetailStruct memory od) = mgv
         .offerInfo($(base), $(quote), offerId);
       assertEq(
         od.maker,
@@ -368,7 +370,7 @@ contract ScenariiTest is MangroveTest {
       "incorrect maker B balance"
     );
     // Testing residual offer
-    (P.OfferStruct memory ofr, ) = mgv.offerInfo(
+    (OfferStruct memory ofr, ) = mgv.offerInfo(
       $(base),
       $(quote),
       bag.snipedId

@@ -4,6 +4,7 @@ import "mgv_src/strategies/routers/SimpleRouter.sol";
 pragma solidity ^0.8.10;
 import "./OfferLogic.t.sol";
 import "mgv_src/strategies/offer_forwarder/OfferForwarder.sol";
+import { Global } from "mgv_src/preprocessed/MgvPack.post.sol";
 
 contract OfferForwarderTest is OfferLogicTest {
   function setupMakerContract() internal virtual override prank(maker) {
@@ -46,7 +47,7 @@ contract OfferForwarderTest is OfferLogicTest {
       contractOldBalance + loss_for_maker,
       "Invalid contract balance"
     );
-    (P.Global.t global,) = mgv.config($(weth),$(usdc));
+    (Global.t global,) = mgv.config($(weth),$(usdc));
     // checking that not storing `loss_for_maker` in `ownerData` saves more maker funds than actually storing it.
     // currently we are storing 0 at a cost of 5000 g.u. Storing loss_for_maker would cost an additional 15K g.u
     // we use mangrove gasprice to evaluate this.

@@ -13,6 +13,8 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 import "mgv_src/strategies/offer_maker/abstract/Direct.sol";
 import "mgv_src/strategies/routers/SimpleRouter.sol";
+import {MgvLib } from "mgv_src/MgvLib.sol";
+import { Offer } from "mgv_src/preprocessed/MgvPack.post.sol";
 
 contract Ghost is Direct {
   IERC20 public immutable STABLE1;
@@ -87,7 +89,7 @@ contract Ghost is Direct {
     });
   }
 
-  function __posthookSuccess__(ML.SingleOrder calldata order, bytes32 makerData)
+  function __posthookSuccess__(MgvLib.SingleOrder calldata order, bytes32 makerData)
     internal
     override
     returns (bytes32)
@@ -105,7 +107,7 @@ contract Ghost is Direct {
 
     if (repost_status == "posthook/reposted") {
       uint new_alt_gives = __residualGives__(order); // in base units
-      P.Offer.t alt_offer = MGV.offers(
+      Offer.t alt_offer = MGV.offers(
         order.outbound_tkn,
         address(alt_stable),
         alt_offerId

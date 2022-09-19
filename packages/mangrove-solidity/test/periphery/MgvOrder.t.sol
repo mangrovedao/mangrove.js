@@ -5,19 +5,13 @@ import "mgv_test/lib/MangroveTest.sol";
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-// import "../../AbstractMangrove.sol";
-import {MgvLib as ML, P, IMaker} from "mgv_src/MgvLib.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 
-// import "hardhat/console.sol";
 
-// import "../Toolbox/sol";
-
-// import "../Agents/TestToken.sol";
-// import "../Agents/TestMaker.sol";
 
 import {MangroveOrderEnriched as MgvOrder} from "mgv_src/periphery/MangroveOrderEnriched.sol";
 import "mgv_src/strategies/interfaces/IOrderLogic.sol";
+import { Offer } from "mgv_src/preprocessed/MgvPack.post.sol";
 
 contract MangroveOrder_Test is MangroveTest {
   // to check ERC20 logging
@@ -346,7 +340,7 @@ contract MangroveOrder_Test is MangroveTest {
     );
 
     // checking resting order parameters
-    P.Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
+    Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
     assertEq(
       offer.wants(),
       buyOrder.makerWants - (res.takerGot + res.fee),
@@ -427,7 +421,7 @@ contract MangroveOrder_Test is MangroveTest {
     );
 
     // checking resting order residual
-    P.Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
+    Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
 
     assertEq(
       offer.gives(),
