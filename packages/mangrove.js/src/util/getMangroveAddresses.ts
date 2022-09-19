@@ -1,10 +1,5 @@
 /*
-Enumerate distributed mangrove-solidity deployments and copy required contract (one set for each chainkey) to addresses.json.
-
-Warning: since we use foundry's broadcast logs, contract instance names are just their class names. You cannot distinguish two instances of the same contract. If you want to deploy 2 instances of a contract in a single deployment, you must create a new contract in mangrove-solidity, e.g.
-
-  contract SubA is A {}
-
+Enumerate distributed mangrove-solidity deployments and copy addresses to mangrove.js.
 
 Args:
 
@@ -22,13 +17,6 @@ import minimist from "minimist";
 
 /* Configuration */
 
-const broadcastDir = path.resolve("../mangrove-solidity/dist/broadcast/");
-const addressesFile = path.resolve("src/constants/addresses.json");
-const addresses = JSON.parse(fs.readFileSync(addressesFile, "utf8"));
-const logName = "run-latest.json";
-
-const chainkeys = ["maticmum"];
-
 /* Argument parsing */
 const args = minimist(process.argv.slice(2), {
   boolean: ["debug", "dry-run"],
@@ -43,70 +31,31 @@ if (args.debug) {
   console.debug(args);
 }
 
-/* 
-Given a broadcast file and a contract names array, return a name->address
-mapping for each contract name. Throws if != 1 address is found for each
-contract in the array.
+const sourceDir = path.resolve("../mangrove-solidity/dist/addresses/");
+const addressFile = path.resolve("src/constants/addresses.json");
 
-Broadcast logs are the form:
+const addresses = JSON.parse(fs.readFileSync(addressFile, "utf8"));
 
-  transactions: [
-    { 
-      transactionType: "CREATE", // or "CALL"
-      contractName: "MyContract", // or null if unknown
-      contractAddress: ...
-    },
-    { 
-      <another transaction>
-    }
-  ]
-
-*/
-const readBroadcast = function (broadcastLog: any): Record<string, string> {
-  const addresses: Record<string, string> = {};
-
-  for (const tx of broadcastLog.transactions) {
-    if (tx.transactionType === "CREATE" && tx.contractName !== null) {
-      if (addresses[tx.contractName]) {
-        throw new Error(
-          `Expected exactly one address for contract ${tx.contractName}. Had ${
-            addresses[tx.contractName]
-          }, now also ${tx.contractAddress}`
-        );
-      }
-
-      addresses[tx.contractName] = tx.contractAddress;
+for (const filename of fs.readdirSync(sourceDir)) {
+  const { ext, name: network } = path.parse(filename);
+  if (ext == ".json") {
+    const data = fs.readFileSync(path.join(sourceDir, filename), "utf8");
+    const networkAddresses = JSON.parse(data);
+    for (const { name, address } of networkAddresses) {
+      addresses[network][name] = address;
     }
   }
-
-  return addresses;
-};
-
-/* Main program */
-
-for (const chainkey of chainkeys) {
-  const broadcast = path.join(broadcastDir, chainkey, logName);
-  let latestData: string;
-  try {
-    latestData = fs.readFileSync(broadcast, "utf8");
-  } catch (e) {
-    console.warn(`Could not read ${broadcast} file, skipping`);
-    continue;
-  }
-  const latest = JSON.parse(latestData);
-  const chainAddresses = readBroadcast(latest);
-  addresses[chainkey] = { ...addresses[chainkey], ...chainAddresses };
 }
 
-if (args.debug || args.dryRun) {
+if (args.debug || args["dry-run"]) {
   console.debug(
     `New address file, which ${
-      args.dryRun ? "would" : "will"
-    } be written to file at ${addressesFile}:`
+      args["dry-run"] ? "would" : "will"
+    } be written to file at ${addressFile}:`
   );
   console.dir(addresses);
 }
 
-if (!args.dryRun) {
-  fs.writeFileSync(addressesFile, JSON.stringify(addresses, null, 2) + "\n");
+if (!args["dry-run"]) {
+  fs.writeFileSync(addressFile, JSON.stringify(addresses, null, 2) + "\n");
 }
