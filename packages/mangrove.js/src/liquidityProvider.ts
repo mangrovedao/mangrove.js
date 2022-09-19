@@ -186,7 +186,7 @@ class LiquidityProvider {
   }
 
   #singleUserOnly(message: string): void {
-    if (this.logic && this.logic.isMultiMaker) {
+    if (this.logic && this.logic.isForwarder) {
       throw new Error(message);
     }
   }
@@ -222,15 +222,6 @@ class LiquidityProvider {
       : this.mgv
           .token(tokenName)
           .allowance({ owner: this.eoa, spender: this.mgv._address });
-  }
-
-  approveMangrove(
-    tokenName: string,
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.logic
-      ? this.logic.approveMangrove(tokenName, overrides)
-      : this.mgv.token(tokenName).approve(this.mgv._address);
   }
 
   fundMangrove(
@@ -548,25 +539,28 @@ class LiquidityProvider {
     return this.#approveToken(this.market.quote.name, overrides);
   }
 
-  //TODO handle multi maker case
+  //TODO handle offer forwarder case
   async getMissingProvision(
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     const gasreq = opts.gasreq ? opts.gasreq : await this.#gasreq();
     const gasprice = opts.gasprice ? opts.gasprice : 0;
+    // this computes the total provision required for a new offer on the market
     const bounty = await this.market.getOfferProvision(ba, gasreq, gasprice);
+    // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
     let lockedProvision = Big(0);
     if (opts.id) {
       const offer = await this.market.offerInfo(ba, opts.id);
       const prov_in_gwei: Big = new Big(
         (offer.gasreq + offer.offer_gasbase) * offer.gasprice
       );
-      lockedProvision = prov_in_gwei.div(10 ** 9);
+      lockedProvision = prov_in_gwei.mul(10 ** 9); // in WEIs
     }
     let balance: Bigish = 0;
     if (this.logic) {
-      balance = this.logic.isMultiMaker ? 0 : await this.balanceOnMangrove();
+      // if interacting with an offer forwarder, maker can only use funds that are sent with update or new offer
+      balance = this.logic.isForwarder ? 0 : await this.balanceOnMangrove();
     }
     const currentOfferProvision = lockedProvision.add(balance);
     logger.debug(`Get missing provision`, {

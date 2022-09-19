@@ -4,17 +4,17 @@
       "inputs": [
         {
           "internalType": "contract AbstractMangrove",
-          "name": "mgv",
+          "name": "_mgv",
           "type": "address"
         },
         {
           "internalType": "contract IERC20",
-          "name": "base",
+          "name": "_base",
           "type": "address"
         },
         {
           "internalType": "contract IERC20",
-          "name": "quote",
+          "name": "_quote",
           "type": "address"
         }
       ],
@@ -99,17 +99,17 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "mgv",
+          "name": "_mgv",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "base",
+          "name": "_base",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "quote",
+          "name": "_quote",
           "type": "address"
         },
         {
@@ -293,12 +293,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "base",
+          "name": "_base",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "quote",
+          "name": "_quote",
           "type": "address"
         },
         {
@@ -493,12 +493,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "base",
+          "name": "_base",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "quote",
+          "name": "_quote",
           "type": "address"
         },
         {
