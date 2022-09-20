@@ -87,6 +87,13 @@ abstract contract Deployer is Script2 {
       }
       line("]");
       vm.writeFile(fork.addressesFile("deployed"), out);
+      vm.writeFile(
+        fork.addressesFile(
+          "deployed",
+          string.concat("-", vm.toString(block.timestamp), ".backup")
+        ),
+        out
+      );
     }
   }
 

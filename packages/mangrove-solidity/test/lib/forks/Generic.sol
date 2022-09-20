@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.10;
 
-import {Script,console} from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
 import {ToyENS} from "mgv_script/lib/ToyENS.sol";
 
 /* A record entry in an addresses JSON file */
@@ -40,14 +40,21 @@ contract GenericFork is Script {
 
   /* get/set addresses, passthrough to context/deployed ToyENS instances */
 
-  function set(string memory name, address addr, bool isToken) public {
-    require(context._addrs(name) == address(0), "Fork: context addresses cannot be changed.");
-    deployed.set(name,addr,isToken);
-    label(addr,name);
+  function set(
+    string memory name,
+    address addr,
+    bool isToken
+  ) public {
+    require(
+      context._addrs(name) == address(0),
+      "Fork: context addresses cannot be changed."
+    );
+    deployed.set(name, addr, isToken);
+    label(addr, name);
   }
 
   function set(string memory name, address addr) public {
-    set(name,addr,false);
+    set(name, addr, false);
   }
 
   function get(string memory name) public view returns (address payable) {
@@ -58,13 +65,21 @@ contract GenericFork is Script {
     }
   }
 
-  function allDeployed() public view returns (string[] memory, address[] memory, bool[] memory) {
+  function allDeployed()
+    public
+    view
+    returns (
+      string[] memory,
+      address[] memory,
+      bool[] memory
+    )
+  {
     return deployed.all();
   }
 
   /* Read addresses from JSON files */
 
-  function addressesFile(string memory category)
+  function addressesFile(string memory category, string memory suffix)
     public
     view
     returns (string memory)
@@ -76,8 +91,17 @@ contract GenericFork is Script {
         category,
         "/",
         NETWORK,
+        suffix,
         ".json"
       );
+  }
+
+  function addressesFile(string memory category)
+    public
+    view
+    returns (string memory)
+  {
+    return addressesFile(category, "");
   }
 
   function readAddresses(string memory category)
@@ -114,7 +138,6 @@ contract GenericFork is Script {
     // return empty record array by default
     return (new Record[](0));
   }
-
 
   /* Select/modify current fork
      ! Does not impact context/deployed mappings !
@@ -158,7 +181,7 @@ contract GenericFork is Script {
     Record[] memory records = readAddresses("context");
     for (uint i = 0; i < records.length; i++) {
       context.set(records[i].name, records[i].addr, records[i].isToken);
-      label(records[i].addr,records[i].name);
+      label(records[i].addr, records[i].name);
     }
     records = readAddresses("deployed");
     for (uint i = 0; i < records.length; i++) {
