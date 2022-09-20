@@ -60,6 +60,8 @@ abstract contract Deployer is Script2 {
     }
   }
 
+  string out;
+
   function outputDeployment() internal {
     (
       string[] memory names,
@@ -73,7 +75,7 @@ abstract contract Deployer is Script2 {
     }
 
     if (createFile) {
-      vm.writeFile(fork.addressesFile("deployed"), ""); // clear file
+      out = "";
       line("[");
       for (uint i = 0; i < names.length; i++) {
         bool end = i + 1 == names.length;
@@ -84,10 +86,11 @@ abstract contract Deployer is Script2 {
         line(end ? "  }" : "  },");
       }
       line("]");
+      vm.writeFile(fork.addressesFile("deployed"), out);
     }
   }
 
   function line(string memory s) internal {
-    vm.writeLine(fork.addressesFile("deployed"), s);
+    out = string.concat(out, s, "\n");
   }
 }
