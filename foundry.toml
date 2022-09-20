@@ -7,7 +7,7 @@ test='packages/mangrove-solidity/test'
 out='packages/mangrove-solidity/out'
 libs=['packages/mangrove-solidity/lib']
 cache_path='packages/mangrove-solidity/cache'
-fs_permissions = [ { access = "read-write", path = "./packages/mangrove-solidity/addresses/"} ]
+fs_permissions = [{ access = "read-write", path = "./packages/mangrove-solidity/addresses/"}]
 solc_version="0.8.14"
 # optimizer=true
 # optimizer_runs=20000
