@@ -291,12 +291,11 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     );
   }
 
-  ///@notice updates an offer existing on Mangrove (not necessarily live).
-  ///@dev gasreq == max_int indicates one wishes to use ofr_gasreq (default value)
-  ///@dev gasprice is overridden by the value computed by taking into account :
+  ///@dev the `gasprice` argument is always ignored in `Forwarder` logic, since it has to be derived from `msg.value` of the call (see `_newOffer`).
   /// * value transferred on current tx
   /// * if offer was deprovisioned after a fail, amount of wei (still on this contract balance on Mangrove) that should be counted as offer owner's
   /// * if offer is still live, its current locked provision
+  ///@inheritdoc IOfferLogic
   function updateOffer(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -342,7 +341,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   }
 
 
-  // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove. Function call will throw if `this` contract is not the owner of `offerId`.
+  ///@notice Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove. Function call will throw if `this` contract is not the owner of `offerId`.
   ///@param deprovision is true if offer owner wishes to have the offer's provision pushed to its reserve
   function retractOffer(
     IERC20 outbound_tkn,
