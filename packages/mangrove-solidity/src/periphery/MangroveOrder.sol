@@ -11,10 +11,12 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import "mgv_src/strategies/offer_forwarder/abstract/Forwarder.sol";
-import "mgv_src/strategies/interfaces/IOrderLogic.sol";
-import "mgv_src/strategies/routers/SimpleRouter.sol";
-import {MgvLib} from "mgv_src/MgvLib.sol";
+import {IMangrove} from "mgv_src/IMangrove.sol";
+import {Forwarder} from "mgv_src/strategies/offer_forwarder/abstract/Forwarder.sol";
+import {IOrderLogic} from "mgv_src/strategies/interfaces/IOrderLogic.sol";
+import {SimpleRouter} from "mgv_src/strategies/routers/SimpleRouter.sol";
+import {TransferLib} from "mgv_src/strategies/utils/TransferLib.sol";
+import {MgvLib, IERC20} from "mgv_src/MgvLib.sol";
 
 contract MangroveOrder is Forwarder, IOrderLogic {
   // `expiring[outbound_tkn][inbound_tkn][offerId]` gives timestamp beyond which the offer should renege on trade.
