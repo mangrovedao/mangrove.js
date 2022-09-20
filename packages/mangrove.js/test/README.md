@@ -26,5 +26,5 @@ Useful env variables you can set:
 
 - `MGV_NODE_DEBUG` (default false): log all ethers.js requsts to the rpc node
 - `MGV_NODE_USE_CACHE` (default false): 1) create a `state.dump` file containing the state after deploying contracts for testing. 2) if a `state.dump` file is present, directly load it in anvil it instead of compiling/deploying a .sol script. It speeds up testing a lot. TODO: auto-invalidate cache.
-- `MGV_NODE_SPAWN_SERVER` (default true): do not create an `anvil` process during testing, instead connect to an existing one (see `node.ts` for more info).
+- `MGV_NODE_SPAWN` (default true): do not create an `anvil` process during testing, instead connect to an existing one (see `node.ts` for more info).
 - `MGV_NODE_DEPLOY` (default true): do not deploy Mangrove & other contracts when starting an anvil process (see `node.ts` for more info).
