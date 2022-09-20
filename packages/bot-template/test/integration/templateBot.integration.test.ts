@@ -2,15 +2,13 @@
  * Integration tests for the bot.
  */
 
-import { afterEach, before, beforeEach, describe, it } from "mocha";
-import * as chai from "chai";
-const { expect } = chai;
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
 import Mangrove from "@mangrovedao/mangrove.js";
-import { TemplateBot } from "../../src/TemplateBot";
-import { Signer, ethers } from "ethers";
-import { config } from "../../src/util/config";
+import * as chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { ethers, Signer } from "ethers";
+import { afterEach, before, beforeEach, describe, it } from "mocha";
+const { expect } = chai;
+chai.use(chaiAsPromised);
 
 // TODO: Basic can-connect test - delete/update as needed
 describe("Can connect to Mangrove on local chain", () => {
@@ -47,10 +45,7 @@ describe("Bot integration tests", () => {
 
   it("should be able to create the bot", async function () {
     // setup
-    const templateBot = new TemplateBot(mgv);
-
     // TODO: Test
-
     // TODO: Assert
   });
 });

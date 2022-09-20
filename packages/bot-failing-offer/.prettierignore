@@ -1,0 +1,7 @@
+# Ignore artifacts:
+build
+coverage
+.DS_Store
+node_modules
+dist
+.husky
