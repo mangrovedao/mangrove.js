@@ -161,7 +161,7 @@ contract Ghost is Direct {
   function __posthookFallback__(
     MgvLib.SingleOrder calldata order,
     MgvLib.OrderResult calldata result
-  ) internal override return(bytes32) {
+  ) internal override returns (bytes32) {
     // if we reach this code, trade has failed for lack of base token
     (IERC20 alt_stable, uint alt_offerId) = IERC20(order.inbound_tkn) == STABLE1
       ? (STABLE2, offerId2)
