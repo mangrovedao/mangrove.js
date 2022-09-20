@@ -197,6 +197,21 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     }
   }
 
+  ///@notice Memory allocation of `_updateOffer` variables
+  ///@param global current block's global configuration variables of Mangrove 
+  ///@param local current block's configuration variables of the (outbound token, inbound token) offer list
+  ///@param offer_detail a recap of the current block's offer details.
+  ///@param fund remainder of msg.value as received by the external function
+  ///@param outbound_tkn token contract 
+  ///@param inbound_tkn token contract
+  ///@param wants the new amount of inbound tokens the maker wants for a complete fill
+  ///@param gives the new amount of outbound tokens the maker gives for a complete fill
+  ///@param gasprice memory location for storing the derived gasprice of the offer
+  ///@param gasreq new gasreq for the udpated offer.
+  ///@param pivotId a best pivot estimate for cheap offer insertion in the offer list
+  ///@param offerId the id of the offer to be updated
+  ///@param owner the owner of the offer to be udpated
+  ///@param wei_balance the current provision that is available to the owner for this offer.
   struct UpdateOfferData {
     MgvPack.Global.t global;
     MgvPack.Local.t local;
@@ -214,56 +229,6 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     address owner;
   }
 
-  ///@notice updates an offer existing on Mangrove (not necessarily live).
-  ///@dev gasreq == max_int indicates one wishes to use ofr_gasreq (default value)
-  ///@dev gasprice is overridden by the value computed by taking into account :
-  /// * value transferred on current tx
-  /// * if offer was deprovisioned after a fail, amount of wei (still on this contract balance on Mangrove) that should be counted as offer owner's
-  /// * if offer is still live, its current locked provision
-  function updateOffer(
-    IERC20 outbound_tkn,
-    IERC20 inbound_tkn,
-    uint wants,
-    uint gives,
-    uint gasreq,
-    uint gasprice, // value ignored but kept to maintain compatibility with `Direct` offers
-    uint pivotId,
-    uint offerId
-    ) external payable override {
-    OwnerData memory od = ownerData[outbound_tkn][inbound_tkn][
-      offerId
-    ];
-    require(
-      msg.sender == od.owner,
-      "Multi/updateOffer/unauthorized"
-    );
-    gasprice; // ssh
-    UpdateOfferData memory upd; 
-    // upd.gasprice is deliberately left at 0
-    upd.offer_detail = MGV.offerDetails(
-      address(outbound_tkn),
-      address(inbound_tkn),
-      offerId
-    );
-    (upd.global, upd.local) = MGV.config(
-      address(outbound_tkn),
-      address(inbound_tkn)
-    );
-    upd.fund = msg.value;
-    upd.outbound_tkn = outbound_tkn;
-    upd.inbound_tkn = inbound_tkn;
-    upd.wants = wants;
-    upd.gives = gives;
-    upd.gasreq = gasreq > type(uint24).max ? offerGasreq() : gasreq;
-    upd.pivotId = pivotId;
-    upd.offerId = offerId;
-    upd.owner = msg.sender;
-
-    // if `wei_balance` > 0 then `this` contract has a balance on Mangrove >= `wei_balance`.
-    upd.wei_balance = od.wei_balance;
-    _updateOffer(upd);
-  }
-
   // upd.gasprice is kept to 0 because it will be derived from `msg.value` 
   // not doing this would allow a user to submit an `new/updateOffer` underprovisioned for the announced gasprice
   // Mangrove would then erroneously take missing WEIs in `this` contract free balance (possibly coming from uncollected deprovisioned offers after a fail).
@@ -274,7 +239,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   function _updateOffer(UpdateOfferData memory upd)
     private
   { 
-    // storing current offer gasprice into `upd` struct
+    // storing current offer gasprice and gasreq into `upd` struct
     upd.gasprice = upd.offer_detail.gasprice();
     if (upd.gasprice == 0) {
       // offer was previously deprovisioned, we add the portion of this contract WEI pool on Mangrove that belongs to this offer (if any)
@@ -325,6 +290,57 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       upd.offerId
     );
   }
+
+  ///@notice updates an offer existing on Mangrove (not necessarily live).
+  ///@dev gasreq == max_int indicates one wishes to use ofr_gasreq (default value)
+  ///@dev gasprice is overridden by the value computed by taking into account :
+  /// * value transferred on current tx
+  /// * if offer was deprovisioned after a fail, amount of wei (still on this contract balance on Mangrove) that should be counted as offer owner's
+  /// * if offer is still live, its current locked provision
+  function updateOffer(
+    IERC20 outbound_tkn,
+    IERC20 inbound_tkn,
+    uint wants,
+    uint gives,
+    uint gasreq,
+    uint gasprice, // value ignored but kept to maintain compatibility with `Direct` offers
+    uint pivotId,
+    uint offerId
+    ) external payable override {
+    OwnerData memory od = ownerData[outbound_tkn][inbound_tkn][
+      offerId
+    ];
+    require(
+      msg.sender == od.owner,
+      "Multi/updateOffer/unauthorized"
+    );
+    gasprice; // ssh
+    UpdateOfferData memory upd; 
+    // upd.gasprice is deliberately left at 0
+    upd.offer_detail = MGV.offerDetails(
+      address(outbound_tkn),
+      address(inbound_tkn),
+      offerId
+    );
+    (upd.global, upd.local) = MGV.config(
+      address(outbound_tkn),
+      address(inbound_tkn)
+    );
+    upd.fund = msg.value;
+    upd.outbound_tkn = outbound_tkn;
+    upd.inbound_tkn = inbound_tkn;
+    upd.wants = wants;
+    upd.gives = gives;
+    upd.gasreq = gasreq > type(uint24).max ? upd.offer_detail.gasreq() : gasreq; // not using offerGasReq() to save a storage read.
+    upd.pivotId = pivotId;
+    upd.offerId = offerId;
+    upd.owner = msg.sender;
+
+    // if `wei_balance` > 0 then `this` contract has a balance on Mangrove >= `wei_balance`.
+    upd.wei_balance = od.wei_balance;
+    _updateOffer(upd);
+  }
+
 
   // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove. Function call will throw if `this` contract is not the owner of `offerId`.
   ///@param deprovision is true if offer owner wishes to have the offer's provision pushed to its reserve

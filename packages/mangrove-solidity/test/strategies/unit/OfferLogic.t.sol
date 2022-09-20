@@ -200,7 +200,7 @@ contract OfferLogicTest is MangroveTest {
       gives: 1 * 10**18,
       gasreq: type(uint).max,
       gasprice: 0,
-      pivotId: 0,
+      pivotId: offerId,
       offerId: offerId
     });
   }
