@@ -1,5 +1,12 @@
 # next version
 
+# 0.10.1 (September 2022)
+
+- Update and verify `MangroveOrderEnriched`
+- `ApproveMangrove` and `ApproveRouter` are no longer functions of `OfferLogic` and `LiquidityProvider` use `activate` instead.
+- `OfferLogic` has an `approveToken` function to let EOA approve router or logic itself if the logic has no router
+- update ABIs
+
 # 0.10.0 (August 2022)
 
 - Update address for `MangroveOrderEnriched`
