@@ -53,14 +53,12 @@ abstract contract Deployer is Script2 {
         );
       }
 
-      singleton("Deployer:Fork",address(fork));
+      singleton("Deployer:Fork", address(fork));
       fork.setUp();
     } else {
       fork = GenericFork(singleton("Deployer:Fork"));
     }
-
   }
-
 
   function outputDeployment() internal {
     (
@@ -83,7 +81,7 @@ abstract contract Deployer is Script2 {
         line(string.concat('    "address": "', vm.toString(addrs[i]), '",'));
         line(string.concat('    "isToken": ', vm.toString(isToken[i]), ","));
         line(string.concat('    "name": "', names[i], '"'));
-        line(end ? "}" : "},");
+        line(end ? "  }" : "  },");
       }
       line("]");
     }
