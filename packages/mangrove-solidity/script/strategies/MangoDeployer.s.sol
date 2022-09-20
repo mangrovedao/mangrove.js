@@ -57,7 +57,7 @@ contract MangoDeployer is Deployer {
     uint price_incr,
     address admin
   ) public {
-    IMangrove mgv = IMangrove(ens.get("Mangrove"));
+    IMangrove mgv = IMangrove(fork.get("Mangrove"));
 
     console.log(
       "Deploying Mango on market",

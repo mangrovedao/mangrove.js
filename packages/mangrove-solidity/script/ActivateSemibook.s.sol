@@ -38,7 +38,7 @@ contract ActivateSemibook is Test2,Deployer {
     uint fee
   ) public {
 
-    Mangrove mgv = Mangrove(ens.get("Mangrove"));
+    Mangrove mgv = Mangrove(fork.get("Mangrove"));
 
     /*
 

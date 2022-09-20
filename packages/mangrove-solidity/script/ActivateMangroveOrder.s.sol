@@ -24,7 +24,7 @@ import {Deployer} from "mgv_script/lib/Deployer.sol";
 contract ActivateMangroveOrder is Script2, Deployer {
   function run() public {
     inner_run({
-      mgvOrder: MangroveOrder(ens.get("MangroveOrderEnriched")),
+      mgvOrder: MangroveOrder(fork.get("MangroveOrderEnriched")),
       tkns: toIERC20(vm.envAddress("TKNS",","))
     });
   }
