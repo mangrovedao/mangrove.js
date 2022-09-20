@@ -1,5 +1,5 @@
 {
-  "name": "@mangrovedao/bot-offer-failing",
+  "name": "@mangrovedao/bot-failing-offer",
   "version": "0.0.1",
   "author": "Mangrove DAO",
   "description": "This is a bot that post offers that will fail",

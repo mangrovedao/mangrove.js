@@ -202,6 +202,13 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "unbind",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
