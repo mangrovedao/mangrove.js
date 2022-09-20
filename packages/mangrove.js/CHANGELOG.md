@@ -1,5 +1,9 @@
 # next version
 
+# 0.10.2 (September 2022)
+
+- bugfix: wrong deployment addresses
+
 # 0.10.1 (September 2022)
 
 - Update and verify `MangroveOrderEnriched`
