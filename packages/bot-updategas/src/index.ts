@@ -3,64 +3,25 @@
  * @module
  */
 
-import { config } from "./util/config";
+import { GasUpdater } from "./GasUpdater";
+import config, { OracleConfig, readAndValidateConfig } from "./util/config";
 import { logger } from "./util/logger";
-import {
-  GasUpdater,
-  MaxUpdateConstraint,
-  OracleSourceConfiguration,
-} from "./GasUpdater";
 
-import Mangrove from "@mangrovedao/mangrove.js";
-import { getDefaultProvider } from "@ethersproject/providers";
-import { NonceManager } from "@ethersproject/experimental";
+import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
+import Mangrove from "@mangrovedao/mangrove.js";
 
-import { ToadScheduler, SimpleIntervalJob, AsyncTask } from "toad-scheduler";
-
-import http from "http";
-import finalhandler from "finalhandler";
-import serveStatic from "serve-static";
-
-enum ExitCode {
-  Normal = 0,
-  UncaughtException = 1,
-  UnhandledRejection = 2,
-  ExceptionInMain = 3,
-  MangroveIsKilled = 4,
-  ErrorInAsyncTask = 5,
-}
-
-type OracleConfig = {
-  acceptableGasGapToOracle: number;
-  runEveryXHours: number;
-  oracleSourceConfiguration: OracleSourceConfiguration;
-};
+import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
+import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 
 const scheduler = new ToadScheduler();
+const setup = new Setup(config);
 
-const main = async () => {
-  logger.info("Starting gas-updater bot...");
-
-  // read and use env config
-  if (!process.env["ETHEREUM_NODE_URL"]) {
-    throw new Error("No URL for a node has been provided in ETHEREUM_NODE_URL");
-  }
-  if (!process.env["PRIVATE_KEY"]) {
-    throw new Error("No private key provided in PRIVATE_KEY");
-  }
-  const provider = getDefaultProvider(process.env["ETHEREUM_NODE_URL"]);
-  const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
-  const nonceManager = new NonceManager(signer);
-  const mgv = await Mangrove.connect({ signer: nonceManager });
-
-  logger.info("Connected to Mangrove", {
-    data: {
-      network: mgv._network,
-      addresses: Mangrove.getAllAddresses(mgv._network.name),
-    },
-  });
-
+async function botFunction(
+  mgv: Mangrove,
+  signer: Wallet,
+  provider: BaseProvider
+) {
   const oracleConfig: OracleConfig = readAndValidateConfig();
 
   const gasUpdater = new GasUpdater(
@@ -80,13 +41,15 @@ const main = async () => {
         return -1;
       });
 
+      const contextInfo = `block#=${blockNumber}`;
+
       logger.debug(`Scheduled bot task running on block ${blockNumber}...`);
-      await exitIfMangroveIsKilled(mgv, blockNumber);
+      await setup.exitIfMangroveIsKilled(mgv, contextInfo, server, scheduler);
       await gasUpdater.checkSetGasprice();
     },
     (err: Error) => {
       logger.error(err);
-      stopAndExit(ExitCode.ErrorInAsyncTask);
+      setup.stopAndExit(ExitCode.ErrorInAsyncTask, server, scheduler);
     }
   );
 
@@ -99,165 +62,15 @@ const main = async () => {
   );
 
   scheduler.addSimpleIntervalJob(job);
+}
+
+const server = setup.createServer();
+
+const main = async () => {
+  await setup.startBot("update gas bot", botFunction, server, scheduler);
 };
-
-function readAndValidateConfig(): OracleConfig {
-  let acceptableGasGapToOracle = 0;
-  let runEveryXHours = 0;
-
-  const configErrors: string[] = [];
-  // - acceptable gap
-  if (config.has("acceptableGasGapToOracle")) {
-    acceptableGasGapToOracle = config.get<number>("acceptableGasGapToOracle");
-  } else {
-    configErrors.push("'acceptableGasGapToOracle' missing");
-  }
-
-  // - run every X hours
-  if (config.has("runEveryXHours")) {
-    runEveryXHours = config.get<number>("runEveryXHours");
-  } else {
-    configErrors.push("'runEveryXHours' missing");
-  }
-
-  // - oracle source config
-  let constantOracleGasPrice: number | undefined;
-  let oracleURL = "";
-  let oracleURL_Key = "";
-  let oracleURL_subKey = "";
-  let maxUpdateConstraint: MaxUpdateConstraint = {};
-
-  if (config.has("constantOracleGasPrice")) {
-    constantOracleGasPrice = config.get<number>("constantOracleGasPrice");
-  }
-
-  if (config.has("oracleURL")) {
-    oracleURL = config.get<string>("oracleURL");
-  }
-
-  if (config.has("oracleURL_Key")) {
-    oracleURL_Key = config.get<string>("oracleURL_Key");
-  }
-
-  if (config.has("oracleURL_subKey")) {
-    oracleURL_subKey = config.get<string>("oracleURL_subKey");
-  }
-
-  if (config.has("maxUpdateConstraint")) {
-    maxUpdateConstraint = config.get<MaxUpdateConstraint>(
-      "maxUpdateConstraint"
-    );
-  }
-
-  if (
-    maxUpdateConstraint?.constant &&
-    acceptableGasGapToOracle > maxUpdateConstraint.constant
-  ) {
-    configErrors.push(
-      "The max update constraint is lower than the acceptableGasGap. With this config, the gas price will never be updated"
-    );
-  }
-
-  let oracleSourceConfiguration: OracleSourceConfiguration;
-  if (constantOracleGasPrice != null) {
-    // if constant price set, use that and ignore other gas price config
-    logger.info(
-      `Configuration for constant oracle gas price found. Using the configured value.`,
-      { data: constantOracleGasPrice }
-    );
-
-    oracleSourceConfiguration = {
-      OracleGasPrice: constantOracleGasPrice,
-      _tag: "Constant",
-    };
-  } else {
-    // basic validatation of endpoint config
-    if (
-      oracleURL == null ||
-      oracleURL == "" ||
-      oracleURL_Key == null ||
-      oracleURL_Key == ""
-    ) {
-      configErrors.push(
-        `Either 'constantOracleGasPrice' or the pair ('oracleURL', 'oracleURL_Key') must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', oracleURL: '${oracleURL}', oracleURL_Key: '${oracleURL_Key}', oracleURL_subKey: '${oracleURL_subKey}'`
-      );
-    }
-    logger.info(
-      `Configuration for oracle endpoint found. Using the configured values.`,
-      {
-        data: { oracleURL, oracleURL_Key },
-      }
-    );
-
-    if (configErrors.length > 0) {
-      throw new Error(
-        `Found following config errors: [${configErrors.join(", ")}]`
-      );
-    }
-
-    oracleSourceConfiguration = {
-      oracleEndpointURL: oracleURL,
-      oracleEndpointKey: oracleURL_Key,
-      oracleEndpointSubKey: oracleURL_subKey,
-      _tag: "Endpoint",
-    };
-  }
-
-  return {
-    acceptableGasGapToOracle: acceptableGasGapToOracle,
-    oracleSourceConfiguration: oracleSourceConfiguration,
-    runEveryXHours: runEveryXHours,
-  };
-}
-
-// NOTE: Almost equal to method in cleanerbot - commonlib.js candidate
-async function exitIfMangroveIsKilled(
-  mgv: Mangrove,
-  blockNumber: number
-): Promise<void> {
-  const globalConfig = await mgv.config();
-  if (globalConfig.dead) {
-    logger.warn(
-      `Mangrove is dead at block number ${blockNumber}. Stopping the bot.`
-    );
-    stopAndExit(ExitCode.MangroveIsKilled);
-  }
-}
-
-// The node http server is used solely to serve static information files for environment management
-const staticBasePath = "./static";
-
-const serve = serveStatic(staticBasePath, { index: false });
-
-const server = http.createServer(function (req, res) {
-  const done = finalhandler(req, res);
-  serve(req, res, () => done(undefined)); // 'undefined' means no error
-});
-
-server.listen(process.env.PORT || 8080);
-
-// Stop gracefully and rely on NodeJS shutting down when no more work is scheduled.
-// This allows any logging to be processed before exiting (which isn't guaranteed
-// if `process.exit` is called).
-function stopAndExit(exitStatusCode: number) {
-  logger.info("Stopping and exiting", { data: { exitCode: exitStatusCode } });
-  process.exitCode = exitStatusCode;
-  scheduler.stop();
-  server.close();
-}
-
-// Exiting on unhandled rejections and exceptions allows the app platform to restart the bot
-process.on("unhandledRejection", (reason) => {
-  logger.error("Unhandled Rejection", { data: reason });
-  stopAndExit(ExitCode.UnhandledRejection);
-});
-
-process.on("uncaughtException", (err) => {
-  logger.error(`Uncaught Exception: ${err.message}`);
-  stopAndExit(ExitCode.UncaughtException);
-});
 
 main().catch((e) => {
   logger.error(e);
-  stopAndExit(ExitCode.ExceptionInMain);
+  setup.stopAndExit(ExitCode.ExceptionInMain, server, scheduler);
 });
