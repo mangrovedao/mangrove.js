@@ -460,8 +460,8 @@ class Trade {
         gasForMarketOrder: params.gasForMarketOrder
           ? params.gasForMarketOrder
           : 0,
-        blocksToLiveForRestingOrder: params.blocksToLiveForRestingOrder
-          ? params.blocksToLiveForRestingOrder
+        timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
+          ? params.timeToLiveForRestingOrder
           : 0,
       },
       overrides_

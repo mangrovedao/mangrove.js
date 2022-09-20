@@ -1,5 +1,16 @@
 # next version
 
+# 0.10.2 (September 2022)
+
+- bugfix: wrong deployment addresses
+
+# 0.10.1 (September 2022)
+
+- Update and verify `MangroveOrderEnriched`
+- `ApproveMangrove` and `ApproveRouter` are no longer functions of `OfferLogic` and `LiquidityProvider` use `activate` instead.
+- `OfferLogic` has an `approveToken` function to let EOA approve router or logic itself if the logic has no router
+- update ABIs
+
 # 0.10.0 (August 2022)
 
 - Update address for `MangroveOrderEnriched`
@@ -185,13 +196,13 @@ This version number was inadvertently skipped.
 
 # 0.0.8
 
-- SimpleMaker constructor is called Maker
+- OfferMaker constructor is called Maker
 - `market.consoleAsk` and `market.consoleBids` now allows for pretty printing semi OB
 - `bids` and `asks` allows for optional parameters `gasreq` and `gasprice` if one wants to change their values
 
 # 0.0.5 (December 2021)
 
-- Add `bookOptions` to SimpleMaker constructor.
+- Add `bookOptions` to OfferMaker constructor.
 - Allow initializing markets&makers after construction.
 - Uncertain pivot ids when pushing an offer will throw.
   - TODO: allow giving bookOptions later

@@ -4,7 +4,7 @@
       "inputs": [
         {
           "internalType": "contract IMangrove",
-          "name": "_MGV",
+          "name": "mgv",
           "type": "address"
         },
         {
@@ -15,56 +15,6 @@
       ],
       "stateMutability": "nonpayable",
       "type": "constructor"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "contract IMangrove",
-          "name": "mangrove",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "CreditMgvUser",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "contract IMangrove",
-          "name": "mangrove",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "DebitMgvUser",
-      "type": "event"
     },
     {
       "anonymous": false,
@@ -241,6 +191,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "NO_ROUTER",
+      "outputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "contract IERC20[]",
@@ -264,32 +227,6 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC20",
-          "name": "outbound_tkn",
-          "type": "address"
-        }
-      ],
-      "name": "approveMangrove",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IERC20",
-          "name": "token",
-          "type": "address"
-        }
-      ],
-      "name": "approveRouter",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -368,19 +305,6 @@
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "has_router",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -530,64 +454,16 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "components": [
-            {
-              "internalType": "contract IERC20",
-              "name": "outbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "contract IERC20",
-              "name": "inbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "wants",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gives",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasreq",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasprice",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "pivotId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "offerId",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct IOfferLogic.MakerOrder",
-          "name": "mko",
-          "type": "tuple"
-        }
-      ],
-      "name": "newOffer",
+      "inputs": [],
+      "name": "offerGasreq",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "offerId",
+          "name": "",
           "type": "uint256"
         }
       ],
-      "stateMutability": "payable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -612,21 +488,8 @@
       "outputs": [
         {
           "internalType": "address[]",
-          "name": "_offerOwners",
+          "name": "offerOwners_",
           "type": "address[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "ofr_gasreq",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -729,7 +592,7 @@
           "type": "address"
         }
       ],
-      "name": "set_admin",
+      "name": "setAdmin",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -742,7 +605,7 @@
           "type": "uint256"
         }
       ],
-      "name": "set_gasreq",
+      "name": "setGasreq",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -751,11 +614,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "__reserve",
+          "name": "reserve_",
           "type": "address"
         }
       ],
-      "name": "set_reserve",
+      "name": "setReserve",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -768,7 +631,7 @@
           "type": "address"
         }
       ],
-      "name": "set_router",
+      "name": "setRouter",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -834,7 +697,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "blocksToLiveForRestingOrder",
+              "name": "timeToLiveForRestingOrder",
               "type": "uint256"
             }
           ],
@@ -903,51 +766,44 @@
     {
       "inputs": [
         {
-          "components": [
-            {
-              "internalType": "contract IERC20",
-              "name": "outbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "contract IERC20",
-              "name": "inbound_tkn",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "wants",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gives",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasreq",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasprice",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "pivotId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "offerId",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct IOfferLogic.MakerOrder",
-          "name": "mko",
-          "type": "tuple"
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "wants",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gives",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasprice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pivotId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
         }
       ],
       "name": "updateOffer",

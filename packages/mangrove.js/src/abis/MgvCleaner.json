@@ -4,7 +4,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_MGV",
+          "name": "mgv",
           "type": "address"
         }
       ],

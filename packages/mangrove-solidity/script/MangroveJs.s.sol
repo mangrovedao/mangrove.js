@@ -93,14 +93,14 @@ contract MangroveJsDeploy is Deployer {
 
     vm.broadcast();
     simpleTestMaker = new SimpleTestMaker({
-      mgv: AbstractMangrove(payable(mgv)),
-      base: tokenA,
-      quote: tokenB
+      _mgv: AbstractMangrove(payable(mgv)),
+      _base: tokenA,
+      _quote: tokenB
     });
     fork.set("SimpleTestMaker", address(simpleTestMaker));
 
     vm.broadcast();
-    mgo = new MangroveOrder({_MGV: IMangrove(payable(mgv)), deployer: chief});
+    mgo = new MangroveOrder({mgv: IMangrove(payable(mgv)), deployer: chief});
     fork.set("MangroveOrder", address(mgo));
   }
 }
