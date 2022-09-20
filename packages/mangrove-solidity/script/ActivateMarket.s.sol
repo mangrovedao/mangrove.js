@@ -26,7 +26,7 @@ import {ActivateSemibook} from "./ActivateSemibook.s.sol";
 
 contract ActivateMarket is Script {
   function run() public {
-    inner_run({
+    innerRun({
       tkn1: vm.envAddress("TKN1"),
       tkn2: vm.envAddress("TKN2"),
       tkn1_in_gwei: vm.envUint("TKN1_IN_GWEI"),
@@ -35,21 +35,21 @@ contract ActivateMarket is Script {
     });
   }
 
-  function inner_run(
+  function innerRun(
     address tkn1,
     address tkn2,
     uint tkn1_in_gwei,
     uint tkn2_in_gwei,
     uint fee
   ) public {
-    new ActivateSemibook().inner_run({
+    new ActivateSemibook().innerRun({
       outbound_tkn: tkn1,
       inbound_tkn: tkn2,
       outbound_in_gwei: tkn1_in_gwei,
       fee: fee
     });
 
-    new ActivateSemibook().inner_run({
+    new ActivateSemibook().innerRun({
       outbound_tkn: tkn2,
       inbound_tkn: tkn1,
       outbound_in_gwei: tkn2_in_gwei,

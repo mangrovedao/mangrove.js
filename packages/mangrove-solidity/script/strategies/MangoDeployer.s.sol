@@ -27,7 +27,7 @@ import {Deployer} from "../lib/Deployer.sol";
 contract MangoDeployer is Deployer {
 
   function run() public {
-    inner_run({
+    innerRun({
       base: vm.envAddress("BASE"),
       quote: vm.envAddress("QUOTE"),
       base_0: vm.envUint("BASE_0"),
@@ -48,7 +48,7 @@ contract MangoDeployer is Deployer {
   @param price_incr in units of quote. Price(i+1) = price(i) + price_incr
   @param admin address of the adim on Mango after deployment 
   */
-  function inner_run(
+  function innerRun(
     address base,
     address quote,
     uint base_0,

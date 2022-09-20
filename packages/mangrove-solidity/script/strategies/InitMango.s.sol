@@ -20,7 +20,7 @@ import {Mango, IERC20, IMangrove} from "mgv_src/strategies/offer_maker/market_ma
 
 contract InitMango is Script {
   function run() public {
-    inner_run({
+    innerRun({
       $mgo: payable(vm.envAddress("MANGO")),
       default_base_amount: vm.envUint("DEFAULT_BASE_AMOUNT"),
       default_quote_amount: vm.envUint("DEFAULT_QUOTE_AMOUNT"),
@@ -30,7 +30,7 @@ contract InitMango is Script {
     });
   }
 
-  function inner_run(
+  function innerRun(
     address payable $mgo,
     uint default_base_amount, // for asks
     uint default_quote_amount, // for bids

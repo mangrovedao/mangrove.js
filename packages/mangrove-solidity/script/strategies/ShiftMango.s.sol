@@ -24,14 +24,14 @@ contract ShiftMango is Script {
   uint absShift;
 
   function run() public {
-    inner_run({
+    innerRun({
       mgo: payable(vm.envAddress("MANGO")),
       shift: vm.envInt("SHIFT"),
       default_gives_amount: vm.envUint("DEFAULT_GIVES_AMOUNT")
     });
   }
 
-  function inner_run(
+  function innerRun(
     address payable mgo,
     int shift,
     uint default_gives_amount // in base amount if shift < 0, in quote amount otherwise

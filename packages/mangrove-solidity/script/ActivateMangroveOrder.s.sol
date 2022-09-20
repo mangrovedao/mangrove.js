@@ -23,13 +23,13 @@ import {Deployer} from "mgv_script/lib/Deployer.sol";
 
 contract ActivateMangroveOrder is Script2, Deployer {
   function run() public {
-    inner_run({
+    innerRun({
       mgvOrder: MangroveOrder(fork.get("MangroveOrderEnriched")),
       tkns: toIERC20(vm.envAddress("TKNS",","))
     });
   }
 
-  function inner_run(MangroveOrder mgvOrder, IERC20[] memory tkns) public {
+  function innerRun(MangroveOrder mgvOrder, IERC20[] memory tkns) public {
     console.log("Activating the following tokens:");
     for (uint i = 0; i < tkns.length; i++) {
       console.log("%s (%s)",IERC20(tkns[i]).symbol(), address(tkns[i]));

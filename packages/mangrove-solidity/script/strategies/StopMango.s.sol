@@ -21,14 +21,14 @@ import {Mango, IERC20, IMangrove} from "mgv_src/strategies/offer_maker/market_ma
 
 contract StopMango is Script {
   function run() public {
-    inner_run({
+    innerRun({
       $mgo: payable(vm.envAddress("MANGO")),
       from: vm.envUint("FROM"),
       to: vm.envUint("TO")
     });
   }
 
-  function inner_run(
+  function innerRun(
     address payable $mgo,
     uint from,
     uint to
