@@ -1159,7 +1159,7 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-taker-greedy ====        
 
- # ==== Job: Build and test bot-offer-failing ====
+ # ==== Job: Build and test bot-failing-offer ====
   bot-failing-offer:
     needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
 
