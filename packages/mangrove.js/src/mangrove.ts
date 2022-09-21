@@ -100,7 +100,7 @@ class Mangrove {
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
     if (network.name === "local" && !Mangrove.addresses[network.name]) {
-      Mangrove.fetchAllAddresses(signer.provider);
+      await Mangrove.fetchAllAddresses(signer.provider);
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({

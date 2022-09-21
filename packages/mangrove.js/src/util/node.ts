@@ -264,11 +264,12 @@ const connect = async (params: any) => {
     await deploy(params);
   }
 
-  // convenience: try to populate global Mangrove instance if possible
-  if (require.main !== module) {
-    // assume we will use mangrove.js soon
-    await Mangrove.fetchAllAddresses(params.provider);
-  }
+  // // convenience: try to populate global Mangrove instance if possible
+  // disabled for now; may hide issues in normal use of Mangrove
+  // if (require.main !== module) {
+  //   // assume we will use mangrove.js soon
+  //   await Mangrove.fetchAllAddresses(params.provider);
+  // }
 
   /* Track node snapshot ids for easy snapshot/revert */
   let lastSnapshotId;
