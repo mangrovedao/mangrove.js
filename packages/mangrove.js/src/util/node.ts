@@ -14,6 +14,7 @@ import { ethers } from "ethers";
 import * as eth from "../eth";
 import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
+import * as Multicall from "./MulticallCode";
 import { default as nodeCleanup } from "node-cleanup";
 import { getAllToyENSEntries } from "./toyEnsEntries";
 
@@ -180,6 +181,16 @@ const deploy = async (params: any) => {
   if (toyENSCode === "0x") {
     // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
     await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
+  }
+
+  // setup Toy ENS if needed
+  const MulticallCode = await params.provider.send("eth_getCode", [
+    Multicall.address,
+    "latest",
+  ]);
+  if (MulticallCode === "0x") {
+    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
+    await params.provider.send("anvil_setCode", [Multicall.address, Multicall.code]);
   }
 
   // test connectivity
