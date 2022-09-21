@@ -17,8 +17,7 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
 
 /* # Structs
 The structs defined in `structs.js` have their counterpart as solidity structs that are easy to manipulate for outside contracts / callers of view functions. */
@@ -39,7 +38,7 @@ library MgvLib {
     uint gives;
     /* `offerDetail` is only populated when necessary. */
     OfferDetail.t offerDetail;
-    Global.t global;
+    Global.t globall;
     Local.t local;
   }
 

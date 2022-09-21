@@ -20,7 +20,7 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 import {IERC20, HasMgvEvents, IMaker, IMgvMonitor, MgvLib} from "./MgvLib.sol";
 import {MgvHasOffers} from "./MgvHasOffers.sol";
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
 
 abstract contract MgvOfferTaking is MgvHasOffers {
   /* # MultiOrder struct */
@@ -111,7 +111,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       MgvLib.SingleOrder memory sor;
       sor.outbound_tkn = outbound_tkn;
       sor.inbound_tkn = inbound_tkn;
-      (sor.global, sor.local) = config(outbound_tkn, inbound_tkn);
+      (sor.globall, sor.local) = config(outbound_tkn, inbound_tkn);
       /* Throughout the execution of the market order, the `sor`'s offer id and other parameters will change. We start with the current best offer id (0 if the book is empty). */
       sor.offerId = sor.local.best();
       sor.offer = offers[outbound_tkn][inbound_tkn][sor.offerId];
@@ -127,7 +127,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       mor.fillWants = fillWants;
 
       /* For the market order to even start, the market needs to be both active, and not currently protected from reentrancy. */
-      activeMarketOnly(sor.global, sor.local);
+      activeMarketOnly(sor.globall, sor.local);
       unlockedMarketOnly(sor.local);
 
       /* ### Initialization */
@@ -336,14 +336,14 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       MgvLib.SingleOrder memory sor;
       sor.outbound_tkn = outbound_tkn;
       sor.inbound_tkn = inbound_tkn;
-      (sor.global, sor.local) = config(outbound_tkn, inbound_tkn);
+      (sor.globall, sor.local) = config(outbound_tkn, inbound_tkn);
 
       MultiOrder memory mor;
       mor.taker = taker;
       mor.fillWants = fillWants;
 
       /* For the snipes to even start, the market needs to be both active and not currently protected from reentrancy. */
-      activeMarketOnly(sor.global, sor.local);
+      activeMarketOnly(sor.globall, sor.local);
       unlockedMarketOnly(sor.local);
 
       emit OrderStart();
@@ -590,8 +590,8 @@ abstract contract MgvOfferTaking is MgvHasOffers {
         );
 
         /* If configured to do so, the Mangrove notifies an external contract that a successful trade has taken place. */
-        if (sor.global.notify()) {
-          IMgvMonitor(sor.global.monitor()).notifySuccess(sor, mor.taker);
+        if (sor.globall.notify()) {
+          IMgvMonitor(sor.globall.monitor()).notifySuccess(sor, mor.taker);
         }
 
         /* We update the totals in the multiorder based on the adjusted `sor.wants`/`sor.gives`. */
@@ -618,8 +618,8 @@ abstract contract MgvOfferTaking is MgvHasOffers {
           );
 
           /* If configured to do so, the Mangrove notifies an external contract that a failed trade has taken place. */
-          if (sor.global.notify()) {
-            IMgvMonitor(sor.global.monitor()).notifyFail(sor, mor.taker);
+          if (sor.globall.notify()) {
+            IMgvMonitor(sor.globall.monitor()).notifyFail(sor, mor.taker);
           }
           /* It is crucial that any error code which indicates an error caused by the taker triggers a revert, because functions that call `execute` consider that `mgvData` not in `["mgv/notExecuted","mgv/tradeSuccess"]` should be blamed on the maker. */
         } else if (mgvData == "mgv/notEnoughGasForMakerTrade") {
@@ -842,7 +842,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
 
       /* As an invariant, `applyPenalty` is only called when `mgvData` is not in `["mgv/notExecuted","mgv/tradeSuccess"]` */
       uint penalty = 10**9 *
-        sor.global.gasprice() *
+        sor.globall.gasprice() *
         (gasused + sor.local.offer_gasbase());
 
       if (penalty > provision) {
@@ -866,9 +866,10 @@ abstract contract MgvOfferTaking is MgvHasOffers {
   }
 
   /* Post-trade, `payTakerMinusFees` sends what's due to the taker and the rest (the fees) to the vault. Routing through the Mangrove like that also deals with blacklisting issues (separates the maker-blacklisted and the taker-blacklisted cases). */
-  function payTakerMinusFees(MultiOrder memory mor, MgvLib.SingleOrder memory sor)
-    internal
-  {
+  function payTakerMinusFees(
+    MultiOrder memory mor,
+    MgvLib.SingleOrder memory sor
+  ) internal {
     unchecked {
       /* Should be statically provable that the 2 transfers below cannot return false under well-behaved ERC20s and a non-blacklisted, non-0 target. */
 

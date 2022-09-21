@@ -18,9 +18,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import { MgvLib } from "mgv_src/MgvLib.sol";
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
-import { OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct } from "mgv_src/preprocessed/MgvStructs.post.sol";
+import {MgvLib} from "mgv_src/MgvLib.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
+import {OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct} from "mgv_src/preprocessed/MgvStructs.post.sol";
 
 interface MangroveLike {
   function best(address, address) external view returns (uint);
@@ -43,10 +43,7 @@ interface MangroveLike {
     uint
   ) external view returns (OfferStruct memory, OfferDetailStruct memory);
 
-  function config(address, address)
-    external
-    view
-    returns (Global.t, Local.t);
+  function config(address, address) external view returns (Global.t, Local.t);
 }
 
 contract MgvReader {
@@ -184,12 +181,9 @@ contract MgvReader {
     uint ofr_gasprice
   ) external view returns (uint) {
     unchecked {
-      (Global.t global, Local.t local) = MGV.config(
-        outbound_tkn,
-        inbound_tkn
-      );
+      (Global.t globall, Local.t local) = MGV.config(outbound_tkn, inbound_tkn);
       uint _gp;
-      uint global_gasprice = global.gasprice();
+      uint global_gasprice = globall.gasprice();
       if (global_gasprice > ofr_gasprice) {
         _gp = global_gasprice;
       } else {

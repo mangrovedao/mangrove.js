@@ -20,7 +20,7 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 import {IMaker, HasMgvEvents} from "./MgvLib.sol";
 import {MgvHasOffers} from "./MgvHasOffers.sol";
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
 
 /* `MgvOfferMaking` contains market-making-related functions. */
 contract MgvOfferMaking is MgvHasOffers {
@@ -41,7 +41,7 @@ contract MgvOfferMaking is MgvHasOffers {
     uint gasreq;
     uint gasprice;
     uint pivotId;
-    Global.t global;
+    Global.t globall;
     Local.t local;
     // used on update only
     Offer.t oldOffer;
@@ -75,9 +75,9 @@ contract MgvOfferMaking is MgvHasOffers {
     unchecked {
       /* In preparation for calling `writeOffer`, we read the `outbound_tkn`,`inbound_tkn` pair configuration, check for reentrancy and market liveness, fill the `OfferPack` struct and increment the `outbound_tkn`,`inbound_tkn` pair's `last`. */
       OfferPack memory ofp;
-      (ofp.global, ofp.local) = config(outbound_tkn, inbound_tkn);
+      (ofp.globall, ofp.local) = config(outbound_tkn, inbound_tkn);
       unlockedMarketOnly(ofp.local);
-      activeMarketOnly(ofp.global, ofp.local);
+      activeMarketOnly(ofp.globall, ofp.local);
       if (msg.value > 0) {
         creditWei(msg.sender, msg.value);
       }
@@ -130,9 +130,9 @@ contract MgvOfferMaking is MgvHasOffers {
   ) external payable {
     unchecked {
       OfferPack memory ofp;
-      (ofp.global, ofp.local) = config(outbound_tkn, inbound_tkn);
+      (ofp.globall, ofp.local) = config(outbound_tkn, inbound_tkn);
       unlockedMarketOnly(ofp.local);
-      activeMarketOnly(ofp.global, ofp.local);
+      activeMarketOnly(ofp.globall, ofp.local);
       if (msg.value > 0) {
         creditWei(msg.sender, msg.value);
       }
@@ -263,13 +263,13 @@ contract MgvOfferMaking is MgvHasOffers {
       /* `gasprice`'s floor is Mangrove's own gasprice estimate, `ofp.global.gasprice`. We first check that gasprice fits in 16 bits. Otherwise it could be that `uint16(gasprice) < global_gasprice < gasprice`, and the actual value we store is `uint16(gasprice)`. */
       require(checkGasprice(ofp.gasprice), "mgv/writeOffer/gasprice/16bits");
 
-      if (ofp.gasprice < ofp.global.gasprice()) {
-        ofp.gasprice = ofp.global.gasprice();
+      if (ofp.gasprice < ofp.globall.gasprice()) {
+        ofp.gasprice = ofp.globall.gasprice();
       }
 
       /* * Check `gasreq` below limit. Implies `gasreq` at most 24 bits wide, which ensures no overflow in computation of `provision` (see below). */
       require(
-        ofp.gasreq <= ofp.global.gasmax(),
+        ofp.gasreq <= ofp.globall.gasmax(),
         "mgv/writeOffer/gasreq/tooHigh"
       );
       /* * Make sure `gives > 0` -- division by 0 would throw in several places otherwise, and `isLive` relies on it. */
@@ -330,8 +330,7 @@ contract MgvOfferMaking is MgvHasOffers {
           offerDetail.offer_gasbase() != ofp.local.offer_gasbase()
         ) {
           uint offer_gasbase = ofp.local.offer_gasbase();
-          offerDetails[ofp.outbound_tkn][ofp.inbound_tkn][ofp.id] = 
-            OfferDetail
+          offerDetails[ofp.outbound_tkn][ofp.inbound_tkn][ofp.id] = OfferDetail
             .pack({
               __maker: msg.sender,
               __gasreq: ofp.gasreq,

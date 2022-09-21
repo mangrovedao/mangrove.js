@@ -3,7 +3,7 @@
 pragma solidity ^0.8.10;
 
 import "mgv_test/lib/MangroveTest.sol";
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
 
 contract MonitorTest is MangroveTest {
   TestMaker mkr;
@@ -107,7 +107,7 @@ contract MonitorTest is MangroveTest {
       wants: 0.04 ether,
       gives: 0.04 ether, // wants has been updated to offer price
       offerDetail: mgv.offerDetails($(base), $(quote), ofrId),
-      global: _global,
+      globall: _global,
       local: _local
     });
 
@@ -145,7 +145,7 @@ contract MonitorTest is MangroveTest {
       wants: 0.04 ether,
       gives: 0.04 ether, // gives has been updated to offer price
       offerDetail: offerDetail, // gasprice logged will still be as before failure
-      global: _global,
+      globall: _global,
       local: _local
     });
 
