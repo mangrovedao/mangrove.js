@@ -137,6 +137,15 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     return MOS.getStorage().router;
   }
 
+  /// @inheritdoc IOfferLogic
+  function approve(
+    IERC20 token,
+    address spender,
+    uint amount
+  ) public override onlyAdmin returns (bool) {
+    return token.approve(spender, amount);
+  }
+
   /// @notice getter of the address where offer maker is storing its liquidity
   /// @param maker the address of the offer maker one wishes to know the reserve of.
   /// @return reserve_ the address of the offer maker's reserve of liquidity.

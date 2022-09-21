@@ -59,12 +59,34 @@ interface IOfferLogic is IMaker {
   ///@dev new router needs to be approved by `this` contract to push funds to reserve (see `activate` function). It also needs to be approved by reserve to pull from it.
   function setRouter(AbstractRouter router_) external;
 
+  ///@notice Approves a spender to transfer a certain amount of tokens on behalf of `this` contract.
+  ///@param token the ERC20 token contract
+  ///@param spender the approved spender
+  ///@param amount the spending amount
+  ///@dev admin may use this function to revoke approvals of `this` contract that are set after a call to `activate`.
+  function approve(
+    IERC20 token,
+    address spender,
+    uint amount
+  ) external returns (bool);
+
   // withdraw `amount` `token` form the contract's (owner) reserve and sends them to `receiver`'s balance
   function withdrawToken(
     IERC20 token,
     address receiver,
     uint amount
   ) external returns (bool success);
+
+  ///@notice computes the provision that can be redeemed when deprovisioning a certain offer.
+  ///@param outbound_tkn the outbound token of the offer list
+  ///@param inbound_tkn the inbound token of the offer list
+  ///@param offerId the identifier of the offer in the offer list
+  ///@return provision the amount of native tokens that can be redeemed when deprovisioning the offer
+  function provisionOf(
+    IERC20 outbound_tkn,
+    IERC20 inbound_tkn,
+    uint offerId
+  ) external view returns (uint provision);
 
   ///@notice verifies that this contract's current state is ready to be used by msg.sender to post offers on Mangrove
   ///@dev throws with a reason when there is a missing approval
@@ -93,14 +115,14 @@ interface IOfferLogic is IMaker {
   ///@param pivotId the pivot to use for re-inserting the offer in the list (use `offerId` if updated offer is live)
   ///@param offerId the id of the offer in the offer list.
   function updateOffer(
-    IERC20 outbound_tkn, 
-    IERC20 inbound_tkn, 
-    uint wants, 
-    uint gives, 
+    IERC20 outbound_tkn,
+    IERC20 inbound_tkn,
+    uint wants,
+    uint gives,
     uint gasreq,
-    uint gasprice, 
+    uint gasprice,
     uint pivotId,
-    uint offerId 
+    uint offerId
   ) external payable;
 
   function retractOffer(
