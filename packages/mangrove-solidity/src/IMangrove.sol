@@ -6,9 +6,9 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 pragma experimental ABIEncoderV2;
-import { MgvLib, IMaker } from "./MgvLib.sol";
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
-import { OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct } from "mgv_src/preprocessed/MgvStructs.post.sol";
+import {MgvLib, IMaker} from "./MgvLib.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
+import {OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct} from "mgv_src/preprocessed/MgvStructs.post.sol";
 
 interface IMangrove {
   event Approval(
@@ -138,7 +138,7 @@ interface IMangrove {
   function configInfo(address outbound_tkn, address inbound_tkn)
     external
     view
-    returns (GlobalStruct memory global, LocalStruct memory local);
+    returns (GlobalStruct memory globalstruct, LocalStruct memory localstruct);
 
   function deactivate(address outbound_tkn, address inbound_tkn) external;
 
@@ -217,10 +217,7 @@ interface IMangrove {
   )
     external
     view
-    returns (
-      OfferStruct memory offer,
-      OfferDetailStruct memory offerDetail
-    );
+    returns (OfferStruct memory offer, OfferDetailStruct memory offerDetail);
 
   function offers(
     address,

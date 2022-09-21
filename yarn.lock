@@ -1779,8 +1779,8 @@ __metadata:
   resolution: "@mangrovedao/mangrove-solidity@workspace:packages/mangrove-solidity"
   dependencies:
     lint-staged: ^13.0.3
-    prettier: ^2.4.1
-    prettier-plugin-solidity: 1.0.0-beta.24
+    prettier: ^2.7.1
+    prettier-plugin-solidity: ^1.0.0-dev.22
     rimraf: ^3.0.2
     shelljs: ^0.8.4
     solcco: ">=1.0.11"
@@ -7116,9 +7116,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"prettier-plugin-solidity@npm:1.0.0-beta.24":
-  version: 1.0.0-beta.24
-  resolution: "prettier-plugin-solidity@npm:1.0.0-beta.24"
+"prettier-plugin-solidity@npm:^1.0.0-dev.22":
+  version: 1.0.0-dev.23
+  resolution: "prettier-plugin-solidity@npm:1.0.0-dev.23"
   dependencies:
     "@solidity-parser/parser": ^0.14.3
     emoji-regex: ^10.1.0
@@ -7128,11 +7128,11 @@ fsevents@~2.3.2:
     string-width: ^4.2.3
   peerDependencies:
     prettier: ^2.3.0
-  checksum: 5923fbb2827307a23f3182c85f601b6bae476ac69ab115524fc3f08b823eaf7eaa93844a2564ad0a5ac49be0ce946381e0ef3407c1e5cfd4928811fa071823e0
+  checksum: bf068bcd763b2c2be48859abca5f2aee9543c38e875039470c8c0a850de4218292c7ec46fb63ef6866f51e8c87e80f8de015446ebd9f407712b26a9e30c41050
   languageName: node
   linkType: hard
 
-"prettier@npm:2.7.1, prettier@npm:^2.3.1, prettier@npm:^2.5.1":
+"prettier@npm:2.7.1, prettier@npm:^2.3.1, prettier@npm:^2.5.1, prettier@npm:^2.7.1":
   version: 2.7.1
   resolution: "prettier@npm:2.7.1"
   bin:
@@ -7939,12 +7939,12 @@ fsevents@~2.3.2:
   linkType: hard
 
 "source-map-support@npm:^0.5.16":
-  version: 0.5.20
-  resolution: "source-map-support@npm:0.5.20"
+  version: 0.5.21
+  resolution: "source-map-support@npm:0.5.21"
   dependencies:
     buffer-from: ^1.0.0
     source-map: ^0.6.0
-  checksum: 43946aff452011960d16154304b11011e0185549493e65dd90da045959409fb2d266ba1c854fff3d5949f8e59382e3fcc7f7c5fa66136007a6750ad06c6c0baa
+  checksum: 43e98d700d79af1d36f859bdb7318e601dfc918c7ba2e98456118ebc4c4872b327773e5a1df09b0524e9e5063bb18f0934538eace60cca2710d1fa687645d137
   languageName: node
   linkType: hard
 

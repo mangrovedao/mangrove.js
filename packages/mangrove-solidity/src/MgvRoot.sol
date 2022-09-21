@@ -38,12 +38,11 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 import {MgvLib, HasMgvEvents, IMgvMonitor} from "./MgvLib.sol";
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
-import { OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct } from "mgv_src/preprocessed/MgvStructs.post.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
+import {OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct} from "mgv_src/preprocessed/MgvStructs.post.sol";
 
 /* `MgvRoot` contains state variables used everywhere in the operation of the Mangrove and their related function. */
 contract MgvRoot is HasMgvEvents {
-
   /* # State variables */
   //+clear+
   /* The `vault` address. If a pair has fees >0, those fees are sent to the vault. */
@@ -97,15 +96,12 @@ contract MgvRoot is HasMgvEvents {
   function configInfo(address outbound_tkn, address inbound_tkn)
     external
     view
-    returns (GlobalStruct memory global, LocalStruct memory local)
+    returns (GlobalStruct memory globalstruct, LocalStruct memory localstruct)
   {
     unchecked {
-      (Global.t _global, Local.t _local) = config(
-        outbound_tkn,
-        inbound_tkn
-      );
-      global = _global.to_struct();
-      local = _local.to_struct();
+      (Global.t _global, Local.t _local) = config(outbound_tkn, inbound_tkn);
+      globalstruct = _global.to_struct();
+      localstruct = _local.to_struct();
     }
   }
 
@@ -141,10 +137,7 @@ contract MgvRoot is HasMgvEvents {
   }
 
   /* When the Mangrove is deployed, all pairs are inactive by default (since `locals[outbound_tkn][inbound_tkn]` is 0 by default). Offers on inactive pairs cannot be taken or created. They can be updated and retracted. */
-  function activeMarketOnly(Global.t _global, Local.t _local)
-    internal
-    pure
-  {
+  function activeMarketOnly(Global.t _global, Local.t _local) internal pure {
     liveMgvOnly(_global);
     require(_local.active(), "mgv/inactive");
   }
