@@ -22,7 +22,9 @@ pragma solidity ^0.8.13;
  * we add a file-level function and rely on compiler optimization
  */
 function uint_of_bool(bool b) pure returns (uint u) {
-  assembly { u := b }
+  assembly {
+    u := b
+  }
 }
 
 // struct_defs are of the form [name,obj]

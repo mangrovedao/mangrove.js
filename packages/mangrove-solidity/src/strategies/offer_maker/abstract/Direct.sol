@@ -13,15 +13,12 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 
 import "mgv_src/strategies/MangroveOffer.sol";
-import { MgvLib  } from "mgv_src/MgvLib.sol";
+import {MgvLib} from "mgv_src/MgvLib.sol";
 import "mgv_src/strategies/utils/TransferLib.sol";
 
 /// MangroveOffer is the basic building block to implement a reactive offer that interfaces with the Mangrove
 abstract contract Direct is MangroveOffer {
-  constructor(
-    IMangrove mgv,
-    AbstractRouter router_
-  ) MangroveOffer(mgv) {
+  constructor(IMangrove mgv, AbstractRouter router_) MangroveOffer(mgv) {
     // default reserve is router's address if router is defined
     // if not then default reserve is `this` contract
     if (router_ == NO_ROUTER) {
@@ -193,12 +190,10 @@ abstract contract Direct is MangroveOffer {
     }
   }
 
-  function __posthookSuccess__(MgvLib.SingleOrder calldata order, bytes32 makerData)
-    internal
-    virtual
-    override
-    returns (bytes32)
-  {
+  function __posthookSuccess__(
+    MgvLib.SingleOrder calldata order,
+    bytes32 makerData
+  ) internal virtual override returns (bytes32) {
     IERC20[] memory tokens = new IERC20[](2);
     tokens[0] = IERC20(order.outbound_tkn); // flushing outbound tokens if this contract pulled more liquidity than required during `makerExecute`
     tokens[1] = IERC20(order.inbound_tkn); // flushing liquidity brought by taker

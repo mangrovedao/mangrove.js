@@ -13,7 +13,7 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 import "mgv_src/strategies/offer_maker/OfferMaker.sol";
 import "mgv_src/strategies/routers/AaveDeepRouter.sol";
-import {MgvLib } from "mgv_src/MgvLib.sol";
+import {MgvLib} from "mgv_src/MgvLib.sol";
 
 contract AdvancedAaveRetail is OfferMaker {
   constructor(
@@ -31,7 +31,7 @@ contract AdvancedAaveRetail is OfferMaker {
 
   // overriding put to leverage taker's liquidity on aave
   // this function will deposit incoming liquidity to increase borrow power during trade
-  function __put__(uint amount,MgvLib.SingleOrder calldata order)
+  function __put__(uint amount, MgvLib.SingleOrder calldata order)
     internal
     override
     returns (uint missingPut)

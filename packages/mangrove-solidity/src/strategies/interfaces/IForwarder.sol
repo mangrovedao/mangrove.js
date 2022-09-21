@@ -12,13 +12,12 @@
 
 pragma solidity >=0.7.0;
 pragma abicoder v2;
-import { IMangrove } from "mgv_src/IMangrove.sol";
-import { IERC20 } from "mgv_src/MgvLib.sol";
+import {IMangrove} from "mgv_src/IMangrove.sol";
+import {IERC20} from "mgv_src/MgvLib.sol";
 
-///@title IForwarder 
+///@title IForwarder
 ///@notice Interface for contracts that manage liquidity on Mangrove on behalf of multiple offer makers
 interface IForwarder {
-  
   ///@notice Logging new offer owner
   ///@param mangrove the Mangrove contract on which the offer is posted
   ///@param outbound_tkn the outbound token of the offer list.
@@ -54,5 +53,4 @@ interface IForwarder {
     IERC20 inbound_tkn,
     uint offerId
   ) external view returns (address owner);
-
 }

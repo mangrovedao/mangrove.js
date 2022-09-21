@@ -16,7 +16,7 @@ import "./MangoImplementation.sol";
 import "../../abstract/Direct.sol";
 import "../../../routers/AbstractRouter.sol";
 import "../../../routers/SimpleRouter.sol";
-import { MgvLib } from "mgv_src/MgvLib.sol";
+import {MgvLib} from "mgv_src/MgvLib.sol";
 
 /** Discrete automated market making strat */
 /** This AMM is headless (no price model) and market makes on `NSLOTS` price ranges*/
@@ -57,7 +57,7 @@ contract Mango is Direct {
   {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     AbstractRouter router_ = router();
-    
+
     // sanity check
     require(
       nslots > 0 &&

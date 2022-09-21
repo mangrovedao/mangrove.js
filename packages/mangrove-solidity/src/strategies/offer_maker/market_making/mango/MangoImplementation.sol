@@ -14,8 +14,8 @@ pragma abicoder v2;
 import "mgv_src/IMangrove.sol";
 import "./MangoStorage.sol";
 import "mgv_src/strategies/utils/TransferLib.sol";
-import { MgvLib } from "mgv_src/MgvLib.sol";
-import { Offer } from "mgv_src/preprocessed/MgvPack.post.sol";
+import {MgvLib} from "mgv_src/MgvLib.sol";
+import {Offer} from "mgv_src/preprocessed/MgvPack.post.sol";
 
 //import "../routers/AbstractRouter.sol";
 
@@ -616,11 +616,7 @@ contract MangoImplementation {
   ) internal {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     // outbound : QUOTE, inbound: BASE
-    Offer.t offer = MGV.offers(
-      address(QUOTE),
-      address(BASE),
-      mStr.bids[index]
-    );
+    Offer.t offer = MGV.offers(address(QUOTE), address(BASE), mStr.bids[index]);
 
     uint position = position_of_index(index);
 
@@ -665,11 +661,7 @@ contract MangoImplementation {
   ) internal {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     // outbound : BASE, inbound: QUOTE
-    Offer.t offer = MGV.offers(
-      address(BASE),
-      address(QUOTE),
-      mStr.asks[index]
-    );
+    Offer.t offer = MGV.offers(address(BASE), address(QUOTE), mStr.asks[index]);
     uint position = position_of_index(index);
 
     uint new_gives = reset

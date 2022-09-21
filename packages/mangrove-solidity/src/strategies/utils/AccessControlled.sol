@@ -17,7 +17,6 @@ import {AccessControlledStorage as ACS} from "./AccessControlledStorage.sol";
 /// @notice The contract stores an admin address which is checked against `msg.sender` in the `onlyAdmin` modifier.
 /// @notice Additionally, a specific `msg.sender` can be verified with the `onlyCaller` modifier.
 contract AccessControlled {
-
   /**
   @notice `AccessControlled`'s constructor
   @param _admin The address of the admin that can access privileged functions and also allowed to change the admin. Cannot be `address(0)`.

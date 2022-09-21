@@ -19,12 +19,7 @@ contract OfferProxy is OfferForwarder {
     address _addressesProvider,
     IMangrove mgv,
     address deployer
-  )
-    OfferForwarder(
-      mgv,
-      msg.sender
-    )
-  {
+  ) OfferForwarder(mgv, msg.sender) {
     // OfferForwarder has a SimpleRouter by default
     // replacing this router with an Aave one
     AaveDeepRouter _router = new AaveDeepRouter(_addressesProvider, 0, 2);

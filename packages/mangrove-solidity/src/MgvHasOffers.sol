@@ -20,8 +20,8 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 import {MgvLib, HasMgvEvents, IMgvMonitor} from "./MgvLib.sol";
 import {MgvRoot} from "./MgvRoot.sol";
-import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
-import { OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct } from "mgv_src/preprocessed/MgvStructs.post.sol";
+import {Offer, OfferDetail, Global, Local} from "mgv_src/preprocessed/MgvPack.post.sol";
+import {OfferStruct, OfferDetailStruct, GlobalStruct, LocalStruct} from "mgv_src/preprocessed/MgvStructs.post.sol";
 
 /* `MgvHasOffers` contains the state variables and functions common to both market-maker operations and market-taker operations. Mostly: storing offers, removing them, updating market makers' provisions. */
 contract MgvHasOffers is MgvRoot {
@@ -135,7 +135,9 @@ contract MgvHasOffers is MgvRoot {
     Local.t local
   ) internal returns (Local.t) {
     unchecked {
-      mapping(uint => Offer.t) storage semiBook = offers[outbound_tkn][inbound_tkn];
+      mapping(uint => Offer.t) storage semiBook = offers[outbound_tkn][
+        inbound_tkn
+      ];
       if (betterId != 0) {
         semiBook[betterId] = semiBook[betterId].next(worseId);
       } else {

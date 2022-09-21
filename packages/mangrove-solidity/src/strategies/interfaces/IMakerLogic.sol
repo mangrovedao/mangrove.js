@@ -16,7 +16,6 @@ import "./IOfferLogic.sol";
 
 // Completes IOfferLogic with the ability to post new offer in a minimalistic way.
 interface IMakerLogic is IOfferLogic {
-  
   function newOffer(
     IERC20 outbound_tkn, // address of the ERC20 contract managing outbound tokens
     IERC20 inbound_tkn, // address of the ERC20 contract managing outbound tokens

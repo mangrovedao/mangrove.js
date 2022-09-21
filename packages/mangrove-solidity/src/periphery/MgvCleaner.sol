@@ -19,7 +19,7 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 import {MgvLib} from "../MgvLib.sol";
-import { OfferStruct, OfferDetailStruct } from "mgv_src/preprocessed/MgvStructs.post.sol";
+import {OfferStruct, OfferDetailStruct} from "mgv_src/preprocessed/MgvStructs.post.sol";
 
 interface MangroveLike {
   function snipesFor(

@@ -14,7 +14,7 @@ pragma abicoder v2;
 import "mgv_src/strategies/vendor/compound/ICompound.sol";
 import "mgv_src/strategies/vendor/compound/Exponential.sol";
 import "mgv_src/IMangrove.sol";
-import {IERC20, MgvLib } from "mgv_src/MgvLib.sol";
+import {IERC20, MgvLib} from "mgv_src/MgvLib.sol";
 
 interface WETH is IERC20 {
   function deposit() external payable;
@@ -206,10 +206,10 @@ contract CompoundModule is Exponential {
     );
   }
 
-  function compoundRedeem(uint amountToRedeem, MgvLib.SingleOrder calldata order)
-    internal
-    returns (uint)
-  {
+  function compoundRedeem(
+    uint amountToRedeem,
+    MgvLib.SingleOrder calldata order
+  ) internal returns (uint) {
     IcERC20 outbound_cTkn = overlyings[IERC20(order.outbound_tkn)]; // this is 0x0 if outbound_tkn is not compound sourced.
     if (address(outbound_cTkn) == address(0)) {
       return amountToRedeem;

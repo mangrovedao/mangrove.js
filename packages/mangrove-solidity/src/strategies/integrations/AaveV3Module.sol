@@ -116,7 +116,6 @@ contract AaveV3Module {
       );
   }
 
-
   /**
   @notice intermediate function to allow a call to be delagated to IMPLEMENTATION while preserving the a `view` attribute. 
   @dev scheme is as follows: for some `view` function `f` of IMPLEMENTATION, one does `staticcall(_staticdelegatecall(f))` which will retain for the `view` attribute
@@ -296,8 +295,9 @@ contract AaveV3Module {
     returns (uint)
   {
     DataTypes.ReserveData memory rd = POOL.getReserveData(underlying);
-    return INTEREST_RATE_MODE == 1 
-    ? IERC20(rd.stableDebtTokenAddress).balanceOf(account)
-    : IERC20(rd.variableDebtTokenAddress).balanceOf(account);
+    return
+      INTEREST_RATE_MODE == 1
+        ? IERC20(rd.stableDebtTokenAddress).balanceOf(account)
+        : IERC20(rd.variableDebtTokenAddress).balanceOf(account);
   }
 }
