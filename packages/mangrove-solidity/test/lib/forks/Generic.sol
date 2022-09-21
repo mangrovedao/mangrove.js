@@ -39,20 +39,13 @@ contract GenericFork is Script {
 
   /* get/set addresses, passthrough to context/deployed ToyENS instances */
 
-  function set(
-    string memory name,
-    address addr
-  ) public {
+  function set(string memory name, address addr) public {
     require(
       context._addrs(name) == address(0),
       "Fork: context addresses cannot be changed."
     );
     deployed.set(name, addr);
     label(addr, name);
-  }
-
-  function set(string memory name, address addr) public {
-    set(name, addr, false);
   }
 
   function get(string memory name) public view returns (address payable) {
@@ -66,11 +59,7 @@ contract GenericFork is Script {
   function allDeployed()
     public
     view
-    returns (
-      string[] memory,
-      address[] memory,
-      bool[] memory
-    )
+    returns (string[] memory, address[] memory)
   {
     return deployed.all();
   }
