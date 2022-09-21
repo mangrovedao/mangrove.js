@@ -25,7 +25,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
   constructor(IMangrove mgv, address deployer)
     Forwarder(mgv, new SimpleRouter())
   {
-    setGasreq(30000); // fails < 30K
+    setGasreq(30000); // fails < 20K. Use 30K to be on the safe side
     // adding `this` contract to authorized makers of the router before setting admin rights of the router to deployer
     router().bind(address(this));
     if (deployer != msg.sender) {
@@ -64,8 +64,8 @@ contract MangroveOrder is Forwarder, IOrderLogic {
 
   // `this` contract MUST have approved Mangrove for inbound token transfer
   // `msg.sender` MUST have approved `this` contract for at least the same amount
-  // provision for posting a resting order MAY be sent when calling this function
-  // gasLimit of this `tx` MUST at least cover filling the market order.
+  // provision for posting a resting order MUST be sent when calling this function
+  // gasLimit of this `tx` MUST at cover filling the market order and a new offer for resting orders.
   // msg.value SHOULD contain enough native token to cover for the resting order provision
   // msg.value MUST be 0 if `!restingOrder` otherwise transferred WEIs are burnt.
 
@@ -84,17 +84,13 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     );
     require(pulled == tko.takerGives, "mgvOrder/mo/transferInFail");
 
-    (uint takerGot, uint takerGave, uint bounty, uint fee) = MGV.marketOrder({
+    (res.takerGot, res.takerGave, res.bounty, res.fee) = MGV.marketOrder({
       outbound_tkn: address(tko.outbound_tkn),
       inbound_tkn: address(tko.inbound_tkn),
       takerWants: tko.takerWants, // `tko.takerWants` includes user defined slippage
       takerGives: tko.takerGives,
       fillWants: tko.fillWants
     });
-    res.takerGot = takerGot;
-    res.takerGave = takerGave;
-    res.bounty = bounty;
-    res.fee = fee;
 
     bool isComplete = checkCompleteness(tko, res);
     // requiring `partialFillNotAllowed` => `isComplete \/ restingOrder`
