@@ -19,7 +19,7 @@ contract OfferForwarder is IMakerLogic, Forwarder {
   constructor(IMangrove mgv, address deployer)
     Forwarder(mgv, new SimpleRouter())
   {
-    setGasreq(0);
+    setGasreq(30_000);
     AbstractRouter router_ = router();
     router_.bind(address(this));
     if (deployer != msg.sender) {
