@@ -5,7 +5,7 @@ Tests in mangrove.js must use the `ToyENS.sol` and `DeployScript.sol` files from
 - start an `anvil` server
 - run a solidity script with `forge script`
 
-The script should inherit `Deployer` to get acces to a copy of the currently forked chain as `fork`. Every newly created contract should be followed by `fork.set(string contractName, address contractAddress, bool contractIsToken)`.
+The script should inherit `Deployer` to get acces to a copy of the currently forked chain as `fork`. Every newly created contract should be followed by `fork.set(string contractName, address contractAddress)`.
 
 After a successful `node.ts` spawn&deploy, mangrove.js tests use the `ToyENS` contract to cache _all_ its mappings locally. This contract got its mapping from the `Deployer` contract's `outputDeployment` function.
 

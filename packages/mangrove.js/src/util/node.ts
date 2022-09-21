@@ -14,6 +14,7 @@ import { ethers } from "ethers";
 import * as eth from "../eth";
 import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
+import * as Multicall from "./MulticallCode";
 import { default as nodeCleanup } from "node-cleanup";
 import { getAllToyENSEntries } from "./toyEnsEntries";
 
@@ -182,6 +183,16 @@ const deploy = async (params: any) => {
     await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
   }
 
+  // setup Toy ENS if needed
+  const MulticallCode = await params.provider.send("eth_getCode", [
+    Multicall.address,
+    "latest",
+  ]);
+  if (MulticallCode === "0x") {
+    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
+    await params.provider.send("anvil_setCode", [Multicall.address, Multicall.code]);
+  }
+
   // test connectivity
   try {
     await params.provider.send("eth_chainId", []);
@@ -264,11 +275,12 @@ const connect = async (params: any) => {
     await deploy(params);
   }
 
-  // convenience: try to populate global Mangrove instance if possible
-  if (require.main !== module) {
-    // assume we will use mangrove.js soon
-    await Mangrove.fetchAllAddresses(params.provider);
-  }
+  // // convenience: try to populate global Mangrove instance if possible
+  // disabled for now; may hide issues in normal use of Mangrove
+  // if (require.main !== module) {
+  //   // assume we will use mangrove.js soon
+  //   await Mangrove.fetchAllAddresses(params.provider);
+  // }
 
   /* Track node snapshot ids for easy snapshot/revert */
   let lastSnapshotId;
