@@ -11,11 +11,13 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 pragma solidity ^0.8.10;
 pragma abicoder v2;
-import { MangroveOffer } from "../../MangroveOffer.sol";
-import "mgv_src/strategies/interfaces/IForwarder.sol";
-import {AbstractRouter} from "mgv_src/strategies/routers/AbstractRouter.sol";
-import "mgv_src/strategies/interfaces/IOfferLogic.sol";
-import "mgv_src/preprocessed/MgvPack.post.sol" as MgvPack;
+import { MangroveOffer } from "mgv_src/strategies/MangroveOffer.sol";
+import { IMangrove } from "mgv_src/IMangrove.sol";
+import { IForwarder } from "mgv_src/strategies/interfaces/IForwarder.sol";
+import { AbstractRouter } from "mgv_src/strategies/routers/AbstractRouter.sol";
+import { IOfferLogic } from "mgv_src/strategies/interfaces/IOfferLogic.sol";
+import { Offer, OfferDetail, Global, Local } from "mgv_src/preprocessed/MgvPack.post.sol";
+
 import "mgv_src/MgvLib.sol";
 
 ///@title Class for maker contracts that forward external offer makers instructions to Mangrove in a permissionless fashion.
@@ -117,7 +119,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   }
 
   ///@notice Memory allocation of `_newOffer` variables
-  ///@param outbound_tkn outoubd token of the offer list
+  ///@param outbound_tkn outbound token of the offer list
   ///@param inbound_tkn inbound token of the offer list
   ///@param wants the amount of inbound tokens the maker wants for a complete fill
   ///@param gives the amount of outbound tokens the maker gives for a complete fill
@@ -154,7 +156,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   function _newOffer(
     NewOfferData memory offData
   ) internal returns (uint offerId) {
-    (MgvPack.Global.t global, MgvPack.Local.t local) = MGV.config(
+    (Global.t global, Local.t local) = MGV.config(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn)
     );
@@ -206,15 +208,15 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   ///@param wants the new amount of inbound tokens the maker wants for a complete fill
   ///@param gives the new amount of outbound tokens the maker gives for a complete fill
   ///@param gasprice memory location for storing the derived gasprice of the offer
-  ///@param gasreq new gasreq for the udpated offer.
+  ///@param gasreq new gasreq for the updated offer.
   ///@param pivotId a best pivot estimate for cheap offer insertion in the offer list
   ///@param offerId the id of the offer to be updated
   ///@param wei_balance the current provision that is available to the owner for this offer.
-  ///@param owner the owner of the offer to be udpated
+  ///@param owner the owner of the offer to be updated
   struct UpdateOfferData {
-    MgvPack.Global.t global;
-    MgvPack.Local.t local;
-    MgvPack.OfferDetail.t offer_detail;
+    Global.t global;
+    Local.t local;
+    OfferDetail.t offer_detail;
     uint fund;
     IERC20 outbound_tkn;
     IERC20 inbound_tkn;
@@ -225,7 +227,6 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint pivotId;
     uint offerId;
     uint wei_balance;
-    address owner;
   }
 
   ///@notice Implementation body of `updateOffer`, using variables on memory to avoid stack too deep.
@@ -240,10 +241,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
         // offer was passively deprovisionned by Mangrove. `wei_balance` is a portion of `this` contract's balance on Mangrove that belongs to offer owner
         // we recycle these funds to reprovision the updated offer
         upd.fund += upd.wei_balance;
-        ownerData[upd.outbound_tkn][upd.inbound_tkn][upd.offerId] = OwnerData({
-          owner: upd.owner,
-          wei_balance: 0
-        });
+        ownerData[upd.outbound_tkn][upd.inbound_tkn][upd.offerId].wei_balance = 0;
       }
       // gasprice for this offer is now recomputed based on `upd.fund`
       upd.gasprice = deriveGasprice(
@@ -325,7 +323,6 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     upd.gasreq = gasreq > type(uint24).max ? upd.offer_detail.gasreq() : gasreq; // not using offerGasReq() to save a storage read.
     upd.pivotId = pivotId;
     upd.offerId = offerId;
-    upd.owner = msg.sender;
 
     // if `wei_balance` > 0 then `this` contract has a balance on Mangrove >= `wei_balance`.
     upd.wei_balance = od.wei_balance;
@@ -383,10 +380,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       // pulling free wei from Mangrove to `this`
       require(MGV.withdraw(free_wei), "Forwarder/withdrawFail");
       // resetting pending returned provision
-      ownerData[outbound_tkn][inbound_tkn][offerId] = OwnerData({
-        owner: od.owner,
-        wei_balance: 0
-      });
+      ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance = 0;
       // sending WEI's to offer owner. Note that this call could occur nested inside a call to `makerExecute` originating from Mangrove
       // this is still safe because WEI's are being sent to offer owner who has no incentive to make current trade fail. 
       (bool noRevert, ) = od.owner.call{value: free_wei}("");
@@ -462,7 +456,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // NB if several offers of `this` contract have failed during the market order, the balance of this contract on Mangrove will contain cumulated free provision
 
     // computing an under approximation of returned provision because of this offer's failure
-    (MgvPack.Global.t global, MgvPack.Local.t local) = MGV.config(
+    (Global.t global, Local.t local) = MGV.config(
       order.outbound_tkn,
       order.inbound_tkn
     );
