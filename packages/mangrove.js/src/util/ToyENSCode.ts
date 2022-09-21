@@ -16,10 +16,10 @@ TODO: a slower but maybe cleaner way would be to: 1) deploy ToyENS to any addres
 export const address = "0xdecaf" + "0".repeat(35);
 
 export const abi = [
-  "function set(string,address,bool) external ",
-  "function set(string[],address[],bool[]) external",
-  "function get(string) view external returns (address addr)",
-  "function all() view external returns (string[] names, address[] addrs, bool[] isToken, bool[] transient)",
+  "function set(string,address) external ",
+  "function set(string[],address[]) external",
+  "function get(string) view external returns (address)",
+  "function all() view external returns (string[], address[])",
 ];
 
 export const code =

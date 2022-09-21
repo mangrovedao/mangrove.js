@@ -456,15 +456,13 @@ class Mangrove {
    */
   static async fetchAllAddresses(provider: ethers.providers.Provider) {
     const network = await eth.getProviderNetwork(provider);
-    try {
-      const contracts = await getAllToyENSEntries(provider);
-      for (const { name, address, isToken } of contracts) {
-        Mangrove.setAddress(name, address, network.name);
-        if (isToken) {
-          Mangrove.fetchDecimals(name, provider);
-        }
+    const contracts = await getAllToyENSEntries(provider);
+    for (const { name, address, decimals } of contracts) {
+      Mangrove.setAddress(name, address, network.name);
+      if (typeof decimals !== "undefined") {
+        Mangrove.setDecimals(name, decimals);
       }
-    } catch (err) {}
+    }
   }
 }
 
