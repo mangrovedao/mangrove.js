@@ -200,7 +200,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   ///@param global current block's global configuration variables of Mangrove 
   ///@param local current block's configuration variables of the (outbound token, inbound token) offer list
   ///@param offer_detail a recap of the current block's offer details.
-  ///@param fund remainder of msg.value as received by the external function
+  ///@param fund available funds for provisioning the offer
   ///@param outbound_tkn token contract 
   ///@param inbound_tkn token contract
   ///@param wants the new amount of inbound tokens the maker wants for a complete fill
@@ -274,7 +274,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       upd.gasprice >= upd.global.gasprice(),
       "mgv/insufficientProvision"
     );
-    MGV.updateOffer{value: upd.fund}(
+    MGV.updateOffer{value: msg.value}(
       address(upd.outbound_tkn),
       address(upd.inbound_tkn),
       upd.wants,
@@ -332,6 +332,27 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     _updateOffer(upd);
   }
 
+  ///@inheritdoc IOfferLogic
+  function provisionOf(IERC20 outbound_tkn, IERC20 inbound_tkn, uint offerId) 
+  override external view returns (uint provision) {
+    uint deprovisioned = ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance;
+    if (deprovisioned > 0) {
+      return deprovisioned;
+    } else {
+      OfferDetail.t offer_detail = MGV.offerDetails(
+        address(outbound_tkn),
+        address(inbound_tkn),
+        offerId
+      ); 
+      (, Local.t local) = MGV.config(
+        address(outbound_tkn),
+        address(inbound_tkn)
+      );
+      unchecked{
+        provision = offer_detail.gasprice() * 10 ** 9 * (local.offer_gasbase() + offer_detail.gasreq());
+      }
+    }
+   }
 
   ///@notice Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove. Function call will throw if `this` contract is not the owner of `offerId`.
   ///@param deprovision is true if offer owner wishes to have the offer's provision pushed to its reserve
@@ -438,7 +459,6 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   ) internal virtual override returns (bytes32) {
     result; // ssh
     mapping(uint => OwnerData) storage semiBookOwnerData = ownerData[IERC20(order.outbound_tkn)][IERC20(order.inbound_tkn)];
-    OwnerData memory od = semiBookOwnerData[order.offerId];
     // NB if several offers of `this` contract have failed during the market order, the balance of this contract on Mangrove will contain cumulated free provision
 
     // computing an under approximation of returned provision because of this offer's failure
@@ -446,27 +466,22 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       order.outbound_tkn,
       order.inbound_tkn
     );
-    uint gaspriceInWei = global.gasprice() * 10**9;
     uint provision = 10**9 *
       order.offerDetail.gasprice() *
       (order.offerDetail.gasreq() + order.offerDetail.offer_gasbase());
 
-    // gas estimate to complete posthook ~ 1500, putting 3000 to be overapproximating
-    uint approxBounty = (order.offerDetail.gasreq() -
-      gasleft() +
-      3000 +
-      local.offer_gasbase()) * gaspriceInWei;
-
+    // gasUsed estimate to complete posthook ~ 1500
+    uint approxBounty = (
+      order.offerDetail.gasreq() - (gasleft() - 1500) 
+      + local.offer_gasbase()
+      ) * global.gasprice() * 10**9;
     uint approxReturnedProvision = approxBounty >= provision
       ? 0
       : provision - approxBounty;
 
     // storing the portion of this contract's balance on Mangrove that should be attributed back to the failing offer's owner
     // those free WEIs can be retrieved by offer owner, by calling `retractOffer` with the `deprovision` flag.
-    semiBookOwnerData[order.offerId] = OwnerData({
-      owner: od.owner,
-      wei_balance: uint96(approxReturnedProvision) // previous wei_balance is always 0 here: if offer failed in the past, `updateOffer` did reuse it
-    });
+    semiBookOwnerData[order.offerId].wei_balance = uint96(approxReturnedProvision); // previous wei_balance is always 0 here: if offer failed in the past, `updateOffer` did reuse it
     return "";
   }
 
