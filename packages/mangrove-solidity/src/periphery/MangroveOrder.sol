@@ -162,7 +162,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     // `offerId_==0` if mangrove rejects the update because of low density.
     // call may not revert because of insufficient funds
     res.offerId = _newOffer(
-      NewOfferData({
+      NewOfferArgs({
         outbound_tkn: outbound_tkn,
         inbound_tkn: inbound_tkn,
         wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage

@@ -67,11 +67,12 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
     uint offerId,
-    address owner
+    address owner,
+    uint leftover
   ) internal {
     ownerData[outbound_tkn][inbound_tkn][offerId] = OwnerData({
       owner: owner,
-      wei_balance: uint96(0)
+      wei_balance: uint96(leftover)
     });
     emit NewOwnedOffer(MGV, outbound_tkn, inbound_tkn, offerId, owner);
   }
@@ -85,13 +86,13 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint gasreq,
     uint provision,
     uint offer_gasbase
-  ) internal pure returns (uint gasprice) {
+  ) internal pure returns (uint gasprice, uint leftover) {
     unchecked {
       uint num = (offer_gasbase + gasreq) * 10**9;
       // pre-check to avoir underflow since 0 is interpreted as "use mangrove's gasprice"
       require(provision >= num, "mgv/insufficientProvision");
       gasprice = provision / num;
-      // leftover is provision - num;
+      leftover = provision - num;
     }
   }
 
@@ -125,7 +126,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   ///@param caller msg.sender of the calling external function
   ///@param fund WEIs in `this` contract's balance that are used to provision the offer
   ///@param noRevert is set to true if calling function does not wish `_newOffer` to revert on error. Out of gas exception is always possible though.
-  struct NewOfferData {
+  struct NewOfferArgs {
     IERC20 outbound_tkn; 
     IERC20 inbound_tkn;
     uint wants;
@@ -152,7 +153,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   /// We could assign this dust to the corresponding `wei_balance` of `OwnerData` but this would entail a storage write whose gas cost would exceed the saved dust.
   /// Note that this dust is not burnt, as accrued dust can be admin retrieved from this contract via `withdrawFromMangrove`.
   function _newOffer(
-    NewOfferData memory offData
+    NewOfferArgs memory offData
   ) internal returns (uint offerId) {
     (MgvPack.Global.t global, MgvPack.Local.t local) = MGV.config(
       address(offData.outbound_tkn),
@@ -161,7 +162,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // convention for default gasreq value
     offData.gasreq = (offData.gasreq > type(uint24).max) ? offerGasreq() : offData.gasreq;
     // computing max `gasprice` such that `offData.fund` covers `offData.gasreq` at `gasprice`
-    uint gasprice = deriveGasprice(
+    (uint gasprice, uint leftover) = deriveGasprice(
       offData.gasreq,
       offData.fund,
       local.offer_gasbase()
@@ -187,103 +188,13 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       offData.pivotId
     ) returns (uint offerId_) {
       // assign `offerId_` to caller
-      addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId_, offData.caller); 
+      addOwner(offData.outbound_tkn, offData.inbound_tkn, offerId_, offData.caller, leftover); 
       offerId = offerId_;
     } catch Error(string memory reason){
       /// letting revert bubble up unless `noRevert` is positioned.
       require (offData.noRevert, reason);
       offerId = 0;
     }
-  }
-
-  ///@notice Memory allocation of `_updateOffer` variables
-  ///@param global current block's global configuration variables of Mangrove 
-  ///@param local current block's configuration variables of the (outbound token, inbound token) offer list
-  ///@param offer_detail a recap of the current block's offer details.
-  ///@param fund available funds for provisioning the offer
-  ///@param outbound_tkn token contract 
-  ///@param inbound_tkn token contract
-  ///@param wants the new amount of inbound tokens the maker wants for a complete fill
-  ///@param gives the new amount of outbound tokens the maker gives for a complete fill
-  ///@param gasprice memory location for storing the derived gasprice of the offer
-  ///@param gasreq new gasreq for the udpated offer.
-  ///@param pivotId a best pivot estimate for cheap offer insertion in the offer list
-  ///@param offerId the id of the offer to be updated
-  ///@param wei_balance the current provision that is available to the owner for this offer.
-  ///@param owner the owner of the offer to be udpated
-  struct UpdateOfferData {
-    MgvPack.Global.t global;
-    MgvPack.Local.t local;
-    MgvPack.OfferDetail.t offer_detail;
-    uint fund;
-    IERC20 outbound_tkn;
-    IERC20 inbound_tkn;
-    uint wants;
-    uint gives;
-    uint gasreq;
-    uint gasprice;
-    uint pivotId;
-    uint offerId;
-    uint wei_balance;
-    address owner;
-  }
-
-  ///@notice Implementation body of `updateOffer`, using variables on memory to avoid stack too deep.
-  function _updateOffer(UpdateOfferData memory upd)
-    private
-  { 
-    // storing current offer gasprice (`upd.gasprice` is uninitialized)
-    upd.gasprice = upd.offer_detail.gasprice();
-    if (upd.gasprice == 0) {
-      // offer was previously deprovisioned
-      if (upd.wei_balance > 0) {
-        // offer was passively deprovisionned by Mangrove. `wei_balance` is a portion of `this` contract's balance on Mangrove that belongs to offer owner
-        // we recycle these funds to reprovision the updated offer
-        upd.fund += upd.wei_balance;
-        ownerData[upd.outbound_tkn][upd.inbound_tkn][upd.offerId] = OwnerData({
-          owner: upd.owner,
-          wei_balance: 0
-        });
-      }
-      // gasprice for this offer is now recomputed based on `upd.fund`
-      upd.gasprice = deriveGasprice(
-        upd.gasreq,
-        upd.fund,
-        upd.local.offer_gasbase()
-      );
-    } else {
-      // offer is still provisioned as offer.gasprice requires
-      if (upd.fund > 0) {
-        // caller wishes to add provision to existing provision
-        // we retrieve current offer provision based on upd.gasprice (which is current offer gasprice)
-        upd.fund +=
-          upd.gasprice *
-          10**9 *
-          (upd.offer_detail.gasreq() + upd.local.offer_gasbase());
-        upd.gasprice = deriveGasprice(
-          upd.gasreq,
-          upd.fund,
-          upd.local.offer_gasbase()
-        );
-      }
-      // if value == 0  we keep upd.gasprice unchanged
-    }
-    // if `upd.fund` is too low, offer gasprice might be below mangrove's gasprice
-    // Mangrove will then take its own gasprice for the offer and would possibly tap into `this` contract's pool to cover for the missing provision
-    require(
-      upd.gasprice >= upd.global.gasprice(),
-      "mgv/insufficientProvision"
-    );
-    MGV.updateOffer{value: msg.value}(
-      address(upd.outbound_tkn),
-      address(upd.inbound_tkn),
-      upd.wants,
-      upd.gives,
-      upd.gasreq,
-      upd.gasprice,
-      upd.pivotId,
-      upd.offerId
-    );
   }
 
   ///@dev the `gasprice` argument is always ignored in `Forwarder` logic, since it has to be derived from `msg.value` of the call (see `_newOffer`).
@@ -306,8 +217,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       "Multi/updateOffer/unauthorized"
     );
     gasprice; // ssh
-    UpdateOfferData memory upd; 
-    // upd.gasprice is deliberately left at 0
+    UpdateOfferArgs memory upd;
     upd.offer_detail = MGV.offerDetails(
       address(outbound_tkn),
       address(inbound_tkn),
@@ -317,7 +227,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       address(outbound_tkn),
       address(inbound_tkn)
     );
-    upd.fund = msg.value;
+    upd.fund = msg.value + od.wei_balance;
     upd.outbound_tkn = outbound_tkn;
     upd.inbound_tkn = inbound_tkn;
     upd.wants = wants;
@@ -325,32 +235,99 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     upd.gasreq = gasreq > type(uint24).max ? upd.offer_detail.gasreq() : gasreq; // not using offerGasReq() to save a storage read.
     upd.pivotId = pivotId;
     upd.offerId = offerId;
-    upd.owner = msg.sender;
-
-    // if `wei_balance` > 0 then `this` contract has a balance on Mangrove >= `wei_balance`.
-    upd.wei_balance = od.wei_balance;
+    // wei_balance is used to provision offer
+    ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance = 0; // hot storage
     _updateOffer(upd);
+  }
+
+
+  ///@notice Memory allocation of `_updateOffer` variables
+  ///@param global current block's global configuration variables of Mangrove 
+  ///@param local current block's configuration variables of the (outbound token, inbound token) offer list
+  ///@param offer_detail a recap of the current block's offer details.
+  ///@param fund available funds for provisioning the offer
+  ///@param outbound_tkn token contract 
+  ///@param inbound_tkn token contract
+  ///@param wants the new amount of inbound tokens the maker wants for a complete fill
+  ///@param gives the new amount of outbound tokens the maker gives for a complete fill
+  ///@param gasprice memory location for storing the derived gasprice of the offer
+  ///@param gasreq new gasreq for the udpated offer.
+  ///@param pivotId a best pivot estimate for cheap offer insertion in the offer list
+  ///@param offerId the id of the offer to be updated
+  struct UpdateOfferArgs {
+    MgvPack.Global.t global;
+    MgvPack.Local.t local;
+    MgvPack.OfferDetail.t offer_detail;
+    uint fund;
+    IERC20 outbound_tkn;
+    IERC20 inbound_tkn;
+    uint wants;
+    uint gives;
+    uint gasreq;
+    uint pivotId;
+    uint offerId;
+    address owner;
+  }
+
+  struct UpdateOfferVars {
+    uint gasprice;
+    uint leftover;
+  }
+
+  ///@notice Implementation body of `updateOffer`, using variables on memory to avoid stack too deep.
+  function _updateOffer(UpdateOfferArgs memory args)
+    private
+  { 
+    UpdateOfferVars memory vars;
+    // storing current offer gasprice (`upd.gasprice` is uninitialized)
+    vars.gasprice = args.offer_detail.gasprice();
+    // adding current locked provision to funds (0 if offer is deprovisioned)
+    args.fund +=
+      vars.gasprice *
+      10**9 *
+      (args.offer_detail.gasreq() + args.local.offer_gasbase());
+
+    (vars.gasprice, vars.leftover) = deriveGasprice(
+        args.gasreq,
+        args.fund,
+        args.local.offer_gasbase()
+    );
+    // leftover can be safely cast to uint96 since it a rounding error
+    ownerData[args.outbound_tkn][args.inbound_tkn][args.offerId].wei_balance = uint96(vars.leftover);
+
+    // if `args.fund` is too low, offer gasprice might be below mangrove's gasprice
+    // Mangrove will then take its own gasprice for the offer and would possibly tap into `this` contract's pool to cover for the missing provision
+    require(
+      vars.gasprice >= args.global.gasprice(),
+      "mgv/insufficientProvision"
+    );
+    MGV.updateOffer{value: msg.value}(
+      address(args.outbound_tkn),
+      address(args.inbound_tkn),
+      args.wants,
+      args.gives,
+      args.gasreq,
+      vars.gasprice,
+      args.pivotId,
+      args.offerId
+    );
   }
 
   ///@inheritdoc IOfferLogic
   function provisionOf(IERC20 outbound_tkn, IERC20 inbound_tkn, uint offerId) 
   override external view returns (uint provision) {
-    uint deprovisioned = ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance;
-    if (deprovisioned > 0) {
-      return deprovisioned;
-    } else {
-      OfferDetail.t offer_detail = MGV.offerDetails(
-        address(outbound_tkn),
-        address(inbound_tkn),
-        offerId
-      ); 
-      (, Local.t local) = MGV.config(
-        address(outbound_tkn),
-        address(inbound_tkn)
-      );
-      unchecked{
-        provision = offer_detail.gasprice() * 10 ** 9 * (local.offer_gasbase() + offer_detail.gasreq());
-      }
+    OfferDetail.t offer_detail = MGV.offerDetails(
+      address(outbound_tkn),
+      address(inbound_tkn),
+      offerId
+    ); 
+    (, Local.t local) = MGV.config(
+      address(outbound_tkn),
+      address(inbound_tkn)
+    );
+    unchecked{
+      provision = offer_detail.gasprice() * 10 ** 9 * (local.offer_gasbase() + offer_detail.gasreq());
+      provision += ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance;
     }
    }
 
@@ -367,26 +344,18 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       od.owner == msg.sender || address(MGV) == msg.sender,
       "Multi/retractOffer/unauthorized"
     );
-    if (od.wei_balance > 0) {
-      // offer was already retracted and deprovisioned by Mangrove after a trade failure
-      // wei_balance is part of this contract's pooled free wei and can be redeemed by offer owner
-      free_wei = deprovision ? od.wei_balance : 0;
-    } else {
-      free_wei = MGV.retractOffer(
-        address(outbound_tkn),
-        address(inbound_tkn),
-        offerId,
-        deprovision
-      );
-    }
+    free_wei = deprovision ? od.wei_balance : 0;
+    free_wei += MGV.retractOffer(
+      address(outbound_tkn),
+      address(inbound_tkn),
+      offerId,
+      deprovision
+    );
     if (free_wei > 0) {
       // pulling free wei from Mangrove to `this`
       require(MGV.withdraw(free_wei), "Forwarder/withdrawFail");
       // resetting pending returned provision
-      ownerData[outbound_tkn][inbound_tkn][offerId] = OwnerData({
-        owner: od.owner,
-        wei_balance: 0
-      });
+      ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance = 0;
       // sending WEI's to offer owner. Note that this call could occur nested inside a call to `makerExecute` originating from Mangrove
       // this is still safe because WEI's are being sent to offer owner who has no incentive to make current trade fail. 
       (bool noRevert, ) = od.owner.call{value: free_wei}("");
@@ -481,7 +450,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
 
     // storing the portion of this contract's balance on Mangrove that should be attributed back to the failing offer's owner
     // those free WEIs can be retrieved by offer owner, by calling `retractOffer` with the `deprovision` flag.
-    semiBookOwnerData[order.offerId].wei_balance = uint96(approxReturnedProvision); // previous wei_balance is always 0 here: if offer failed in the past, `updateOffer` did reuse it
+    semiBookOwnerData[order.offerId].wei_balance += uint96(approxReturnedProvision); 
     return "";
   }
 

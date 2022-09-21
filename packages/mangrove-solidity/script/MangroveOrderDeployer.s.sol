@@ -25,7 +25,7 @@ contract MangroveOrderDeployer is Deployer {
     IMangrove mgv = IMangrove(fork.get("Mangrove"));
     vm.broadcast();
     MangroveOrderEnriched mgv_order = new MangroveOrderEnriched(mgv, admin);
-    fork.set("MangroveOrderEnriched", address(mgv_order), false);
+    fork.set("MangroveOrderEnriched", address(mgv_order));
     outputDeployment();
     console.log("Deployed!", address(mgv_order));
   }
