@@ -443,23 +443,24 @@ class Trade {
       ? overrides_.gasLimit
       : await market.estimateGas(orderType, wants);
 
+    const [outboundTkn, inboundTkn] =
+      orderType === "buy"
+        ? [market.base, market.quote]
+        : [market.quote, market.base];
+
     const response = await market.mgv.orderContract.take(
       {
-        base: market.base.address,
-        quote: market.quote.address,
+        outbound_tkn: outboundTkn.address,
+        inbound_tkn: inboundTkn.address,
         partialFillNotAllowed: params.partialFillNotAllowed
           ? params.partialFillNotAllowed
           : false,
-        selling: orderType === "sell",
-        wants: wants,
+        fillWants: orderType === "buy",
+        takerWants: wants,
         makerWants: makerWants,
-        gives: gives,
+        takerGives: gives,
         makerGives: makerGives,
         restingOrder: true,
-        retryNumber: params.retryNumber ? params.retryNumber : 0,
-        gasForMarketOrder: params.gasForMarketOrder
-          ? params.gasForMarketOrder
-          : 0,
         timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
           ? params.timeToLiveForRestingOrder
           : 0,

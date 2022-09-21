@@ -12,23 +12,33 @@
 
 pragma solidity >=0.8.0;
 pragma abicoder v2;
-import "mgv_src/IMangrove.sol";
+import {IMangrove} from "mgv_src/IMangrove.sol";
 import {IERC20} from "mgv_src/MgvLib.sol";
 
+///@title Interface for resting orders functionality.
 interface IOrderLogic {
+  ///@notice Information for creating a market order and possibly a resting order (offer).
   struct TakerOrder {
-    IERC20 base; //identifying Mangrove market
-    IERC20 quote;
-    bool partialFillNotAllowed; //revert if taker order cannot be filled and resting order failed or is not enabled
-    bool selling; // whether this is a selling order (otherwise a buy order)
-    uint wants; // if `selling` amount of quote tokens, otherwise amount of base tokens
-    uint makerWants; // taker wants before slippage (`makerWants == wants` when `!selling`)
-    uint gives; // if `selling` amount of base tokens, otherwise amount of quote tokens
-    uint makerGives; // taker gives before slippage (`makerGives == gives` when `selling`)
-    bool restingOrder; // whether the complement of the partial fill (if any) should be posted as a resting limit order
-    uint retryNumber; // number of times filling the taker order should be retried (0 means 1 attempt).
-    uint gasForMarketOrder; // gas limit per market order attempt
-    uint timeToLiveForRestingOrder; // number of seconds the resting order should be allowed to live, 0 means forever
+    ///@notice the outbound token used to identify the order book
+    IERC20 outbound_tkn;
+    ///@notice the inbound token used to identify the order book
+    IERC20 inbound_tkn;
+    ///@notice true to revert if taker order cannot be filled and resting order failed or is not enabled; otherwise, false
+    bool partialFillNotAllowed;
+    ///@notice desired total amount of `outbound_tkn`
+    uint takerWants;
+    ///@notice taker wants before slippage (`makerWants == wants` when `!selling`)
+    uint makerWants;
+    ///@notice available total amount of `inbound_tkn`
+    uint takerGives;
+    ///@notice taker gives before slippage (`makerGives == gives` when `selling`)
+    uint makerGives;
+    ///@notice if true, the market order stops when `takerWants` units of `outbound_tkn` have been obtained; otherwise, the market order stops when `takerGives` units of `inbound_tkn` have been sold.
+    bool fillWants;
+    ///@notice true if the complement of the partial fill (if any) should be posted as a resting limit order; otherwise, false
+    bool restingOrder;
+    ///@notice number of seconds the resting order should be allowed to live, 0 means forever
+    uint timeToLiveForRestingOrder;
   }
 
   struct TakerOrderResult {
@@ -41,10 +51,10 @@ interface IOrderLogic {
 
   event OrderSummary(
     IMangrove mangrove,
-    IERC20 indexed base,
-    IERC20 indexed quote,
+    IERC20 indexed outbound_tkn,
+    IERC20 indexed inbound_tkn,
     address indexed taker,
-    bool selling,
+    bool fillWants,
     uint takerGot,
     uint takerGave,
     uint penalty,

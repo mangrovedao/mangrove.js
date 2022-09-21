@@ -102,13 +102,13 @@
         {
           "indexed": true,
           "internalType": "contract IERC20",
-          "name": "base",
+          "name": "outbound_tkn",
           "type": "address"
         },
         {
           "indexed": true,
           "internalType": "contract IERC20",
-          "name": "quote",
+          "name": "inbound_tkn",
           "type": "address"
         },
         {
@@ -120,7 +120,7 @@
         {
           "indexed": false,
           "internalType": "bool",
-          "name": "selling",
+          "name": "fillWants",
           "type": "bool"
         },
         {
@@ -642,12 +642,12 @@
           "components": [
             {
               "internalType": "contract IERC20",
-              "name": "base",
+              "name": "outbound_tkn",
               "type": "address"
             },
             {
               "internalType": "contract IERC20",
-              "name": "quote",
+              "name": "inbound_tkn",
               "type": "address"
             },
             {
@@ -656,13 +656,8 @@
               "type": "bool"
             },
             {
-              "internalType": "bool",
-              "name": "selling",
-              "type": "bool"
-            },
-            {
               "internalType": "uint256",
-              "name": "wants",
+              "name": "takerWants",
               "type": "uint256"
             },
             {
@@ -672,7 +667,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "gives",
+              "name": "takerGives",
               "type": "uint256"
             },
             {
@@ -682,18 +677,13 @@
             },
             {
               "internalType": "bool",
-              "name": "restingOrder",
+              "name": "fillWants",
               "type": "bool"
             },
             {
-              "internalType": "uint256",
-              "name": "retryNumber",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasForMarketOrder",
-              "type": "uint256"
+              "internalType": "bool",
+              "name": "restingOrder",
+              "type": "bool"
             },
             {
               "internalType": "uint256",
