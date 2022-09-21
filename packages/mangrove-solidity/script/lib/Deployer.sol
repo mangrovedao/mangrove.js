@@ -93,7 +93,7 @@ abstract contract Deployer is Script2 {
     (string[] memory names, address[] memory addrs) = fork.allDeployed();
 
     if (address(remoteEns).code.length > 0) {
-      vm.broadcast();
+      broadcast();
       remoteEns.set(names, addrs);
     }
 
