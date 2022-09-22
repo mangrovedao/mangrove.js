@@ -73,6 +73,19 @@ jobs:
           addresses:
             - 'packages/mangrove-solidity/addresses/deployed/*.json'
 
+  # ==== End job: Security guard ====
+  file-guard:
+    needs: [security-guard]
+    runs-on: ubuntu-latest
+    steps:
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v3
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
     - name: Fail if addresses changed unless PR has 'update address' label
       if: >
           (    github.event_name == 'pull_request_target'
@@ -81,7 +94,6 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: core.setFailed('You have changed an address in deployed/. PR must be marked \'update address\' for CI to run')
-  # ==== End job: Security guard ====
 
   # ==== Job: Build and test commonlib.js ====
   commonlib-js:
@@ -1421,6 +1433,7 @@ jobs:
 
     needs:
     - security-guard
+    - file-guard
     - mangrove-solidity
     - commonlib-js
     - mangrove-solidity-doc
