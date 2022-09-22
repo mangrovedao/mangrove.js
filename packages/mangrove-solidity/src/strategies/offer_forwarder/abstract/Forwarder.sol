@@ -92,7 +92,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       // pre-check to avoir underflow since 0 is interpreted as "use mangrove's gasprice"
       require(provision >= num, "mgv/insufficientProvision");
       gasprice = provision / num;
-      leftover = provision - num;
+      leftover = provision - (gasprice * 10**9 * (offer_gasbase + gasreq));
     }
   }
 
@@ -150,8 +150,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   /// Therefore we need to make sure that all `msg.value` is used to provision the offer at `gasprice`.
   /// To do so, we do not let offer maker fix a gasprice. Rather we derive the gasprice based on `msg.value`.
   /// Because of rounding errors in `deriveGasprice` a small amount of WEIs will accumulate in mangrove's balance of `this` contract
-  /// We could assign this dust to the corresponding `wei_balance` of `OwnerData` but this would entail a storage write whose gas cost would exceed the saved dust.
-  /// Note that this dust is not burnt, as accrued dust can be admin retrieved from this contract via `withdrawFromMangrove`.
+  /// We assign this dust to the corresponding `wei_balance` of `OwnerData`.
   function _newOffer(
     NewOfferArgs memory offData
   ) internal returns (uint offerId) {
@@ -227,6 +226,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       address(outbound_tkn),
       address(inbound_tkn)
     );
+    // funds to compute new gasprice is msg.value + WEIs belonging to offer owner in `this` contract's balance on Mangrove
     upd.fund = msg.value + od.wei_balance;
     upd.outbound_tkn = outbound_tkn;
     upd.inbound_tkn = inbound_tkn;
@@ -236,7 +236,6 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     upd.pivotId = pivotId;
     upd.offerId = offerId;
     // wei_balance is used to provision offer
-    ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance = 0; // hot storage
     _updateOffer(upd);
   }
 
@@ -279,11 +278,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     private
   { 
     UpdateOfferVars memory vars;
-    // storing current offer gasprice (`upd.gasprice` is uninitialized)
-    vars.gasprice = args.offer_detail.gasprice();
     // adding current locked provision to funds (0 if offer is deprovisioned)
     args.fund +=
-      vars.gasprice *
+      args.offer_detail.gasprice() *
       10**9 *
       (args.offer_detail.gasreq() + args.local.offer_gasbase());
 
@@ -293,6 +290,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
         args.local.offer_gasbase()
     );
     // leftover can be safely cast to uint96 since it a rounding error
+    // overriding previous value since it was included in args.fund
     ownerData[args.outbound_tkn][args.inbound_tkn][args.offerId].wei_balance = uint96(vars.leftover);
 
     // if `args.fund` is too low, offer gasprice might be below mangrove's gasprice
@@ -441,7 +439,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
 
     // gasUsed estimate to complete posthook ~ 1500
     uint approxBounty = (
-      order.offerDetail.gasreq() - (gasleft() - 1500) 
+      order.offerDetail.gasreq() - (gasleft() - 2000) 
       + local.offer_gasbase()
       ) * global.gasprice() * 10**9;
     uint approxReturnedProvision = approxBounty >= provision
