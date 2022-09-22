@@ -62,19 +62,6 @@ abstract contract Deployer is Script2 {
     } else {
       fork = GenericFork(singleton("Deployer:Fork"));
     }
-
-    broadcaster = tx.origin;
-    // If sender is not forge's default sender, ignore env var config
-    // Otherwise, load <NETWORK>_PRIVATE_KEY (if it exists)
-    if (broadcaster == 0x00a329c0648769A73afAc7F9381E08FB43dBEA72) {
-      string memory envVar = string.concat(
-        simpleCapitalize(fork.NAME()),
-        "_PRIVATE_KEY"
-      );
-      try vm.envUint(envVar) returns (uint key) {
-        broadcaster = vm.rememberKey(key);
-      } catch {}
-    }
   }
 
   // broadcast using a broadcasting address in the descending prio order:
@@ -83,6 +70,21 @@ abstract contract Deployer is Script2 {
   // * --private-key (or 1st of --private-keys)'s associated address
   // * forge default sending address
   function broadcast() public {
+    /* Memoize broadcaster. Cannot just do it in constructor because tx.origin for script constructors is not the same as for function calls */
+    if (broadcaster == address(0)) {
+      broadcaster = tx.origin;
+      // If sender is not forge's default sender, ignore env var config
+      // Otherwise, load <NETWORK>_PRIVATE_KEY (if it exists)
+      if (broadcaster == 0x00a329c0648769A73afAc7F9381E08FB43dBEA72) {
+        string memory envVar = string.concat(
+          simpleCapitalize(fork.NAME()),
+          "_PRIVATE_KEY"
+        );
+        try vm.envUint(envVar) returns (uint key) {
+          broadcaster = vm.rememberKey(key);
+        } catch {}
+      }
+    }
     vm.broadcast(broadcaster);
   }
 
