@@ -57,22 +57,6 @@ jobs:
       with:
         labels: external PR
 
-    - name: Fail if workflow triggered by external PR *not* labelled 'safe to test'
-      if: >
-          !(   github.event_name != 'pull_request_target'
-            || github.event.pull_request.head.repo.full_name == github.repository
-            || contains(github.event.pull_request.labels.*.name, 'safe to test') )
-      uses: actions/github-script@v6
-      with:
-        script: core.setFailed('External PR must be marked \'safe to test\' for CI to run')
-
-    - uses: dorny/paths-filter@v2
-      id: filter
-      with:
-        filters: |
-          addresses:
-            - 'packages/mangrove-solidity/addresses/deployed/*.json'
-
   # ==== End job: Security guard ====
   file-guard:
     needs: [security-guard]
@@ -86,6 +70,14 @@ jobs:
         persist-credentials: false
         ref: ${{ env.GIT_REF_TO_TEST }}
         submodules: recursive
+
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          addresses:
+            - 'packages/mangrove-solidity/addresses/deployed/*.json'
+
     - name: Fail if addresses changed unless PR has 'update address' label
       if: >
           (    github.event_name == 'pull_request_target'
