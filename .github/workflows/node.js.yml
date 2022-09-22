@@ -9,7 +9,7 @@ on:
     paths-ignore: 
       - '**.md'
   pull_request_target:
-    branches: [ master ]
+    branches: [ master, test-pr ]
     types: [opened, synchronize, reopened, labeled]
     paths-ignore: 
       - '**.md'
