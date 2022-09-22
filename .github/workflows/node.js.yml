@@ -65,6 +65,22 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: core.setFailed('External PR must be marked \'safe to test\' for CI to run')
+
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          addresses:
+            - 'packages/mangrove-solidity/addresses/deployed/*.json'
+
+    - name: Fail if addresses changed unless PR has 'update address' label
+      if: >
+          (    github.event_name == 'pull_request_target'
+           &&  !contains(github.event.pull_request.labels.*.name,'update address') 
+           &&  steps.changes.outputs.addresses == 'true')
+      uses: actions/github-script@v6
+      with:
+        script: core.setFailed('You have changed an address in deployed/. PR must be marked \'update address\' for CI to run')
   # ==== End job: Security guard ====
 
   # ==== Job: Build and test commonlib.js ====
