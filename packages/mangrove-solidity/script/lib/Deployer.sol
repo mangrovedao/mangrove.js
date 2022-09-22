@@ -1,5 +1,6 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.13;
+
 import {Script2} from "mgv_test/lib/Script2.sol";
 import {ToyENS} from "./ToyENS.sol";
 import {GenericFork} from "mgv_test/lib/forks/Generic.sol";
@@ -44,13 +45,7 @@ abstract contract Deployer is Script2 {
         createFile = false;
         fork = new LocalFork();
       } else {
-        revert(
-          string.concat(
-            "Unknown chain id ",
-            vm.toString(block.chainid),
-            ", cannot deploy."
-          )
-        );
+        revert(string.concat("Unknown chain id ", vm.toString(block.chainid), ", cannot deploy."));
       }
 
       singleton("Deployer:Fork", address(fork));
@@ -63,10 +58,7 @@ abstract contract Deployer is Script2 {
   string out;
 
   function outputDeployment() internal {
-    (
-      string[] memory names,
-      address[] memory addrs
-    ) = fork.allDeployed();
+    (string[] memory names, address[] memory addrs) = fork.allDeployed();
 
     if (address(remoteEns).code.length > 0) {
       vm.broadcast();
@@ -85,13 +77,7 @@ abstract contract Deployer is Script2 {
       }
       line("]");
       vm.writeFile(fork.addressesFile("deployed"), out);
-      vm.writeFile(
-        fork.addressesFile(
-          "deployed",
-          string.concat("-", vm.toString(block.timestamp), ".backup")
-        ),
-        out
-      );
+      vm.writeFile(fork.addressesFile("deployed", string.concat("-", vm.toString(block.timestamp), ".backup")), out);
     }
   }
 

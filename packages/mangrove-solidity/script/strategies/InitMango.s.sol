@@ -4,19 +4,22 @@ pragma solidity ^0.8.13;
 import {Script, console} from "forge-std/Script.sol";
 import {Mango, IERC20, IMangrove} from "mgv_src/strategies/offer_maker/market_making/mango/Mango.sol";
 
-/** @notice Initialize Mango offers on a given market */
-/** Usage example: initialize MANGO_WETH_USDC
-
-    MANGO=0x7D63939ce0Fa80cC69C129D337a978D0E1F354A1 \
-    DEFAULT_BASE_AMOUNT=$(cast ff 18 0.25) \
-    DEFAULT_QUOTE=_AMOUNT=$(cast ff 6 1000) \
-    LAST_BID_INDEX=50 \
-    BATCH_SIZE=10 \
-    COVER_FACTOR=2 \
-    forge script --fork-url $MUMBAI_NODE_URL \
-    --private-key $MUMBAI_TESTER_PRIVATE_KEY \
-    InitMango
-*/
+/**
+ * @notice Initialize Mango offers on a given market
+ */
+/**
+ * Usage example: initialize MANGO_WETH_USDC
+ *
+ * MANGO=0x7D63939ce0Fa80cC69C129D337a978D0E1F354A1 \
+ * DEFAULT_BASE_AMOUNT=$(cast ff 18 0.25) \
+ * DEFAULT_QUOTE=_AMOUNT=$(cast ff 6 1000) \
+ * LAST_BID_INDEX=50 \
+ * BATCH_SIZE=10 \
+ * COVER_FACTOR=2 \
+ * forge script --fork-url $MUMBAI_NODE_URL \
+ * --private-key $MUMBAI_TESTER_PRIVATE_KEY \
+ * InitMango
+ */
 
 contract InitMango is Script {
   function run() public {
@@ -37,7 +40,9 @@ contract InitMango is Script {
     uint lastBidIndex,
     uint batch_size, // number of offers to be posted in the same tx
     uint cover_factor
-  ) public {
+  )
+    public
+  {
     require(cover_factor * batch_size > 0, "invalid arguments");
 
     uint n = Mango($mgo).NSLOTS();
@@ -60,11 +65,7 @@ contract InitMango is Script {
       // funding Mangrove
       IMangrove mgv = Mango($mgo).MGV();
 
-      console.log(
-        "Funding mangrove with",
-        (provAsk + provBid) * n * cover_factor,
-        "WEIs"
-      );
+      console.log("Funding mangrove with", (provAsk + provBid) * n * cover_factor, "WEIs");
       vm.broadcast();
       mgv.fund{value: (provAsk + provBid) * n * cover_factor}($mgo);
     }

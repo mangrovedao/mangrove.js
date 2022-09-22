@@ -23,11 +23,7 @@ contract MangroveDeployer is Deployer {
     outputDeployment();
   }
 
-  function deploy(
-    address chief,
-    uint gasprice,
-    uint gasmax
-  ) public {
+  function deploy(address chief, uint gasprice, uint gasmax) public {
     vm.broadcast();
     mgv = new Mangrove({governance: chief, gasprice: gasprice, gasmax: gasmax});
     fork.set("Mangrove", address(mgv));

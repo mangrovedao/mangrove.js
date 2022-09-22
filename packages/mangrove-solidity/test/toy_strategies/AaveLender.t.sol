@@ -13,22 +13,14 @@ abstract contract AaveV3ModuleTest is MangroveTest {
     uint expected_balance,
     uint expected_borrow,
     address account
-  ) public {
+  )
+    public
+  {
     uint balance = op.overlying(underlying).balanceOf(account);
     uint borrow = op.borrowed($(underlying), account);
     console2.log("borrow is %s", borrow);
-    assertApproxEqAbs(
-      balance,
-      expected_balance,
-      (10**14) / 2,
-      "wrong balance on lender"
-    );
-    assertApproxEqAbs(
-      borrow,
-      expected_borrow,
-      (10**14) / 2,
-      "wrong borrow on lender"
-    );
+    assertApproxEqAbs(balance, expected_balance, (10 ** 14) / 2, "wrong balance on lender");
+    assertApproxEqAbs(borrow, expected_borrow, (10 ** 14) / 2, "wrong borrow on lender");
   }
 }
 
@@ -105,12 +97,7 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
     router.approveLender(dai);
 
     // makerContract deposits some DAI on Lender (remains 100 DAIs on the contract)
-    router.supply(
-      dai,
-      strat.reserve(),
-      900 ether,
-      $(strat) /* from */
-    );
+    router.supply(dai, strat.reserve(), 900 ether, $(strat) /* from */ );
   }
 
   function execTraderStrat() public {
@@ -125,7 +112,7 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
       pivotId: 0
     });
 
-    (, uint got, uint gave, , ) = mgv.snipes({
+    (, uint got, uint gave,,) = mgv.snipes({
       outbound_tkn: $(dai),
       inbound_tkn: $(weth),
       targets: wrap_dynamic([offerId, 300 ether, 0.15 ether, type(uint).max]),
@@ -148,7 +135,7 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
     });
 
     vm.warp(block.timestamp + 10);
-    (uint successes, , , , ) = mgv.snipes({
+    (uint successes,,,,) = mgv.snipes({
       outbound_tkn: $(weth),
       inbound_tkn: $(dai),
       targets: wrap_dynamic([offerId, 0.2 ether, 380 ether, type(uint).max]),
@@ -173,17 +160,13 @@ contract AaveLenderForkedTest is AaveV3ModuleTest {
     // cannot borrowrepay in same block
     vm.warp(block.timestamp + 1);
 
-    (, got, , , ) = mgv.snipes({
+    (, got,,,) = mgv.snipes({
       outbound_tkn: $(dai),
       inbound_tkn: $(weth),
       targets: wrap_dynamic([offerId, 1500 ether, 0.63 ether, type(uint).max]),
       fillWants: true
     });
-    assertEq(
-      got,
-      minusFee($(dai), $(weth), 1500 ether),
-      "wrong received amount"
-    );
+    assertEq(got, minusFee($(dai), $(weth), 1500 ether), "wrong received amount");
 
     // TODO logLenderStatus
     assertApproxBalanceAndBorrow(router, weth, 0.58 ether, 0, $(router));

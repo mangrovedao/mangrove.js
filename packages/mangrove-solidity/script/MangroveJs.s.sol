@@ -35,11 +35,7 @@ contract MangroveJsDeploy is Deployer {
     outputDeployment();
   }
 
-  function deploy(
-    address chief,
-    uint gasprice,
-    uint gasmax
-  ) public {
+  function deploy(address chief, uint gasprice, uint gasmax) public {
     MangroveDeployer mgvDeployer = new MangroveDeployer();
 
     mgvDeployer.deploy({chief: chief, gasprice: gasprice, gasmax: gasmax});

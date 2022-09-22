@@ -14,11 +14,7 @@ contract MangroveOfferTest is MangroveTest {
 
   // tracking IOfferLogic logs
   event LogIncident(
-    IMangrove mangrove,
-    IERC20 indexed outbound_tkn,
-    IERC20 indexed inbound_tkn,
-    uint indexed offerId,
-    bytes32 reason
+    IMangrove mangrove, IERC20 indexed outbound_tkn, IERC20 indexed inbound_tkn, uint indexed offerId, bytes32 reason
   );
 
   function setUp() public override {
@@ -92,13 +88,7 @@ contract MangroveOfferTest is MangroveTest {
     result.makerData = "failReason";
 
     vm.expectEmit(true, false, false, true);
-    emit LogIncident(
-      IMangrove(payable(mgv)),
-      IERC20(address(0)),
-      IERC20(address(0)),
-      0,
-      "failReason"
-    );
+    emit LogIncident(IMangrove(payable(mgv)), IERC20(address(0)), IERC20(address(0)), 0, "failReason");
     vm.prank(address(mgv));
     makerContract.makerPosthook(order, result);
   }
@@ -111,11 +101,7 @@ contract MangroveOfferTest is MangroveTest {
     uint balMaker = maker.balance;
     vm.prank(maker);
     makerContract.withdrawFromMangrove(0.5 ether, maker);
-    assertEq(
-      mgv.balanceOf(address(makerContract)),
-      0.5 ether,
-      "incorrect balance"
-    );
+    assertEq(mgv.balanceOf(address(makerContract)), 0.5 ether, "incorrect balance");
     assertEq(maker.balance, balMaker + 0.5 ether, "incorrect balance");
   }
 
@@ -127,11 +113,7 @@ contract MangroveOfferTest is MangroveTest {
     SimpleRouter router = new SimpleRouter();
     router.setAdmin(address(makerContract));
     makerContract.setRouter(router);
-    assertEq(
-      address(makerContract.router()),
-      address(router),
-      "Router was not set"
-    );
+    assertEq(address(makerContract.router()), address(router), "Router was not set");
     vm.stopPrank();
   }
 
@@ -155,10 +137,6 @@ contract MangroveOfferTest is MangroveTest {
     SimpleRouter router = new SimpleRouter();
     router.setAdmin(address(makerContract));
     makerContract.setRouter(router);
-    assertEq(
-      makerContract.offerGasreq(),
-      gasreq + router.gasOverhead(),
-      "incorrect gasreq"
-    );
+    assertEq(makerContract.offerGasreq(), gasreq + router.gasOverhead(), "incorrect gasreq");
   }
 }
