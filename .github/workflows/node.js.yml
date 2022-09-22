@@ -72,7 +72,7 @@ jobs:
         submodules: recursive
 
     - uses: dorny/paths-filter@v2
-      id: filter
+      id: changes
       with:
         filters: |
           addresses:
