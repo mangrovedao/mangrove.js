@@ -12,11 +12,12 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 import { MangroveOffer } from "../../MangroveOffer.sol";
-import "mgv_src/strategies/interfaces/IForwarder.sol";
-import {AbstractRouter} from "mgv_src/strategies/routers/AbstractRouter.sol";
-import "mgv_src/strategies/interfaces/IOfferLogic.sol";
-import "mgv_src/preprocessed/MgvPack.post.sol" as MgvPack;
-import "mgv_src/MgvLib.sol";
+import { IForwarder } from "mgv_src/strategies/interfaces/IForwarder.sol";
+import { AbstractRouter } from "mgv_src/strategies/routers/AbstractRouter.sol";
+import { IOfferLogic } from "mgv_src/strategies/interfaces/IOfferLogic.sol";
+import { Offer, OfferDetail, Local, Global } from "mgv_src/preprocessed/MgvPack.post.sol";
+import { MgvLib, IERC20 } from "mgv_src/MgvLib.sol";
+import { IMangrove } from "mgv_src/IMangrove.sol";
 
 ///@title Class for maker contracts that forward external offer makers instructions to Mangrove in a permissionless fashion.
 ///@notice Each offer posted via this contract are managed by their offer maker, not by this contract's admin.
@@ -156,7 +157,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   function _newOffer(
     NewOfferArgs memory offData
   ) internal returns (uint offerId) {
-    (MgvPack.Global.t global, MgvPack.Local.t local) = MGV.config(
+    (Global.t global, Local.t local) = MGV.config(
       address(offData.outbound_tkn),
       address(offData.inbound_tkn)
     );
@@ -252,13 +253,13 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
   ///@param wants the new amount of inbound tokens the maker wants for a complete fill
   ///@param gives the new amount of outbound tokens the maker gives for a complete fill
   ///@param gasprice memory location for storing the derived gasprice of the offer
-  ///@param gasreq new gasreq for the udpated offer.
+  ///@param gasreq new gasreq for the updated offer.
   ///@param pivotId a best pivot estimate for cheap offer insertion in the offer list
   ///@param offerId the id of the offer to be updated
   struct UpdateOfferArgs {
-    MgvPack.Global.t global;
-    MgvPack.Local.t local;
-    MgvPack.OfferDetail.t offer_detail;
+    Global.t global;
+    Local.t local;
+    OfferDetail.t offer_detail;
     uint fund;
     IERC20 outbound_tkn;
     IERC20 inbound_tkn;
@@ -431,7 +432,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     // NB if several offers of `this` contract have failed during the market order, the balance of this contract on Mangrove will contain cumulated free provision
 
     // computing an under approximation of returned provision because of this offer's failure
-    (MgvPack.Global.t global, MgvPack.Local.t local) = MGV.config(
+    (Global.t global, Local.t local) = MGV.config(
       order.outbound_tkn,
       order.inbound_tkn
     );
