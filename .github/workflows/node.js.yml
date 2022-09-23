@@ -77,6 +77,7 @@ jobs:
         filters: |
           addresses:
             - 'packages/mangrove-solidity/addresses/deployed/*.json'
+            - 'packages/mangrove.js/src/constants/addresses.json'
 
     - name: Fail if addresses changed unless PR has 'update address' label
       if: >
@@ -85,7 +86,7 @@ jobs:
            &&  steps.changes.outputs.addresses == 'true')
       uses: actions/github-script@v6
       with:
-        script: core.setFailed('You have changed an address in deployed/. PR must be marked \'update address\' for CI to run')
+        script: core.setFailed('You have changed an address in mangrove-solidity (deployed/*.json) or in mangrove.js (addresses.json). PR must be marked \'update address\' for CI to run')
 
   # ==== Job: Build and test commonlib.js ====
   commonlib-js:
