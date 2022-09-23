@@ -1,5 +1,10 @@
 # next version
 
+# 0.11.0 (September 2022)
+- Resting order no longer expect `gasForMarketOrder` and `retryNumber`
+- new deploy address for `MangroveOrder`
+- changing scheme for retrieving resting order id (listening to MangroveOrder logs).
+
 # 0.10.2 (September 2022)
 
 - bugfix: wrong deployment addresses

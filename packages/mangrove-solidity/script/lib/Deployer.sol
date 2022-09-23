@@ -31,7 +31,7 @@ abstract contract Deployer is Script2 {
   // This remote ENS cannot be set from the deployment script because anvil does not support cheatcodes. The client will use anvil_setCode at that address.
   ToyENS remoteEns = ToyENS(address(bytes20(hex"decaf0")));
 
-  bool createFile; // whether to write a .json file with updated addresses
+  bool writeDeploy; // whether to write a .json file with updated addresses
   address broadcaster; // who will broadcast
 
   constructor() {
@@ -40,13 +40,11 @@ abstract contract Deployer is Script2 {
 
     // depending on which fork the script is running on, choose whether to write the addresses to a file, get the right fork contract, and name the current network.
     if (singleton("Deployer:Fork") == address(0)) {
-      createFile = true;
       if (block.chainid == 80001) {
         fork = new MumbaiFork();
       } else if (block.chainid == 127) {
         fork = new PolygonFork();
       } else if (block.chainid == 31337) {
-        createFile = false;
         fork = new LocalFork();
       } else {
         revert(string.concat("Unknown chain id ", vm.toString(block.chainid), ", cannot deploy."));
@@ -57,6 +55,10 @@ abstract contract Deployer is Script2 {
     } else {
       fork = GenericFork(singleton("Deployer:Fork"));
     }
+
+    try vm.envBool("WRITE_DEPLOY") returns (bool _writeDeploy) {
+      writeDeploy = _writeDeploy;
+    } catch {}
   }
 
   // broadcast using a broadcasting address in the descending prio order:
@@ -91,19 +93,25 @@ abstract contract Deployer is Script2 {
       remoteEns.set(names, addrs);
     }
 
-    if (createFile) {
-      out = "";
-      line("[");
-      for (uint i = 0; i < names.length; i++) {
-        bool end = i + 1 == names.length;
-        line("  {");
-        line(string.concat('    "address": "', vm.toString(addrs[i]), '",'));
-        line(string.concat('    "name": "', names[i], '"'));
-        line(end ? "  }" : "  },");
-      }
-      line("]");
+    out = "";
+    line("[");
+    for (uint i = 0; i < names.length; i++) {
+      bool end = i + 1 == names.length;
+      line("  {");
+      line(string.concat('    "address": "', vm.toString(addrs[i]), '",'));
+      line(string.concat('    "name": "', names[i], '"'));
+      line(end ? "  }" : "  },");
+    }
+    line("]");
+    vm.writeFile(
+      fork.addressesFile(
+        "deployed",
+        string.concat("-", vm.toString(block.timestamp), ".backup")
+      ),
+      out
+    );
+    if (writeDeploy) {
       vm.writeFile(fork.addressesFile("deployed"), out);
-      vm.writeFile(fork.addressesFile("deployed", string.concat("-", vm.toString(block.timestamp), ".backup")), out);
     }
   }
 
