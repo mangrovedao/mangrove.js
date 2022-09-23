@@ -57,8 +57,7 @@ interface IOrderLogic {
     bool fillWants,
     uint takerGot,
     uint takerGave,
-    uint penalty,
-    uint restingOrderId
+    uint penalty
   );
 
   function expiring(

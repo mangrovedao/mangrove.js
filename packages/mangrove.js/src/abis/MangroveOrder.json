@@ -46,7 +46,13 @@
         {
           "indexed": false,
           "internalType": "bytes32",
-          "name": "reason",
+          "name": "makerData",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "mgvData",
           "type": "bytes32"
         }
       ],
@@ -139,12 +145,6 @@
           "indexed": false,
           "internalType": "uint256",
           "name": "penalty",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "restingOrderId",
           "type": "uint256"
         }
       ],
