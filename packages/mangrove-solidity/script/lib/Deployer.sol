@@ -1,5 +1,6 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.13;
+
 import {Script2} from "mgv_test/lib/Script2.sol";
 import {ToyENS} from "./ToyENS.sol";
 import {GenericFork} from "mgv_test/lib/forks/Generic.sol";
@@ -48,13 +49,7 @@ abstract contract Deployer is Script2 {
         createFile = false;
         fork = new LocalFork();
       } else {
-        revert(
-          string.concat(
-            "Unknown chain id ",
-            vm.toString(block.chainid),
-            ", cannot deploy."
-          )
-        );
+        revert(string.concat("Unknown chain id ", vm.toString(block.chainid), ", cannot deploy."));
       }
 
       singleton("Deployer:Fork", address(fork));
@@ -76,10 +71,7 @@ abstract contract Deployer is Script2 {
       // If sender is not forge's default sender, ignore env var config
       // Otherwise, load <NETWORK>_PRIVATE_KEY (if it exists)
       if (broadcaster == 0x00a329c0648769A73afAc7F9381E08FB43dBEA72) {
-        string memory envVar = string.concat(
-          simpleCapitalize(fork.NAME()),
-          "_PRIVATE_KEY"
-        );
+        string memory envVar = string.concat(simpleCapitalize(fork.NAME()), "_PRIVATE_KEY");
         try vm.envUint(envVar) returns (uint key) {
           broadcaster = vm.rememberKey(key);
         } catch {}
@@ -111,13 +103,7 @@ abstract contract Deployer is Script2 {
       }
       line("]");
       vm.writeFile(fork.addressesFile("deployed"), out);
-      vm.writeFile(
-        fork.addressesFile(
-          "deployed",
-          string.concat("-", vm.toString(block.timestamp), ".backup")
-        ),
-        out
-      );
+      vm.writeFile(fork.addressesFile("deployed", string.concat("-", vm.toString(block.timestamp), ".backup")), out);
     }
   }
 
