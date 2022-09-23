@@ -133,6 +133,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
   {
     // resting limit order for the residual of the taker order
     // this call will credit offer owner virtual account on Mangrove with msg.value before trying to post the offer
+    // we add the bounty to the fund instead of an explicit transfer in case an offer is created.
     // `offerId_==0` if mangrove rejects the update because of low density.
     // call may not revert because of insufficient funds
     res.offerId = _newOffer(
@@ -143,7 +144,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         gives: tko.makerGives - res.takerGave,
         gasreq: offerGasreq(),
         pivotId: 0,
-        fund: msg.value,
+        fund: msg.value + res.bounty,
         caller: msg.sender,
         noRevert: true // returns 0 when MGV reverts
       })
