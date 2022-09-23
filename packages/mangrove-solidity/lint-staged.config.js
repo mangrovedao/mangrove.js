@@ -1,7 +1,7 @@
 // lint-staged.config.js
-import micromatch from "micromatch";
+const micromatch = require("micromatch");
 
-export default {
+module.exports = {
   "*.sol": (files) => {
     // from `files` filter those _NOT_ matching `*test.js`
     const match = micromatch.not(files, "**/mangrove-solidity/lib/**");
