@@ -41,6 +41,12 @@ interface IOrderLogic {
     uint timeToLiveForRestingOrder;
   }
 
+  ///@notice Result of an order from the takers side.
+  ///@param takerGot How much the taker got
+  ///@param takerGave How much the taker gave
+  ///@param bounty How much bounty was givin to the taker
+  ///@param fee The fee paided by the taker
+  ///@param offerId The id of the offer that was taken
   struct TakerOrderResult {
     uint takerGot;
     uint takerGave;
@@ -49,6 +55,16 @@ interface IOrderLogic {
     uint offerId;
   }
 
+  ///@notice Information about the order.
+  ///@param mangrove The Mangrove contract on which the offer was posted
+  ///@param outbound_tkn The outbound token of the order.
+  ///@param inbound_tkn The inbound token of the order.
+  ///@param taker The address of the taker
+  ///@param fillWants If true, the market order stoped when `takerWants` units of `outbound_tkn` had been obtained; otherwise, the market order stoped when `takerGives` units of `inbound_tkn` had been sold.
+  ///@param takerGot How much the taker got
+  ///@param takerGave How much the taker gave
+  ///@param penalty How much penalty was given
+  ///@param restingOrderId The Id of the resting order
   event OrderSummary(
     IMangrove mangrove,
     IERC20 indexed outbound_tkn,
