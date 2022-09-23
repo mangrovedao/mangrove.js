@@ -58,11 +58,12 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     }
   }
 
-  /// @notice grants managing rights on a particular offer.
-  /// @param outbound_tkn the outbound token of the offer list.
-  /// @param inbound_tkn the inbound token of the offer list.
+  /// @notice grants managing (update/retract) rights on a particular offer.
+  /// @param outbound_tkn the outbound token coordinate of the offer list.
+  /// @param inbound_tkn the inbound token coordinate of the offer list.
   /// @param offerId the offer identifier in the offer list.
-  /// @param owner the address of the offer maker who will have ownership over the offer.
+  /// @param owner the address of the offer maker.
+  /// @param leftover the fraction of msg.value that is not locked in the offer provision due to rounding error (see `_newOffer`).
   function addOwner(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
@@ -77,10 +78,11 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     emit NewOwnedOffer(MGV, outbound_tkn, inbound_tkn, offerId, owner);
   }
 
-  /// @notice computes the `gasprice` that is covered by the provision given in argument.
+  /// @notice computes the maximum `gasprice` that can be covered by the amount of provision given in argument.
   /// @param gasreq the gas required by the offer
-  /// @param provision the amount of native token one is using to provision the offer
-  /// @return gasprice the gas price that is covered by `provision`.
+  /// @param provision the amount of native token one is wishes to use, to provision the offer on Mangrove.
+  /// @return gasprice the gas price that is covered by `provision` - `leftover`.
+  /// @return leftover the sub amount of `provision` that is not used to provision the offer.
   /// @dev the returned gasprice is slightly lower than the real gasprice that the provision can cover because of the rounding error due to division
   function deriveGasprice(
     uint gasreq,
