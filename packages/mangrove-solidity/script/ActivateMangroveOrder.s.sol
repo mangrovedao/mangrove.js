@@ -29,7 +29,7 @@ contract ActivateMangroveOrder is Script2, Deployer {
     for (uint i = 0; i < tkns.length; i++) {
       console.log("%s (%s)", IERC20(tkns[i]).symbol(), address(tkns[i]));
     }
-    vm.broadcast();
+    broadcast();
     MangroveOrder(payable(mgvOrder)).activate(tkns);
   }
 }

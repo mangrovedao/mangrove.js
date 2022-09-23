@@ -161,6 +161,7 @@ contract MakerPosthookTest is MangroveTest, IMaker {
   function test_failed_offer_truncates() public {
     sExecuteRevertData = "abcdefghijklmnopqrstuvwxyz1234567";
     bExecuteRevertData = "abcdefghijklmnopqrstuvwxyz123456";
+    _posthook = treat_fail_at_posthook;
     uint balMaker = base.balanceOf($(this));
     uint balTaker = quote.balanceOf(address(tkr));
     ofr = mgv.newOffer($(base), $(quote), 1 ether, 1 ether, gasreq, _gasprice, 0);

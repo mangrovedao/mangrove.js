@@ -19,28 +19,28 @@ contract MangroveDeployer is Deployer {
   MangroveOrderEnriched public mgoe;
 
   function run() public {
-    deploy({chief: msg.sender, gasprice: 1, gasmax: 2_000_000});
+    innerRun({chief: msg.sender, gasprice: 1, gasmax: 2_000_000});
     outputDeployment();
   }
 
-  function deploy(address chief, uint gasprice, uint gasmax) public {
-    vm.broadcast();
+  function innerRun(address chief, uint gasprice, uint gasmax) public {
+    broadcast();
     mgv = new Mangrove({governance: chief, gasprice: gasprice, gasmax: gasmax});
     fork.set("Mangrove", address(mgv));
 
-    vm.broadcast();
+    broadcast();
     reader = new MgvReader({mgv: payable(mgv)});
     fork.set("MgvReader", address(reader));
 
-    vm.broadcast();
+    broadcast();
     cleaner = new MgvCleaner({mgv: address(mgv)});
     fork.set("MgvCleaner", address(cleaner));
 
-    vm.broadcast();
+    broadcast();
     oracle = new MgvOracle({_governance: chief, _initialMutator: chief});
     fork.set("MgvOracle", address(oracle));
 
-    vm.broadcast();
+    broadcast();
     mgoe = new MangroveOrderEnriched({
       mgv: IMangrove(payable(mgv)),
       deployer: chief

@@ -719,4 +719,21 @@ contract Script2 is Script {
     }
     return bs;
   }
+
+  /* String stuff */
+  // @notice Uppercase any string that only contains ascii lower/uppercase and underscores
+  /// @param s a string
+  /// @return ss s, uppercased
+  function simpleCapitalize(string memory s) internal pure returns (string memory ss) {
+    bytes memory b = bytes(s);
+    ss = new string(b.length);
+    unchecked {
+      for (uint i = 0; i < b.length; i++) {
+        bytes1 bb = b[i];
+        bool lowercase = bb >= "a" && bb <= "z";
+        require(lowercase || bb == "_" || (bb >= "A" && bb <= "Z"), "simpleCapitalize input out of range");
+        bytes(ss)[i] = lowercase ? bytes1(uint8(bb) - 32) : bb;
+      }
+    }
+  }
 }

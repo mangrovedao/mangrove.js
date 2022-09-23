@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 import {Mango, IERC20, IMangrove} from "mgv_src/strategies/offer_maker/market_making/mango/Mango.sol";
+import {Deployer} from "mgv_script/lib/Deployer.sol";
 
 /**
  * @notice Shuts down a Mango instance on a given market
@@ -21,7 +22,7 @@ import {Mango, IERC20, IMangrove} from "mgv_src/strategies/offer_maker/market_ma
  * StopMango
  */
 
-contract StopMango is Script {
+contract StopMango is Deployer {
   function run() public {
     innerRun({$mgo: payable(vm.envAddress("MANGO")), from: vm.envUint("FROM"), to: vm.envUint("TO")});
   }
@@ -32,7 +33,7 @@ contract StopMango is Script {
     require(mgo.admin() == msg.sender, "This script requires admin rights");
     require(from < n, "invalid start index");
     to = to >= n ? n - 1 : to;
-    vm.broadcast();
+    broadcast();
     uint collected = mgo.retractOffers(
       2, // both bids and asks
       from, // from
@@ -41,7 +42,7 @@ contract StopMango is Script {
     uint bal = mgo.MGV().balanceOf($mgo);
     if (bal > 0) {
       collected += bal;
-      vm.broadcast();
+      broadcast();
       mgo.withdrawFromMangrove(bal, payable(msg.sender));
     }
     console.log("Retracted", to - from, "offers");

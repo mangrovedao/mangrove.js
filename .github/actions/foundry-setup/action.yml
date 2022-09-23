@@ -16,7 +16,7 @@ runs:
     uses: actions/cache@v3
     with:
       path: "~/.foundry/cache"
-      key: foundry-rpc-cache-${{ hashFiles('foundry.toml',format('{0}/test/',env.working-directory)) }}
+      key: foundry-rpc-cache-${{ hashFiles('foundry.toml','packages/mangrove-solidity/test') }}
       restore-keys: |
         foundry-rpc-cache-
 
