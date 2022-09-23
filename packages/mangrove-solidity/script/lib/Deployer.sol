@@ -17,11 +17,11 @@ import {LocalFork} from "mgv_test/lib/forks/Local.sol";
 
    How to use:
    1. Inherit Deployer.
-   2. Write a deploy() function that does all the deployment and can be called by other deployers.
+   2. Write a innerRun() function that does all the work and can be called by other scripts.
    3. Write a standalone run() function that will be called by forge script. Call outputDeployment() at the end of run() if you deployed any contract.
 
    Do not inherit other deployer scripts! Just instantiate them and call their
-   .deploy() function;
+   .innerRun() function;
 */
 abstract contract Deployer is Script2 {
   // singleton Fork so all deploy scripts talk to the same backend
@@ -31,8 +31,12 @@ abstract contract Deployer is Script2 {
   ToyENS remoteEns = ToyENS(address(bytes20(hex"decaf0")));
 
   bool createFile; // whether to write a .json file with updated addresses
+  address broadcaster; // who will broadcast
 
   constructor() {
+    vm.label(address(fork), "Deployer:Fork");
+    vm.label(address(remoteEns), "Remote ENS");
+
     // depending on which fork the script is running on, choose whether to write the addresses to a file, get the right fork contract, and name the current network.
     if (singleton("Deployer:Fork") == address(0)) {
       createFile = true;
@@ -60,16 +64,38 @@ abstract contract Deployer is Script2 {
     }
   }
 
+  // broadcast using a broadcasting address in the descending prio order:
+  // * <NETWORK>_PRIVATE_KEY env var's associated address
+  // * --sender
+  // * --private-key (or 1st of --private-keys)'s associated address
+  // * forge default sending address
+  function broadcast() public {
+    /* Memoize broadcaster. Cannot just do it in constructor because tx.origin for script constructors is not the same as for function calls */
+    if (broadcaster == address(0)) {
+      broadcaster = tx.origin;
+      // If sender is not forge's default sender, ignore env var config
+      // Otherwise, load <NETWORK>_PRIVATE_KEY (if it exists)
+      if (broadcaster == 0x00a329c0648769A73afAc7F9381E08FB43dBEA72) {
+        string memory envVar = string.concat(
+          simpleCapitalize(fork.NAME()),
+          "_PRIVATE_KEY"
+        );
+        try vm.envUint(envVar) returns (uint key) {
+          broadcaster = vm.rememberKey(key);
+        } catch {}
+      }
+    }
+    vm.broadcast(broadcaster);
+  }
+
+  // buffer for output file
   string out;
 
   function outputDeployment() internal {
-    (
-      string[] memory names,
-      address[] memory addrs
-    ) = fork.allDeployed();
+    (string[] memory names, address[] memory addrs) = fork.allDeployed();
 
     if (address(remoteEns).code.length > 0) {
-      vm.broadcast();
+      broadcast();
       remoteEns.set(names, addrs);
     }
 
