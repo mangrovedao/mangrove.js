@@ -22,7 +22,8 @@ contract OfferLogicTest is MangroveTest {
     IERC20 indexed outbound_tkn,
     IERC20 indexed inbound_tkn,
     uint indexed offerId,
-    bytes32 reason
+    bytes32 makerData,
+    bytes32 mgvData
   );
 
   function setUp() public virtual override {
@@ -209,7 +210,7 @@ contract OfferLogicTest is MangroveTest {
     });
   }
 
-  function performTrade()
+  function performTrade(bool success)
     internal
     returns (
       uint takergot,
@@ -240,7 +241,10 @@ contract OfferLogicTest is MangroveTest {
       fillWants: true
     });
     vm.stopPrank();
-    assertTrue(bounty == 0 && takergot > 0, "trade failed");
+    assertTrue(
+      !success || (bounty == 0 && takergot > 0),
+      "unexpected trade result"
+    );
   }
 
   function test_reserveUpdatedWhenTradeSucceeds() public {
@@ -251,7 +255,7 @@ contract OfferLogicTest is MangroveTest {
     uint balIn = makerContract.tokenBalance(usdc);
     vm.stopPrank();
 
-    (uint takergot, uint takergave, uint bounty, uint fee) = performTrade();
+    (uint takergot, uint takergave, uint bounty, uint fee) = performTrade(true);
     assertTrue(bounty == 0 && takergot > 0, "trade failed");
 
     vm.startPrank(maker);
@@ -273,10 +277,28 @@ contract OfferLogicTest is MangroveTest {
     // for aave routers reserve will hold overlying while for simple router reserve will hold the asset
     uint balusdc = usdc.balanceOf(maker);
 
-    (, uint takergave, , ) = performTrade();
+    (, uint takergave, , ) = performTrade(true);
     vm.prank(maker);
     // this will be a noop when maker == reserve
     makerContract.withdrawToken(usdc, maker, takergave);
     assertEq(usdc.balanceOf(maker), balusdc + takergave, "withdraw failed");
+  }
+
+  function test_failingOfferLogsIncident() public {
+    // making offer fail for lack of approval
+    (, Local.t local) = mgv.config($(weth), $(usdc));
+    uint next_id = local.last() + 1;
+    vm.expectEmit(true, true, true, false, address(makerContract));
+    emit LogIncident(
+      IMangrove($(mgv)),
+      weth,
+      usdc,
+      next_id,
+      "mgvOffer/tradeSuccess",
+      "mgv/makerTransferFail"
+    );
+    vm.prank(maker);
+    makerContract.approve(weth, $(mgv), 0);
+    performTrade({success: false});
   }
 }

@@ -21,7 +21,8 @@ contract MangroveOrder_Test is MangroveTest {
     IERC20 indexed outbound_tkn,
     IERC20 indexed inbound_tkn,
     uint indexed offerId,
-    bytes32 reason
+    bytes32 makerData,
+    bytes32 mgvData
   );
 
   event OrderSummary(

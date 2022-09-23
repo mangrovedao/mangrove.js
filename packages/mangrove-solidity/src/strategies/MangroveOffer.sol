@@ -91,7 +91,6 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     if (__get__(order.wants, order) > 0) {
       revert("mgvOffer/abort/getFailed");
     }
-    return ret;
   }
 
   /// @notice `makerPosthook` is the callback function that is called by Mangrove *after* the offer execution.
@@ -113,7 +112,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
         IERC20(order.outbound_tkn),
         IERC20(order.inbound_tkn),
         order.offerId,
-        result.makerData
+        result.makerData,
+        result.mgvData
       );
       __posthookFallback__(order, result);
     }
@@ -275,7 +275,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     returns (bytes32 data)
   {
     order; //shh
-    return "";
+    return "mgvOffer/tradeSuccess";
   }
 
   ///@notice Post-hook that implements fallback behavior when Taker Order's execution failed unexpectedly.

@@ -26,7 +26,8 @@ interface IOfferLogic is IMaker {
     IERC20 indexed outbound_tkn,
     IERC20 indexed inbound_tkn,
     uint indexed offerId,
-    bytes32 reason
+    bytes32 makerData,
+    bytes32 mgvData
   );
 
   ///@notice Logging change of router address
