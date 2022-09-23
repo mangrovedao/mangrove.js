@@ -47,7 +47,7 @@ describe("TradeEventManagement unit tests suite", () => {
       when(gotToken.fromUnits(evt.args.takerGot)).thenReturn(expectedGot);
       when(gaveToken.fromUnits(evt.args.takerGave)).thenReturn(expectedGave);
       const partialFillFunc: (
-        takerGot: BigNumber,
+        takerGotWithFee: BigNumber,
         takerGave: BigNumber
       ) => boolean = () => true;
 
@@ -160,7 +160,6 @@ describe("TradeEventManagement unit tests suite", () => {
       assert.equal(result.gave, summary.gave);
       assert.equal(result.partialFill, summary.partialFill);
       assert.equal(result.penalty, summary.penalty);
-      assert.equal(result.offerId, expectedOfferId.toNumber());
     });
   });
 
@@ -268,16 +267,16 @@ describe("TradeEventManagement unit tests suite", () => {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const fillWants = true;
-      const takerGot = BigNumber.from(10);
+      const takerGotWithFee = BigNumber.from(10);
       const takerWants = BigNumber.from(9);
 
       //Act
-      const partialFillFunc = tradeEventManagement.partialFill(
+      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
         fillWants,
         takerWants,
         mock(BigNumber)
       );
-      const partialFill = partialFillFunc(takerGot, mock(BigNumber));
+      const partialFill = partialFillFunc(takerGotWithFee, mock(BigNumber));
 
       //Assert
       assert.equal(partialFill, false);
@@ -286,16 +285,16 @@ describe("TradeEventManagement unit tests suite", () => {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const fillWants = true;
-      const takerGot = BigNumber.from(10);
+      const takerGotWithFee = BigNumber.from(10);
       const takerWants = BigNumber.from(11);
 
       //Act
-      const partialFillFunc = tradeEventManagement.partialFill(
+      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
         fillWants,
         takerWants,
         mock(BigNumber)
       );
-      const partialFill = partialFillFunc(takerGot, mock(BigNumber));
+      const partialFill = partialFillFunc(takerGotWithFee, mock(BigNumber));
 
       //Assert
       assert.equal(partialFill, true);
@@ -309,7 +308,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const takerGives = BigNumber.from(9);
 
       //Act
-      const partialFillFunc = tradeEventManagement.partialFill(
+      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
         fillWants,
         mock(BigNumber),
         takerGives
@@ -328,7 +327,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const takerGives = BigNumber.from(11);
 
       //Act
-      const partialFillFunc = tradeEventManagement.partialFill(
+      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
         fillWants,
         mock(BigNumber),
         takerGives

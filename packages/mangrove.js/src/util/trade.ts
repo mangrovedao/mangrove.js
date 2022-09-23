@@ -307,17 +307,14 @@ class Trade {
     overrides: ethers.Overrides = {},
     market: Market
   ): Promise<Market.RawSnipeParams> {
-    const [outboundTkn, inboundTkn] =
-      params.ba === "asks"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(params.ba);
 
     const _targets = params.targets.map<SnipeUnitParams["targets"][number]>(
       (t) => {
         return {
           offerId: t.offerId,
-          takerWants: outboundTkn.toUnits(t.takerWants),
-          takerGives: inboundTkn.toUnits(t.takerGives),
+          takerWants: outbound_tkn.toUnits(t.takerWants),
+          takerGives: inbound_tkn.toUnits(t.takerGives),
           gasLimit: t.gasLimit,
         };
       }
@@ -391,18 +388,18 @@ class Trade {
     );
     const receipt = await response.wait();
 
-    //last OrderComplete is ours!
     logger.debug("Market order raw receipt", {
       contextInfo: "market.marketOrder",
       data: { receipt: receipt },
     });
-    const result: Market.OrderResult = this.createOrderResultFromReceipt(
+    const result: Market.OrderResult = this.initialResult(receipt);
+    this.tradeEventManagement.processMangroveEvents(
+      result,
       receipt,
-      orderType,
+      this.bsToBa(orderType),
       fillWants,
       wants,
       gives,
-      market.mgv._address,
       market
     );
     if (!result.summary) {
@@ -469,21 +466,32 @@ class Trade {
     );
     const receipt = await response.wait();
 
-    //last OrderComplete is ours!
     logger.debug("Resting order raw receipt", {
       contextInfo: "market.restingOrder",
       data: { receipt: receipt },
     });
 
-    const result: Market.OrderResult = this.createOrderResultFromReceipt(
+    const result: Market.OrderResult = this.initialResult(receipt);
+
+    this.tradeEventManagement.processMangroveEvents(
+      result,
       receipt,
-      orderType,
+      this.bsToBa(orderType),
       fillWants,
       wants,
       gives,
-      market.mgv.orderContract.address,
       market
     );
+    this.tradeEventManagement.processMangroveOrderEvents(
+      result,
+      receipt,
+      this.bsToBa(orderType),
+      fillWants,
+      wants,
+      gives,
+      market
+    );
+
     if (!result.summary) {
       throw Error("resting order went wrong");
     }
@@ -491,46 +499,23 @@ class Trade {
     return result;
   }
 
-  createOrderResultFromReceipt(
-    receipt: ethers.ContractReceipt,
-    orderType: string,
-    fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
-    address: string,
-    market: Market
-  ) {
-    let result: Market.OrderResult = {
+  initialResult(receipt: ethers.ContractReceipt): Market.OrderResult {
+    return {
       txReceipt: receipt,
       summary: undefined,
       successes: [],
       tradeFailures: [],
       posthookFailures: [],
+      offerWrites: [],
     };
-    const got_bq = orderType === "buy" ? "base" : "quote";
-    const gave_bq = orderType === "buy" ? "quote" : "base";
-    for (const evt of receipt.events) {
-      if (
-        evt.address === address &&
-        (!evt.args.taker || receipt.from === evt.args.taker)
-      ) {
-        result = this.tradeEventManagement.resultOfEvent(
-          evt,
-          got_bq,
-          gave_bq,
-          fillWants,
-          wants,
-          gives,
-          result,
-          market
-        );
-      }
-    }
-    return result;
   }
 
   baToBs(ba: Market.BA): Market.BS {
     return ba === "asks" ? "buy" : "sell";
+  }
+
+  bsToBa(bs: Market.BS): Market.BA {
+    return bs === "buy" ? "asks" : "bids";
   }
 
   /**
@@ -596,13 +581,6 @@ class Trade {
     const snipeFunction = requireOffersToFail
       ? market.mgv.cleanerContract.collect
       : market.mgv.contract.snipes;
-    const parseLogs = requireOffersToFail
-      ? (events: ethers.Event[], logs: ethers.providers.Log[]) =>
-          logs
-            .filter((x) => x.address === market.mgv._address)
-            .map((l) => market.mgv.contract.interface.parseLog(l))
-      : (events: ethers.Event[], logs: ethers.providers.Log[]) =>
-          events.filter((x) => x.address === market.mgv._address);
 
     const response = await snipeFunction(
       raw.outboundTkn,
@@ -614,33 +592,23 @@ class Trade {
 
     const receipt = await response.wait();
 
-    let result: Market.OrderResult = {
-      txReceipt: receipt,
-      summary: undefined,
-      successes: [],
-      tradeFailures: [],
-      posthookFailures: [],
-    };
-    //last OrderComplete is ours!
+    const result: Market.OrderResult = this.initialResult(receipt);
+
     logger.debug("Snipes raw receipt", {
       contextInfo: "market.snipes",
       data: { receipt: receipt },
     });
-    const got_bq = raw.ba === "asks" ? "base" : "quote";
-    const gave_bq = raw.ba === "asks" ? "quote" : "base";
-    const parsedEvents = parseLogs(receipt.events, receipt.logs);
-    for (const evt of parsedEvents) {
-      if (evt.args && (!evt.args.taker || receipt.from === evt.args.taker)) {
-        result = this.tradeEventManagement.resultOfEventCore(
-          evt,
-          got_bq,
-          gave_bq,
-          () => false,
-          result,
-          market
-        );
-      }
-    }
+
+    // pass 0's for gives/wants to always report a full fill
+    this.tradeEventManagement.processMangroveEvents(
+      result,
+      receipt,
+      raw.ba,
+      true,
+      ethers.BigNumber.from(0),
+      ethers.BigNumber.from(0),
+      market
+    );
     if (!result.summary) {
       throw Error("snipes went wrong");
     }

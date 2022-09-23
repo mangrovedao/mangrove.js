@@ -124,7 +124,7 @@ describe("RestingOrder", () => {
         "Taker received an incorrect amount"
       );
       assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
-      assert(orderResult.summary.offerId > 0, "Resting order was not posted");
+      assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
       assert(
         orderResult.summary.partialFill,
         "Order should have been partially filled"
@@ -147,12 +147,15 @@ describe("RestingOrder", () => {
         restingOrder: { provision: provision, timeToLiveForRestingOrder: 5 },
       });
 
-      assert(orderResult.summary.offerId > 0, "Resting order was not posted");
+      assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
       const ttl = await mgv.orderContract.expiring(
         mgv.token("TokenB").address,
         mgv.token("TokenA").address,
-        orderResult.summary.offerId
+        orderResult.restingOrder.id
       );
+
+      assert(orderResult.restingOrder.volume.eq(10));
+      assert(orderResult.restingOrder.price.eq(1));
 
       // taking resting offer
 
@@ -165,7 +168,7 @@ describe("RestingOrder", () => {
       assert(
         await orderContractAsLP.market.isLive(
           "bids",
-          orderResult.summary.offerId
+          orderResult.restingOrder.id
         ),
         "Residual should still be in the book"
       );
