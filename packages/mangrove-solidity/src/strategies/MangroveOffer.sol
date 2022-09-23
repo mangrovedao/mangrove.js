@@ -183,7 +183,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     if (amount == type(uint).max) {
       amount = MGV.balanceOf(address(this));
       if (amount == 0) {
-        return; // optim
+        return; // optimization
       }
     }
     require(MGV.withdraw(amount), "mgvOffer/withdrawFromMgv/withdrawFail");

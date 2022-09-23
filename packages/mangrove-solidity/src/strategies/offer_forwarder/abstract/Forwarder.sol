@@ -184,7 +184,11 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint gasprice, // value ignored but kept to satisfy `Forwarder is IOfferLogic`
     uint pivotId,
     uint offerId
-  ) external payable override {
+  )
+    external
+    payable
+    override
+  {
     OwnerData memory od = ownerData[outbound_tkn][inbound_tkn][offerId];
     require(msg.sender == od.owner, "Multi/updateOffer/unauthorized");
     gasprice; // ssh
@@ -285,7 +289,11 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     IERC20 inbound_tkn,
     uint offerId,
     bool deprovision // if set to `true`, `this` contract will receive the remaining provision (in WEI) associated to `offerId`.
-  ) public override returns (uint free_wei) {
+  )
+    public
+    override
+    returns (uint free_wei)
+  {
     OwnerData memory od = ownerData[outbound_tkn][inbound_tkn][offerId];
     require(od.owner == msg.sender || address(MGV) == msg.sender, "Multi/retractOffer/unauthorized");
     free_wei = deprovision ? od.wei_balance : 0;
@@ -296,7 +304,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       // resetting pending returned provision
       ownerData[outbound_tkn][inbound_tkn][offerId].wei_balance = 0;
       // sending WEI's to offer owner. Note that this call could occur nested inside a call to `makerExecute` originating from Mangrove
-      // this is still safe because WEI's are being sent to offer owner who has no incentive to make current trade fail.
+      // this is still safe because WEI's are being sent to offer owner who has no incentive to make current trade fail or waste gas.
       (bool noRevert,) = od.owner.call{value: free_wei}("");
       require(noRevert, "Forwarder/weiTransferFail");
     }

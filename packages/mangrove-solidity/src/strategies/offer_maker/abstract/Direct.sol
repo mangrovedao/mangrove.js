@@ -101,7 +101,12 @@ abstract contract Direct is MangroveOffer {
     uint gasprice,
     uint pivotId,
     uint offerId
-  ) public payable override mgvOrAdmin {
+  )
+    public
+    payable
+    override
+    mgvOrAdmin
+  {
     MGV.updateOffer{value: msg.value}(
       address(outbound_tkn),
       address(inbound_tkn),
@@ -117,18 +122,23 @@ abstract contract Direct is MangroveOffer {
   // Retracts `offerId` from the (`outbound_tkn`,`inbound_tkn`) Offer list of Mangrove.
   // Function call will throw if `this` contract is not the owner of `offerId`.
   // Returned value is the amount of ethers that have been credited to `this` contract balance on Mangrove (always 0 if `deprovision=false`)
-  // NB `mgvOrAdmin` modifier guarantees that this function is either called by contract admin or during trade execution by Mangrove
+  // NB `mgvOrAdmin` modifier guarantees that this function is either called by contract admin or (indirectly) during trade execution by Mangrove
   function retractOffer(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
     uint offerId,
     bool deprovision // if set to `true`, `this` contract will receive the remaining provision (in WEI) associated to `offerId`.
-  ) public override mgvOrAdmin returns (uint free_wei) {
+  )
+    public
+    override
+    mgvOrAdmin
+    returns (uint free_wei)
+  {
     free_wei = MGV.retractOffer(address(outbound_tkn), address(inbound_tkn), offerId, deprovision);
     if (free_wei > 0) {
       require(MGV.withdraw(free_wei), "Direct/withdrawFromMgv/withdrawFail");
-      // sending native tokens to msg.sender prevents reentrancy issues
-      // (the context call of `retractOffer` could be coming from `makerExecute` and recipient of transfer could use this call to make offer fail)
+      // sending native tokens to `msg.sender` prevents reentrancy issues
+      // (the context call of `retractOffer` could be coming from `makerExecute` and a different recipient of transfer than `msg.sender` could use this call to make offer fail)
       (bool noRevert,) = msg.sender.call{value: free_wei}("");
       require(noRevert, "Direct/weiTransferFail");
     }

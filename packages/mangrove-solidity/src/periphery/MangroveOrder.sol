@@ -84,7 +84,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
 
     // at this points the following invariants hold:
     // 1. taker received `takerGot` outbound tokens
-    // 2. `this` contract inbound token balance is now equal to `tko.gives - takerGave`.
+    // 2. `this` contract inbound token balance is now equal to `tko.takerGives - takerGave`.
     // 3. `this` contract's WEI balance is credited of `msg.value + bounty`
 
     if (tko.restingOrder && !isComplete) {
@@ -100,8 +100,12 @@ contract MangroveOrder is Forwarder, IOrderLogic {
       }
 
       // transferring potential bounty and msg.value back to the taker
+      // The msg.value was only going to be used to fund the resting order, but in this branch we are not creating it,
+      // so there is nothing to pay for since a potential taker fee is deducted from the the taker received in the taker order.
       if (msg.value + res.bounty > 0) {
-        // NB this calls gives reentrancy power to caller
+        // NB this calls gives reentrancy power to caller, but
+        // since we only ever send money to the caller, we do not need to provide any particular amount of gas, the caller should manage this herself,
+        // and state has been updated.
         (bool noRevert,) = msg.sender.call{value: msg.value + res.bounty}("");
         require(noRevert, "mgvOrder/mo/refundFail");
       }
@@ -124,7 +128,9 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     IERC20 inbound_tkn,
     IERC20 outbound_tkn,
     TakerOrderResult memory res
-  ) internal {
+  )
+    internal
+  {
     // resting limit order for the residual of the taker order
     // this call will credit offer owner virtual account on Mangrove with msg.value before trying to post the offer
     // `offerId_==0` if mangrove rejects the update because of low density.
@@ -178,7 +184,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         offerId: res.offerId
       });
 
-      // crediting caller's balance with amount of offered tokens (transferred from caller at the beginning of this function)
+      // crediting caller's balance with amount of offered tokens (transferred from caller at the beginning of take function)
       // so that the offered tokens can be transferred when the offer is taken.
       router().push(outbound_tkn, msg.sender, tko.takerGives - res.takerGave);
 

@@ -88,9 +88,10 @@ interface IOfferLogic is IMaker {
   function activate(IERC20[] calldata tokens) external;
 
   ///@notice withdraws ETH from the provision account on Mangrove and sends collected WEIs to `receiver`
-  ///@dev for multi user strats, the contract provision account on Mangrove is pooled amongst offer owners so admin should only call this function to recover WEIs (e.g. that were erroneously transferred to Mangrove using `MGV.fund()`)
+  ///@dev for multi user strats (e.g., is `Forwarder`), the contract provision account on Mangrove is pooled amongst offer owners so admin should only call this function to recover WEIs (e.g. that were erroneously transferred to Mangrove using `MGV.fund()`)
   /// This contract's balance on Mangrove may contain deprovisioned WEIs after an offer has failed (complement between provision and the bounty that was sent to taker)
-  /// those free WEIs can be retrieved by offer owners by calling `retractOffer` with the `deprovision` flag. Not by calling this function which is admin only.
+  /// those free WEIs can be retrieved by offer owners by calling `retractOffer` with the `deprovision` flag - not by calling this function which is admin only.
+  /// Since a call is made to the receiver, the admin should careful how much gas is made available for this call and note that the receiver force it to fail.
   function withdrawFromMangrove(uint amount, address payable receiver) external;
 
   ///@notice updates an offer existing on Mangrove (not necessarily live).
@@ -111,14 +112,18 @@ interface IOfferLogic is IMaker {
     uint gasprice,
     uint pivotId,
     uint offerId
-  ) external payable;
+  )
+    external
+    payable;
 
   function retractOffer(
     IERC20 outbound_tkn,
     IERC20 inbound_tkn,
     uint offerId,
     bool deprovision // if set to `true`, `this` contract will receive the remaining provision (in WEI) associated to `offerId`.
-  ) external returns (uint received);
+  )
+    external
+    returns (uint received);
 
   // returns the address of the vault holding maker's liquidity
   // for single user maker is simply `this` contract
