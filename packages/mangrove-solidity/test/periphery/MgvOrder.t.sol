@@ -1,17 +1,16 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.10;
 
-import "mgv_test/lib/MangroveTest.sol";
-
-pragma solidity ^0.8.10;
-
 pragma abicoder v2;
 
+import {MangroveTest} from "mgv_test/lib/MangroveTest.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
-
 import {MangroveOrderEnriched as MgvOrder} from "mgv_src/periphery/MangroveOrderEnriched.sol";
-import "mgv_src/strategies/interfaces/IOrderLogic.sol";
+import {IOrderLogic} from "mgv_src/strategies/interfaces/IOrderLogic.sol";
 import {Offer} from "mgv_src/preprocessed/MgvPack.post.sol";
+import {IERC20} from "mgv_src/MgvLib.sol";
+import {TestTaker} from "mgv_test/lib/agents/TestTaker.sol";
+import {TestMaker} from "mgv_test/lib/agents/TestMaker.sol";
 
 contract MangroveOrder_Test is MangroveTest {
   // to check ERC20 logging

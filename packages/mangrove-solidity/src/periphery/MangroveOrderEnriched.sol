@@ -13,7 +13,9 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import "./MangroveOrder.sol";
+import {MangroveOrder} from "mgv_src/periphery/MangroveOrder.sol";
+import {IERC20} from "mgv_src/MgvLib.sol";
+import {IMangrove} from "mgv_src/IMangrove.sol";
 
 /**
  * @title This contract is a `MangroveOrder` enriched with the ability to retrieve all offers for each owner.
