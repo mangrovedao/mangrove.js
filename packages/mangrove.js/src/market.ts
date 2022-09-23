@@ -51,7 +51,6 @@ namespace Market {
     partialFill: boolean;
     penalty: Big;
     feePaid: Big;
-    offerId?: number; // id of resting order if any
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
@@ -59,6 +58,8 @@ namespace Market {
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];
+    offerWrites: Market.OfferSlim[];
+    restingOrder?: Market.OfferSlim;
   };
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
@@ -146,18 +147,21 @@ namespace Market {
     desiredVolume?: VolumeParams;
   };
 
-  export type Offer = {
+  export type OfferSlim = {
     id: number;
     prev: number | undefined;
-    next: number | undefined;
     gasprice: number;
     maker: string;
     gasreq: number;
-    offer_gasbase: number;
     wants: Big;
     gives: Big;
     volume: Big;
     price: Big;
+  };
+
+  export type Offer = OfferSlim & {
+    next: number | undefined;
+    offer_gasbase: number;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-namespace

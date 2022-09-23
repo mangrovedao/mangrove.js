@@ -93,18 +93,6 @@ namespace Semibook {
   }
 }
 
-type RawOfferData = {
-  id: BigNumber;
-  prev: BigNumber;
-  next: BigNumber;
-  gasprice: BigNumber;
-  maker: string;
-  gasreq: BigNumber;
-  offer_gasbase: BigNumber;
-  wants: BigNumber;
-  gives: BigNumber;
-};
-
 /**
  * The Semibook is a data structure for maintaining a cached prefix
  * of an offer list for one side (asks or bids) of a market.
@@ -189,11 +177,19 @@ class Semibook implements Iterable<Market.Offer> {
       inbound_tkn.address,
       offerId
     );
-    return this.#rawOfferToOffer({
-      id: this.#idToRawId(offerId),
-      ...offer,
-      ...details,
-    });
+    return {
+      next: this.#rawIdToId(offer.next),
+      offer_gasbase: details.offer_gasbase.toNumber(),
+      ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
+        this.market,
+        this.ba,
+        {
+          id: this.#idToRawId(offerId),
+          ...offer,
+          ...details,
+        }
+      ),
+    };
   }
 
   /**
@@ -633,11 +629,15 @@ class Semibook implements Iterable<Market.Offer> {
         }
 
         if (expectOfferInsertionInCache) {
-          offer = this.#rawOfferToOffer({
-            ...event.args,
-            offer_gasbase: BigNumber.from(this.#offer_gasbase),
-            next: this.#idToRawId(next),
-          });
+          offer = {
+            offer_gasbase: this.#offer_gasbase,
+            next: next,
+            ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
+              this.market,
+              this.ba,
+              event.args
+            ),
+          };
 
           if (!this.#insertOffer(offer)) {
             // Offer was not inserted
@@ -856,13 +856,23 @@ class Semibook implements Iterable<Market.Offer> {
           { blockTag: blockNumber }
         );
 
-      chunk = offerIds.map((offerId, index) =>
-        this.#rawOfferToOffer({
-          id: offerId,
-          ...offers[index],
-          ...details[index],
-        })
-      );
+      chunk = offerIds.map((offerId, index) => {
+        const offer = offers[index];
+        const detail = details[index];
+        return {
+          next: this.#rawIdToId(offer.next),
+          offer_gasbase: detail.offer_gasbase.toNumber(),
+          ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
+            this.market,
+            this.ba,
+            {
+              id: offerId,
+              ...offer,
+              ...detail,
+            }
+          ),
+        };
+      });
 
       result.push(...chunk);
 
@@ -882,36 +892,6 @@ class Semibook implements Iterable<Market.Offer> {
       lock: cfg.local.lock,
       best: this.#rawIdToId(cfg.local.best),
       last: this.#rawIdToId(cfg.local.last),
-    };
-  }
-
-  #rawOfferToOffer(raw: RawOfferData): Market.Offer {
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
-      this.ba
-    );
-
-    const _gives = outbound_tkn.fromUnits(raw.gives);
-    const _wants = inbound_tkn.fromUnits(raw.wants);
-
-    const { baseVolume } = Market.getBaseQuoteVolumes(this.ba, _gives, _wants);
-    const price = Market.getPrice(this.ba, _gives, _wants);
-
-    if (baseVolume.eq(0)) {
-      throw Error("baseVolume is 0 (not allowed)");
-    }
-
-    return {
-      id: this.#rawIdToId(raw.id),
-      prev: this.#rawIdToId(raw.prev),
-      next: this.#rawIdToId(raw.next),
-      gasprice: raw.gasprice.toNumber(),
-      maker: raw.maker,
-      gasreq: raw.gasreq.toNumber(),
-      offer_gasbase: raw.offer_gasbase.toNumber(),
-      gives: _gives,
-      wants: _wants,
-      volume: baseVolume,
-      price: price,
     };
   }
 
