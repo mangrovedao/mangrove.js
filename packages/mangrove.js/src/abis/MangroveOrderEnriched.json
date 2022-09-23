@@ -102,13 +102,13 @@
         {
           "indexed": true,
           "internalType": "contract IERC20",
-          "name": "base",
+          "name": "outbound_tkn",
           "type": "address"
         },
         {
           "indexed": true,
           "internalType": "contract IERC20",
-          "name": "quote",
+          "name": "inbound_tkn",
           "type": "address"
         },
         {
@@ -120,7 +120,7 @@
         {
           "indexed": false,
           "internalType": "bool",
-          "name": "selling",
+          "name": "fillWants",
           "type": "bool"
         },
         {
@@ -227,6 +227,35 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -559,6 +588,35 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        }
+      ],
+      "name": "provisionOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "provision",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "reserve",
       "outputs": [
@@ -676,12 +734,12 @@
           "components": [
             {
               "internalType": "contract IERC20",
-              "name": "base",
+              "name": "outbound_tkn",
               "type": "address"
             },
             {
               "internalType": "contract IERC20",
-              "name": "quote",
+              "name": "inbound_tkn",
               "type": "address"
             },
             {
@@ -690,13 +748,8 @@
               "type": "bool"
             },
             {
-              "internalType": "bool",
-              "name": "selling",
-              "type": "bool"
-            },
-            {
               "internalType": "uint256",
-              "name": "wants",
+              "name": "takerWants",
               "type": "uint256"
             },
             {
@@ -706,7 +759,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "gives",
+              "name": "takerGives",
               "type": "uint256"
             },
             {
@@ -716,18 +769,13 @@
             },
             {
               "internalType": "bool",
-              "name": "restingOrder",
+              "name": "fillWants",
               "type": "bool"
             },
             {
-              "internalType": "uint256",
-              "name": "retryNumber",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "gasForMarketOrder",
-              "type": "uint256"
+              "internalType": "bool",
+              "name": "restingOrder",
+              "type": "bool"
             },
             {
               "internalType": "uint256",

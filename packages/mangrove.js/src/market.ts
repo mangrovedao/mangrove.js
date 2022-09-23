@@ -78,8 +78,6 @@ namespace Market {
 
   export type RestingOrderParams = {
     partialFillNotAllowed?: boolean;
-    retryNumber?: number;
-    gasForMarketOrder?: number;
     timeToLiveForRestingOrder?: number;
     provision: Bigish;
   };
