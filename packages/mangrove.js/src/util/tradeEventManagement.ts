@@ -6,16 +6,66 @@ import MgvToken from "../mgvtoken";
 import {
   OfferFailEvent,
   OfferSuccessEvent,
+  OfferWriteEvent,
   OrderCompleteEvent,
   PosthookFailEvent,
 } from "../types/typechain/Mangrove";
-import { OrderSummaryEvent } from "../types/typechain/MangroveOrder";
+import {
+  NewOwnedOfferEvent,
+  OrderSummaryEvent,
+} from "../types/typechain/MangroveOrder";
 import UnitCalculations from "./unitCalculations";
+import { BaseContract, BigNumber } from "ethers";
+
+type RawOfferData = {
+  id: BigNumber;
+  prev: BigNumber;
+  gasprice: BigNumber;
+  maker: string;
+  gasreq: BigNumber;
+  wants: BigNumber;
+  gives: BigNumber;
+};
 
 class TradeEventManagement {
   mangroveUtils: UnitCalculations;
   constructor(mangroveUtils?: UnitCalculations) {
     this.mangroveUtils = mangroveUtils ? mangroveUtils : new UnitCalculations();
+  }
+
+  rawOfferToOffer(
+    market: Market,
+    ba: Market.BA,
+    raw: RawOfferData
+  ): Market.OfferSlim {
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+
+    const gives = outbound_tkn.fromUnits(raw.gives);
+    const wants = inbound_tkn.fromUnits(raw.wants);
+
+    const { baseVolume } = Market.getBaseQuoteVolumes(ba, gives, wants);
+    const price = Market.getPrice(ba, gives, wants);
+
+    if (baseVolume.eq(0)) {
+      throw Error("baseVolume is 0 (not allowed)");
+    }
+
+    return {
+      id: this.#rawIdToId(raw.id),
+      prev: this.#rawIdToId(raw.prev),
+      gasprice: raw.gasprice.toNumber(),
+      maker: raw.maker,
+      gasreq: raw.gasreq.toNumber(),
+      gives: gives,
+      wants: wants,
+      volume: baseVolume,
+      price: price,
+    };
+  }
+
+  #rawIdToId(rawId: BigNumber): number | undefined {
+    const id = rawId.toNumber();
+    return id === 0 ? undefined : id;
   }
 
   createSummaryFromEvent(
@@ -30,14 +80,17 @@ class TradeEventManagement {
     got: MgvToken,
     gave: MgvToken,
     partialFillFunc: (
-      takerGot: ethers.BigNumber,
+      takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean
   ): Market.Summary {
     return {
       got: got.fromUnits(event.args.takerGot),
       gave: gave.fromUnits(event.args.takerGave),
-      partialFill: partialFillFunc(event.args.takerGot, event.args.takerGave),
+      partialFill: partialFillFunc(
+        event.args.takerGot.add(event.args.feePaid ?? ethers.BigNumber.from(0)),
+        event.args.takerGave
+      ),
       penalty: this.mangroveUtils.fromUnits(event.args.penalty, 18),
       feePaid:
         "feePaid" in event.args
@@ -50,7 +103,7 @@ class TradeEventManagement {
     got: MgvToken,
     gave: MgvToken,
     partialFillFunc: (
-      takerGot: ethers.BigNumber,
+      takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean
   ) {
@@ -92,108 +145,214 @@ class TradeEventManagement {
     return posthookFailure;
   }
 
+  createOfferWriteFromEvent(
+    market: Market,
+    ba: Market.BA,
+    evt: OfferWriteEvent
+  ): Market.OfferSlim {
+    return this.rawOfferToOffer(market, ba, evt.args);
+  }
+
   createSummaryFromOrderSummaryEvent(
     evt: OrderSummaryEvent,
     got: MgvToken,
     gave: MgvToken,
     partialFillFunc: (
-      takerGot: ethers.BigNumber,
+      takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean
   ): Market.Summary {
-    const summary = this.createSummaryFromEvent(
-      evt,
-      got,
-      gave,
-      partialFillFunc
-    );
-
-    return { ...summary, offerId: evt.args.restingOrderId.toNumber() };
+    return this.createSummaryFromEvent(evt, got, gave, partialFillFunc);
   }
 
-  partialFill(
+  createRestingOrderFromEvent(
+    evt: NewOwnedOfferEvent,
+    taker: string,
+    currentRestingOrder: Market.OfferSlim,
+    offerWrites: Market.OfferSlim[]
+  ): Market.OfferSlim {
+    if (evt.args.owner === taker) {
+      currentRestingOrder =
+        offerWrites.find((x) => x.id === this.#rawIdToId(evt.args.offerId)) ??
+        currentRestingOrder;
+    }
+    return currentRestingOrder;
+  }
+
+  createPartialFillFunc(
     fillWants: boolean,
     takerWants: ethers.ethers.BigNumber,
     takerGives: ethers.ethers.BigNumber
   ) {
-    return (takerGot: ethers.BigNumber, takerGave: ethers.BigNumber) =>
-      fillWants ? takerGot.lt(takerWants) : takerGave.lt(takerGives);
+    return (takerGotWithFee: ethers.BigNumber, takerGave: ethers.BigNumber) =>
+      fillWants ? takerGotWithFee.lt(takerWants) : takerGave.lt(takerGives);
   }
 
-  resultOfEvent(
-    evt: ethers.Event,
-    got_bq: "base" | "quote",
-    gave_bq: "base" | "quote",
-    fillWants: boolean,
-    takerWants: ethers.BigNumber,
-    takerGives: ethers.BigNumber,
-    result: Market.OrderResult,
-    market: Market
-  ): Market.OrderResult {
-    return this.resultOfEventCore(
-      evt,
-      got_bq,
-      gave_bq,
-      this.partialFill(fillWants, takerWants, takerGives),
-      result,
-      market
-    );
-  }
-
-  resultOfEventCore(
+  resultOfMangroveEventCore(
+    receipt: ethers.ContractReceipt,
     evt: ethers.Event | LogDescription,
-    got_bq: "base" | "quote",
-    gave_bq: "base" | "quote",
+    ba: Market.BA,
     partialFillFunc: (
-      takerGot: ethers.BigNumber,
+      takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean,
     result: Market.OrderResult,
     market: Market
-  ): Market.OrderResult {
-    const got = market[got_bq];
-    const gave = market[gave_bq];
+  ) {
+    if (evt.args.taker && receipt.from !== evt.args.taker) return;
+
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
       case "OrderComplete": {
+        //last OrderComplete is ours so it overrides previous summaries if any
         result.summary = this.createSummaryFromOrderCompleteEvent(
           evt as OrderCompleteEvent,
-          got,
-          gave,
+          outbound_tkn,
+          inbound_tkn,
           partialFillFunc
         );
-        return result;
+        break;
       }
       case "OfferSuccess": {
         result.successes.push(
-          this.createSuccessFromEvent(evt as OfferSuccessEvent, got, gave)
+          this.createSuccessFromEvent(
+            evt as OfferSuccessEvent,
+            outbound_tkn,
+            inbound_tkn
+          )
         );
-        return result;
+        break;
       }
       case "OfferFail": {
         result.tradeFailures.push(
-          this.createTradeFailureFromEvent(evt as OfferFailEvent, got, gave)
+          this.createTradeFailureFromEvent(
+            evt as OfferFailEvent,
+            outbound_tkn,
+            inbound_tkn
+          )
         );
-        return result;
+        break;
       }
       case "PosthookFail": {
         result.posthookFailures.push(
           this.createPosthookFailureFromEvent(evt as PosthookFailEvent)
         );
-        return result;
+        break;
       }
-      case "OrderSummary": {
-        result.summary = this.createSummaryFromOrderSummaryEvent(
-          evt as OrderSummaryEvent,
-          got,
-          gave,
-          partialFillFunc
+      case "OfferWrite": {
+        result.offerWrites.push(
+          this.createOfferWriteFromEvent(market, ba, evt as OfferWriteEvent)
         );
-        return result;
       }
       default: {
-        return result;
+        break;
       }
+    }
+  }
+
+  resultOfMangroveOrderEventCore(
+    receipt: ethers.ContractReceipt,
+    evt: ethers.Event | LogDescription,
+    ba: Market.BA,
+    partialFillFunc: (
+      takerGotWithFee: ethers.BigNumber,
+      takerGave: ethers.BigNumber
+    ) => boolean,
+    result: Market.OrderResult,
+    market: Market
+  ) {
+    if (evt.args.taker && receipt.from !== evt.args.taker) return;
+
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
+    switch (name) {
+      case "OrderSummary": {
+        //last OrderSummary is ours so it overrides previous summaries if any
+        result.summary = this.createSummaryFromOrderSummaryEvent(
+          evt as OrderSummaryEvent,
+          outbound_tkn,
+          inbound_tkn,
+          partialFillFunc
+        );
+        break;
+      }
+      case "NewOwnedOffer": {
+        result.restingOrder = this.createRestingOrderFromEvent(
+          evt as NewOwnedOfferEvent,
+          receipt.from,
+          result.restingOrder,
+          result.offerWrites
+        );
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  getContractEventsFromReceipt(
+    receipt: ethers.ContractReceipt,
+    contract: BaseContract
+  ) {
+    const parseLogs =
+      receipt.to === contract.address
+        ? (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+            events.filter((x) => x.address === contract.address)
+        : (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+            logs
+              .filter((x) => x.address === contract.address)
+              .map((l) => contract.interface.parseLog(l));
+
+    return parseLogs(receipt.events, receipt.logs);
+  }
+
+  processMangroveEvents(
+    result: Market.OrderResult,
+    receipt: ethers.ContractReceipt,
+    ba: Market.BA,
+    fillWants: boolean,
+    wants: ethers.BigNumber,
+    gives: ethers.BigNumber,
+    market: Market
+  ) {
+    for (const evt of this.getContractEventsFromReceipt(
+      receipt,
+      market.mgv.contract
+    )) {
+      this.resultOfMangroveEventCore(
+        receipt,
+        evt,
+        ba,
+        this.createPartialFillFunc(fillWants, wants, gives),
+        result,
+        market
+      );
+    }
+  }
+
+  processMangroveOrderEvents(
+    result: Market.OrderResult,
+    receipt: ethers.ContractReceipt,
+    ba: Market.BA,
+    fillWants: boolean,
+    wants: ethers.BigNumber,
+    gives: ethers.BigNumber,
+    market: Market
+  ) {
+    for (const evt of this.getContractEventsFromReceipt(
+      receipt,
+      market.mgv.orderContract
+    )) {
+      this.resultOfMangroveOrderEventCore(
+        receipt,
+        evt,
+        ba,
+        this.createPartialFillFunc(fillWants, wants, gives),
+        result,
+        market
+      );
     }
   }
 }
