@@ -57,6 +57,7 @@ class OfferLogic {
       ethers.constants.AddressZero,
       await mgv._signer.getAddress()
     );
+    await contract.deployTransaction.wait();
     return contract.address;
   }
 
