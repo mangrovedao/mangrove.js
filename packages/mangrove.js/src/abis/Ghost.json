@@ -1,0 +1,724 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IMangrove",
+          "name": "mgv",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "base",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "stable1",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "stable2",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract IMangrove",
+          "name": "mangrove",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "makerData",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "mgvData",
+          "type": "bytes32"
+        }
+      ],
+      "name": "LogIncident",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "SetGasreq",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "SetRouter",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "BASE",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MGV",
+      "outputs": [
+        {
+          "internalType": "contract IMangrove",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "NO_ROUTER",
+      "outputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STABLE1",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "STABLE2",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20[]",
+          "name": "tokens",
+          "type": "address[]"
+        }
+      ],
+      "name": "activate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "admin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20[]",
+          "name": "tokens",
+          "type": "address[]"
+        }
+      ],
+      "name": "checkList",
+      "outputs": [],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasprice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getMissingProvision",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offer",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offerDetail",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "global",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "local",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MgvLib.SingleOrder",
+          "name": "order",
+          "type": "tuple"
+        }
+      ],
+      "name": "makerExecute",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "ret",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "outbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "inbound_tkn",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offer",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wants",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gives",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "offerDetail",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "global",
+              "type": "uint256"
+            },
+            {
+              "internalType": "t",
+              "name": "local",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MgvLib.SingleOrder",
+          "name": "order",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "makerData",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "mgvData",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct MgvLib.OrderResult",
+          "name": "result",
+          "type": "tuple"
+        }
+      ],
+      "name": "makerPosthook",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "gives",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "wants1",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "wants2",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pivot1",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pivot2",
+          "type": "uint256"
+        }
+      ],
+      "name": "newGhostOffers",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "offerGasreq",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        }
+      ],
+      "name": "provisionOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "provision",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "reserve",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "deprovision",
+          "type": "bool"
+        }
+      ],
+      "name": "retractOffer",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "free_wei",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "router",
+      "outputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_admin",
+          "type": "address"
+        }
+      ],
+      "name": "setAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        }
+      ],
+      "name": "setGasreq",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "reserve_",
+          "type": "address"
+        }
+      ],
+      "name": "setReserve",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract AbstractRouter",
+          "name": "router_",
+          "type": "address"
+        }
+      ],
+      "name": "setRouter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "tokenBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "outbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "inbound_tkn",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "wants",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gives",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasprice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pivotId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offerId",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateOffer",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address payable",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "withdrawFromMangrove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawToken",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ]
+}
