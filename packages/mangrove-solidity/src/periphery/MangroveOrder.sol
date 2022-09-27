@@ -20,17 +20,22 @@ import {SimpleRouter} from "mgv_src/strategies/routers/SimpleRouter.sol";
 import {TransferLib} from "mgv_src/strategies/utils/TransferLib.sol";
 import {MgvLib, IERC20} from "mgv_src/MgvLib.sol";
 
+///@title MangroveOrder. A periphery contract to Mangrove protocol that implements resting limit orders.
+///@notice A resting limit order is a taker order (offer taking) followed by a maker order (offer posting) when the taker order was parially filled.
+/// This contract is a `Forwarder` logic, i.e it does not hold maker funds (either native or ERC20) and uses a router to pull/push liquidity from/to the correct reserve whenever it is called by Mangrove.
+
 contract MangroveOrder is Forwarder, IOrderLogic {
   // `expiring[outbound_tkn][inbound_tkn][offerId]` gives timestamp beyond which the offer should renege on trade.
   mapping(IERC20 => mapping(IERC20 => mapping(uint => uint))) public expiring;
 
+  
   constructor(IMangrove mgv, address deployer) Forwarder(mgv, new SimpleRouter()) {
-    setGasreq(30000); // fails < 20K. Use 30K to be on the safe side
+    setGasreq(30000); // fails < 20K in prod. Use 30K to be on the safe side
     // adding `this` contract to authorized makers of the router before setting admin rights of the router to deployer
     router().bind(address(this));
+    router().setAdmin(deployer);
     if (deployer != msg.sender) {
       setAdmin(deployer);
-      router().setAdmin(deployer);
     }
   }
 
