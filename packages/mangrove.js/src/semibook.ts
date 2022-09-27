@@ -278,8 +278,14 @@ class Semibook implements Iterable<Market.Offer> {
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    *
+   * if you add a `boundary` field, it either means
+   * - the minimum amount you want to receive if you spend all `given` (if to:"sell"), or
+   * - the maximum amount you are ready to spend if you buy all `given` (if to:"buy")
+   *
+   * So for instance, if you say {given:10,to:"sell",boundary:"5"}, estimateVolume will return the volume you will be able to receive if selling up to 10 at a min price of 10/5.
+   *
    * The returned `givenResidue` is how much of the given token that cannot be
-   * traded due to insufficient volume on the book.
+   * traded due to insufficient volume on the book / price becoming bad.
    */
 
   async estimateVolume(
