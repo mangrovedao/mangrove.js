@@ -155,9 +155,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   }
 
   /// @inheritdoc IOfferLogic
-  function activate(IERC20[] calldata tokens) public override onlyAdmin {
+  function activate(IERC20[] calldata tokens) external override onlyAdmin {
     for (uint i = 0; i < tokens.length; i++) {
-      // any strat requires `this` contract to approve Mangrove for pulling funds at the end of `makerExecute`
       __activate__(tokens[i]);
     }
   }
@@ -196,6 +195,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@custom:hook overrides of this hook should be conservative and call `super.__activate__(token)`
   function __activate__(IERC20 token) internal virtual {
     AbstractRouter router_ = router();
+     // any strat requires `this` contract to approve Mangrove for pulling funds at the end of `makerExecute`
     require(token.approve(address(MGV), type(uint).max), "mgvOffer/approveMangrove/Fail");
     if (router_ != NO_ROUTER) {
       // allowing router to pull `token` from this contract (for the `push` function of the router)
