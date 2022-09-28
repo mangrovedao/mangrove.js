@@ -100,6 +100,13 @@ contract MangroveOfferTest is MangroveTest {
     makerContract.makerPosthook(order, result);
   }
 
+  function test_lastLookReturnedValueIsPassed() public {
+    MgvLib.SingleOrder memory order;
+    vm.prank(address(mgv));
+    bytes32 data = makerContract.makerExecute(order);
+    assertEq(data, "mgvOffer/tradeSuccess");
+  }
+
   function test_AdminCanWithdrawFunds() public {
     assertEq(mgv.balanceOf(address(makerContract)), 0, "incorrect balance");
     mgv.fund{value: 1 ether}(address(makerContract));
@@ -136,6 +143,7 @@ contract MangroveOfferTest is MangroveTest {
 
     makerContract.activate(tokens);
     makerContract.checkList(tokens);
+    vm.stopPrank();
   }
 
   function test_GasReqTakesNewRouterIntoAccount() public {
@@ -145,5 +153,6 @@ contract MangroveOfferTest is MangroveTest {
     router.setAdmin(address(makerContract));
     makerContract.setRouter(router);
     assertEq(makerContract.offerGasreq(), gasreq + router.gasOverhead(), "incorrect gasreq");
+    vm.stopPrank();
   }
 }
