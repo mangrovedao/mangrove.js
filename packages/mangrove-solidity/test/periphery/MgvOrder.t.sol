@@ -125,6 +125,7 @@ contract MangroveOrder_Test is MangroveTest {
       takerGives: 0.26 ether,
       makerGives: 0.26 ether,
       restingOrder: false,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     expectFrom($(quote)); // checking quote is sent to mgv and remainder is sent back to taker
@@ -147,6 +148,7 @@ contract MangroveOrder_Test is MangroveTest {
       takerGives: 0.26 ether,
       makerGives: 0.26 ether,
       restingOrder: false,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     vm.expectRevert("mgvOrder/mo/noPartialFill");
@@ -165,6 +167,7 @@ contract MangroveOrder_Test is MangroveTest {
       takerGives: 0.26 ether,
       makerGives: 0.26 ether,
       restingOrder: false,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(buyOrder);
@@ -186,6 +189,7 @@ contract MangroveOrder_Test is MangroveTest {
       makerWants: 2 ether,
       makerGives: 0.26 ether,
       restingOrder: false,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(buyOrder);
@@ -207,6 +211,7 @@ contract MangroveOrder_Test is MangroveTest {
       makerWants: 1 ether,
       makerGives: 0.13 ether,
       restingOrder: true,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(buyOrder);
@@ -227,6 +232,7 @@ contract MangroveOrder_Test is MangroveTest {
       makerWants: 1 ether,
       makerGives: 0.13 ether,
       restingOrder: true,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take(buyOrder);
@@ -245,6 +251,7 @@ contract MangroveOrder_Test is MangroveTest {
       makerWants: 2 ether,
       makerGives: 0.2548 ether, //without 2% slippage
       restingOrder: true,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     uint bal_quote_before = mgo.router().reserveBalance(quote, $(this));
@@ -282,6 +289,7 @@ contract MangroveOrder_Test is MangroveTest {
       makerWants: 2 ether,
       makerGives: 0.26 ether,
       restingOrder: true,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(buyOrder);
@@ -320,6 +328,7 @@ contract MangroveOrder_Test is MangroveTest {
       makerWants: 2 ether,
       makerGives: 0.26 ether,
       restingOrder: true,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 0.1 ether}(buyOrder);
@@ -339,6 +348,7 @@ contract MangroveOrder_Test is MangroveTest {
       makerWants: 2 ether,
       makerGives: 0.26 ether,
       restingOrder: true,
+      pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
 

@@ -11,6 +11,11 @@
           "internalType": "address",
           "name": "deployer",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
         }
       ],
       "stateMutability": "nonpayable",
