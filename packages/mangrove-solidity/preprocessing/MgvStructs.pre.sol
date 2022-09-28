@@ -16,6 +16,9 @@ pragma solidity ^0.8.13;
 
 $(preamble)
 
+struct $$(Sname)Struct {
+
+// Note: can't do Type.Unpacked because typechain mixes up multiple 'Unpacked' structs under different namespaces. So for consistency we don't do Type.Packed either. We do TypeUnpacked and TypePacked.
 
 // #for ns in struct_defs
 // #def sname ns[0]
