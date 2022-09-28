@@ -12,6 +12,7 @@ contract OfferLogicTest is MangroveTest {
   TestToken usdc;
   address payable maker;
   address payable taker;
+  address payable deployer;
   address reserve;
   IMakerLogic makerContract; // can be either OfferMaker or OfferForwarder
   GenericFork fork;
@@ -50,6 +51,8 @@ contract OfferLogicTest is MangroveTest {
     }
     maker = freshAddress("maker");
     vm.deal(maker, 10 ether);
+    // for Direct strats, maker is deployer
+    deployer = deployer == address(0) ? maker : deployer;
 
     taker = freshAddress("taker");
     vm.deal(taker, 1 ether);
@@ -64,19 +67,21 @@ contract OfferLogicTest is MangroveTest {
     // instanciates makerContract
     setupMakerContract();
     setupRouter();
+    // dealing 1 eth and 2000$ to maker's reserve on contract
     vm.startPrank(maker);
     deal($(weth), makerContract.reserve(), 1 ether);
     deal($(usdc), makerContract.reserve(), cash(usdc, 2000));
-    makerContract.activate(dynamic([IERC20(weth), usdc]));
     vm.stopPrank();
+    vm.prank(deployer);
+    makerContract.activate(dynamic([IERC20(weth), usdc]));
   }
 
   // override this to use MultiUser strats
-  function setupMakerContract() internal virtual prank(maker) {
+  function setupMakerContract() internal virtual prank(deployer) {
     makerContract = new OfferMaker({
       mgv: IMangrove($(mgv)),
       router_: AbstractRouter(address(0)),
-      deployer: maker
+      deployer: deployer
     });
   }
 
@@ -89,7 +94,7 @@ contract OfferLogicTest is MangroveTest {
     vm.stopPrank();
   }
 
-  function test_makerCanSetReserve() public {
+  function test_makerCanSetItsReserve() public {
     address new_reserve = freshAddress();
     vm.startPrank(maker);
     makerContract.setReserve(new_reserve);
@@ -99,10 +104,10 @@ contract OfferLogicTest is MangroveTest {
 
   function test_changingReserveWithNoRouterMakesChecklistFail() public {
     address new_reserve = freshAddress();
-    vm.startPrank(maker);
+    vm.prank(maker);
     makerContract.setReserve(new_reserve);
+    vm.prank(deployer);
     makerContract.setRouter(AbstractRouter(address(0)));
-    vm.stopPrank();
     vm.expectRevert("MangroveOffer/LogicHasNoRouter");
     makerContract.checkList(dynamic([IERC20(weth), usdc]));
   }
@@ -152,7 +157,7 @@ contract OfferLogicTest is MangroveTest {
     vm.stopPrank();
   }
 
-  function test_makerCanRetractOffer() public {
+  function test_makerCanDeprovisionOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}({
       outbound_tkn: weth,
@@ -251,16 +256,5 @@ contract OfferLogicTest is MangroveTest {
     // this will be a noop when maker == reserve
     makerContract.withdrawToken(usdc, maker, takergave);
     assertEq(usdc.balanceOf(maker), balusdc + takergave, "withdraw failed");
-  }
-
-  function test_failingOfferLogsIncident() public {
-    // making offer fail for lack of approval
-    (, Local.t local) = mgv.config($(weth), $(usdc));
-    uint next_id = local.last() + 1;
-    vm.expectEmit(true, true, true, false, address(makerContract));
-    emit LogIncident(IMangrove($(mgv)), weth, usdc, next_id, "mgvOffer/tradeSuccess", "mgv/makerTransferFail");
-    vm.prank(maker);
-    makerContract.approve(weth, $(mgv), 0);
-    performTrade({success: false});
   }
 }
