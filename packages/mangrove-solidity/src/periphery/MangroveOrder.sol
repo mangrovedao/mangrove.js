@@ -14,34 +14,46 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 
 import {IMangrove} from "mgv_src/IMangrove.sol";
-import {Forwarder} from "mgv_src/strategies/offer_forwarder/abstract/Forwarder.sol";
+import {Forwarder, MangroveOffer} from "mgv_src/strategies/offer_forwarder/abstract/Forwarder.sol";
 import {IOrderLogic} from "mgv_src/strategies/interfaces/IOrderLogic.sol";
 import {SimpleRouter} from "mgv_src/strategies/routers/SimpleRouter.sol";
 import {TransferLib} from "mgv_src/strategies/utils/TransferLib.sol";
 import {MgvLib, IERC20} from "mgv_src/MgvLib.sol";
 
 ///@title MangroveOrder. A periphery contract to Mangrove protocol that implements resting limit orders.
-///@notice A resting limit order is a taker order (offer taking) followed by a maker order (offer posting) when the taker order was parially filled.
-/// This contract is a `Forwarder` logic, i.e it does not hold maker funds (either native or ERC20) and uses a router to pull/push liquidity from/to the correct reserve whenever it is called by Mangrove.
+///@notice A resting limit order is a taker order (offer taking) followed by a maker order (offer posting) when the taker order was partially filled.
+/// E.g `taker` wishes to buy 1 ETH at a limit average price of 1500 USD/ETH. After a market order:
+/// 1. `taker` gets a partial fill of 0.582 ETH (0.6 ETH - 3% fee) for 850 USD (thus at a price of ~1417 USD/ETH).
+/// 2. This contract will then post a resting order to complement the market order as a bid for 0.4 ETH for 650 USD (thus at a price of 1625 USD)
+/// 3. If the resting order is fully taken, the global average price for taker will indeed be 1500 USD/ETH.
+/// Note that if taker allows for some slippage in her market order, the price of the resting order is computed taking the original price only (i.e without slippage).
+/// Resting order may be posted with a time to leave, implemented in the form of a `__lastLook__` override that reneges on trade passed a certain timestamp.
 
 contract MangroveOrder is Forwarder, IOrderLogic {
-  // `expiring[outbound_tkn][inbound_tkn][offerId]` gives timestamp beyond which the offer should renege on trade.
+  ///@notice `expiring[outbound_tkn][inbound_tkn][offerId]` gives timestamp beyond which `offerId` on the (outbound_tkn, inbound_tkn)` offer list should renege on trade.
   mapping(IERC20 => mapping(IERC20 => mapping(uint => uint))) public expiring;
 
-  constructor(IMangrove mgv, address deployer) Forwarder(mgv, new SimpleRouter()) {
-    setGasreq(30000); // fails < 20K in prod. Use 30K to be on the safe side
+  ///@notice MangroveOrder constructor extends Forwarder with a simple router.
+  constructor(IMangrove mgv, address deployer, uint gasreq) Forwarder(mgv, new SimpleRouter()) {
+    // we start by setting gasreq for this logic to execute a trade in the worst case scenario.
+    // gas requirements implied by router are taken into account separately.
+    setGasreq(gasreq); // for fixed simple router overhead, this logic fails when `offer_gasreq` < 20K in prod.
     // adding `this` contract to authorized makers of the router before setting admin rights of the router to deployer
     router().bind(address(this));
     router().setAdmin(deployer);
-    if (deployer != msg.sender) {
+    // if `msg.sender` is not `deployer`, setting admin of `this` to `deployer`.
+    // `deployer` will thus be able to call `activate` on `this` to enable trading on particular assets.
+    if (msg.sender != deployer) {
       setAdmin(deployer);
     }
   }
 
+  ///Checks the current timestamps are reneges on trade (by reverting) if the offer has expired.
+  ///@inheritdoc MangroveOffer
   function __lastLook__(MgvLib.SingleOrder calldata order) internal virtual override returns (bytes32) {
     uint exp = expiring[IERC20(order.outbound_tkn)][IERC20(order.inbound_tkn)][order.offerId];
     require(exp == 0 || block.timestamp <= exp, "mgvOrder/expired");
-    return "";
+    return super.__lastLook__(order);
   }
 
   ///@notice checks whether the order is completely filled
@@ -147,7 +159,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         wants: tko.makerWants - (res.takerGot + res.fee), // tko.makerWants is before slippage
         gives: tko.makerGives - res.takerGave,
         gasreq: offerGasreq(),
-        pivotId: 0,
+        pivotId: tko.pivotId,
         fund: msg.value + res.bounty,
         caller: msg.sender,
         noRevert: true // returns 0 when MGV reverts

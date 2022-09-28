@@ -28,7 +28,8 @@ interface IOrderLogic {
   ///@param takerGives available total amount of `inbound_tkn`
   ///@param makerGives taker gives before slippage (`makerGives == gives` when `!fillWants`)
   ///@param fillWants if true, the market order stops when `takerWants` units of `outbound_tkn` have been obtained; otherwise, the market order stops when `takerGives` units of `inbound_tkn` have been sold.
-  ///@param restingOrder true if the complement of the partial fill (if any) should be posted as a resting limit order; otherwise, false
+  ///@param restingOrder whether the complement of the partial fill (if any) should be posted as a resting limit order.
+  ///@param pivotId in case a resting order is required, the best pivot estimation of its position in the offer list (if the market order led to a non empty partial fill, then `pivotId` should be 0 unless the order book is crossed).
   ///@param timeToLiveForRestingOrder number of seconds the resting order should be allowed to live, 0 means forever
   struct TakerOrder {
     IERC20 outbound_tkn;
@@ -40,6 +41,7 @@ interface IOrderLogic {
     uint makerGives;
     bool fillWants;
     bool restingOrder;
+    uint pivotId;
     uint timeToLiveForRestingOrder;
   }
 
