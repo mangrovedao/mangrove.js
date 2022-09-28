@@ -750,6 +750,11 @@
             },
             {
               "internalType": "uint256",
+              "name": "pivotId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
               "name": "timeToLiveForRestingOrder",
               "type": "uint256"
             }
