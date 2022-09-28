@@ -195,7 +195,7 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   ///@custom:hook overrides of this hook should be conservative and call `super.__activate__(token)`
   function __activate__(IERC20 token) internal virtual {
     AbstractRouter router_ = router();
-     // any strat requires `this` contract to approve Mangrove for pulling funds at the end of `makerExecute`
+    // any strat requires `this` contract to approve Mangrove for pulling funds at the end of `makerExecute`
     require(token.approve(address(MGV), type(uint).max), "mgvOffer/approveMangrove/Fail");
     if (router_ != NO_ROUTER) {
       // allowing router to pull `token` from this contract (for the `push` function of the router)
@@ -233,7 +233,8 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @param order is a recall of the taker order that is at the origin of the current trade.
   /// @return data is a message that will be passed to posthook provided `makerExecute` does not revert.
   /// @dev __lastLook__ should revert if trade is to be reneged on. If not, returned `bytes32` are passed to `makerPosthook` in the `makerData` field.
-  // @custom:hook Special bytes32 word can be used to switch a particular behavior of `__posthookSuccess__`, e.g not to repost offer in case of a partial fill. */
+  // @custom:hook overrides of this hook should be conservative and call `super.__lastLook__(order)`.
+  // Special bytes32 word can be used to switch a particular behavior of `__posthookSuccess__`, e.g not to repost offer in case of a partial fill. */
 
   function __lastLook__(MgvLib.SingleOrder calldata order) internal virtual returns (bytes32 data) {
     order; //shh
