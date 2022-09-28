@@ -28,7 +28,6 @@ contract MangroveOrder is Forwarder, IOrderLogic {
   // `expiring[outbound_tkn][inbound_tkn][offerId]` gives timestamp beyond which the offer should renege on trade.
   mapping(IERC20 => mapping(IERC20 => mapping(uint => uint))) public expiring;
 
-  
   constructor(IMangrove mgv, address deployer) Forwarder(mgv, new SimpleRouter()) {
     setGasreq(30000); // fails < 20K in prod. Use 30K to be on the safe side
     // adding `this` contract to authorized makers of the router before setting admin rights of the router to deployer
@@ -199,21 +198,6 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         expiring[outbound_tkn][inbound_tkn][res.offerId] = block.timestamp + tko.timeToLiveForRestingOrder;
       }
     }
-  }
-
-  function __posthookSuccess__(MgvLib.SingleOrder calldata order, bytes32 makerData)
-    internal
-    virtual
-    override
-    returns (bytes32)
-  {
-    bytes32 repostData = super.__posthookSuccess__(order, makerData);
-    if (repostData != "posthook/reposted") {
-      // if offer was not to reposted, if is now off the book but provision is still locked
-      // calling retract offer will recover the provision and transfer them to offer owner
-      retractOffer(IERC20(order.outbound_tkn), IERC20(order.inbound_tkn), order.offerId, true);
-    }
-    return "";
   }
 
   /**
