@@ -373,23 +373,26 @@ contract MangroveOrder_Test is MangroveTest {
   }
 
   function test_restingOrder_that_fail_to_post_release_provisions() public {
+    vm.deal(address(this), 2 ether);
     uint native_reserve_before = $(this).balance;
-
+    mgv.setDensity($(quote), $(base), 0.1 ether);
     IOrderLogic.TakerOrder memory buyOrder = IOrderLogic.TakerOrder({
       outbound_tkn: base,
       inbound_tkn: quote,
       partialFillNotAllowed: false,
       fillWants: true,
-      takerWants: 1.0000001 ether, // residual will be below density
-      takerGives: 0.130000013 ether,
-      makerWants: 1.0000001 ether,
-      makerGives: 0.130000013 ether,
+      takerWants: 1.000001 ether, // residual will be below density
+      takerGives: 0.13000013 ether,
+      makerWants: 1.000001 ether,
+      makerGives: 0.13000013 ether,
       restingOrder: true,
       pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
-    IOrderLogic.TakerOrderResult memory res = mgo.take{value: 5 ether}(buyOrder);
+    // since this balance is exactly 2 ethers, this call will revert if not refunded!
+    IOrderLogic.TakerOrderResult memory res = mgo.take{value: 2 ether}(buyOrder);
     assertEq(res.takerGot + res.fee, 1 ether, "Market order failed");
+    assertEq(res.offerId, 0 , "Resting order should not be posted");
     // cannot test equality because of gas cost of tx
     assertTrue($(this).balance * 1000 / native_reserve_before >= 999, "Provision not released");
   }
