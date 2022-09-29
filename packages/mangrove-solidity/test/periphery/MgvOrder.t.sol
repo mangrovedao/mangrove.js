@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {MangroveTest} from "mgv_test/lib/MangroveTest.sol";
+import {MangroveTest, csl} from "mgv_test/lib/MangroveTest.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 import {MangroveOrderEnriched as MgvOrder} from "mgv_src/periphery/MangroveOrderEnriched.sol";
 import {IOrderLogic} from "mgv_src/strategies/interfaces/IOrderLogic.sol";
@@ -370,5 +370,30 @@ contract MangroveOrder_Test is MangroveTest {
     assertTrue(userReleasedProvision > 0, "No released provision");
     // making sure approx is not too bad (UserreleasedProvision in O(provision - res.bounty))
     assertEq((provision - res.bounty) / userReleasedProvision, 1, "invalid amount of released provision");
+  }
+
+  function test_restingOrder_that_fail_to_post_release_provisions() public {
+    vm.deal(address(this), 2 ether);
+    uint native_reserve_before = $(this).balance;
+    mgv.setDensity($(quote), $(base), 0.1 ether);
+    IOrderLogic.TakerOrder memory buyOrder = IOrderLogic.TakerOrder({
+      outbound_tkn: base,
+      inbound_tkn: quote,
+      partialFillNotAllowed: false,
+      fillWants: true,
+      takerWants: 1.000001 ether, // residual will be below density
+      takerGives: 0.13000013 ether,
+      makerWants: 1.000001 ether,
+      makerGives: 0.13000013 ether,
+      restingOrder: true,
+      pivotId: 0,
+      timeToLiveForRestingOrder: 0 //NA
+    });
+    // since this balance is exactly 2 ethers, this call will revert if not refunded!
+    IOrderLogic.TakerOrderResult memory res = mgo.take{value: 2 ether}(buyOrder);
+    assertEq(res.takerGot + res.fee, 1 ether, "Market order failed");
+    assertEq(res.offerId, 0 , "Resting order should not be posted");
+    // cannot test equality because of gas cost of tx
+    assertTrue($(this).balance * 1000 / native_reserve_before >= 999, "Provision not released");
   }
 }
