@@ -148,10 +148,12 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     }
   }
 
+  ///@notice posts a maker order on the (outbound_tkn, inbound_tkn) offer list.
+  ///@param fund amount of WEIs used to cover for the offer bounty (covered gasprice is derived from `fund`).
   function postRestingOrder(
     TakerOrder calldata tko,
-    IERC20 inbound_tkn,
     IERC20 outbound_tkn,
+    IERC20 inbound_tkn,
     TakerOrderResult memory res,
     uint fund
   )
@@ -175,7 +177,6 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         noRevert: true // returns 0 when MGV reverts
       })
     );
-    // we summarize the market order (if offerId == 0 no resting order was posted).
     emit OrderSummary({
       mangrove: MGV,
       outbound_tkn: tko.outbound_tkn,
