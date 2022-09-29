@@ -68,8 +68,8 @@ abstract contract AbstractRouter is AccessControlled {
 
   ///@notice pushes assets from maker contract's balance to the specified reserve
   ///@param token is the asset the maker is pushing
-  ///@param reserve is the address identifying where the transfered assets should be placed to
-  ///@param amount is the amount of asset that should be transfered from the calling maker contract
+  ///@param reserve is the address identifying where the transferred assets should be placed to
+  ///@param amount is the amount of asset that should be transferred from the calling maker contract
   function push(IERC20 token, address reserve, uint amount) external onlyMakers {
     __push__({token: token, reserve: reserve, maker: msg.sender, amount: amount});
   }

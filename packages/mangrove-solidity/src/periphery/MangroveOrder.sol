@@ -103,7 +103,7 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     // 1. `msg.sender`'s reserve was credited of `res.takerGot` outbound tokens and was debited of `res.takerGave` inbound tokens
     // 2. `this` contract inbound and outbound token balances are back to their initial value
     // 3. `this` contract's WEI balance is credited of `msg.value + res.bounty`
-    uint fund = msg.value + res.bounty;
+    uint fund = msg.value + res.bounty; // using bounty as additional funds to provision the resting order
     if (tko.restingOrder && !isComplete) {
       // When posting a resting order `msg.sender` becomes a maker. 
       // For maker orders outbound tokens are what makers send. Here `msg.sender` wants to send `tko.inbound`.
@@ -114,15 +114,17 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         outbound_tkn: tko.inbound_tkn, 
         inbound_tkn: tko.outbound_tkn, 
         res: res, 
-        fund: fund  // using bounty as additional funds to provision the resting order
+        fund: fund  
       }); 
       // at this point either 1 or 1' hold:
       // 1. the (maker) resting order was succesfully posted on Mangrove and:
-      /// a. `this` native balance is back to its initial value.
+      /// a. `this` native balance is back to its initial value (`fund` transferred to Mangrove).
       /// b. `fund == 0`
       /// c. `msg.sender` is the owner of the resting order `res.offerId`
       /// d. Mangrove emitted a unique `OfferWrite` log whose `maker` field is `address(this)` and `offerId` is `res.offerId`.
-      // 1'. the resting order was NOT posted and `fund == msg.value + res.bounty`.
+      // 1'. the resting order was NOT posted and:
+      /// a. `fund == msg.value + res.bounty`.
+      /// b. `res.offerId == 0`
     }
     
     if (fund > 0) {

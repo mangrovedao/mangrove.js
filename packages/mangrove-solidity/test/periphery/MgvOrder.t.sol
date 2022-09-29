@@ -389,11 +389,11 @@ contract MangroveOrder_Test is MangroveTest {
       pivotId: 0,
       timeToLiveForRestingOrder: 0 //NA
     });
-    // since this balance is exactly 2 ethers, this call will revert if not refunded!
     IOrderLogic.TakerOrderResult memory res = mgo.take{value: 2 ether}(buyOrder);
+    csl.log($(this).balance);
     assertEq(res.takerGot + res.fee, 1 ether, "Market order failed");
     assertEq(res.offerId, 0 , "Resting order should not be posted");
     // cannot test equality because of gas cost of tx
-    assertTrue($(this).balance * 1000 / native_reserve_before >= 999, "Provision not released");
+    assertEq($(this).balance, native_reserve_before, "Provision not released");
   }
 }

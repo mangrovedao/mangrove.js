@@ -249,7 +249,7 @@ class OfferLogic {
     const gasprice_bn = gasprice ? gasprice : 0;
     const fund: BigNumberish = overrides.value ? await overrides.value : 0;
     if (this.isForwarder) {
-      // checking transfered native tokens are enough to cover gasprice
+      // checking transferred native tokens are enough to cover gasprice
       const provision = await this.contract.getMissingProvision(
         outbound_tkn.address,
         inbound_tkn.address,
