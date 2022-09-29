@@ -20,12 +20,16 @@ import {IOfferLogic} from "mgv_src/strategies/interfaces/IOfferLogic.sol";
 import {Offer, OfferDetail, Local, Global} from "mgv_src/preprocessed/MgvPack.post.sol";
 import {MgvLib, IERC20} from "mgv_src/MgvLib.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
+import {console2} from "forge-std/console2.sol";
 
 ///@title Class for maker contracts that forward external offer makers instructions to Mangrove in a permissionless fashion.
 ///@notice Each offer posted via this contract are managed by their offer maker, not by this contract's admin.
 ///@notice This class implements IForwarder, which contains specific Forwarder logic functions in additions to IOfferlogic interface.
 
 abstract contract Forwarder is IForwarder, MangroveOffer {
+  // approx of amount of gas units required to complete `__posthookFallback__` when evaluating penalty.
+  uint constant GAS_APPROX = 2000;
+
   ///@notice data associated to each offer published on Mangrove by `this` contract.
   ///@param owner address of the account that can manage (update or retract) the offer
   ///@param wei_balance fraction of `this` contract's balance on Mangrove that can be retrieved by offer owner.
@@ -450,9 +454,9 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       order.offerDetail.gasprice() *
       (order.offerDetail.gasreq() + order.offerDetail.offer_gasbase());
 
-    // gasUsed estimate to complete posthook < 1500, using 2000 to be on the safe side.
+    // gasUsed estimate to complete posthook and penalize this offer is ~1750 (empirical estimate)
     uint approxBounty = (order.offerDetail.gasreq() -
-      (gasleft() - 2000) +
+      (gasleft() - GAS_APPROX) +
       local.offer_gasbase()) *
       global.gasprice() *
       10**9;
@@ -465,6 +469,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     semiBookOwnerData[order.offerId].wei_balance += uint96(
       approxReturnedProvision
     );
+    // console2.log(gas - gasleft());
     return "";
   }
 
