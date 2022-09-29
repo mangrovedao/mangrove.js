@@ -109,7 +109,7 @@ contract MgvOfferMaking is MgvHasOffers {
   //+clear+
   /* Very similar to `newOffer`, `updateOffer` prepares an `OfferPack` for `writeOffer`. Makers should use it for updating live offers, but also to save on gas by reusing old, already consumed offers.
 
-     A `pivotId` should still be given to minimise reads in the order book. It is OK to give the offers' own id as a pivot.
+     A `pivotId` should still be given to minimise reads in the offer book. It is OK to give the offers' own id as a pivot.
 
 
      Gas use is minimal when:

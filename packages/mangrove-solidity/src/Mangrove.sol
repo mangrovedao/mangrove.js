@@ -20,7 +20,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {MgvLib} from "./MgvLib.sol";
+import {MgvLib as ML, MgvStructs} from "./MgvLib.sol";
 
 import {AbstractMangrove} from "./AbstractMangrove.sol";
 
@@ -30,9 +30,9 @@ contract Mangrove is AbstractMangrove {
     AbstractMangrove(governance, gasprice, gasmax, "Mangrove")
   {}
 
-  function executeEnd(MultiOrder memory mor, MgvLib.SingleOrder memory sor) internal override {}
+  function executeEnd(MultiOrder memory mor, ML.SingleOrder memory sor) internal override {}
 
-  function beforePosthook(MgvLib.SingleOrder memory sor) internal override {}
+  function beforePosthook(ML.SingleOrder memory sor) internal override {}
 
   /* ## Flashloan */
   /*
@@ -41,7 +41,7 @@ contract Mangrove is AbstractMangrove {
      2. Runs `offerDetail.maker`'s `execute` function.
      3. Returns the result of the operations, with optional makerData to help the maker debug.
    */
-  function flashloan(MgvLib.SingleOrder calldata sor, address taker) external override returns (uint gasused) {
+  function flashloan(ML.SingleOrder calldata sor, address taker) external override returns (uint gasused) {
     unchecked {
       /* `flashloan` must be used with a call (hence the `external` modifier) so its effect can be reverted. But a call from the outside would be fatal. */
       require(msg.sender == address(this), "mgv/flashloan/protected");

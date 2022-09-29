@@ -20,7 +20,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {ITaker, MgvLib} from "./MgvLib.sol";
+import {ITaker, MgvLib as ML, MgvStructs} from "./MgvLib.sol";
 
 import {AbstractMangrove} from "./AbstractMangrove.sol";
 
@@ -31,7 +31,7 @@ contract InvertedMangrove is AbstractMangrove {
   {}
 
   // execute taker trade
-  function executeEnd(MultiOrder memory mor, MgvLib.SingleOrder memory sor) internal override {
+  function executeEnd(MultiOrder memory mor, ML.SingleOrder memory sor) internal override {
     unchecked {
       ITaker(mor.taker).takerTrade(sor.outbound_tkn, sor.inbound_tkn, mor.totalGot, mor.totalGave);
       bool success = transferTokenFrom(sor.inbound_tkn, mor.taker, address(this), mor.totalGave);
@@ -49,7 +49,7 @@ So :
    2. Is OK, but has an extra CALL cost on top of the token transfer, one for each maker. This is unavoidable anyway when calling makerExecute (since the maker must be able to execute arbitrary code at that moment), but we can skip it here.
    3. Is the cheapest, but it has the drawbacks of `transferFrom`: money must end up owned by the taker, and taker needs to `approve` Mangrove
    */
-  function beforePosthook(MgvLib.SingleOrder memory sor) internal override {
+  function beforePosthook(ML.SingleOrder memory sor) internal override {
     unchecked {
       /* If `transferToken` returns false here, we're in a special (and bad) situation. The taker is returning part of their total loan to a maker, but the maker can't receive the tokens. Only case we can see: maker is blacklisted. In that case, we send the tokens to the vault, so things have a chance of getting sorted out later (Mangrove is a token black hole). */
       if (!transferToken(sor.inbound_tkn, sor.offerDetail.maker(), sor.gives)) {
@@ -83,7 +83,7 @@ So :
     We choose `transferFrom`.
     */
 
-  function flashloan(MgvLib.SingleOrder calldata sor, address) external override returns (uint gasused) {
+  function flashloan(ML.SingleOrder calldata sor, address) external override returns (uint gasused) {
     unchecked {
       /* `invertedFlashloan` must be used with a call (hence the `external` modifier) so its effect can be reverted. But a call from the outside would be fatal. */
       require(msg.sender == address(this), "mgv/invertedFlashloan/protected");

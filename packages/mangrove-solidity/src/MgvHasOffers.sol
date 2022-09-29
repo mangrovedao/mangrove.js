@@ -20,7 +20,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {MgvLib, HasMgvEvents, IMgvMonitor, MgvStructs} from "./MgvLib.sol";
+import {MgvLib as ML, HasMgvEvents, IMgvMonitor, MgvStructs} from "./MgvLib.sol";
 import {MgvRoot} from "./MgvRoot.sol";
 
 /* `MgvHasOffers` contains the state variables and functions common to both market-maker operations and market-taker operations. Mostly: storing offers, removing them, updating market makers' provisions. */
@@ -37,7 +37,7 @@ contract MgvHasOffers is MgvRoot {
 
        Offers specify the amount of gas they require for successful execution ([`gasreq`](#structs.js/gasreq)). To minimize book spamming, market makers must provision a *penalty*, which depends on their `gasreq` and on the pair's [`offer_gasbase`](#structs.js/gasbase). This provision is deducted from their `balanceOf`. If an offer fails, part of that provision is given to the taker, as retribution. The exact amount depends on the gas used by the offer before failing.
 
-       The Mangrove keeps track of their available balance in the `balanceOf` map, which is decremented every time a maker creates a new offer, and may be modified on offer updates/cancellations/takings.
+       The Mangrove keeps track of their available balance in the `balanceOf` map, which is decremented every time a maker creates a new offer, and may be modified on offer updates/cancelations/takings.
      */
   mapping(address => uint) public balanceOf;
 
@@ -123,15 +123,14 @@ contract MgvHasOffers is MgvRoot {
     MgvStructs.LocalPacked local
   ) internal returns (MgvStructs.LocalPacked) {
     unchecked {
-      mapping(uint => MgvStructs.OfferPacked) storage semiBook = offers[outbound_tkn][inbound_tkn];
       if (betterId != 0) {
-        semiBook[betterId] = semiBook[betterId].next(worseId);
+        offers[outbound_tkn][inbound_tkn][betterId] = offers[outbound_tkn][inbound_tkn][betterId].next(worseId);
       } else {
         local = local.best(worseId);
       }
 
       if (worseId != 0) {
-        semiBook[worseId] = semiBook[worseId].prev(betterId);
+        offers[outbound_tkn][inbound_tkn][worseId] = offers[outbound_tkn][inbound_tkn][worseId].prev(betterId);
       }
 
       return local;
