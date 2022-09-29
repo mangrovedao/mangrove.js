@@ -18,7 +18,6 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-// import all since MgvStructs' purpose is to gather all necessary imports
 import "./preprocessed/MgvStructs.post.sol" as MgvStructs;
 
 /* # Structs
