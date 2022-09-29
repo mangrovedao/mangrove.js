@@ -14,8 +14,6 @@ pragma solidity ^0.8.13;
 
 // fields are of the form [name,bits,type]
 
-import "./MgvStructs.post.sol";
-
 // struct_defs are of the form [name,obj]
 // #def sname ns[0]
 // #def Sname capitalize(ns[0])
