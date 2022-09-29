@@ -20,18 +20,21 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {MgvLib, Structs} from "mgv_src/MgvLib.sol";
+import {MgvLib, MgvStructs} from "mgv_src/MgvLib.sol";
 
 interface MangroveLike {
   function best(address, address) external view returns (uint);
 
-  function offers(address, address, uint) external view returns (Structs.OfferPacked);
+  function offers(address, address, uint) external view returns (MgvStructs.OfferPacked);
 
-  function offerDetails(address, address, uint) external view returns (Structs.OfferDetailPacked);
+  function offerDetails(address, address, uint) external view returns (MgvStructs.OfferDetailPacked);
 
-  function offerInfo(address, address, uint) external view returns (Structs.OfferUnpacked memory, Structs.OfferDetailUnpacked memory);
+  function offerInfo(address, address, uint)
+    external
+    view
+    returns (MgvStructs.OfferUnpacked memory, MgvStructs.OfferDetailUnpacked memory);
 
-  function config(address, address) external view returns (Structs.GlobalPacked, Structs.LocalPacked);
+  function config(address, address) external view returns (MgvStructs.GlobalPacked, MgvStructs.LocalPacked);
 }
 
 contract MgvReader {
@@ -77,14 +80,14 @@ contract MgvReader {
   function packedOfferList(address outbound_tkn, address inbound_tkn, uint fromId, uint maxOffers)
     public
     view
-    returns (uint, uint[] memory, Structs.OfferPacked[] memory, Structs.OfferDetailPacked[] memory)
+    returns (uint, uint[] memory, MgvStructs.OfferPacked[] memory, MgvStructs.OfferDetailPacked[] memory)
   {
     unchecked {
       (uint currentId, uint length) = offerListEndPoints(outbound_tkn, inbound_tkn, fromId, maxOffers);
 
       uint[] memory offerIds = new uint[](length);
-      Structs.OfferPacked[] memory offers = new Structs.OfferPacked[](length);
-      Structs.OfferDetailPacked[] memory details = new Structs.OfferDetailPacked[](length);
+      MgvStructs.OfferPacked[] memory offers = new MgvStructs.OfferPacked[](length);
+      MgvStructs.OfferDetailPacked[] memory details = new MgvStructs.OfferDetailPacked[](length);
 
       uint i = 0;
 
@@ -104,14 +107,14 @@ contract MgvReader {
   function offerList(address outbound_tkn, address inbound_tkn, uint fromId, uint maxOffers)
     public
     view
-    returns (uint, uint[] memory, Structs.OfferUnpacked[] memory, Structs.OfferDetailUnpacked[] memory)
+    returns (uint, uint[] memory, MgvStructs.OfferUnpacked[] memory, MgvStructs.OfferDetailUnpacked[] memory)
   {
     unchecked {
       (uint currentId, uint length) = offerListEndPoints(outbound_tkn, inbound_tkn, fromId, maxOffers);
 
       uint[] memory offerIds = new uint[](length);
-      Structs.OfferUnpacked[] memory offers = new Structs.OfferUnpacked[](length);
-      Structs.OfferDetailUnpacked[] memory details = new Structs.OfferDetailUnpacked[](length);
+      MgvStructs.OfferUnpacked[] memory offers = new MgvStructs.OfferUnpacked[](length);
+      MgvStructs.OfferDetailUnpacked[] memory details = new MgvStructs.OfferDetailUnpacked[](length);
 
       uint i = 0;
       while (currentId != 0 && i < length) {
@@ -131,7 +134,7 @@ contract MgvReader {
     returns (uint)
   {
     unchecked {
-      (Structs.GlobalPacked global, Structs.LocalPacked local) = MGV.config(outbound_tkn, inbound_tkn);
+      (MgvStructs.GlobalPacked global, MgvStructs.LocalPacked local) = MGV.config(outbound_tkn, inbound_tkn);
       uint _gp;
       uint global_gasprice = global.gasprice();
       if (global_gasprice > ofr_gasprice) {

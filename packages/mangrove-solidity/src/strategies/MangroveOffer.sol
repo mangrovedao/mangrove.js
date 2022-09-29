@@ -16,7 +16,7 @@ pragma abicoder v2;
 import {AccessControlled} from "mgv_src/strategies/utils/AccessControlled.sol";
 import {MangroveOfferStorage as MOS} from "./MangroveOfferStorage.sol";
 import {IOfferLogic} from "mgv_src/strategies/interfaces/IOfferLogic.sol";
-import {MgvLib, IERC20, Structs} from "mgv_src/MgvLib.sol";
+import {MgvLib, IERC20, MgvStructs} from "mgv_src/MgvLib.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 import {AbstractRouter} from "mgv_src/strategies/routers/AbstractRouter.sol";
 
@@ -329,8 +329,10 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
     view
     returns (uint)
   {
-    (Structs.GlobalPacked globalData, Structs.LocalPacked localData) = MGV.config(address(outbound_tkn), address(inbound_tkn));
-    Structs.OfferDetailPacked offerDetailData = MGV.offerDetails(address(outbound_tkn), address(inbound_tkn), offerId);
+    (MgvStructs.GlobalPacked globalData, MgvStructs.LocalPacked localData) =
+      MGV.config(address(outbound_tkn), address(inbound_tkn));
+    MgvStructs.OfferDetailPacked offerDetailData =
+      MGV.offerDetails(address(outbound_tkn), address(inbound_tkn), offerId);
     uint _gp;
     if (globalData.gasprice() > gasprice) {
       _gp = globalData.gasprice();

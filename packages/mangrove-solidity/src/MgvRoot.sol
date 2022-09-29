@@ -39,7 +39,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {MgvLib, HasMgvEvents, IMgvMonitor, Structs} from "./MgvLib.sol";
+import {MgvLib, HasMgvEvents, IMgvMonitor, MgvStructs} from "./MgvLib.sol";
 
 /* `MgvRoot` contains state variables used everywhere in the operation of the Mangrove and their related function. */
 contract MgvRoot is HasMgvEvents {
@@ -49,9 +49,9 @@ contract MgvRoot is HasMgvEvents {
   address public vault;
 
   /* Global mgv configuration, encoded in a 256 bits word. The information encoded is detailed in [`structs.js`](#structs.js). */
-  Structs.GlobalPacked internal internal_global;
-  /* Configuration mapping for each token pair of the form `outbound_tkn => inbound_tkn => Structs.LocalPacked`. The structure of each `Structs.LocalPacked` value is detailed in [`structs.js`](#structs.js). It fits in one word. */
-  mapping(address => mapping(address => Structs.LocalPacked)) internal locals;
+  MgvStructs.GlobalPacked internal internal_global;
+  /* Configuration mapping for each token pair of the form `outbound_tkn => inbound_tkn => MgvStructs.LocalPacked`. The structure of each `MgvStructs.LocalPacked` value is detailed in [`structs.js`](#structs.js). It fits in one word. */
+  mapping(address => mapping(address => MgvStructs.LocalPacked)) internal locals;
 
   /* Checking the size of `density` is necessary to prevent overflow when `density` is used in calculations. */
   function checkDensity(uint density) internal pure returns (bool) {
@@ -69,7 +69,11 @@ contract MgvRoot is HasMgvEvents {
 
   /* # Configuration Reads */
   /* Reading the configuration for a pair involves reading the config global to all pairs and the local one. In addition, a global parameter (`gasprice`) and a local one (`density`) may be read from the oracle. */
-  function config(address outbound_tkn, address inbound_tkn) public view returns (Structs.GlobalPacked _global, Structs.LocalPacked _local) {
+  function config(address outbound_tkn, address inbound_tkn)
+    public
+    view
+    returns (MgvStructs.GlobalPacked _global, MgvStructs.LocalPacked _local)
+  {
     unchecked {
       _global = internal_global;
       _local = locals[outbound_tkn][inbound_tkn];
@@ -89,10 +93,10 @@ contract MgvRoot is HasMgvEvents {
   function configInfo(address outbound_tkn, address inbound_tkn)
     external
     view
-    returns (Structs.GlobalUnpacked memory global, Structs.LocalUnpacked memory local)
+    returns (MgvStructs.GlobalUnpacked memory global, MgvStructs.LocalUnpacked memory local)
   {
     unchecked {
-      (Structs.GlobalPacked _global, Structs.LocalPacked _local) = config(outbound_tkn, inbound_tkn);
+      (MgvStructs.GlobalPacked _global, MgvStructs.LocalPacked _local) = config(outbound_tkn, inbound_tkn);
       global = _global.to_struct();
       local = _local.to_struct();
     }
@@ -100,7 +104,7 @@ contract MgvRoot is HasMgvEvents {
 
   /* Convenience function to check whether given pair is locked */
   function locked(address outbound_tkn, address inbound_tkn) external view returns (bool) {
-    Structs.LocalPacked local = locals[outbound_tkn][inbound_tkn];
+    MgvStructs.LocalPacked local = locals[outbound_tkn][inbound_tkn];
     return local.lock();
   }
 
@@ -111,7 +115,7 @@ contract MgvRoot is HasMgvEvents {
   */
 
   /* `unlockedMarketOnly` protects modifying the market while an order is in progress. Since external contracts are called during orders, allowing reentrancy would, for instance, let a market maker replace offers currently on the book with worse ones. Note that the external contracts _will_ be called again after the order is complete, this time without any lock on the market.  */
-  function unlockedMarketOnly(Structs.LocalPacked local) internal pure {
+  function unlockedMarketOnly(MgvStructs.LocalPacked local) internal pure {
     require(!local.lock(), "mgv/reentrancyLocked");
   }
 
@@ -121,12 +125,12 @@ contract MgvRoot is HasMgvEvents {
        * Sending ETH to the Mangrove the normal way. Usual [shenanigans](https://medium.com/@alexsherbuck/two-ways-to-force-ether-into-a-contract-1543c1311c56) are possible.
        * Creating a new offer
    */
-  function liveMgvOnly(Structs.GlobalPacked _global) internal pure {
+  function liveMgvOnly(MgvStructs.GlobalPacked _global) internal pure {
     require(!_global.dead(), "mgv/dead");
   }
 
   /* When the Mangrove is deployed, all pairs are inactive by default (since `locals[outbound_tkn][inbound_tkn]` is 0 by default). Offers on inactive pairs cannot be taken or created. They can be updated and retracted. */
-  function activeMarketOnly(Structs.GlobalPacked _global, Structs.LocalPacked _local) internal pure {
+  function activeMarketOnly(MgvStructs.GlobalPacked _global, MgvStructs.LocalPacked _local) internal pure {
     liveMgvOnly(_global);
     require(_local.active(), "mgv/inactive");
   }
