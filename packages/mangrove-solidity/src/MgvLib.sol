@@ -19,7 +19,7 @@ pragma solidity ^0.8.10;
 pragma abicoder v2;
 
 // import all since MgvStructs' purpose is to gather all necessary imports
-import "mgv_src/preprocessed/MgvStructs.post.sol" as MgvStructs;
+import "./preprocessed/MgvStructs.post.sol" as MgvStructs;
 
 /* # Structs
 The structs defined in `structs.js` have their counterpart as solidity structs that are easy to manipulate for outside contracts / callers of view functions. */
