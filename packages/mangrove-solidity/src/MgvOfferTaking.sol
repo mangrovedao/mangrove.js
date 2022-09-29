@@ -20,7 +20,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {IERC20, HasMgvEvents, IMaker, IMgvMonitor, MgvLib as ML, MgvStructs} from "./MgvLib.sol";
+import {IERC20, HasMgvEvents, IMaker, IMgvMonitor, MgvLib as MgvLib, MgvStructs} from "./MgvLib.sol";
 import {MgvHasOffers} from "./MgvHasOffers.sol";
 
 abstract contract MgvOfferTaking is MgvHasOffers {
@@ -76,7 +76,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       require(uint160(takerGives) == takerGives, "mgv/mOrder/takerGives/160bits");
 
       /* `SingleOrder` is defined in `MgvLib.sol` and holds information for ordering the execution of one offer. */
-      ML.SingleOrder memory sor;
+      MgvLib.SingleOrder memory sor;
       sor.outbound_tkn = outbound_tkn;
       sor.inbound_tkn = inbound_tkn;
       (sor.global, sor.local) = config(outbound_tkn, inbound_tkn);
@@ -128,7 +128,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
   /* `internalMarketOrder` works recursively. Going downward, each successive offer is executed until the market order stops (due to: volume exhausted, bad price, or empty book). Then the [reentrancy lock is lifted](#internalMarketOrder/liftReentrancy). Going upward, each offer's `maker` contract is called again with its remaining gas and given the chance to update its offers on the book.
 
     The last argument is a boolean named `proceed`. If an offer was not executed, it means the price has become too high. In that case, we notify the next recursive call that the market order should end. In this initial call, no offer has been executed yet so `proceed` is true. */
-  function internalMarketOrder(MultiOrder memory mor, ML.SingleOrder memory sor, bool proceed) internal {
+  function internalMarketOrder(MultiOrder memory mor, MgvLib.SingleOrder memory sor, bool proceed) internal {
     unchecked {
       /* #### Case 1 : End of order */
       /* We execute the offer currently stored in `sor`. */
@@ -248,7 +248,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
     address taker
   ) internal returns (uint successCount, uint snipesGot, uint snipesGave, uint totalPenalty, uint feePaid) {
     unchecked {
-      ML.SingleOrder memory sor;
+      MgvLib.SingleOrder memory sor;
       sor.outbound_tkn = outbound_tkn;
       sor.inbound_tkn = inbound_tkn;
       (sor.global, sor.local) = config(outbound_tkn, inbound_tkn);
@@ -282,7 +282,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
   /* ## Internal snipes */
   //+clear+
   /* `internalSnipes` works by looping over targets. Each successive offer is executed under a [reentrancy lock](#internalSnipes/liftReentrancy), then its posthook is called. Going upward, each offer's `maker` contract is called again with its remaining gas and given the chance to update its offers on the book. */
-  function internalSnipes(MultiOrder memory mor, ML.SingleOrder memory sor, uint[4][] calldata targets)
+  function internalSnipes(MultiOrder memory mor, MgvLib.SingleOrder memory sor, uint[4][] calldata targets)
     internal
     returns (uint successCount, uint snipesGot, uint snipesGave)
   {
@@ -362,7 +362,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
     * `makerData` is the data returned after executing the offer
     * `mgvData` is an [internal Mangrove status code](#MgvOfferTaking/statusCodes).
   */
-  function execute(MultiOrder memory mor, ML.SingleOrder memory sor)
+  function execute(MultiOrder memory mor, MgvLib.SingleOrder memory sor)
     internal
     returns (uint gasused, bytes32 makerData, bytes32 mgvData)
   {
@@ -495,12 +495,12 @@ abstract contract MgvOfferTaking is MgvHasOffers {
   /* Externally called by `execute`, flashloan lends money (from the taker to the maker, or from the maker to the taker, depending on the implementation) then calls `makerExecute` to run the maker liquidity fetching code. If `makerExecute` is unsuccessful, `flashloan` reverts (but the larger orderbook traversal will continue). 
 
   All `flashloan` implementations must `require(msg.sender) == address(this))`. */
-  function flashloan(ML.SingleOrder calldata sor, address taker) external virtual returns (uint gasused);
+  function flashloan(MgvLib.SingleOrder calldata sor, address taker) external virtual returns (uint gasused);
 
   /* ## Maker Execute */
   /* Called by `flashloan`, `makerExecute` runs the maker code and checks that it can safely send the desired assets to the taker. */
 
-  function makerExecute(ML.SingleOrder calldata sor) internal returns (uint gasused) {
+  function makerExecute(MgvLib.SingleOrder calldata sor) internal returns (uint gasused) {
     unchecked {
       bytes memory cd = abi.encodeWithSelector(IMaker.makerExecute.selector, sor);
 
@@ -531,7 +531,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
 
   /* ## executeEnd (abstract) */
   /* Called by `internalSnipes` and `internalMarketOrder`, `executeEnd` may run implementation-specific code after all makers have been called once. In [`InvertedMangrove`](#InvertedMangrove), the function calls the taker once so they can act on their flashloan. In [`Mangrove`], it does nothing. */
-  function executeEnd(MultiOrder memory mor, ML.SingleOrder memory sor) internal virtual;
+  function executeEnd(MultiOrder memory mor, MgvLib.SingleOrder memory sor) internal virtual;
 
   /* ## Post execute */
   /* At this point, we know `mgvData != "mgv/notExecuted"`. After executing an offer (whether in a market order or in snipes), we
@@ -540,7 +540,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
    */
   function postExecute(
     MultiOrder memory mor,
-    ML.SingleOrder memory sor,
+    MgvLib.SingleOrder memory sor,
     uint gasused,
     bytes32 makerData,
     bytes32 mgvData
@@ -568,17 +568,17 @@ abstract contract MgvOfferTaking is MgvHasOffers {
   /* ## beforePosthook (abstract) */
   /* Called by `makerPosthook`, this function can run implementation-specific code before calling the maker has been called a second time. In [`InvertedMangrove`](#InvertedMangrove), all makers are called once so the taker gets all of its money in one shot. Then makers are traversed again and the money is sent back to each taker using `beforePosthook`. In [`Mangrove`](#Mangrove), `beforePosthook` does nothing. */
 
-  function beforePosthook(ML.SingleOrder memory sor) internal virtual;
+  function beforePosthook(MgvLib.SingleOrder memory sor) internal virtual;
 
   /* ## Maker Posthook */
-  function makerPosthook(ML.SingleOrder memory sor, uint gasLeft, bytes32 makerData, bytes32 mgvData)
+  function makerPosthook(MgvLib.SingleOrder memory sor, uint gasLeft, bytes32 makerData, bytes32 mgvData)
     internal
     returns (uint gasused)
   {
     unchecked {
       /* At this point, mgvData can only be `"mgv/tradeSuccess"`, `"mgv/makerRevert"`, `"mgv/makerTransferFail"` or `"mgv/makerReceiveFail"` */
       bytes memory cd = abi.encodeWithSelector(
-        IMaker.makerPosthook.selector, sor, ML.OrderResult({makerData: makerData, mgvData: mgvData})
+        IMaker.makerPosthook.selector, sor, MgvLib.OrderResult({makerData: makerData, mgvData: mgvData})
       );
 
       address maker = sor.offerDetail.maker();
@@ -634,7 +634,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
    * We do not consider the tx.gasprice.
    * `offerDetail.gasbase` and `offerDetail.gasprice` are the values of the Mangrove parameters `config.offer_gasbase` and `config.gasprice` when the offer was created. Without caching those values, the provision set aside could end up insufficient to reimburse the maker (or to retribute the taker).
    */
-  function applyPenalty(ML.SingleOrder memory sor, uint gasused) internal returns (uint) {
+  function applyPenalty(MgvLib.SingleOrder memory sor, uint gasused) internal returns (uint) {
     unchecked {
       uint gasreq = sor.offerDetail.gasreq();
 
@@ -669,7 +669,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
   }
 
   /* Post-trade, `payTakerMinusFees` sends what's due to the taker and the rest (the fees) to the vault. Routing through the Mangrove like that also deals with blacklisting issues (separates the maker-blacklisted and the taker-blacklisted cases). */
-  function payTakerMinusFees(MultiOrder memory mor, ML.SingleOrder memory sor) internal {
+  function payTakerMinusFees(MultiOrder memory mor, MgvLib.SingleOrder memory sor) internal {
     unchecked {
       /* Should be statically provable that the 2 transfers below cannot return false under well-behaved ERC20s and a non-blacklisted, non-0 target. */
 

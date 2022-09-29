@@ -20,7 +20,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {MgvLib as ML, HasMgvEvents, IMgvMonitor, MgvStructs} from "./MgvLib.sol";
+import {MgvLib as MgvLib, HasMgvEvents, IMgvMonitor, MgvStructs} from "./MgvLib.sol";
 import {MgvRoot} from "./MgvRoot.sol";
 
 /* `MgvHasOffers` contains the state variables and functions common to both market-maker operations and market-taker operations. Mostly: storing offers, removing them, updating market makers' provisions. */

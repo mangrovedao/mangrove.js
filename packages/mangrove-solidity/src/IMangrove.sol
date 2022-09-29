@@ -8,7 +8,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 pragma experimental ABIEncoderV2;
 
-import {MgvLib as ML, MgvStructs, IMaker} from "./MgvLib.sol";
+import {MgvLib as MgvLib, MgvStructs, IMaker} from "./MgvLib.sol";
 
 interface IMangrove {
   event Approval(address indexed outbound_tkn, address indexed inbound_tkn, address owner, address spender, uint value);
@@ -88,7 +88,7 @@ interface IMangrove {
 
   function deactivate(address outbound_tkn, address inbound_tkn) external;
 
-  function flashloan(ML.SingleOrder memory sor, address taker) external returns (uint gasused);
+  function flashloan(MgvLib.SingleOrder memory sor, address taker) external returns (uint gasused);
 
   function fund(address maker) external payable;
 
