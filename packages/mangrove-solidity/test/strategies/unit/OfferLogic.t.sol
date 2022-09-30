@@ -37,7 +37,6 @@ contract OfferLogicTest is MangroveTest {
     if (address(fork) != address(0)) {
       fork.setUp();
       mgv = setupMangrove();
-      mgv.setVault($(mgv));
       weth = TestToken(fork.get("WETH"));
       usdc = TestToken(fork.get("USDC"));
       setupMarket(weth, usdc);
@@ -49,6 +48,7 @@ contract OfferLogicTest is MangroveTest {
       weth = base;
       usdc = quote;
     }
+    mgv.setVault(freshAddress("MgvTreasury"));
     maker = freshAddress("maker");
     vm.deal(maker, 10 ether);
     // for Direct strats, maker is deployer
@@ -76,7 +76,7 @@ contract OfferLogicTest is MangroveTest {
     makerContract.activate(dynamic([IERC20(weth), usdc]));
   }
 
-  // override this to use MultiUser strats
+  // override this to use Forwarder strats
   function setupMakerContract() internal virtual prank(deployer) {
     makerContract = new OfferMaker({
       mgv: IMangrove($(mgv)),
@@ -256,5 +256,40 @@ contract OfferLogicTest is MangroveTest {
     // this will be a noop when maker == reserve
     makerContract.withdrawToken(usdc, maker, takergave);
     assertEq(usdc.balanceOf(maker), balusdc + takergave, "withdraw failed");
+  }
+
+  function test_trade_succeeds_with_new_reserve() public {
+    address new_reserve = freshAddress("new_reserve");
+
+    vm.prank(maker);
+    makerContract.setReserve(new_reserve);
+
+    vm.startPrank(deployer);
+    makerContract.setGasreq(makerContract.offerGasreq()+70_000);
+    vm.stopPrank();
+
+    deal($(weth), new_reserve, 0.5 ether);
+    deal($(weth), address(makerContract), 0);
+    deal($(usdc), address(makerContract), 0);
+    
+    address toApprove = address(makerContract.router());
+    toApprove = toApprove == address(0) ? address(makerContract) : toApprove; 
+    vm.startPrank(new_reserve);
+    usdc.approve(toApprove, type(uint).max); // to push
+    weth.approve(toApprove, type(uint).max); // to pull
+    vm.stopPrank();
+    (, uint takerGave,,) = performTrade(true);
+    vm.startPrank(maker);
+    assertEq(
+      takerGave,
+      makerContract.tokenBalance(usdc),
+      "Incorrect reserve usdc balance"
+    );
+    assertEq(
+      makerContract.tokenBalance(weth),
+      0,
+      "Incorrect reserve weth balance"
+    );
+    vm.stopPrank();
   }
 }
