@@ -22,7 +22,7 @@ interface IOrderLogic {
   ///@notice Information for creating a market order and possibly a resting order (offer).
   ///@param outbound_tkn outbound token used to identify the order book
   ///@param inbound_tkn the inbound token used to identify the order book
-  ///@param partialFillNotAllowed true to revert if taker order cannot be filled and resting order failed or is not enabled; otherwise, false
+  ///@param partialFillNotAllowed true to revert if market order cannot be filled and resting order failed or is not enabled; otherwise, false
   ///@param takerWants desired total amount of `outbound_tkn`
   ///@param makerWants taker wants before slippage (`makerWants == wants` when `fillWants`)
   ///@param takerGives available total amount of `inbound_tkn`
@@ -81,5 +81,11 @@ interface IOrderLogic {
 
   function expiring(IERC20, IERC20, uint) external returns (uint);
 
-  function take(TakerOrder memory) external payable returns (TakerOrderResult memory);
+  ///@notice Executes a resting (limit market) order on a given offer list.
+  ///@param tko the arguments in memory of the resting order
+  ///@return tkor the result of the resting order. If `offerId==0`, no resting order was posted on `msg.sender`'s behalf.
+  ///@dev as an extension of a `Forwarder` logic, this function is the only one able to call `MGV.newOffer`
+  /// It is `payable` in order to attach native tokens to cover for the potential resting order provision.
+  function take(TakerOrder memory tko) external payable 
+  returns (TakerOrderResult memory tkor);
 }
