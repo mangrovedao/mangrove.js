@@ -145,4 +145,32 @@ contract MgvHasOffers is MgvRoot {
       return offer.gives() > 0;
     }
   }
+
+  function semibook(bytes32 val) internal pure returns (mapping(uint => MgvStructs.OfferPacked) storage sb) {
+    assembly {
+      sb.slot := val
+    }
+  }
+
+  function semibookDetail(bytes32 val)
+    internal
+    pure
+    returns (mapping(uint => MgvStructs.OfferDetailPacked) storage sbd)
+  {
+    assembly {
+      sbd.slot := val
+    }
+  }
+
+  function tob32(mapping(uint => MgvStructs.OfferPacked) storage sb) internal pure returns (bytes32 val) {
+    assembly {
+      val := sb.slot
+    }
+  }
+
+  function tob32(mapping(uint => MgvStructs.OfferDetailPacked) storage sbd) internal pure returns (bytes32 val) {
+    assembly {
+      val := sbd.slot
+    }
+  }
 }

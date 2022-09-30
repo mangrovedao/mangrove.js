@@ -35,6 +35,8 @@ abstract contract MgvOfferTaking is MgvHasOffers {
     address taker; // used globally
     bool fillWants; // used globally
     uint feePaid; // used globally
+    bytes32 semibook;
+    bytes32 semibookDetail;
   }
 
   /* # Market Orders */
@@ -75,6 +77,15 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       require(uint160(takerWants) == takerWants, "mgv/mOrder/takerWants/160bits");
       require(uint160(takerGives) == takerGives, "mgv/mOrder/takerGives/160bits");
 
+      /* `MultiOrder` (defined above) maintains information related to the entire market order. During the order, initial `wants`/`gives` values minus the accumulated amounts traded so far give the amounts that remain to be traded. */
+      MultiOrder memory mor;
+      mor.initialWants = takerWants;
+      mor.initialGives = takerGives;
+      mor.taker = taker;
+      mor.fillWants = fillWants;
+      mor.semibook = tob32(offers[outbound_tkn][inbound_tkn]);
+      mor.semibookDetail = tob32(offerDetails[outbound_tkn][inbound_tkn]);
+
       /* `SingleOrder` is defined in `MgvLib.sol` and holds information for ordering the execution of one offer. */
       MgvLib.SingleOrder memory sor;
       sor.outbound_tkn = outbound_tkn;
@@ -82,17 +93,10 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       (sor.global, sor.local) = config(outbound_tkn, inbound_tkn);
       /* Throughout the execution of the market order, the `sor`'s offer id and other parameters will change. We start with the current best offer id (0 if the book is empty). */
       sor.offerId = sor.local.best();
-      sor.offer = offers[outbound_tkn][inbound_tkn][sor.offerId];
+      sor.offer = semibook(mor.semibook)[sor.offerId];
       /* `sor.wants` and `sor.gives` may evolve, but they are initially however much remains in the market order. */
       sor.wants = takerWants;
       sor.gives = takerGives;
-
-      /* `MultiOrder` (defined above) maintains information related to the entire market order. During the order, initial `wants`/`gives` values minus the accumulated amounts traded so far give the amounts that remain to be traded. */
-      MultiOrder memory mor;
-      mor.initialWants = takerWants;
-      mor.initialGives = takerGives;
-      mor.taker = taker;
-      mor.fillWants = fillWants;
 
       /* For the market order to even start, the market needs to be both active, and not currently protected from reentrancy. */
       activeMarketOnly(sor.global, sor.local);
@@ -149,7 +153,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
         bytes32 mgvData;
 
         /* Load additional information about the offer. We don't do it earlier to save one storage read in case `proceed` was false. */
-        sor.offerDetail = offerDetails[sor.outbound_tkn][sor.inbound_tkn][sor.offerId];
+        sor.offerDetail = semibookDetail(mor.semibookDetail)[sor.offerId];
 
         /* `execute` will adjust `sor.wants`,`sor.gives`, and may attempt to execute the offer if its price is low enough. It is crucial that an error due to `taker` triggers a revert. That way, [`mgvData`](#MgvOfferTaking/statusCodes) not in `["mgv/notExecuted","mgv/tradeSuccess"]` means the failure is the maker's fault. */
         /* Post-execution, `sor.wants`/`sor.gives` reflect how much was sent/taken by the offer. We will need it after the recursive call, so we save it in local variables. Same goes for `offerId`, `sor.offer` and `sor.offerDetail`. */
@@ -173,7 +177,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
         */
           sor.gives = mor.initialGives - mor.totalGave;
           sor.offerId = sor.offer.next();
-          sor.offer = offers[sor.outbound_tkn][sor.inbound_tkn][sor.offerId];
+          sor.offer = semibook(mor.semibook)[sor.offerId];
         }
 
         /* note that internalMarketOrder may be called twice with same offerId, but in that case `proceed` will be false! */
@@ -256,6 +260,8 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       MultiOrder memory mor;
       mor.taker = taker;
       mor.fillWants = fillWants;
+      mor.semibook = tob32(offers[outbound_tkn][inbound_tkn]);
+      mor.semibookDetail = tob32(offerDetails[outbound_tkn][inbound_tkn]);
 
       /* For the snipes to even start, the market needs to be both active and not currently protected from reentrancy. */
       activeMarketOnly(sor.global, sor.local);
@@ -294,8 +300,8 @@ abstract contract MgvOfferTaking is MgvHasOffers {
 
         /* Initialize single order struct. */
         sor.offerId = targets[i][0];
-        sor.offer = offers[sor.outbound_tkn][sor.inbound_tkn][sor.offerId];
-        sor.offerDetail = offerDetails[sor.outbound_tkn][sor.inbound_tkn][sor.offerId];
+        sor.offer = semibook(mor.semibook)[sor.offerId];
+        sor.offerDetail = semibookDetail(mor.semibookDetail)[sor.offerId];
 
         /* If we removed the `isLive` conditional, a single expired or nonexistent offer in `targets` would revert the entire transaction (by the division by `offer.gives` below since `offer.gives` would be 0). We also check that `gasreq` is not worse than specified. A taker who does not care about `gasreq` can specify any amount larger than $2^{24}-1$. A mismatched price will be detected by `execute`. */
         if (!isLive(sor.offer) || sor.offerDetail.gasreq() > targets[i][3]) {
