@@ -34,15 +34,14 @@ contract Ghost is Direct {
   //        Forwarder  Direct <-- offer management (our entry point)
   //    OfferForwarder  OfferMaker <-- new offer posting
 
-  constructor(IMangrove mgv, IERC20 base, IERC20 stable1, IERC20 stable2, address admin) 
-  Direct(mgv, NO_ROUTER) {
+  constructor(IMangrove mgv, IERC20 base, IERC20 stable1, IERC20 stable2, address admin) Direct(mgv, NO_ROUTER) {
     // SimpleRouter takes promised liquidity from admin's address (wallet)
     STABLE1 = stable1;
     STABLE2 = stable2;
     BASE = base;
     AbstractRouter router_ = new SimpleRouter();
     setRouter(router_);
-    // adding `this` to the allowed makers of `router_` to pull/push liquidity 
+    // adding `this` to the allowed makers of `router_` to pull/push liquidity
     router_.bind(address(this));
     // Note: `reserve()` needs to approve `this.router()` for base token transfer
     router_.setAdmin(admin);
@@ -50,8 +49,12 @@ contract Ghost is Direct {
   }
 
   /**
+   * @param gives in BASE decimals
    * @param wants1 in STABLE1 decimals
    * @param wants2 in STABLE2 decimals
+   * @param pivot1 pivot for STABLE1
+   * @param pivot2 pivot for STABLE2
+   * @return (offerid for STABLE1, offerid for STABLE2)
    * @dev these offer's provision must be in msg.value
    * @dev `reserve()` must have approved base for `this` contract transfer prior to calling this function
    */
@@ -62,7 +65,7 @@ contract Ghost is Direct {
     uint wants2,
     uint pivot1,
     uint pivot2
-  ) external payable onlyAdmin {
+  ) external payable onlyAdmin returns (uint, uint) {
     // there is a cost of being paternalistic here, we read MGV storage
     // an offer can be in 4 states:
     // - not on mangrove (never has been)
@@ -95,6 +98,8 @@ contract Ghost is Direct {
       gasprice: 0,
       pivotId: pivot2
     });
+
+    return (offerId1, offerId2);
   }
 
   ///FIXME a possibility is to update the alt offer during makerExecute
