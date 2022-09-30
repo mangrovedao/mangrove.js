@@ -89,7 +89,7 @@ describe("OfferMaker", () => {
           "TokenB"
         );
         assert.strictEqual(
-          mgv.toUnits(allowanceForLogic, 18).toString(),
+          mgv.toUnits(allowanceForLogic, 6).toString(),
           BigNumber.from(2).pow(256).sub(1).toString(),
           "allowance should be 2^256-1"
         );
@@ -120,7 +120,7 @@ describe("OfferMaker", () => {
         await w(mgv.token("TokenB").approveMangrove());
         allowanceForEOA /*:Big*/ = await eoa_lp.mangroveAllowance("TokenB");
         assert.strictEqual(
-          mgv.toUnits(allowanceForEOA, 18).toString(),
+          mgv.toUnits(allowanceForEOA, 6).toString(),
           BigNumber.from(2).pow(256).sub(1).toString(),
           "allowance should be 2^256-1"
         );

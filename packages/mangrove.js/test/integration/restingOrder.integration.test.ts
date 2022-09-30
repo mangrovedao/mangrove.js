@@ -1,6 +1,5 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
-import chalk from "chalk";
 
 import { utils } from "ethers";
 
