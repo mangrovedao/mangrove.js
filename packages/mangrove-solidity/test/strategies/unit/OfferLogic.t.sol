@@ -102,16 +102,6 @@ contract OfferLogicTest is MangroveTest {
     vm.stopPrank();
   }
 
-  function test_changingReserveWithNoRouterMakesChecklistFail() public {
-    address new_reserve = freshAddress();
-    vm.prank(maker);
-    makerContract.setReserve(new_reserve);
-    vm.prank(deployer);
-    makerContract.setRouter(AbstractRouter(address(0)));
-    vm.expectRevert("MangroveOffer/LogicHasNoRouter");
-    makerContract.checkList(dynamic([IERC20(weth), usdc]));
-  }
-
   function test_makerCanPostNewOffer() public {
     vm.prank(maker);
     uint offerId = makerContract.newOffer{value: 0.1 ether}({

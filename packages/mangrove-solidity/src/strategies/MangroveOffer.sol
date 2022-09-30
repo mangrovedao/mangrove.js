@@ -164,8 +164,6 @@ abstract contract MangroveOffer is AccessControlled, IOfferLogic {
   /// @inheritdoc IOfferLogic
   function checkList(IERC20[] calldata tokens) external view override {
     AbstractRouter router_ = router();
-    // no router => reserve == this
-    require(router_ != NO_ROUTER || _reserve(address(this)) == address(this), "MangroveOffer/LogicHasNoRouter");
     for (uint i = 0; i < tokens.length; i++) {
       // checking `this` contract's approval
       require(tokens[i].allowance(address(this), address(MGV)) > 0, "MangroveOffer/LogicMustApproveMangrove");
