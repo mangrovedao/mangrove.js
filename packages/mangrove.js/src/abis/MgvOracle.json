@@ -62,7 +62,7 @@
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "OfferPacked",
               "name": "offer",
               "type": "uint256"
             },
@@ -77,17 +77,17 @@
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "OfferDetailPacked",
               "name": "offerDetail",
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "GlobalPacked",
               "name": "global",
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "LocalPacked",
               "name": "local",
               "type": "uint256"
             }
@@ -127,7 +127,7 @@
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "OfferPacked",
               "name": "offer",
               "type": "uint256"
             },
@@ -142,17 +142,17 @@
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "OfferDetailPacked",
               "name": "offerDetail",
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "GlobalPacked",
               "name": "global",
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "LocalPacked",
               "name": "local",
               "type": "uint256"
             }
