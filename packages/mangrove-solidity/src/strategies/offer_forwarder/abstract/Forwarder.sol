@@ -98,7 +98,11 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
       uint num = (offer_gasbase + gasreq) * 10**9;
       // pre-check to avoid underflow since 0 is interpreted as "use mangrove's gasprice"
       require(provision >= num, "mgv/insufficientProvision");
+      // Gasprice is eventually a uint16, so too much provision would yield a gasprice overflow
+      // Reverting here with a clearer reason
+      require(provision < type(uint16).max * num, "Forwarder/provisionTooHigh");
       gasprice = provision / num;
+
       // computing amount of native tokens that are not going to be locked on mangrove
       // this amount should still be recoverable by offer maker when retracting the offer
       leftover = provision - (gasprice * 10**9 * (offer_gasbase + gasreq));
@@ -112,7 +116,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint offerId
   ) public view override returns (address owner) {
     owner = ownerData[outbound_tkn][inbound_tkn][offerId].owner;
-    require(owner != address(0), "multiUser/unknownOffer");
+    require(owner != address(0), "Forwarder/unknownOffer");
   }
 
   ///@inheritdoc IOfferLogic
@@ -227,7 +231,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     uint offerId
   ) external payable override {
     OwnerData memory od = ownerData[outbound_tkn][inbound_tkn][offerId];
-    require(msg.sender == od.owner, "Multi/updateOffer/unauthorized");
+    require(msg.sender == od.owner, "Forwarder/updateOffer/unauthorized");
     gasprice; // ssh
     UpdateOfferArgs memory upd;
     upd.offer_detail = MGV.offerDetails(
@@ -355,7 +359,7 @@ abstract contract Forwarder is IForwarder, MangroveOffer {
     OwnerData memory od = ownerData[outbound_tkn][inbound_tkn][offerId];
     require(
       od.owner == msg.sender || address(MGV) == msg.sender,
-      "Multi/retractOffer/unauthorized"
+      "Forwarder/retractOffer/unauthorized"
     );
     free_wei = deprovision ? od.wei_balance : 0;
     free_wei += MGV.retractOffer(

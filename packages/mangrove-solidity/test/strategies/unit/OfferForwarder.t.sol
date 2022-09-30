@@ -157,4 +157,19 @@ contract OfferForwarderTest is OfferLogicTest {
     });
     assertEq(next_id, offerId, "Unexpected offer id");
   }
+
+  function test_provisionTooHighReverts() public {
+    vm.expectRevert("Forwarder/provisionTooHigh");
+
+    vm.startPrank(maker);
+    makerContract.newOffer{value: 10 ether}({
+      outbound_tkn: weth,
+      inbound_tkn: usdc,
+      wants: 2000 * 10 ** 6,
+      gives: 1 ether,
+      gasreq: type(uint).max,
+      gasprice: 0,
+      pivotId: 0
+    });
+  }
 }
