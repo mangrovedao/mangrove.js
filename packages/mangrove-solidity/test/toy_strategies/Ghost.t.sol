@@ -45,12 +45,6 @@ contract GhostTest is MangroveTest {
     dai.approve($(mgv), type(uint).max);
     usdc.approve($(mgv), type(uint).max);
 
-    // TODO: If the following line isn't there, we get an EVM OutOfGas exception in the posthook (success), when the SimpleRouter tries to Flush - in particular the transfer of DAI from Ghost to Testrunner. Investigate
-    deal($(weth), $(this), cash(weth, 10));
-
-    // TODO: If the following line isn't there, we get an EVM OutOfGas exception in the posthook (success) in the the Ghost, when the WETH to USDC offer is tried to be retracted. Investigate
-    deal($(dai), $(this), cash(dai, 10_000));
-
     // setup separate taker and give some native token (for gas) + USDC and DAI
     taker = freshAddress("taker");
     vm.deal(taker, 10_000_000);
@@ -79,6 +73,9 @@ contract GhostTest is MangroveTest {
       stable2: dai,
       admin: $(this) // for ease, set this contract (will be Test runner) as admin for the strat
       });
+
+    // set offerGasReq to overapproximate the gas required to handle trade and posthook
+    strat.setGasreq(250_000);
 
     // make sure the strat is funded on MGV
     mgv.fund{value: 2 ether}($(strat));
