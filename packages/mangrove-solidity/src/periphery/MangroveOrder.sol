@@ -70,15 +70,19 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     }
   }
 
-  // `this` contract MUST have approved Mangrove for inbound token transfer
-  // `msg.sender` MUST have approved `this` contract's router for at least the same amount
-  // provision for posting a resting order MUST be sent when calling this function  
+  ///@inheritdoc IOrderLogic
   function take(TakerOrder calldata tko) external payable returns (TakerOrderResult memory res) {
-    // pulling directly from msg.sender would require caller to approve `this` in addition to the `this.router()`
-    // so pulling funds from `msg.sender`'s reserve
-    uint pulled = router().pull(tko.inbound_tkn, msg.sender, tko.takerGives, true);
+    // ASSUME 
+    // `msg.sender` and `msg.sender`'s reserve added balances are (NAT_USER-`msg.value`, OUT_USER, IN_USER) for native, `tko.outbound_tkn` and `tko.inbound_tkn` balances.
+    // `this` balances are (NAT_THIS+`msg.value`, OUT_THIS, IN_THIS)
+    
+    // Pulling funds from `msg.sender`'s reserve
+    uint pulled = router().pull(tko.inbound_tkn, msg.sender, tko.takerGives, true);    
     require(pulled == tko.takerGives, "mgvOrder/mo/transferInFail");
-
+    // STATE
+    // [`msg.sender'] (NAT_USER-`msg.value`, OUT_USER, IN_USER-`tko.takerGives`)
+    // [`this`] (NAT_THIS+`msg.value`, OUT_THIS, IN_THIS+`tko.takerGives`)
+   
     (res.takerGot, res.takerGave, res.bounty, res.fee) = MGV.marketOrder({
       outbound_tkn: address(tko.outbound_tkn),
       inbound_tkn: address(tko.inbound_tkn),
@@ -87,8 +91,12 @@ contract MangroveOrder is Forwarder, IOrderLogic {
       fillWants: tko.fillWants
     });
 
+    // STATE
+    // [`msg.sender'] (NAT_USER-`msg.value`, OUT_USER, IN_USER-`tko.takerGives`)
+    // [`this`] (NAT_THIS+`msg.value`+`res.bounty`, OUT_THIS+`res.takerGot`, IN_THIS+`tko.takerGives`-`res.takerGave`)
+    
     bool isComplete = checkCompleteness(tko, res);
-    // requiring `partialFillNotAllowed` => `isComplete \/ restingOrder`
+    // requiring `partialFillNotAllowed => (isComplete \/ restingOrder)`
     require(!tko.partialFillNotAllowed || isComplete || tko.restingOrder, "mgvOrder/mo/noPartialFill");
 
     // sending inbound tokens to `msg.sender`'s reserve and sending back remaining outbound tokens
@@ -98,11 +106,10 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     if (!isComplete) {
       router().push(tko.inbound_tkn, msg.sender, tko.takerGives - res.takerGave);
     }
-
-    // at this points the following invariants hold:
-    // 1. `msg.sender`'s reserve was credited of `res.takerGot` outbound tokens and was debited of `res.takerGave` inbound tokens
-    // 2. `this` contract inbound and outbound token balances are back to their initial value
-    // 3. `this` contract's WEI balance is credited of `msg.value + res.bounty`
+    // STATE
+    // [`msg.sender'] (NAT_USER-`msg.value`, OUT_USER+`res.takerGot`, IN_USER-`res.takerGave`)
+    // [`this`] (NAT_THIS+`msg.value`+`res.bounty`, OUT_THIS, IN_THIS)
+    
     uint fund = msg.value + res.bounty; // using bounty as additional funds to provision the resting order
     if (tko.restingOrder && !isComplete) {
       // When posting a resting order `msg.sender` becomes a maker. 
@@ -116,23 +123,29 @@ contract MangroveOrder is Forwarder, IOrderLogic {
         res: res, 
         fund: fund  
       }); 
-      // at this point either 1 or 1' hold:
-      // 1. the (maker) resting order was succesfully posted on Mangrove and:
-      /// a. `this` native balance is back to its initial value (`fund` transferred to Mangrove).
-      /// b. `fund == 0`
-      /// c. `msg.sender` is the owner of the resting order `res.offerId`
-      /// d. Mangrove emitted a unique `OfferWrite` log whose `maker` field is `address(this)` and `offerId` is `res.offerId`.
-      // 1'. the resting order was NOT posted and:
-      /// a. `fund == msg.value + res.bounty`.
-      /// b. `res.offerId == 0`
+      // STATE (`postRestingOrder` succeeded)
+      // [`msg.sender'] (NAT_USER-`msg.value`, OUT_USER+`res.takerGot`, IN_USER-`res.takerGave`)
+      // [`this`] (NAT_THIS, OUT_THIS, IN_THIS)
+      // `fund == 0`
+      // `ownerData[tko.inbound_tkn][tko.outbound_tkn][res.offerId]=={owner:msg.sender, wei_balance:rounding_error(fund,offerGasReq())}`
+      // Mangrove emitted a unique `OfferWrite` log whose `maker` field is `address(this)` and `offerId` is `res.offerId`.
+
+      // STATE (`postRestingOrder` failed)
+      // [`msg.sender'] (NAT_USER-`msg.value`, OUT_USER+`res.takerGot`, IN_USER-`res.takerGave`)
+      // [`this`] (NAT_THIS+`msg.value`+`res.bounty`, OUT_THIS, IN_THIS)
+      // `fund == msg.value + res.bounty`.
+      // `res.offerId == 0`
     }
     
     if (fund > 0) {
       // NB this calls gives reentrancy power to callee, but OK since:
       // 1. callee is `msg.sender` so no grieffing risk of making this call fail for out of gas
-      // 2. retrieval of native tokens from `this` balance by `msg.sender` is bounded by `msg.value` and a possible `res.bounty` which are call specific
+      // 2. no function allows fund retrieval from `this` balance by `msg.sender`
       (bool noRevert,) = msg.sender.call{value: fund}("");
       require(noRevert, "mgvOrder/mo/refundFail");
+      // STATE (`postRestingOrder` failed)
+      // [`msg.sender'] (NAT_USER+`res.bounty`, OUT_USER+`res.takerGot`, IN_USER-`res.takerGave`)
+      // [`this`] (NAT_THIS, OUT_THIS, IN_THIS)
     }
     emit OrderSummary({
       mangrove: MGV,
@@ -158,12 +171,6 @@ contract MangroveOrder is Forwarder, IOrderLogic {
   )
     internal returns (uint refund)
   {
-    // resting limit order for the residual of the taker order
-    // `offerId_==0` if mangrove fails to post the resting order. This could happen if:
-    // - residual gives is below current density
-    // - `fund` is too low and would yield a gasprice that is lower than Mangrove's
-    // - `fund` is too high and would yield a gasprice overflow
-    // - offer list is not active (Mangrove is not dead otherwise market order would have reverted)
     res.offerId = _newOffer(
       NewOfferArgs({
         outbound_tkn: outbound_tkn,
@@ -179,7 +186,11 @@ contract MangroveOrder is Forwarder, IOrderLogic {
     );
 
     if (res.offerId == 0) {
-      // unable to post resting order because remainder is below density
+      // either:
+      // - residual gives is below current density
+      // - `fund` is too low and would yield a gasprice that is lower than Mangrove's
+      // - `fund` is too high and would yield a gasprice overflow
+      // - offer list is not active (Mangrove is not dead otherwise market order would have reverted)
       // reverting when partial fill is not an option
       require(!tko.partialFillNotAllowed, "mgvOrder/mo/noPartialFill");
       // `fund` is no longer needed so sending it back to `msg.sender`
