@@ -144,6 +144,26 @@ contract MgvHasOffers is MgvRoot {
     }
   }
 
+  /* ## Pointers to partially evaluated mappings
+    Reminder: deep mappings are accessed by composing the hash of each successive key. For the mapping at `map` at slot `slot`, `map[key1][key2]` points to keccak256(bytes.concat(key2, keccak256(bytes.concat(key1, uint(slot))))).
+
+    To save gas, we save the partial evaluation of offerDetail and offer when it makes sense. Since memory structs cannot contain storage mappings, we convert to/from bytes32.
+  */
+
+  /* Return the storage pointer given by a partially evaluated mapping (`Offer` or `OfferDetail`), cast to a bytes32 */
+  function tob32(mapping(uint => MgvStructs.OfferPacked) storage sb) internal pure returns (bytes32 val) {
+    assembly {
+      val := sb.slot
+    }
+  }
+
+  function tob32(mapping(uint => MgvStructs.OfferDetailPacked) storage sbd) internal pure returns (bytes32 val) {
+    assembly {
+      val := sbd.slot
+    }
+  }
+
+  /* Return given bytes32 cat to a partially evaluated mapping (`Offer` or `OfferDetail`) */
   function toSemibook(bytes32 val) internal pure returns (mapping(uint => MgvStructs.OfferPacked) storage sb) {
     assembly {
       sb.slot := val
@@ -157,18 +177,6 @@ contract MgvHasOffers is MgvRoot {
   {
     assembly {
       sbd.slot := val
-    }
-  }
-
-  function tob32(mapping(uint => MgvStructs.OfferPacked) storage sb) internal pure returns (bytes32 val) {
-    assembly {
-      val := sb.slot
-    }
-  }
-
-  function tob32(mapping(uint => MgvStructs.OfferDetailPacked) storage sbd) internal pure returns (bytes32 val) {
-    assembly {
-      val := sbd.slot
     }
   }
 }
