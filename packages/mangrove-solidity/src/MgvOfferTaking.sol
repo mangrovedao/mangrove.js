@@ -77,14 +77,7 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       require(uint160(takerWants) == takerWants, "mgv/mOrder/takerWants/160bits");
       require(uint160(takerGives) == takerGives, "mgv/mOrder/takerGives/160bits");
 
-      /* `MultiOrder` (defined above) maintains information related to the entire market order. During the order, initial `wants`/`gives` values minus the accumulated amounts traded so far give the amounts that remain to be traded. */
-      MultiOrder memory mor;
-      mor.initialWants = takerWants;
-      mor.initialGives = takerGives;
-      mor.taker = taker;
-      mor.fillWants = fillWants;
-      mor.semibook = tob32(offers[outbound_tkn][inbound_tkn]);
-      mor.semibookDetails = tob32(offerDetails[outbound_tkn][inbound_tkn]);
+      mapping(uint => MgvStructs.OfferPacked) storage semibook = offers[outbound_tkn][inbound_tkn];
 
       /* `SingleOrder` is defined in `MgvLib.sol` and holds information for ordering the execution of one offer. */
       MgvLib.SingleOrder memory sor;
@@ -93,10 +86,19 @@ abstract contract MgvOfferTaking is MgvHasOffers {
       (sor.global, sor.local) = config(outbound_tkn, inbound_tkn);
       /* Throughout the execution of the market order, the `sor`'s offer id and other parameters will change. We start with the current best offer id (0 if the book is empty). */
       sor.offerId = sor.local.best();
-      sor.offer = toSemibook(mor.semibook)[sor.offerId];
+      sor.offer = semibook[sor.offerId];
       /* `sor.wants` and `sor.gives` may evolve, but they are initially however much remains in the market order. */
       sor.wants = takerWants;
       sor.gives = takerGives;
+
+      /* `MultiOrder` (defined above) maintains information related to the entire market order. During the order, initial `wants`/`gives` values minus the accumulated amounts traded so far give the amounts that remain to be traded. */
+      MultiOrder memory mor;
+      mor.initialWants = takerWants;
+      mor.initialGives = takerGives;
+      mor.taker = taker;
+      mor.fillWants = fillWants;
+      mor.semibook = tob32(semibook);
+      mor.semibookDetails = tob32(offerDetails[outbound_tkn][inbound_tkn]);
 
       /* For the market order to even start, the market needs to be both active, and not currently protected from reentrancy. */
       activeMarketOnly(sor.global, sor.local);
