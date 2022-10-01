@@ -22,6 +22,7 @@ pragma abicoder v2;
 
 import {IMaker, HasMgvEvents, MgvStructs} from "./MgvLib.sol";
 import {MgvHasOffers} from "./MgvHasOffers.sol";
+import "forge-std/console.sol";
 
 /* `MgvOfferMaking` contains market-making-related functions. */
 contract MgvOfferMaking is MgvHasOffers {
@@ -92,6 +93,8 @@ contract MgvOfferMaking is MgvHasOffers {
 
       ofp.outbound_tkn = outbound_tkn;
       ofp.inbound_tkn = inbound_tkn;
+      ofp.semibook = tob32(offers[outbound_tkn][inbound_tkn]);
+      ofp.semibookDetails = tob32(offerDetails[outbound_tkn][inbound_tkn]);
       ofp.wants = wants;
       ofp.gives = gives;
       ofp.gasreq = gasreq;
@@ -134,9 +137,6 @@ contract MgvOfferMaking is MgvHasOffers {
     unchecked {
       OfferPack memory ofp;
       (ofp.global, ofp.local) = config(outbound_tkn, inbound_tkn);
-      mapping(uint => MgvStructs.OfferPacked) storage semibook = offers[outbound_tkn][inbound_tkn];
-      ofp.semibook = tob32(semibook);
-      ofp.semibookDetails = tob32(offerDetails[outbound_tkn][inbound_tkn]);
       unlockedMarketOnly(ofp.local);
       activeMarketOnly(ofp.global, ofp.local);
       if (msg.value > 0) {
@@ -144,6 +144,9 @@ contract MgvOfferMaking is MgvHasOffers {
       }
       ofp.outbound_tkn = outbound_tkn;
       ofp.inbound_tkn = inbound_tkn;
+      mapping(uint => MgvStructs.OfferPacked) storage semibook = offers[outbound_tkn][inbound_tkn];
+      ofp.semibook = tob32(semibook);
+      ofp.semibookDetails = tob32(offerDetails[outbound_tkn][inbound_tkn]);
       ofp.wants = wants;
       ofp.gives = gives;
       ofp.id = offerId;
@@ -339,6 +342,11 @@ contract MgvOfferMaking is MgvHasOffers {
       MgvStructs.OfferPacked ofr =
         MgvStructs.Offer.pack({__prev: prev, __next: next, __wants: ofp.wants, __gives: ofp.gives});
       toSemibook(ofp.semibook)[ofp.id] = ofr;
+      // console.log("local",MgvStructs.OfferPacked.unwrap(ofr));
+      // console.log("found",MgvStructs.OfferPacked.unwrap(offers[ofp.outbound_tkn][ofp.inbound_tkn][ofp.id]));
+      // console.log("found semibook",MgvStructs.OfferPacked.unwrap(toSemibook(ofp.semibook)[ofp.id]));
+      // console.log("semibook",uint(ofp.semibook));
+      // console.log("offer",uint(tob32(offers[ofp.outbound_tkn][ofp.inbound_tkn])));
     }
   }
 
