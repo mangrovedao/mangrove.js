@@ -283,7 +283,7 @@ contract MgvOfferMaking is MgvHasOffers {
       /* We now write the new `offerDetails` and remember the previous provision (0 by default, for new offers) to balance out maker's `balanceOf`. */
       uint oldProvision;
       {
-        MgvStructs.OfferDetailPacked offerDetail = offerDetails[ofp.outbound_tkn][ofp.inbound_tkn][ofp.id];
+        MgvStructs.OfferDetailPacked offerDetail = toSemibookDetails(ofp.semibookDetails)[ofp.id];
         if (update) {
           require(msg.sender == offerDetail.maker(), "mgv/updateOffer/unauthorized");
           oldProvision = 10 ** 9 * offerDetail.gasprice() * (offerDetail.gasreq() + offerDetail.offer_gasbase());
@@ -295,7 +295,7 @@ contract MgvOfferMaking is MgvHasOffers {
             || offerDetail.offer_gasbase() != ofp.local.offer_gasbase()
         ) {
           uint offer_gasbase = ofp.local.offer_gasbase();
-          offerDetails[ofp.outbound_tkn][ofp.inbound_tkn][ofp.id] = MgvStructs.OfferDetail.pack({
+          toSemibookDetails(ofp.semibookDetails)[ofp.id] = MgvStructs.OfferDetail.pack({
             __maker: msg.sender,
             __gasreq: ofp.gasreq,
             __offer_gasbase: offer_gasbase,
@@ -417,7 +417,7 @@ contract MgvOfferMaking is MgvHasOffers {
       uint weight1 = wants1 * gives2;
       uint weight2 = wants2 * gives1;
       if (weight1 == weight2) {
-        uint gasreq1 = offerDetails[ofp.outbound_tkn][ofp.inbound_tkn][offerId1].gasreq();
+        uint gasreq1 = toSemibookDetails(ofp.semibookDetails)[offerId1].gasreq();
         uint gasreq2 = ofp.gasreq;
         return (gives1 * gasreq2 >= gives2 * gasreq1);
       } else {
