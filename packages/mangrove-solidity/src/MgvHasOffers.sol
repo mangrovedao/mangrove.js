@@ -144,14 +144,6 @@ contract MgvHasOffers is MgvRoot {
     }
   }
 
-  // function semibook(address outbound_tkn, address inbound_tkn) internal view returns (mapping(uint => MgvStructs.OfferPacked) storage sb) {
-  //   sb = offers[outbound_tkn][inbound_tkn];
-  // }
-
-  // function semibookDetail(address outbound_tkn, address inbound_tkn) internal view returns (mapping(uint => MgvStructs.OfferDetailPacked) storage sbd) {
-  //   sbd = offerDetails[outbound_tkn][inbound_tkn];
-  // }
-
   function toSemibook(bytes32 val) internal pure returns (mapping(uint => MgvStructs.OfferPacked) storage sb) {
     assembly {
       sb.slot := val
