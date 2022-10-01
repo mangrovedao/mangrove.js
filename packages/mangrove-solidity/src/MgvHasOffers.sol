@@ -91,8 +91,8 @@ contract MgvHasOffers is MgvRoot {
 
      Now, when an offer is deleted, the offer can stay provisioned, or be `deprovision`ed. In the latter case, we set `gasprice` to 0, which induces a provision of 0. All code calling `dirtyDeleteOffer` with `deprovision` set to `true` must be careful to correctly account for where that provision is going (back to the maker's `balanceOf`, or sent to a taker as compensation). */
   function dirtyDeleteOffer(
-    address outbound_tkn,
-    address inbound_tkn,
+    mapping(uint => MgvStructs.OfferPacked) storage semibook,
+    mapping(uint => MgvStructs.OfferDetailPacked) storage semibookDetails,
     uint offerId,
     MgvStructs.OfferPacked offer,
     MgvStructs.OfferDetailPacked offerDetail,
@@ -103,8 +103,8 @@ contract MgvHasOffers is MgvRoot {
       if (deprovision) {
         offerDetail = offerDetail.gasprice(0);
       }
-      offers[outbound_tkn][inbound_tkn][offerId] = offer;
-      offerDetails[outbound_tkn][inbound_tkn][offerId] = offerDetail;
+      semibook[offerId] = offer;
+      semibookDetails[offerId] = offerDetail;
     }
   }
 
@@ -116,22 +116,20 @@ contract MgvHasOffers is MgvRoot {
 
   **Warning**: may make memory copy of `local.best` stale. Returns new `local`. */
   function stitchOffers(
-    address outbound_tkn,
-    address inbound_tkn,
+    mapping(uint => MgvStructs.OfferPacked) storage semibook,
     uint betterId,
     uint worseId,
     MgvStructs.LocalPacked local
   ) internal returns (MgvStructs.LocalPacked) {
     unchecked {
-      mapping(uint => MgvStructs.OfferPacked) storage semiBook = offers[outbound_tkn][inbound_tkn];
       if (betterId != 0) {
-        semiBook[betterId] = semiBook[betterId].next(worseId);
+        semibook[betterId] = semibook[betterId].next(worseId);
       } else {
         local = local.best(worseId);
       }
 
       if (worseId != 0) {
-        semiBook[worseId] = semiBook[worseId].prev(betterId);
+        semibook[worseId] = semibook[worseId].prev(betterId);
       }
 
       return local;
@@ -146,13 +144,21 @@ contract MgvHasOffers is MgvRoot {
     }
   }
 
-  function semibook(bytes32 val) internal pure returns (mapping(uint => MgvStructs.OfferPacked) storage sb) {
+  // function semibook(address outbound_tkn, address inbound_tkn) internal view returns (mapping(uint => MgvStructs.OfferPacked) storage sb) {
+  //   sb = offers[outbound_tkn][inbound_tkn];
+  // }
+
+  // function semibookDetail(address outbound_tkn, address inbound_tkn) internal view returns (mapping(uint => MgvStructs.OfferDetailPacked) storage sbd) {
+  //   sbd = offerDetails[outbound_tkn][inbound_tkn];
+  // }
+
+  function toSemibook(bytes32 val) internal pure returns (mapping(uint => MgvStructs.OfferPacked) storage sb) {
     assembly {
       sb.slot := val
     }
   }
 
-  function semibookDetail(bytes32 val)
+  function toSemibookDetails(bytes32 val)
     internal
     pure
     returns (mapping(uint => MgvStructs.OfferDetailPacked) storage sbd)

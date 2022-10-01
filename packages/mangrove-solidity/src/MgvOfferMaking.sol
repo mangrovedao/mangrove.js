@@ -46,6 +46,8 @@ contract MgvOfferMaking is MgvHasOffers {
     MgvStructs.LocalPacked local;
     // used on update only
     MgvStructs.OfferPacked oldOffer;
+    bytes32 semibook;
+    bytes32 semibookDetails;
   }
 
   /* The function `newOffer` is for market makers only; no match with the existing book is done. A maker specifies how much `inbound_tkn` it `wants` and how much `outbound_tkn` it `gives`.
@@ -132,6 +134,9 @@ contract MgvOfferMaking is MgvHasOffers {
     unchecked {
       OfferPack memory ofp;
       (ofp.global, ofp.local) = config(outbound_tkn, inbound_tkn);
+      mapping(uint => MgvStructs.OfferPacked) storage semibook = offers[outbound_tkn][inbound_tkn];
+      ofp.semibook = tob32(semibook);
+      ofp.semibookDetails = tob32(offerDetails[outbound_tkn][inbound_tkn]);
       unlockedMarketOnly(ofp.local);
       activeMarketOnly(ofp.global, ofp.local);
       if (msg.value > 0) {
@@ -145,7 +150,7 @@ contract MgvOfferMaking is MgvHasOffers {
       ofp.gasreq = gasreq;
       ofp.gasprice = gasprice;
       ofp.pivotId = pivotId;
-      ofp.oldOffer = offers[outbound_tkn][inbound_tkn][offerId];
+      ofp.oldOffer = semibook[offerId];
       // Save local config
       MgvStructs.LocalPacked oldLocal = ofp.local;
       /* The second argument indicates that we are updating an existing offer, not creating a new one. */
@@ -167,21 +172,23 @@ contract MgvOfferMaking is MgvHasOffers {
     unchecked {
       (, MgvStructs.LocalPacked local) = config(outbound_tkn, inbound_tkn);
       unlockedMarketOnly(local);
-      MgvStructs.OfferPacked offer = offers[outbound_tkn][inbound_tkn][offerId];
-      MgvStructs.OfferDetailPacked offerDetail = offerDetails[outbound_tkn][inbound_tkn][offerId];
+      mapping(uint => MgvStructs.OfferPacked) storage semibook = offers[outbound_tkn][inbound_tkn];
+      mapping(uint => MgvStructs.OfferDetailPacked) storage semibookDetails = offerDetails[outbound_tkn][inbound_tkn];
+      MgvStructs.OfferPacked offer = semibook[offerId];
+      MgvStructs.OfferDetailPacked offerDetail = semibookDetails[offerId];
       require(msg.sender == offerDetail.maker(), "mgv/retractOffer/unauthorized");
 
       /* Here, we are about to un-live an offer, so we start by taking it out of the book by stitching together its previous and next offers. Note that unconditionally calling `stitchOffers` would break the book since it would connect offers that may have since moved. */
       if (isLive(offer)) {
         MgvStructs.LocalPacked oldLocal = local;
-        local = stitchOffers(outbound_tkn, inbound_tkn, offer.prev(), offer.next(), local);
+        local = stitchOffers(semibook, offer.prev(), offer.next(), local);
         /* If calling `stitchOffers` has changed the current `best` offer, we update the storage. */
         if (!oldLocal.eq(local)) {
           locals[outbound_tkn][inbound_tkn] = local;
         }
       }
       /* Set `gives` to 0. Moreover, the last argument depends on whether the user wishes to get their provision back (if true, `gasprice` will be set to 0 as well). */
-      dirtyDeleteOffer(outbound_tkn, inbound_tkn, offerId, offer, offerDetail, deprovision);
+      dirtyDeleteOffer(semibook, semibookDetails, offerId, offer, offerDetail, deprovision);
 
       /* If the user wants to get their provision back, we compute its provision from the offer's `gasprice`, `offer_gasbase` and `gasreq`. */
       if (deprovision) {
@@ -312,27 +319,26 @@ contract MgvOfferMaking is MgvHasOffers {
       if (!isLive(ofp.oldOffer) || prev != ofp.oldOffer.prev()) {
         /* * If the offer is not the best one, we update its predecessor; otherwise we update the `best` value. */
         if (prev != 0) {
-          offers[ofp.outbound_tkn][ofp.inbound_tkn][prev] = offers[ofp.outbound_tkn][ofp.inbound_tkn][prev].next(ofp.id);
+          toSemibook(ofp.semibook)[prev] = toSemibook(ofp.semibook)[prev].next(ofp.id);
         } else {
           ofp.local = ofp.local.best(ofp.id);
         }
 
         /* * If the offer is not the last one, we update its successor. */
         if (next != 0) {
-          offers[ofp.outbound_tkn][ofp.inbound_tkn][next] = offers[ofp.outbound_tkn][ofp.inbound_tkn][next].prev(ofp.id);
+          toSemibook(ofp.semibook)[next] = toSemibook(ofp.semibook)[next].prev(ofp.id);
         }
 
         /* * Recall that in this branch, the offer has changed location, or is not currently in the book. If the offer is not new and already in the book, we must remove it from its previous location by stitching its previous prev/next. */
         if (update && isLive(ofp.oldOffer)) {
-          ofp.local =
-            stitchOffers(ofp.outbound_tkn, ofp.inbound_tkn, ofp.oldOffer.prev(), ofp.oldOffer.next(), ofp.local);
+          ofp.local = stitchOffers(toSemibook(ofp.semibook), ofp.oldOffer.prev(), ofp.oldOffer.next(), ofp.local);
         }
       }
 
       /* With the `prev`/`next` in hand, we finally store the offer in the `offers` map. */
       MgvStructs.OfferPacked ofr =
         MgvStructs.Offer.pack({__prev: prev, __next: next, __wants: ofp.wants, __gives: ofp.gives});
-      offers[ofp.outbound_tkn][ofp.inbound_tkn][ofp.id] = ofr;
+      toSemibook(ofp.semibook)[ofp.id] = ofr;
     }
   }
 
@@ -346,13 +352,12 @@ contract MgvOfferMaking is MgvHasOffers {
       uint nextId;
       uint pivotId = ofp.pivotId;
       /* Get `pivot`, optimizing for the case where pivot info is already known */
-      MgvStructs.OfferPacked pivot =
-        pivotId == ofp.id ? ofp.oldOffer : offers[ofp.outbound_tkn][ofp.inbound_tkn][pivotId];
+      MgvStructs.OfferPacked pivot = pivotId == ofp.id ? ofp.oldOffer : toSemibook(ofp.semibook)[pivotId];
 
       /* In case pivotId is not an active offer, it is unusable (since it is out of the book). We default to the current best offer. If the book is empty pivot will be 0. That is handled through a test in the `better` comparison function. */
       if (!isLive(pivot)) {
         pivotId = ofp.local.best();
-        pivot = offers[ofp.outbound_tkn][ofp.inbound_tkn][pivotId];
+        pivot = toSemibook(ofp.semibook)[pivotId];
       }
 
       /* * Pivot is better than `wants/gives`, we follow `next`. */
@@ -360,7 +365,7 @@ contract MgvOfferMaking is MgvHasOffers {
         MgvStructs.OfferPacked pivotNext;
         while (pivot.next() != 0) {
           uint pivotNextId = pivot.next();
-          pivotNext = offers[ofp.outbound_tkn][ofp.inbound_tkn][pivotNextId];
+          pivotNext = toSemibook(ofp.semibook)[pivotNextId];
           if (better(ofp, pivotNext, pivotNextId)) {
             pivotId = pivotNextId;
             pivot = pivotNext;
@@ -376,7 +381,7 @@ contract MgvOfferMaking is MgvHasOffers {
         MgvStructs.OfferPacked pivotPrev;
         while (pivot.prev() != 0) {
           uint pivotPrevId = pivot.prev();
-          pivotPrev = offers[ofp.outbound_tkn][ofp.inbound_tkn][pivotPrevId];
+          pivotPrev = toSemibook(ofp.semibook)[pivotPrevId];
           if (better(ofp, pivotPrev, pivotPrevId)) {
             break;
           } else {
