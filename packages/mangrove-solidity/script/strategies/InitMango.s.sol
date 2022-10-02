@@ -41,7 +41,9 @@ contract InitMango is Deployer {
     uint lastBidIndex,
     uint batch_size, // number of offers to be posted in the same tx
     uint cover_factor
-  ) public {
+  )
+    public
+  {
     require(cover_factor * batch_size > 0, "invalid arguments");
 
     uint n = Mango($mgo).NSLOTS();
