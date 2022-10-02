@@ -112,4 +112,12 @@ abstract contract Deployer is Script2 {
   function line(string memory s) internal {
     out = string.concat(out, s, "\n");
   }
+
+  function getRawAddressOrName(string memory envVar) internal returns (address payable) {
+    try vm.envAddress(envVar) returns (address addr) {
+      return payable(addr);
+    } catch {
+      return fork.get(vm.envString(envVar));
+    }
+  }
 }
