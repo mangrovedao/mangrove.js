@@ -1,7 +1,7 @@
 // SPDX-License-Identifier:	AGPL-3.0
 pragma solidity ^0.8.13;
 
-import {Script} from "forge-std/Script.sol";
+import {Deployer} from "./lib/Deployer.sol";
 import {MgvOracle} from "mgv_src/periphery/MgvOracle.sol";
 import "mgv_src/Mangrove.sol";
 import {ERC20} from "../test/lib/tokens/ERC20.sol";
@@ -24,11 +24,18 @@ import {ActivateSemibook} from "./ActivateSemibook.s.sol";
   3. Round to nearest integer
 */
 
-contract ActivateMarket is Script {
+/* Example: activate (USDC,WETH) offer lists with 1 MATIC = 0.75 USD and a fee of 0.3% 
+ TKN1=USDC TKN2=WETH TKN1_IN_GWEI=782050000 TKN2_IN_GWEI=1719000000000 FEE=30 forge script \
+  --fork-url $LOCALHOST_URL --broadcast \
+  --private-key $MUMBAI_DEPLOYER_PRIVATE_KEY \
+  ActivateMarket 
+*/
+
+contract ActivateMarket is Deployer {
   function run() public {
     innerRun({
-      tkn1: vm.envAddress("TKN1"),
-      tkn2: vm.envAddress("TKN2"),
+      tkn1: getRawAddressOrName("TKN1"),
+      tkn2: getRawAddressOrName("TKN2"),
       tkn1_in_gwei: vm.envUint("TKN1_IN_GWEI"),
       tkn2_in_gwei: vm.envUint("TKN2_IN_GWEI"),
       fee: vm.envUint("FEE")
