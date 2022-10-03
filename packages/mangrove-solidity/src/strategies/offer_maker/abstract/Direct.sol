@@ -56,7 +56,7 @@ abstract contract Direct is MangroveOffer {
   function pull(IERC20 outbound_tkn, uint amount, bool strict) internal returns (uint) {
     AbstractRouter router_ = router();
     if (router_ == NO_ROUTER) {
-      require( 
+      require(
         TransferLib.transferTokenFrom(outbound_tkn, reserve(), address(this), amount), //noop if reserve is `this`
         "Direct/pull/transferFail"
       );
@@ -85,7 +85,7 @@ abstract contract Direct is MangroveOffer {
   function flush(IERC20[] memory tokens) internal {
     AbstractRouter _router = MOS.getStorage().router;
     if (_router == NO_ROUTER) {
-      for(uint i=0; i<tokens.length; i++) {
+      for (uint i = 0; i < tokens.length; i++) {
         require(
           TransferLib.transferToken(tokens[i], reserve(), tokens[i].balanceOf(address(this))),
           "Direct/flush/transferFail"
@@ -180,13 +180,12 @@ abstract contract Direct is MangroveOffer {
     // pulling liquidity from reserve
     // depending on the router, this may result in pulling more/less liquidity than required
     // so one should check local balance to compute missing liquidity
-    uint pulled = pull(IERC20(order.outbound_tkn), amount, false);
-    if (pulled >= amount) {
+    uint local_balance = IERC20(order.outbound_tkn).balanceOf(address(this));
+    if (local_balance >= amount) {
       return 0;
-    } else {
-      uint local_balance = IERC20(order.outbound_tkn).balanceOf(address(this));
-      return local_balance >= amount ? 0 : amount - local_balance;
     }
+    uint pulled = pull(IERC20(order.outbound_tkn), amount - local_balance, false);
+    missing = pulled >= amount - local_balance ? 0 : amount - local_balance - pulled;
   }
 
   function __posthookSuccess__(MgvLib.SingleOrder calldata order, bytes32 makerData)
