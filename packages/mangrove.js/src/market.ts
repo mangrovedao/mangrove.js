@@ -58,7 +58,7 @@ namespace Market {
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];
-    offerWrites: Market.OfferSlim[];
+    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[];
     restingOrder?: Market.OfferSlim;
   };
   export type BookSubscriptionEvent =

@@ -42,8 +42,8 @@ describe("Market integration tests suite", () => {
     const tokenA = mgv.token("TokenA");
     const tokenB = mgv.token("TokenB");
 
-    await tokenA.approveMangrove({ amount: 1000 });
-    await tokenB.approveMangrove({ amount: 1000 });
+    await tokenA.approveMangrove({ amount: 1000000000000000 });
+    await tokenB.approveMangrove({ amount: 1000000000000000 });
     mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
   });
 
@@ -675,7 +675,7 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestAsks, [offer1], "asks semibook not correct");
     assert.deepStrictEqual(latestBids, [offer2], "bids semibook not correct");
 
-    market.sell({ wants: "1", gives: "1.3" });
+    await market.sell({ wants: "1", gives: "1.3" }, { gasLimit: 600000 });
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
@@ -705,7 +705,7 @@ describe("Market integration tests suite", () => {
     expect(events).to.have.lengthOf(1);
 
     // make a buy, which we expect to provoke an OfferFail
-    const result = await market.buy({ wants: "1", gives: "1.5" });
+    const result = await market.buy({ wants: "1", gives: "1.5e12" });
     expect(result.tradeFailures).to.have.lengthOf(1);
     expect(
       utils.parseBytes32String(result.tradeFailures[0].reason)
@@ -728,7 +728,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.mint(market.base, maker, 100);
 
     await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
-    const result_ = await market.buy({ wants: "1", gives: "1.5" });
+    const result_ = await market.buy({ wants: "1", gives: "1.5e12" });
     expect(result_.tradeFailures).to.have.lengthOf(0);
     expect(result_.posthookFailures).to.have.lengthOf(0);
     expect(result_.successes).to.have.lengthOf(1);
@@ -766,7 +766,7 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
     expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
   });
 
@@ -796,14 +796,14 @@ describe("Market integration tests suite", () => {
 
     // estimated gas limit is too low, so we set it explicitly
     const result = await market.sell(
-      { volume: "0.00000000000000001", price: null },
+      { volume: "0.0000000000000001", price: null },
       { gasLimit: 6500000 }
     );
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(2e-13);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
+    expect(result.successes[0].got.toNumber()).to.be.equal(2);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
   });
 
   it("buying offerId snipes offer", async function () {
@@ -844,7 +844,7 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(1);
 
     expect(result.successes[0].got.toNumber()).to.be.equal(1e-12);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-18);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
     expect(result.successes[0].offerId).to.be.equal(notBest);
   });
 
@@ -880,16 +880,16 @@ describe("Market integration tests suite", () => {
     const result = await market.sell(
       {
         offerId: notBest,
-        wants: "0.00000000000000001",
-        gives: "0.0000000000000001",
+        wants: "0.1",
+        gives: "0.0000000000001",
       },
       { gasLimit: 6500000 }
     );
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
 
-    expect(result.successes[0].got.toNumber()).to.be.equal(1e-13);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-17);
+    expect(result.successes[0].got.toNumber()).to.be.equal(1);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
     expect(result.successes[0].offerId).to.be.equal(notBest);
   });
 
@@ -949,7 +949,7 @@ describe("Market integration tests suite", () => {
 
     // 5% fee configured in mochaHooks.js
     expect(result.summary.got.toNumber()).to.be.equal(0.95 * 3e-12);
-    expect(result.summary.gave.toNumber()).to.be.equal(2e-18);
+    expect(result.summary.gave.toNumber()).to.be.equal(2e-6);
     expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
   });
 
@@ -1008,7 +1008,7 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(2);
 
     // 5% fee configured in mochaHooks.js
-    expect(result.summary.got.toNumber()).to.be.equal(3e-12 * 0.95);
+    expect(result.summary.got.toString()).to.be.equal("2.85");
     expect(result.summary.gave.toNumber()).to.be.equal(2e-16);
   });
 

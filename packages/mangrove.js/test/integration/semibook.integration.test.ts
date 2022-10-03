@@ -9,10 +9,7 @@ import { newOffer, toWei } from "../util/helpers";
 import { Mangrove } from "../../src";
 
 import { Big } from "big.js";
-import { anything, spy, verify } from "ts-mockito";
-import { assert } from "console";
-import { BigNumber, providers } from "ethers";
-import { MgvCleaner__factory } from "../../dist/nodejs/types/typechain";
+import { BigNumber } from "ethers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -461,7 +458,7 @@ describe("Semibook integration tests suite", function () {
         });
 
         it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
-          // Put one offer on asks
+          // Put two offers on asks
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );

@@ -16,6 +16,7 @@ import {
 } from "../types/typechain/MangroveOrder";
 import UnitCalculations from "./unitCalculations";
 import { BaseContract, BigNumber } from "ethers";
+import { logger } from "./logger";
 
 type RawOfferData = {
   id: BigNumber;
@@ -147,10 +148,37 @@ class TradeEventManagement {
 
   createOfferWriteFromEvent(
     market: Market,
-    ba: Market.BA,
     evt: OfferWriteEvent
-  ): Market.OfferSlim {
-    return this.rawOfferToOffer(market, ba, evt.args);
+  ): { ba: Market.BA; offer: Market.OfferSlim } {
+    // ba can be both since we get offer writes both from updated orders and from posting a resting order, where the outbound is what taker gives
+    let ba: Market.BA = "asks";
+    let { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    // If no match, try flipping
+    if (outbound_tkn.address != evt.args.outbound_tkn) {
+      ba = "bids";
+      const bidsOutIn = market.getOutboundInbound(ba);
+      outbound_tkn = bidsOutIn.outbound_tkn;
+      inbound_tkn = bidsOutIn.inbound_tkn;
+    }
+
+    if (
+      outbound_tkn.address != evt.args.outbound_tkn ||
+      inbound_tkn.address != evt.args.inbound_tkn
+    ) {
+      logger.debug("OfferWrite for unknown market!", {
+        contextInfo: "tradeEventManagement",
+        base: market.base.name,
+        quote: market.quote.name,
+        data: {
+          outbound_tkn: evt.args.outbound_tkn,
+          inbound_tkn: evt.args.inbound_tkn,
+        },
+      });
+
+      return null;
+    }
+
+    return { ba, offer: this.rawOfferToOffer(market, ba, evt.args) };
   }
 
   createSummaryFromOrderSummaryEvent(
@@ -166,15 +194,18 @@ class TradeEventManagement {
   }
 
   createRestingOrderFromEvent(
+    ba: Market.BA,
     evt: NewOwnedOfferEvent,
     taker: string,
     currentRestingOrder: Market.OfferSlim,
-    offerWrites: Market.OfferSlim[]
+    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[]
   ): Market.OfferSlim {
     if (evt.args.owner === taker) {
+      ba = ba === "bids" ? "asks" : "bids";
       currentRestingOrder =
-        offerWrites.find((x) => x.id === this.#rawIdToId(evt.args.offerId)) ??
-        currentRestingOrder;
+        offerWrites.find(
+          (x) => x.ba == ba && x.offer.id === this.#rawIdToId(evt.args.offerId)
+        )?.offer ?? currentRestingOrder;
     }
     return currentRestingOrder;
   }
@@ -241,9 +272,14 @@ class TradeEventManagement {
         break;
       }
       case "OfferWrite": {
-        result.offerWrites.push(
-          this.createOfferWriteFromEvent(market, ba, evt as OfferWriteEvent)
+        const offerWrite = this.createOfferWriteFromEvent(
+          market,
+          evt as OfferWriteEvent
         );
+        if (offerWrite) {
+          result.offerWrites.push(offerWrite);
+        }
+        break;
       }
       default: {
         break;
@@ -279,6 +315,7 @@ class TradeEventManagement {
       }
       case "NewOwnedOffer": {
         result.restingOrder = this.createRestingOrderFromEvent(
+          ba,
           evt as NewOwnedOfferEvent,
           receipt.from,
           result.restingOrder,

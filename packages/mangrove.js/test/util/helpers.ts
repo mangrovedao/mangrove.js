@@ -57,21 +57,29 @@ export type OfferData = {
   gasprice?: BigNumberish;
 };
 
+function getAmountAndAddress(
+  mgv: Mangrove,
+  token: string | MgvToken,
+  amount: string
+) {
+  const mgvToken = typeof token === "string" ? mgv.token(token) : token;
+  return { address: mgvToken.address, value: mgvToken.toUnits(amount) };
+}
+
 export const newOffer = (
   mgv: Mangrove,
-  base: string | MgvToken,
-  quote: string | MgvToken,
+  outbound_tkn: string | MgvToken,
+  inbound_tkn: string | MgvToken,
   { wants, gives, gasreq, gasprice }: OfferData
 ): Promise<ContractTransaction> => {
-  const baseAddress =
-    typeof base === "string" ? mgv.getAddress(base) : base.address;
-  const quoteAddress =
-    typeof quote === "string" ? mgv.getAddress(quote) : quote.address;
+  const outboundInfo = getAmountAndAddress(mgv, outbound_tkn, gives);
+  const inboundInfo = getAmountAndAddress(mgv, inbound_tkn, wants);
+
   return mgv.contract.newOffer(
-    baseAddress,
-    quoteAddress,
-    toWei(wants),
-    toWei(gives),
+    outboundInfo.address,
+    inboundInfo.address,
+    inboundInfo.value,
+    outboundInfo.value,
     gasreq || 10000,
     gasprice || 1,
     0
