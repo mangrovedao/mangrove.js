@@ -254,7 +254,7 @@ contract OfferLogicTest is MangroveTest {
     uint next_id = local.last() + 1;
     vm.expectEmit(true, true, true, false, address(makerContract));
     emit LogIncident(IMangrove($(mgv)), weth, usdc, next_id, "mgvOffer/tradeSuccess", "mgv/makerTransferFail");
-    vm.prank(maker);
+    vm.prank(deployer);
     makerContract.approve(weth, $(mgv), 0);
     performTrade({success: false});
   }

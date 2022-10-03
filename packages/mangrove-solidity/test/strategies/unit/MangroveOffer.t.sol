@@ -70,6 +70,8 @@ contract MangroveOfferTest is MangroveTest {
 
   function testCannot_callMakerExecuteIfNotMangrove() public {
     MgvLib.SingleOrder memory order;
+    order.outbound_tkn = address(weth);
+    order.inbound_tkn = address(usdc);
     vm.expectRevert("AccessControlled/Invalid");
     makerContract.makerExecute(order);
     vm.prank(address(mgv));
@@ -102,6 +104,8 @@ contract MangroveOfferTest is MangroveTest {
 
   function test_lastLookReturnedValueIsPassed() public {
     MgvLib.SingleOrder memory order;
+    order.outbound_tkn = $(weth);
+    order.inbound_tkn = $(usdc);
     vm.prank(address(mgv));
     bytes32 data = makerContract.makerExecute(order);
     assertEq(data, "mgvOffer/tradeSuccess");

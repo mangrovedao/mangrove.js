@@ -4,7 +4,7 @@ pragma solidity ^0.8.10;
 import "mgv_test/lib/MangroveTest.sol";
 import "mgv_test/lib/forks/Polygon.sol";
 import "mgv_src/toy_strategies/offer_maker/Ghost.sol";
-import {Offer} from "mgv_src/preprocessed/MgvPack.post.sol";
+import {MgvStructs} from "mgv_src/MgvLib.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -139,8 +139,8 @@ contract GhostTest is MangroveTest {
     assertEq(gave, makerWantsAmount, "taker gave wrong amount");
 
     // assert that neither offer posted by Ghost are live (= have been retracted)
-    Offer.t offer_on_dai = mgv.offers($(weth), $(dai), offerId1);
-    Offer.t offer_on_usdc = mgv.offers($(weth), $(usdc), offerId2);
+    MgvStructs.OfferPacked offer_on_dai = mgv.offers($(weth), $(dai), offerId1);
+    MgvStructs.OfferPacked offer_on_usdc = mgv.offers($(weth), $(usdc), offerId2);
     assertTrue(!mgv.isLive(offer_on_dai), "weth->dai offer should have been retracted");
     assertTrue(!mgv.isLive(offer_on_usdc), "weth->usdc offer should have been retracted");
   }

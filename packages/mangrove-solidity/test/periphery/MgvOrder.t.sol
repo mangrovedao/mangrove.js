@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 
 pragma abicoder v2;
 
-import {MangroveTest, csl} from "mgv_test/lib/MangroveTest.sol";
+import "mgv_test/lib/MangroveTest.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 import {MangroveOrderEnriched as MgvOrder} from "mgv_src/periphery/MangroveOrderEnriched.sol";
 import "mgv_src/strategies/interfaces/IOrderLogic.sol";

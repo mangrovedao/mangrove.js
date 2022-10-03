@@ -140,7 +140,7 @@ contract OfferForwarderTest is OfferLogicTest {
   }
 
   function test_logging() public {
-    (, Local.t local) = mgv.config($(weth), $(usdc));
+    (, MgvStructs.LocalPacked local) = mgv.config($(weth), $(usdc));
     uint next_id = local.last() + 1;
     vm.expectEmit(true, true, true, false, address(forwarder));
     emit NewOwnedOffer(IMangrove($(mgv)), weth, usdc, next_id, maker);
