@@ -749,12 +749,12 @@
       "name": "config",
       "outputs": [
         {
-          "internalType": "t",
+          "internalType": "GlobalPacked",
           "name": "_global",
           "type": "uint256"
         },
         {
-          "internalType": "t",
+          "internalType": "LocalPacked",
           "name": "_local",
           "type": "uint256"
         }
@@ -810,7 +810,7 @@
               "type": "bool"
             }
           ],
-          "internalType": "struct GlobalStruct",
+          "internalType": "struct GlobalUnpacked",
           "name": "global",
           "type": "tuple"
         },
@@ -852,7 +852,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct LocalStruct",
+          "internalType": "struct LocalUnpacked",
           "name": "local",
           "type": "tuple"
         }
@@ -898,7 +898,7 @@
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "OfferPacked",
               "name": "offer",
               "type": "uint256"
             },
@@ -913,17 +913,17 @@
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "OfferDetailPacked",
               "name": "offerDetail",
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "GlobalPacked",
               "name": "global",
               "type": "uint256"
             },
             {
-              "internalType": "t",
+              "internalType": "LocalPacked",
               "name": "local",
               "type": "uint256"
             }
@@ -985,7 +985,7 @@
     {
       "inputs": [
         {
-          "internalType": "t",
+          "internalType": "OfferPacked",
           "name": "offer",
           "type": "uint256"
         }
@@ -1234,7 +1234,7 @@
       "name": "offerDetails",
       "outputs": [
         {
-          "internalType": "t",
+          "internalType": "OfferDetailPacked",
           "name": "",
           "type": "uint256"
         }
@@ -1285,7 +1285,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct OfferStruct",
+          "internalType": "struct OfferUnpacked",
           "name": "offer",
           "type": "tuple"
         },
@@ -1312,7 +1312,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct OfferDetailStruct",
+          "internalType": "struct OfferDetailUnpacked",
           "name": "offerDetail",
           "type": "tuple"
         }
@@ -1341,7 +1341,7 @@
       "name": "offers",
       "outputs": [
         {
-          "internalType": "t",
+          "internalType": "OfferPacked",
           "name": "",
           "type": "uint256"
         }

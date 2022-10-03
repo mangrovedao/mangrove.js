@@ -248,6 +248,17 @@ contract OfferLogicTest is MangroveTest {
     assertEq(usdc.balanceOf(maker), balusdc + takergave, "withdraw failed");
   }
 
+  function test_failingOfferLogsIncident() public {
+    // making offer fail for lack of approval
+    (, MgvStructs.LocalPacked local) = mgv.config($(weth), $(usdc));
+    uint next_id = local.last() + 1;
+    vm.expectEmit(true, true, true, false, address(makerContract));
+    emit LogIncident(IMangrove($(mgv)), weth, usdc, next_id, "mgvOffer/tradeSuccess", "mgv/makerTransferFail");
+    vm.prank(maker);
+    makerContract.approve(weth, $(mgv), 0);
+    performTrade({success: false});
+  }
+
   function test_trade_succeeds_with_new_reserve() public {
     address new_reserve = freshAddress("new_reserve");
 
@@ -282,4 +293,6 @@ contract OfferLogicTest is MangroveTest {
     );
     vm.stopPrank();
   }
+
+
 }

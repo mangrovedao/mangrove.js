@@ -6,11 +6,8 @@ pragma abicoder v2;
 import {MangroveTest, csl} from "mgv_test/lib/MangroveTest.sol";
 import {IMangrove} from "mgv_src/IMangrove.sol";
 import {MangroveOrderEnriched as MgvOrder} from "mgv_src/periphery/MangroveOrderEnriched.sol";
-import {IOrderLogic} from "mgv_src/strategies/interfaces/IOrderLogic.sol";
-import {Offer} from "mgv_src/preprocessed/MgvPack.post.sol";
-import {IERC20} from "mgv_src/MgvLib.sol";
-import {TestTaker} from "mgv_test/lib/agents/TestTaker.sol";
-import {TestMaker} from "mgv_test/lib/agents/TestMaker.sol";
+import "mgv_src/strategies/interfaces/IOrderLogic.sol";
+import {MgvStructs} from "mgv_src/MgvLib.sol";
 
 contract MangroveOrder_Test is MangroveTest {
   // to check ERC20 logging
@@ -267,7 +264,7 @@ contract MangroveOrder_Test is MangroveTest {
     assertTrue(res.offerId > 0, "Resting offer failed to be published on mangrove");
 
     // checking resting order parameters
-    Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
+    MgvStructs.OfferPacked offer = mgv.offers($(quote), $(base), res.offerId);
     assertEq(offer.wants(), buyOrder.makerWants - (res.takerGot + res.fee), "Incorrect wants for bid resting order");
     assertEq(offer.gives(), buyOrder.makerGives - res.takerGave, "Incorrect gives for bid resting order");
 
@@ -312,7 +309,7 @@ contract MangroveOrder_Test is MangroveTest {
     );
 
     // checking resting order residual
-    Offer.t offer = mgv.offers($(quote), $(base), res.offerId);
+    MgvStructs.OfferPacked offer = mgv.offers($(quote), $(base), res.offerId);
 
     assertEq(offer.gives(), buyOrder.takerGives - res.takerGave - 0.1 ether, "Incorrect gives for bid resting order");
   }
