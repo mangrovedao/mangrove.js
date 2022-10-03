@@ -458,6 +458,7 @@ class Trade {
         takerGives: gives,
         makerGives: makerGives,
         restingOrder: true,
+        pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by makerWants/makerGives
         timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
           ? params.timeToLiveForRestingOrder
           : 0,
