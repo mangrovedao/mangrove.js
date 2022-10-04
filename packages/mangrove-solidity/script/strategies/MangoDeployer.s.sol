@@ -23,7 +23,6 @@ import {Deployer} from "../lib/Deployer.sol";
  forge script --fork-url $LOCALHOST_URL \
  --private-key $MUMBAI_DEPLOYER_PRIVATE_KEY \
  --broadcast \
- --verify \
  MangoDeployer
  */
 
