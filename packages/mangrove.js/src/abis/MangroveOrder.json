@@ -11,6 +11,11 @@
           "internalType": "address",
           "name": "deployer",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasreq",
+          "type": "uint256"
         }
       ],
       "stateMutability": "nonpayable",
@@ -742,6 +747,11 @@
               "internalType": "bool",
               "name": "restingOrder",
               "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pivotId",
+              "type": "uint256"
             },
             {
               "internalType": "uint256",

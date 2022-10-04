@@ -11,8 +11,8 @@ import {Deployer} from "../lib/Deployer.sol";
 /**
  * e.g deploy mango on WETH USDC market:
  *
- * BASE=$WETH \
- * QUOTE=$USDC \
+ * BASE=WETH \
+ * QUOTE=USDC \
  * BASE_0=$(cast ff 18 1) \
  * QUOTE_0=$(cast ff 6 200) \
  * NSLOTS=100 \
@@ -66,6 +66,8 @@ contract MangoDeployer is Deployer {
       price_incr,
       admin
     );
+    // smoke test
+    require(mgo.MGV() == mgv, "Smoke test failed");
     outputDeployment();
     console.log("Mango deployed", address(mgo));
   }

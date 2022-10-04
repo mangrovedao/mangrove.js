@@ -1,6 +1,5 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
-import chalk from "chalk";
 
 import { utils } from "ethers";
 
@@ -156,6 +155,8 @@ describe("RestingOrder", () => {
 
       assert(orderResult.restingOrder.volume.eq(10));
       assert(orderResult.restingOrder.price.eq(1));
+      assert(orderResult.restingOrder.wants.eq(10));
+      assert(orderResult.restingOrder.gives.eq(10));
 
       // taking resting offer
 
