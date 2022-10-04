@@ -1,6 +1,11 @@
 # next version
 
+# 0.11.1 (October 2022)
+
+- Fixed decimals handling for resting order in results.
+
 # 0.11.0 (September 2022)
+
 - Resting order no longer expect `gasForMarketOrder` and `retryNumber`
 - new deploy address for `MangroveOrder`
 - changing scheme for retrieving resting order id (listening to MangroveOrder logs).
