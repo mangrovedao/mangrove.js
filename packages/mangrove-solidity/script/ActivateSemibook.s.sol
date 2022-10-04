@@ -78,18 +78,22 @@ contract ActivateSemibook is Test2, Deployer {
     });
 
     vm.stopBroadcast();
+    (,MgvStructs.LocalPacked local) = mgv.config(outbound_tkn, inbound_tkn);
+    require(local.active(), "Smoke test failed");
   }
 
   function measureTransferGas(address tkn) internal returns (uint) {
-    address someone = freshAddress();
-    vm.prank(someone);
+    // worst case scenario (transfer to a balance of 0)
+    address from = freshAddress("from");
+    address to = freshAddress("to");
+    vm.prank(from);
     ERC20(tkn).approve(address(this), type(uint).max);
-    deal(tkn, someone, 10);
+    deal(tkn, from, 10);
     /* WARNING: gas metering is done by local execution, which means that on
      * networks that have different EIPs activated, there will be discrepancies. */
     uint post;
     uint pre = gasleft();
-    ERC20(tkn).transferFrom(someone, address(this), 1);
+    require(ERC20(tkn).transferFrom(from, to, 1),"Transfer failed");
     post = gasleft();
     return pre - post;
   }

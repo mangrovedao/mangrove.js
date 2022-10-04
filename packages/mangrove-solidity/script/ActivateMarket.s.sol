@@ -24,8 +24,8 @@ import {ActivateSemibook} from "./ActivateSemibook.s.sol";
   3. Round to nearest integer
 */
 
-/* Example: activate (USDC,WETH) offer lists with 1 MATIC = 0.75 USD and a fee of 0.3% 
- TKN1=USDC TKN2=WETH TKN1_IN_GWEI=782050000 TKN2_IN_GWEI=1719000000000 FEE=30 forge script \
+/* Example: activate (GNT, USDC) offer lists with 1 MATIC = 0.83 USD and a fee of 0%
+ TKN1=GNT TKN2=USDC TKN1_IN_GWEI=$(cast ff 9 2.56) TKN2_IN_GWEI=$(cast ff 9 1.2) FEE=0 forge script \
   --fork-url $LOCALHOST_URL --broadcast \
   --private-key $MUMBAI_DEPLOYER_PRIVATE_KEY \
   ActivateMarket 
@@ -43,6 +43,7 @@ contract ActivateMarket is Deployer {
   }
 
   function innerRun(address tkn1, address tkn2, uint tkn1_in_gwei, uint tkn2_in_gwei, uint fee) public {
+    require(tkn1 != address(0) && tkn2 != address(0), "invalid/0x");
     new ActivateSemibook().innerRun({
       outbound_tkn: tkn1,
       inbound_tkn: tkn2,

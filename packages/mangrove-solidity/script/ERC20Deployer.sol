@@ -9,9 +9,10 @@ import {Deployer} from "./lib/Deployer.sol";
 This script deploys a testToken ERC20. Grants admin rights to `msg.sender`
 */
 /* Example:
-NAME="Mangrove Token" SYMBOL="MGV" DECIMALS=18 forge script \
+NAME="Goddess Nature Token" SYMBOL="GNT" DECIMALS=18 WRITE_DEPLOY=true forge script \
   --fork-url $LOCALHOST_URL \
   --private-key $MUMBAI_DEPLOYER_PRIVATE_KEY \
+  --broadcast \
   ERC20Deployer
 */
 

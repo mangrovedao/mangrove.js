@@ -11,19 +11,20 @@ import {Deployer} from "../lib/Deployer.sol";
 /**
  * e.g deploy mango on WETH USDC market:
  *
- * BASE=WETH \
- * QUOTE=USDC \
- * BASE_0=$(cast ff 18 1) \
- * QUOTE_0=$(cast ff 6 200) \
- * NSLOTS=100 \
- * PRICE_INCR=$(cast ff 6 30) \
- * ADMIN=$MUMBAI_TESTER_ADDRESS \
- * forge script --fork-url $MUMBAI_NODE_URL \
- * --private-key $MUMBAI_DEPLOYER_PRIVATE_KEY \
- * --etherscan-api-key $POLYGONSCAN_API \
- * --broadcast \
- * --verify \
- * MangoDeployer
+ BASE=GNT \
+ QUOTE=USDC \
+ NAME=Mango_GNT_USDC \
+ BASE_0=$(cast ff 18 10000) \
+ QUOTE_0=$(cast ff 6 15000) \
+ NSLOTS=35 \
+ WRITE_DEPLOY=true \
+ PRICE_INCR=$(cast ff 6 1000) \
+ ADMIN=$MUMBAI_TESTER_ADDRESS \
+ forge script --fork-url $LOCALHOST_URL \
+ --private-key $MUMBAI_DEPLOYER_PRIVATE_KEY \
+ --broadcast \
+ --verify \
+ MangoDeployer
  */
 
 contract MangoDeployer is Deployer {
@@ -68,6 +69,7 @@ contract MangoDeployer is Deployer {
     );
     // smoke test
     require(mgo.MGV() == mgv, "Smoke test failed");
+    fork.set(vm.envString("NAME"), address(mgo));
     outputDeployment();
     console.log("Mango deployed", address(mgo));
   }

@@ -38,13 +38,26 @@ contract Ghost is Direct {
     STABLE1 = stable1;
     STABLE2 = stable2;
     BASE = base;
-    AbstractRouter router_ = new SimpleRouter();
+    AbstractRouter router_ = new SimpleRouter(); // routes liquidity from an EOA
+
     setRouter(router_);
-    // adding `this` to the allowed makers of `router_` to pull/push liquidity
-    router_.bind(address(this));
     // Note: `reserve()` needs to approve `this.router()` for base token transfer
-    router_.setAdmin(admin);
     setReserve(admin);
+
+    // adding `this` to the allowed makers of `router_` to pull/push liquidity
+    // because we deploy the router in `this` constructor, `this` is admin of the router.
+    router_.bind(address(this)); // in general this call should be made by the EOA that is admin of the router
+    // GENERAL CASE
+    // 1. admin deploys a router 
+    // 2. admin deploys `this` (which sets router)
+    // 3. admin binds router to `this`
+
+    // if we don't do the next call, admin will not be able to bind `router_` to another contract
+    router_.setAdmin(admin);
+
+    // gas requirement to execute a trade (`makerExecute` + `makerPosthook`) 
+    // without router specific gas cost
+    setGasreq(30_000);
   }
 
   /**
@@ -110,7 +123,7 @@ contract Ghost is Direct {
     returns (bytes32)
   {
     // reposts residual if any (conservative hook)
-    bytes32 repost_status = super.__posthookSuccess__(order, makerData);
+    bytes32 repost_status = super.__posthookSuccess__(order, makerData); // hot storage write
     // write here what you want to do if not `reposted`
     // reasons for not ok are:
     // - residual below density (dust)
@@ -132,7 +145,7 @@ contract Ghost is Direct {
         new_alt_wants = (old_alt_wants * new_alt_gives) / old_alt_gives;
       }
       // the call below might throw
-      MGV.updateOffer({
+      MGV.updateOffer({ // cold storage write
         outbound_tkn: address(order.outbound_tkn),
         inbound_tkn: address(alt_stable),
         gives: new_alt_gives,
@@ -145,17 +158,17 @@ contract Ghost is Direct {
       return "posthook/bothOfferReposted";
     } else {
       // repost failed or offer was entirely taken
-      MGV.retractOffer({
+      MGV.retractOffer({ // hot storage read/write
         outbound_tkn: address(order.outbound_tkn),
         inbound_tkn: address(order.inbound_tkn),
         offerId: order.offerId,
-        deprovision: true
+        deprovision: false
       });
       MGV.retractOffer({
         outbound_tkn: address(order.outbound_tkn),
         inbound_tkn: address(alt_stable),
         offerId: alt_offerId,
-        deprovision: true
+        deprovision: false
       });
       return "posthook/bothRetracted";
     }
@@ -173,7 +186,7 @@ contract Ghost is Direct {
       outbound_tkn: address(order.outbound_tkn),
       inbound_tkn: address(alt_stable),
       offerId: alt_offerId,
-      deprovision: true
+      deprovision: false
     });
     return "posthook/bothFailing";
   }

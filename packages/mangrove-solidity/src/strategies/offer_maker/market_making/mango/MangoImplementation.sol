@@ -188,6 +188,7 @@ contract MangoImplementation {
     uint gives;
     uint ofr_gr;
     uint pivotId;
+    bool allowPending;
   }
 
   // posts or updates ask at position of `index`
@@ -209,9 +210,13 @@ contract MangoImplementation {
         mStr.asks[wd.index] = offerId;
         mStr.index_of_ask[mStr.asks[wd.index]] = wd.index;
         return 0;
-      } catch {
+      } catch Error(string memory reason){
+        if (wd.allowPending) {
         // `newOffer` can fail when Mango is underprovisioned or if `offer.gives` is below density
-        return wd.gives;
+          return wd.gives;
+        } else {
+          revert(reason);
+        }
       }
     } else {
       try MGV.updateOffer({
@@ -226,14 +231,18 @@ contract MangoImplementation {
       }) {
         // updateOffer succeeded
         return 0;
-      } catch {
-        // update offer might fail because residual is below density (this is OK)
-        // it may also fail because there is not enough provision on Mangrove (this is Not OK so we log)
-        // updateOffer failed but `offer` might still be live (i.e with `offer.gives>0`)
-        uint oldGives = MGV.offers(address(BASE), address(QUOTE), mStr.asks[wd.index]).gives();
-        // if not during initialize we necessarily have gives > oldGives
-        // otherwise we are trying to reset the offer and oldGives is irrelevant
-        return (wd.gives > oldGives) ? wd.gives - oldGives : wd.gives;
+      } catch Error(string memory reason){
+        if (wd.allowPending) {
+          // update offer might fail because residual is below density (this is OK)
+          // it may also fail because there is not enough provision on Mangrove (this is Not OK so we log)
+          // updateOffer failed but `offer` might still be live (i.e with `offer.gives>0`)
+          uint oldGives = MGV.offers(address(BASE), address(QUOTE), mStr.asks[wd.index]).gives();
+          // if not during initialize we necessarily have gives > oldGives
+          // otherwise we are trying to reset the offer and oldGives is irrelevant
+          return (wd.gives > oldGives) ? wd.gives - oldGives : wd.gives;
+        } else {
+          revert(reason);
+        }
       }
     }
   }
@@ -253,8 +262,13 @@ contract MangoImplementation {
         mStr.bids[wd.index] = offerId;
         mStr.index_of_bid[mStr.bids[wd.index]] = wd.index;
         return 0;
-      } catch {
-        return wd.gives;
+      } catch Error (string memory reason) {
+        if (wd.allowPending) {
+          return wd.gives;
+        } else {
+          revert(reason);
+        }
+
       }
     } else {
       try MGV.updateOffer({
@@ -268,12 +282,16 @@ contract MangoImplementation {
         offerId: mStr.bids[wd.index]
       }) {
         return 0;
-      } catch {
-        // updateOffer failed but `offer` might still be live (i.e with `offer.gives>0`)
-        uint oldGives = MGV.offers(address(QUOTE), address(BASE), mStr.bids[wd.index]).gives();
-        // if not during initialize we necessarily have gives > oldGives
-        // otherwise we are trying to reset the offer and oldGives is irrelevant
-        return (wd.gives > oldGives) ? wd.gives - oldGives : wd.gives;
+      } catch Error(string memory reason) {
+        if (wd.allowPending) {
+          // updateOffer failed but `offer` might still be live (i.e with `offer.gives>0`)
+          uint oldGives = MGV.offers(address(QUOTE), address(BASE), mStr.bids[wd.index]).gives();
+          // if not during initialize we necessarily have gives > oldGives
+          // otherwise we are trying to reset the offer and oldGives is irrelevant
+          return (wd.gives > oldGives) ? wd.gives - oldGives : wd.gives;
+        } else {
+          revert (reason);
+        }
       }
     }
   }
@@ -293,7 +311,7 @@ contract MangoImplementation {
     MangoStorage.Layout storage mStr = MangoStorage.getStorage();
     if (outbound_tkn == BASE) {
       uint not_published =
-        writeAsk(WriteData({index: index, wants: wants, gives: gives, ofr_gr: ofr_gr, pivotId: pivotId}));
+        writeAsk(WriteData({index: index, wants: wants, gives: gives, ofr_gr: ofr_gr, pivotId: pivotId, allowPending: withPending}));
       if (not_published > 0) {
         // Ask could not be written on the book (density or provision issue)
         mStr.pending_base = withPending ? not_published : (mStr.pending_base + not_published);
@@ -304,7 +322,7 @@ contract MangoImplementation {
       }
     } else {
       uint not_published =
-        writeBid(WriteData({index: index, wants: wants, gives: gives, ofr_gr: ofr_gr, pivotId: pivotId}));
+        writeBid(WriteData({index: index, wants: wants, gives: gives, ofr_gr: ofr_gr, pivotId: pivotId, allowPending: withPending}));
       if (not_published > 0) {
         mStr.pending_quote = withPending ? not_published : (mStr.pending_quote + not_published);
       } else {
