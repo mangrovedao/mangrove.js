@@ -243,8 +243,8 @@ jobs:
     # env vars reuse paths of foundry-setup
     - name: Mangrove.js Tests
       env:
-        MGV_NODE_FORGE_CACHE: "~/.foundry/build-cache"
-        MGV_NODE_FORGE_OUT: "~/.foundry/build-out"
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
       run: yarn run test:coverage
 
     - name: Mangrove.js Test Report
