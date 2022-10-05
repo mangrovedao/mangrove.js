@@ -24,6 +24,8 @@ const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 const DUMPFILE = "mangroveJsNodeState.dump";
 
+const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
+
 import yargs from "yargs";
 
 // default first three default anvil accounts,
@@ -82,6 +84,14 @@ export const builder = (yargs) => {
       default: false,
       type: "boolean",
     })
+    .option("forge-cache", {
+      describe: "Location of forge cache dir",
+      type: "string",
+    })
+    .option("forge-out", {
+      describe: "Location of forge out dir",
+      type: "string",
+    })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
 
@@ -115,7 +125,10 @@ const spawn = async (params: any) => {
       LOCAL_MNEMONIC,
     ]
       .concat(chainIdArgs)
-      .concat(forkUrlArgs)
+      .concat(forkUrlArgs),
+    {
+      cwd: CORE_DIR,
+    }
   );
 
   anvil.stdout.setEncoding("utf8");
@@ -190,7 +203,10 @@ const deploy = async (params: any) => {
   ]);
   if (MulticallCode === "0x") {
     // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-    await params.provider.send("anvil_setCode", [Multicall.address, Multicall.code]);
+    await params.provider.send("anvil_setCode", [
+      Multicall.address,
+      Multicall.code,
+    ]);
   }
 
   // test connectivity
@@ -218,6 +234,8 @@ const deploy = async (params: any) => {
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
+    ${params.forgeCache ? `--cache-path ${params.forgeCache}` : ""} \
+    ${params.forgeOut ? `--out ${params.forgeOut}` : ""} \
     ${params.script}`;
 
     console.log("Running forge script:");
@@ -234,6 +252,7 @@ const deploy = async (params: any) => {
         {
           encoding: "utf8",
           env: process.env,
+          cwd: CORE_DIR,
         },
         (error, stdout, stderr) => {
           if (params.pipe || error) {

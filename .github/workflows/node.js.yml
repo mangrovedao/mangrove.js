@@ -76,7 +76,6 @@ jobs:
       with:
         filters: |
           addresses:
-            - 'packages/mangrove-solidity/addresses/deployed/*.json'
             - 'packages/mangrove.js/src/constants/addresses.json'
 
     - name: Fail if addresses changed unless PR has 'update address' label
@@ -86,7 +85,7 @@ jobs:
            &&  steps.changes.outputs.addresses == 'true')
       uses: actions/github-script@v6
       with:
-        script: core.setFailed('You have changed an address in mangrove-solidity (deployed/*.json) or in mangrove.js (addresses.json). PR must be marked \'update address\' for CI to run')
+        script: core.setFailed('You have changed an address in mangrove.js (addresses.json). PR must be marked \'update address\' for CI to run')
 
   # ==== Job: Build and test commonlib.js ====
   commonlib-js:
@@ -174,164 +173,9 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: commonlib-js ====
 
-  # ==== Job: Build and test Mangrove Core
-  mangrove-solidity:
-    needs: [security-guard]
-
-    runs-on: ubuntu-latest
-
-    env:
-      working-directory: packages/mangrove-solidity
-
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}
-
-    strategy:
-      matrix:
-        node-version: [16.x]
-
-    steps:
-
-    # == Git checkout ==
-    - name: Checkout
-      uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
-
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-
-    # == yarn setup ==
-    - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-        
-    - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
-
-    - name: Foundry Setup
-      uses: ./.github/actions/foundry-setup
-
-    # == build ==
-    - name: Solidity Compile
-      run: yarn run build-this-package
-
-    - name: Save status of build
-      # So we can fail-fast and drop the X Test Report steps, if build fails
-      # A tiny bit hacky, but it's simple and works
-      run: echo "mangrove_built=true" >> $GITHUB_ENV
-
-    # Run local Solidity tests
-    - name: Mangrove Solidity Tests
-      run: yarn run test
-      env:
-        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
-
-    # NOTE: uncomment once you can manage forge test 
-    # outputs in gh actions
-    # - name: Mangrove Solidity Test Report
-    #   uses: dorny/test-reporter@v1
-    #   if: ${{ env.mangrove_built && (success() || failure()) }}
-    #   with:
-    #     name: Solidity Tests                  # Name of the check run which will be created
-    #     path: ${{env.working-directory}}/solidity-mocha-test-report.json # Path to test results
-    #     reporter: mocha-json                  # Format of test results
-
-    # save artifacts for later stages
-    - name: Zip output
-      uses: montudor/action-zip@v1
-      with: 
-        args: zip -qq -r mangrove-solidity-out.zip ${{env.working-directory}}/artifacts ${{env.working-directory}}/dist
-
-    - name: Cache mangrove-solidity output as artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-        path: mangrove-solidity-out.zip
-
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job mangrove-solidity ====
-
-  # ==== Job: Build Mangrove documentation ====
-  mangrove-solidity-doc:
-    needs: [security-guard, mangrove-solidity]
-
-    runs-on: ubuntu-latest
-
-    env:
-      working-directory: packages/mangrove-solidity
-
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}    
-
-    steps:
-
-    # == Git checkout ==
-    - name: Checkout
-      uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
-
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-
-    # == yarn setup ==
-    - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-        
-    - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
-
-    # == create and upload docs ==
-    - run: yarn run doc
-
-    - name: Archive documentation
-      uses: actions/upload-artifact@v3
-      with:
-        name: documentation
-        path: ${{env.working-directory}}/doc/
-
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job mangrove-solidity-doc ====
-
   # ==== Job: Build and test mangrove.js ====
   mangrove-js:
-    needs: [security-guard, commonlib-js, mangrove-solidity]
+    needs: [security-guard, commonlib-js]
 
     runs-on: ubuntu-latest
 
@@ -376,17 +220,6 @@ jobs:
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
         
-    # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached commonlib.js artifact
       uses: actions/download-artifact@v3
       with:
@@ -407,7 +240,11 @@ jobs:
       run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
 
     # == run and report tests == 
+    # env vars reuse paths of foundry-setup
     - name: Mangrove.js Tests
+      env:
+        MGV_NODE_FORGE_CACHE: "~/.foundry/build-cache"
+        MGV_NODE_FORGE_OUT: "~/.foundry/build-out"
       run: yarn run test:coverage
 
     - name: Mangrove.js Test Report
@@ -439,23 +276,6 @@ jobs:
         path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
         base-path	: ${{env.working-directory}}
         flag-name: js
-
-    - name: Create coverage report for mangrove-solidity
-      if: github.event_name != 'pull_request_target' 
-      run: forge coverage --report lcov
-      working-directory: . # coverage cannot find contracts if executed inside mangrove-solidity
-      env:
-        POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
-
-    - name: Upload to Coveralls for mangrove-solidity
-      uses: coverallsapp/github-action@master
-      if: github.event_name != 'pull_request_target' 
-      with:
-        git-commit: ${{ steps.coveralls_vars.outputs.sha_for_head }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: lcov.info
-        base-path	: .
-        flag-name: solidity
 
     # save artifacts for later stages
     - name: Zip output
@@ -574,7 +394,7 @@ jobs:
 
   # ==== Job: Build and test bot-utils ====
   bot-utils:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js]
+    needs: [security-guard, commonlib-js, mangrove-js]
 
     runs-on: ubuntu-latest
 
@@ -620,16 +440,6 @@ jobs:
       uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v3
       with:
@@ -706,7 +516,7 @@ jobs:
 
   # ==== Job: Build and test bot-cleaning ====
   bot-cleaning:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
+    needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -751,17 +561,6 @@ jobs:
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
         
-    # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v3
       with:
@@ -825,7 +624,7 @@ jobs:
 
   # ==== Job: Build and test bot-updategas ====
   bot-updategas:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
+    needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -871,16 +670,6 @@ jobs:
       uses: ./.github/actions/foundry-setup
 
     # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v3
       with:
@@ -944,7 +733,7 @@ jobs:
           
   # ==== Job: Build and test bot-maker-noise ====
   bot-maker-noise:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
+    needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -990,16 +779,6 @@ jobs:
       uses: ./.github/actions/foundry-setup
       
     # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v3
       with:
@@ -1063,7 +842,7 @@ jobs:
           
   # ==== Job: Build and test bot-taker-greedy ====
   bot-taker-greedy:
-    needs: [security-guard, commonlib-js, mangrove-solidity,  mangrove-js, bot-utils]
+    needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -1109,16 +888,6 @@ jobs:
       uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v3
       with:
@@ -1182,7 +951,7 @@ jobs:
 
  # ==== Job: Build and test bot-failing-offer ====
   bot-failing-offer:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
+    needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -1228,16 +997,6 @@ jobs:
       uses: ./.github/actions/foundry-setup
       
     # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v3
       with:
@@ -1301,7 +1060,7 @@ jobs:
 
   # ==== Job: Build and test bot-template ====
   bot-template:
-    needs: [security-guard, commonlib-js, mangrove-solidity, mangrove-js, bot-utils]
+    needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
     runs-on: ubuntu-latest
 
@@ -1347,16 +1106,6 @@ jobs:
       uses: ./.github/actions/foundry-setup
         
     # == download and unzip artefacts ==
-    - name: Download cached mangrove-solidity artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-solidity-out.zip
-
-    - name: Unzip mangrove-solidity artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq mangrove-solidity-out.zip
-
     - name: Download cached mangrove-js artifact
       uses: actions/download-artifact@v3
       with:
@@ -1427,9 +1176,7 @@ jobs:
     needs:
     - security-guard
     - file-guard
-    - mangrove-solidity
     - commonlib-js
-    - mangrove-solidity-doc
     - mangrove-js
     - mangrove-js-doc
     - bot-utils

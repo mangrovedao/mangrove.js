@@ -55,7 +55,6 @@
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
     "@ethersproject/hardware-wallets": "^5.6.0",
-    "@mangrovedao/mangrove-solidity": "workspace:*",
     "@typechain/ethers-v5": "^10.1.0",
     "@types/chai": "^4.3.1",
     "@types/chai-as-promised": "^7.1.5",

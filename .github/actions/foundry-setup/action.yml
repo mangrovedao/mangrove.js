@@ -16,7 +16,7 @@ runs:
     uses: actions/cache@v3
     with:
       path: "~/.foundry/cache"
-      key: foundry-rpc-cache-${{ hashFiles('foundry.toml','packages/mangrove-solidity/test') }}
+      key: foundry-rpc-cache-${{ github.run_id }}
       restore-keys: |
         foundry-rpc-cache-
 
@@ -24,8 +24,8 @@ runs:
     uses: actions/cache@v3
     with:
       path: |
-        packages/mangrove-solidity/cache
-        packages/mangrove-solidity/out
-      key: foundry-build-cache-${{ hashFiles('foundry.toml',format('${0}/[lib,script,src,test]/','packages/mangrove-solidity')) }}
+        ~/.foundry/build-cache
+        ~/.foundry/build-out
+      key: foundry-build-cache-${{ github.run_id }}
       restore-keys: |
         foundry-build-cache-

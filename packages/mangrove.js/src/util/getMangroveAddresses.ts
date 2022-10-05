@@ -1,5 +1,5 @@
 /*
-Enumerate distributed mangrove-solidity deployments and copy addresses to mangrove.js.
+Enumerate distributed mangrove-core deployments and copy addresses to mangrove.js.
 
 Args:
 
@@ -31,19 +31,15 @@ if (args.debug) {
   console.debug(args);
 }
 
-const sourceDir = path.resolve("../mangrove-solidity/dist/addresses/deployed/");
+// const sourceDir = path.resolve("../mangrove-core/dist/addresses/deployed/");
 const addressFile = path.resolve("src/constants/addresses.json");
-
 const addresses = JSON.parse(fs.readFileSync(addressFile, "utf8"));
 
-for (const filename of fs.readdirSync(sourceDir)) {
-  const { ext, name: network } = path.parse(filename);
-  if (ext == ".json" && !filename.endsWith(".backup.json")) {
-    const data = fs.readFileSync(path.join(sourceDir, filename), "utf8");
-    const networkAddresses = JSON.parse(data);
-    for (const { name, address } of networkAddresses) {
-      addresses[network][name] = address;
-    }
+const mgvCore = require("@mangrovedao/mangrove-core");
+
+for (const [network, networkAddresses] of Object.entries(mgvCore.addresses)) {
+  for (const { name, address } of networkAddresses as any) {
+    addresses[network][name] = address;
   }
 }
 
