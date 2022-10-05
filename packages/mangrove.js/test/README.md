@@ -1,6 +1,6 @@
 # Mangrove.js tests
 
-Tests in mangrove.js must use the `ToyENS.sol` and `DeployScript.sol` files from `mangrove-solidity`. The `src/util/node.ts` file contains what is required to:
+Tests in mangrove.js must use the `ToyENS.sol` and `DeployScript.sol` files from `mangrove-core`. The `src/util/node.ts` file contains what is required to:
 
 - start an `anvil` server
 - run a solidity script with `forge script`

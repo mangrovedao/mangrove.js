@@ -8,8 +8,6 @@ Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate 
 
 If you are looking for the Mangrove developer documentation, the main site to go to is [docs.mangrove.exchange](https://docs.mangrove.exchange).
 
-For the Mangrove contracts in `mangrove-solidity`, we extract a doc-site from the rich documentation in the contract files. This is published at [code.mangrove.exchange](https://code.mangrove.exchange).
-
 Each package also contains a README.md with package-specific documentation.
 
 # Prerequisites

@@ -1,6 +1,0 @@
-mgv_src/=packages/mangrove-solidity/src/
-mgv_test/=packages/mangrove-solidity/test/
-mgv_script/=packages/mangrove-solidity/script/
-
-ds-test/=packages/mangrove-solidity/lib/forge-std-vendored/lib/ds-test/src/
-forge-std/=packages/mangrove-solidity/lib/forge-std-vendored/src/
