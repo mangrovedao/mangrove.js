@@ -225,7 +225,6 @@ const deploy = async (params: any) => {
     await params.provider.send("anvil_loadState", [state]);
     console.log("...done.");
   } else {
-    console.log(params);
     // await provider.send("anvil_setLoggingEnabled", [true]);
     const forgeScriptCmd = `forge script \
     --rpc-url http://${params.host}:${params.port} \
