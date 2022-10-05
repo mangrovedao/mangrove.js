@@ -3,7 +3,7 @@
  
   This is a Mangrove.js utility for its internal tests. It can also be used in standalone.
 
-  For rapid test cycles, use MGV_NODE_USE_CACHE=true, this will cache the result
+  For rapid test cycles, use MGV_NODE_STATE_CACHE=true, this will cache the result
   of deploying contracts in a file (see DUMPFILE below), then delete that file
   every time you want to invalidate the cache.
 */
@@ -36,7 +36,7 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
   key: mnemonic.key(i),
 }));
 
-const stateCache = path.resolve(`./${DUMPFILE}`);
+const stateCacheFile = path.resolve(`./${DUMPFILE}`);
 
 export const builder = (yargs) => {
   return yargs
@@ -55,7 +55,7 @@ export const builder = (yargs) => {
       type: "boolean",
       default: true,
     })
-    .option("caching", {
+    .option("state-cache", {
       describe: `Read/write ./${DUMPFILE} file when possible`,
       type: "boolean",
       default: false,
@@ -211,8 +211,8 @@ const deploy = async (params: any) => {
     );
   }
 
-  if (params.caching && fs.existsSync(stateCache)) {
-    const state = fs.readFileSync(stateCache, "utf8");
+  if (params.stateCache && fs.existsSync(stateCacheFile)) {
+    const state = fs.readFileSync(stateCacheFile, "utf8");
     console.log("Loading state from cache...");
     await params.provider.send("anvil_loadState", [state]);
     console.log("...done.");
@@ -262,10 +262,10 @@ const deploy = async (params: any) => {
       );
     });
     await scriptPromise;
-    if (params.caching) {
+    if (params.stateCache) {
       const stateData = await params.provider.send("anvil_dumpState", []);
-      fs.writeFileSync(stateCache, stateData);
-      console.log(`Wrote state cache to ${stateCache}`);
+      fs.writeFileSync(stateCacheFile, stateData);
+      console.log(`Wrote state cache to ${stateCacheFile}`);
     }
   }
 };
