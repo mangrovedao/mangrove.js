@@ -112,9 +112,6 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
 const spawn = async (params: any) => {
   const chainIdArgs = "chainId" in params ? ["--chain-id", params.chainId] : [];
   const forkUrlArgs = "forkUrl" in params ? ["--fork-url", params.forkUrl] : [];
-  const forgeCacheArgs =
-    "forgeCache" in params ? ["--cache-path", params.forgeCache] : [];
-  const forgeOutArgs = "forgeOut" in params ? ["--out", params.forgeOut] : [];
   const anvil = childProcess.spawn(
     "anvil",
     [
@@ -128,9 +125,7 @@ const spawn = async (params: any) => {
       LOCAL_MNEMONIC,
     ]
       .concat(chainIdArgs)
-      .concat(forkUrlArgs)
-      .concat(forgeCacheArgs)
-      .concat(forgeOutArgs),
+      .concat(forkUrlArgs),
     {
       cwd: CORE_DIR,
     }
