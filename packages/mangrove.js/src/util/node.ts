@@ -84,14 +84,6 @@ export const builder = (yargs) => {
       default: false,
       type: "boolean",
     })
-    .option("forge-cache", {
-      describe: "Location of forge cache dir",
-      type: "string",
-    })
-    .option("forge-out", {
-      describe: "Location of forge out dir",
-      type: "string",
-    })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
 
@@ -234,8 +226,6 @@ const deploy = async (params: any) => {
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
-    ${params.forgeCache ? `--cache-path ${params.forgeCache}` : ""} \
-    ${params.forgeOut ? `--out ${params.forgeOut}` : ""} \
     ${params.script}`;
 
     console.log("Running forge script:");
