@@ -92,7 +92,7 @@ class TradeEventManagement {
         event.args.takerGot.add(event.args.feePaid ?? ethers.BigNumber.from(0)),
         event.args.takerGave
       ),
-      penalty: this.mangroveUtils.fromUnits(event.args.penalty, 18),
+      bounty: this.mangroveUtils.fromUnits(event.args.penalty, 18),
       feePaid:
         "feePaid" in event.args
           ? this.mangroveUtils.fromUnits(event.args.feePaid, 18)

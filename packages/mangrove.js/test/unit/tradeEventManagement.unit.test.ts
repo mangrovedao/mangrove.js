@@ -63,7 +63,7 @@ describe("TradeEventManagement unit tests suite", () => {
       assert.equal(result.got, expectedGot);
       assert.equal(result.gave, expectedGave);
       assert.equal(result.partialFill, true);
-      assert.equal(result.penalty, expectedPenalty);
+      assert.equal(result.bounty, expectedPenalty);
       assert.equal(result.feePaid, expectedFeePaid);
     });
   });
@@ -122,7 +122,7 @@ describe("TradeEventManagement unit tests suite", () => {
         got: Big(1),
         gave: Big(2),
         partialFill: false,
-        penalty: Big(3),
+        bounty: Big(3),
         feePaid: Big(4),
       };
       const expectedOfferId = BigNumber.from(20);
@@ -159,7 +159,7 @@ describe("TradeEventManagement unit tests suite", () => {
       assert.equal(result.got, summary.got);
       assert.equal(result.gave, summary.gave);
       assert.equal(result.partialFill, summary.partialFill);
-      assert.equal(result.penalty, summary.penalty);
+      assert.equal(result.bounty, summary.bounty);
     });
   });
 

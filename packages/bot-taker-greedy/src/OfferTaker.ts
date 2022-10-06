@@ -271,7 +271,7 @@ export class OfferTaker {
             gave: result.summary.gave.toString(),
             got: result.summary.got.toString(),
             partialFill: result.summary.partialFill,
-            penalty: result.summary.penalty.toString(),
+            penalty: result.summary.bounty.toString(),
           },
         },
       });
