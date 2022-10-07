@@ -711,7 +711,7 @@ describe("Market integration tests suite", () => {
       utils.parseBytes32String(result.tradeFailures[0].reason)
     ).to.be.equal("mgv/makerTransferFail");
     expect(result.successes).to.have.lengthOf(0);
-    expect(result.summary.penalty.toNumber()).to.be.greaterThan(0);
+    expect(result.summary.bounty.toNumber()).to.be.greaterThan(0);
     //expect(result.failures[0].offerId).to.be.equal(1);
 
     const offerEvent = await queue.get();
@@ -1066,7 +1066,7 @@ describe("Market integration tests suite", () => {
       expect(result.summary.got.toNumber()).to.be.equal(0);
       expect(result.summary.gave.toNumber()).to.be.equal(0);
 
-      expect(result.summary.penalty.toNumber()).to.be.equal(0.00009591);
+      expect(result.summary.bounty.toNumber()).to.be.equal(0.00009591);
       expect(result.summary.feePaid.toNumber()).to.be.equal(0);
 
       // Verify book gets updated to reflect offers have failed and are removed

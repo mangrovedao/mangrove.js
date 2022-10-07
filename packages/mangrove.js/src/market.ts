@@ -49,7 +49,7 @@ namespace Market {
     got: Big;
     gave: Big;
     partialFill: boolean;
-    penalty: Big;
+    bounty: Big;
     feePaid: Big;
   };
   export type OrderResult = {
