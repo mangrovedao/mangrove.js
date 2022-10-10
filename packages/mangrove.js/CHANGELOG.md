@@ -1,7 +1,10 @@
 # next version
 
+# 0.11.2 (October 2022)
+
 - Export typechain namespace
 - Rename `penalty` to `bounty` in `Market.Summary` as it's a bounty from the taker's perspective
+- Fix comparison of addresses which caused missing summaries for some tokens. Addresses are now handled as checksum addresses.
 
 # 0.11.1 (October 2022)
 
