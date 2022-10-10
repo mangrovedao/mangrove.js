@@ -1,5 +1,9 @@
 # next version
 
+# 0.11.3 (October 2022)
+
+- Move @mangrovedao/mangrove-core from devDependency to dependency.
+
 # 0.11.2 (October 2022)
 
 - Export typechain namespace
