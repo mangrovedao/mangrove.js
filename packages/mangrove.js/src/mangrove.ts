@@ -385,6 +385,7 @@ class Mangrove {
     if (!Mangrove.addresses[network]) {
       Mangrove.addresses[network] = {};
     }
+    address = ethers.utils.getAddress(address);
     Mangrove.addresses[network][name] = address;
   }
 
