@@ -128,7 +128,7 @@ describe("RestingOrder", () => {
         orderResult.summary.partialFill,
         "Order should have been partially filled"
       );
-      assert(orderResult.summary.penalty.eq(0), "No offer should have failed");
+      assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
     });
 
     it("resting order with deadline", async () => {
@@ -185,7 +185,7 @@ describe("RestingOrder", () => {
         "Timestamp did not advance"
       );
       const result_ = await market.sell({ wants: 5, gives: 5 });
-      assert(result_.summary.penalty.gt(0), "Order should have reneged");
+      assert(result_.summary.bounty.gt(0), "Order should have reneged");
     });
   });
 });

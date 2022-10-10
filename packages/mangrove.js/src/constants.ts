@@ -2,6 +2,7 @@ import knownAddresses from "./constants/addresses.json";
 import tokenDecimals from "./constants/tokenDecimals.json";
 import tokenDisplayedDecimals from "./constants/tokenDisplayedDecimals.json";
 import tokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedAsPriceDecimals.json";
+import { ethers } from "ethers";
 
 import mgvCore from "@mangrovedao/mangrove-core";
 
@@ -12,7 +13,7 @@ const addresses = { ...knownAddresses };
 for (const [network, networkAddresses] of Object.entries(mgvCore.addresses)) {
   addresses[network] ??= {};
   for (const { name, address } of networkAddresses as any) {
-    addresses[network][name] = address;
+    addresses[network][name] = ethers.utils.getAddress(address);
   }
 }
 

@@ -143,6 +143,6 @@ describe("Failing offer integration tests", () => {
 
     // Assert
     assert.equal(0, cleanerMarket.getSemibook("asks").size());
-    assert.equal(result !== undefined && result.summary.penalty.gt(0), true);
+    assert.equal(result !== undefined && result.summary.bounty.gt(0), true);
   });
 });
