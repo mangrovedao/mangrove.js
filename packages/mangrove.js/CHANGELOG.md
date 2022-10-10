@@ -1,5 +1,7 @@
 # next version
 
+- Export typechain namespace
+
 # 0.11.1 (October 2022)
 
 - Fixed decimals handling for resting order in results.

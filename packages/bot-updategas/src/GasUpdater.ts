@@ -1,6 +1,5 @@
-import Mangrove from "@mangrovedao/mangrove.js";
+import { Mangrove, typechain } from "@mangrovedao/mangrove.js";
 import GasHelper from "./GasHelper";
-import * as typechain from "./types/typechain";
 import { logger } from "./util/logger";
 
 /**
