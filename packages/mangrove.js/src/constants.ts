@@ -1,16 +1,19 @@
-import addressesPerNetwork from "./constants/addresses.json";
+import knownAddresses from "./constants/addresses.json";
 import tokenDecimals from "./constants/tokenDecimals.json";
 import tokenDisplayedDecimals from "./constants/tokenDisplayedDecimals.json";
 import tokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedAsPriceDecimals.json";
 import { ethers } from "ethers";
 
-const addresses = { ...addressesPerNetwork };
+import mgvCore from "@mangrovedao/mangrove-core";
 
-for (const [network, networkAddresses] of Object.entries(addresses)) {
-  for (const [name, address] of Object.entries(networkAddresses) as any) {
-    if (address) {
-      addresses[network][name] = ethers.utils.getAddress(address);
-    }
+// Merge known addresses and addresses provided by mangrove-core, with priority to mangrove-core addresses.
+
+const addresses = { ...knownAddresses };
+
+for (const [network, networkAddresses] of Object.entries(mgvCore.addresses)) {
+  addresses[network] ??= {};
+  for (const { name, address } of networkAddresses as any) {
+    addresses[network][name] = ethers.utils.getAddress(address);
   }
 }
 

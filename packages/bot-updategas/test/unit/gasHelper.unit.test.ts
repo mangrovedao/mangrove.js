@@ -1,4 +1,4 @@
-import Mangrove from "@mangrovedao/mangrove.js";
+import { Mangrove, typechain } from "@mangrovedao/mangrove.js";
 import { ContractTransaction } from "ethers";
 import { describe, it } from "mocha";
 import {
@@ -11,7 +11,6 @@ import {
   when,
 } from "ts-mockito";
 import GasHelper from "../../src/GasHelper";
-import { MgvOracle } from "../../src/types/typechain";
 import assert from "assert";
 
 describe("GasHelper unit test suite", () => {
@@ -143,7 +142,7 @@ describe("GasHelper unit test suite", () => {
     it("should set to rounded gasPrice", async function () {
       //Arrange
       const gasHelper = new GasHelper();
-      const mgvOracle = mock<MgvOracle>();
+      const mgvOracle = mock<typechain.MgvOracle>();
       const newGasPrice = 20.4;
       const mangrove = mock(Mangrove);
       const prom: Promise<ContractTransaction> = mock(

@@ -1,5 +1,6 @@
 # next version
 
+- Export typechain namespace
 - Rename `penalty` to `bounty` in `Market.Summary` as it's a bounty from the taker's perspective
 
 # 0.11.1 (October 2022)
