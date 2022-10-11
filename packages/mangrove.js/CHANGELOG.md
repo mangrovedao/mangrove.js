@@ -1,5 +1,9 @@
 # next version
 
+# 0.11.4 (October 2022)
+
+- Fix addresses being stored in checksum format
+
 # 0.11.3 (October 2022)
 
 - Move @mangrovedao/mangrove-core from devDependency to dependency.
