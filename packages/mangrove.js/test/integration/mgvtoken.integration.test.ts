@@ -9,7 +9,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 };
 
 describe("MGV Token integration tests suite", () => {
-  let mgv;
+  let mgv: Mangrove;
 
   beforeEach(async function () {
     //set mgv object
@@ -19,6 +19,8 @@ describe("MGV Token integration tests suite", () => {
     });
 
     //shorten polling for faster tests
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     mgv._provider.pollingInterval = 10;
   });
 
@@ -41,5 +43,12 @@ describe("MGV Token integration tests suite", () => {
     assert.strictEqual(usdc.toFixed("10.3213"), "10.32");
     const weth = mgv.token("WETH");
     assert.strictEqual(weth.toFixed("10.32132"), "10.3213");
+  });
+
+  it("has checksum addresses", async function () {
+    const addresses = Mangrove.getAllAddresses("maticmum");
+    const wethAddress = addresses.find((x) => x[0] == "WETH")[1];
+    assert.ok(wethAddress);
+    assert.notEqual(wethAddress, wethAddress.toLowerCase());
   });
 });

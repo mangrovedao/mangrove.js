@@ -10,6 +10,15 @@ import mgvCore from "@mangrovedao/mangrove-core";
 
 const addresses = { ...knownAddresses };
 
+// Make sure all addresses are with checksum casing
+for (const [network, networkAddresses] of Object.entries(addresses)) {
+  for (const [name, address] of Object.entries(networkAddresses) as any) {
+    if (address) {
+      addresses[network][name] = ethers.utils.getAddress(address);
+    }
+  }
+}
+
 for (const [network, networkAddresses] of Object.entries(mgvCore.addresses)) {
   addresses[network] ??= {};
   for (const { name, address } of networkAddresses as any) {
