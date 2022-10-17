@@ -354,9 +354,10 @@ class Semibook implements Iterable<Market.Offer> {
           } else {
             if (fillWants) {
               const product = takerWants.mul(offer.wants);
-              acc.gives = product
-                .div(offer.gives)
-                .add(product.mod(offer.gives).eq(0) ? 0 : 1);
+              /* Reproduce the mangrove round-up of takerGives using Big's rounding mode. */
+              Big.RM = Big.roundUp;
+              acc.gives = product.div(offer.gives);
+              Big.RM = Big.roundDown;
             } else {
               if (offer.wants.eq(0)) {
                 acc.wants = offer.gives;
