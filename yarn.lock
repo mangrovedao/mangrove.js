@@ -1805,7 +1805,7 @@ __metadata:
     ts-mockito: ^2.0.0
     ts-node: ^10.9.1
     typechain: ^8.1.0
-    typedoc: ^0.23.13
+    typedoc: ^0.23.17
     typescript: ^4.7.0
     yargs: ^17.3.0
   bin:
@@ -7744,9 +7744,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.23.13":
-  version: 0.23.13
-  resolution: "typedoc@npm:0.23.13"
+"typedoc@npm:^0.23.17":
+  version: 0.23.17
+  resolution: "typedoc@npm:0.23.17"
   dependencies:
     lunr: ^2.3.9
     marked: ^4.0.19
@@ -7756,7 +7756,7 @@ fsevents@~2.3.2:
     typescript: 4.6.x || 4.7.x || 4.8.x
   bin:
     typedoc: bin/typedoc
-  checksum: 720b5fa9846fcb2d0e3a763bc01b8f856d7e1c80ac50d2efd85dd850f61b98c4f52b7519a86ff2c59cebc7ab1e19e92cab31a25082d4574ab9a6f93e660e5369
+  checksum: 9bfcfa762205f42645a5c545cf75399346663209e1f91f3e630880a6f48a5676a2efab23305df7aca69c6fe19bd4b1c42470bf39b95a369811f6eb4d5a8549e8
   languageName: node
   linkType: hard
 
