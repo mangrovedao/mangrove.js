@@ -1,5 +1,7 @@
 # next version
 
+- Fix `Semibook.simulateMarketOrder`. Fixes `Semibook.estimateVolume`, `Market.(estimateVolume[|ToReceive|ToSpend])`.
+
 # 0.11.4 (October 2022)
 
 - Fix addresses being stored in checksum format
