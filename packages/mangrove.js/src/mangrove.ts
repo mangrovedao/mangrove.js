@@ -10,6 +10,7 @@ import * as eth from "./eth";
 import { getAllToyENSEntries } from "./util/toyEnsEntries";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
+import { TypedDataSigner } from "@ethersproject/abstract-signer";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -49,6 +50,26 @@ namespace Mangrove {
     gasprice: number;
     gasmax: number;
     dead: boolean;
+  };
+
+  export type SimplePermitData = {
+    outbound_tkn: string;
+    inbound_tkn: string;
+    owner: string;
+    spender: string;
+    value: ethers.BigNumber;
+    nonce?: number | ethers.BigNumber;
+    deadline: number | Date;
+  };
+
+  export type PermitData = {
+    outbound_tkn: string;
+    inbound_tkn: string;
+    owner: string;
+    spender: string;
+    value: ethers.BigNumber;
+    nonce: ethers.BigNumber;
+    deadline: number;
   };
 }
 
@@ -347,6 +368,109 @@ class Mangrove {
       gasmax: config.global.gasmax.toNumber(),
       dead: config.global.dead,
     };
+  }
+
+  /** Permit data normalization
+   * Autofill/convert 'nonce' field of permit data if needd, convert deadline to
+   * num if needed.
+   */
+  async normalizePermitData(
+    params: Mangrove.SimplePermitData
+  ): Promise<Mangrove.PermitData> {
+    const data = { ...params };
+
+    // Autofind nonce if needed
+    if (!("nonce" in data)) {
+      data.nonce = await this.contract.nonces(data.owner);
+    }
+
+    if (typeof data.nonce === "number") {
+      data.nonce = ethers.BigNumber.from(data.nonce);
+    }
+
+    // Convert deadline if needed
+    if (data.deadline instanceof Date) {
+      data.deadline = Math.floor(data.deadline.getTime() / 1000);
+    }
+
+    return data as Mangrove.PermitData;
+  }
+
+  /**
+   * Sign typed data for permit().
+   * To set the deadline to +days or +months, you can do
+   * let date = new Date();
+   * date.setDate(date.getDate() + days);
+   * date.setMonth(date.getMonth() + months);
+   * - Nonce is autoselected if needed and can be a number
+   * - Date can be a Date or a number
+   */
+  async simpleSignPermitData(params: Mangrove.SimplePermitData) {
+    const data = await this.normalizePermitData(params);
+    return this.signPermitData(data);
+  }
+
+  /** Permit data generator for normalized permit data input */
+  async signPermitData(data: Mangrove.PermitData) {
+    // Check that generated signer has a typed data signing prop
+    if (!("_signTypedData" in this._signer)) {
+      throw new Error("Cannot sign typed data with this signer.");
+    }
+
+    // Declare domain (match mangrove contract)
+    const domain = {
+      name: "Mangrove",
+      version: "1",
+      chainId: this._network.id,
+      verifyingContract: this._address,
+    };
+
+    // Declare type to sign (match mangrove contract)
+    const types = {
+      Permit: [
+        { name: "outbound_tkn", type: "address" },
+        { name: "inbound_tkn", type: "address" },
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    };
+
+    const signer = this._signer as unknown as TypedDataSigner;
+    return signer._signTypedData(domain, types, data);
+  }
+
+  /** Give permit to Mangrove.
+   * Permit params.spender to buy on behalf of owner on the outbound/inbound
+   * offer list up to value. Default deadline is now + 1 day. Default nonce is
+   * current owner nonce.
+   */
+  async permit(
+    params: Mangrove.SimplePermitData
+  ): Promise<ethers.ContractTransaction> {
+    if (!params.deadline) {
+      params.deadline = new Date();
+      params.deadline.setDate(params.deadline.getDate() + 1);
+    }
+
+    const data = await this.normalizePermitData(params);
+    const { v, r, s } = ethers.utils.splitSignature(
+      await this.signPermitData(data)
+    );
+
+    return this.contract.permit(
+      data.outbound_tkn,
+      data.inbound_tkn,
+      data.owner,
+      data.spender,
+      data.value,
+      data.deadline,
+      v,
+      r,
+      s
+    );
   }
 
   /* Static */

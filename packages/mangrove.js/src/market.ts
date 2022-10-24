@@ -467,6 +467,31 @@ class Market {
     return this.getSemibook(ba).offerInfo(offerId);
   }
 
+  /** Sign permit data. If action="buy", will permit buying base with spender's
+   * quote token. If action="sell", will permit buying quote with spender's base
+   * token. See mangrove.ts. */
+  permit(
+    action: "buy" | "sell",
+    data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">
+  ): Promise<ethers.ContractTransaction> {
+    let outbound_tkn: MgvToken;
+    let inbound_tkn: MgvToken;
+
+    if (action === "buy") {
+      outbound_tkn = this.base;
+      inbound_tkn = this.quote;
+    } else {
+      outbound_tkn = this.quote;
+      inbound_tkn = this.base;
+    }
+
+    return this.mgv.permit({
+      ...data,
+      outbound_tkn: outbound_tkn.address,
+      inbound_tkn: inbound_tkn.address,
+    });
+  }
+
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    * Params can be of the form:

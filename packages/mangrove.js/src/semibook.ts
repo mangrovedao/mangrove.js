@@ -217,6 +217,22 @@ class Semibook implements Iterable<Market.Offer> {
     );
   }
 
+  /** Sign permit data for buying outbound_tkn with spender's inbound_tkn
+   * See mangrove.ts. */
+  permit(
+    data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">
+  ) {
+    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
+      this.ba
+    );
+
+    this.market.mgv.permit({
+      ...data,
+      outbound_tkn: outbound_tkn.address,
+      inbound_tkn: inbound_tkn.address,
+    });
+  }
+
   /** Returns the number of offers in the cache. */
   size(): number {
     return this.#offerCache.size;
