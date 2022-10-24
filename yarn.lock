@@ -1413,7 +1413,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     toad-scheduler: ^1.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -1462,7 +1462,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-mockito: ^2.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -1512,7 +1512,7 @@ __metadata:
     random: ^3.0.6
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-node: ^10.9.1
     typescript: ^4.7.0
   languageName: unknown
@@ -1561,7 +1561,7 @@ __metadata:
     random: ^3.0.6
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     toad-scheduler: ^1.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -1610,7 +1610,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-node: ^10.9.1
     typescript: ^4.7.0
   languageName: unknown
@@ -1660,7 +1660,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     toad-scheduler: ^1.6.1
     ts-mockito: ^2.0.0
     ts-node: ^10.9.1
@@ -1710,7 +1710,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-mockito: ^2.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -7004,19 +7004,6 @@ fsevents@~2.3.2:
   version: 1.7.3
   resolution: "shell-quote@npm:1.7.3"
   checksum: aca58e73a3a5d933d02e0bdddedc53ee14f7c2ec264f97ac915b9d4482d077a38e422aa664631d60a672cd3cdb4054eb2e6c0303f54882453dacb6483e482d34
-  languageName: node
-  linkType: hard
-
-"shelljs@npm:^0.8.4":
-  version: 0.8.4
-  resolution: "shelljs@npm:0.8.4"
-  dependencies:
-    glob: ^7.0.0
-    interpret: ^1.0.0
-    rechoir: ^0.6.2
-  bin:
-    shjs: bin/shjs
-  checksum: 27f83206ef6a4f5b74a493726c3e6b4c3e07a9c2aac94c5e692d800a61353c18a8234967bd8523b1346abe718beb563843687fb57f466529ba06db3cae6f0bb3
   languageName: node
   linkType: hard
 
