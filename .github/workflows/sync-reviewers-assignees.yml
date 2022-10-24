@@ -6,7 +6,7 @@ on:
     types: [review_requested,review_request_removed,assigned,unassigned]
 
 permissions:
-  checks: write
+  issues: write
   contents: read
 
 jobs:
