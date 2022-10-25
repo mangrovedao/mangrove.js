@@ -145,6 +145,7 @@ jobs:
     #     name: commonlib.js - Tests                   # Name of the check run which will be created
     #     path: packages/commonlib.js/commonlib-js-mocha-test-report.json # Path to test results
     #     reporter: mocha-json                               # Format of test results
+    #     fail-on-error: 'false'                                          # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     # save artifacts for later stages
     - name: Zip output
@@ -250,6 +251,7 @@ jobs:
         name: Mangrove.js Tests               # Name of the check run which will be created
         path: ${{env.working-directory}}/coverage-tests-report.json # Path to test results
         reporter: mocha-json                  # Format of test results
+        fail-on-error: 'false'                                      # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     # == verify cli can start ==
     - name: Mgv cli Tests
@@ -475,6 +477,7 @@ jobs:
         name: Bot Utils - Tests                   # Name of the check run which will be created
         path: packages/bot-utils/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+        fail-on-error: 'false'                              # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -606,6 +609,7 @@ jobs:
         name: Cleaning Bot - Tests                   # Name of the check run which will be created
         path: packages/bot-cleaning/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+        fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -715,6 +719,7 @@ jobs:
         name: Update Gas Bot - Tests                   # Name of the check run which will be created
         path: packages/bot-updategas/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+        fail-on-error: 'false'                                  # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -824,6 +829,7 @@ jobs:
         name: Noise Maker Bot - Tests                                # Name of the check run which will be created
         path: packages/bot-maker-noise/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
+        fail-on-error: 'false'                                    # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -933,6 +939,7 @@ jobs:
         name: Greedy Taker Bot - Tests                                # Name of the check run which will be created
         path: packages/bot-taker-greedy/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                          # Format of test results
+        fail-on-error: 'false'                                     # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
     
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1042,6 +1049,7 @@ jobs:
         name: Failing Offer Bot - Tests                                # Name of the check run which will be created
         path: packages/bot-failing-offer/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                         # Format of test results
+        fail-on-error: 'false'                                       # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
@@ -1151,6 +1159,7 @@ jobs:
         name: Template Bot - Tests                   # Name of the check run which will be created
         path: packages/bot-template/coverage-tests-report.json # Path to test results
         reporter: mocha-json                               # Format of test results
+        fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
