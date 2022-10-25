@@ -6,14 +6,13 @@ import * as chai from "chai";
 const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
-import { Mangrove } from "@mangrovedao/mangrove.js";
+import { Mangrove, typechain } from "@mangrovedao/mangrove.js";
 import {
   GasUpdater,
   MaxUpdateConstraint,
   OracleSourceConfiguration,
 } from "../../src/GasUpdater";
 import { config } from "../../src/util/config";
-import * as typechain from "../../src/types/typechain";
 import { Signer, ethers } from "ethers";
 
 describe("GasUpdater integration tests", () => {

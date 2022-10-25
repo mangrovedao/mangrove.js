@@ -1413,7 +1413,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     toad-scheduler: ^1.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -1462,7 +1462,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-mockito: ^2.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -1512,7 +1512,7 @@ __metadata:
     random: ^3.0.6
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-node: ^10.9.1
     typescript: ^4.7.0
   languageName: unknown
@@ -1561,7 +1561,7 @@ __metadata:
     random: ^3.0.6
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     toad-scheduler: ^1.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -1610,7 +1610,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-node: ^10.9.1
     typescript: ^4.7.0
   languageName: unknown
@@ -1660,7 +1660,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     toad-scheduler: ^1.6.1
     ts-mockito: ^2.0.0
     ts-node: ^10.9.1
@@ -1710,7 +1710,7 @@ __metadata:
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
     serve-static: ^1.15.0
-    shelljs: ^0.8.4
+    shelljs: ^0.8.5
     ts-mockito: ^2.6.1
     ts-node: ^10.9.1
     typescript: ^4.7.0
@@ -1805,7 +1805,7 @@ __metadata:
     ts-mockito: ^2.0.0
     ts-node: ^10.9.1
     typechain: ^8.1.0
-    typedoc: ^0.23.13
+    typedoc: ^0.23.18
     typescript: ^4.7.0
     yargs: ^17.3.0
   bin:
@@ -7007,19 +7007,6 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"shelljs@npm:^0.8.4":
-  version: 0.8.4
-  resolution: "shelljs@npm:0.8.4"
-  dependencies:
-    glob: ^7.0.0
-    interpret: ^1.0.0
-    rechoir: ^0.6.2
-  bin:
-    shjs: bin/shjs
-  checksum: 27f83206ef6a4f5b74a493726c3e6b4c3e07a9c2aac94c5e692d800a61353c18a8234967bd8523b1346abe718beb563843687fb57f466529ba06db3cae6f0bb3
-  languageName: node
-  linkType: hard
-
 "shelljs@npm:^0.8.5":
   version: 0.8.5
   resolution: "shelljs@npm:0.8.5"
@@ -7089,13 +7076,13 @@ fsevents@~2.3.2:
   linkType: hard
 
 "simple-get@npm:^3.0.3":
-  version: 3.1.0
-  resolution: "simple-get@npm:3.1.0"
+  version: 3.1.1
+  resolution: "simple-get@npm:3.1.1"
   dependencies:
     decompress-response: ^4.2.0
     once: ^1.3.1
     simple-concat: ^1.0.0
-  checksum: cca91a9ab2b532fa8d367757c196b54e2dfe3325aab0298d66a3e2a45a29a9d335d1a3fb41f036dad14000f78baddd4170fbf9621d72869791d2912baf9469aa
+  checksum: 80195e70bf171486e75c31e28e5485468195cc42f85940f8b45c4a68472160144d223eb4d07bc82ef80cb974b7c401db021a540deb2d34ac4b3b8883da2d6401
   languageName: node
   linkType: hard
 
@@ -7744,9 +7731,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.23.13":
-  version: 0.23.13
-  resolution: "typedoc@npm:0.23.13"
+"typedoc@npm:^0.23.18":
+  version: 0.23.18
+  resolution: "typedoc@npm:0.23.18"
   dependencies:
     lunr: ^2.3.9
     marked: ^4.0.19
@@ -7756,7 +7743,7 @@ fsevents@~2.3.2:
     typescript: 4.6.x || 4.7.x || 4.8.x
   bin:
     typedoc: bin/typedoc
-  checksum: 720b5fa9846fcb2d0e3a763bc01b8f856d7e1c80ac50d2efd85dd850f61b98c4f52b7519a86ff2c59cebc7ab1e19e92cab31a25082d4574ab9a6f93e660e5369
+  checksum: 2cf1ae57865e53545ba4cbdd8a441870b7a4ad74e421d43f4b731e4643adc82c3a2e89fa9cf1f600f908d9d12da818bcd1d26970c9dce9493a8d8ec5b649b594
   languageName: node
   linkType: hard
 

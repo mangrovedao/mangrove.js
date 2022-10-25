@@ -16,6 +16,7 @@ import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
 import AaveV3Module from "./aaveV3Module";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
+import { typechain } from "./types";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -23,6 +24,7 @@ import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
 export default Mangrove;
 export {
   eth,
+  typechain,
   decimals,
   ethers,
   Mangrove,

@@ -12,18 +12,26 @@ export const getAllToyENSEntries = async (
   const [names, addresses] = await ens.all();
 
   /* Grab decimals for all contracts */
-  const decFn = (new ethers.utils.Interface(["function decimals() view returns (uint8)"]));
-  const decimalsData = decFn.encodeFunctionData("decimals",[]);
-  const args = addresses.map(addr => [addr, decimalsData]);
-  const multicall = new ethers.Contract(Multicall.address, Multicall.abi, provider);
-  const [allIsToken,allDecimals] = await multicall.callStatic.aggregate(args);
+  const decFn = new ethers.utils.Interface([
+    "function decimals() view returns (uint8)",
+  ]);
+  const decimalsData = decFn.encodeFunctionData("decimals", []);
+  const args = addresses.map((addr) => [addr, decimalsData]);
+  const multicall = new ethers.Contract(
+    Multicall.address,
+    Multicall.abi,
+    provider
+  );
+  const [allIsToken, allDecimals] = await multicall.callStatic.aggregate(args);
 
   const contracts = names.map((name, index) => {
     let decimals;
     if (allIsToken[index]) {
-      decimals = decFn.decodeFunctionResult("decimals",allDecimals[index])[0];
+      decimals = decFn.decodeFunctionResult("decimals", allDecimals[index])[0];
     }
-    return { name, address: addresses[index], decimals };
+
+    // we lower case addresses here to ensure we store and compare checksum cased addresses
+    return { name, address: addresses[index].toLowerCase(), decimals };
   });
   return contracts;
 };
