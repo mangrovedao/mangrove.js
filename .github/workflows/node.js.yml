@@ -160,7 +160,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -298,7 +298,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -379,7 +379,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -478,7 +478,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -609,7 +609,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -718,7 +718,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -827,7 +827,7 @@ jobs:
         
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -936,7 +936,7 @@ jobs:
     
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -1045,7 +1045,7 @@ jobs:
         
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -1154,7 +1154,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
