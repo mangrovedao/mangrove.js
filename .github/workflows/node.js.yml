@@ -142,9 +142,9 @@ jobs:
     #   uses: dorny/test-reporter@v1
     #   if: ${{ env.commonlib_js_built && (success() || failure()) }}
     #   with:
-    #     name: commonlib.js - Tests                   # Name of the check run which will be created
+    #     name: commonlib.js - Tests                                      # Name of the check run which will be created
     #     path: packages/commonlib.js/commonlib-js-mocha-test-report.json # Path to test results
-    #     reporter: mocha-json                               # Format of test results
+    #     reporter: mocha-json                                            # Format of test results
     #     fail-on-error: 'false'                                          # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     # save artifacts for later stages
@@ -248,9 +248,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.mangrove_js_built && (success() || failure()) }}
       with:
-        name: Mangrove.js Tests               # Name of the check run which will be created
+        name: Mangrove.js Tests                                     # Name of the check run which will be created
         path: ${{env.working-directory}}/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                  # Format of test results
+        reporter: mocha-json                                        # Format of test results
         fail-on-error: 'false'                                      # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     # == verify cli can start ==
@@ -474,9 +474,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_utils_built && (success() || failure()) }}
       with:
-        name: Bot Utils - Tests                   # Name of the check run which will be created
+        name: Bot Utils - Tests                             # Name of the check run which will be created
         path: packages/bot-utils/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                # Format of test results
         fail-on-error: 'false'                              # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
@@ -606,9 +606,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.cleaning_bot_built && (success() || failure()) }}
       with:
-        name: Cleaning Bot - Tests                   # Name of the check run which will be created
+        name: Cleaning Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-cleaning/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                   # Format of test results
         fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
@@ -716,9 +716,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.updategas_bot_built && (success() || failure()) }}
       with:
-        name: Update Gas Bot - Tests                   # Name of the check run which will be created
+        name: Update Gas Bot - Tests                            # Name of the check run which will be created
         path: packages/bot-updategas/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                    # Format of test results
         fail-on-error: 'false'                                  # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
@@ -826,9 +826,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_maker_noise_built && (success() || failure()) }}
       with:
-        name: Noise Maker Bot - Tests                                # Name of the check run which will be created
+        name: Noise Maker Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-maker-noise/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                                         # Format of test results
+        reporter: mocha-json                                      # Format of test results
         fail-on-error: 'false'                                    # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
     - name: Report Failure to Slack
@@ -936,9 +936,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_taker_greedy_built && (success() || failure()) }}
       with:
-        name: Greedy Taker Bot - Tests                                # Name of the check run which will be created
+        name: Greedy Taker Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-taker-greedy/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                                          # Format of test results
+        reporter: mocha-json                                       # Format of test results
         fail-on-error: 'false'                                     # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
     
     - name: Report Failure to Slack
@@ -1046,8 +1046,8 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_failing_offer_built && (success() || failure()) }}
       with:
-        name: Failing Offer Bot - Tests                                # Name of the check run which will be created
-        path: packages/bot-failing-offer/coverage-tests-report.json # Path to test results
+        name: Failing Offer Bot - Tests                              # Name of the check run which will be created
+        path: packages/bot-failing-offer/coverage-tests-report.json  # Path to test results
         reporter: mocha-json                                         # Format of test results
         fail-on-error: 'false'                                       # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
@@ -1156,9 +1156,9 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.template_bot_built && (success() || failure()) }}
       with:
-        name: Template Bot - Tests                   # Name of the check run which will be created
+        name: Template Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-template/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                   # Format of test results
         fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
