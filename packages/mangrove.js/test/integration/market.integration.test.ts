@@ -1193,6 +1193,7 @@ describe("Market integration tests suite", () => {
 
     const config = await market.config();
     assert.strictEqual(config.asks.fee, fee, "wrong fee");
+    mgvAsAdmin.disconnect();
   });
 
   it("updates OB", async function () {

@@ -44,6 +44,7 @@ describe("Semibook integration tests suite", function () {
   afterEach(async () => {
     mgvTestUtil.stopPollOfTransactionTracking();
     mgv.disconnect();
+    mgvAdmin.disconnect();
   });
 
   // FIXME: Test cache invariants
@@ -208,6 +209,7 @@ describe("Semibook integration tests suite", function () {
       expect(config.fee).to.be.eq(fee);
       expect(config.density.eq(2)).to.be.eq(true);
       expect(config.offer_gasbase).to.be.eq(gasbase);
+      mgv.disconnect();
     });
 
     it("returns the config of the latest block as Mangrove.LocalConfig, when given no blocknumber", async function () {
@@ -241,6 +243,7 @@ describe("Semibook integration tests suite", function () {
       expect(config.fee).to.be.eq(fee);
       expect(config.density.eq(2)).to.be.eq(true);
       expect(config.offer_gasbase).to.be.eq(gasbase);
+      mgv.disconnect();
     });
   });
 
