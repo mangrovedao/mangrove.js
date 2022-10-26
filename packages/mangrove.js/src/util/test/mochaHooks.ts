@@ -17,6 +17,11 @@ let currentProxyPort = 8546;
 
 export const mochaHooks = {
   async beforeAll() {
+    if (process.env.MOCHA_WORKER_ID) {
+      // running in parallel mode - change port
+      serverParams.port =
+        serverParams.port + Number(process.env.MOCHA_WORKER_ID);
+    }
     this.server = await node(serverParams).connect();
     this.accounts = {
       deployer: this.server.accounts[0],
