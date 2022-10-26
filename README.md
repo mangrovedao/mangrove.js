@@ -1,8 +1,8 @@
 [![CI](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove/actions/workflows/node.js.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove)
 
-The `mangrove` monorepo contains most of the TypeScript (and JavaScript) packages developed for the Mangrove. The core contracts for Mangrove with example Solidity offer logics live in the [mangrove-core](https://github.com/mangrovedao/mangrove-core) repo.
+This repo contains the SDK for developing TypeScript (and JavaScript) apps using the Mangrove, as well as a number of bots that use this SDK. 
 
-Some other Mangrove packages (like `mangrove-dApp`) live in their own, separate repos. The rules for which packages go where are not hard and fast. On the contrary, we are experimenting with different structures, in order to figure out what the pros and cons are in our specific circumstances.
+The core contracts for Mangrove with example Solidity offer logics live in the [mangrove-core](https://github.com/mangrovedao/mangrove-core) repo. 
 
 # Documentation
 
