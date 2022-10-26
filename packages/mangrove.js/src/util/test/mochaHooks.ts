@@ -55,7 +55,7 @@ export const mochaHooks = {
     const tx = await mgv.fundMangrove(10, mgv.getAddress("SimpleTestMaker"));
     // making sure that last one is mined before snapshotting, anvil may snapshot too early otherwise
     await tx.wait();
-
+    mgv.disconnect();
     await this.server.snapshot();
   },
 
