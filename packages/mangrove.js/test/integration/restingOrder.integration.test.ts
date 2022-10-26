@@ -7,6 +7,7 @@ import assert from "assert";
 import { Mangrove, LiquidityProvider, Market } from "../../src";
 
 import { Big } from "big.js";
+import { JsonRpcProvider } from "@ethersproject/providers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -174,8 +175,8 @@ describe("RestingOrder", () => {
         "Residual should still be in the book"
       );
       // Advance time 6 seconds by changing clock and mining block
-      await (mgv._provider as any).send("evm_increaseTime", ["6"]);
-      await (mgv._provider as any).send("anvil_mine", ["0x100"]);
+      await (mgv._provider as JsonRpcProvider).send("evm_increaseTime", ["6"]);
+      await (mgv._provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
 
       assert(
         ttl.lt(

@@ -27,6 +27,7 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
 import yargs from "yargs";
+import { JsonRpcProvider, Provider } from "@ethersproject/providers";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
@@ -177,7 +178,15 @@ const spawn = async (params: any) => {
 };
 
 /* Run a deployment, populate Mangrove addresses */
-const deploy = async (params: any) => {
+const deploy = async (params: {
+  provider: JsonRpcProvider;
+  stateCache: boolean;
+  targetContract: string;
+  script: string;
+  host: string;
+  port: number;
+  pipe: boolean;
+}) => {
   // setup Toy ENS if needed
   const toyENSCode = await params.provider.send("eth_getCode", [
     ToyENS.address,
@@ -229,6 +238,7 @@ const deploy = async (params: any) => {
     ${params.script}`;
 
     console.log("Running forge script:");
+    // this dumps the private-key but it is a test mnemonic
     console.log(forgeScriptCmd);
 
     // Warning: using exec & awaiting promise instead of using the simpler `execSync`
@@ -274,7 +284,18 @@ const deploy = async (params: any) => {
   Connect to a node. Optionally spawns it before connecting. Optionally runs
   initial deployment before connecting.
  */
-const connect = async (params: any) => {
+const connect = async (params: {
+  spawn: boolean;
+  deploy: boolean;
+  url: boolean;
+  provider: JsonRpcProvider;
+  stateCache: boolean;
+  targetContract: string;
+  script: string;
+  host: string;
+  port: number;
+  pipe: boolean;
+}) => {
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
     spawnInfo = await spawn(params);
@@ -292,17 +313,28 @@ const connect = async (params: any) => {
   // }
 
   /* Track node snapshot ids for easy snapshot/revert */
-  let lastSnapshotId;
+  let lastSnapshotId: string;
+  let snapshotBlockNumber: number;
 
   return {
     ...spawnInfo,
     url: params.url,
     accounts: anvilAccounts,
     params,
-    snapshot: async () =>
-      (lastSnapshotId = await params.provider.send("evm_snapshot", [])),
-    revert: (snapshotId = lastSnapshotId) =>
-      params.provider.send("evm_revert", [snapshotId]),
+    snapshot: async () => {
+      lastSnapshotId = await params.provider.send("evm_snapshot", []);
+      snapshotBlockNumber = await params.provider.getBlockNumber();
+      return lastSnapshotId;
+    },
+    revert: async (snapshotId = lastSnapshotId) => {
+      await params.provider.send("evm_revert", [snapshotId]);
+      const blockNumberAfterRevert = await params.provider.getBlockNumber();
+      if (blockNumberAfterRevert != snapshotBlockNumber) {
+        throw Error(
+          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`
+        );
+      }
+    },
   };
 };
 
