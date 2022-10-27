@@ -1,6 +1,7 @@
 # next version
 
 - Fix `Semibook.simulateMarketOrder`. Fixes `Semibook.estimateVolume`, `Market.(estimateVolume[|ToReceive|ToSpend])`.
+- EOA offers (on the fly) do not require any gasreq
 
 # 0.11.4 (October 2022)
 

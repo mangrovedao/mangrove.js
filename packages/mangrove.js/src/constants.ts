@@ -27,9 +27,6 @@ for (const [network, networkAddresses] of Object.entries(mgvCore.addresses)) {
 }
 
 export { addresses };
-
-export const EOA_offer_gasreq = 5000;
-
 export const decimals = tokenDecimals;
 export const defaultDisplayedDecimals = 2;
 export const displayedDecimals = tokenDisplayedDecimals;

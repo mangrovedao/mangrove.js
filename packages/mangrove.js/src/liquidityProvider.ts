@@ -1,6 +1,5 @@
 import { logger } from "./util/logger";
 import * as ethers from "ethers";
-import { EOA_offer_gasreq } from "./constants";
 
 import Market from "./market";
 // syntactic sugar
@@ -193,7 +192,7 @@ class LiquidityProvider {
 
   async #gasreq(): Promise<number> {
     if (this.eoa) {
-      return EOA_offer_gasreq;
+      return 0;
     } else {
       return await this.logic.getDefaultGasreq();
     }
@@ -313,7 +312,7 @@ class LiquidityProvider {
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
-        gasreq ? gasreq : EOA_offer_gasreq,
+        gasreq ? gasreq : 0,
         gasprice ? gasprice : 0,
         pivot ?? 0,
         this.#optValueToPayableOverride(overrides, fund)
@@ -382,7 +381,7 @@ class LiquidityProvider {
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
-        gasreq ? gasreq : EOA_offer_gasreq,
+        gasreq ? gasreq : 0,
         gasprice ? gasprice : offer.gasprice,
         (await this.market.getPivotId(p.ba, price)) ?? 0,
         id,
