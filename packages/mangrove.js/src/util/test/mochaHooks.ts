@@ -55,12 +55,12 @@ export const mochaHooks = {
     const tx = await mgv.fundMangrove(10, mgv.getAddress("SimpleTestMaker"));
     // making sure that last one is mined before snapshotting, anvil may snapshot too early otherwise
     await tx.wait();
-
+    mgv.disconnect();
     await this.server.snapshot();
   },
 
   async beforeEach() {
-    await this.server.revert();
+    await this.server.revert(); // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
     await this.server.snapshot();
   },
 

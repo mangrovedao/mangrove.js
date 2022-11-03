@@ -1193,6 +1193,7 @@ describe("Market integration tests suite", () => {
 
     const config = await market.config();
     assert.strictEqual(config.asks.fee, fee, "wrong fee");
+    mgvAsAdmin.disconnect();
   });
 
   it("updates OB", async function () {
@@ -1391,18 +1392,10 @@ describe("Market integration tests suite", () => {
       );
     }
 
-    // wait for offer(s) to figure in market
-    const done = new Deferred();
-    market.subscribe(async () => {
-      if (market.getBook().asks.size() >= 1) {
-        const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
-        expect(asksEstimate.toNumber()).to.be.equal(
-          emptyBookAsksEstimate.add(askGasReq).toNumber()
-        );
-        done.resolve();
-      }
-    });
-
-    await done.promise;
+    await mgvTestUtil.waitForBooksForLastTx(market);
+    const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
+    expect(asksEstimate.toNumber()).to.be.equal(
+      emptyBookAsksEstimate.add(askGasReq).toNumber()
+    );
   });
 });
