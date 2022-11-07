@@ -9,11 +9,13 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
       - name: Dependabot metadata
         id: dependabot-metadata
         uses: dependabot/fetch-metadata@v1.3.5
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"        
 
       - name: Enable auto-merge for Dependabot PRs - for patches
         if: ${{steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch'}}
