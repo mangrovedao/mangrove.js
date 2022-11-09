@@ -38,4 +38,5 @@ const { id: offerId } = await directLP.newAsk({
 });
 
 // Check the order was posted (or look at https://testnet.mangrove.exchange.
+console.log(offerId);
 market.consoleAsks();
