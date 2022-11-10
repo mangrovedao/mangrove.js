@@ -544,16 +544,20 @@ class Trade {
     });
 
     // user defined gasLimit overrides estimates
-    const _targets = unitParams.targets.map<
-      Market.RawSnipeParams["targets"][number]
-    >((t) => [
-      t.offerId,
-      t.takerWants,
-      t.takerGives,
-      t.gasLimit ??
-        overrides.gasLimit ??
-        market.estimateGas(this.baToBs(unitParams.ba), t.takerWants),
-    ]);
+    const _targets = await Promise.all(
+      unitParams.targets.map<Promise<Market.RawSnipeParams["targets"][number]>>(
+        async (t) => [
+          t.offerId,
+          t.takerWants,
+          t.takerGives,
+          t.gasLimit ??
+            overrides.gasLimit ??
+            (
+              await market.getSemibook(unitParams.ba).offerInfo(t.offerId)
+            ).gasreq,
+        ]
+      )
+    );
 
     return {
       ba: unitParams.ba,
