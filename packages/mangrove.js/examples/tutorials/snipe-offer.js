@@ -3,7 +3,6 @@
 var parsed = require("dotenv").config();
 // Import the Mangrove API
 const { Mangrove, ethers } = require("@mangrovedao/mangrove.js");
-const { off } = require("process");
 
 // Create a wallet with a provider to interact with the chain.
 // const provider = new ethers.providers.WebSocketProvider(process.env.RPC_URL); // For real chain use
