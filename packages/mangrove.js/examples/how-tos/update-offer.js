@@ -2,7 +2,7 @@
 // This script assumes RPC_URL points to your access point and PRIVATE_KEY contains private key from which one wishes to post offers
 var parsed = require("dotenv").config();
 // Import the Mangrove API
-const { Mangrove, ethers } = require("@mangrovedao/mangrove.js");
+const { Mangrove, ethers, OfferLogic } = require("@mangrovedao/mangrove.js");
 
 // Create a wallet with a provider to interact with the chain.
 const provider = new ethers.providers.WebSocketProvider(process.env.RPC_URL); // For real chain use
@@ -40,3 +40,31 @@ await directLP.updateAsk(offerId, {
 });
 
 market.consoleAsks();
+
+let offerLogic = new OfferLogic({
+  mgv: mgv,
+  logic: "", //Write your contract address here
+  isForwarder: false,
+});
+
+// We recommend to use a liquidityProvider
+offerLogic.updateOffer({
+  outbound_Tkn: market.base,
+  inbound_Tkn: market.quote,
+  wants: 100.5,
+  gives: 1.00345,
+  gasreq: 123, // give correct gasreq
+  gasprice: 9999, // give correct gasprice
+  pivot: 5572, // give pivot that makes sense
+  offerId: 5572,
+  overrides: {
+    value: 123, // give correct value
+  },
+});
+
+let lp = offerLogic.liquidityProvider(market);
+
+await lp.updateAsk(offerId, {
+  volume: 100.5,
+  price: 1.00345,
+});
