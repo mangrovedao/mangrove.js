@@ -70,7 +70,11 @@ namespace Market {
 
   export type TradeParams = {
     slippage?: number;
-  } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
+  } & (
+    | { restingOrder?: RestingOrderParams }
+    | { offerId?: number }
+    | { fillOrKill?: "yes" }
+  ) &
     (
       | { volume: Bigish; price: Bigish | null }
       | { total: Bigish; price: Bigish | null }
