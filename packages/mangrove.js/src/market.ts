@@ -70,18 +70,20 @@ namespace Market {
 
   export type TradeParams = {
     slippage?: number;
-  } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
+  } & ({ mangroveOrder?: MangroveOrderParams } | { offerId?: number }) &
     (
       | { volume: Bigish; price: Bigish | null }
       | { total: Bigish; price: Bigish | null }
       | { wants: Bigish; gives: Bigish; fillWants?: boolean }
     );
 
-  export type RestingOrderParams = {
-    partialFillNotAllowed?: boolean;
-    timeToLiveForRestingOrder?: number;
-    provision: Bigish;
-  };
+  export type MangroveOrderParams =
+    | { fillOrKill: boolean }
+    | {
+        timeToLiveForRestingOrder?: number;
+        restingOrder: boolean;
+        provision: Bigish;
+      };
 
   export type SnipeParams = {
     targets: {

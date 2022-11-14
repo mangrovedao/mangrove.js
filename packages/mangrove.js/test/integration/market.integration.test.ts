@@ -57,7 +57,7 @@ describe("Market integration tests suite", () => {
 
     beforeEach(async function () {
       mgvro = await Mangrove.connect({
-        provider: "http://localhost:8545",
+        provider: this.server.url,
         forceReadOnly: true,
       });
       //shorten polling for faster tests

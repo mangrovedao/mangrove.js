@@ -147,11 +147,11 @@ class Trade {
   ): Promise<Market.OrderResult> {
     const { wants, givesWithoutSlippage, gives, fillWants } =
       this.getParamsForBuy(params, market.base, market.quote);
-    if ("restingOrder" in params && params.restingOrder) {
+    if ("mangroveOrder" in params && params.mangroveOrder) {
       const makerWants = wants;
       const makerGives = market.quote.toUnits(givesWithoutSlippage);
 
-      return this.restingOrder(
+      return this.mangroveOrder(
         {
           gives,
           makerGives,
@@ -159,7 +159,7 @@ class Trade {
           makerWants,
           orderType: "buy",
           fillWants,
-          params: params.restingOrder,
+          params: params.mangroveOrder,
           market: market,
         },
         overrides
@@ -220,10 +220,10 @@ class Trade {
   ): Promise<Market.OrderResult> {
     const { gives, wants, wantsWithoutSlippage, fillWants } =
       this.getParamsForSell(params, market.base, market.quote);
-    if ("restingOrder" in params && params.restingOrder) {
+    if ("mangroveOrder" in params && params.mangroveOrder) {
       const makerGives = gives;
       const makerWants = market.quote.toUnits(wantsWithoutSlippage);
-      return this.restingOrder(
+      return this.mangroveOrder(
         {
           gives,
           makerGives,
@@ -231,7 +231,7 @@ class Trade {
           makerWants,
           orderType: "sell",
           fillWants,
-          params: params.restingOrder,
+          params: params.mangroveOrder,
           market,
         },
         overrides
@@ -408,7 +408,7 @@ class Trade {
     return result;
   }
 
-  async restingOrder(
+  async mangroveOrder(
     {
       wants,
       makerWants,
@@ -425,14 +425,16 @@ class Trade {
       makerGives: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
-      params: Market.RestingOrderParams;
+      params: Market.MangroveOrderParams;
       market: Market;
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
+    const { restingOrder, provision, timeToLiveForRestingOrder, fillOrKill } =
+      this.getMangroveOrderParams(params);
     const overrides_ = {
       ...overrides,
-      value: market.mgv.toUnits(params.provision, 18),
+      value: provision ? market.mgv.toUnits(provision, 18) : 0,
     };
 
     // user defined gasLimit overrides estimates
@@ -449,26 +451,22 @@ class Trade {
       {
         outbound_tkn: outboundTkn.address,
         inbound_tkn: inboundTkn.address,
-        partialFillNotAllowed: params.partialFillNotAllowed
-          ? params.partialFillNotAllowed
-          : false,
+        partialFillNotAllowed: fillOrKill,
         fillWants: orderType === "buy",
         takerWants: wants,
         makerWants: makerWants,
         takerGives: gives,
         makerGives: makerGives,
-        restingOrder: true,
+        restingOrder: restingOrder,
         pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by makerWants/makerGives
-        timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
-          ? params.timeToLiveForRestingOrder
-          : 0,
+        timeToLiveForRestingOrder: timeToLiveForRestingOrder,
       },
       overrides_
     );
     const receipt = await response.wait();
 
-    logger.debug("Resting order raw receipt", {
-      contextInfo: "market.restingOrder",
+    logger.debug("Mangrove order raw receipt", {
+      contextInfo: "market.mangrove",
       data: { receipt: receipt },
     });
 
@@ -494,10 +492,32 @@ class Trade {
     );
 
     if (!result.summary) {
-      throw Error("resting order went wrong");
+      throw Error("mangrove order went wrong");
     }
     // if resting order was not posted, result.summary is still undefined.
     return result;
+  }
+
+  getMangroveOrderParams(params: Market.MangroveOrderParams) {
+    if ("fillOrKill" in params) {
+      return {
+        restingOrder: false,
+        provision: 0,
+        timeToLiveForRestingOrder: 0,
+        fillOrKill: params.fillOrKill,
+      };
+    }
+    if ("restingOrder" in params) {
+      return {
+        restingOrder: params.restingOrder,
+        provision: params.provision,
+        timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
+          ? params.timeToLiveForRestingOrder
+          : 0,
+        fillOrKill: false,
+      };
+    }
+    return {};
   }
 
   initialResult(receipt: ethers.ContractReceipt): Market.OrderResult {
