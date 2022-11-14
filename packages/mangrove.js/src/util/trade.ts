@@ -430,9 +430,11 @@ class Trade {
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
+    const { restingOrder, provision, timeToLiveForRestingOrder, fillOrKill } =
+      this.getMangroveOrderParams(params);
     const overrides_ = {
       ...overrides,
-      value: market.mgv.toUnits(params.provision, 18),
+      value: provision ? market.mgv.toUnits(provision, 18) : 0,
     };
 
     // user defined gasLimit overrides estimates
@@ -449,17 +451,15 @@ class Trade {
       {
         outbound_tkn: outboundTkn.address,
         inbound_tkn: inboundTkn.address,
-        partialFillNotAllowed: params.fillOrKill ? params.fillOrKill : false,
+        partialFillNotAllowed: fillOrKill,
         fillWants: orderType === "buy",
         takerWants: wants,
         makerWants: makerWants,
         takerGives: gives,
         makerGives: makerGives,
-        restingOrder: params.restingOrder ? params.restingOrder : false,
+        restingOrder: restingOrder,
         pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by makerWants/makerGives
-        timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
-          ? params.timeToLiveForRestingOrder
-          : 0,
+        timeToLiveForRestingOrder: timeToLiveForRestingOrder,
       },
       overrides_
     );
@@ -496,6 +496,28 @@ class Trade {
     }
     // if resting order was not posted, result.summary is still undefined.
     return result;
+  }
+
+  getMangroveOrderParams(params: Market.MangroveOrderParams) {
+    if ("fillOrKill" in params) {
+      return {
+        restingOrder: false,
+        provision: 0,
+        timeToLiveForRestingOrder: 0,
+        fillOrKill: params.fillOrKill,
+      };
+    }
+    if ("restingOrder" in params) {
+      return {
+        restingOrder: params.restingOrder,
+        provision: params.provision,
+        timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
+          ? params.timeToLiveForRestingOrder
+          : 0,
+        fillOrKill: false,
+      };
+    }
+    return {};
   }
 
   initialResult(receipt: ethers.ContractReceipt): Market.OrderResult {

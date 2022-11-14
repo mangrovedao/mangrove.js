@@ -77,12 +77,13 @@ namespace Market {
       | { wants: Bigish; gives: Bigish; fillWants?: boolean }
     );
 
-  export type MangroveOrderParams = {
-    fillOrKill?: boolean;
-    timeToLiveForRestingOrder?: number;
-    restingOrder?: boolean;
-    provision: Bigish;
-  };
+  export type MangroveOrderParams =
+    | { fillOrKill: boolean }
+    | {
+        timeToLiveForRestingOrder?: number;
+        restingOrder: boolean;
+        provision: Bigish;
+      };
 
   export type SnipeParams = {
     targets: {
