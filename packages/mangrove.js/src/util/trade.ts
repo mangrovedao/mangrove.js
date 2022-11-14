@@ -465,8 +465,8 @@ class Trade {
     );
     const receipt = await response.wait();
 
-    logger.debug("Resting order raw receipt", {
-      contextInfo: "market.restingOrder",
+    logger.debug("Mangrove order raw receipt", {
+      contextInfo: "market.mangrove",
       data: { receipt: receipt },
     });
 
@@ -492,7 +492,7 @@ class Trade {
     );
 
     if (!result.summary) {
-      throw Error("resting order went wrong");
+      throw Error("mangrove order went wrong");
     }
     // if resting order was not posted, result.summary is still undefined.
     return result;
