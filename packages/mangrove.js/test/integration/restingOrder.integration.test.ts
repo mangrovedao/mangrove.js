@@ -116,7 +116,7 @@ describe("RestingOrder", () => {
         await orderContractAsLP.market.buy({
           wants: 20, // tokenA
           gives: 20, // tokenB
-          restingOrder: { provision: provision },
+          mangroveOrder: { provision: provision, restingOrder: true },
         });
       assert(
         // 5% fee configured in mochaHooks.js
@@ -144,7 +144,11 @@ describe("RestingOrder", () => {
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
         gives: 20, // tokenB
-        restingOrder: { provision: provision, timeToLiveForRestingOrder: 5 },
+        mangroveOrder: {
+          restingOrder: true,
+          provision: provision,
+          timeToLiveForRestingOrder: 5,
+        },
       });
 
       assert(orderResult.restingOrder.id > 0, "Resting order was not posted");

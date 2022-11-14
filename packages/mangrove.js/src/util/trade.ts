@@ -147,13 +147,11 @@ class Trade {
   ): Promise<Market.OrderResult> {
     const { wants, givesWithoutSlippage, gives, fillWants } =
       this.getParamsForBuy(params, market.base, market.quote);
-    if ("fillOrKill" in params && params.fillOrKill === "yes") {
-      return this.fok(params, market, "buy", overrides);
-    } else if ("restingOrder" in params && params.restingOrder) {
+    if ("mangroveOrder" in params && params.mangroveOrder) {
       const makerWants = wants;
       const makerGives = market.quote.toUnits(givesWithoutSlippage);
 
-      return this.restingOrder(
+      return this.mangroveOrder(
         {
           gives,
           makerGives,
@@ -161,7 +159,7 @@ class Trade {
           makerWants,
           orderType: "buy",
           fillWants,
-          params: params.restingOrder,
+          params: params.mangroveOrder,
           market: market,
         },
         overrides
@@ -222,12 +220,10 @@ class Trade {
   ): Promise<Market.OrderResult> {
     const { gives, wants, wantsWithoutSlippage, fillWants } =
       this.getParamsForSell(params, market.base, market.quote);
-    if ("fillOrKill" in params && params.fillOrKill === "yes") {
-      return this.fok(params, market, "sell", overrides);
-    } else if ("restingOrder" in params && params.restingOrder) {
+    if ("mangroveOrder" in params && params.mangroveOrder) {
       const makerGives = gives;
       const makerWants = market.quote.toUnits(wantsWithoutSlippage);
-      return this.restingOrder(
+      return this.mangroveOrder(
         {
           gives,
           makerGives,
@@ -235,7 +231,7 @@ class Trade {
           makerWants,
           orderType: "sell",
           fillWants,
-          params: params.restingOrder,
+          params: params.mangroveOrder,
           market,
         },
         overrides
@@ -412,7 +408,7 @@ class Trade {
     return result;
   }
 
-  async restingOrder(
+  async mangroveOrder(
     {
       wants,
       makerWants,
@@ -429,7 +425,7 @@ class Trade {
       makerGives: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
-      params: Market.RestingOrderParams;
+      params: Market.MangroveOrderParams;
       market: Market;
     },
     overrides: ethers.Overrides
@@ -453,15 +449,13 @@ class Trade {
       {
         outbound_tkn: outboundTkn.address,
         inbound_tkn: inboundTkn.address,
-        partialFillNotAllowed: params.partialFillNotAllowed
-          ? params.partialFillNotAllowed
-          : false,
+        partialFillNotAllowed: params.fillOrKill ? params.fillOrKill : false,
         fillWants: orderType === "buy",
         takerWants: wants,
         makerWants: makerWants,
         takerGives: gives,
         makerGives: makerGives,
-        restingOrder: true,
+        restingOrder: params.restingOrder ? params.restingOrder : false,
         pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by makerWants/makerGives
         timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
           ? params.timeToLiveForRestingOrder
@@ -502,99 +496,6 @@ class Trade {
     }
     // if resting order was not posted, result.summary is still undefined.
     return result;
-  }
-
-  async fok(
-    params: Market.TradeParams,
-    market: Market,
-    orderType: "buy" | "sell",
-    overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
-    const { wants, gives, makerGives, makerWants, fillWants } =
-      orderType === "buy"
-        ? this.fokBuyParams(params, market)
-        : this.fokSellParams(params, market);
-
-    const overrides_ = {
-      ...overrides,
-      value: 0,
-    };
-
-    // user defined gasLimit overrides estimates
-    overrides_.gasLimit = overrides_.gasLimit
-      ? overrides_.gasLimit
-      : await market.estimateGas(orderType, wants);
-
-    const [outboundTkn, inboundTkn] =
-      orderType === "buy"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
-
-    const response = await market.mgv.orderContract.take(
-      {
-        outbound_tkn: outboundTkn.address,
-        inbound_tkn: inboundTkn.address,
-        partialFillNotAllowed: true,
-        fillWants: orderType === "buy",
-        takerWants: wants,
-        makerWants: makerWants,
-        takerGives: gives,
-        makerGives: makerGives,
-        restingOrder: false,
-        pivotId: 0, // Not posting new offers, therefore not needed
-        timeToLiveForRestingOrder: 0,
-      },
-      overrides_
-    );
-    const receipt = await response.wait();
-
-    logger.debug("FOK order raw receipt", {
-      contextInfo: "market.FOK",
-      data: { receipt: receipt },
-    });
-
-    const result: Market.OrderResult = this.initialResult(receipt);
-
-    this.tradeEventManagement.processMangroveEvents(
-      result,
-      receipt,
-      this.bsToBa(orderType),
-      fillWants,
-      wants,
-      gives,
-      market
-    );
-    this.tradeEventManagement.processMangroveOrderEvents(
-      result,
-      receipt,
-      this.bsToBa(orderType),
-      fillWants,
-      wants,
-      gives,
-      market
-    );
-
-    if (!result.summary) {
-      throw Error("FOK order went wrong");
-    }
-    // if resting order was not posted, result.summary is still undefined.
-    return result;
-  }
-
-  private fokSellParams(params: Market.TradeParams, market: Market) {
-    const { wants, gives, wantsWithoutSlippage, fillWants } =
-      this.getParamsForSell(params, market.base, market.quote);
-    const makerGives = gives;
-    const makerWants = market.quote.toUnits(wantsWithoutSlippage);
-    return { wants, gives, makerGives, makerWants, fillWants };
-  }
-
-  private fokBuyParams(params: Market.TradeParams, market: Market) {
-    const { wants, givesWithoutSlippage, gives, fillWants } =
-      this.getParamsForBuy(params, market.base, market.quote);
-    const makerWants = wants;
-    const makerGives = market.quote.toUnits(givesWithoutSlippage);
-    return { wants, gives, makerWants, makerGives, fillWants };
   }
 
   initialResult(receipt: ethers.ContractReceipt): Market.OrderResult {
