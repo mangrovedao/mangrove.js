@@ -47,10 +47,6 @@ class TradeEventManagement {
     const { baseVolume } = Market.getBaseQuoteVolumes(ba, gives, wants);
     const price = Market.getPrice(ba, gives, wants);
 
-    if (baseVolume.eq(0)) {
-      throw Error("baseVolume is 0 (not allowed)");
-    }
-
     return {
       id: this.#rawIdToId(raw.id),
       prev: this.#rawIdToId(raw.prev),

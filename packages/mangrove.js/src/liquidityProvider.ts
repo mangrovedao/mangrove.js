@@ -364,11 +364,18 @@ class LiquidityProvider {
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     overrides: ethers.PayableOverrides = {}
   ): Promise<{ event: ethers.providers.Log }> {
-    const offerList = p.ba === "asks" ? this.asks() : this.bids();
-    const offer = offerList.find((o) => o.id === id);
+    const offer =
+      p.ba === "asks"
+        ? await this.market.askInfo(id)
+        : await this.market.bidInfo(id);
     if (typeof offer === "undefined") {
+      throw Error(`No offer in market with id ${id}.`);
+    }
+    const thisMaker = this.eoa ? this.eoa : this.logic.address;
+    const offerMakerAddress = (await offer).maker;
+    if (offerMakerAddress != thisMaker) {
       throw Error(
-        `No offer in ${p} with id ${id} owned by this maker contract.`
+        `The offer is not owned by ${offerMakerAddress}, not ${thisMaker}.`
       );
     }
     const { wants, gives, price, gasreq, gasprice, fund } =

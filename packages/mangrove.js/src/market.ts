@@ -832,7 +832,7 @@ class Market {
       gives,
       wants
     );
-    return quoteVolume.div(baseVolume);
+    return baseVolume.gt(0) ? quoteVolume.div(baseVolume) : undefined;
   }
 
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
