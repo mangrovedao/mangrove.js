@@ -89,15 +89,13 @@ export class Setup {
       this.stopAndExit(ExitCode.UncaughtException, server, scheduler);
     });
 
-    if (!process.env["ETHEREUM_NODE_URL"]) {
-      throw new Error(
-        "No URL for a node has been provided in ETHEREUM_NODE_URL"
-      );
+    if (!process.env["RPC_NODE_URL"]) {
+      throw new Error("No URL for a node has been provided in RPC_NODE_URL");
     }
     if (!process.env["PRIVATE_KEY"]) {
       throw new Error("No private key provided in PRIVATE_KEY");
     }
-    const provider = getDefaultProvider(process.env["ETHEREUM_NODE_URL"]);
+    const provider = getDefaultProvider(process.env["RPC_NODE_URL"]);
     const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
     const nonceManager = new NonceManager(signer);
     const mgv = await Mangrove.connect({ signer: nonceManager });
