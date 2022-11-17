@@ -773,7 +773,13 @@ class Market {
                     exception: "tx mined but filter never returned true",
                   });
                 }
-              });
+              })
+                .then(() => {
+                  // ignored
+                })
+                .catch((e) => {
+                  throw e;
+                });
             })
             .catch((e) => {
               txHashDeferred.reject(e);
