@@ -363,16 +363,18 @@ describe("Market integration tests suite", () => {
       mockito
         .when(mockedMgv.readerContract)
         .thenReturn(mockito.instance(mockedReader));
+
       mockito
         .when(
-          mockedReader["getProvision(address,address,uint256)"](
+          mockedReader["getProvision(address,address,uint256,uint256)"](
             outBound.address,
             inBound.address,
             gasreq,
-            { gasPrice: gasprice }
+            gasprice
           )
         )
         .thenResolve(prov);
+
       // Act
       const result = await market.getOfferProvision(ba, gasreq, gasprice);
       // Assert

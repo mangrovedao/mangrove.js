@@ -441,10 +441,8 @@ class Market {
   ): Promise<Big> {
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     const prov = await this.mgv.readerContract[
-      "getProvision(address,address,uint256)"
-    ](outbound_tkn.address, inbound_tkn.address, gasreq, {
-      gasPrice: gasprice,
-    });
+      "getProvision(address,address,uint256,uint256)"
+    ](outbound_tkn.address, inbound_tkn.address, gasreq, gasprice);
     return this.mgv.fromUnits(prov, 18);
   }
 
