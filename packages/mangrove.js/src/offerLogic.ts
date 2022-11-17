@@ -141,7 +141,7 @@ class OfferLogic {
 
   /**
    * @note a contract's reserve is where contract's liquidity is stored (waiting for a trade execution)
-   * This function returns the balance of a token type on contract's reserve (note that where tokens are stored depends on the contracts immplementation)
+   * This function returns the balance of a token type on contract's reserve (note that where tokens are stored depends on the contracts implementation)
    * if this contract is single user this is the contracts's unique reserve, if it is multi user this is the signer's reserve of tokens
    * @param tokenName one wishes to know the balance of.
    * @param overrides ethers.js overrides
@@ -154,6 +154,7 @@ class OfferLogic {
   ): Promise<Big> {
     const rawBalance = await this.contract.tokenBalance(
       this.mgv.getAddress(tokenName),
+      await this.mgv._signer.getAddress(),
       overrides
     );
     return this.mgv.fromUnits(rawBalance, tokenName);
@@ -193,17 +194,6 @@ class OfferLogic {
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
     return this.mgv.fundMangrove(amount, this.address, overrides);
-  }
-
-  setDefaultGasreq(
-    amount: number,
-    overrides: ethers.Overrides = {}
-  ): Promise<TransactionResponse> {
-    const tx = this.contract.setGasreq(
-      ethers.BigNumber.from(amount),
-      overrides
-    );
-    return tx;
   }
 
   async getDefaultGasreq(): Promise<number> {

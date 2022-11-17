@@ -365,11 +365,11 @@ describe("Market integration tests suite", () => {
         .thenReturn(mockito.instance(mockedReader));
       mockito
         .when(
-          mockedReader.getProvision(
+          mockedReader["getProvision(address,address,uint256)"](
             outBound.address,
             inBound.address,
             gasreq,
-            gasprice
+            { gasPrice: gasprice }
           )
         )
         .thenResolve(prov);
@@ -1066,7 +1066,10 @@ describe("Market integration tests suite", () => {
       expect(result.summary.got.toNumber()).to.be.equal(0);
       expect(result.summary.gave.toNumber()).to.be.equal(0);
 
-      expect(result.summary.bounty.toNumber()).to.be.equal(0.00009591);
+      expect(result.summary.bounty.toNumber()).to.be.equal(
+        0.000100266,
+        "bounty was not correct - note test is brittle - a new contract version can use different amount of gas, in that case simply update it."
+      );
       expect(result.summary.feePaid.toNumber()).to.be.equal(0);
 
       // Verify book gets updated to reflect offers have failed and are removed
@@ -1174,7 +1177,10 @@ describe("Market integration tests suite", () => {
       raw.fillWants
     );
 
-    expect(mgv.fromUnits(result, 18).toNumber()).to.be.equal(0.000053454);
+    expect(mgv.fromUnits(result, 18).toNumber()).to.be.equal(
+      0.000055632,
+      "bounty was not correct - note test is brittle - a new contract version can use different amount of gas, in that case simply update it."
+    );
   });
 
   it("gets config", async function () {

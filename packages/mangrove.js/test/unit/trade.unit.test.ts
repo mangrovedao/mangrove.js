@@ -52,7 +52,9 @@ describe("Trade unit tests suite", () => {
       const expectedGivesWithoutSlippage = Big(params.volume).mul(price);
       assert.equal(result.wants.eq(BigNumber.from(params.volume)), true);
       assert.equal(
-        result.givesWithoutSlippage.eq(expectedGivesWithoutSlippage),
+        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
+          result.gives.sub(result.givesSlippageAmount)
+        ),
         true
       );
       assert.equal(result.gives.eq(BigNumber.from(params.price)), true);
@@ -115,7 +117,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.givesWithoutSlippage.eq(expectedGivesWithoutSlippage),
+        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
+          result.gives.sub(result.givesSlippageAmount)
+        ),
         true
       );
     });
@@ -172,7 +176,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.givesWithoutSlippage.eq(expectedGivesWithoutSlippage),
+        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
+          result.gives.sub(result.givesSlippageAmount)
+        ),
         true
       );
     });
@@ -224,7 +230,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.givesWithoutSlippage.eq(expectedGivesWithoutSlippage),
+        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
+          result.gives.sub(result.givesSlippageAmount)
+        ),
         true
       );
     });
@@ -278,7 +286,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.givesWithoutSlippage.eq(expectedGivesWithoutSlippage),
+        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
+          result.gives.sub(result.givesSlippageAmount)
+        ),
         true
       );
     });
@@ -333,7 +343,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.givesWithoutSlippage.eq(expectedGivesWithoutSlippage),
+        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
+          result.gives.sub(result.givesSlippageAmount)
+        ),
         true
       );
     });
@@ -379,7 +391,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.wantsWithoutSlippage.eq(expectedWantsWithoutSlippage),
+        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
+          result.wants.sub(result.wantsSlippageAmount)
+        ),
         true
       );
       assert.equal(result.gives.eq(BigNumber.from(params.volume)), true);
@@ -428,7 +442,9 @@ describe("Trade unit tests suite", () => {
       const expectedWantsWithoutSlippage = Big(0);
       assert.equal(result.wants.eq(BigNumber.from(Big(0).toFixed(0))), true);
       assert.equal(
-        result.wantsWithoutSlippage.eq(expectedWantsWithoutSlippage),
+        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
+          result.wants.sub(result.wantsSlippageAmount)
+        ),
         true
       );
       assert.equal(result.gives.eq(BigNumber.from(params.volume)), true);
@@ -480,7 +496,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.wantsWithoutSlippage.eq(expectedWantsWithoutSlippage),
+        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
+          result.wants.sub(result.wantsSlippageAmount)
+        ),
         true
       );
       assert.equal(
@@ -537,7 +555,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.wantsWithoutSlippage.eq(expectedWantsWithoutSlippage),
+        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
+          result.wants.sub(result.wantsSlippageAmount)
+        ),
         true
       );
       assert.equal(
@@ -590,8 +610,11 @@ describe("Trade unit tests suite", () => {
         result.wants.eq(BigNumber.from(Big(params.wants).toFixed(0))),
         true
       );
+
       assert.equal(
-        result.wantsWithoutSlippage.eq(expectedWantsWithoutSlippage),
+        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
+          result.wants.sub(result.wantsSlippageAmount)
+        ),
         true
       );
       assert.equal(
@@ -646,7 +669,9 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.wantsWithoutSlippage.eq(expectedWantsWithoutSlippage),
+        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
+          result.wants.sub(result.wantsSlippageAmount)
+        ),
         true
       );
       assert.equal(
