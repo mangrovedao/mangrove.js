@@ -244,6 +244,11 @@ export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
 export async function waitForBooksForLastTx(market?: Market) {
   // Wait for txs so we can get the right block number for them
   await eventsForLastTxHaveBeenGenerated();
+  if (!isTrackingPolls) {
+    throw Error(
+      "call initPollOfTransactionTracking before trying to await waitForBooksForLastTx"
+    );
+  }
   if (market) {
     // this may be a block number slightly larger, but for tests that is ok.
     const lastBlock = await market.mgv._provider.getBlockNumber();

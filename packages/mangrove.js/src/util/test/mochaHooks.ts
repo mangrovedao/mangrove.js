@@ -2,13 +2,18 @@
 import { ethers } from "ethers";
 import { Mangrove } from "../../";
 import node from "../../util/node";
+const ProxyServer = require("transparent-proxy");
+import { sleep } from "@mangrovedao/commonlib.js";
+import { nextTick } from "process";
 
 const serverParams = {
   host: "127.0.0.1",
-  port: 8545,
+  port: 8546, // use 8546 for the actual node, but proxy it.
   pipeOut: false,
   script: "MangroveJsDeploy",
 };
+
+let currentProxyPort = 8547;
 
 export const mochaHooks = {
   async beforeAll() {
@@ -60,6 +65,50 @@ export const mochaHooks = {
   },
 
   async beforeEach() {
+    // Wait for all outstanding requests to end.
+    if (!this.proxies) {
+      this.proxies = {};
+    }
+    const currentProxy = this.proxies[currentProxyPort];
+    if (currentProxy) {
+      currentProxy.cancelAll = true;
+      while (currentProxy.outstandingRequests > 0) {
+        await sleep(1);
+      }
+      //??TODOcurrentProxy.close(() => {});
+    }
+
+    const newProxy = {
+      cancelAll: false,
+      outstandingRequests: 0,
+      proxyServer: null,
+    };
+    currentProxyPort++;
+    newProxy.proxyServer = new ProxyServer({
+      upstream: async function () {
+        return "127.0.0.1:8546";
+      },
+      intercept: true,
+      injectData: (data) => {
+        // console.log(`D${currentProxyPort}: ${newProxy.outstandingRequests}`);
+        if (newProxy.cancelAll) {
+          console.log("Got request after cancelled!");
+          return null;
+        }
+        newProxy.outstandingRequests++;
+        return data;
+      },
+      injectResponse: (data) => {
+        // console.log(`R${currentProxyPort}: ${newProxy.outstandingRequests}`);
+        newProxy.outstandingRequests--;
+        return data;
+      },
+    });
+    newProxy.proxyServer.listen(currentProxyPort, "127.0.0.1", function () {});
+
+    this.proxies[currentProxyPort] = newProxy;
+    this.server.url = `http://127.0.0.1:${currentProxyPort}`;
+
     await this.server.revert(); // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
     await this.server.snapshot();
   },

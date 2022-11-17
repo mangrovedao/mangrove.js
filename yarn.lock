@@ -1807,6 +1807,7 @@ __metadata:
     prettier: ^2.4.1
     rimraf: ^3.0.2
     shx: ^0.3.4
+    transparent-proxy: ^1.9.1
     ts-essentials: ^9.1.2
     ts-mockito: ^2.0.0
     ts-node: ^10.9.1
@@ -7597,6 +7598,13 @@ fsevents@~2.3.2:
   version: 1.0.1
   resolution: "toidentifier@npm:1.0.1"
   checksum: 952c29e2a85d7123239b5cfdd889a0dde47ab0497f0913d70588f19c53f7e0b5327c95f4651e413c74b785147f9637b17410ac8c846d5d4a20a5a33eb6dc3a45
+  languageName: node
+  linkType: hard
+
+"transparent-proxy@npm:^1.9.1":
+  version: 1.9.1
+  resolution: "transparent-proxy@npm:1.9.1"
+  checksum: b820f94084a29e5e899ff438ec8ea46934130f5791d4af6d39f09aed563133aad4744b8729c43d4219b8c2339d160a1deb97ac00768763c1f9aa86c4291b1206
   languageName: node
   linkType: hard
 

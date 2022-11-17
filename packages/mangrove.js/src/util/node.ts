@@ -10,7 +10,7 @@
 const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import * as eth from "../eth";
 import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
@@ -294,7 +294,7 @@ const deploy = async (params: {
 const connect = async (params: {
   spawn: boolean;
   deploy: boolean;
-  url: boolean;
+  url: string;
   provider: JsonRpcProvider;
   stateCache: boolean;
   targetContract: string;
@@ -330,15 +330,27 @@ const connect = async (params: {
     params,
     snapshot: async () => {
       lastSnapshotId = await params.provider.send("evm_snapshot", []);
-      snapshotBlockNumber = await params.provider.getBlockNumber();
+
+      const bn = await params.provider.perform("getBlockNumber", {});
+
+      snapshotBlockNumber = BigNumber.from(bn).toNumber();
       return lastSnapshotId;
     },
     revert: async (snapshotId = lastSnapshotId) => {
+      let poolStatus = await params.provider.send("txpool_status", []);
+      while (poolStatus.pending != "0x0" || poolStatus.queued != "0x0") {
+        console.log(poolStatus);
+        poolStatus = await params.provider.send("txpool_status", []);
+      }
+
       await params.provider.send("evm_revert", [snapshotId]);
-      const blockNumberAfterRevert = await params.provider.getBlockNumber();
+
+      const bn = await params.provider.perform("getBlockNumber", {});
+
+      const blockNumberAfterRevert = BigNumber.from(bn).toNumber();
       if (blockNumberAfterRevert != snapshotBlockNumber) {
         throw Error(
-          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`
+          `evm_revert aadid not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`
         );
       }
     },
