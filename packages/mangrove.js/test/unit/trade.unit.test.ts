@@ -34,9 +34,11 @@ describe("Trade unit tests suite", () => {
       when(baseToken.toUnits(anything())).thenReturn(
         BigNumber.from(params.volume)
       );
-      when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.price)
-      );
+      when(quoteToken.toUnits(anything()))
+        .thenReturn(BigNumber.from(params.price))
+        .thenCall((b) => {
+          return BigNumber.from(b.toFixed(0));
+        });
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
       //Act
@@ -45,8 +47,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).last();
-      const [gives] = capture(quoteToken.toUnits).last();
+      const [wants] = capture(baseToken.toUnits).first();
+      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedGivesWithoutSlippage = Big(params.volume).mul(price);
@@ -97,8 +99,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).last();
-      const [gives] = capture(quoteToken.toUnits).last();
+      const [wants] = capture(baseToken.toUnits).first();
+      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedGivesWithoutSlippage = veryBigNumber;
@@ -151,8 +153,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).last();
-      const [gives] = capture(quoteToken.toUnits).last();
+      const [wants] = capture(baseToken.toUnits).first();
+      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedGivesWithoutSlippage = Big(params.total);
@@ -210,8 +212,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).last();
-      const [gives] = capture(quoteToken.toUnits).last();
+      const [wants] = capture(baseToken.toUnits).first();
+      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedGivesWithoutSlippage = Big(params.total);
@@ -263,8 +265,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).last();
-      const [gives] = capture(quoteToken.toUnits).last();
+      const [wants] = capture(baseToken.toUnits).first();
+      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedGivesWithoutSlippage = Big(params.gives);
@@ -320,8 +322,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).last();
-      const [gives] = capture(quoteToken.toUnits).last();
+      const [wants] = capture(baseToken.toUnits).first();
+      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedGivesWithoutSlippage = Big(params.gives);
@@ -379,8 +381,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).last();
-      const [wants] = capture(quoteToken.toUnits).last();
+      const [gives] = capture(baseToken.toUnits).first();
+      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedWantsWithoutSlippage = Big(params.volume).mul(price);
@@ -435,8 +437,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).last();
-      const [wants] = capture(quoteToken.toUnits).last();
+      const [gives] = capture(baseToken.toUnits).first();
+      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedWantsWithoutSlippage = Big(0);
@@ -486,8 +488,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).last();
-      const [wants] = capture(quoteToken.toUnits).last();
+      const [gives] = capture(baseToken.toUnits).first();
+      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedWantsWithoutSlippage = Big(params.total);
@@ -545,8 +547,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).last();
-      const [wants] = capture(quoteToken.toUnits).last();
+      const [gives] = capture(baseToken.toUnits).first();
+      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedWantsWithoutSlippage = Big(params.total);
@@ -601,8 +603,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).last();
-      const [wants] = capture(quoteToken.toUnits).last();
+      const [gives] = capture(baseToken.toUnits).first();
+      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedWantsWithoutSlippage = Big(params.wants);
@@ -659,8 +661,8 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).last();
-      const [wants] = capture(quoteToken.toUnits).last();
+      const [gives] = capture(baseToken.toUnits).first();
+      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
       const expectedWantsWithoutSlippage = Big(params.wants);
