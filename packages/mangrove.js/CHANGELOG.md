@@ -1,5 +1,11 @@
 # next version
 
+# 0.12.0 (November 2022)
+
+- Upgraded mangrove-core dependency.
+- For resting orders timeToLiveForRestingOrder is changed to expiryDate and is in Unix time.
+- For TradeParams changed to have restingOrder be a boolean on a mangroveOrder parameter.
+- MangroveOrder now supports fill-or-kill orders.
 - Fix `Semibook.simulateMarketOrder`. Fixes `Semibook.estimateVolume`, `Market.(estimateVolume[|ToReceive|ToSpend])`.
 - EOA offers (on the fly) do not require any gasreq
 - Remove unsafe option to set `price=null` in `market.{buy|sell}` as simulating true market orders is prone to sandwich attacks and therefore not encouraged.
