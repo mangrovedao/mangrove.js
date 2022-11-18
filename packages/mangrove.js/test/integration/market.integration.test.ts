@@ -796,7 +796,7 @@ describe("Market integration tests suite", () => {
 
     // estimated gas limit is too low, so we set it explicitly
     const result = await market.sell(
-      { volume: "0.0000000000000001", price: null },
+      { volume: "0.0000000000000001", price: 0 },
       { gasLimit: 6500000 }
     );
 
@@ -838,7 +838,7 @@ describe("Market integration tests suite", () => {
     const result = await market.buy({
       offerId: notBest,
       total: 1,
-      price: null,
+      price: Big(2).pow(256).minus(1),
     });
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
