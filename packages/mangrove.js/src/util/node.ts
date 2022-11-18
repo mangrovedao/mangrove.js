@@ -241,6 +241,13 @@ const deploy = async (params: {
     // this dumps the private-key but it is a test mnemonic
     console.log(forgeScriptCmd);
 
+    // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
+    const env = {
+      ...process.env,
+      MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
+      POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
+    };
+
     // Warning: using exec & awaiting promise instead of using the simpler `execSync`
     // due to the following issue: when too many transactions are broadcast by the script,
     // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
@@ -251,7 +258,7 @@ const deploy = async (params: {
         forgeScriptCmd,
         {
           encoding: "utf8",
-          env: process.env,
+          env: env,
           cwd: CORE_DIR,
         },
         (error, stdout, stderr) => {
