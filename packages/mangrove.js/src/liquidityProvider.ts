@@ -502,7 +502,7 @@ class LiquidityProvider {
   ): Promise<Big> {
     if (this.logic) {
       // if liquidity provider has a logic, then one should ask its contract what is the balance of signer (could be multiple users)
-      return this.logic.tokenBalance(tokenName, overrides);
+      return this.logic.tokenBalance(tokenName, null, overrides);
     } else {
       return this.mgv.token(tokenName).balanceOf(this.eoa, overrides);
     }

@@ -144,17 +144,19 @@ class OfferLogic {
    * This function returns the balance of a token type on contract's reserve (note that where tokens are stored depends on the contracts implementation)
    * if this contract is single user this is the contracts's unique reserve, if it is multi user this is the signer's reserve of tokens
    * @param tokenName one wishes to know the balance of.
+   * @param maker optional maker to get balance for; otherwise, the signer.
    * @param overrides ethers.js overrides
    * @returns the balance of tokens
    */
 
   async tokenBalance(
     tokenName: string,
+    maker?: string,
     overrides: ethers.Overrides = {}
   ): Promise<Big> {
     const rawBalance = await this.contract.tokenBalance(
       this.mgv.getAddress(tokenName),
-      await this.mgv._signer.getAddress(),
+      maker ?? (await this.mgv._signer.getAddress()),
       overrides
     );
     return this.mgv.fromUnits(rawBalance, tokenName);
