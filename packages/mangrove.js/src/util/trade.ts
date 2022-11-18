@@ -45,10 +45,13 @@ class Trade {
     }
 
     const slippage = this.validateSlippage(params.slippage);
+    const givesWithSlippage = quoteToken.toUnits(
+      gives.mul(100 + slippage).div(100)
+    );
     return {
       wants: baseToken.toUnits(wants),
-      givesWithoutSlippage: gives,
-      gives: quoteToken.toUnits(gives.mul(100 + slippage).div(100)),
+      givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
+      gives: givesWithSlippage,
       fillWants: fillWants,
     };
   }
@@ -76,11 +79,14 @@ class Trade {
     }
 
     const slippage = this.validateSlippage(params.slippage);
+    const wantsWithSlippage = quoteToken.toUnits(
+      wants.mul(100 - slippage).div(100)
+    );
 
     return {
       gives: baseToken.toUnits(gives),
-      wantsWithoutSlippage: wants,
-      wants: quoteToken.toUnits(wants.mul(100 - slippage).div(100)),
+      wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
+      wants: wantsWithSlippage,
       fillWants: fillWants,
     };
   }
@@ -139,18 +145,14 @@ class Trade {
     overrides: ethers.Overrides = {},
     market: Market
   ): Promise<Market.OrderResult> {
-    const { wants, givesWithoutSlippage, gives, fillWants } =
+    const { wants, givesSlippageAmount, gives, fillWants } =
       this.getParamsForBuy(params, market.base, market.quote);
     if ("mangroveOrder" in params && params.mangroveOrder) {
-      const makerWants = wants;
-      const makerGives = market.quote.toUnits(givesWithoutSlippage);
-
       return this.mangroveOrder(
         {
           gives,
-          makerGives,
           wants,
-          makerWants,
+          slippageAmount: givesSlippageAmount,
           orderType: "buy",
           fillWants,
           params: params.mangroveOrder,
@@ -212,17 +214,14 @@ class Trade {
     overrides: ethers.Overrides = {},
     market: Market
   ): Promise<Market.OrderResult> {
-    const { gives, wants, wantsWithoutSlippage, fillWants } =
+    const { gives, wants, wantsSlippageAmount, fillWants } =
       this.getParamsForSell(params, market.base, market.quote);
     if ("mangroveOrder" in params && params.mangroveOrder) {
-      const makerGives = gives;
-      const makerWants = market.quote.toUnits(wantsWithoutSlippage);
       return this.mangroveOrder(
         {
           gives,
-          makerGives,
           wants,
-          makerWants,
+          slippageAmount: wantsSlippageAmount,
           orderType: "sell",
           fillWants,
           params: params.mangroveOrder,
@@ -405,18 +404,16 @@ class Trade {
   async mangroveOrder(
     {
       wants,
-      makerWants,
       gives,
-      makerGives,
+      slippageAmount,
       orderType,
       fillWants,
       params,
       market,
     }: {
       wants: ethers.BigNumber;
-      makerWants: ethers.BigNumber;
       gives: ethers.BigNumber;
-      makerGives: ethers.BigNumber;
+      slippageAmount: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       params: Market.MangroveOrderParams;
@@ -424,7 +421,7 @@ class Trade {
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
-    const { restingOrder, provision, timeToLiveForRestingOrder, fillOrKill } =
+    const { restingOrder, provision, expiryDate, fillOrKill } =
       this.getMangroveOrderParams(params);
     const overrides_ = {
       ...overrides,
@@ -445,15 +442,14 @@ class Trade {
       {
         outbound_tkn: outboundTkn.address,
         inbound_tkn: inboundTkn.address,
-        partialFillNotAllowed: fillOrKill,
+        fillOrKill: fillOrKill,
         fillWants: orderType === "buy",
         takerWants: wants,
-        makerWants: makerWants,
         takerGives: gives,
-        makerGives: makerGives,
+        slippageAmount,
         restingOrder: restingOrder,
-        pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by makerWants/makerGives
-        timeToLiveForRestingOrder: timeToLiveForRestingOrder,
+        pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by price takerWants/(takerGives - slippageAmount) or vice versa
+        expiryDate: expiryDate,
       },
       overrides_
     );
@@ -497,7 +493,7 @@ class Trade {
       return {
         restingOrder: false,
         provision: 0,
-        timeToLiveForRestingOrder: 0,
+        expiryDate: 0,
         fillOrKill: params.fillOrKill,
       };
     }
@@ -505,9 +501,7 @@ class Trade {
       return {
         restingOrder: params.restingOrder,
         provision: params.provision,
-        timeToLiveForRestingOrder: params.timeToLiveForRestingOrder
-          ? params.timeToLiveForRestingOrder
-          : 0,
+        expiryDate: params.expiryDate ? params.expiryDate : 0,
         fillOrKill: false,
       };
     }

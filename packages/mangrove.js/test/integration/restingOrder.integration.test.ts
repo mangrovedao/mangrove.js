@@ -147,7 +147,10 @@ describe("RestingOrder", () => {
         mangroveOrder: {
           restingOrder: true,
           provision: provision,
-          timeToLiveForRestingOrder: 5,
+          expiryDate:
+            (
+              await mgv._provider.getBlock(mgv._provider.getBlockNumber())
+            ).timestamp + 5,
         },
       });
 

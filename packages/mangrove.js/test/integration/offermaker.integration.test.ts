@@ -260,16 +260,6 @@ describe("OfferMaker", () => {
           "offer should have updated gives"
         );
       });
-
-      it("changes gasreq", async () => {
-        const tx = await onchain_lp.logic?.setDefaultGasreq(50000);
-        await tx?.wait();
-        assert.strictEqual(
-          50000,
-          (await onchain_lp.logic?.contract.offerGasreq()).toNumber(),
-          "Offer default gasreq not updated"
-        );
-      });
     });
   });
 });

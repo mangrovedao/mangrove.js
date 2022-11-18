@@ -80,7 +80,7 @@ namespace Market {
   export type MangroveOrderParams =
     | { fillOrKill: boolean }
     | {
-        timeToLiveForRestingOrder?: number;
+        expiryDate?: number;
         restingOrder: boolean;
         provision: Bigish;
       };
@@ -440,12 +440,9 @@ class Market {
     gasprice: number
   ): Promise<Big> {
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
-    const prov = await this.mgv.readerContract.getProvision(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      gasreq,
-      gasprice
-    );
+    const prov = await this.mgv.readerContract[
+      "getProvision(address,address,uint256,uint256)"
+    ](outbound_tkn.address, inbound_tkn.address, gasreq, gasprice);
     return this.mgv.fromUnits(prov, 18);
   }
 
@@ -758,30 +755,37 @@ class Market {
         ko({ revert: false, exception: e })
       );
 
-      txPromise.then((resp) => {
-        // Warning: if the tx nor any with the same nonce is ever mined,
-        // the `once` and block callbacks will never be triggered and you will memory leak by queuing tasks.
-        txHashDeferred.resolve(resp.hash);
-        resp
-          .wait(1)
-          .then((recp) => {
-            this.afterBlock(recp.blockNumber, async () => {
+      txPromise
+        .then((resp) => {
+          // Warning: if the tx nor any with the same nonce is ever mined,
+          // the `once` and block callbacks will never be triggered and you will memory leak by queuing tasks.
+          txHashDeferred.resolve(resp.hash);
+          resp
+            .wait(1)
+            .then((recp) => {
+              this.afterBlock(recp.blockNumber, async () => {
+                this.unsubscribe(cb);
+                // only check if someMatch after the filters have executed:
+                await Promise.all(filterPromises);
+                if (!someMatch) {
+                  ko({
+                    revert: false,
+                    exception: "tx mined but filter never returned true",
+                  });
+                }
+              });
+            })
+            .catch((e) => {
+              txHashDeferred.reject(e);
               this.unsubscribe(cb);
-              // only check if someMatch after the filters have executed:
-              await Promise.all(filterPromises);
-              if (!someMatch) {
-                ko({
-                  revert: false,
-                  exception: "tx mined but filter never returned true",
-                });
-              }
+              ko({ revert: true, exception: e });
             });
-          })
-          .catch((e) => {
-            this.unsubscribe(cb);
-            ko({ revert: true, exception: e });
-          });
-      });
+        })
+        .catch((e) => {
+          txHashDeferred.reject(e);
+          this.unsubscribe(cb);
+          ko({ revert: true, exception: e });
+        });
     });
   }
 
