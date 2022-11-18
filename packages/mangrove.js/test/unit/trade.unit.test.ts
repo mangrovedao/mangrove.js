@@ -71,61 +71,6 @@ describe("Trade unit tests suite", () => {
       );
     });
 
-    it("returns wants as volume, gives as Big(2).pow(256).minus(1) and fillWants true, when params has price===null and volume", async function () {
-      //Arrange
-      const trade = new Trade();
-      const spyTrade = spy(trade);
-      const price = null;
-      const slippage = 3;
-      const params: Market.TradeParams = {
-        price: price,
-        volume: 30,
-        slippage: slippage,
-      };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
-      const veryBigNumber = Big(2).pow(256).minus(1);
-      when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.volume)
-      );
-      when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(veryBigNumber.toFixed(0))
-      );
-      when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
-
-      //Act
-      const result = trade.getParamsForBuy(
-        params,
-        instance(baseToken),
-        instance(quoteToken)
-      );
-      const [wants] = capture(baseToken.toUnits).first();
-      const [gives] = capture(quoteToken.toUnits).first();
-
-      //Assert
-      const expectedGivesWithoutSlippage = veryBigNumber;
-      assert.equal(result.wants.eq(BigNumber.from(params.volume)), true);
-      assert.equal(
-        result.gives.eq(BigNumber.from(veryBigNumber.toFixed(0))),
-        true
-      );
-      assert.equal(result.fillWants, true);
-      assert.equal(Big(params.volume).eq(wants), true);
-      assert.equal(
-        expectedGivesWithoutSlippage
-          .mul(100 + slippage)
-          .div(100)
-          .eq(gives),
-        true
-      );
-      assert.equal(
-        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
-          result.gives.sub(result.givesSlippageAmount)
-        ),
-        true
-      );
-    });
-
     it("returns gives as total, wants as gives.div(price) and fillWants false, when params has price!=null and total", async function () {
       //Arrange
       const trade = new Trade();
@@ -170,60 +115,6 @@ describe("Trade unit tests suite", () => {
       );
       assert.equal(result.fillWants, false);
       assert.equal(Big(params.total).div(price).eq(wants), true);
-      assert.equal(
-        expectedGivesWithoutSlippage
-          .mul(100 + slippage)
-          .div(100)
-          .eq(gives),
-        true
-      );
-      assert.equal(
-        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
-          result.gives.sub(result.givesSlippageAmount)
-        ),
-        true
-      );
-    });
-
-    it("returns gives as total, wants as Big(0) and fillWants false, when params has price===null and total", async function () {
-      //Arrange
-      const trade = new Trade();
-      const spyTrade = spy(trade);
-      const price = null;
-      const slippage = 3;
-      const params: Market.TradeParams = {
-        price: price,
-        total: 30,
-        slippage: slippage,
-      };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
-      when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(0).toFixed(0))
-      );
-      when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.total)
-      );
-      when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
-
-      //Act
-      const result = trade.getParamsForBuy(
-        params,
-        instance(baseToken),
-        instance(quoteToken)
-      );
-      const [wants] = capture(baseToken.toUnits).first();
-      const [gives] = capture(quoteToken.toUnits).first();
-
-      //Assert
-      const expectedGivesWithoutSlippage = Big(params.total);
-      assert.equal(
-        result.gives.eq(BigNumber.from(Big(params.total).toFixed(0))),
-        true
-      );
-      assert.equal(result.wants.eq(BigNumber.from(Big(0).toFixed(0))), true);
-      assert.equal(result.fillWants, false);
-      assert.equal(Big(0).eq(wants), true);
       assert.equal(
         expectedGivesWithoutSlippage
           .mul(100 + slippage)
@@ -410,57 +301,6 @@ describe("Trade unit tests suite", () => {
       );
     });
 
-    it("returns gives as volume, wants as Big(0) and fillWants false, when params has price===null and volume", async function () {
-      //Arrange
-      const trade = new Trade();
-      const spyTrade = spy(trade);
-      const price = null;
-      const slippage = 3;
-      const params: Market.TradeParams = {
-        price: price,
-        volume: 30,
-        slippage: slippage,
-      };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
-      when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.volume)
-      );
-      when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(0).toFixed(0))
-      );
-      when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
-
-      //Act
-      const result = trade.getParamsForSell(
-        params,
-        instance(baseToken),
-        instance(quoteToken)
-      );
-      const [gives] = capture(baseToken.toUnits).first();
-      const [wants] = capture(quoteToken.toUnits).first();
-
-      //Assert
-      const expectedWantsWithoutSlippage = Big(0);
-      assert.equal(result.wants.eq(BigNumber.from(Big(0).toFixed(0))), true);
-      assert.equal(
-        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
-          result.wants.sub(result.wantsSlippageAmount)
-        ),
-        true
-      );
-      assert.equal(result.gives.eq(BigNumber.from(params.volume)), true);
-      assert.equal(result.fillWants, false);
-      assert.equal(Big(params.volume).eq(gives), true);
-      assert.equal(
-        expectedWantsWithoutSlippage
-          .mul(100 - slippage)
-          .div(100)
-          .eq(wants),
-        true
-      );
-    });
-
     it("returns wants as total, gives as wants.div(price) and fillWants true, when params has price!=null and total", async function () {
       //Arrange
       const trade = new Trade();
@@ -511,63 +351,6 @@ describe("Trade unit tests suite", () => {
       );
       assert.equal(result.fillWants, true);
       assert.equal(Big(params.total).div(price).eq(gives), true);
-      assert.equal(
-        expectedWantsWithoutSlippage
-          .mul(100 - slippage)
-          .div(100)
-          .eq(wants),
-        true
-      );
-    });
-
-    it("returns wants as total, gives as Big(2).pow(256).minus(1) and fillWants true, when params has price===null and total", async function () {
-      //Arrange
-      const trade = new Trade();
-      const spyTrade = spy(trade);
-      const price = null;
-      const slippage = 3;
-      const params: Market.TradeParams = {
-        price: price,
-        total: 30,
-        slippage: slippage,
-      };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
-      when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.total)
-      );
-      when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(2).pow(256).minus(1).toFixed(0))
-      );
-      when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
-
-      //Act
-      const result = trade.getParamsForSell(
-        params,
-        instance(baseToken),
-        instance(quoteToken)
-      );
-      const [gives] = capture(baseToken.toUnits).first();
-      const [wants] = capture(quoteToken.toUnits).first();
-
-      //Assert
-      const expectedWantsWithoutSlippage = Big(params.total);
-      assert.equal(
-        result.wants.eq(BigNumber.from(Big(params.total).toFixed(0))),
-        true
-      );
-      assert.equal(
-        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
-          result.wants.sub(result.wantsSlippageAmount)
-        ),
-        true
-      );
-      assert.equal(
-        result.gives.eq(BigNumber.from(Big(2).pow(256).minus(1).toFixed(0))),
-        true
-      );
-      assert.equal(result.fillWants, true);
-      assert.equal(Big(2).pow(256).minus(1).eq(gives), true);
       assert.equal(
         expectedWantsWithoutSlippage
           .mul(100 - slippage)

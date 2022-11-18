@@ -2,6 +2,7 @@
 
 - Fix `Semibook.simulateMarketOrder`. Fixes `Semibook.estimateVolume`, `Market.(estimateVolume[|ToReceive|ToSpend])`.
 - EOA offers (on the fly) do not require any gasreq
+- Remove unsafe option to set `price=null` in `market.{buy|sell}` as simulating true market orders is prone to sandwich attacks and therefore not encouraged.
 
 # 0.11.4 (October 2022)
 
