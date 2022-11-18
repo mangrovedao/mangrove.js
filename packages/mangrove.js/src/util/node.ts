@@ -118,10 +118,7 @@ const spawn = async (params: any) => {
       LOCAL_MNEMONIC,
     ]
       .concat(chainIdArgs)
-      .concat(forkUrlArgs),
-    {
-      cwd: CORE_DIR,
-    }
+      .concat(forkUrlArgs)
   );
 
   anvil.stdout.setEncoding("utf8");
@@ -232,6 +229,7 @@ const deploy = async (params: {
     --froms ${mnemonic.address(0)} \
     --private-key ${mnemonic.key(0)} \
     --broadcast -vvv \
+    --root ${CORE_DIR} \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
@@ -240,13 +238,6 @@ const deploy = async (params: {
     console.log("Running forge script:");
     // this dumps the private-key but it is a test mnemonic
     console.log(forgeScriptCmd);
-
-    // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
-    const env = {
-      ...process.env,
-      MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
-      POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
-    };
 
     // Warning: using exec & awaiting promise instead of using the simpler `execSync`
     // due to the following issue: when too many transactions are broadcast by the script,
@@ -258,8 +249,7 @@ const deploy = async (params: {
         forgeScriptCmd,
         {
           encoding: "utf8",
-          env: env,
-          cwd: CORE_DIR,
+          env: process.env,
         },
         (error, stdout, stderr) => {
           if (params.pipe || error) {
