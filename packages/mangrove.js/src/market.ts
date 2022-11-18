@@ -72,8 +72,8 @@ namespace Market {
     slippage?: number;
   } & ({ mangroveOrder?: MangroveOrderParams } | { offerId?: number }) &
     (
-      | { volume: Bigish; price: Bigish | null }
-      | { total: Bigish; price: Bigish | null }
+      | { volume: Bigish; price: Bigish }
+      | { total: Bigish; price: Bigish }
       | { wants: Bigish; gives: Bigish; fillWants?: boolean }
     );
 

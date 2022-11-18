@@ -31,14 +31,11 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         wants = Big(params.volume);
-        gives =
-          params.price === null
-            ? Big(2).pow(256).minus(1)
-            : wants.mul(params.price);
+        gives = wants.mul(params.price);
         fillWants = true;
       } else {
         gives = Big(params.total);
-        wants = params.price === null ? Big(0) : gives.div(params.price);
+        wants = gives.div(params.price);
         fillWants = false;
       }
     } else {
@@ -65,14 +62,11 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         gives = Big(params.volume);
-        wants = params.price === null ? Big(0) : gives.mul(params.price);
+        wants = gives.mul(params.price);
         fillWants = false;
       } else {
         wants = Big(params.total);
-        gives =
-          params.price === null
-            ? Big(2).pow(256).minus(1)
-            : wants.div(params.price);
+        gives = wants.div(params.price);
         fillWants = true;
       }
     } else {
@@ -121,8 +115,8 @@ class Trade {
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be true.
-   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
+   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`.
+   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`.
    * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
@@ -194,8 +188,8 @@ class Trade {
   /**
    * Market sell order. Will attempt to sell base token for quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
-   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`. Set `price` to null. `fillWants` will be true.
+   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`.
+   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`.
    * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
