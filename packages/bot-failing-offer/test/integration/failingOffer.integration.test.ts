@@ -28,15 +28,8 @@ let makerMarket: Market;
 let cleanerMarket: Market;
 
 describe("Failing offer integration tests", () => {
-  before(async function () {
-    testProvider = ethers.getDefaultProvider(this.server.url);
-  });
-
-  after(async function () {
-    await mgvTestUtil.logAddresses();
-  });
-
   beforeEach(async function () {
+    testProvider = ethers.getDefaultProvider(this.server.url);
     makerMangrove = await Mangrove.connect({
       privateKey: this.accounts.maker.key,
       provider: this.server.url,

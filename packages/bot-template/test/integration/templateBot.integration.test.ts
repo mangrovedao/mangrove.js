@@ -27,11 +27,8 @@ describe("Bot integration tests", () => {
   let botSigner: Signer;
   let mgv: Mangrove;
 
-  before(async function () {
-    botSigner = new ethers.Wallet(this.accounts.tester.key);
-  });
-
   beforeEach(async function () {
+    botSigner = new ethers.Wallet(this.accounts.tester.key);
     // specific to this bot
     mgv = await Mangrove.connect({
       signer: botSigner,
