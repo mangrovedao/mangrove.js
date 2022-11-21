@@ -88,7 +88,7 @@ export const mochaHooks = {
     currentProxyPort++;
     newProxy.proxyServer = new ProxyServer({
       upstream: async function () {
-        return "127.0.0.1:8545";
+        return `http://${serverParams.host}:${serverParams.port}`;
       },
       intercept: true,
       injectData: (data: any, session: any) => {
@@ -101,11 +101,11 @@ export const mochaHooks = {
         return data;
       },
     });
-    newProxy.proxyServer.listen(currentProxyPort, "127.0.0.1");
+    newProxy.proxyServer.listen(currentProxyPort, serverParams.host);
     this.proxies[currentProxyPort] = newProxy;
     // Tests reference the anvil instance through the following address.
     // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request
-    this.server.url = `http://127.0.0.1:${currentProxyPort}`;
+    this.server.url = `http://${serverParams.host}:${currentProxyPort}`;
 
     await this.server.revert();
     // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
