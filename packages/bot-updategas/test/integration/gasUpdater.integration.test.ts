@@ -20,12 +20,9 @@ describe("GasUpdater integration tests", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
 
-  before(async function () {
+  beforeEach(async function () {
     gasUpdaterSigner = new ethers.Wallet(this.accounts.tester.key);
     // gasUpdaterSigner = await hre.ethers.getNamedSigner("gasUpdater");
-  });
-
-  beforeEach(async function () {
     mgv = await Mangrove.connect({
       //provider: this.test?.parent?.parent?.ctx.provider,
       signer: gasUpdaterSigner,

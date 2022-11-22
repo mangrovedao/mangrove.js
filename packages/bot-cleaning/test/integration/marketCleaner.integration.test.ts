@@ -28,15 +28,12 @@ let mgv: Mangrove;
 let market: Market;
 
 describe("MarketCleaner integration tests", () => {
-  before(async function () {
-    testProvider = ethers.getDefaultProvider(this.server.url);
-  });
-
   after(async function () {
     await mgvTestUtil.logAddresses();
   });
 
   beforeEach(async function () {
+    testProvider = ethers.getDefaultProvider(this.server.url);
     mgvTestUtil.setConfig(
       await Mangrove.connect({
         privateKey: this.accounts.deployer.key,

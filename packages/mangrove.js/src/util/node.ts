@@ -10,7 +10,7 @@
 const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import * as eth from "../eth";
 import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
@@ -294,7 +294,7 @@ const deploy = async (params: {
 const connect = async (params: {
   spawn: boolean;
   deploy: boolean;
-  url: boolean;
+  url: string;
   provider: JsonRpcProvider;
   stateCache: boolean;
   targetContract: string;
