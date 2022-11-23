@@ -6,6 +6,19 @@ namespace ThresholdBlockSubscriptions {
   };
 }
 
+/* Instances of this class react to incoming blocks once the blocks have been seen enough times.
+
+Usage:
+* You register a `callback` for a given block `n` using `subscribe(n,callback)`. Once the block _or any later block_ has been seen `>= seenThreshold` times, `callback` is executed.
+* You signal that a block `m` has been seen using `increaseCount(m)`. This will increase the `seenCount` of block `m`, and possibly execute all callbacks associated to blocks `m'<=m` if the updated `seenCount` is strictly greater than `seenThreshold`.
+
+The constructor takes `lastSeen:number` argument (the starting block number), and a `seenThreshold:number` argument (the number of times a block must be seen before its associated callbacks are executed).
+
+Motivation: a Mangrove market has two semibooks, and may receive updates from each at different times, but it should only trigger the "market has been updated" callback once both semibooks have gotten their updates. In addition, a callback for block n may be registered after block `m > n` has been observed, so this class searches through previous block's registered callbacks when it crosses a `seenThreshold`.
+
+Callbacks are discarded before execution.
+
+*/
 class ThresholdBlockSubscriptions {
   #byBlock: Map<number, ThresholdBlockSubscriptions.blockSubscription>;
   #lastSeen: number;
