@@ -62,7 +62,7 @@ export const builder = (yargs) => {
       default: false,
     })
     .option("deploy", {
-      describe: "Do not spawn a new node",
+      describe: "Create utility contracts at startup time",
       type: "boolean",
       default: true,
     })
@@ -308,8 +308,13 @@ const connect = async (params: {
     spawnInfo = await spawn(params);
   }
 
+  const deployFn = () => {
+    return deploy(params);
+  };
+
+  // deploy immediately if requested, otherwise return a deploy function
   if (params.deploy) {
-    await deploy(params);
+    await deployFn();
   }
 
   // // convenience: try to populate global Mangrove instance if possible
@@ -328,6 +333,7 @@ const connect = async (params: {
     url: params.url,
     accounts: anvilAccounts,
     params,
+    deploy: params.deploy ? undefined : deployFn,
     snapshot: async () => {
       lastSnapshotId = await params.provider.send("evm_snapshot", []);
       snapshotBlockNumber = await params.provider.getBlockNumber();
