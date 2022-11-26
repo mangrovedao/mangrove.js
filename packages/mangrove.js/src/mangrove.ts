@@ -99,8 +99,8 @@ class Mangrove {
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
-    if (network.name === "local" && !Mangrove.addresses[network.name]) {
-      await Mangrove.fetchAllAddresses(signer.provider);
+    if (network.name === "local") {
+      await Mangrove.watchLocalAddresses(signer.provider);
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({
@@ -455,14 +455,17 @@ class Mangrove {
    * Returns all addresses registered at the local server's Toy ENS contract.
    * Assumes provider is connected to a local server (typically for testing/experimentation).
    */
-  static async fetchAllAddresses(provider: ethers.providers.Provider) {
-    const network = await eth.getProviderNetwork(provider);
-    const contracts = await getAllToyENSEntries(provider);
-    for (const { name, address, decimals } of contracts) {
+  static async watchLocalAddresses(provider: ethers.providers.Provider) {
+    const setAddress = (name, address, decimals) => {
       Mangrove.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
         Mangrove.setDecimals(name, decimals);
       }
+    };
+    const network = await eth.getProviderNetwork(provider);
+    const contracts = await getAllToyENSEntries(provider, setAddress);
+    for (const { name, address, decimals } of contracts) {
+      setAddress(name, address, decimals);
     }
   }
 }
