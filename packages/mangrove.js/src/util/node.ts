@@ -16,7 +16,7 @@ import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
 import * as Multicall from "./MulticallCode";
 import { default as nodeCleanup } from "node-cleanup";
-import { getAllToyENSEntries } from "./toyEnsEntries";
+import DevNode from "./devNode";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8545;
@@ -187,28 +187,10 @@ const deploy = async (params: {
   port: number;
   pipe: boolean;
 }) => {
-  // setup Toy ENS if needed
-  const toyENSCode = await params.provider.send("eth_getCode", [
-    ToyENS.address,
-    "latest",
-  ]);
-  if (toyENSCode === "0x") {
-    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-    await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
-  }
+  const devNode = new DevNode(params.provider);
+  await devNode.deployToyENSIfAbsent();
 
-  // setup Toy ENS if needed
-  const MulticallCode = await params.provider.send("eth_getCode", [
-    Multicall.address,
-    "latest",
-  ]);
-  if (MulticallCode === "0x") {
-    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-    await params.provider.send("anvil_setCode", [
-      Multicall.address,
-      Multicall.code,
-    ]);
-  }
+  await devNode.deployMulticallIfAbsent();
 
   // test connectivity
   try {
@@ -358,21 +340,19 @@ export const node = (argv: any, useYargs: boolean = true) => {
   params.url = `http://${params.host}:${params.port}`;
   params.provider = new ethers.providers.StaticJsonRpcProvider(params.url);
 
+  const devNode = new DevNode(params.provider);
+
   return {
     connect() {
       return connect(params);
     },
     getAllToyENSEntries() {
-      return getAllToyENSEntries(params.provider);
+      return devNode.getAllToyENSEntries(params.provider);
     },
   };
 };
 
-node.getAllToyENSEntries = getAllToyENSEntries;
-
 export default node;
-
-export { getAllToyENSEntries };
 
 /* If running as script, start anvil. */
 if (require.main === module) {
