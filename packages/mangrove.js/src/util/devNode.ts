@@ -179,7 +179,6 @@ class DevNode {
 
   connectToToyENSContract(): ethers.Contract {
     return connectToToyENSContract(this.provider);
-    return new ethers.Contract(ToyENS.address, ToyENS.abi, this.provider);
   }
 
   getAllToyENSEntries(onSet?: (name, address, decimals?: number) => void) {
