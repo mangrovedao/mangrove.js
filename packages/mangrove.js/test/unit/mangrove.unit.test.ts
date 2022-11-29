@@ -3,7 +3,7 @@ import { describe, it } from "mocha";
 import {
   connectToToyENSContract,
   getAllToyENSEntries,
-} from "../../src/util/toyEnsEntries";
+} from "../../src/util/devNode";
 import { Watcher } from "../../src/util";
 
 import { Mangrove } from "../../src";
@@ -38,7 +38,7 @@ describe("Mangrove functionality", () => {
 
       // create new entry
       const ens = connectToToyENSContract(
-        mgv._signer as any as ethers.providers.Provider
+        mgv._signer as any as ethers.providers.JsonRpcProvider
       );
 
       // watch for new entry
