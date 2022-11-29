@@ -456,13 +456,13 @@ class Mangrove {
    * Assumes provider is connected to a local server (typically for testing/experimentation).
    */
   static async watchLocalAddresses(provider: ethers.providers.Provider) {
+    const network = await eth.getProviderNetwork(provider);
     const setAddress = (name, address, decimals) => {
       Mangrove.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
         Mangrove.setDecimals(name, decimals);
       }
     };
-    const network = await eth.getProviderNetwork(provider);
     const contracts = await getAllToyENSEntries(provider, setAddress);
     for (const { name, address, decimals } of contracts) {
       setAddress(name, address, decimals);
