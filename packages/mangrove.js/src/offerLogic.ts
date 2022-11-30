@@ -23,53 +23,19 @@ type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
  * The OfferLogic class connects to a OfferLogic contract.
  * It posts onchain offers.
  */
-// OfferLogic.withdrawDeposit()
-// OfferLogic.deposit(n)
+
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.OfferForwarder;
+  contract: typechain.ILiquidityProvider;
   address: string;
-  isForwarder: boolean;
 
-  constructor(
-    mgv: Mangrove,
-    logic: string,
-    isForwarder: boolean,
-    signer?: SignerOrProvider
-  ) {
+  constructor(mgv: Mangrove, logic: string, signer?: SignerOrProvider) {
     this.mgv = mgv;
     this.address = logic;
-    this.isForwarder = isForwarder;
-    this.contract = typechain.OfferForwarder__factory.connect(
+    this.contract = typechain.ILiquidityProvider__factory.connect(
       logic,
       signer ? signer : this.mgv._signer
     );
-  }
-  /**
-   * @note Deploys a fresh MangroveOffer contract
-   * @returns The new contract address
-   */
-  static async deploy(mgv: Mangrove): Promise<string> {
-    const contract = await new typechain[`OfferMaker__factory`](
-      mgv._signer
-    ).deploy(
-      mgv._address,
-      ethers.constants.AddressZero,
-      await mgv._signer.getAddress()
-    );
-    await contract.deployTransaction.wait();
-    return contract.address;
-  }
-
-  /**
-   * @note Returns the allowance Mangrove has to spend token on the contract's
-   * behalf.
-   * @returns the current allowance the contract has on Mangrove
-   */
-  mangroveAllowance(tokenName: string): Promise<Big> {
-    return this.mgv
-      .token(tokenName)
-      .allowance({ owner: this.address, spender: this.mgv._address });
   }
 
   /**
@@ -86,10 +52,6 @@ class OfferLogic {
     }
   }
 
-  aaveModule(address: string): AaveV3Module {
-    return new AaveV3Module(this.mgv, address);
-  }
-
   /**
    * @note Approves the logic to spend `token`s on signer's behalf.
    * This has to be done for each token the signer's wishes to ask or bid for.
@@ -99,7 +61,7 @@ class OfferLogic {
     tokenName: string,
     arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides
-  ): Promise<TransactionResponse> {
+  ): Promise<ethers.ContractTransaction> {
     const router: typechain.AbstractRouter | undefined = await this.router();
     const token = this.mgv.token(tokenName);
     if (router) {
@@ -111,7 +73,7 @@ class OfferLogic {
     }
   }
 
-  /**@note returns logic allowance to trade `tokenName` on signer's behalf */
+  /**@note returns logic's allowance to trade `tokenName` on signer's behalf */
   async allowance(tokenName: string): Promise<Big> {
     const router: typechain.AbstractRouter | undefined = await this.router();
     const token = this.mgv.token(tokenName);
@@ -128,77 +90,12 @@ class OfferLogic {
     }
   }
 
-  /**
-   * @note Get the current provision balance (native token) the logic has on Mangrove
-   * @dev if the underlying logic is multi user, then this only shows the pooled provision the contract has on Mangrove
-   **/
-  async balanceOnMangrove(
-    owner: string = this.address,
-    overrides: ethers.Overrides = {}
-  ): Promise<Big> {
-    return this.mgv.balanceOf(owner, overrides);
-  }
-
-  /**
-   * @note a contract's reserve is where contract's liquidity is stored (waiting for a trade execution)
-   * This function returns the balance of a token type on contract's reserve (note that where tokens are stored depends on the contracts implementation)
-   * if this contract is single user this is the contracts's unique reserve, if it is multi user this is the signer's reserve of tokens
-   * @param tokenName one wishes to know the balance of.
-   * @param maker optional maker to get balance for; otherwise, the signer.
-   * @param overrides ethers.js overrides
-   * @returns the balance of tokens
-   */
-
-  async tokenBalance(
-    tokenName: string,
-    maker?: string,
-    overrides: ethers.Overrides = {}
-  ): Promise<Big> {
-    const rawBalance = await this.contract.tokenBalance(
-      this.mgv.getAddress(tokenName),
-      maker ?? (await this.mgv._signer.getAddress()),
-      overrides
-    );
-    return this.mgv.fromUnits(rawBalance, tokenName);
-  }
-
-  /**
-   * @note Withdraws `amount` tokens from offer logic
-   * if contract is single user tokens are redeems from the contract's reserve (admin only tx)
-   * if contract is multi user, tokens are redeemed form signer's reserve
-   * @param tokenName the token type on wishes to withdraw
-   * @param recipient the address to which the withdrawn tokens should be sent
-   * @param overrides ethers.js overrides
-   * */
-  withdrawToken(
-    tokenName: string,
-    recipient: string,
-    amount: Bigish,
-    overrides: ethers.Overrides = {}
-  ): Promise<TransactionResponse> {
-    return this.contract.withdrawToken(
-      this.mgv.getAddress(tokenName),
-      recipient,
-      this.mgv.toUnits(amount, tokenName),
-      overrides
-    );
-  }
-
   // returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
-  connect(sOp: SignerOrProvider, isForwarder: boolean): OfferLogic {
-    return new OfferLogic(this.mgv, this.contract.address, isForwarder, sOp);
+  connect(sOp: SignerOrProvider): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.address, sOp);
   }
 
-  /** Fund the current contract balance with ethers sent from current signer. */
-  //TODO maybe this should be removed since one should not fund mangrove like this when using a forwarder
-  fundMangrove(
-    amount: Bigish,
-    overrides: ethers.Overrides = {}
-  ): Promise<TransactionResponse> {
-    return this.mgv.fundMangrove(amount, this.address, overrides);
-  }
-
-  async getDefaultGasreq(): Promise<number> {
+  async offerGasreq(): Promise<number> {
     const gr = await this.contract.offerGasreq();
     return gr.toNumber();
   }
@@ -210,7 +107,7 @@ class OfferLogic {
     return this.contract.setAdmin(newAdmin, overrides);
   }
 
-  getAdmin(): Promise<string> {
+  admin(): Promise<string> {
     return this.contract.admin();
   }
 
@@ -228,86 +125,17 @@ class OfferLogic {
     return this.contract.activate(tokenAddresses, overrides);
   }
 
-  async newOffer(
-    outbound_tkn: MgvToken,
-    inbound_tkn: MgvToken,
-    wants: Bigish,
-    gives: Bigish,
-    gasreq: number,
-    gasprice: number,
-    pivot: number,
-    overrides: ethers.PayableOverrides
-  ): Promise<ethers.ContractTransaction> {
-    const gasreq_bn = gasreq ? gasreq : ethers.constants.MaxUint256;
-    const gasprice_bn = gasprice ? gasprice : 0;
-    const fund: BigNumberish = overrides.value ? await overrides.value : 0;
-    if (this.isForwarder) {
-      // checking transferred native tokens are enough to cover gasprice
-      const provision = await this.contract.getMissingProvision(
-        outbound_tkn.address,
-        inbound_tkn.address,
-        gasreq_bn,
-        gasprice_bn,
-        0
-      );
-      if (provision.gt(fund)) {
-        throw Error(
-          `New offer doesn't have enough provision (
-            ${ethers.utils.formatEther(fund)}
-          ) to cover for bounty (
-            ${this.mgv.fromUnits(provision, 18)}
-          )`
-        );
-      }
-    }
-    const response = await this.contract.newOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      inbound_tkn.toUnits(wants),
-      outbound_tkn.toUnits(gives),
-      gasreq_bn,
-      gasprice_bn,
-      pivot ? pivot : 0,
-      overrides
-    );
-    return response;
-  }
-
-  updateOffer(
-    outbound_tkn: MgvToken,
-    inbound_tkn: MgvToken,
-    wants: Bigish,
-    gives: Bigish,
-    gasreq: number,
-    gasprice: number,
-    pivot: number,
-    offerId: number,
-    overrides: ethers.PayableOverrides
-  ): Promise<TransactionResponse> {
-    return this.contract.updateOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      inbound_tkn.toUnits(wants),
-      outbound_tkn.toUnits(gives),
-      gasreq ? gasreq : ethers.constants.MaxUint256,
-      gasprice ? gasprice : 0,
-      pivot,
-      offerId,
-      overrides
-    );
-  }
-
   // todo look in the tx receipt for the `Debit(maker, amount)` log emitted by mangrove in order to returned a value to user
   retractOffer(
-    outbound_tkn: MgvToken,
-    inbound_tkn: MgvToken,
+    outbound_tkn: string,
+    inbound_tkn: string,
     id: number,
     deprovision: boolean,
     overrides: ethers.Overrides
   ): Promise<TransactionResponse> {
     return this.contract.retractOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
+      this.mgv.token(outbound_tkn).address,
+      this.mgv.token(inbound_tkn).address,
       id,
       deprovision,
       overrides
@@ -338,7 +166,11 @@ class OfferLogic {
         }
   ): Promise<LiquidityProvider> {
     if (p instanceof Market) {
-      return new LiquidityProvider({ mgv: this.mgv, logic: this, market: p });
+      return new LiquidityProvider({
+        mgv: this.mgv,
+        logic: this,
+        market: p,
+      });
     } else {
       return new LiquidityProvider({
         mgv: this.mgv,

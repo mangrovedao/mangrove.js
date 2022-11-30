@@ -1758,12 +1758,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/mangrove-core@npm:^1.1.3":
-  version: 1.1.3
-  resolution: "@mangrovedao/mangrove-core@npm:1.1.3"
-  checksum: 77a99019e3d1bbc7e24db941c42c253901449123da2a1bd3a4b784138e666457e53991747ef1717c374fbcf0112b33b664f52b8cf020e1eee26103dcdeae752d
+"@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/mangrove-core::locator=mangrove-monorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/mangrove-core::locator=mangrove-monorepo%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@mangrovedao/mangrove.js@workspace:*, @mangrovedao/mangrove.js@workspace:packages/mangrove.js":
   version: 0.0.0-use.local
