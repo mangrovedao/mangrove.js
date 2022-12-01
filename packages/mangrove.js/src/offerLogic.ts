@@ -104,11 +104,19 @@ class OfferLogic {
     newAdmin: string,
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    return this.contract.setAdmin(newAdmin, overrides);
+    const accessControlled = typechain.AccessControlled__factory.connect(
+      this.address,
+      this.mgv._signer
+    );
+    return accessControlled.setAdmin(newAdmin, overrides);
   }
 
   admin(): Promise<string> {
-    return this.contract.admin();
+    const accessControlled = typechain.AccessControlled__factory.connect(
+      this.address,
+      this.mgv._signer
+    );
+    return accessControlled.admin();
   }
 
   /**

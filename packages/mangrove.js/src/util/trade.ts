@@ -446,7 +446,6 @@ class Trade {
         fillWants: orderType === "buy",
         takerWants: wants,
         takerGives: gives,
-        slippageAmount,
         restingOrder: restingOrder,
         pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by price takerWants/(takerGives - slippageAmount) or vice versa
         expiryDate: expiryDate,

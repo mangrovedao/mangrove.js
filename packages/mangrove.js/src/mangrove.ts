@@ -206,14 +206,14 @@ class Mangrove {
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(logic: string, multiMaker?: boolean): OfferLogic {
+  offerLogic(logic: string): OfferLogic {
     if (ethers.utils.isAddress(logic)) {
-      return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
+      return new OfferLogic(this, logic);
     } else {
       // loading a multi maker predeployed logic
       const address: string = Mangrove.getAddress(logic, this._network.name);
       if (address) {
-        return new OfferLogic(this, address, true);
+        return new OfferLogic(this, address);
       } else {
         throw Error(`Cannot find ${logic} on network ${this._network.name}`);
       }

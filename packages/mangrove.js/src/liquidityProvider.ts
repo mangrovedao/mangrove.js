@@ -215,40 +215,6 @@ class LiquidityProvider {
     To avoid inconsistency we do a market.once(...) which fulfills the promise once the offer has been created.
   */
 
-  parseEvents(
-    receipt: ethers.ContractReceipt,
-    contractInterface: ethers.Contract["Interface"],
-    eventName: string
-  ) {
-    const logs = receipt.logs
-      .map((log) => contractInterface.parseLog(log))
-      .filter((log) => log.name === eventName);
-    return logs;
-  }
-
-  #resultOfOfferAction(
-    ba: Market.BA,
-    type: "OfferWrite" | "OfferRetract",
-    receipt: ethers.ContractReceipt
-  ): LiquidityProvider.OfferActionResult {
-    let result: LiquidityProvider.OfferActionResult;
-    const logs = this.parseEvents(receipt, this.mgv.contract.interface, type);
-    for (const evt of logs) {
-      result = {
-        offerType: ba,
-        market: `(${this.market.base.name},${this.market.quote.name})`,
-        txReceipt: receipt,
-        id: evt.args.id.toNumber(),
-        gasprice: evt.args.gasprice ? evt.args.gasprice.toNumber() : undefined,
-        gasreq: evt.args.gasreq ? evt.args.gasreq.toNumber() : undefined,
-      };
-    }
-    if (!result) {
-      throw Error("Maker offer went wrong");
-    }
-    return result;
-  }
-
   /* Returns an easy to use promise of a view of the new offer. You can also catch any error thrown if the transaction was rejected/replaced. */
   async newOffer(
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
@@ -260,8 +226,8 @@ class LiquidityProvider {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
     let txPromise = null;
-    let poster = this.logic ? this.logic : this.mgv;
-    txPromise = poster.contract.newOffer(
+    const poster = this.logic ? this.logic.contract : this.mgv.contract;
+    txPromise = poster.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       outbound_tkn.toUnits(wants),
@@ -335,7 +301,7 @@ class LiquidityProvider {
       this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     let txPromise = null;
-    let updater = this.logic ? this.logic.contract : this.mgv.contract;
+    const updater = this.logic ? this.logic.contract : this.mgv.contract;
     txPromise = updater.updateOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -387,10 +353,10 @@ class LiquidityProvider {
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
     let txPromise = null;
-    let retracter = this.logic ? this.logic.contract : this.mgv.contract;
+    const retracter = this.logic ? this.logic.contract : this.mgv.contract;
     txPromise = retracter.retractOffer(
-      outbound_tkn,
-      inbound_tkn,
+      outbound_tkn.address,
+      inbound_tkn.address,
       id,
       deprovision,
       overrides
@@ -448,7 +414,7 @@ class LiquidityProvider {
     let lockedProvision: Bigish;
     // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
     if (opts.id) {
-      let { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
+      const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
       lockedProvision = this.mgv.fromUnits(
         this.logic
           ? await this.logic.contract.provisionOf(
