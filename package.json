@@ -21,8 +21,5 @@
     "dependencies": {
         "pinst": "^2.1.6"
     },
-    "packageManager": "yarn@3.1.0",
-    "resolutions": {
-        "@mangrovedao/mangrove-core": "portal:/Users/jeankrivine/Documents/git/mangrove-core"
-    }
+    "packageManager": "yarn@3.1.0"
 }
