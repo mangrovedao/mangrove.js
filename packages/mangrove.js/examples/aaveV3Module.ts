@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
-import { typechain } from "./types";
-import { Mangrove } from ".";
+import { typechain } from "../src/types";
+import { Mangrove } from "../";
 import Big from "big.js";
 
 //import { TransactionResponse } from "@ethersproject/abstract-provider";

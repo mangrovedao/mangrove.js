@@ -4,7 +4,7 @@ import Market from "./market";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { LiquidityProvider, Mangrove, AaveV3Module } from ".";
+import { LiquidityProvider, Mangrove } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 
 /* Note on big.js:
@@ -14,14 +14,11 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
-import MgvToken from "./mgvtoken";
-import { BigNumberish } from "@ethersproject/bignumber";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 
 /**
- * The OfferLogic class connects to a OfferLogic contract.
- * It posts onchain offers.
+ * The OfferLogic class connects to a Maker contract
  */
 
 class OfferLogic {
