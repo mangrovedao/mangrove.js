@@ -24,7 +24,12 @@
     "rootDir": "src/",
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/*.json"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/constants/*.json",
+    "src/callIndexer.ts"
+  ],
   "references": [
     {
       "path": "../commonlib.js"
