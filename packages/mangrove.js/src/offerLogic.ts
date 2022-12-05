@@ -14,7 +14,6 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
-import { OfferMaker__factory } from "./types/typechain";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 
