@@ -14,6 +14,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
+import { OfferMaker__factory } from "./types/typechain";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 
@@ -33,6 +34,18 @@ class OfferLogic {
       logic,
       signer ? signer : this.mgv._signer
     );
+  }
+
+  static async deploy(mgv: Mangrove): Promise<string> {
+    const contract = await new typechain[`OfferMaker__factory`](
+      mgv._signer
+    ).deploy(
+      mgv._address,
+      ethers.constants.AddressZero,
+      await mgv._signer.getAddress()
+    );
+    await contract.deployTransaction.wait();
+    return contract.address;
   }
 
   /**

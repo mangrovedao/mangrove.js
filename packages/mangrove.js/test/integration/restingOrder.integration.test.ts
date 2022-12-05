@@ -30,8 +30,8 @@ describe("RestingOrder", () => {
       //shorten polling for faster tests
       (mgv._provider as any).pollingInterval = 10;
 
-      // interpreting mangroveOrder as a multi user maker contract
-      const logic = mgv.offerLogic(mgv.orderContract.address, true);
+      // interpreting mangroveOrder as a maker contract
+      const logic = mgv.offerLogic(mgv.orderContract.address);
       const lp = await logic.liquidityProvider({
         base: "TokenA",
         quote: "TokenB",
@@ -62,7 +62,7 @@ describe("RestingOrder", () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       mgv._provider.pollingInterval = 10;
-      const logic = mgv.offerLogic(mgv.orderContract.address, true);
+      const logic = mgv.offerLogic(mgv.orderContract.address);
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
@@ -116,7 +116,7 @@ describe("RestingOrder", () => {
         await orderContractAsLP.market.buy({
           wants: 20, // tokenA
           gives: 20, // tokenB
-          mangroveOrder: { provision: provision, restingOrder: true },
+          restingOrder: { provision: provision },
         });
       assert(
         // 5% fee configured in mochaHooks.js
@@ -144,8 +144,7 @@ describe("RestingOrder", () => {
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
         gives: 20, // tokenB
-        mangroveOrder: {
-          restingOrder: true,
+        restingOrder: {
           provision: provision,
           expiryDate:
             (

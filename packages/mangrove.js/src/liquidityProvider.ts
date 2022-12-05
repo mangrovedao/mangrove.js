@@ -232,9 +232,9 @@ class LiquidityProvider {
       inbound_tkn.address,
       outbound_tkn.toUnits(wants),
       inbound_tkn.toUnits(gives),
-      gasreq,
-      gasprice,
-      pivot,
+      gasreq ? gasreq : this.logic ? ethers.constants.MaxUint256 : 0,
+      gasprice ? gasprice : 0,
+      pivot ? pivot : 0,
       this.#optValueToPayableOverride(overrides, fund)
     );
 
@@ -307,7 +307,7 @@ class LiquidityProvider {
       inbound_tkn.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      gasreq ? gasreq : 0,
+      gasreq ? gasreq : offer.gasreq,
       gasprice ? gasprice : offer.gasprice,
       (await this.market.getPivotId(p.ba, price)) ?? 0,
       id,
@@ -402,7 +402,6 @@ class LiquidityProvider {
     return this.#approveToken(this.market.quote.name, arg, overrides);
   }
 
-  //TODO handle offer forwarder case
   async getMissingProvision(
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
@@ -411,7 +410,7 @@ class LiquidityProvider {
     const gasprice = opts.gasprice ? opts.gasprice : 0;
     // this computes the total provision required for a new offer on the market
     const provision = await this.market.getOfferProvision(ba, gasreq, gasprice);
-    let lockedProvision: Bigish;
+    let lockedProvision = Big(0);
     // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
     if (opts.id) {
       const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
@@ -430,7 +429,11 @@ class LiquidityProvider {
       contextInfo: "mangrove.maker",
       data: { ba: ba, opts: opts },
     });
-    return provision.sub(lockedProvision);
+    if (provision.gt(lockedProvision)) {
+      return provision.sub(lockedProvision);
+    } else {
+      return Big(0);
+    }
   }
 }
 

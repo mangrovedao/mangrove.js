@@ -21,7 +21,7 @@ describe("Mangrove functionality", () => {
       // start server
       const server = await node({
         ...defaultServerParams,
-        port: 8546,
+        port: 8545,
       }).connect();
 
       // connect mgv

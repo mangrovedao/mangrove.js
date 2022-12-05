@@ -70,20 +70,18 @@ namespace Market {
 
   export type TradeParams = {
     slippage?: number;
-  } & ({ mangroveOrder?: MangroveOrderParams } | { offerId?: number }) &
+    fillOrKill?: boolean;
+  } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
     (
       | { volume: Bigish; price: Bigish }
       | { total: Bigish; price: Bigish }
       | { wants: Bigish; gives: Bigish; fillWants?: boolean }
     );
 
-  export type MangroveOrderParams =
-    | { fillOrKill: boolean }
-    | {
-        expiryDate?: number;
-        restingOrder: boolean;
-        provision: Bigish;
-      };
+  export type RestingOrderParams = {
+    expiryDate?: number;
+    provision: Bigish;
+  };
 
   export type SnipeParams = {
     targets: {
@@ -492,7 +490,7 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    return this.trade.buy(params, overrides, this);
+    return this.trade.buy(params, this, overrides);
   }
 
   /**
@@ -521,7 +519,7 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    return this.trade.sell(params, overrides, this);
+    return this.trade.sell(params, this, overrides);
   }
 
   /**
@@ -542,7 +540,7 @@ class Market {
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    return this.trade.snipe(params, overrides, this);
+    return this.trade.snipe(params, this, overrides);
   }
 
   /**
@@ -561,7 +559,7 @@ class Market {
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.RawSnipeParams> {
-    return this.trade.getRawSnipeParams(params, overrides, this);
+    return this.trade.getRawSnipeParams(params, this, overrides);
   }
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
