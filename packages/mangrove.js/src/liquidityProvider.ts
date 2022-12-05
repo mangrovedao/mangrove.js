@@ -230,8 +230,8 @@ class LiquidityProvider {
     txPromise = poster.newOffer(
       outbound_tkn.address,
       inbound_tkn.address,
-      outbound_tkn.toUnits(wants),
-      inbound_tkn.toUnits(gives),
+      inbound_tkn.toUnits(wants),
+      outbound_tkn.toUnits(gives),
       gasreq ? gasreq : this.logic ? ethers.constants.MaxUint256 : 0,
       gasprice ? gasprice : 0,
       pivot ? pivot : 0,

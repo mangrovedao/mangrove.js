@@ -186,8 +186,8 @@ class Trade {
       } else {
         return this.marketOrder(
           {
-            gives: gives,
             wants: wants,
+            gives: gives,
             orderType: bs,
             fillWants: fillWants,
             market,
