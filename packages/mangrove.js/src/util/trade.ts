@@ -178,7 +178,7 @@ class Trade {
               },
             ],
             fillWants: fillWants,
-            ba: bs === "buy" ? "asks" : "bids",
+            ba: this.bsToBa(bs),
           },
           market,
           overrides
@@ -196,22 +196,6 @@ class Trade {
         );
       }
     }
-  }
-
-  sell(
-    params: Market.TradeParams,
-    market: Market,
-    overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
-    return this.order("sell", params, market, overrides);
-  }
-
-  buy(
-    params: Market.TradeParams,
-    market: Market,
-    overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
-    return this.order("buy", params, market, overrides);
   }
 
   /**
@@ -396,7 +380,6 @@ class Trade {
         ? [market.base, market.quote]
         : [market.quote, market.base];
 
-    await market.consoleAsks(["wants", "gives"]);
     const response = await market.mgv.orderContract.take(
       {
         outbound_tkn: outboundTkn.address,

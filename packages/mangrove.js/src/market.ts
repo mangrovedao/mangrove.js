@@ -490,7 +490,7 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    return this.trade.buy(params, this, overrides);
+    return this.trade.order("buy", params, this, overrides);
   }
 
   /**
@@ -519,7 +519,7 @@ class Market {
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.OrderResult> {
-    return this.trade.sell(params, this, overrides);
+    return this.trade.order("sell", params, this, overrides);
   }
 
   /**
