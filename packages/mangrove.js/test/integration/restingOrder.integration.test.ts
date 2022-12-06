@@ -28,10 +28,10 @@ describe("RestingOrder", () => {
         privateKey: this.accounts.tester.key,
       });
       //shorten polling for faster tests
-      (mgv._provider as any).pollingInterval = 10;
+      (mgv.provider as any).pollingInterval = 10;
 
-      // interpreting mangroveOrder as a multi user maker contract
-      const logic = mgv.offerLogic(mgv.orderContract.address, true);
+      // interpreting mangroveOrder as a maker contract
+      const logic = mgv.offerLogic(mgv.orderContract.address);
       const lp = await logic.liquidityProvider({
         base: "TokenA",
         quote: "TokenB",
@@ -61,8 +61,8 @@ describe("RestingOrder", () => {
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      mgv._provider.pollingInterval = 10;
-      const logic = mgv.offerLogic(mgv.orderContract.address, true);
+      mgv.provider.pollingInterval = 10;
+      const logic = mgv.offerLogic(mgv.orderContract.address);
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
@@ -74,7 +74,7 @@ describe("RestingOrder", () => {
       await w(orderContractAsLP.logic.activate(["TokenA", "TokenB"]));
 
       // minting As and Bs for test runner
-      const me = await mgv._signer.getAddress();
+      const me = await mgv.signer.getAddress();
       await w(
         mgv.token("TokenA").contract.mint(me, utils.parseUnits("100", 18))
       );
@@ -116,7 +116,7 @@ describe("RestingOrder", () => {
         await orderContractAsLP.market.buy({
           wants: 20, // tokenA
           gives: 20, // tokenB
-          mangroveOrder: { provision: provision, restingOrder: true },
+          restingOrder: { provision: provision },
         });
       assert(
         // 5% fee configured in mochaHooks.js
@@ -144,12 +144,11 @@ describe("RestingOrder", () => {
       const orderResult: Market.OrderResult = await market.buy({
         wants: 20, // tokenA
         gives: 20, // tokenB
-        mangroveOrder: {
-          restingOrder: true,
+        restingOrder: {
           provision: provision,
           expiryDate:
             (
-              await mgv._provider.getBlock(mgv._provider.getBlockNumber())
+              await mgv.provider.getBlock(mgv.provider.getBlockNumber())
             ).timestamp + 5,
         },
       });
@@ -182,13 +181,12 @@ describe("RestingOrder", () => {
         "Residual should still be in the book"
       );
       // Advance time 6 seconds by changing clock and mining block
-      await (mgv._provider as JsonRpcProvider).send("evm_increaseTime", ["6"]);
-      await (mgv._provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
+      await (mgv.provider as JsonRpcProvider).send("evm_increaseTime", ["6"]);
+      await (mgv.provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
 
       assert(
         ttl.lt(
-          (await mgv._provider.getBlock(mgv._provider.getBlockNumber()))
-            .timestamp
+          (await mgv.provider.getBlock(mgv.provider.getBlockNumber())).timestamp
         ),
         "Timestamp did not advance"
       );

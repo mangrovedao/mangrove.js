@@ -53,11 +53,11 @@ namespace Mangrove {
 }
 
 class Mangrove {
-  _provider: Provider;
-  _signer: Signer;
-  _network: eth.ProviderNetwork;
+  provider: Provider;
+  signer: Signer;
+  network: eth.ProviderNetwork;
   _readOnly: boolean;
-  _address: string;
+  address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
   cleanerContract: typechain.MgvCleaner;
@@ -128,14 +128,13 @@ class Mangrove {
   }
 
   disconnect(): void {
-    this._provider.removeAllListeners();
+    this.provider.removeAllListeners();
 
     logger.debug("Disconnect from Mangrove", {
       contextInfo: "mangrove.base",
     });
   }
   //TODO types in module namespace with same name as class
-  //TODO remove _prefix on public properties
 
   constructor(params: {
     signer: Signer;
@@ -148,38 +147,35 @@ class Mangrove {
       );
     }
     // must always pass a provider-equipped signer
-    this._provider = params.signer.provider;
-    this._signer = params.signer;
-    this._network = params.network;
+    this.provider = params.signer.provider;
+    this.signer = params.signer;
+    this.network = params.network;
     this._readOnly = params.readOnly;
-    this._address = Mangrove.getAddress("Mangrove", this._network.name);
+    this.address = Mangrove.getAddress("Mangrove", this.network.name);
     this.contract = typechain.Mangrove__factory.connect(
-      this._address,
-      this._signer
+      this.address,
+      this.signer
     );
-    const readerAddress = Mangrove.getAddress("MgvReader", this._network.name);
+    const readerAddress = Mangrove.getAddress("MgvReader", this.network.name);
     this.readerContract = typechain.MgvReader__factory.connect(
       readerAddress,
-      this._signer
+      this.signer
     );
-    const cleanerAddress = Mangrove.getAddress(
-      "MgvCleaner",
-      this._network.name
-    );
+    const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
     this.cleanerContract = typechain.MgvCleaner__factory.connect(
       cleanerAddress,
-      this._signer
+      this.signer
     );
     // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
     const orderAddress = Mangrove.getAddress(
       // "MangroveOrder",
       "MangroveOrderEnriched",
-      this._network.name
+      this.network.name
     );
     // this.orderContract = typechain.MangroveOrder__factory.connect(
     this.orderContract = typechain.MangroveOrderEnriched__factory.connect(
       orderAddress,
-      this._signer
+      this.signer
     );
   }
   /* Instance */
@@ -206,16 +202,16 @@ class Mangrove {
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(logic: string, multiMaker?: boolean): OfferLogic {
+  offerLogic(logic: string): OfferLogic {
     if (ethers.utils.isAddress(logic)) {
-      return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
+      return new OfferLogic(this, logic);
     } else {
       // loading a multi maker predeployed logic
-      const address: string = Mangrove.getAddress(logic, this._network.name);
+      const address: string = Mangrove.getAddress(logic, this.network.name);
       if (address) {
-        return new OfferLogic(this, address, true);
+        return new OfferLogic(this, address);
       } else {
-        throw Error(`Cannot find ${logic} on network ${this._network.name}`);
+        throw Error(`Cannot find ${logic} on network ${this.network.name}`);
       }
     }
   }
@@ -230,7 +226,7 @@ class Mangrove {
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
-    const EOA = await this._signer.getAddress();
+    const EOA = await this.signer.getAddress();
     if (p instanceof Market) {
       return new LiquidityProvider({
         mgv: this,
@@ -257,7 +253,7 @@ class Mangrove {
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getAddress(name: string): string {
-    return Mangrove.getAddress(name, this._network.name || "mainnet");
+    return Mangrove.getAddress(name, this.network.name || "mainnet");
   }
 
   /**
@@ -266,7 +262,7 @@ class Mangrove {
    * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.
    */
   setAddress(name: string, address: string): void {
-    Mangrove.setAddress(name, address, this._network.name || "mainnet");
+    Mangrove.setAddress(name, address, this.network.name || "mainnet");
   }
 
   /** Convert public token amount to internal token representation.

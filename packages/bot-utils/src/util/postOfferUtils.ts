@@ -24,15 +24,13 @@ export class PostOfferUtils {
     let directLP = await mgv.liquidityProvider(offerData.market);
     // LP needs to approve Mangrove for base transfer (skipping this part will ensure offers posted by this LP will fail)
     let prov = await directLP.computeAskProvision();
-    // Make sure tx has been mined so we can read the result off the chain
-    let tx = await directLP.fundMangrove(prov);
-    await tx.wait();
     // Posting a new Ask or Bid (that will fail)
     let post = this.postBidOrAsk(
       directLP,
       offerData.ba,
       offerData.price,
-      offerData.quantity
+      offerData.quantity,
+      prov
     );
     return post;
   }
@@ -41,12 +39,13 @@ export class PostOfferUtils {
     directLP: LiquidityProvider,
     ba: Market.BA,
     price: Big,
-    quantity: Big
+    quantity: Big,
+    fund: Big
   ): Promise<{ id: number; event: ethers.providers.Log }> {
     if (ba == "asks") {
-      return directLP.newAsk({ price: price, volume: quantity });
+      return directLP.newAsk({ price: price, volume: quantity, fund: fund });
     } else {
-      return directLP.newBid({ price: price, volume: quantity });
+      return directLP.newBid({ price: price, volume: quantity, fund: fund });
     }
   }
 

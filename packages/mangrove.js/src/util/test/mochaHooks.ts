@@ -36,7 +36,7 @@ export const mochaHooks = {
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    mgv._provider.pollingInterval = 10;
+    mgv.provider.pollingInterval = 10;
     await mgv.fundMangrove(10, this.accounts.deployer.address);
     // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
 

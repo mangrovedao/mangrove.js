@@ -68,7 +68,7 @@ const botFunction = async (
 
   await balanceUtils.logTokenBalances(
     mgv,
-    await mgv._signer.getAddress(),
+    await mgv.signer.getAddress(),
     tokenConfigs,
     "init"
   );

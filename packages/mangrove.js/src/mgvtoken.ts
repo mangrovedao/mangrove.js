@@ -51,7 +51,7 @@ class MgvToken {
 
     this.contract = typechain.TestToken__factory.connect(
       this.address,
-      this.mgv._signer
+      this.mgv.signer
     );
     this.unitCalculations = new UnitCalculations();
   }
@@ -115,10 +115,10 @@ class MgvToken {
     params: { owner?: string; spender?: string } = {}
   ): Promise<Big> {
     if (typeof params.owner === "undefined") {
-      params.owner = await this.mgv._signer.getAddress();
+      params.owner = await this.mgv.signer.getAddress();
     }
     if (typeof params.spender === "undefined") {
-      params.spender = this.mgv._address;
+      params.spender = this.mgv.address;
     }
     const amount = await this.contract.allowance(params.owner, params.spender);
     return this.fromUnits(amount);
@@ -150,7 +150,7 @@ class MgvToken {
     arg: { amount?: Bigish } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.approve(this.mgv._address, arg, overrides);
+    return this.approve(this.mgv.address, arg, overrides);
   }
 
   /**

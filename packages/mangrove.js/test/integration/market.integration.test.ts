@@ -36,7 +36,7 @@ describe("Market integration tests suite", () => {
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    mgv._provider.pollingInterval = 10;
+    mgv.provider.pollingInterval = 10;
     await mgv.contract["fund()"]({ value: toWei(10) });
 
     const tokenA = mgv.token("TokenA");
@@ -44,7 +44,7 @@ describe("Market integration tests suite", () => {
 
     await tokenA.approveMangrove({ amount: 1000000000000000 });
     await tokenB.approveMangrove({ amount: 1000000000000000 });
-    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
+    mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
 
   afterEach(async () => {
@@ -63,7 +63,7 @@ describe("Market integration tests suite", () => {
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      mgvro._provider.pollingInterval = 10;
+      mgvro.provider.pollingInterval = 10;
     });
     afterEach(async () => {
       mgvro.disconnect();
@@ -595,7 +595,7 @@ describe("Market integration tests suite", () => {
   it("listens to blocks", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
     const pro = market.afterBlock(1, (n) => {});
-    const lastBlock = await mgv._provider.getBlockNumber();
+    const lastBlock = await mgv.provider.getBlockNumber();
     const pro2 = market.afterBlock(lastBlock + 1, (n) => {});
     await helpers.newOffer(mgv, market.base, market.quote, {
       wants: "1",
@@ -635,7 +635,7 @@ describe("Market integration tests suite", () => {
       next: undefined,
       gasprice: 1,
       gasreq: 10000,
-      maker: await mgv._signer.getAddress(),
+      maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).asks.offer_gasbase,
       wants: Big("1"),
       gives: Big("1.2"),
@@ -649,7 +649,7 @@ describe("Market integration tests suite", () => {
       next: undefined,
       gasprice: 1,
       gasreq: 10000,
-      maker: await mgv._signer.getAddress(),
+      maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).bids.offer_gasbase,
       wants: Big("1.3"),
       gives: Big("1.1"),
@@ -1129,7 +1129,7 @@ describe("Market integration tests suite", () => {
       );
     } catch (e) {
       didThrow = true;
-      const callResult = await mgv._provider.call(e.transaction);
+      const callResult = await mgv.provider.call(e.transaction);
       expect(() =>
         mgv.cleanerContract.interface.decodeFunctionResult(
           "collect",
@@ -1315,7 +1315,7 @@ describe("Market integration tests suite", () => {
     asks = reorder(asks, [3, 1, 2]);
     bids = reorder(bids, [2, 1, 3]);
 
-    const selfAddress = await mgv._signer.getAddress();
+    const selfAddress = await mgv.signer.getAddress();
 
     // Add price/volume, prev/next, +extra info to expected book.
     // Volume always in base, price always in quote/base.

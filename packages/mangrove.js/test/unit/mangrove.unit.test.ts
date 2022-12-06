@@ -21,7 +21,7 @@ describe("Mangrove functionality", () => {
       // start server
       const server = await node({
         ...defaultServerParams,
-        port: 8546,
+        port: 8544,
       }).connect();
 
       // connect mgv
@@ -30,7 +30,7 @@ describe("Mangrove functionality", () => {
         provider,
         privateKey: server.accounts[0].key,
       });
-      (mgv._provider as any).pollingInterval = 10;
+      (mgv.provider as any).pollingInterval = 10;
 
       // setup mangrove addresses watcher
       const watcher = new Watcher(Mangrove.addresses.local);
@@ -38,7 +38,7 @@ describe("Mangrove functionality", () => {
 
       // create new entry
       const ens = connectToToyENSContract(
-        mgv._signer as any as ethers.providers.JsonRpcProvider
+        mgv.signer as any as ethers.providers.JsonRpcProvider
       );
 
       // watch for new entry

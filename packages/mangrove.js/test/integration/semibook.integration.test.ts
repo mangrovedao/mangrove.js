@@ -29,16 +29,16 @@ describe("Semibook integration tests suite", function () {
 
     mgvAdmin = await Mangrove.connect({
       privateKey: this.accounts.deployer.key,
-      provider: mgv._provider,
+      provider: mgv.provider,
     });
 
     mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
-    (mgv._provider as any).pollingInterval = 10;
+    (mgv.provider as any).pollingInterval = 10;
     await mgv.contract["fund()"]({ value: toWei(10) });
 
-    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
+    mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
 
   afterEach(async () => {
