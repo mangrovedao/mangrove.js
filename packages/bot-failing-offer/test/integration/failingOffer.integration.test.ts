@@ -43,8 +43,8 @@ describe("Failing offer integration tests", () => {
 
     accounts = [deployer, maker, cleaner];
     // @ts-ignore
-    makerMangrove._provider.pollingInterval = 10;
-    mgvTestUtil.initPollOfTransactionTracking(makerMangrove._provider);
+    makerMangrove.provider.pollingInterval = 10;
+    mgvTestUtil.initPollOfTransactionTracking(makerMangrove.provider);
 
     deployerMangrove = await Mangrove.connect({ signer: deployer.signer });
 

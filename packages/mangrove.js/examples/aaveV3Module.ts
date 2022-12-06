@@ -22,7 +22,7 @@ class AaveV3Module {
     this.mgv = mgv;
     this.contract = typechain.AaveV3Module__factory.connect(
       address,
-      signer ? signer : this.mgv._signer
+      signer ? signer : this.mgv.signer
     );
   }
 
@@ -34,7 +34,7 @@ class AaveV3Module {
     const debt_address = await this.contract.debtToken(asset_address);
     return typechain.ICreditDelegationToken__factory.connect(
       debt_address,
-      signer ? signer : this.mgv._signer
+      signer ? signer : this.mgv.signer
     );
   }
 
@@ -67,7 +67,7 @@ class AaveV3Module {
   }
 
   async logStatus(tokenNames: string[], account?: string): Promise<void> {
-    account = account ? account : await this.mgv._signer.getAddress();
+    account = account ? account : await this.mgv.signer.getAddress();
     for (const tokenName of tokenNames) {
       const stat = await this.status(tokenName, account);
       console.log(`----------${tokenName}----------`);

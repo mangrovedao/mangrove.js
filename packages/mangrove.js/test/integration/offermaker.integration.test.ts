@@ -30,7 +30,7 @@ describe("OfferMaker", () => {
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      mgv._provider.pollingInterval = 10;
+      mgv.provider.pollingInterval = 10;
       const mkr_address = await OfferLogic.deploy(mgv);
       const logic = mgv.offerLogic(mkr_address);
       const lp = await logic.liquidityProvider({
@@ -56,7 +56,7 @@ describe("OfferMaker", () => {
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      mgv._provider.pollingInterval = 10;
+      mgv.provider.pollingInterval = 10;
 
       const mkr_address = await OfferLogic.deploy(mgv);
       const logic = mgv.offerLogic(mkr_address);
@@ -74,12 +74,10 @@ describe("OfferMaker", () => {
 
     describe("Before setup", () => {
       it("checks allowance for onchain logic", async () => {
-        let allowanceForLogic /*:Big*/ = await mgv
-          .token("TokenB")
-          .allowance({
-            owner: onchain_lp.logic.address,
-            spender: mgv._address,
-          });
+        let allowanceForLogic /*:Big*/ = await mgv.token("TokenB").allowance({
+          owner: onchain_lp.logic.address,
+          spender: mgv.address,
+        });
 
         assert.strictEqual(
           allowanceForLogic.toNumber(),
@@ -89,12 +87,10 @@ describe("OfferMaker", () => {
 
         // test default approve amount
         await w(onchain_lp.logic?.activate(["TokenB"]));
-        allowanceForLogic /*:Big*/ = await mgv
-          .token("TokenB")
-          .allowance({
-            owner: onchain_lp.logic.address,
-            spender: mgv._address,
-          });
+        allowanceForLogic /*:Big*/ = await mgv.token("TokenB").allowance({
+          owner: onchain_lp.logic.address,
+          spender: mgv.address,
+        });
 
         assert.strictEqual(
           mgv.toUnits(allowanceForLogic, 6).toString(),
@@ -106,7 +102,7 @@ describe("OfferMaker", () => {
       it("checks allowance for EOA provider", async () => {
         let allowanceForEOA = await mgv
           .token("TokenB")
-          .allowance({ owner: eoa_lp.eoa, spender: mgv._address });
+          .allowance({ owner: eoa_lp.eoa, spender: mgv.address });
 
         assert.strictEqual(
           allowanceForEOA.toNumber(),
@@ -123,7 +119,7 @@ describe("OfferMaker", () => {
         );
         allowanceForEOA = await mgv
           .token("TokenB")
-          .allowance({ owner: eoa_lp.eoa, spender: mgv._address });
+          .allowance({ owner: eoa_lp.eoa, spender: mgv.address });
 
         assert.strictEqual(
           allowanceForEOA.toNumber(),
@@ -135,7 +131,7 @@ describe("OfferMaker", () => {
 
         allowanceForEOA = await mgv
           .token("TokenB")
-          .allowance({ owner: eoa_lp.eoa, spender: mgv._address });
+          .allowance({ owner: eoa_lp.eoa, spender: mgv.address });
 
         assert.strictEqual(
           mgv.toUnits(allowanceForEOA, 6).toString(),
@@ -172,7 +168,7 @@ describe("OfferMaker", () => {
 
       it("withdraws", async () => {
         const getBal = async () =>
-          mgv._provider.getBalance(await mgv._signer.getAddress());
+          mgv.provider.getBalance(await mgv.signer.getAddress());
         let tx = await mgv.fundMangrove(10, onchain_lp.logic.address);
         await tx.wait();
         const oldBal = await getBal();
@@ -228,13 +224,13 @@ describe("OfferMaker", () => {
           gasprice: 12000,
           fund: prov,
         });
-        let prov_before_cancel = await mgv._provider.getBalance(
-          await onchain_lp.mgv._signer.getAddress()
+        let prov_before_cancel = await mgv.provider.getBalance(
+          await onchain_lp.mgv.signer.getAddress()
         );
 
         await onchain_lp.retractBid(ofrId, true); // with deprovision
-        let prov_after_cancel = await mgv._provider.getBalance(
-          await onchain_lp.mgv._signer.getAddress()
+        let prov_after_cancel = await mgv.provider.getBalance(
+          await onchain_lp.mgv.signer.getAddress()
         );
         assert(
           prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
@@ -246,8 +242,8 @@ describe("OfferMaker", () => {
         );
 
         await onchain_lp.retractBid(ofrId, true);
-        let prov_after_cancel2 = await mgv._provider.getBalance(
-          await onchain_lp.mgv._signer.getAddress()
+        let prov_after_cancel2 = await mgv.provider.getBalance(
+          await onchain_lp.mgv.signer.getAddress()
         );
         assert(
           prov_after_cancel2.lt(prov_after_cancel), // cannot do better because of gas cost

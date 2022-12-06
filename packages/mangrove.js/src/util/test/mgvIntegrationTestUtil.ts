@@ -50,7 +50,7 @@ let signers: any = {};
 export const setConfig = (_mgv: Mangrove, accounts: any) => {
   mgv = _mgv;
   for (const [name, { key }] of Object.entries(accounts) as any) {
-    signers[name] = new ethers.Wallet(key, mgv._provider);
+    signers[name] = new ethers.Wallet(key, mgv.provider);
   }
 };
 
@@ -59,7 +59,7 @@ export const getAddresses = async (): Promise<Addresses> => {
     const mg = await mgv.contract;
     const tm = await Mangrove.typechain.SimpleTestMaker__factory.connect(
       mgv.getAddress("SimpleTestMaker"),
-      mgv._signer
+      mgv.signer
     );
     const ta = mgv.token("TokenA").contract;
     const tb = mgv.token("TokenB").contract;
@@ -251,7 +251,7 @@ export async function waitForBooksForLastTx(market?: Market) {
   }
   if (market) {
     // this may be a block number slightly larger, but for tests that is ok.
-    const lastBlock = await market.mgv._provider.getBlockNumber();
+    const lastBlock = await market.mgv.provider.getBlockNumber();
     await market.afterBlock(lastBlock, () => {});
   }
 }

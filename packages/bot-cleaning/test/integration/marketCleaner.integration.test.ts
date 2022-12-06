@@ -52,13 +52,13 @@ describe("MarketCleaner integration tests", () => {
     });
     market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    cleanerProvider = mgv._provider;
+    cleanerProvider = mgv.provider;
 
     // Turn up the Mangrove gasprice to increase the bounty
     await mgvTestUtil.setMgvGasPrice(50);
 
     balancesBefore = await mgvTestUtil.getBalances(accounts, testProvider);
-    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
+    mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
 
   afterEach(async function () {

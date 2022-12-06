@@ -97,11 +97,11 @@ export class GasUpdater {
     // Using the mangrove.js address functionallity, since there is no reason to recreate the significant infastructure for only one Contract.
     const oracleAddress = Mangrove.getAddress(
       "MgvOracle",
-      mangrove._network.name
+      mangrove.network.name
     );
     this.oracleContract = typechain.MgvOracle__factory.connect(
       oracleAddress,
-      mangrove._signer
+      mangrove.signer
     );
   }
 

@@ -103,8 +103,8 @@ export class Setup {
     this.logger.info("Connected to Mangrove", {
       contextInfo: "init",
       data: {
-        network: mgv._network,
-        addresses: Mangrove.getAllAddresses(mgv._network.name),
+        network: mgv.network,
+        addresses: Mangrove.getAllAddresses(mgv.network.name),
       },
     });
 

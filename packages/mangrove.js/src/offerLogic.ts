@@ -31,17 +31,17 @@ class OfferLogic {
     this.address = logic;
     this.contract = typechain.ILiquidityProvider__factory.connect(
       logic,
-      signer ? signer : this.mgv._signer
+      signer ? signer : this.mgv.signer
     );
   }
 
   static async deploy(mgv: Mangrove): Promise<string> {
     const contract = await new typechain[`OfferMaker__factory`](
-      mgv._signer
+      mgv.signer
     ).deploy(
-      mgv._address,
+      mgv.address,
       ethers.constants.AddressZero,
-      await mgv._signer.getAddress()
+      await mgv.signer.getAddress()
     );
     await contract.deployTransaction.wait();
     return contract.address;
@@ -56,7 +56,7 @@ class OfferLogic {
     if (router_address != ethers.constants.AddressZero) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
-        this.mgv._signer
+        this.mgv.signer
       );
     }
   }
@@ -88,12 +88,12 @@ class OfferLogic {
     const token = this.mgv.token(tokenName);
     if (router) {
       return token.allowance({
-        owner: await this.mgv._signer.getAddress(),
+        owner: await this.mgv.signer.getAddress(),
         spender: router.address,
       });
     } else {
       return token.allowance({
-        owner: await this.mgv._signer.getAddress(),
+        owner: await this.mgv.signer.getAddress(),
         spender: this.address,
       });
     }
@@ -115,7 +115,7 @@ class OfferLogic {
   ): Promise<TransactionResponse> {
     const accessControlled = typechain.AccessControlled__factory.connect(
       this.address,
-      this.mgv._signer
+      this.mgv.signer
     );
     return accessControlled.setAdmin(newAdmin, overrides);
   }
@@ -123,7 +123,7 @@ class OfferLogic {
   admin(): Promise<string> {
     const accessControlled = typechain.AccessControlled__factory.connect(
       this.address,
-      this.mgv._signer
+      this.mgv.signer
     );
     return accessControlled.admin();
   }
@@ -167,7 +167,7 @@ class OfferLogic {
   ): Promise<TransactionResponse> {
     return this.contract.withdrawFromMangrove(
       this.mgv.toUnits(amount, 18),
-      await this.mgv._signer.getAddress(),
+      await this.mgv.signer.getAddress(),
       overrides
     );
   }

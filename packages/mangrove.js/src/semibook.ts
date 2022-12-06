@@ -149,14 +149,14 @@ class Semibook implements Iterable<Market.Offer> {
 
   /** Stop listening to events from mangrove */
   disconnect(): void {
-    this.market.mgv._provider.off("block", this.#blockEventCallback);
+    this.market.mgv.provider.off("block", this.#blockEventCallback);
   }
 
   async requestOfferListPrefix(
     options: Semibook.Options
   ): Promise<Market.Offer[]> {
     return await this.#fetchOfferListPrefix(
-      await this.market.mgv._provider.getBlockNumber(),
+      await this.market.mgv.provider.getBlockNumber(),
       undefined, // Start from best offer
       options
     );
@@ -552,11 +552,11 @@ class Semibook implements Iterable<Market.Offer> {
     // before the semibook has been initialized. This is ensured by
     // locking the cache and having the event listener await and take that lock.
     await this.#cacheLock.runExclusive(async () => {
-      this.market.mgv._provider.on("block", this.#blockEventCallback);
+      this.market.mgv.provider.on("block", this.#blockEventCallback);
 
       // To ensure consistency in this cache, everything is initially fetched from a specific block
       this.#lastReadBlockNumber =
-        await this.market.mgv._provider.getBlockNumber();
+        await this.market.mgv.provider.getBlockNumber();
       const localConfig = await this.getConfig(this.#lastReadBlockNumber);
       this.#offer_gasbase = localConfig.offer_gasbase;
 
@@ -586,7 +586,7 @@ class Semibook implements Iterable<Market.Offer> {
       if (blockNumber <= this.#lastReadBlockNumber) {
         return;
       }
-      const logs = await this.market.mgv._provider.getLogs({
+      const logs = await this.market.mgv.provider.getLogs({
         fromBlock: blockNumber,
         toBlock: blockNumber,
         ...this.#eventFilter,
@@ -934,7 +934,7 @@ class Semibook implements Iterable<Market.Offer> {
         : [topics0, quote_padded, base_padded];
 
     return {
-      address: this.market.mgv._address,
+      address: this.market.mgv.address,
       topics: topics,
     };
   }
