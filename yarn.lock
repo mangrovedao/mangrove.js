@@ -1406,7 +1406,7 @@ __metadata:
     "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
@@ -1418,7 +1418,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.8
@@ -1455,7 +1455,7 @@ __metadata:
     "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
@@ -1467,7 +1467,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.8
@@ -1504,7 +1504,7 @@ __metadata:
     "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
@@ -1516,7 +1516,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.8
@@ -1553,7 +1553,7 @@ __metadata:
     "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
@@ -1565,7 +1565,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.8
@@ -1603,7 +1603,7 @@ __metadata:
     "@mangrovedao/bot-utils": "workspace:*"
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
@@ -1615,7 +1615,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.8
@@ -1652,7 +1652,7 @@ __metadata:
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
     "@typechain/ethers-v5": ^10.1.0
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
@@ -1665,7 +1665,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
     axios: ^0.27.2
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.8
@@ -1703,7 +1703,7 @@ __metadata:
     "@ethersproject/hardware-wallets": ^5.6.1
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove.js": "workspace:*"
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
@@ -1715,7 +1715,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     config: ^3.3.8
@@ -1796,7 +1796,7 @@ __metadata:
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-core": ^1.1.3
     "@typechain/ethers-v5": ^10.1.0
-    "@types/big.js": ^6.1.3
+    "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5
     "@types/mocha": ^9.1.1
     "@types/node": ^18.0.0
@@ -1805,7 +1805,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ^5.44.0
     "@typescript-eslint/parser": ^5.22.0
     async-mutex: ^0.4.0
-    big.js: ^6.1.1
+    big.js: ^6.2.1
     chai: ^4.3.6
     chai-as-promised: ^7.1.1
     chalk: ^4.1.2
@@ -1937,10 +1937,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/big.js@npm:^6.1.3":
-  version: 6.1.3
-  resolution: "@types/big.js@npm:6.1.3"
-  checksum: bf52e25c1d91daf5f88e7c49d03465ac9ce537cb09697c7677e70f9a09727156f4278987959769aabbfcce9e225c50713ccd594ab0c3835a7712d8635f323f7c
+"@types/big.js@npm:^6.1.6":
+  version: 6.1.6
+  resolution: "@types/big.js@npm:6.1.6"
+  checksum: 290936fc4e9ebd9883ead8e8278126f43783b3e57bf7736b12ce6d922c62515a83b8c62cd3ef557a043508109d403cb0bd89c7556b221c2c1057fd3a1d03e683
   languageName: node
   linkType: hard
 
@@ -2701,10 +2701,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"big.js@npm:^6.1.1":
-  version: 6.1.1
-  resolution: "big.js@npm:6.1.1"
-  checksum: ba5db278e7d6700d7f92b7421e851bb65b6336d90b882869696c50574623c6be31f81500c3195fb1b391045163ffe62745e1c2bc30b35cb15e1b3e3ed135266b
+"big.js@npm:^6.2.1":
+  version: 6.2.1
+  resolution: "big.js@npm:6.2.1"
+  checksum: 0b234a2fd56c52bed2798ed2020bcab6fef5e9523b99a05406ad071d1aed6ee97ada9fb8de9576092da74c68825c276e19015743b8d1baea269b60a5c666b0cd
   languageName: node
   linkType: hard
 
