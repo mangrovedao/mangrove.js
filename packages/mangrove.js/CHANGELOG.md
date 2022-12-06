@@ -2,6 +2,8 @@
 
 - Upgraded mangrove-core dependency to enable Polygon mainnet
 - Updated TradeParams to remove slippage
+- public fields of Mangrove class are no longer prefixed by '\_'
+- Simplifying `offerLogic` and `liquidityProvider` classes. They now respectively implement `IOfferLogic` and `ILiquidityProvider` interface
 
 # 0.13.0 (November 2022)
 

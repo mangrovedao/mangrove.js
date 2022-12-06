@@ -1,7 +1,7 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
 
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 import assert from "assert";
 import { Mangrove, OfferLogic, LiquidityProvider } from "../../src";
@@ -16,6 +16,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 
 describe("OfferMaker", () => {
   let mgv: Mangrove;
+  let adminMgv: Mangrove;
 
   afterEach(async () => {
     mgv.disconnect();
@@ -26,6 +27,10 @@ describe("OfferMaker", () => {
       mgv = await Mangrove.connect({
         provider: this.server.url,
         privateKey: this.accounts.tester.key,
+      });
+      adminMgv = await Mangrove.connect({
+        provider: this.server.url,
+        privateKey: this.accounts.deployer.key,
       });
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -51,6 +56,10 @@ describe("OfferMaker", () => {
       mgv = await Mangrove.connect({
         provider: this.server.url,
         privateKey: this.accounts.tester.key,
+      });
+      adminMgv = await Mangrove.connect({
+        provider: this.server.url,
+        privateKey: this.accounts.deployer.key,
       });
 
       //shorten polling for faster tests
@@ -187,7 +196,6 @@ describe("OfferMaker", () => {
 
       it("pushes a new offer", async () => {
         const provision = await onchain_lp.computeAskProvision();
-
         const { id: ofrId } = await onchain_lp.newAsk({
           wants: 10,
           gives: 10,
@@ -216,12 +224,17 @@ describe("OfferMaker", () => {
       });
 
       it("cancels offer", async () => {
-        // huge provision to maker sure refund exceeds gas costs
-        const prov = await onchain_lp.computeBidProvision({ gasprice: 12000 });
+        //sets huge gasprice to induce high provision, to make sure taker receives more than gas cost when cancelling their offer
+        let prov = await onchain_lp.computeBidProvision();
+        console.log(prov);
+        const tx = await adminMgv.contract.setGasprice(1200);
+        await tx.wait();
+        prov = await onchain_lp.computeBidProvision();
+        console.log(prov);
+
         const { id: ofrId } = await onchain_lp.newBid({
           wants: 10,
           gives: 20,
-          gasprice: 12000,
           fund: prov,
         });
         let prov_before_cancel = await mgv.provider.getBalance(
