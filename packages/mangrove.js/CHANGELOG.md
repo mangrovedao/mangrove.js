@@ -1,5 +1,11 @@
 # next version
 
+# 0.13.0 (November 2022)
+
+- Add name resolution via the [ToyENS](https://github.com/mangrovedao/mangrove-core/blob/master/lib/ToyENS.sol) contract from mangrove-core if it exists at the canonical address. This enables using named contracts in mangrove.js when running a local chain. This also works if those contracts are deployed after mangrove.js has been initialized as long as the deployer registers the address in ToyENS, which all mangrove-core deployment scripts do.
+- Add `Watcher` proxy class to ease observation of async updates
+- Smaller code documentation improvements
+
 # 0.12.0 (November 2022)
 
 - Upgraded mangrove-core dependency.

@@ -7,7 +7,7 @@ import {
   displayedPriceDecimals as loadedDisplayedPriceDecimals,
 } from "./constants";
 import * as eth from "./eth";
-import { getAllToyENSEntries } from "./util/toyEnsEntries";
+import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
 
@@ -99,8 +99,13 @@ class Mangrove {
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
-    if (network.name === "local" && !Mangrove.addresses[network.name]) {
-      await Mangrove.fetchAllAddresses(signer.provider);
+    if ("send" in signer.provider) {
+      const devNode = new DevNode(signer.provider);
+      if (await devNode.isDevNode()) {
+        await devNode.deployToyENSIfAbsent();
+        await devNode.deployMulticallIfAbsent();
+        await Mangrove.watchLocalAddresses(devNode);
+      }
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({
@@ -455,14 +460,17 @@ class Mangrove {
    * Returns all addresses registered at the local server's Toy ENS contract.
    * Assumes provider is connected to a local server (typically for testing/experimentation).
    */
-  static async fetchAllAddresses(provider: ethers.providers.Provider) {
-    const network = await eth.getProviderNetwork(provider);
-    const contracts = await getAllToyENSEntries(provider);
-    for (const { name, address, decimals } of contracts) {
+  static async watchLocalAddresses(devNode: DevNode) {
+    const network = await eth.getProviderNetwork(devNode.provider);
+    const setAddress = (name, address, decimals) => {
       Mangrove.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
         Mangrove.setDecimals(name, decimals);
       }
+    };
+    const contracts = await devNode.getAllToyENSEntries(setAddress);
+    for (const { name, address, decimals } of contracts) {
+      setAddress(name, address, decimals);
     }
   }
 }
