@@ -38,7 +38,7 @@
     "@types/finalhandler": "^1.1.1",
     "@types/serve-static": "^1.15.0",
     "big.js": "^6.1.1",
-    "config": "^3.3.7",
+    "config": "^3.3.8",
     "dotenv-flow": "^3.2.0",
     "ethers": "^5.6.4",
     "fast-safe-stringify": "^2.1.1",
