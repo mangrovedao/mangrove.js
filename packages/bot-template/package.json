@@ -31,7 +31,7 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
-    "@ethersproject/experimental": "^5.6.3",
+    "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/bot-utils": "workspace:*",
     "@mangrovedao/commonlib.js": "workspace:*",
     "@mangrovedao/mangrove.js": "workspace:*",
@@ -41,7 +41,7 @@
     "big.js": "^6.2.1",
     "config": "^3.3.8",
     "dotenv-flow": "^3.2.0",
-    "ethers": "^5.6.4",
+    "ethers": "^5.7.2",
     "fast-safe-stringify": "^2.1.1",
     "finalhandler": "^1.2.0",
     "nyc": "^15.1.0",
