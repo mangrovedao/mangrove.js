@@ -229,7 +229,6 @@ describe("OfferMaker", () => {
         const tx = await adminMgv.contract.setGasprice(1200);
         await tx.wait();
         prov = await onchain_lp.computeBidProvision();
-        console.log(prov);
 
         const { id: ofrId } = await onchain_lp.newBid({
           wants: 10,
