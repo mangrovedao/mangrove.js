@@ -969,7 +969,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
-    "@types/finalhandler": ^1.1.1
+    "@types/finalhandler": ^1.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
     "@types/serve-static": ^1.15.0
@@ -1018,7 +1018,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
-    "@types/finalhandler": ^1.1.1
+    "@types/finalhandler": ^1.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
     "@types/serve-static": ^1.15.0
@@ -1067,7 +1067,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
-    "@types/finalhandler": ^1.1.1
+    "@types/finalhandler": ^1.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
     "@types/serve-static": ^1.15.0
@@ -1116,7 +1116,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
-    "@types/finalhandler": ^1.1.1
+    "@types/finalhandler": ^1.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
     "@types/serve-static": ^1.15.0
@@ -1166,7 +1166,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
-    "@types/finalhandler": ^1.1.1
+    "@types/finalhandler": ^1.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
     "@types/serve-static": ^1.15.0
@@ -1215,7 +1215,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
-    "@types/finalhandler": ^1.1.1
+    "@types/finalhandler": ^1.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
     "@types/serve-static": ^1.15.0
@@ -1266,7 +1266,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/config": ^3.3.0
     "@types/dotenv-flow": ^3.2.0
-    "@types/finalhandler": ^1.1.1
+    "@types/finalhandler": ^1.2.0
     "@types/mocha": ^9.0.0
     "@types/node": ^18.0.0
     "@types/serve-static": ^1.15.0
@@ -1556,12 +1556,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/finalhandler@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "@types/finalhandler@npm:1.1.1"
+"@types/finalhandler@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@types/finalhandler@npm:1.2.0"
   dependencies:
     "@types/node": "*"
-  checksum: 065ab628ae8612d501525dc2e2ed5834946c9c839bd54e0d9e3393c653534bffd05c9d9e2a2e2efe9c158c4e309a224b9c004e2febc9e6563c632b2f8a99dc1c
+  checksum: 9f2944504bd80756ebb3784ea975ad9235be594ab11f6ba5bfc57ab80a6e733bb8f027a38d84f434048b152eb1a086bd1e33f62c8a7a9a4655b67b5d07095eb8
   languageName: node
   linkType: hard
 
