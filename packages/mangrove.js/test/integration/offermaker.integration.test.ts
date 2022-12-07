@@ -226,7 +226,6 @@ describe("OfferMaker", () => {
       it("cancels offer", async () => {
         //sets huge gasprice to induce high provision, to make sure taker receives more than gas cost when cancelling their offer
         let prov = await onchain_lp.computeBidProvision();
-        console.log(prov);
         const tx = await adminMgv.contract.setGasprice(1200);
         await tx.wait();
         prov = await onchain_lp.computeBidProvision();
