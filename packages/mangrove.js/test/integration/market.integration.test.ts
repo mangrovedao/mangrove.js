@@ -1294,7 +1294,7 @@ describe("Market integration tests suite", () => {
       { id: 3, wants: "1.11", gives: "1", gasreq: 10_022, gasprice: 30 },
     ];
 
-    /* fill orderbook with bids and asks */
+    /* fill order book with bids and asks */
     /* note that we are NOT testing mangrove.js's newOffer function
      * so we create offers through ethers.js generic API */
     for (const ask of asks) {
@@ -1304,7 +1304,7 @@ describe("Market integration tests suite", () => {
       await waitForTransaction(helpers.newOffer(mgv, "TokenB", "TokenA", bid));
     }
 
-    /* Now we create the orderbook we expect to get back so we can compare them */
+    /* Now we create the order book we expect to get back so we can compare them */
 
     /* Reorder array a (array) such that an element with id i
      * goes to position o.indexOf(i). o is the order we want.
