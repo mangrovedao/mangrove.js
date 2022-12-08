@@ -1,5 +1,5 @@
 /**
- * A simple failing offer bot for Mangrove which post offers on the orderbook
+ * A simple failing offer bot for Mangrove which post offers on the order book
  * that will always fail.
  * @module
  */

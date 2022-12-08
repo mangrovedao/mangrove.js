@@ -659,9 +659,9 @@ class Market {
   }
 
   /**
-   * Subscribe to orderbook updates.
+   * Subscribe to order book updates.
    *
-   * `cb` gets called whenever the orderbook is updated.
+   * `cb` gets called whenever the order book is updated.
    *  Its first argument `event` is a summary of the event. It has the following properties:
    *
    * * `type` the type of change. May be: * `"OfferWrite"`: an offer was
