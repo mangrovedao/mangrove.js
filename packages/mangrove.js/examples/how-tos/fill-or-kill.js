@@ -5,8 +5,8 @@ var parsed = require("dotenv").config();
 const { Mangrove, ethers } = require("@mangrovedao/mangrove.js");
 
 // Create a wallet with a provider to interact with the chain.
-const provider = new ethers.providers.WebSocketProvider(process.env.RPC_URL); // For real chain use
-// const provider = new ethers.providers.WebSocketProvider(process.env.LOCAL_URL); // For local chain use
+// const provider = new ethers.providers.WebSocketProvider(process.env.RPC_URL); // For real chain use
+const provider = new ethers.providers.WebSocketProvider(process.env.LOCAL_URL); // For local chain use
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider); // Use either own account or if on local chain use an anvil account
 
 // Connect the API to Mangrove
@@ -29,7 +29,7 @@ await mgv.offerLogic(mgv.orderContract.address).approveToken(market.quote.name);
 let result = await market.buy({
   volume: 2000,
   price: 1.3,
-  mangroveOrder: { fillOrKill: true },
+  fillOrKill: true,
 });
 
 console.log(result);
