@@ -5,8 +5,8 @@ var parsed = require("dotenv").config();
 const { Mangrove, ethers, OfferLogic } = require("@mangrovedao/mangrove.js");
 
 // Create a wallet with a provider to interact with the chain.
-const provider = new ethers.providers.WebSocketProvider(process.env.RPC_URL); // For real chain use
-// const provider = new ethers.providers.WebSocketProvider(process.env.LOCAL_URL); // For local chain use
+// const provider = new ethers.providers.WebSocketProvider(process.env.RPC_URL); // For real chain use
+const provider = new ethers.providers.WebSocketProvider(process.env.LOCAL_URL); // For local chain use
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider); // Use either own account or if on local chain use an anvil account
 
 // Connect the API to Mangrove
@@ -22,8 +22,7 @@ market.consoleBids();
 // Create a simple liquidity provider on `market`, using `wallet` as a source of liquidity
 const directLP = await mgv.liquidityProvider(market);
 
-// If you already have an offer on the book, skip this part of approval and posting new offer.
-
+// Show best asks
 market.consoleAsks();
 
 // Change this to your own offer id.
@@ -41,28 +40,26 @@ await directLP.updateAsk(offerId, {
 
 market.consoleAsks();
 
-let offerLogic = new OfferLogic({
-  mgv: mgv,
-  logic: "", //Write your contract address here
-  isForwarder: false,
-});
+let offerLogic = new OfferLogic(
+  mgv,
+  "" //Write your contract address here
+);
 
 // We recommend to use a liquidityProvider
-offerLogic.updateOffer({
-  outbound_Tkn: market.base,
-  inbound_Tkn: market.quote,
-  wants: 100.5,
-  gives: 1.00345,
-  gasreq: 123, // give correct gasreq
-  gasprice: 9999, // give correct gasprice
-  pivot: 5572, // give pivot that makes sense
-  offerId: 5572,
-  overrides: {
-    value: 123, // give correct value
-  },
-});
+let result = await offerLogic.contract.updateOffer(
+  market.base.address, // outbound_tkn
+  market.quote.address, // inbound_tkn
+  market.quote.toUnits(100.5), // wants
+  market.base.toUnits(1.00345), // gives
+  0, // pivot - give pivot that makes sense
+  offerId, // offerId
+  {
+    // overrides
+    value: mgv.toUnits(123, 18), // give correct value
+  }
+);
 
-let lp = offerLogic.liquidityProvider(market);
+let lp = await offerLogic.liquidityProvider(market);
 
 await lp.updateAsk(offerId, {
   volume: 100.5,
