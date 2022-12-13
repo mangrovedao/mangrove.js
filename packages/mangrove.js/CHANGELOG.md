@@ -1,5 +1,7 @@
 # next version
 
+# 0.14.0 (December 2022)
+
 - Upgraded mangrove-core dependency to enable Polygon mainnet
 - Updated TradeParams to remove slippage
 - public fields of Mangrove class are no longer prefixed by '\_'
