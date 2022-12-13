@@ -23,7 +23,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const tradeEventManagement = new TradeEventManagement(
         instance(mockedUnitCalculations)
       );
-      var evt = {
+      const evt = {
         args: {
           takerGot: BigNumber.from(10),
           takerGave: BigNumber.from(20),
@@ -130,7 +130,7 @@ describe("TradeEventManagement unit tests suite", () => {
 
       when(
         spyTradeEventManagement.createSummaryFromEvent(
-          event,
+          anything(),
           gotToken,
           gaveToken,
           anything()
@@ -150,7 +150,7 @@ describe("TradeEventManagement unit tests suite", () => {
       //Asset
       verify(
         spyTradeEventManagement.createSummaryFromEvent(
-          event,
+          anything(),
           gotToken,
           gaveToken,
           partialFillFunc
