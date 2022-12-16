@@ -29,7 +29,7 @@ await tx.wait();
 // Query mangrove to know the bounty for posting a new Ask on `market`
 const provision = await directLP.computeAskProvision();
 
-// Post a new ask (offering 100.5 DAI for 100.4 USDC) at a price of 100.5/100.4~=1.00099
+// Post a new ask (requesting 100.5 DAI for 100.4 USDC) at a price of 100.5/100.4~=1.00099
 // Consider looking at the consoleAsks above and increase gives such that the offer becomes visible in this list
 const { id: offerId } = await directLP.newAsk({
   wants: 100.5,
