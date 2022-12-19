@@ -301,7 +301,7 @@ class LiquidityProvider {
     const offerMakerAddress = (await offer).maker;
     if (offerMakerAddress != thisMaker) {
       throw Error(
-        `The offer is not owned by ${offerMakerAddress}, not ${thisMaker}.`
+        `The offer is owned by a different address ${offerMakerAddress}, not the expected address ${thisMaker}.`
       );
     }
     const { wants, gives, price, fund } = this.#normalizeOfferParams(p);
