@@ -1,5 +1,10 @@
 # next version
 
+# 1.0.0 (December 2022)
+
+- Upgraded mangrove-core dependency with new addresses
+- Bump version to 1.0.0 for initial release
+
 # 0.14.0 (December 2022)
 
 - Upgraded mangrove-core dependency to enable Polygon mainnet
