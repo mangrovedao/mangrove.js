@@ -145,7 +145,10 @@ class Trade {
     params: Market.TradeParams,
     market: Market,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     const { wants, gives, fillWants } =
       bs === "buy"
         ? this.getParamsForBuy(params, market.base, market.quote)
@@ -214,7 +217,10 @@ class Trade {
     params: Market.SnipeParams,
     market: Market,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     const raw = await this.getRawSnipeParams(params, market, overrides);
 
     return this.snipesWithRawParameters(
@@ -290,7 +296,10 @@ class Trade {
       market: Market;
     },
     overrides: ethers.Overrides
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     const [outboundTkn, inboundTkn] =
       orderType === "buy"
         ? [market.base, market.quote]
@@ -313,7 +322,7 @@ class Trade {
         gasLimit: overrides.gasLimit?.toString(),
       },
     });
-    const response = await market.mgv.contract.marketOrder(
+    const response = market.mgv.contract.marketOrder(
       outboundTkn.address,
       inboundTkn.address,
       wants,
@@ -321,7 +330,26 @@ class Trade {
       fillWants,
       overrides
     );
-    const receipt = await response.wait();
+    const result = this.responseToMarketOrderResult(
+      response,
+      orderType,
+      fillWants,
+      wants,
+      gives,
+      market
+    );
+    return { result, response };
+  }
+
+  async responseToMarketOrderResult(
+    response: Promise<ethers.ContractTransaction>,
+    orderType: Market.BS,
+    fillWants: boolean,
+    wants: ethers.BigNumber,
+    gives: ethers.BigNumber,
+    market: Market
+  ) {
+    const receipt = await (await response).wait();
 
     logger.debug("Market order raw receipt", {
       contextInfo: "market.marketOrder",
@@ -337,6 +365,10 @@ class Trade {
       gives,
       market
     );
+    logger.debug("Market order raw receipt", {
+      contextInfo: "market.marketOrder",
+      data: { receipt: receipt },
+    });
     if (!result.summary) {
       throw Error("market order went wrong");
     }
@@ -362,7 +394,10 @@ class Trade {
       market: Market;
     },
     overrides: ethers.Overrides
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     const { postRestingOrder, provision, expiryDate } =
       this.getRestingOrderParams(restingParams);
     const overrides_ = {
@@ -380,7 +415,7 @@ class Trade {
         ? [market.base, market.quote]
         : [market.quote, market.base];
 
-    const response = await market.mgv.orderContract.take(
+    const response = market.mgv.orderContract.take(
       {
         outbound_tkn: outboundTkn.address,
         inbound_tkn: inboundTkn.address,
@@ -394,7 +429,27 @@ class Trade {
       },
       overrides_
     );
-    const receipt = await response.wait();
+    const result = this.responseToMangroveOrdeResult(
+      response,
+      orderType,
+      fillWants,
+      wants,
+      gives,
+      market
+    );
+    // if resting order was not posted, result.summary is still undefined.
+    return { result, response };
+  }
+
+  async responseToMangroveOrdeResult(
+    response: Promise<ethers.ContractTransaction>,
+    orderType: Market.BS,
+    fillWants: boolean,
+    wants: ethers.BigNumber,
+    gives: ethers.BigNumber,
+    market: Market
+  ) {
+    const receipt = await (await response).wait();
 
     logger.debug("Mangrove order raw receipt", {
       contextInfo: "market.mangrove",
@@ -425,7 +480,6 @@ class Trade {
     if (!result.summary) {
       throw Error("mangrove order went wrong");
     }
-    // if resting order was not posted, result.summary is still undefined.
     return result;
   }
 
@@ -522,13 +576,16 @@ class Trade {
     market: Market,
     overrides: ethers.Overrides,
     requireOffersToFail?: boolean
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     // Invoking the cleanerContract does not populate receipt.events, so we instead parse receipt.logs
     const snipeFunction = requireOffersToFail
       ? market.mgv.cleanerContract.collect
       : market.mgv.contract.snipes;
 
-    const response = await snipeFunction(
+    const response = snipeFunction(
       raw.outboundTkn,
       raw.inboundTkn,
       raw.targets,
@@ -536,7 +593,16 @@ class Trade {
       overrides
     );
 
-    const receipt = await response.wait();
+    const result = this.respondsToSnipesResult(response, raw, market);
+    return { result, response };
+  }
+
+  async respondsToSnipesResult(
+    response: Promise<ethers.ContractTransaction>,
+    raw: Market.RawSnipeParams,
+    market: Market
+  ) {
+    const receipt = await (await response).wait();
 
     const result: Market.OrderResult = this.initialResult(receipt);
 
@@ -571,7 +637,10 @@ class Trade {
     unitParams: SnipeUnitParams,
     market: Market,
     overrides: ethers.Overrides
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     const raw = await this.getSnipesRawParamsFromUnitParams(
       unitParams,
       market,

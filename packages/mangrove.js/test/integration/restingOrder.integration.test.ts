@@ -112,12 +112,12 @@ describe("RestingOrder", () => {
       await w(mgv.token("TokenB").approve(router_address));
       await w(mgv.token("TokenA").approve(router_address));
 
-      const orderResult: Market.OrderResult =
-        await orderContractAsLP.market.buy({
-          wants: 20, // tokenA
-          gives: 20, // tokenB
-          restingOrder: { provision: provision },
-        });
+      const buyPromises = await orderContractAsLP.market.buy({
+        wants: 20, // tokenA
+        gives: 20, // tokenB
+        restingOrder: { provision: provision },
+      });
+      const orderResult = await buyPromises.result;
       assert(
         // 5% fee configured in mochaHooks.js
         orderResult.summary.got.eq(10 * 0.95),
@@ -141,7 +141,7 @@ describe("RestingOrder", () => {
       await w(mgv.token("TokenB").approve(router_address));
       await w(mgv.token("TokenA").approve(router_address));
 
-      const orderResult: Market.OrderResult = await market.buy({
+      const buyPromises = await market.buy({
         wants: 20, // tokenA
         gives: 20, // tokenB
         restingOrder: {
@@ -152,6 +152,7 @@ describe("RestingOrder", () => {
             ).timestamp + 5,
         },
       });
+      const orderResult = await buyPromises.result;
 
       assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
       const ttl = await mgv.orderContract.expiring(
@@ -170,7 +171,8 @@ describe("RestingOrder", () => {
       await w(mgv.token("TokenB").approveMangrove());
       await w(mgv.token("TokenA").approveMangrove());
 
-      const result = await market.sell({ wants: 5, gives: 5 });
+      const sellPromises = await market.sell({ wants: 5, gives: 5 });
+      const result = await sellPromises.result;
       // 5% fee configured in mochaHooks.js
       assert(result.summary.got.eq(5 * 0.95), "Sell order went wrong");
       assert(
@@ -190,7 +192,8 @@ describe("RestingOrder", () => {
         ),
         "Timestamp did not advance"
       );
-      const result_ = await market.sell({ wants: 5, gives: 5 });
+      const sellPromises_ = await market.sell({ wants: 5, gives: 5 });
+      const result_ = await sellPromises_.result;
       assert(result_.summary.bounty.gt(0), "Order should have reneged");
     });
   });

@@ -254,10 +254,11 @@ export class OfferTaker {
       },
     });
     try {
-      const result = await this.#market[buyOrSell](
+      const buyOrSellPromise = await this.#market[buyOrSell](
         { total: total, price: externalPrice },
         {}
       );
+      const result = await buyOrSellPromise.result;
       logger.info(`Successfully completed ${buyOrSell} order`, {
         contextInfo: "taker",
         base: this.#market.base.name,

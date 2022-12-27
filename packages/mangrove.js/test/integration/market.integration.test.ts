@@ -16,6 +16,7 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../dist/nodejs/types";
 import { MgvReader } from "../../src/types/typechain/MgvReader";
 import { Deferred } from "../../src/util";
+import { builtinModules } from "module";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -707,7 +708,8 @@ describe("Market integration tests suite", () => {
     expect(events).to.have.lengthOf(1);
 
     // make a buy, which we expect to provoke an OfferFail
-    const result = await market.buy({ wants: "1", gives: "1.5e12" });
+    const buyPromises = await market.buy({ wants: "1", gives: "1.5e12" });
+    const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(1);
     expect(
       utils.parseBytes32String(result.tradeFailures[0].reason)
@@ -730,7 +732,8 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.mint(market.base, maker, 100);
 
     await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
-    const result_ = await market.buy({ wants: "1", gives: "1.5e12" });
+    const buyPromises_ = await market.buy({ wants: "1", gives: "1.5e12" });
+    const result_ = await buyPromises_.result;
     expect(result_.tradeFailures).to.have.lengthOf(0);
     expect(result_.posthookFailures).to.have.lengthOf(0);
     expect(result_.successes).to.have.lengthOf(1);
@@ -761,10 +764,11 @@ describe("Market integration tests suite", () => {
       gives: 2000000,
     });
 
-    const result = await market.buy(
+    const buyPromises = await market.buy(
       { wants: 0.000000000002, gives: 10 },
       { gasLimit: 6500000 }
     );
+    const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
@@ -797,10 +801,11 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.waitForBooksForLastTx(market);
 
     // estimated gas limit is too low, so we set it explicitly
-    const result = await market.sell(
+    const sellPromises = await market.sell(
       { volume: "0.0000000000000001", price: 0 },
       { gasLimit: 6500000 }
     );
+    const result = await sellPromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
@@ -837,11 +842,13 @@ describe("Market integration tests suite", () => {
 
     // make a buy of the not-best offer
     // a standard buy would give us 2e-12, but due to snipe we only get 1e-12.
-    const result = await market.buy({
+    const buyPromises = await market.buy({
       offerId: notBest,
       total: 1,
       price: Big(2).pow(256).minus(1),
     });
+    const result = await buyPromises.result;
+
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
 
@@ -879,7 +886,7 @@ describe("Market integration tests suite", () => {
 
     // make a sell of the not-best offer
     // a standard sell would give us 2e-13, but due to snipe we only get 1e-13.
-    const result = await market.sell(
+    const sellPromises = await market.sell(
       {
         offerId: notBest,
         wants: "0.1",
@@ -887,6 +894,8 @@ describe("Market integration tests suite", () => {
       },
       { gasLimit: 6500000 }
     );
+    const result = await sellPromises.result;
+
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
 
@@ -928,7 +937,7 @@ describe("Market integration tests suite", () => {
     const asks = [...market.getBook().asks];
 
     // use wants/gives from offer to verify unit conversion
-    const result = await market.snipe({
+    const snipePromises = await market.snipe({
       ba: "asks",
       targets: [
         {
@@ -945,6 +954,7 @@ describe("Market integration tests suite", () => {
         },
       ],
     });
+    const result = await snipePromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(2);
@@ -988,7 +998,7 @@ describe("Market integration tests suite", () => {
     const bids = [...market.getBook().bids];
 
     // use wants/gives from offer to verify unit conversion
-    const result = await market.snipe({
+    const snipePromises = await market.snipe({
       ba: "bids",
       targets: [
         {
@@ -1005,6 +1015,7 @@ describe("Market integration tests suite", () => {
         },
       ],
     });
+    const result = await snipePromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(2);
@@ -1043,7 +1054,7 @@ describe("Market integration tests suite", () => {
       await mgvTestUtil.waitForBooksForLastTx(market);
       const asks = [...market.getBook().asks];
 
-      const result = await market.snipe({
+      const snipePromises = await market.snipe({
         ba: "asks",
         targets: [
           {
@@ -1061,6 +1072,7 @@ describe("Market integration tests suite", () => {
         ],
         requireOffersToFail: requireOffersToFail,
       });
+      const result = await snipePromises.result;
 
       expect(result.tradeFailures).to.have.lengthOf(2);
       expect(result.successes).to.have.lengthOf(0);
@@ -1112,7 +1124,7 @@ describe("Market integration tests suite", () => {
     // Actual snipe
     var didThrow = false;
     try {
-      await market.snipe(
+      const snipePromises = await market.snipe(
         {
           ba: "asks",
           targets: [
@@ -1127,6 +1139,7 @@ describe("Market integration tests suite", () => {
         },
         { gasLimit: 600000 }
       );
+      await snipePromises.result;
     } catch (e) {
       didThrow = true;
       const callResult = await mgv.provider.call(e.transaction);
