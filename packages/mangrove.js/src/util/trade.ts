@@ -159,6 +159,7 @@ class Trade {
           gives: gives,
           orderType: bs,
           fillWants: fillWants,
+          expiryDate: "expiryDate" in params ? params.expiryDate : 0,
           restingParams: restingOrderParams,
           market: market,
           fillOrKill: params.fillOrKill ? params.fillOrKill : false,
@@ -350,6 +351,7 @@ class Trade {
       orderType,
       fillWants,
       fillOrKill,
+      expiryDate,
       restingParams,
       market,
     }: {
@@ -358,12 +360,13 @@ class Trade {
       orderType: Market.BS;
       fillWants: boolean;
       fillOrKill: boolean;
+      expiryDate: number;
       restingParams: Market.RestingOrderParams;
       market: Market;
     },
     overrides: ethers.Overrides
   ): Promise<Market.OrderResult> {
-    const { postRestingOrder, provision, expiryDate } =
+    const { postRestingOrder, provision } =
       this.getRestingOrderParams(restingParams);
     const overrides_ = {
       ...overrides,
@@ -431,17 +434,15 @@ class Trade {
 
   getRestingOrderParams(params: Market.RestingOrderParams): {
     provision: Bigish;
-    expiryDate: number;
     postRestingOrder: boolean;
   } {
     if (params) {
       return {
         provision: params.provision,
-        expiryDate: params.expiryDate ? params.expiryDate : 0,
         postRestingOrder: true,
       };
     } else {
-      return { provision: 0, expiryDate: 0, postRestingOrder: false };
+      return { provision: 0, postRestingOrder: false };
     }
   }
 
