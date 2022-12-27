@@ -739,7 +739,7 @@ describe("Market integration tests suite", () => {
     expect(result_.successes[0].offerId).to.be.equal(2);
   });
 
-  it("buying uses best price", async function () {
+  it("buying uses best price, with default allowed route", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
     // post two offers, one worse than the other.
@@ -770,6 +770,80 @@ describe("Market integration tests suite", () => {
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
     expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
+  });
+
+  it("buying uses best price, with allowed route Mangrove", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+    });
+
+    const result = await market.buy(
+      { allowedOrderRoutes: ["Mangrove"], wants: 0.000000000002, gives: 10 },
+      { gasLimit: 6500000 }
+    );
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
+  });
+
+  it("buying uses best price, with allowed route MangroveOrder", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+    });
+
+    try {
+      await market.buy(
+        {
+          allowedOrderRoutes: ["MangroveOrder"],
+          wants: 0.000000000002,
+          gives: 10,
+        },
+        { gasLimit: 6500000 }
+      );
+      assert(false, "Should have thrown before this");
+    } catch (e) {
+      expect(e).to.be.instanceOf(Error);
+      expect(e.message).to.be.eq(
+        "Given parameters matches a marketOrder, but Mangrove is not in the params.allowedOrderRoutes",
+        e.message
+      );
+    }
   });
 
   it("selling uses best price", async function () {

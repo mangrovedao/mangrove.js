@@ -153,18 +153,27 @@ class Trade {
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
     if (params.fillOrKill || restingOrderParams) {
-      return this.mangroveOrder(
-        {
-          wants: wants,
-          gives: gives,
-          orderType: bs,
-          fillWants: fillWants,
-          restingParams: restingOrderParams,
-          market: market,
-          fillOrKill: params.fillOrKill ? params.fillOrKill : false,
-        },
-        overrides
-      );
+      if (
+        !params.allowedOrderRoutes ||
+        params.allowedOrderRoutes.includes("MangroveOrder")
+      ) {
+        return this.mangroveOrder(
+          {
+            wants: wants,
+            gives: gives,
+            orderType: bs,
+            fillWants: fillWants,
+            restingParams: restingOrderParams,
+            market: market,
+            fillOrKill: params.fillOrKill ? params.fillOrKill : false,
+          },
+          overrides
+        );
+      } else {
+        throw new Error(
+          "Given parameters matches a mangroveOrder, but MangroveOrder is not in the params.allowedOrderRoutes"
+        );
+      }
     } else {
       if ("offerId" in params && params.offerId) {
         return this.snipes(
@@ -184,16 +193,25 @@ class Trade {
           overrides
         );
       } else {
-        return this.marketOrder(
-          {
-            wants: wants,
-            gives: gives,
-            orderType: bs,
-            fillWants: fillWants,
-            market,
-          },
-          overrides
-        );
+        if (
+          !params.allowedOrderRoutes ||
+          params.allowedOrderRoutes.includes("Mangrove")
+        ) {
+          return this.marketOrder(
+            {
+              wants: wants,
+              gives: gives,
+              orderType: bs,
+              fillWants: fillWants,
+              market,
+            },
+            overrides
+          );
+        } else {
+          throw new Error(
+            "Given parameters matches a marketOrder, but Mangrove is not in the params.allowedOrderRoutes"
+          );
+        }
       }
     }
   }

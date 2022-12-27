@@ -68,7 +68,10 @@ namespace Market {
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
+  export type OrderRoute = "Mangrove" | "MangroveOrder";
+
   export type TradeParams = {
+    allowedOrderRoutes?: OrderRoute[];
     slippage?: number;
     fillOrKill?: boolean;
   } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
