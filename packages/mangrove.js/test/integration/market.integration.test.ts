@@ -16,7 +16,6 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../dist/nodejs/types";
 import { MgvReader } from "../../src/types/typechain/MgvReader";
 import { Deferred } from "../../src/util";
-import { builtinModules } from "module";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {

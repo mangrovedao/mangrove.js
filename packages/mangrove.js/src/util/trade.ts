@@ -365,10 +365,6 @@ class Trade {
       gives,
       market
     );
-    logger.debug("Market order raw receipt", {
-      contextInfo: "market.marketOrder",
-      data: { receipt: receipt },
-    });
     if (!result.summary) {
       throw Error("market order went wrong");
     }
