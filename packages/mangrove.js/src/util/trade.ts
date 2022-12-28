@@ -152,7 +152,11 @@ class Trade {
         : this.getParamsForSell(params, market.base, market.quote);
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
-    if (params.fillOrKill || restingOrderParams) {
+    if (
+      !!params.fillOrKill ||
+      !!restingOrderParams ||
+      !!params.forceRoutingToMangroveOrder
+    ) {
       return this.mangroveOrder(
         {
           wants: wants,

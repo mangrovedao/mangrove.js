@@ -7,7 +7,7 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import assert from "assert";
-import { Mangrove, Market, Semibook } from "../../src";
+import { LiquidityProvider, Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
@@ -739,7 +739,7 @@ describe("Market integration tests suite", () => {
     expect(result_.successes[0].offerId).to.be.equal(2);
   });
 
-  it("buying uses best price", async function () {
+  it("buying uses best price, with no forceRoutingToMangroveOrder", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
     // post two offers, one worse than the other.
@@ -763,6 +763,39 @@ describe("Market integration tests suite", () => {
 
     const result = await market.buy(
       { wants: 0.000000000002, gives: 10 },
+      { gasLimit: 6500000 }
+    );
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes).to.have.lengthOf(1);
+    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
+    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
+    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
+  });
+
+  it("buying uses best price, with forceRoutingToMangroveOrder:false", async function () {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    // post two offers, one worse than the other.
+    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+    await mgvTestUtil.mint(market.quote, maker, 100);
+    await mgvTestUtil.mint(market.base, maker, 100);
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 1000000,
+    });
+    await mgvTestUtil.postNewOffer({
+      market,
+      ba: "asks",
+      maker,
+      wants: 1,
+      gives: 2000000,
+    });
+
+    const result = await market.buy(
+      { forceRoutingToMangroveOrder: false, wants: 0.000000000002, gives: 10 },
       { gasLimit: 6500000 }
     );
     expect(result.tradeFailures).to.have.lengthOf(0);
