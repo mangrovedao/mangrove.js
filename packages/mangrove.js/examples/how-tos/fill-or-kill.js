@@ -26,10 +26,12 @@ market.consoleAsks();
 // approve that the mangroveOrder contract can use your USDC (quote) funds
 await mgv.offerLogic(mgv.orderContract.address).approveToken(market.quote.name);
 
-let result = await market.buy({
+let buyPromises = await market.buy({
   volume: 2000,
   price: 1.3,
   fillOrKill: true,
 });
+
+const result = await buyPromises.result;
 
 console.log(result);
