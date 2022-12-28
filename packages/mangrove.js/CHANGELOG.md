@@ -1,5 +1,11 @@
 # next version
 
+# 1.0.1 (December 2022)
+
+- Updated order to return both transaction response and result
+- Add option to TradeParams, that forces usage of MangroveOrder
+- Moved ExpiryDate from RestingOrderParams to TradeParams
+
 # 1.0.0 (December 2022)
 
 - Upgraded mangrove-core dependency with new addresses

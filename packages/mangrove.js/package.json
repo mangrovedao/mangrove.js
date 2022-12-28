@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/mangrove.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
