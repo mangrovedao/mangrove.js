@@ -492,7 +492,10 @@ class Market {
   buy(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     return this.trade.order("buy", params, this, overrides);
   }
 
@@ -521,7 +524,10 @@ class Market {
   sell(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     return this.trade.order("sell", params, this, overrides);
   }
 
@@ -542,7 +548,10 @@ class Market {
   snipe(
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     return this.trade.snipe(params, this, overrides);
   }
 
