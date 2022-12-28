@@ -74,6 +74,7 @@ namespace Market {
     allowedOrderRoutes?: OrderRoute[];
     slippage?: number;
     fillOrKill?: boolean;
+    expiryDate?: number;
   } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
     (
       | { volume: Bigish; price: Bigish }
@@ -82,7 +83,6 @@ namespace Market {
     );
 
   export type RestingOrderParams = {
-    expiryDate?: number;
     provision: Bigish;
   };
 
