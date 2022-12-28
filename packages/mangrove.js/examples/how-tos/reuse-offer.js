@@ -45,7 +45,9 @@ let { id: offerId } = await directLP.newAsk({
   fund: provision,
 });
 
-let result = await market.snipe({
+await mgv.approveMangrove("USDC");
+
+let snipePromises = await market.snipe({
   targets: [
     {
       offerId: offerId,
@@ -56,9 +58,11 @@ let result = await market.snipe({
   ],
   ba: "asks",
 });
+
+let snipeResult = await snipePromises.result;
+console.log(snipeResult);
 */
 
-let offerIdToUpdate = 5573; // use the correct offerId
 let lp = await mgv.liquidityProvider(market);
 let provisionForUpdateOffer = await lp.computeAskProvision({
   id: offerIdToUpdate,
