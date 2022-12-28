@@ -153,9 +153,9 @@ class Trade {
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
     if (
-      params.fillOrKill ||
-      restingOrderParams ||
-      (params.forceRoutingToMangroveOrder ?? false)
+      !!params.fillOrKill ||
+      !!restingOrderParams ||
+      !!params.forceRoutingToMangroveOrder
     ) {
       return this.mangroveOrder(
         {
