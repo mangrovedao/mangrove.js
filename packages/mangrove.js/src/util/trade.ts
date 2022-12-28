@@ -597,7 +597,7 @@ class Trade {
     return { result, response };
   }
 
-  async respondsToSnipesResult(
+  async responseToSnipesResult(
     response: Promise<ethers.ContractTransaction>,
     raw: Market.RawSnipeParams,
     market: Market
