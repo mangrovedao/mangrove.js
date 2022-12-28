@@ -162,6 +162,7 @@ class Trade {
           gives: gives,
           orderType: bs,
           fillWants: fillWants,
+          expiryDate: "expiryDate" in params ? params.expiryDate : 0,
           restingParams: restingOrderParams,
           market: market,
           fillOrKill: params.fillOrKill ? params.fillOrKill : false,
@@ -378,6 +379,7 @@ class Trade {
       orderType,
       fillWants,
       fillOrKill,
+      expiryDate,
       restingParams,
       market,
     }: {
@@ -386,6 +388,7 @@ class Trade {
       orderType: Market.BS;
       fillWants: boolean;
       fillOrKill: boolean;
+      expiryDate: number;
       restingParams: Market.RestingOrderParams;
       market: Market;
     },
@@ -394,7 +397,7 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const { postRestingOrder, provision, expiryDate } =
+    const { postRestingOrder, provision } =
       this.getRestingOrderParams(restingParams);
     const overrides_ = {
       ...overrides,
@@ -476,22 +479,21 @@ class Trade {
     if (!result.summary) {
       throw Error("mangrove order went wrong");
     }
+    // if resting order was not posted, result.summary is still undefined.
     return result;
   }
 
   getRestingOrderParams(params: Market.RestingOrderParams): {
     provision: Bigish;
-    expiryDate: number;
     postRestingOrder: boolean;
   } {
     if (params) {
       return {
         provision: params.provision,
-        expiryDate: params.expiryDate ? params.expiryDate : 0,
         postRestingOrder: true,
       };
     } else {
-      return { provision: 0, expiryDate: 0, postRestingOrder: false };
+      return { provision: 0, postRestingOrder: false };
     }
   }
 
@@ -589,7 +591,7 @@ class Trade {
       overrides
     );
 
-    const result = this.respondsToSnipesResult(response, raw, market);
+    const result = this.responseToSnipesResult(response, raw, market);
     return { result, response };
   }
 

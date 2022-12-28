@@ -144,12 +144,12 @@ describe("RestingOrder", () => {
       const buyPromises = await market.buy({
         wants: 20, // tokenA
         gives: 20, // tokenB
+        expiryDate:
+          (
+            await mgv.provider.getBlock(mgv.provider.getBlockNumber())
+          ).timestamp + 5,
         restingOrder: {
           provision: provision,
-          expiryDate:
-            (
-              await mgv.provider.getBlock(mgv.provider.getBlockNumber())
-            ).timestamp + 5,
         },
       });
       const orderResult = await buyPromises.result;
