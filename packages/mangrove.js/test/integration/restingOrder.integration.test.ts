@@ -9,6 +9,7 @@ import { Mangrove, LiquidityProvider, Market } from "../../src";
 import { Big } from "big.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { cat } from "shelljs";
+import { expect } from "chai";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -106,7 +107,7 @@ describe("RestingOrder", () => {
       });
     });
 
-    it("simple resting order, with deafult allowed route", async () => {
+    it("simple resting order, with no forceRoutingToMangroveOrder", async () => {
       const provision = await orderContractAsLP.computeBidProvision();
       const router_address = await orderContractAsLP.logic?.contract.router();
       // `me` buying base via orderContract so should approve it for quote
@@ -133,7 +134,7 @@ describe("RestingOrder", () => {
       assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
     });
 
-    it("simple resting order, with MangroveOrder in allowed route", async () => {
+    it("simple resting order, with forceRoutingToMangroveOrder:true", async () => {
       const provision = await orderContractAsLP.computeBidProvision();
       const router_address = await orderContractAsLP.logic?.contract.router();
       // `me` buying base via orderContract so should approve it for quote
@@ -142,7 +143,7 @@ describe("RestingOrder", () => {
 
       const orderResult: Market.OrderResult =
         await orderContractAsLP.market.buy({
-          allowedOrderRoutes: ["MangroveOrder"],
+          forceRoutingToMangroveOrder: true,
           wants: 20, // tokenA
           gives: 20, // tokenB
           restingOrder: { provision: provision },
@@ -161,30 +162,61 @@ describe("RestingOrder", () => {
       assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
     });
 
-    it("simple resting order, with Mangrove in allowed route", async () => {
+    it("simple resting order, with forceRoutingToMangroveOrder:false", async () => {
       const provision = await orderContractAsLP.computeBidProvision();
       const router_address = await orderContractAsLP.logic?.contract.router();
       // `me` buying base via orderContract so should approve it for quote
       await w(mgv.token("TokenB").approve(router_address));
       await w(mgv.token("TokenA").approve(router_address));
 
-      try {
+      const orderResult: Market.OrderResult =
         await orderContractAsLP.market.buy({
-          allowedOrderRoutes: ["Mangrove"],
+          forceRoutingToMangroveOrder: false,
           wants: 20, // tokenA
           gives: 20, // tokenB
           restingOrder: { provision: provision },
         });
+      assert(
+        // 5% fee configured in mochaHooks.js
+        orderResult.summary.got.eq(10 * 0.95),
+        "Taker received an incorrect amount"
+      );
+      assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
+      assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
+      assert(
+        orderResult.summary.partialFill,
+        "Order should have been partially filled"
+      );
+      assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
+    });
 
-        assert(false, "Should have thrown error before this");
-      } catch (e) {
-        assert(e instanceof Error);
-        assert(
-          e.message ==
-            "Given parameters matches a mangroveOrder, but MangroveOrder is not in the params.allowedOrderRoutes",
-          e.message
-        );
-      }
+    it("no resting order params, with forceRoutingToMangroveOrder:true", async () => {
+      const router_address = await orderContractAsLP.logic?.contract.router();
+      // `me` buying base via orderContract so should approve it for quote
+      await w(mgv.token("TokenB").approve(router_address));
+      await w(mgv.token("TokenA").approve(router_address));
+
+      const orderResult: Market.OrderResult =
+        await orderContractAsLP.market.buy({
+          forceRoutingToMangroveOrder: true,
+          wants: 5, // tokenA
+          gives: 5, // tokenB
+        });
+      assert(
+        // 5% fee configured in mochaHooks.js
+        orderResult.summary.got.eq(5 * 0.95),
+        "Taker received an incorrect amount"
+      );
+      assert(orderResult.summary.gave.eq(5), "Taker gave an incorrect amount");
+      assert(
+        !orderResult.restingOrder?.id,
+        "Resting order should not have been posted"
+      );
+      assert(
+        !orderResult.summary.partialFill,
+        "Order should have been fully filled"
+      );
+      assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
     });
 
     it("resting order with deadline", async () => {

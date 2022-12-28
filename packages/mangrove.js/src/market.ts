@@ -71,7 +71,7 @@ namespace Market {
   export type OrderRoute = "Mangrove" | "MangroveOrder";
 
   export type TradeParams = {
-    allowedOrderRoutes?: OrderRoute[];
+    forceRoutingToMangroveOrder?: boolean;
     slippage?: number;
     fillOrKill?: boolean;
     expiryDate?: number;

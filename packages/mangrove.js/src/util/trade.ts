@@ -152,29 +152,24 @@ class Trade {
         : this.getParamsForSell(params, market.base, market.quote);
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
-    if (params.fillOrKill || restingOrderParams) {
-      if (
-        !params.allowedOrderRoutes ||
-        params.allowedOrderRoutes.includes("MangroveOrder")
-      ) {
-        return this.mangroveOrder(
-          {
-            wants: wants,
-            gives: gives,
-            orderType: bs,
-            fillWants: fillWants,
-            expiryDate: "expiryDate" in params ? params.expiryDate : 0,
-            restingParams: restingOrderParams,
-            market: market,
-            fillOrKill: params.fillOrKill ? params.fillOrKill : false,
-          },
-          overrides
-        );
-      } else {
-        throw new Error(
-          "Given parameters matches a mangroveOrder, but MangroveOrder is not in the params.allowedOrderRoutes"
-        );
-      }
+    if (
+      params.fillOrKill ||
+      restingOrderParams ||
+      params.forceRoutingToMangroveOrder
+    ) {
+      return this.mangroveOrder(
+        {
+          wants: wants,
+          gives: gives,
+          orderType: bs,
+          fillWants: fillWants,
+          expiryDate: "expiryDate" in params ? params.expiryDate : 0,
+          restingParams: restingOrderParams,
+          market: market,
+          fillOrKill: params.fillOrKill ? params.fillOrKill : false,
+        },
+        overrides
+      );
     } else {
       if ("offerId" in params && params.offerId) {
         return this.snipes(
@@ -194,25 +189,16 @@ class Trade {
           overrides
         );
       } else {
-        if (
-          !params.allowedOrderRoutes ||
-          params.allowedOrderRoutes.includes("Mangrove")
-        ) {
-          return this.marketOrder(
-            {
-              wants: wants,
-              gives: gives,
-              orderType: bs,
-              fillWants: fillWants,
-              market,
-            },
-            overrides
-          );
-        } else {
-          throw new Error(
-            "Given parameters matches a marketOrder, but Mangrove is not in the params.allowedOrderRoutes"
-          );
-        }
+        return this.marketOrder(
+          {
+            wants: wants,
+            gives: gives,
+            orderType: bs,
+            fillWants: fillWants,
+            market,
+          },
+          overrides
+        );
       }
     }
   }
