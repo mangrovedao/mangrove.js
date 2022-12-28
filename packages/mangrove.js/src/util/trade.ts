@@ -155,7 +155,7 @@ class Trade {
     if (
       params.fillOrKill ||
       restingOrderParams ||
-      params.forceRoutingToMangroveOrder
+      (params.forceRoutingToMangroveOrder ?? false)
     ) {
       return this.mangroveOrder(
         {
