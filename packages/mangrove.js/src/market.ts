@@ -247,6 +247,7 @@ class Market {
     base: string;
     quote: string;
     bookOptions?: Market.BookOptions;
+    noInit?: boolean;
   }): Promise<Market> {
     canConstructMarket = true;
     const market = new Market(params);

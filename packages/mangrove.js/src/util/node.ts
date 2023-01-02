@@ -14,7 +14,6 @@ import { BigNumber, ethers } from "ethers";
 import * as eth from "../eth";
 import { Mangrove } from "..";
 import * as ToyENS from "./ToyENSCode";
-import * as Multicall from "./MulticallCode";
 import { default as nodeCleanup } from "node-cleanup";
 import DevNode from "./devNode";
 
@@ -188,9 +187,9 @@ const deploy = async (params: {
   pipe: boolean;
 }) => {
   const devNode = new DevNode(params.provider);
-  await devNode.deployToyENSIfAbsent();
+  await devNode.setToyENSCodeIfAbsent();
 
-  await devNode.deployMulticallIfAbsent();
+  await devNode.setMulticallCodeIfAbsent();
 
   // test connectivity
   try {
