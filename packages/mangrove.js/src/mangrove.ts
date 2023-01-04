@@ -490,7 +490,7 @@ class Mangrove {
 
   /**
    * Returns open markets data according to mangrove reader.
-   * @param from: start at market i
+   * @param from: start at market `from`. Default 0.
    * @param maxLen: max number of markets returned
    * @param configs: fetch market's config information. Default true.
    * @param tokenInfo: fetch token information (symbol, decimals)
