@@ -33,7 +33,6 @@ async function main() {
 
     // Get directory for local abis
     const localAbisDir = path.join(process.cwd(), "src/constants/artifacts");
-    // console.log(localAbisDir);
     if (!fs.existsSync(localAbisDir)) {
       throw new Error(`Wrong artifacts directory path ${localAbisDir}`);
     }
