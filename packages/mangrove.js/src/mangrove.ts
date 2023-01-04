@@ -491,7 +491,7 @@ class Mangrove {
   /**
    * Returns open markets data according to mangrove reader.
    * @param from: start at market `from`. Default 0.
-   * @param maxLen: max number of markets returned
+   * @param maxLen: max number of markets returned. Default all.
    * @param configs: fetch market's config information. Default true.
    * @param tokenInfo: fetch token information (symbol, decimals)
    * @note If an open market has a token with no/bad decimals/symbol function, this function will revert.
