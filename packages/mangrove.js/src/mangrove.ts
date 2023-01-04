@@ -600,9 +600,9 @@ class Mangrove {
   /**
    * Returns open markets according to mangrove reader. Will internally update Mangrove token information.
    *
-   * @param from: start at market i
-   * @param maxLen: max number of markets returned
-   * @param noInit: do not initialize markets (default:false)
+   * @param from: start at market `from` (default: 0)
+   * @param maxLen: max number of markets returned (default: all)
+   * @param noInit: do not initialize markets (default: false)
    * @param bookOptions: bookOptions argument to pass to every new market (default: undefined)
    */
   async openMarkets(
