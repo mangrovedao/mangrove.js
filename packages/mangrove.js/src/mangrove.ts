@@ -645,7 +645,7 @@ class Mangrove {
   }
 
   // relative cashness of a token will determine which is base & which is quote
-  // lower cashness is base, higher cashness is quote, tiebreaker is <
+  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of symbol string
   setCashness(symbol: string, cashness: number) {
     loadedCashness[symbol] = cashness;
   }
