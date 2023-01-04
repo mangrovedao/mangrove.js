@@ -505,13 +505,10 @@ class Mangrove {
     } = {}
   ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
-    params.from = "from" in params ? params.from : 0;
-    params.maxLen =
-      "maxLen" in params
-        ? params.maxLen
-        : ethers.BigNumber.from(2).pow(256).sub(1);
-    params.configs = "configs" in params ? params.configs : true;
-    params.tokenInfos = "tokenInfos" in params ? params.tokenInfos : true;
+    params.from ??= 0;
+    params.maxLen ??= ethers.BigNumber.from(2).pow(256).sub(1);
+    params.configs ??= true;
+    params.tokenInfos ??= true;
     // read open markets and their configs off mgvReader
     const raw = await this.readerContract["openMarkets(uint256,uint256,bool)"](
       params.from,
@@ -616,10 +613,9 @@ class Mangrove {
       bookOptions?: Market.BookOptions;
     } = {}
   ): Promise<Market[]> {
-    const noInit = "noInit" in params ? params.noInit : false;
+    const noInit = params.noInit ?? false;
     delete params.noInit;
-    const bookOptions =
-      "bookOptions" in params ? params.bookOptions : undefined;
+    const bookOptions = params.bookOptions;
     delete params.bookOptions;
     const openMarketsData = await this.openMarketsData({
       ...params,
