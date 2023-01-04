@@ -650,7 +650,7 @@ class Mangrove {
     loadedCashness[symbol] = cashness;
   }
 
-  // cashness is "how similar to cahs is a token". The cashier token is the quote.
+  // cashness is "how similar to cash is a token". The cashier token is the quote.
   // toBaseQuoteByCashness orders symbols according to relative cashness.
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
