@@ -60,6 +60,5 @@ async function main() {
 main()
   .catch(console.error)
   .then((result) => {
-    // console.log('runTypeChain: done.');
     process.exit(0);
   });
