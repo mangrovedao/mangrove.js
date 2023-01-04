@@ -52,7 +52,7 @@ namespace Mangrove {
     dead: boolean;
   };
 
-  export type openMarketInfo = {
+  export type OpenMarketInfo = {
     base: { address: string; symbol: string; decimals: number };
     quote: { address: string; symbol: string; decimals: number };
     asksConfig: LocalConfig;
@@ -503,7 +503,7 @@ class Mangrove {
       configs?: boolean;
       tokenInfos?: boolean;
     } = {}
-  ): Promise<Mangrove.openMarketInfo[]> {
+  ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
     params.from = "from" in params ? params.from : 0;
     params.maxLen =
