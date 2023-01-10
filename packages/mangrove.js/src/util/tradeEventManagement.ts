@@ -186,7 +186,19 @@ class TradeEventManagement {
       takerGave: ethers.BigNumber
     ) => boolean
   ): Market.Summary {
-    return this.createSummaryFromEvent(evt, got, gave, partialFillFunc);
+    return this.createSummaryFromEvent(
+      {
+        args: {
+          takerGot: evt.args.takerGot,
+          takerGave: evt.args.takerGave,
+          penalty: evt.args.bounty,
+          feePaid: evt.args.fee,
+        },
+      },
+      got,
+      gave,
+      partialFillFunc
+    );
   }
 
   createRestingOrderFromEvent(

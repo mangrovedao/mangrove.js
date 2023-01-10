@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/mangrove.js",
-  "version": "0.13.0",
+  "version": "1.0.1",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
@@ -63,7 +63,7 @@
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/commonlib.js": "workspace:*",
-    "@mangrovedao/mangrove-core": "^1.2.0",
+    "@mangrovedao/mangrove-core": "^1.4.0",
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
     "esbuild-plugin-resolve": "^1.0.3",
@@ -91,7 +91,7 @@
     "cross-env": "^7.0.3",
     "dir-compare": "^4.0.0",
     "esbuild": "^0.15.13",
-    "eslint": "^8.28.0",
+    "eslint": "^8.31.0",
     "eslint-config-prettier": "^8.5.0",
     "lint-staged": "^13.0.3",
     "mocha": "^10.0.0",

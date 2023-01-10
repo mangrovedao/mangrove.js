@@ -1,7 +1,26 @@
 # next version
 
+# 1.1.0 (January 2023)
+
+- add Mangrove.openMarkets and Mangrove.openMarketsData, reads open markets info off MgvReader
+
+# 1.0.1 (December 2022)
+
+- Updated order to return both transaction response and result
+- Add option to TradeParams, that forces usage of MangroveOrder
+- Moved ExpiryDate from RestingOrderParams to TradeParams
+
+# 1.0.0 (December 2022)
+
+- Upgraded mangrove-core dependency with new addresses
+- Bump version to 1.0.0 for initial release
+
+# 0.14.0 (December 2022)
+
 - Upgraded mangrove-core dependency to enable Polygon mainnet
 - Updated TradeParams to remove slippage
+- public fields of Mangrove class are no longer prefixed by '\_'
+- Simplifying `offerLogic` and `liquidityProvider` classes. They now respectively implement `IOfferLogic` and `ILiquidityProvider` interface
 
 # 0.13.0 (November 2022)
 

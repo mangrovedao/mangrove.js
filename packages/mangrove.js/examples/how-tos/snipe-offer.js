@@ -36,7 +36,7 @@ console.log(offer);
 await mgv.approveMangrove("USDC");
 
 // Snipe the offer using the information about the offer.
-let result = await market.snipe({
+let snipePromises = await market.snipe({
   targets: [
     {
       offerId: offer.id,
@@ -47,6 +47,7 @@ let result = await market.snipe({
   ],
   ba: "asks",
 });
+const result = await snipePromises.result;
 
 // Log the result of snipe
 console.log(result);

@@ -68,9 +68,13 @@ namespace Market {
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
+  export type OrderRoute = "Mangrove" | "MangroveOrder";
+
   export type TradeParams = {
+    forceRoutingToMangroveOrder?: boolean;
     slippage?: number;
     fillOrKill?: boolean;
+    expiryDate?: number;
   } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
     (
       | { volume: Bigish; price: Bigish }
@@ -79,7 +83,6 @@ namespace Market {
     );
 
   export type RestingOrderParams = {
-    expiryDate?: number;
     provision: Bigish;
   };
 
@@ -244,6 +247,7 @@ class Market {
     base: string;
     quote: string;
     bookOptions?: Market.BookOptions;
+    noInit?: boolean;
   }): Promise<Market> {
     canConstructMarket = true;
     const market = new Market(params);
@@ -489,7 +493,10 @@ class Market {
   buy(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     return this.trade.order("buy", params, this, overrides);
   }
 
@@ -518,7 +525,10 @@ class Market {
   sell(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     return this.trade.order("sell", params, this, overrides);
   }
 
@@ -539,7 +549,10 @@ class Market {
   snipe(
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
     return this.trade.snipe(params, this, overrides);
   }
 
@@ -659,9 +672,9 @@ class Market {
   }
 
   /**
-   * Subscribe to orderbook updates.
+   * Subscribe to order book updates.
    *
-   * `cb` gets called whenever the orderbook is updated.
+   * `cb` gets called whenever the order book is updated.
    *  Its first argument `event` is a summary of the event. It has the following properties:
    *
    * * `type` the type of change. May be: * `"OfferWrite"`: an offer was

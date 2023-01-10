@@ -29,7 +29,7 @@ namespace LiquidityProvider {
    *  offer order.
    */
 
-  type OptParams = { gasreq?: number; gasprice?: number; fund?: Bigish };
+  type OptParams = { fund?: Bigish };
 
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
@@ -160,11 +160,9 @@ class LiquidityProvider {
         [wants, gives] = [gives, wants];
       }
     }
-    const gasreq = p.gasreq;
-    const gasprice = p.gasprice;
     const fund = p.fund;
 
-    return { wants, gives, price, gasreq, gasprice, fund };
+    return { wants, gives, price, fund };
   }
 
   #optValueToPayableOverride(
@@ -220,23 +218,32 @@ class LiquidityProvider {
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     overrides: ethers.Overrides = {}
   ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
-    const { wants, gives, price, gasreq, gasprice, fund } =
-      this.#normalizeOfferParams(p);
+    const { wants, gives, price, fund } = this.#normalizeOfferParams(p);
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
     let txPromise = null;
-    const poster = this.logic ? this.logic.contract : this.mgv.contract;
-    txPromise = poster.newOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      inbound_tkn.toUnits(wants),
-      outbound_tkn.toUnits(gives),
-      gasreq ? gasreq : this.logic ? ethers.constants.MaxUint256 : 0,
-      gasprice ? gasprice : 0,
-      pivot ? pivot : 0,
-      this.#optValueToPayableOverride(overrides, fund)
-    );
+    if (this.logic) {
+      txPromise = this.logic.contract.newOffer(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        inbound_tkn.toUnits(wants),
+        outbound_tkn.toUnits(gives),
+        pivot ? pivot : 0,
+        this.#optValueToPayableOverride(overrides, fund)
+      );
+    } else {
+      txPromise = this.mgv.contract.newOffer(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        inbound_tkn.toUnits(wants),
+        outbound_tkn.toUnits(gives),
+        0, //gasreq
+        0, //gasprice
+        pivot ? pivot : 0,
+        this.#optValueToPayableOverride(overrides, fund)
+      );
+    }
 
     logger.debug(`Post new offer`, {
       contextInfo: "mangrove.maker",
@@ -294,25 +301,35 @@ class LiquidityProvider {
     const offerMakerAddress = (await offer).maker;
     if (offerMakerAddress != thisMaker) {
       throw Error(
-        `The offer is not owned by ${offerMakerAddress}, not ${thisMaker}.`
+        `The offer is owned by a different address ${offerMakerAddress}, not the expected address ${thisMaker}.`
       );
     }
-    const { wants, gives, price, gasreq, gasprice, fund } =
-      this.#normalizeOfferParams(p);
+    const { wants, gives, price, fund } = this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     let txPromise = null;
-    const updater = this.logic ? this.logic.contract : this.mgv.contract;
-    txPromise = updater.updateOffer(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      inbound_tkn.toUnits(wants),
-      outbound_tkn.toUnits(gives),
-      gasreq ? gasreq : offer.gasreq,
-      gasprice ? gasprice : offer.gasprice,
-      (await this.market.getPivotId(p.ba, price)) ?? 0,
-      id,
-      this.#optValueToPayableOverride(overrides, fund)
-    );
+    if (this.logic) {
+      txPromise = this.logic.contract.updateOffer(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        inbound_tkn.toUnits(wants),
+        outbound_tkn.toUnits(gives),
+        (await this.market.getPivotId(p.ba, price)) ?? 0,
+        id,
+        this.#optValueToPayableOverride(overrides, fund)
+      );
+    } else {
+      txPromise = this.mgv.contract.updateOffer(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        inbound_tkn.toUnits(wants),
+        outbound_tkn.toUnits(gives),
+        0,
+        0,
+        (await this.market.getPivotId(p.ba, price)) ?? 0,
+        id,
+        this.#optValueToPayableOverride(overrides, fund)
+      );
+    }
 
     logger.debug(`Update offer`, {
       contextInfo: "mangrove.maker",
