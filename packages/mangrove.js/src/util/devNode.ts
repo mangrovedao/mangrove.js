@@ -4,7 +4,10 @@
  */
 import { ethers } from "ethers";
 import * as ToyENS from "./ToyENSCode";
-import * as Multicall from "./MulticallCode";
+import { typechain } from "../types";
+const multicallAbi = require("../constants/artifacts/Multicall2.json");
+
+const multicallAddress = "0xdecaf1" + "0".repeat(34);
 
 /* Call 'decimals' on all given addresses. */
 export const callDecimalsOn = async (
@@ -12,24 +15,24 @@ export const callDecimalsOn = async (
   addresses: string[]
 ): Promise<(number | undefined)[]> => {
   // ABI to get token decimals
-  const decFn = new ethers.utils.Interface([
-    "function decimals() view returns (uint8)",
-  ]);
-  const decimalsData = decFn.encodeFunctionData("decimals", []);
+  const ierc20 = typechain.IERC20__factory.createInterface();
+  const decimalsData = ierc20.encodeFunctionData("decimals");
+
   /* Grab decimals for all contracts */
-  const args = addresses.map((addr) => [addr, decimalsData]);
-  const multicall = new ethers.Contract(
-    Multicall.address,
-    Multicall.abi,
+  const multicall = typechain.Multicall2__factory.connect(
+    multicallAddress,
     provider
   );
-  const [allIsToken, allDecimals] = await multicall.callStatic.aggregate(args);
-  const ret = allDecimals.map((rawData, index) => {
+  const args = addresses.map((addr) => {
+    return { target: addr, callData: decimalsData };
+  });
+  const returnData = await multicall.callStatic.tryAggregate(false, args);
+  const ret = returnData.map(({ success, returnData }) => {
     let decoded;
-    // if not a token, rawData decoding will trigger the error encoded in the rawData
-    if (allIsToken[index]) {
+    if (success) {
       try {
-        decoded = decFn.decodeFunctionResult("decimals", rawData)[0];
+        // if not a token, decoding will trigger the error encoded in returnData
+        decoded = ierc20.decodeFunctionResult("decimals", returnData)[0];
       } catch (e) {}
     }
     return decoded;
@@ -109,7 +112,9 @@ export const devNodeInfos: { [key: string]: DevNode.info } = {
 class DevNode {
   provider: DevNode.provider;
   web3ClientVersion: string;
+  multicallAddress: string;
   constructor(provider: any) {
+    this.multicallAddress = multicallAddress;
     if ("send" in provider) {
       this.provider = provider as DevNode.provider;
     } else {
@@ -159,18 +164,21 @@ class DevNode {
     return currentCode !== "0x";
   }
 
-  async deployCodeIfAbsent(address: string, newCode: string): Promise<any> {
+  async setCodeIfAbsent(address: string, newCode: string): Promise<any> {
     if (!(await this.hasCode(address))) {
       return this.setCode(address, newCode);
     }
   }
 
-  deployToyENSIfAbsent(): Promise<any> {
-    return this.deployCodeIfAbsent(ToyENS.address, ToyENS.code);
+  setToyENSCodeIfAbsent(): Promise<any> {
+    return this.setCodeIfAbsent(ToyENS.address, ToyENS.code);
   }
 
-  deployMulticallIfAbsent(): Promise<any> {
-    return this.deployCodeIfAbsent(Multicall.address, Multicall.code);
+  setMulticallCodeIfAbsent(): Promise<any> {
+    return this.setCodeIfAbsent(
+      multicallAddress,
+      multicallAbi.deployedBytecode.object
+    );
   }
 
   callDecimalsOn(addresses: string[]): Promise<(number | undefined)[]> {

@@ -1,5 +1,9 @@
 # next version
 
+# 1.1.0 (January 2023)
+
+- add Mangrove.openMarkets and Mangrove.openMarketsData, reads open markets info off MgvReader
+
 # 1.0.1 (December 2022)
 
 - Updated order to return both transaction response and result
