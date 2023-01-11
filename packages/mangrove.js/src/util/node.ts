@@ -84,6 +84,17 @@ export const builder = (yargs) => {
       default: false,
       type: "boolean",
     })
+    .option("set-multicall-code-if-absent", {
+      describe: "Set Multicall code if absent",
+      default: true,
+      type: "boolean",
+    })
+    .option("set-toy-ens-code-if-absent", {
+      alias: "setToyENSCodeIfAbsent",
+      describe: "Set ToyENS code if absent",
+      default: true,
+      type: "boolean",
+    })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
 
@@ -177,7 +188,7 @@ const spawn = async (params: any) => {
 };
 
 /* Run a deployment, populate Mangrove addresses */
-const deploy = async (params: {
+type deployParams = {
   provider: JsonRpcProvider;
   stateCache: boolean;
   targetContract: string;
@@ -185,11 +196,19 @@ const deploy = async (params: {
   host: string;
   port: number;
   pipe: boolean;
-}) => {
+  setMulticallCodeIfAbsent: boolean;
+  setToyENSCodeIfAbsent: boolean;
+};
+const deploy = async (params: deployParams) => {
+  // convenience: deploy ToyENS/Multicall if not in place yet and not forbidden by params
   const devNode = new DevNode(params.provider);
-  await devNode.setToyENSCodeIfAbsent();
+  if (params.setToyENSCodeIfAbsent) {
+    await devNode.setToyENSCodeIfAbsent();
+  }
 
-  await devNode.setMulticallCodeIfAbsent();
+  if (params.setMulticallCodeIfAbsent) {
+    await devNode.setMulticallCodeIfAbsent();
+  }
 
   // test connectivity
   try {
@@ -272,18 +291,16 @@ const deploy = async (params: {
   Connect to a node. Optionally spawns it before connecting. Optionally runs
   initial deployment before connecting.
  */
-const connect = async (params: {
+type connectParams = {
   spawn: boolean;
   deploy: boolean;
   url: string;
   provider: JsonRpcProvider;
-  stateCache: boolean;
-  targetContract: string;
-  script: string;
   host: string;
   port: number;
   pipe: boolean;
-}) => {
+};
+const connect = async (params: connectParams & deployParams) => {
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
     spawnInfo = await spawn(params);
@@ -345,8 +362,8 @@ export const node = (argv: any, useYargs: boolean = true) => {
     connect() {
       return connect(params);
     },
-    getAllToyENSEntries() {
-      return devNode.getAllToyENSEntries(params.provider);
+    watchAllToyENSEntries() {
+      return devNode.watchAllToyENSEntries(params.provider);
     },
   };
 };
