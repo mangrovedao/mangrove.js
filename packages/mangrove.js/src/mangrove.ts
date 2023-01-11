@@ -111,14 +111,7 @@ class Mangrove {
     if ("send" in signer.provider) {
       const devNode = new DevNode(signer.provider);
       if (await devNode.isDevNode()) {
-        await devNode.setToyENSCodeIfAbsent();
-        await Mangrove.watchLocalAddresses(devNode);
-        await devNode.setMulticallCodeIfAbsent();
-        Mangrove.setAddress(
-          "Multicall2",
-          devNode.multicallAddress,
-          network.name
-        );
+        await Mangrove.initAndListenToDevNode(devNode);
       }
     }
     canConstructMangrove = true;
@@ -471,18 +464,25 @@ class Mangrove {
   }
 
   /**
-   * Returns all addresses registered at the local server's Toy ENS contract.
-   * Assumes provider is connected to a local server (typically for testing/experimentation).
+   * Setup dev node necessary contracts if needed, register dev Multicall2
+   * address, listen to future additions (a script external to mangrove.js may
+   * deploy contracts during execution).
    */
-  static async watchLocalAddresses(devNode: DevNode) {
+  static async initAndListenToDevNode(devNode: DevNode) {
     const network = await eth.getProviderNetwork(devNode.provider);
+    // set necessary code
+    await devNode.setToyENSCodeIfAbsent();
+    await devNode.setMulticallCodeIfAbsent();
+    // register Multicall2
+    Mangrove.setAddress("Multicall2", devNode.multicallAddress, network.name);
+    // get currently deployed contracts & listen for future ones
     const setAddress = (name, address, decimals) => {
       Mangrove.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
         Mangrove.setDecimals(name, decimals);
       }
     };
-    const contracts = await devNode.getAllToyENSEntries(setAddress);
+    const contracts = await devNode.watchAllToyENSEntries(setAddress);
     for (const { name, address, decimals } of contracts) {
       setAddress(name, address, decimals);
     }

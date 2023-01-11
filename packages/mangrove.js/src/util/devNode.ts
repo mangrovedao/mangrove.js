@@ -49,7 +49,7 @@ export const connectToToyENSContract = (
 
 /* Fetch all Toy ENS entries, used to give contract addresses to Mangrove */
 /* onSets is called at most once per block with the list of name,address pairs that were set during the block */
-export const getAllToyENSEntries = async (
+export const watchAllToyENSEntries = async (
   provider: ethers.providers.JsonRpcProvider,
   onSet?: (name, address, decimals?: number) => void
 ): Promise<DevNode.fetchedContract[]> => {
@@ -73,6 +73,7 @@ export const getAllToyENSEntries = async (
   } catch (e) {
     return [];
   }
+  // TODO: move decimals out of devNode and into mangrove.ts where it belongs
   const decimals = await callDecimalsOn(provider, addresses);
   const contracts = names.map((name, index) => {
     return {
@@ -189,8 +190,8 @@ class DevNode {
     return connectToToyENSContract(this.provider);
   }
 
-  getAllToyENSEntries(onSet?: (name, address, decimals?: number) => void) {
-    return getAllToyENSEntries(this.provider, onSet);
+  watchAllToyENSEntries(onSet?: (name, address, decimals?: number) => void) {
+    return watchAllToyENSEntries(this.provider, onSet);
   }
 }
 

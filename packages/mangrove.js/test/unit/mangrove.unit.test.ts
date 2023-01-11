@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { describe, it } from "mocha";
 import {
   connectToToyENSContract,
-  getAllToyENSEntries,
+  watchAllToyENSEntries,
 } from "../../src/util/devNode";
 import { Watcher } from "../../src/util";
 
@@ -47,7 +47,7 @@ describe("Mangrove functionality", () => {
       await watcher.watchFor((k, v) => k === "Mangrove" && v == ADDR1);
     });
 
-    // can't make this test go through mangrove since Mangrove can't connect without an existing Mangrove instance -- so we're just testing getAllToyENSEntries watch functionality here
+    // can't make this test go through mangrove since Mangrove can't connect without an existing Mangrove instance -- so we're just testing watchAllToyENSEntries watch functionality here
     it("can start watching before ToyENS has been created", async function () {
       // start server but deploy nothing
       const server = await node({
@@ -60,7 +60,7 @@ describe("Mangrove functionality", () => {
 
       // promise that will resolve when Mangrove is registered to ToyENS
       const prom = new Promise<void>((ok) => {
-        getAllToyENSEntries(provider, (name, address, decimals) => {
+        watchAllToyENSEntries(provider, (name, address, decimals) => {
           if (name === "Mangrove") {
             ok();
           }

@@ -58,7 +58,7 @@ describe("Mangrove integration tests suite", function () {
       assert.equal(markets.length, 1);
     });
 
-    it("gets correct market info and updates with cahsness", async function () {
+    it("gets correct market info and updates with cashness", async function () {
       await mgv.readerContract.updateMarket(
         mgv.getAddress("TokenA"),
         mgv.getAddress("TokenB")
