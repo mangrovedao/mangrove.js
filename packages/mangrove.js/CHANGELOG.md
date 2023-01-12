@@ -1,5 +1,9 @@
 # next version
 
+# 1.1.1 (January 2023)
+
+- Improve and bugfix devNode detection (which made `Mangrove.connect()` buggy against local chains in previous version), and add options for Multicall and ToyENS usage.
+
 # 1.1.0 (January 2023)
 
 - add Mangrove.openMarkets and Mangrove.openMarketsData, reads open markets info off MgvReader
