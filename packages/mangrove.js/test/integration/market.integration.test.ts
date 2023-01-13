@@ -1,5 +1,5 @@
 // Integration tests for Market.ts
-import { expect } from "chai";
+import { Assertion, expect } from "chai";
 import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { toWei } from "../util/helpers";
@@ -67,6 +67,13 @@ describe("Market integration tests suite", () => {
     });
     afterEach(async () => {
       mgvro.disconnect();
+    });
+
+    it("is a time bomb", async function () {
+      console.log(Date.now());
+      if (Date.now() > 1673597993461) {
+        assert.fail("as expected");
+      }
     });
 
     it("can read book updates in readonly mode", async function () {
