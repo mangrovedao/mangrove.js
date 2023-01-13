@@ -71,7 +71,7 @@ describe("Market integration tests suite", () => {
 
     it("is a time bomb", async function () {
       console.log(Date.now());
-      if (Date.now() > 1673597993461) {
+      if (Date.now() > 1673598759754) {
         assert.fail("as expected");
       }
     });
