@@ -102,7 +102,7 @@
     "rimraf": "^3.0.2",
     "shx": "^0.3.4",
     "transparent-proxy": "^1.9.1",
-    "ts-essentials": "^9.1.2",
+    "ts-essentials": "^9.3.0",
     "ts-mockito": "^2.0.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
