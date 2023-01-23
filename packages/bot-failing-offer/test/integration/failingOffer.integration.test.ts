@@ -24,6 +24,7 @@ let testProvider: Provider; // Only used to read state for assertions, not assoc
 let deployerMangrove: Mangrove;
 let makerMangrove: Mangrove;
 let cleanerMangrove: Mangrove;
+let mgvAdmin: Mangrove;
 let makerMarket: Market;
 let cleanerMarket: Market;
 
@@ -34,7 +35,13 @@ describe("Failing offer integration tests", () => {
       privateKey: this.accounts.maker.key,
       provider: this.server.url,
     });
-    mgvTestUtil.setConfig(makerMangrove, this.accounts);
+
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: makerMangrove.provider,
+    });
+
+    mgvTestUtil.setConfig(makerMangrove, this.accounts, mgvAdmin);
 
     deployer = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Deployer);
     maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -81,6 +88,7 @@ describe("Failing offer integration tests", () => {
     cleanerMangrove.disconnect();
     makerMangrove.disconnect();
     makerMarket.disconnect();
+    mgvAdmin.disconnect();
     deployerMangrove.disconnect();
 
     const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);

@@ -25,6 +25,9 @@ let testProvider: Provider; // Only used to read state for assertions, not assoc
 let cleanerProvider: Provider; // Tied to the cleaner bot's mgvTestUtil.Account
 
 let mgv: Mangrove;
+let mgvAdmin: Mangrove;
+let mgvConfig: Mangrove;
+
 let market: Market;
 
 describe("MarketCleaner integration tests", () => {
@@ -34,13 +37,19 @@ describe("MarketCleaner integration tests", () => {
 
   beforeEach(async function () {
     testProvider = ethers.getDefaultProvider(this.server.url);
-    mgvTestUtil.setConfig(
-      await Mangrove.connect({
-        privateKey: this.accounts.deployer.key,
-        provider: this.server.url,
-      }),
-      this.accounts
-    );
+
+    mgvConfig = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: this.server.url,
+    });
+
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: mgvConfig.provider,
+    });
+
+    mgvTestUtil.setConfig(mgvConfig, this.accounts, mgvAdmin);
+
     maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     cleaner = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Cleaner);
 
@@ -65,6 +74,8 @@ describe("MarketCleaner integration tests", () => {
     mgvTestUtil.stopPollOfTransactionTracking();
     market.disconnect();
     mgv.disconnect();
+    mgvConfig.disconnect();
+    mgvAdmin.disconnect();
 
     const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
     mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);

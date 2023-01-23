@@ -20,6 +20,7 @@ describe("OfferMaker", () => {
 
   afterEach(async () => {
     mgv.disconnect();
+    adminMgv.disconnect();
   });
 
   describe("OfferMaker connectivity", () => {

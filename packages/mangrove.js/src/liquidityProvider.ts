@@ -222,9 +222,29 @@ class LiquidityProvider {
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
-    let txPromise = null;
+
+    // set up market subscriber
+    const callback = (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent,
+      ethersLog: ethers.providers.Log
+    ) => {
+      const offerId = cbArg.offerId;
+      return { id: offerId, pivot: pivot, event: ethersLog };
+    };
+
+    const subscribeOnce = this.market
+      .once(
+        callback,
+        (cbArg: Market.BookSubscriptionCbArgument) => cbArg.type == "OfferWrite"
+      )
+      .then((v) => {
+        return v;
+      });
+
+    // send offer
     if (this.logic) {
-      txPromise = this.logic.contract.newOffer(
+      this.logic.contract.newOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -233,7 +253,7 @@ class LiquidityProvider {
         this.#optValueToPayableOverride(overrides, fund)
       );
     } else {
-      txPromise = this.mgv.contract.newOffer(
+      this.mgv.contract.newOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -250,15 +270,7 @@ class LiquidityProvider {
       data: { params: p, overrides: overrides },
     });
 
-    return this.market.onceWithTxPromise(
-      txPromise,
-      (cbArg, _event, ethersEvent) => ({
-        id: cbArg.offerId,
-        event: ethersEvent,
-        pivot: pivot,
-      }),
-      (_cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
-    );
+    return subscribeOnce;
   }
 
   /** Update an existing ask */
@@ -306,9 +318,28 @@ class LiquidityProvider {
     }
     const { wants, gives, price, fund } = this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-    let txPromise = null;
+
+    // set up market subscriber
+    const callback = (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent,
+      ethersLog: ethers.providers.Log
+    ) => {
+      return { event: ethersLog };
+    };
+
+    const subscribeOnce = this.market
+      .once(
+        callback,
+        (cbArg: Market.BookSubscriptionCbArgument) => cbArg.type == "OfferWrite"
+      )
+      .then((v) => {
+        return v;
+      });
+
+    // update offer
     if (this.logic) {
-      txPromise = this.logic.contract.updateOffer(
+      this.logic.contract.updateOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -318,7 +349,7 @@ class LiquidityProvider {
         this.#optValueToPayableOverride(overrides, fund)
       );
     } else {
-      txPromise = this.mgv.contract.updateOffer(
+      this.mgv.contract.updateOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -336,11 +367,7 @@ class LiquidityProvider {
       data: { id: id, params: p, overrides: overrides },
     });
 
-    return this.market.onceWithTxPromise(
-      txPromise,
-      (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
-      (cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
-    );
+    return subscribeOnce;
   }
 
   /** Cancel an ask. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
@@ -369,9 +396,21 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    let txPromise = null;
     const retracter = this.logic ? this.logic.contract : this.mgv.contract;
-    txPromise = retracter.retractOffer(
+
+    // set up market subscriber (its callback doesn't matter - only the filter, which ensures that the promise only resolves when we've seen the OfferRetract)
+    const subscribeOnce = this.market
+      .once(
+        () => {
+          return;
+        },
+        (cbArg: Market.BookSubscriptionCbArgument) =>
+          cbArg.type == "OfferRetract"
+      )
+      .then((v) => v);
+
+    // retract offer
+    retracter.retractOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       id,
@@ -384,13 +423,7 @@ class LiquidityProvider {
       data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
     });
 
-    return this.market.onceWithTxPromise(
-      txPromise,
-      (/*cbArg, event, ethersEvent*/) => {
-        /*empty*/
-      },
-      (cbArg, evt /* _ethersEvent*/) => evt.name === "OfferRetract"
-    );
+    return subscribeOnce;
   }
 
   #approveToken(

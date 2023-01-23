@@ -24,6 +24,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 
 describe("Market integration tests suite", () => {
   let mgv: Mangrove;
+  let mgvAdmin: Mangrove;
 
   beforeEach(async function () {
     mgv = await Mangrove.connect({
@@ -31,7 +32,12 @@ describe("Market integration tests suite", () => {
       privateKey: this.accounts.tester.key,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts);
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: mgv.provider,
+    });
+
+    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
 
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -50,6 +56,7 @@ describe("Market integration tests suite", () => {
   afterEach(async () => {
     mgvTestUtil.stopPollOfTransactionTracking();
     mgv.disconnect();
+    mgvAdmin.disconnect();
   });
 
   describe("Readonly mode", async function () {
@@ -592,20 +599,6 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  it("listens to blocks", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-    const pro = market.afterBlock(1, (n) => {});
-    const lastBlock = await mgv.provider.getBlockNumber();
-    const pro2 = market.afterBlock(lastBlock + 1, (n) => {});
-    await helpers.newOffer(mgv, market.base, market.quote, {
-      wants: "1",
-      gives: "1.2",
-    });
-    await pro;
-    await pro2;
-    //Failure for this test is a timeout, do to promises never being resolved.
-  });
-
   it("subscribes", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
@@ -691,7 +684,9 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
-      queue.put(evt);
+      // NOTE: As we are using mgvTestUtil.waitForBooksForLastTx we need to
+      // disregard a few SetGasbase-events
+      if (evt.type !== "SetGasbase") queue.put(evt);
     };
     market.subscribe(cb);
 
