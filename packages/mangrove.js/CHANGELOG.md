@@ -1,5 +1,7 @@
 # next version
 
+- Remove inefficient synchronous block-by-block querying and updates of Semibook's. Block-subscription have been removed from Semibook and Market. Code relying on this (mostly test and test-util libs) have been rewritten. APIs in market and Semibook supporting on-block listening has been removed.
+
 # 1.1.1 (January 2023)
 
 - Improve and bugfix devNode detection (which made `Mangrove.connect()` buggy against local chains in previous version), and add options for Multicall and ToyENS usage.
