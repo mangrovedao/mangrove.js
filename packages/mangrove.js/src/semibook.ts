@@ -2,7 +2,6 @@ import { Listener } from "@ethersproject/providers";
 import { Mutex } from "async-mutex";
 import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
-import EventEmitter from "events";
 import { Mangrove, Market } from ".";
 import { Bigish } from "./types";
 import { TypedEventFilter } from "./types/typechain/common";
@@ -112,7 +111,6 @@ class Semibook implements Iterable<Market.Offer> {
   readonly ba: Market.BA;
   readonly market: Market;
   readonly options: Semibook.Options; // complete and validated
-  readonly startProcessBlockEmitter = new EventEmitter();
 
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
   #offer_gasbase: number;
@@ -720,14 +718,6 @@ class Semibook implements Iterable<Market.Offer> {
         break;
       default:
         throw Error(`Unknown event ${event}`);
-    }
-
-    if (ethersLog.blockNumber > this.#lastProcessedEventFromBlock) {
-      this.#lastProcessedEventFromBlock = ethersLog.blockNumber;
-      this.startProcessBlockEmitter.emit(
-        "startBlock",
-        this.#lastProcessedEventFromBlock
-      );
     }
   }
 
