@@ -75,7 +75,6 @@ class Mangrove {
   orderContract: typechain.MangroveOrderEnriched;
   static typechain = typechain;
   static addresses = addresses;
-  unitCalculations = new UnitCalculations();
 
   /**
    * Creates an instance of the Mangrove Typescript object
@@ -100,8 +99,11 @@ class Mangrove {
    */
 
   static async connect(
-    options: eth.CreateSignerOptions | string = {}
+    options?: eth.CreateSignerOptions | string
   ): Promise<Mangrove> {
+    if (typeof options === "undefined") {
+      options = "http://localhost:8545";
+    }
     if (typeof options === "string") {
       options = { provider: options };
     }
@@ -281,14 +283,22 @@ class Mangrove {
    * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
    * it is the number of decimals.
    *
+   * For convenience, has a static and an instance version.
+   *
    *  @example
    *  ```
-   *  mgv.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
+   *  Mangrove.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
+  static toUnits(
+    amount: Bigish,
+    nameOrDecimals: string | number
+  ): ethers.BigNumber {
+    return UnitCalculations.toUnits(amount, nameOrDecimals);
+  }
   toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
-    return this.unitCalculations.toUnits(amount, nameOrDecimals);
+    return Mangrove.toUnits(amount, nameOrDecimals);
   }
 
   /** Convert internal token amount to public token representation.
@@ -306,7 +316,7 @@ class Mangrove {
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
-    return this.unitCalculations.fromUnits(amount, nameOrDecimals);
+    return UnitCalculations.fromUnits(amount, nameOrDecimals);
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */

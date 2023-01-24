@@ -124,6 +124,11 @@ namespace Market {
   };
   export type DirectionlessVolumeParams = Omit<VolumeParams, "to">;
 
+  export type OptionalParams = {
+    bookOptions: Market.BookOptions;
+    noInit: boolean;
+  };
+
   /**
    * Options that control how the book cache behaves.
    */
@@ -242,13 +247,13 @@ class Market {
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
-  static async connect(params: {
-    mgv: Mangrove;
-    base: string;
-    quote: string;
-    bookOptions?: Market.BookOptions;
-    noInit?: boolean;
-  }): Promise<Market> {
+  static async connect(
+    params: {
+      mgv: Mangrove;
+      base: string;
+      quote: string;
+    } & Partial<Market.OptionalParams>
+  ): Promise<Market> {
     canConstructMarket = true;
     const market = new Market(params);
     canConstructMarket = false;

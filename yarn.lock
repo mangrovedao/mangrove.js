@@ -1474,10 +1474,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/mangrove-core@npm:^1.4.0":
+"@mangrovedao/mangrove-core@github:mangrovedao/mangrove-core#head=adrien/rename-reorder":
   version: 1.4.0
-  resolution: "@mangrovedao/mangrove-core@npm:1.4.0"
-  checksum: 479a74adfe64e91d6a8fb93c91d541f3a8e96d2cba22a79d408455789bdb23539767afe042f6af195d864c4a5177ef30643cceacf871523fe08bf123540b12f8
+  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=00c7bd1982c873936af3104924cf101966fbfbb3"
+  checksum: 2cac3d95b5f595ddad5ac68e88433b8cd3acd98418d2b9acdaf7740a4661786273de6c0f234a618d02b3b0723780b5ddb45c86e6475f39b7d1964b949a18f2b7
   languageName: node
   linkType: hard
 
@@ -1492,7 +1492,7 @@ __metadata:
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
     "@mangrovedao/commonlib.js": "workspace:*"
-    "@mangrovedao/mangrove-core": ^1.4.0
+    "@mangrovedao/mangrove-core": "github:mangrovedao/mangrove-core#head=adrien/rename-reorder"
     "@typechain/ethers-v5": ^10.1.0
     "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5

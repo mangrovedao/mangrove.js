@@ -23,7 +23,6 @@ class MgvToken {
   decimals: number;
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
-  unitCalculations: UnitCalculations;
   constructor(
     name: string,
     mgv: Mangrove,
@@ -53,7 +52,6 @@ class MgvToken {
       this.address,
       this.mgv.signer
     );
-    this.unitCalculations = new UnitCalculations();
   }
 
   /**
@@ -69,7 +67,7 @@ class MgvToken {
    * ```
    */
   fromUnits(amount: string | number | ethers.BigNumber): Big {
-    return this.unitCalculations.fromUnits(amount, this.decimals);
+    return UnitCalculations.fromUnits(amount, this.decimals);
   }
   /**
    * Convert base/quote from public amount to internal contract amount.
@@ -86,7 +84,7 @@ class MgvToken {
    * ```
    */
   toUnits(amount: Bigish): ethers.BigNumber {
-    return this.unitCalculations.toUnits(amount, this.decimals);
+    return UnitCalculations.toUnits(amount, this.decimals);
   }
 
   /**

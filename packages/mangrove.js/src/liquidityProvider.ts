@@ -136,7 +136,9 @@ class LiquidityProvider {
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
    *  return {price,wants,gives}
    */
-  #normalizeOfferParams(p: { ba: Market.BA } & LiquidityProvider.OfferParams): {
+  static normalizeOfferParams(
+    p: { ba: Market.BA } & LiquidityProvider.OfferParams
+  ): {
     price: Big;
     wants: Big;
     gives: Big;
@@ -165,12 +167,12 @@ class LiquidityProvider {
     return { wants, gives, price, fund };
   }
 
-  #optValueToPayableOverride(
+  static optValueToPayableOverride(
     overrides: ethers.Overrides,
     fund?: Bigish
   ): ethers.PayableOverrides {
     if (fund) {
-      return { value: this.mgv.toUnits(fund, 18), ...overrides };
+      return { value: Mangrove.toUnits(fund, 18), ...overrides };
     } else {
       return overrides;
     }
@@ -218,7 +220,8 @@ class LiquidityProvider {
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     overrides: ethers.Overrides = {}
   ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
-    const { wants, gives, price, fund } = this.#normalizeOfferParams(p);
+    const { wants, gives, price, fund } =
+      LiquidityProvider.normalizeOfferParams(p);
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
@@ -230,7 +233,7 @@ class LiquidityProvider {
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
         pivot ? pivot : 0,
-        this.#optValueToPayableOverride(overrides, fund)
+        LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {
       txPromise = this.mgv.contract.newOffer(
@@ -241,7 +244,7 @@ class LiquidityProvider {
         0, //gasreq
         0, //gasprice
         pivot ? pivot : 0,
-        this.#optValueToPayableOverride(overrides, fund)
+        LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     }
 
@@ -304,7 +307,8 @@ class LiquidityProvider {
         `The offer is owned by a different address ${offerMakerAddress}, not the expected address ${thisMaker}.`
       );
     }
-    const { wants, gives, price, fund } = this.#normalizeOfferParams(p);
+    const { wants, gives, price, fund } =
+      LiquidityProvider.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     let txPromise = null;
     if (this.logic) {
@@ -315,7 +319,7 @@ class LiquidityProvider {
         outbound_tkn.toUnits(gives),
         (await this.market.getPivotId(p.ba, price)) ?? 0,
         id,
-        this.#optValueToPayableOverride(overrides, fund)
+        LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {
       txPromise = this.mgv.contract.updateOffer(
@@ -327,7 +331,7 @@ class LiquidityProvider {
         0,
         (await this.market.getPivotId(p.ba, price)) ?? 0,
         id,
-        this.#optValueToPayableOverride(overrides, fund)
+        LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     }
 

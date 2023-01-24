@@ -15,7 +15,10 @@ class UnitCalculations {
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
-  toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
+  static toUnits(
+    amount: Bigish,
+    nameOrDecimals: string | number
+  ): ethers.BigNumber {
     let decimals;
     if (typeof nameOrDecimals === "number") {
       decimals = nameOrDecimals;
@@ -36,7 +39,7 @@ class UnitCalculations {
    *  mgv.fromUnits("1e19",18) // 10
    *  ```
    */
-  fromUnits(
+  static fromUnits(
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
