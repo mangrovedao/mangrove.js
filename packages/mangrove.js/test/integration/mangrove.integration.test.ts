@@ -48,14 +48,37 @@ describe("Mangrove integration tests suite", function () {
   });
 
   describe("getMarkets", async function () {
-    it("gets empty market lists when mgvReader is empty, and updates with mgvReader", async function () {
-      let markets = await mgv.openMarkets();
+    it("updates with mgvReader", async function () {
+      await mgvAdmin.contract.deactivate(
+        mgv.getAddress("TokenA"),
+        mgv.getAddress("TokenB")
+      );
+      await mgvAdmin.contract.deactivate(
+        mgv.getAddress("TokenB"),
+        mgv.getAddress("TokenA")
+      );
       await mgv.readerContract.updateMarket(
         mgv.getAddress("TokenA"),
         mgv.getAddress("TokenB")
       );
-      markets = await mgv.openMarkets();
-      assert.equal(markets.length, 1);
+      const marketsBefore = await mgv.openMarkets();
+      await mgvAdmin.contract.activate(
+        mgv.getAddress("TokenA"),
+        mgv.getAddress("TokenB"),
+        1,
+        1,
+        1
+      );
+      await mgv.readerContract.updateMarket(
+        mgv.getAddress("TokenA"),
+        mgv.getAddress("TokenB")
+      );
+      let markets = await mgv.openMarkets();
+      assert.equal(
+        markets.length - marketsBefore.length,
+        1,
+        "1 market should have opened"
+      );
     });
 
     it("gets correct market info and updates with cashness", async function () {

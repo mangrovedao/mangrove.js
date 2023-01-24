@@ -1476,8 +1476,8 @@ __metadata:
 
 "@mangrovedao/mangrove-core@github:mangrovedao/mangrove-core#head=adrien/rename-reorder":
   version: 1.4.0
-  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=00c7bd1982c873936af3104924cf101966fbfbb3"
-  checksum: 2cac3d95b5f595ddad5ac68e88433b8cd3acd98418d2b9acdaf7740a4661786273de6c0f234a618d02b3b0723780b5ddb45c86e6475f39b7d1964b949a18f2b7
+  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=35b8d6bff1981d5a52e0161c3ff996714647dc82"
+  checksum: a755f91a9bad10391377d275c0704f95a8bf03acf73351c69ac587ad11d5341d081de7dcb3fdaafc77b1975bc151969715da76b056f2e90e1ef3a15a0ba5b9fe
   languageName: node
   linkType: hard
 

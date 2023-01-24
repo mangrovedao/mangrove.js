@@ -1114,7 +1114,7 @@ describe("Market integration tests suite", () => {
       expect(result.summary.gave.toNumber()).to.be.equal(0);
 
       expect(result.summary.bounty.toNumber()).to.be.equal(
-        0.000100266,
+        0.000111092,
         "bounty was not correct - note test is brittle - a new contract version can use different amount of gas, in that case simply update it."
       );
       expect(result.summary.feePaid.toNumber()).to.be.equal(0);
@@ -1226,7 +1226,7 @@ describe("Market integration tests suite", () => {
     );
 
     expect(mgv.fromUnits(result, 18).toNumber()).to.be.equal(
-      0.000055632,
+      0.000061045,
       "bounty was not correct - note test is brittle - a new contract version can use different amount of gas, in that case simply update it."
     );
   });
