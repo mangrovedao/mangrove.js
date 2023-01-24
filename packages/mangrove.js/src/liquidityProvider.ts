@@ -223,28 +223,40 @@ class LiquidityProvider {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
 
-    // set up market subscriber
-    const callback = (
+    let txPromise: Promise<ethers.ContractTransaction> = null;
+
+    // set up market promise and subscriber
+    let promiseResolve: (value: {
+      id: number;
+      pivot: number;
+      event: ethers.providers.Log;
+    }) => void;
+    const promise = new Promise<{
+      id: number;
+      pivot: number;
+      event: ethers.providers.Log;
+    }>((resolve) => {
+      promiseResolve = resolve;
+    });
+
+    const callback = async (
       cbArg: Market.BookSubscriptionCbArgument,
       bookEvent: Market.BookSubscriptionEvent,
       ethersLog: ethers.providers.Log
     ) => {
-      const offerId = cbArg.offerId;
-      return { id: offerId, pivot: pivot, event: ethersLog };
+      const txHash = (await txPromise).hash;
+      const logTxHash = ethersLog.transactionHash;
+      if (txHash === logTxHash && cbArg.type === "OfferWrite") {
+        const offerId = cbArg.offerId;
+        promiseResolve({ id: offerId, pivot: pivot, event: ethersLog });
+      }
     };
 
-    const subscribeOnce = this.market
-      .once(
-        callback,
-        (cbArg: Market.BookSubscriptionCbArgument) => cbArg.type == "OfferWrite"
-      )
-      .then((v) => {
-        return v;
-      });
+    this.market.subscribe(callback);
 
     // send offer
     if (this.logic) {
-      this.logic.contract.newOffer(
+      txPromise = this.logic.contract.newOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -253,7 +265,7 @@ class LiquidityProvider {
         this.#optValueToPayableOverride(overrides, fund)
       );
     } else {
-      this.mgv.contract.newOffer(
+      txPromise = this.mgv.contract.newOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -270,7 +282,7 @@ class LiquidityProvider {
       data: { params: p, overrides: overrides },
     });
 
-    return subscribeOnce;
+    return promise.finally(() => this.market.unsubscribe(callback));
   }
 
   /** Update an existing ask */
@@ -319,27 +331,31 @@ class LiquidityProvider {
     const { wants, gives, price, fund } = this.#normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
-    // set up market subscriber
-    const callback = (
+    let txPromise: Promise<ethers.ContractTransaction> = null;
+
+    // set up market promise and subscriber
+    let promiseResolve: (value: { event: ethers.providers.Log }) => void;
+    const promise = new Promise<{ event: ethers.providers.Log }>((resolve) => {
+      promiseResolve = resolve;
+    });
+
+    const callback = async (
       cbArg: Market.BookSubscriptionCbArgument,
       bookEvent: Market.BookSubscriptionEvent,
       ethersLog: ethers.providers.Log
     ) => {
-      return { event: ethersLog };
+      const txHash = (await txPromise).hash;
+      const logTxHash = ethersLog.transactionHash;
+      if (txHash === logTxHash && cbArg.type === "OfferWrite") {
+        promiseResolve({ event: ethersLog });
+      }
     };
 
-    const subscribeOnce = this.market
-      .once(
-        callback,
-        (cbArg: Market.BookSubscriptionCbArgument) => cbArg.type == "OfferWrite"
-      )
-      .then((v) => {
-        return v;
-      });
+    this.market.subscribe(callback);
 
     // update offer
     if (this.logic) {
-      this.logic.contract.updateOffer(
+      txPromise = this.logic.contract.updateOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -349,7 +365,7 @@ class LiquidityProvider {
         this.#optValueToPayableOverride(overrides, fund)
       );
     } else {
-      this.mgv.contract.updateOffer(
+      txPromise = this.mgv.contract.updateOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -367,7 +383,7 @@ class LiquidityProvider {
       data: { id: id, params: p, overrides: overrides },
     });
 
-    return subscribeOnce;
+    return promise.finally(() => this.market.unsubscribe(callback));
   }
 
   /** Cancel an ask. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
@@ -398,19 +414,30 @@ class LiquidityProvider {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
     const retracter = this.logic ? this.logic.contract : this.mgv.contract;
 
-    // set up market subscriber (its callback doesn't matter - only the filter, which ensures that the promise only resolves when we've seen the OfferRetract)
-    const subscribeOnce = this.market
-      .once(
-        () => {
-          return;
-        },
-        (cbArg: Market.BookSubscriptionCbArgument) =>
-          cbArg.type == "OfferRetract"
-      )
-      .then((v) => v);
+    let txPromise: Promise<ethers.ContractTransaction> = null;
+
+    // set up market promise and subscriber
+    let promiseResolve: (value?) => void;
+    const promise = new Promise<void>((resolve) => {
+      promiseResolve = resolve;
+    });
+
+    const callback = async (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent,
+      ethersLog: ethers.providers.Log
+    ) => {
+      const txHash = (await txPromise).hash;
+      const logTxHash = ethersLog.transactionHash;
+      if (txHash === logTxHash && cbArg.type === "OfferRetract") {
+        promiseResolve();
+      }
+    };
+
+    this.market.subscribe(callback);
 
     // retract offer
-    retracter.retractOffer(
+    txPromise = retracter.retractOffer(
       outbound_tkn.address,
       inbound_tkn.address,
       id,
@@ -423,7 +450,7 @@ class LiquidityProvider {
       data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
     });
 
-    return subscribeOnce;
+    return promise.finally(() => this.market.unsubscribe(callback));
   }
 
   #approveToken(
