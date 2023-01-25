@@ -231,12 +231,14 @@ class LiquidityProvider {
       pivot: number;
       event: ethers.providers.Log;
     }) => void;
+    let promiseReject: (reason: string) => void;
     const promise = new Promise<{
       id: number;
       pivot: number;
       event: ethers.providers.Log;
-    }>((resolve) => {
+    }>((resolve, reject) => {
       promiseResolve = resolve;
+      promiseReject = reject;
     });
 
     const callback = async (
@@ -276,6 +278,9 @@ class LiquidityProvider {
         this.#optValueToPayableOverride(overrides, fund)
       );
     }
+
+    // catch rejections of the tx and reject returned promise
+    txPromise.catch((e) => promiseReject(e));
 
     logger.debug(`Post new offer`, {
       contextInfo: "mangrove.maker",
@@ -335,8 +340,12 @@ class LiquidityProvider {
 
     // set up market promise and subscriber
     let promiseResolve: (value: { event: ethers.providers.Log }) => void;
-    const promise = new Promise<{ event: ethers.providers.Log }>((resolve) => {
+    let promiseReject: (reason: string) => void;
+    const promise = new Promise<{
+      event: ethers.providers.Log;
+    }>((resolve, reject) => {
       promiseResolve = resolve;
+      promiseReject = reject;
     });
 
     const callback = async (
@@ -378,6 +387,9 @@ class LiquidityProvider {
       );
     }
 
+    // catch rejections of the tx and reject returned promise
+    txPromise.catch((e) => promiseReject(e));
+
     logger.debug(`Update offer`, {
       contextInfo: "mangrove.maker",
       data: { id: id, params: p, overrides: overrides },
@@ -418,8 +430,10 @@ class LiquidityProvider {
 
     // set up market promise and subscriber
     let promiseResolve: (value?) => void;
-    const promise = new Promise<void>((resolve) => {
+    let promiseReject: (reason: string) => void;
+    const promise = new Promise<void>((resolve, reject) => {
       promiseResolve = resolve;
+      promiseReject = reject;
     });
 
     const callback = async (
@@ -444,6 +458,9 @@ class LiquidityProvider {
       deprovision,
       overrides
     );
+
+    // catch rejections of the tx and reject returned promise
+    txPromise.catch((e) => promiseReject(e));
 
     logger.debug(`Cancel offer`, {
       contextInfo: "mangrove.maker",
