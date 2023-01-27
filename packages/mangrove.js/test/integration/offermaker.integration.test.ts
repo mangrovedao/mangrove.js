@@ -279,7 +279,7 @@ describe("OfferMaker", () => {
       it("fails, when trying to cancel a non-existing offer", async () => {
         const retractPromise = onchain_lp.retractBid(666, true); // with deprovision
 
-        assert.rejects(
+        await assert.rejects(
           retractPromise,
           "Retracting a non-existing offer should fail."
         );
