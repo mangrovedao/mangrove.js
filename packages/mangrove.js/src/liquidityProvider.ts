@@ -225,37 +225,6 @@ class LiquidityProvider {
 
     let txPromise: Promise<ethers.ContractTransaction> = null;
 
-    // set up market promise and subscriber
-    let promiseResolve: (value: {
-      id: number;
-      pivot: number;
-      event: ethers.providers.Log;
-    }) => void;
-    let promiseReject: (reason: string) => void;
-    const promise = new Promise<{
-      id: number;
-      pivot: number;
-      event: ethers.providers.Log;
-    }>((resolve, reject) => {
-      promiseResolve = resolve;
-      promiseReject = reject;
-    });
-
-    const callback = async (
-      cbArg: Market.BookSubscriptionCbArgument,
-      bookEvent: Market.BookSubscriptionEvent,
-      ethersLog: ethers.providers.Log
-    ) => {
-      const txHash = (await txPromise).hash;
-      const logTxHash = ethersLog.transactionHash;
-      if (txHash === logTxHash && cbArg.type === "OfferWrite") {
-        const offerId = cbArg.offerId;
-        promiseResolve({ id: offerId, pivot: pivot, event: ethersLog });
-      }
-    };
-
-    this.market.subscribe(callback);
-
     // send offer
     if (this.logic) {
       txPromise = this.logic.contract.newOffer(
@@ -279,15 +248,54 @@ class LiquidityProvider {
       );
     }
 
-    // catch rejections of the tx and reject returned promise
-    txPromise.catch((e) => promiseReject(e));
-
     logger.debug(`Post new offer`, {
       contextInfo: "mangrove.maker",
       data: { params: p, overrides: overrides },
     });
 
-    return promise.finally(() => this.market.unsubscribe(callback));
+    return this.#constructPromise(
+      this.market,
+      (_cbArg, _bookEvent, _ethersLog) => ({
+        id: _cbArg.offerId,
+        pivot: pivot,
+        event: _ethersLog,
+      }),
+      txPromise,
+      (cbArg) => cbArg.type === "OfferWrite"
+    );
+  }
+
+  #constructPromise<T>(
+    market: Market,
+    cb: Market.MarketCallback<T>,
+    txPromise: Promise<ethers.ethers.ContractTransaction>,
+    filter: Market.MarketFilter
+  ): Promise<T> {
+    let promiseResolve: (value: T) => void;
+    let promiseReject: (reason: string) => void;
+    const promise = new Promise<T>((resolve, reject) => {
+      promiseResolve = resolve;
+      promiseReject = reject;
+    });
+
+    // catch rejections of the txPromise and reject returned promise
+    txPromise.catch((e) => promiseReject(e));
+
+    const callback = async (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent,
+      ethersLog: ethers.providers.Log
+    ) => {
+      const txHash = (await txPromise).hash;
+      const logTxHash = ethersLog.transactionHash;
+      if (txHash === logTxHash && filter(cbArg)) {
+        promiseResolve(cb(cbArg, bookEvent, ethersLog));
+      }
+    };
+
+    market.subscribe(callback); // TODO: subscribe/once ?
+
+    return promise.finally(() => market.unsubscribe(callback));
   }
 
   /** Update an existing ask */
@@ -338,30 +346,6 @@ class LiquidityProvider {
 
     let txPromise: Promise<ethers.ContractTransaction> = null;
 
-    // set up market promise and subscriber
-    let promiseResolve: (value: { event: ethers.providers.Log }) => void;
-    let promiseReject: (reason: string) => void;
-    const promise = new Promise<{
-      event: ethers.providers.Log;
-    }>((resolve, reject) => {
-      promiseResolve = resolve;
-      promiseReject = reject;
-    });
-
-    const callback = async (
-      cbArg: Market.BookSubscriptionCbArgument,
-      bookEvent: Market.BookSubscriptionEvent,
-      ethersLog: ethers.providers.Log
-    ) => {
-      const txHash = (await txPromise).hash;
-      const logTxHash = ethersLog.transactionHash;
-      if (txHash === logTxHash && cbArg.type === "OfferWrite") {
-        promiseResolve({ event: ethersLog });
-      }
-    };
-
-    this.market.subscribe(callback);
-
     // update offer
     if (this.logic) {
       txPromise = this.logic.contract.updateOffer(
@@ -387,15 +371,19 @@ class LiquidityProvider {
       );
     }
 
-    // catch rejections of the tx and reject returned promise
-    txPromise.catch((e) => promiseReject(e));
-
     logger.debug(`Update offer`, {
       contextInfo: "mangrove.maker",
       data: { id: id, params: p, overrides: overrides },
     });
 
-    return promise.finally(() => this.market.unsubscribe(callback));
+    return this.#constructPromise(
+      this.market,
+      (_cbArg, _bookEvent, _ethersLog) => ({
+        event: _ethersLog,
+      }),
+      txPromise,
+      (cbArg) => cbArg.type === "OfferWrite"
+    );
   }
 
   /** Cancel an ask. If deprovision is true, will return the offer's provision to the maker balance at Mangrove. */
@@ -428,28 +416,6 @@ class LiquidityProvider {
 
     let txPromise: Promise<ethers.ContractTransaction> = null;
 
-    // set up market promise and subscriber
-    let promiseResolve: (value?) => void;
-    let promiseReject: (reason: string) => void;
-    const promise = new Promise<void>((resolve, reject) => {
-      promiseResolve = resolve;
-      promiseReject = reject;
-    });
-
-    const callback = async (
-      cbArg: Market.BookSubscriptionCbArgument,
-      bookEvent: Market.BookSubscriptionEvent,
-      ethersLog: ethers.providers.Log
-    ) => {
-      const txHash = (await txPromise).hash;
-      const logTxHash = ethersLog.transactionHash;
-      if (txHash === logTxHash && cbArg.type === "OfferRetract") {
-        promiseResolve();
-      }
-    };
-
-    this.market.subscribe(callback);
-
     // retract offer
     txPromise = retracter.retractOffer(
       outbound_tkn.address,
@@ -459,15 +425,19 @@ class LiquidityProvider {
       overrides
     );
 
-    // catch rejections of the tx and reject returned promise
-    txPromise.catch((e) => promiseReject(e));
-
     logger.debug(`Cancel offer`, {
       contextInfo: "mangrove.maker",
       data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
     });
 
-    return promise.finally(() => this.market.unsubscribe(callback));
+    return this.#constructPromise(
+      this.market,
+      (/*_cbArg, _bookEvent, _ethersLog*/) => {
+        /* intentionally left blank */
+      },
+      txPromise,
+      (cbArg) => cbArg.type === "OfferRetract"
+    );
   }
 
   #approveToken(
