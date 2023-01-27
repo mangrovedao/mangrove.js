@@ -346,7 +346,7 @@ describe("OfferMaker", () => {
         const base = onchain_lp.market.base.address;
         const quote = onchain_lp.market.quote.address;
         const closetx = await adminMgv.contract.deactivate(base, quote);
-        closetx.wait();
+        await closetx.wait();
 
         const updatePromise = onchain_lp.updateAsk(ofrId, {
           wants: 12,
