@@ -20,6 +20,7 @@ describe("OfferMaker", () => {
 
   afterEach(async () => {
     mgv.disconnect();
+    adminMgv.disconnect();
   });
 
   describe("OfferMaker connectivity", () => {
@@ -223,6 +224,19 @@ describe("OfferMaker", () => {
         );
       });
 
+      it("fails, when trying to push new offer without sufficient provision", async () => {
+        const newAskPromise = onchain_lp.newAsk({
+          wants: 10,
+          gives: 10,
+          fund: 0, // explicitly setting no provision
+        });
+
+        await assert.rejects(
+          newAskPromise,
+          "Posting a new offer without sufficient provision should fail."
+        );
+      });
+
       it("cancels offer", async () => {
         //sets huge gasprice to induce high provision, to make sure taker receives more than gas cost when cancelling their offer
         let prov = await onchain_lp.computeBidProvision();
@@ -262,6 +276,36 @@ describe("OfferMaker", () => {
         );
       });
 
+      it("fails, when trying to cancel a non-existing offer", async () => {
+        const retractPromise = onchain_lp.retractBid(666, true); // with deprovision
+
+        await assert.rejects(
+          retractPromise,
+          "Retracting a non-existing offer should fail."
+        );
+      });
+
+      it("fails, when trying to create an offer on a closed market", async () => {
+
+        const base = onchain_lp.market.base.address;
+        const quote = onchain_lp.market.quote.address;
+        const closetx = await adminMgv.contract.deactivate(base, quote);
+        await closetx.wait();
+
+        const prov = await onchain_lp.computeBidProvision();
+
+        const createPromise = onchain_lp.newAsk({
+          wants: 10,
+          gives: 20,
+          fund: prov,
+        });
+
+        await assert.rejects(
+          createPromise,
+          "Creating on a closed semibook should fail."
+        );
+      });
+
       it("updates offer", async () => {
         const { id: ofrId } = await onchain_lp.newAsk({
           wants: 10,
@@ -286,6 +330,31 @@ describe("OfferMaker", () => {
           asks[0].gives.toNumber(),
           10,
           "offer should have updated gives"
+        );
+      });
+
+      it("fails, when trying to update on a closed market", async () => {
+        const prov = await onchain_lp.computeBidProvision();
+
+        const { id: ofrId } = await onchain_lp.newBid({
+          wants: 10,
+          gives: 20,
+          fund: prov,
+        });
+
+        const base = onchain_lp.market.base.address;
+        const quote = onchain_lp.market.quote.address;
+        const closetx = await adminMgv.contract.deactivate(base, quote);
+        await closetx.wait();
+
+        const updatePromise = onchain_lp.updateAsk(ofrId, {
+          wants: 12,
+          gives: 10,
+        });
+
+        await assert.rejects(
+          updatePromise,
+          "Updating on a closed market should fail."
         );
       });
     });

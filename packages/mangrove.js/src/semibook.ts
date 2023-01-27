@@ -120,7 +120,8 @@ class Semibook implements Iterable<Market.Offer> {
   #blockEventCallback: Listener;
   #eventFilter: TypedEventFilter<any>;
   #eventListener: Semibook.EventListener;
-  #blockListener: Semibook.BlockListener;
+  #logQueue: ethers.providers.Log[] = [];
+  #lastProcessedEventFromBlock = -1;
 
   #cacheLock: Mutex; // Lock that must be acquired when modifying the cache to ensure consistency and to queue cache updating events.
   #offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
@@ -132,17 +133,10 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: Market.BA,
     eventListener: Semibook.EventListener,
-    blockListener: Semibook.BlockListener,
     options: Semibook.Options
   ): Promise<Semibook> {
     canConstructSemibook = true;
-    const semibook = new Semibook(
-      market,
-      ba,
-      eventListener,
-      blockListener,
-      options
-    );
+    const semibook = new Semibook(market, ba, eventListener, options);
     canConstructSemibook = false;
     await semibook.#initialize();
     return semibook;
@@ -519,7 +513,6 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: Market.BA,
     eventListener: Semibook.EventListener,
-    blockListener: Semibook.BlockListener,
     options: Semibook.Options
   ) {
     if (!canConstructSemibook) {
@@ -535,10 +528,7 @@ class Semibook implements Iterable<Market.Offer> {
     this.#canInitialize = true;
     this.#cacheLock = new Mutex();
 
-    this.#blockEventCallback = (blockNumber: number) =>
-      this.#handleBlockEvent(blockNumber);
     this.#eventListener = eventListener;
-    this.#blockListener = blockListener;
     this.#eventFilter = this.#createEventFilter();
 
     this.#offerCache = new Map();
@@ -548,12 +538,15 @@ class Semibook implements Iterable<Market.Offer> {
     if (!this.#canInitialize) return;
     this.#canInitialize = false;
 
-    // To avoid missing any blocks, we register the event listener before
+    // To avoid missing any events, we register the event listener before
     // reading the offer list. However, the events must not be processed
     // before the semibook has been initialized. This is ensured by
     // locking the cache and having the event listener await and take that lock.
     await this.#cacheLock.runExclusive(async () => {
-      this.market.mgv.provider.on("block", this.#blockEventCallback);
+      // handle provider events
+      this.market.mgv.provider.on(this.#eventFilter, (log) => {
+        this.#handleBookEventFromProvider(log);
+      });
 
       // To ensure consistency in this cache, everything is initially fetched from a specific block
       this.#lastReadBlockNumber =
@@ -576,25 +569,15 @@ class Semibook implements Iterable<Market.Offer> {
     });
   }
 
-  lastReadBlockNumber(): number {
-    return this.#lastReadBlockNumber;
+  #handleBookEventFromProvider(ethersLog: ethers.providers.Log): void {
+    this.#logQueue.push(ethersLog);
+    this.#handleBookEvents();
   }
 
-  async #handleBlockEvent(blockNumber: number): Promise<void> {
+  async #handleBookEvents() {
     await this.#cacheLock.runExclusive(async () => {
-      // During initialization events may queue up, even some for the
-      // initialization block or previous ones; These should be disregarded.
-      if (blockNumber <= this.#lastReadBlockNumber) {
-        return;
-      }
-      const logs = await this.market.mgv.provider.getLogs({
-        fromBlock: blockNumber,
-        toBlock: blockNumber,
-        ...this.#eventFilter,
-      });
-      logs.forEach((l) => this.#handleBookEvent(l));
-      this.#lastReadBlockNumber = blockNumber;
-      this.#blockListener(this.#lastReadBlockNumber);
+      this.#logQueue.forEach((l) => this.#handleBookEvent(l));
+      this.#logQueue = [];
     });
   }
 
@@ -723,6 +706,15 @@ class Semibook implements Iterable<Market.Offer> {
 
       case "SetGasbase":
         this.#offer_gasbase = event.args.offer_gasbase.toNumber();
+        this.#eventListener({
+          cbArg: {
+            type: event.name,
+            ba: this.ba,
+          },
+          event,
+          ethersLog: ethersLog,
+        });
+
         break;
       default:
         throw Error(`Unknown event ${event}`);
