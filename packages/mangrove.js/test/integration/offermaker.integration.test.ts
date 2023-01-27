@@ -353,7 +353,7 @@ describe("OfferMaker", () => {
           gives: 10,
         });
 
-        assert.rejects(
+        await assert.rejects(
           updatePromise,
           "Updating on a closed market should fail."
         );
