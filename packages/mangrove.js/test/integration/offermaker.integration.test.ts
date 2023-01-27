@@ -285,25 +285,24 @@ describe("OfferMaker", () => {
         );
       });
 
-      it("fails, when trying to cancel an offer on a closed market", async () => {
+      it("fails, when trying to create an offer on a closed market", async () => {
+
+        const base = onchain_lp.market.base.address;
+        const quote = onchain_lp.market.quote.address;
+        const closetx = await adminMgv.contract.deactivate(base, quote);
+        await closetx.wait();
+
         const prov = await onchain_lp.computeBidProvision();
 
-        const { id: ofrId } = await onchain_lp.newBid({
+        const createPromise = onchain_lp.newAsk({
           wants: 10,
           gives: 20,
           fund: prov,
         });
 
-        const base = onchain_lp.market.base.address;
-        const quote = onchain_lp.market.quote.address;
-        const closetx = await adminMgv.contract.deactivate(base, quote);
-        closetx.wait();
-
-        const retractPromise = onchain_lp.retractBid(ofrId, true); // with deprovision
-
-        assert.rejects(
-          retractPromise,
-          "Retracting on a closed market should fail."
+        await assert.rejects(
+          createPromise,
+          "Creating on a closed semibook should fail."
         );
       });
 
