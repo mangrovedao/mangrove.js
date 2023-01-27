@@ -231,7 +231,7 @@ describe("OfferMaker", () => {
           fund: 0, // explicitly setting no provision
         });
 
-        assert.rejects(
+        await assert.rejects(
           newAskPromise,
           "Posting a new offer without sufficient provision should fail."
         );
