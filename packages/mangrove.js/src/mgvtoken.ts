@@ -15,7 +15,7 @@ namespace MgvToken {
   };
 }
 
-// Used to ease the user of approve functions
+// Used to ease the use of approve functions
 export type ApproveArgs =
   | Bigish
   | ethers.Overrides
