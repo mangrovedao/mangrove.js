@@ -129,7 +129,7 @@ describe("Failing offer integration tests", () => {
     // Assert
     assert.equal(1, makerMarket.getSemibook("asks").size());
 
-    await cleanerMarket.quote.approveMangrove({ amount: 10000000 }); // approve mangrove to use x amount for quote token
+    await cleanerMarket.quote.approveMangrove(10000000); // approve mangrove to use x amount for quote token
     await mgvTestUtil.waitForBooksForLastTx(cleanerMarket); // makes sure that the cached market is up to date before getting ask offer
     const offer = [...cleanerMarket.getBook().asks][0];
     const buyPromises = await cleanerMarket.buy(
