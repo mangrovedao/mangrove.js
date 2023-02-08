@@ -23,7 +23,7 @@ export type ApproveArgs =
 
 function convertToApproveArgs(arg: ApproveArgs): {
   amount?: Bigish;
-  overrides?: ethers.Overrides;
+  overrides: ethers.Overrides;
 } {
   let amount: Bigish;
   let overrides: ethers.Overrides;
@@ -38,13 +38,15 @@ function convertToApproveArgs(arg: ApproveArgs): {
     overrides = arg as ethers.Overrides;
   }
 
-  return amount && overrides
-    ? { amount, overrides }
-    : amount
-    ? { amount }
-    : overrides
-    ? { overrides }
-    : {};
+  if (amount && overrides) {
+    return { amount, overrides };
+  } else if (amount) {
+    return { amount, overrides: {} };
+  } else if (overrides) {
+    return { overrides: overrides };
+  } else {
+    return { overrides: {} };
+  }
 }
 
 class MgvToken {
@@ -194,11 +196,7 @@ class MgvToken {
       "amount" in args
         ? this.toUnits(args.amount)
         : ethers.constants.MaxUint256;
-    return this.contract.approve(
-      spender,
-      _amount,
-      "overrides" in args ? args.overrides : {}
-    );
+    return this.contract.approve(spender, _amount, args.overrides);
   }
 
   /**
