@@ -15,6 +15,38 @@ namespace MgvToken {
   };
 }
 
+// Used to ease the user of approve functions
+export type ApproveArgs =
+  | Bigish
+  | ethers.Overrides
+  | { amount: Bigish; overrides: ethers.Overrides };
+
+function convertToApproveArgs(arg: ApproveArgs): {
+  amount?: Bigish;
+  overrides?: ethers.Overrides;
+} {
+  let amount: Bigish;
+  let overrides: ethers.Overrides;
+  if (arg["amount"]) {
+    amount = arg["amount"];
+  } else if (typeof arg != "object") {
+    amount = arg;
+  }
+  if (arg["overrides"]) {
+    overrides = arg["overrides"];
+  } else if (typeof arg === "object") {
+    overrides = arg as ethers.Overrides;
+  }
+
+  return amount && overrides
+    ? { amount, overrides }
+    : amount
+    ? { amount }
+    : overrides
+    ? { overrides }
+    : {};
+}
+
 class MgvToken {
   mgv: Mangrove;
   name: string;
@@ -146,11 +178,8 @@ class MgvToken {
   /**
    * Set approval for Mangrove on `amount`.
    */
-  approveMangrove(
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.approve(this.mgv.address, arg, overrides);
+  approveMangrove(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
+    return this.approve(this.mgv.address, arg);
   }
 
   /**
@@ -158,13 +187,18 @@ class MgvToken {
    */
   approve(
     spender: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
-    const _amount = arg.amount
-      ? this.toUnits(arg.amount)
-      : ethers.constants.MaxUint256;
-    return this.contract.approve(spender, _amount, overrides);
+    const args = convertToApproveArgs(arg);
+    const _amount =
+      "amount" in args
+        ? this.toUnits(args.amount)
+        : ethers.constants.MaxUint256;
+    return this.contract.approve(
+      spender,
+      _amount,
+      "overrides" in args ? args.overrides : {}
+    );
   }
 
   /**

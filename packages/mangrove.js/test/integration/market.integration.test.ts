@@ -48,8 +48,8 @@ describe("Market integration tests suite", () => {
     const tokenA = mgv.token("TokenA");
     const tokenB = mgv.token("TokenB");
 
-    await tokenA.approveMangrove({ amount: 1000000000000000 });
-    await tokenB.approveMangrove({ amount: 1000000000000000 });
+    await tokenA.approveMangrove(1000000000000000);
+    await tokenB.approveMangrove(1000000000000000);
     mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
 

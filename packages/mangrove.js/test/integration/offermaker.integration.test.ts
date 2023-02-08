@@ -125,7 +125,7 @@ describe("OfferMaker", () => {
         await w(
           mgv
             .token("TokenB")
-            .approveMangrove({ amount: 10 ** 9 }, overridesTest)
+            .approveMangrove({ amount: 10 ** 9, overrides: overridesTest })
         );
         allowanceForEOA = await mgv
           .token("TokenB")
@@ -286,7 +286,6 @@ describe("OfferMaker", () => {
       });
 
       it("fails, when trying to create an offer on a closed market", async () => {
-
         const base = onchain_lp.market.base.address;
         const quote = onchain_lp.market.quote.address;
         const closetx = await adminMgv.contract.deactivate(base, quote);

@@ -11,6 +11,7 @@ import * as eth from "./eth";
 import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
+import { ApproveArgs } from "./mgvtoken";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -336,10 +337,9 @@ class Mangrove {
 
   approveMangrove(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.token(tokenName).approveMangrove(arg, overrides);
+    return this.token(tokenName).approveMangrove(arg);
   }
 
   /**
