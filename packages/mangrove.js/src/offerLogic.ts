@@ -6,6 +6,7 @@ import { typechain } from "./types";
 
 import { LiquidityProvider, Mangrove } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
+import { ApproveArgs } from "./mgvtoken";
 
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
@@ -68,17 +69,16 @@ class OfferLogic {
    */
   async approveToken(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
     const router: typechain.AbstractRouter | undefined = await this.router();
     const token = this.mgv.token(tokenName);
     if (router) {
       // LP's logic is using a router to manage its liquidity
-      return token.approve(router.address, arg, overrides);
+      return token.approve(router.address, arg);
     } else {
       // LP's logic is doing the routing itself
-      return token.approve(this.address, arg, overrides);
+      return token.approve(this.address, arg);
     }
   }
 

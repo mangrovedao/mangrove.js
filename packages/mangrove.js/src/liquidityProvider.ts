@@ -15,6 +15,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
+import { ApproveArgs } from "./mgvtoken";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -442,28 +443,21 @@ class LiquidityProvider {
 
   #approveToken(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
     if (this.logic) {
-      return this.logic.approveToken(tokenName, arg, overrides);
+      return this.logic.approveToken(tokenName, arg);
     } else {
       // LP is an EOA
-      return this.mgv.approveMangrove(tokenName, arg, overrides);
+      return this.mgv.approveMangrove(tokenName, arg);
     }
   }
 
-  approveAsks(
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.base.name, arg, overrides);
+  approveAsks(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
+    return this.#approveToken(this.market.base.name, arg);
   }
-  approveBids(
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.quote.name, arg, overrides);
+  approveBids(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
+    return this.#approveToken(this.market.quote.name, arg);
   }
 
   async getMissingProvision(
