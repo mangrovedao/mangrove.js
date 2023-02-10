@@ -121,7 +121,6 @@ class Semibook implements Iterable<Market.Offer> {
   #eventFilter: TypedEventFilter<any>;
   #eventListener: Semibook.EventListener;
   #logQueue: ethers.providers.Log[] = [];
-  #lastProcessedEventFromBlock = -1;
 
   #cacheLock: Mutex; // Lock that must be acquired when modifying the cache to ensure consistency and to queue cache updating events.
   #offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
