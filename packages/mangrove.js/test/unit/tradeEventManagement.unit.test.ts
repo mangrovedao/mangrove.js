@@ -19,10 +19,7 @@ describe("TradeEventManagement unit tests suite", () => {
   describe("createSummary", () => {
     it("return summary with partialFill as true, when partialFill func returns true", async function () {
       //Arrange
-      const mockedUnitCalculations = mock(UnitCalculations);
-      const tradeEventManagement = new TradeEventManagement(
-        instance(mockedUnitCalculations)
-      );
+      const tradeEventManagement = new TradeEventManagement();
       const evt = {
         args: {
           takerGot: BigNumber.from(10),
@@ -34,16 +31,10 @@ describe("TradeEventManagement unit tests suite", () => {
 
       const gotToken = mock(MgvToken);
       const gaveToken = mock(MgvToken);
-      const expectedPenalty = Big(10000);
-      const expectedGot = Big(evt.args.takerGot.toNumber());
-      const expectedGave = Big(evt.args.takerGave.toNumber());
-      const expectedFeePaid = Big(evt.args.feePaid.toNumber());
-      when(mockedUnitCalculations.fromUnits(evt.args.penalty, 18)).thenReturn(
-        expectedPenalty
-      );
-      when(mockedUnitCalculations.fromUnits(evt.args.feePaid, 18)).thenReturn(
-        expectedFeePaid
-      );
+      const expectedPenalty = UnitCalculations.fromUnits(evt.args.penalty, 18);
+      const expectedGot = UnitCalculations.fromUnits(evt.args.takerGot, 18);
+      const expectedGave = UnitCalculations.fromUnits(evt.args.takerGave, 18);
+      const expectedFeePaid = UnitCalculations.fromUnits(evt.args.feePaid, 18);
       when(gotToken.fromUnits(evt.args.takerGot)).thenReturn(expectedGot);
       when(gaveToken.fromUnits(evt.args.takerGave)).thenReturn(expectedGave);
       const partialFillFunc: (
@@ -60,11 +51,11 @@ describe("TradeEventManagement unit tests suite", () => {
       );
 
       //Assert
-      assert.equal(result.got, expectedGot);
-      assert.equal(result.gave, expectedGave);
+      assert.deepStrictEqual(result.got, expectedGot);
+      assert.deepStrictEqual(result.gave, expectedGave);
       assert.equal(result.partialFill, true);
-      assert.equal(result.bounty, expectedPenalty);
-      assert.equal(result.feePaid, expectedFeePaid);
+      assert.deepStrictEqual(result.bounty, expectedPenalty);
+      assert.deepStrictEqual(result.feePaid, expectedFeePaid);
     });
   });
 

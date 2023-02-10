@@ -895,10 +895,7 @@ class Semibook implements Iterable<Market.Offer> {
     return {
       active: local.active,
       fee: local.fee.toNumber(),
-      density: new UnitCalculations().fromUnits(
-        local.density,
-        outboundDecimals
-      ),
+      density: UnitCalculations.fromUnits(local.density, outboundDecimals),
       offer_gasbase: local.offer_gasbase.toNumber(),
       lock: local.lock,
       best: Semibook.rawIdToId(local.best),
