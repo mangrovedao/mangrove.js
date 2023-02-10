@@ -3,6 +3,7 @@ import { typechain } from "@mangrovedao/mangrove.js/dist/nodejs/types";
 import get from "axios";
 import { MaxUpdateConstraint } from "./GasUpdater";
 import logger from "./util/logger";
+import { Network, Alchemy } from "alchemy-sdk";
 
 class GasHelper {
   /**
@@ -13,9 +14,7 @@ class GasHelper {
    */
   async getGasPriceEstimateFromOracle(params: {
     constantGasPrice: number | undefined;
-    oracleURL: string;
-    oracleURL_Key: string;
-    oracleURL_subKey?: string;
+    network: string;
     mangrove: Mangrove;
   }): Promise<number | undefined> {
     if (params.constantGasPrice !== undefined) {
@@ -25,26 +24,32 @@ class GasHelper {
       );
       return params.constantGasPrice;
     }
+    if (!process.env["APIKEY"]) {
+      throw new Error("No API key for alchemy");
+    }
+
+    const networkIndex = Object.entries(Network).find(
+      (item) => item[0] == params.network
+    );
+    if (!networkIndex) {
+      throw new Error(
+        `Given network: ${params.network}, is not in the alchemy networks`
+      );
+    }
 
     try {
-      const { data } = await this.getData(params.oracleURL);
-      logger.debug(`Received this data from oracle.`, { data: data });
-      const keyData = data[params.oracleURL_Key];
-      logger.debug(`Received this data from oracleKey.`, { data: keyData });
-      if (!params.oracleURL_subKey) {
-        return keyData;
-      }
-      if (params.oracleURL_subKey) return keyData[params.oracleURL_subKey];
+      const alchemy = new Alchemy({
+        apiKey: process.env["APIKEY"],
+        network: networkIndex[1],
+      });
+
+      return (await alchemy.core.getGasPrice()).toNumber();
     } catch (error) {
       logger.error("Getting gas price estimate from oracle failed", {
         mangrove: params.mangrove,
         data: error,
       });
     }
-  }
-
-  getData(oracleURL: string): Promise<{ data: any }> {
-    return get(oracleURL);
   }
 
   /**
