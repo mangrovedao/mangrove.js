@@ -42,10 +42,22 @@ export const mochaHooks = {
     // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
 
     await mgv.contract
-      .activate(tokenA.address, tokenB.address, 500, 10, 20000)
+      .setFee(tokenA.address, tokenB.address, 500)
       .then((tx) => tx.wait());
     await mgv.contract
-      .activate(tokenB.address, tokenA.address, 500, 10, 20000)
+      .setDensity(tokenA.address, tokenB.address, 10)
+      .then((tx) => tx.wait());
+    await mgv.contract
+      .setGasbase(tokenA.address, tokenB.address, 20000)
+      .then((tx) => tx.wait());
+    await mgv.contract
+      .setFee(tokenB.address, tokenA.address, 500)
+      .then((tx) => tx.wait());
+    await mgv.contract
+      .setDensity(tokenB.address, tokenA.address, 10)
+      .then((tx) => tx.wait());
+    await mgv.contract
+      .setGasbase(tokenB.address, tokenA.address, 20000)
       .then((tx) => tx.wait());
 
     await tokenA.contract.mint(

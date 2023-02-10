@@ -48,14 +48,22 @@ describe("Mangrove integration tests suite", function () {
   });
 
   describe("getMarkets", async function () {
-    it("gets empty market lists when mgvReader is empty, and updates with mgvReader", async function () {
+    it("gets market list, and updates with mgvReader", async function () {
+      // The MangroveJs solidity script activates 4 markets.
       let markets = await mgv.openMarkets();
+      assert.equal(markets.length, 4);
+      await mgvAdmin.contract
+        .deactivate(mgv.getAddress("TokenA"), mgv.getAddress("TokenB"))
+        .then((tx) => tx.wait());
+      await mgvAdmin.contract
+        .deactivate(mgv.getAddress("TokenB"), mgv.getAddress("TokenA"))
+        .then((tx) => tx.wait());
       await mgv.readerContract.updateMarket(
         mgv.getAddress("TokenA"),
         mgv.getAddress("TokenB")
       );
       markets = await mgv.openMarkets();
-      assert.equal(markets.length, 1);
+      assert.equal(markets.length, 3);
     });
 
     it("gets correct market info and updates with cashness", async function () {

@@ -425,7 +425,6 @@ export const postNewOffer = async ({
   gives = 1000000,
   gasreq = 5e4,
   shouldFail = false,
-  shouldAbort = false,
   shouldRevert = false,
 }: NewOffer): Promise<void> => {
   const { inboundToken, outboundToken } = getTokens(market, ba);
@@ -447,9 +446,6 @@ export const postNewOffer = async ({
 
   await waitForTransaction(
     maker.connectedContracts.testMaker.shouldFail(shouldFail)
-  );
-  await waitForTransaction(
-    maker.connectedContracts.testMaker.shouldAbort(shouldAbort)
   );
   await waitForTransaction(
     maker.connectedContracts.testMaker.shouldRevert(shouldRevert)
