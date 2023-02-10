@@ -10,10 +10,8 @@
 const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
-import { BigNumber, ethers } from "ethers";
+import { ethers } from "ethers";
 import * as eth from "../eth";
-import { Mangrove } from "..";
-import * as ToyENS from "./ToyENSCode";
 import { default as nodeCleanup } from "node-cleanup";
 import DevNode from "./devNode";
 

@@ -15,6 +15,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
+import { ApproveArgs } from "./mgvtoken";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -225,7 +226,10 @@ class LiquidityProvider {
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
-    let txPromise = null;
+
+    let txPromise: Promise<ethers.ContractTransaction> = null;
+
+    // send offer
     if (this.logic) {
       txPromise = this.logic.contract.newOffer(
         outbound_tkn.address,
@@ -253,15 +257,49 @@ class LiquidityProvider {
       data: { params: p, overrides: overrides },
     });
 
-    return this.market.onceWithTxPromise(
-      txPromise,
-      (cbArg, _event, ethersEvent) => ({
-        id: cbArg.offerId,
-        event: ethersEvent,
+    return this.#constructPromise(
+      this.market,
+      (_cbArg, _bookEvent, _ethersLog) => ({
+        id: _cbArg.offerId,
         pivot: pivot,
+        event: _ethersLog,
       }),
-      (_cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
+      txPromise,
+      (cbArg) => cbArg.type === "OfferWrite"
     );
+  }
+
+  #constructPromise<T>(
+    market: Market,
+    cb: Market.MarketCallback<T>,
+    txPromise: Promise<ethers.ethers.ContractTransaction>,
+    filter: Market.MarketFilter
+  ): Promise<T> {
+    let promiseResolve: (value: T) => void;
+    let promiseReject: (reason: string) => void;
+    const promise = new Promise<T>((resolve, reject) => {
+      promiseResolve = resolve;
+      promiseReject = reject;
+    });
+
+    // catch rejections of the txPromise and reject returned promise
+    txPromise.catch((e) => promiseReject(e));
+
+    const callback = async (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent,
+      ethersLog: ethers.providers.Log
+    ) => {
+      const txHash = (await txPromise).hash;
+      const logTxHash = ethersLog.transactionHash;
+      if (txHash === logTxHash && filter(cbArg)) {
+        promiseResolve(cb(cbArg, bookEvent, ethersLog));
+      }
+    };
+
+    market.subscribe(callback); // TODO: subscribe/once ?
+
+    return promise.finally(() => market.unsubscribe(callback));
   }
 
   /** Update an existing ask */
@@ -310,7 +348,10 @@ class LiquidityProvider {
     const { wants, gives, price, fund } =
       LiquidityProvider.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
-    let txPromise = null;
+
+    let txPromise: Promise<ethers.ContractTransaction> = null;
+
+    // update offer
     if (this.logic) {
       txPromise = this.logic.contract.updateOffer(
         outbound_tkn.address,
@@ -340,10 +381,13 @@ class LiquidityProvider {
       data: { id: id, params: p, overrides: overrides },
     });
 
-    return this.market.onceWithTxPromise(
+    return this.#constructPromise(
+      this.market,
+      (_cbArg, _bookEvent, _ethersLog) => ({
+        event: _ethersLog,
+      }),
       txPromise,
-      (_cbArg, _event, ethersEvent) => ({ event: ethersEvent }),
-      (cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
+      (cbArg) => cbArg.type === "OfferWrite"
     );
   }
 
@@ -373,8 +417,11 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    let txPromise = null;
     const retracter = this.logic ? this.logic.contract : this.mgv.contract;
+
+    let txPromise: Promise<ethers.ContractTransaction> = null;
+
+    // retract offer
     txPromise = retracter.retractOffer(
       outbound_tkn.address,
       inbound_tkn.address,
@@ -388,39 +435,33 @@ class LiquidityProvider {
       data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
     });
 
-    return this.market.onceWithTxPromise(
-      txPromise,
-      (/*cbArg, event, ethersEvent*/) => {
-        /*empty*/
+    return this.#constructPromise(
+      this.market,
+      (/*_cbArg, _bookEvent, _ethersLog*/) => {
+        /* intentionally left blank */
       },
-      (cbArg, evt /* _ethersEvent*/) => evt.name === "OfferRetract"
+      txPromise,
+      (cbArg) => cbArg.type === "OfferRetract"
     );
   }
 
   #approveToken(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
     if (this.logic) {
-      return this.logic.approveToken(tokenName, arg, overrides);
+      return this.logic.approveToken(tokenName, arg);
     } else {
       // LP is an EOA
-      return this.mgv.approveMangrove(tokenName, arg, overrides);
+      return this.mgv.approveMangrove(tokenName, arg);
     }
   }
 
-  approveAsks(
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.base.name, arg, overrides);
+  approveAsks(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
+    return this.#approveToken(this.market.base.name, arg);
   }
-  approveBids(
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.quote.name, arg, overrides);
+  approveBids(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
+    return this.#approveToken(this.market.quote.name, arg);
   }
 
   async getMissingProvision(

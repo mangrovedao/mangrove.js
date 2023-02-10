@@ -1,5 +1,9 @@
 # next version
 
+# 1.2.0 (January 2023)
+
+- Remove inefficient synchronous block-by-block querying and updates of `Semibook`'s. Instead process events one-by-one (optimized for WebSocket subscriptions). Block-subscription have been removed from `Semibook` and `Market`. Code relying on block-by-block processing (mostly test and test-util libs) have been rewritten. APIs in `Market` and `Semibook` supporting on-block listening have been removed.
+
 # 1.1.1 (January 2023)
 
 - Improve and bugfix devNode detection (which made `Mangrove.connect()` buggy against local chains in previous version), and add options for Multicall and ToyENS usage.

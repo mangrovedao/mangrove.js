@@ -32,7 +32,7 @@ describe("Mangrove integration tests suite", function () {
       provider: mgv.provider,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts);
+    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
 
     //shorten polling for faster tests
     (mgv.provider as any).pollingInterval = 10;
