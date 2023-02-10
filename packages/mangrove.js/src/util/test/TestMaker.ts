@@ -175,15 +175,49 @@ class TestMaker {
       payableOverrides
     );
 
-    return this.market.onceWithTxPromise(
-      txPromise,
-      (cbArg, _event, ethersEvent) => ({
-        id: cbArg.offerId,
-        event: ethersEvent,
+    return this.#constructPromise(
+      this.market,
+      (_cbArg, _bookEevnt, _ethersLog) => ({
+        id: _cbArg.offerId,
         pivot: pivot,
+        event: _ethersLog,
       }),
-      (_cbArg, evt /*, _ethersEvent*/) => evt.name === "OfferWrite"
+      txPromise,
+      (cbArg) => cbArg.type === "OfferWrite"
     );
+  }
+
+  #constructPromise<T>(
+    market: Market,
+    cb: Market.MarketCallback<T>,
+    txPromise: Promise<ethers.ethers.ContractTransaction>,
+    filter: Market.MarketFilter
+  ): Promise<T> {
+    let promiseResolve: (value: T) => void;
+    let promiseReject: (reason: string) => void;
+    const promise = new Promise<T>((resolve, reject) => {
+      promiseResolve = resolve;
+      promiseReject = reject;
+    });
+
+    // catch rejections of the txPromise and reject returned promise
+    txPromise.catch((e) => promiseReject(e));
+
+    const callback = async (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent,
+      ethersLog: ethers.providers.Log
+    ) => {
+      const txHash = (await txPromise).hash;
+      const logTxHash = ethersLog.transactionHash;
+      if (txHash === logTxHash && filter(cbArg)) {
+        promiseResolve(cb(cbArg, bookEvent, ethersLog));
+      }
+    };
+
+    market.subscribe(callback); // TODO: subscribe/once ?
+
+    return promise.finally(() => market.unsubscribe(callback));
   }
 
   /** Post a new ask */
