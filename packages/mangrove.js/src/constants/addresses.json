@@ -1,7 +1,12 @@
 {
   "mainnet": {},
   "rinkeby": {},
-  "goerli": {},
+  "goerli": {
+    "DAI": "0xd77b79be3e85351ff0cbe78f1b58cf8d1064047c",
+    "USDC": "0x3a034fe373b6304f98b7a24a3f21c958946d4075",
+    "WETH": "0x695364ffaa20f205e337f9e6226e5e22525838d9",
+    "Multicall2": "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+  },
   "kovan": {},
   "ropsten": {},
   "maticmum": {
