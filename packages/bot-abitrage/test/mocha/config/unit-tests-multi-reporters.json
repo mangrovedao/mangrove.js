@@ -1,0 +1,6 @@
+{
+  "reporterEnabled": "spec, @espendk/json-file-reporter",
+  "espendkJsonFileReporterReporterOptions": {
+    "output": "unit-tests-report.json"
+  }
+}
