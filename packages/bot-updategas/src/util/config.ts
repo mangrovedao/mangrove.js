@@ -36,25 +36,15 @@ export function readAndValidateConfig(): OracleConfig {
 
   // - oracle source config
   let constantOracleGasPrice: number | undefined;
-  let oracleURL = "";
-  let oracleURL_Key = "";
-  let oracleURL_subKey = "";
+  let network = "";
   let maxUpdateConstraint: MaxUpdateConstraint = {};
 
   if (config.has("constantOracleGasPrice")) {
     constantOracleGasPrice = config.get<number>("constantOracleGasPrice");
   }
 
-  if (config.has("oracleURL")) {
-    oracleURL = config.get<string>("oracleURL");
-  }
-
-  if (config.has("oracleURL_Key")) {
-    oracleURL_Key = config.get<string>("oracleURL_Key");
-  }
-
-  if (config.has("oracleURL_subKey")) {
-    oracleURL_subKey = config.get<string>("oracleURL_subKey");
+  if (config.has("network")) {
+    network = config.get<string>("network");
   }
 
   if (config.has("maxUpdateConstraint")) {
@@ -86,20 +76,15 @@ export function readAndValidateConfig(): OracleConfig {
     };
   } else {
     // basic validatation of endpoint config
-    if (
-      oracleURL == null ||
-      oracleURL == "" ||
-      oracleURL_Key == null ||
-      oracleURL_Key == ""
-    ) {
+    if (network == null || network == "") {
       configErrors.push(
-        `Either 'constantOracleGasPrice' or the pair ('oracleURL', 'oracleURL_Key') must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', oracleURL: '${oracleURL}', oracleURL_Key: '${oracleURL_Key}', oracleURL_subKey: '${oracleURL_subKey}'`
+        `Either 'constantOracleGasPrice' or network must be set in config. Found values: constantOracleGasPrice: '${constantOracleGasPrice}', network: '${network}'}'`
       );
     }
     logger.info(
       `Configuration for oracle endpoint found. Using the configured values.`,
       {
-        data: { oracleURL, oracleURL_Key },
+        data: { network },
       }
     );
 
@@ -110,9 +95,7 @@ export function readAndValidateConfig(): OracleConfig {
     }
 
     oracleSourceConfiguration = {
-      oracleEndpointURL: oracleURL,
-      oracleEndpointKey: oracleURL_Key,
-      oracleEndpointSubKey: oracleURL_subKey,
+      network: network,
       _tag: "Endpoint",
     };
   }
