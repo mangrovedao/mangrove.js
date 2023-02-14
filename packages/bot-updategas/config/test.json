@@ -3,6 +3,8 @@
   "acceptableGasGapToOracle": 0.5,
   "constantOracleGasPrice": 6,
   "network": "MATIC_MUMBAI",
-  "maxUpdateConstraint": {},
-  "runEveryXHours": 8
+  "runEveryXHours": 0.008,
+  "maxUpdateConstraint": {
+    "constant": 10
+  }
 }
