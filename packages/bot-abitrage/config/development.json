@@ -1,0 +1,5 @@
+{
+  "logLevel": "debug",
+  "markets": [["WETH", "DAI"]],
+  "runEveryXMinutes": 0.5
+}
