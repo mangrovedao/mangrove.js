@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 
 import mgvCore from "@mangrovedao/mangrove-core";
 
-// Merge known addresses and addresses provided by mangrove-core, with priority to mangrove-core addresses.
+// Merge known addresses and addresses provided by mangrove-core, no clash permitted
 
 const addresses = { ...knownAddresses };
 
@@ -20,10 +20,33 @@ for (const [network, networkAddresses] of Object.entries(addresses)) {
   }
 }
 
-for (const [network, networkAddresses] of Object.entries(mgvCore.addresses)) {
+let mgvCoreAddresses = [];
+
+if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
+  if (mgvCore.addresses.deployed) {
+    mgvCoreAddresses.push(mgvCore.addresses.deployed);
+  }
+  if (mgvCore.addresses.context) {
+    mgvCoreAddresses.push(mgvCore.addresses.context);
+  }
+} else {
+  mgvCoreAddresses.push(mgvCore.addresses);
+}
+
+mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
+
+for (const [network, networkAddresses] of mgvCoreAddresses) {
   addresses[network] ??= {};
   for (const { name, address } of networkAddresses as any) {
-    addresses[network][name] = ethers.utils.getAddress(address);
+    if (addresses[network][name]) {
+      throw new Error(
+        `address ${name} (network: ${network}) cannot be added twice. Existing address: ${
+          addresses[network][name]
+        }. New address: ${address.toString()}`
+      );
+    } else {
+      addresses[network][name] = ethers.utils.getAddress(address);
+    }
   }
 }
 
