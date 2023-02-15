@@ -1475,10 +1475,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/mangrove-core@npm:^1.4.0":
-  version: 1.4.1
-  resolution: "@mangrovedao/mangrove-core@npm:1.4.1"
-  checksum: cf61164327d3828b920974ae28b321efb378e15dcfd8ef3c85a6ff97ed7e2517da53e0e184fe43b59a495ed47460fc9315a9ab3f0dca454b9db986ac34b9fe36
+"@mangrovedao/mangrove-core@npm:^1.4.2":
+  version: 1.4.2
+  resolution: "@mangrovedao/mangrove-core@npm:1.4.2"
+  checksum: 51f778dc6dccd0c59493e1a18b579b5c91cddc684fed762c257c3a369c5df99d75bfd4a06f37addcfa40e07bc25200b14dc579faefe7504fab4ac46601afef60
   languageName: node
   linkType: hard
 
@@ -1493,7 +1493,7 @@ __metadata:
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
     "@mangrovedao/commonlib.js": "workspace:*"
-    "@mangrovedao/mangrove-core": ^1.4.0
+    "@mangrovedao/mangrove-core": ^1.4.2
     "@typechain/ethers-v5": ^10.1.0
     "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5

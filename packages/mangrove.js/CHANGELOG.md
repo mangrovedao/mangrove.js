@@ -1,4 +1,10 @@
-# next version
+# 1.2.2 (February 2023)
+
+- Use AAVE faucet addresses on mumbai network
+
+# 1.2.1 (February 2023)
+
+- skipped
 
 # 1.2.0 (January 2023)
 
