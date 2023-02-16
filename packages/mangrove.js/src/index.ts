@@ -14,6 +14,7 @@ import Semibook from "./semibook";
 import OfferLogic from "./offerLogic";
 import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
+import Kandel from "./kandel";
 import TestMaker from "./util/test/TestMaker";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
 import { typechain } from "./types";
@@ -35,4 +36,5 @@ export {
   LiquidityProvider,
   mgvTestUtil,
   TestMaker,
+  Kandel,
 };
