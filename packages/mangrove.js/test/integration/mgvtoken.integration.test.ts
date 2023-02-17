@@ -28,13 +28,27 @@ describe("MGV Token integration tests suite", () => {
     mgv.disconnect();
   });
 
-  it("reads allowance", async function () {
+  it("approveMangrove and reads allowance", async function () {
     const usdc = mgv.token("USDC");
     const allowance1 = await usdc.allowance();
     assert.deepStrictEqual(allowance1, Big(0), "allowance should start at 0");
     const resp = await usdc.approveMangrove(100);
     await resp.wait(1);
     const allowance2 = await usdc.allowance();
+    assert.deepStrictEqual(allowance2, Big(100), "allowance should be 100");
+  });
+
+  it("approve and reads allowance", async function () {
+    const usdc = mgv.token("USDC");
+    const allowance1 = await usdc.allowance({
+      spender: this.accounts.maker.address,
+    });
+    assert.deepStrictEqual(allowance1, Big(0), "allowance should start at 0");
+    const resp = await usdc.approve(this.accounts.maker.address, 100);
+    await resp.wait(1);
+    const allowance2 = await usdc.allowance({
+      spender: this.accounts.maker.address,
+    });
     assert.deepStrictEqual(allowance2, Big(100), "allowance should be 100");
   });
 

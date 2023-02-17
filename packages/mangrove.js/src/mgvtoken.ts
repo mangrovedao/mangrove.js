@@ -21,7 +21,7 @@ export type ApproveArgs =
   | ethers.Overrides
   | { amount: Bigish; overrides: ethers.Overrides };
 
-function convertToApproveArgs(arg: ApproveArgs): {
+export function convertToApproveArgs(arg: ApproveArgs): {
   amount?: Bigish;
   overrides: ethers.Overrides;
 } {
