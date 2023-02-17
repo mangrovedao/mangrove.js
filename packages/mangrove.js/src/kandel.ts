@@ -42,7 +42,6 @@ class Kandel {
 			Depositfunds
 			getMissingProvision
 			offeredVolume
-			Params
 			Pending
 			reserveBalance
 			Fund via mgv
@@ -60,6 +59,8 @@ class Kandel {
 			Setcompoundrates
 			getOffers (all?)? - one at a time
 			Heal
+			GetIncidents(events)
+			GetPosthookFailures(Events), etc.
 */
 }
 

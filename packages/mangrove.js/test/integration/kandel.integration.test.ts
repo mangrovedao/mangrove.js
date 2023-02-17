@@ -12,6 +12,7 @@ import { Mangrove } from "../../src";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import KandelFarm from "../../src/kandel/kandelFarm";
+import KandelInstance from "../../src/kandel/kandelInstance";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -174,4 +175,31 @@ describe("Kandel integration tests suite", function () {
       assert.equal(kandels.length, 4, "count wrong");
     });
   });
+
+  [true, false].forEach((onAave) =>
+    describe(`instance onAave=${onAave}`, async function () {
+      let kandel: KandelInstance;
+      beforeEach(async function () {
+        const kandelApi = new Kandel({ mgv: mgv });
+        const seeder = new Kandel({ mgv: mgv }).seeder;
+        const kandelAddress = (
+          await seeder.sow({
+            base: "TokenA",
+            quote: "TokenB",
+            gasprice: Big(10000),
+            liquiditySharing: false,
+            onAave: onAave,
+          })
+        ).address;
+
+        kandel = kandelApi.instance(kandelAddress);
+      });
+      it("has immutable data", async function () {
+        assert.equal(await kandel.base(), "TokenA");
+        assert.equal(await kandel.quote(), "TokenB");
+        assert.equal(await kandel.hasRouter(), onAave);
+        assert.equal(await kandel.reserveId(), kandel.address);
+      });
+    })
+  );
 });
