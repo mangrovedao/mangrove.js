@@ -11,6 +11,7 @@ import { Mangrove } from "../../src";
 
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
+import KandelFarm from "../../src/kandel/kandelFarm";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -62,33 +63,23 @@ describe("Kandel integration tests suite", function () {
             onAave: onAave,
           });
 
-          const params = await kandel.functions.params();
+          const params = await kandel.parameters();
           assert.equal(
-            100000,
-            params.compoundRateBase,
+            params.compoundRateBase.toNumber(),
+            1,
             "compound rate should be set during seed"
           );
+          assert.equal("TokenA", await kandel.base(), "wrong base");
+          assert.equal("TokenB", await kandel.quote(), "wrong base");
           assert.equal(
-            await kandel.BASE(),
-            mgv.token("TokenA").address,
-            "wrong base"
-          );
-          assert.equal(
-            await kandel.QUOTE(),
-            mgv.token("TokenB").address,
-            "wrong base"
-          );
-          assert.equal(
-            await kandel.RESERVE_ID(),
             liquiditySharing ? await mgv.signer.getAddress() : kandel.address,
+            await kandel.reserveId(),
             "wrong reserve"
           );
           assert.equal(
-            await kandel.router(),
-            onAave
-              ? await seeder.aaveKandelSeeder.AAVE_ROUTER()
-              : await kandel.NO_ROUTER(),
-            "router should be the aave router only on aave"
+            await kandel.hasRouter(),
+            onAave,
+            "router should only be there for aave"
           );
         });
       })
@@ -96,7 +87,12 @@ describe("Kandel integration tests suite", function () {
   });
 
   describe("farm", async function () {
+    let farm: KandelFarm;
+    let defaultOwner: string;
+
     beforeEach(async function () {
+      farm = new Kandel({ mgv: mgv }).farm;
+      defaultOwner = await mgv.signer.getAddress();
       const seeder = new Kandel({ mgv: mgv }).seeder;
 
       await seeder.sow({
@@ -143,78 +139,39 @@ describe("Kandel integration tests suite", function () {
     });
 
     it("retrieves all kandel instances", async function () {
-      const defaultOwner = await mgv.signer.getAddress();
-
-      const farm = new Kandel({ mgv: mgv }).farm;
       const kandels = await farm.getKandels();
-      assert.equal(5, kandels.length, "total count wrong");
-      assert.equal(
-        1,
-        kandels.filter((x) => x.base == "TokenA").length,
-        "base TokenA count wrong"
-      );
-      assert.equal(
-        4,
-        kandels.filter((x) => x.base == "WETH").length,
-        "base WETH count wrong"
-      );
-      assert.equal(
-        3,
-        kandels.filter((x) => x.quote == "USDC").length,
-        "quote USDC count wrong"
-      );
-      assert.equal(
-        2,
-        kandels.filter((x) => x.onAave).length,
-        "kandels on aave count wrong"
-      );
+      assert.equal(kandels.length, 5, "total count wrong");
+      assert.equal(kandels.filter((x) => x.base == "TokenA").length, 1);
+      assert.equal(kandels.filter((x) => x.base == "WETH").length, 4);
+      assert.equal(kandels.filter((x) => x.quote == "USDC").length, 3);
+      assert.equal(kandels.filter((x) => x.onAave).length, 2);
 
-      assert.equal(
-        4,
-        kandels.filter((x) => x.owner == defaultOwner).length,
-        "default owner count wrong"
-      );
+      assert.equal(kandels.filter((x) => x.owner == defaultOwner).length, 4);
     });
 
     it("retrieves owned kandel instances", async function () {
-      const defaultOwner = await mgv.signer.getAddress();
-
-      const farm = new Kandel({ mgv: mgv }).farm;
       const kandels = await farm.getKandels({ owner: defaultOwner });
-      assert.equal(4, kandels.length, "total count wrong");
-      assert.equal(
-        4,
-        kandels.filter((x) => x.owner == defaultOwner).length,
-        "default owner count wrong"
-      );
+      assert.equal(kandels.length, 4);
+      assert.equal(kandels.filter((x) => x.owner == defaultOwner).length, 4);
     });
 
     it("retrieves aave kandel instances", async function () {
-      const kandels = await new Kandel({ mgv: mgv }).farm.getKandels({
-        onAave: true,
-      });
-      assert.equal(2, kandels.length, "count wrong");
+      const kandels = await farm.getKandels({ onAave: true });
+      assert.equal(kandels.length, 2, "count wrong");
     });
 
     it("retrieves non-aave kandel instances", async function () {
-      const kandels = await new Kandel({ mgv: mgv }).farm.getKandels({
-        onAave: false,
-      });
-      assert.equal(3, kandels.length, "count wrong");
+      const kandels = await farm.getKandels({ onAave: false });
+      assert.equal(kandels.length, 3, "count wrong");
     });
 
     it("retrieves all market kandel instances", async function () {
-      const kandels = await new Kandel({ mgv: mgv }).farm.getKandels({
-        base: "WETH",
-        quote: "USDC",
-      });
-      assert.equal(3, kandels.length, "count wrong");
+      const kandels = await farm.getKandels({ base: "WETH", quote: "USDC" });
+      assert.equal(kandels.length, 3, "count wrong");
     });
     it("retrieves all base kandel instances", async function () {
-      const kandels = await new Kandel({ mgv: mgv }).farm.getKandels({
-        base: "WETH",
-      });
-      assert.equal(4, kandels.length, "count wrong");
+      const kandels = await farm.getKandels({ base: "WETH" });
+      assert.equal(kandels.length, 4, "count wrong");
     });
   });
 });

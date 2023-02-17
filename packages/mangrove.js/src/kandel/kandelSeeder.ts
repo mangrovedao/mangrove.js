@@ -1,13 +1,9 @@
 import * as ethers from "ethers";
-import { BigNumber } from "ethers";
 import Mangrove from "../mangrove";
-import MgvToken from "../mgvtoken";
-import { Bigish, typechain } from "../types";
-import Trade from "../util/trade";
+import { typechain } from "../types";
 import logger from "../util/logger";
 
 import Big from "big.js";
-import PrettyPrint, { prettyPrintFilter } from "../util/prettyPrint";
 import TradeEventManagement from "../util/tradeEventManagement";
 import UnitCalculations from "../util/unitCalculations";
 
@@ -16,9 +12,10 @@ import {
   NewAaveKandelEvent,
 } from "../types/typechain/AbstractKandelSeeder";
 
+import KandelInstance from "./kandelInstance";
+
 class KandelSeeder {
   mgv: Mangrove;
-  prettyP = new PrettyPrint();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
   aaveKandelSeeder: typechain.AaveKandelSeeder;
@@ -55,7 +52,7 @@ class KandelSeeder {
       liquiditySharing: boolean;
     },
     overrides: ethers.Overrides = {}
-  ): Promise<typechain.GeometricKandel> {
+  ): Promise<KandelInstance> {
     const base = this.mgv.token(params.base);
     const quote = this.mgv.token(params.quote);
 
@@ -85,18 +82,18 @@ class KandelSeeder {
       switch (name) {
         case "NewKandel": {
           const kandelEvent = evt as NewKandelEvent;
-          return typechain.Kandel__factory.connect(
-            kandelEvent.args.kandel,
-            this.mgv.signer
-          );
+          return new KandelInstance({
+            address: kandelEvent.args.kandel,
+            mgv: this.mgv,
+          });
         }
         case "NewAaveKandel": {
           evt as NewAaveKandelEvent;
           const aaveKandelEvent = evt as NewAaveKandelEvent;
-          return typechain.AaveKandel__factory.connect(
-            aaveKandelEvent.args.aaveKandel,
-            this.mgv.signer
-          );
+          return new KandelInstance({
+            address: aaveKandelEvent.args.aaveKandel,
+            mgv: this.mgv,
+          });
         }
         default:
           return null;

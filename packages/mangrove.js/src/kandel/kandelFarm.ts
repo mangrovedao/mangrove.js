@@ -1,20 +1,14 @@
-import * as ethers from "ethers";
-import { BigNumber } from "ethers";
 import Mangrove from "../mangrove";
-import MgvToken from "../mgvtoken";
-import { Bigish, typechain } from "../types";
-import Trade from "../util/trade";
-import logger from "../util/logger";
+import { typechain } from "../types";
 
-import Big from "big.js";
-import PrettyPrint, { prettyPrintFilter } from "../util/prettyPrint";
 import TradeEventManagement from "../util/tradeEventManagement";
 import { PromiseOrValue } from "../types/typechain/common";
 
-///@notice Repository for Kandel instances
+/**
+ * @title Repository for Kandel instances.
+ * */
 class KandelFarm {
   mgv: Mangrove;
-  prettyP = new PrettyPrint();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
   aaveKandelSeeder: typechain.AaveKandelSeeder;
@@ -47,7 +41,7 @@ class KandelFarm {
    * @param filter the filter to apply.
    * @param filter.owner the Kandel instance owner - the one who invoked sow.
    * @param filter.base the base token for the Kandel instance.
-   * @param filter.quote the quote token for the Kandle instance.
+   * @param filter.quote the quote token for the Kandel instance.
    * @param filter.onAave whether the Kandel instance uses the Aave router.
    * @returns all kandels matching the filter.
    */
