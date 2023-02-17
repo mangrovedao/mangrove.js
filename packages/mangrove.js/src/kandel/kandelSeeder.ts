@@ -9,6 +9,7 @@ import logger from "../util/logger";
 import Big from "big.js";
 import PrettyPrint, { prettyPrintFilter } from "../util/prettyPrint";
 import TradeEventManagement from "../util/tradeEventManagement";
+import UnitCalculations from "../util/unitCalculations";
 
 import {
   NewKandelEvent,
@@ -39,7 +40,7 @@ class KandelSeeder {
       "AaveKandelSeeder",
       this.mgv.network.name
     );
-    this.kandelSeeder = typechain.KandelSeeder__factory.connect(
+    this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
       aaveKandelSeederAddress,
       this.mgv.signer
     );
@@ -50,6 +51,7 @@ class KandelSeeder {
       onAave: boolean;
       base: string;
       quote: string;
+      gasprice: Big;
       liquiditySharing: boolean;
     },
     overrides: ethers.Overrides = {}
@@ -60,7 +62,7 @@ class KandelSeeder {
     const seed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
       base: base.address,
       quote: quote.address,
-      gasprice: 10000, //TODO
+      gasprice: UnitCalculations.toUnits(params.gasprice, 0),
       liquiditySharing: params.liquiditySharing,
     };
 
@@ -87,8 +89,6 @@ class KandelSeeder {
             kandelEvent.args.kandel,
             this.mgv.signer
           );
-
-          break;
         }
         case "NewAaveKandel": {
           evt as NewAaveKandelEvent;
@@ -97,14 +97,11 @@ class KandelSeeder {
             aaveKandelEvent.args.aaveKandel,
             this.mgv.signer
           );
-          break;
         }
         default:
-          break;
+          return null;
       }
     }
-
-    return null;
   }
 }
 

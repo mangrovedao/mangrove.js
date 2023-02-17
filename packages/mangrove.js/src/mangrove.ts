@@ -279,6 +279,28 @@ class Mangrove {
     Mangrove.setAddress(name, address, this.network.name || "mainnet");
   }
 
+  /**
+   * Read a contract address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  getNameFromAddress(address: string): string {
+    const networkAddresses = Mangrove.addresses[this.network.name];
+
+    if (networkAddresses) {
+      address = ethers.utils.getAddress(address);
+
+      for (const [name, candidateAddress] of Object.entries(
+        networkAddresses
+      ) as any) {
+        if (candidateAddress == address) {
+          return name;
+        }
+      }
+    }
+    return null;
+  }
+
   /** Convert public token amount to internal token representation.
    *
    * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise

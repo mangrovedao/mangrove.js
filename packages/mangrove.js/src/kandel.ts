@@ -12,31 +12,34 @@ import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import TradeEventManagement from "./util/tradeEventManagement";
 
 import KandelSeeder from "./kandel/kandelSeeder";
+import KandelFarm from "./kandel/kandelFarm";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Kandel {}
 
 class Kandel {
   seeder: KandelSeeder;
+  farm: KandelFarm;
 
   public constructor(params: { mgv: Mangrove }) {
     this.seeder = new KandelSeeder(params);
+    this.farm = new KandelFarm(params);
   }
 
   // TODO: Factory (seeder), Repository (get instances), and Instance/Manager (work on a single instance), and some helper functions TBD where they reside.
   /*
 
-		Seeder: Deploy/factory
-			Get seeder
-			Calculate parameters based on input from user
-			Deploy via sow()
-    Repository
-      get my instances
-  		Watch? Events? Queries?
-		Utility? - list all instances, calculate distribution
+	Seeder: kandelSeeder.ts
+  		TODO:
+			Decide gasprice and liquidity sharing
+    Repository: kandelFarm.ts
+  		TODO:
+  			Add status? watching?
+	Utility? - list all instances, calculate distribution
+  		TODO:
 				Calculatedistribution - incl needed base/quote
         Estimate pivots
-		Manage/Instance/Kandel - given instance
+	Manage/Instance/Kandel - given instance
 			Checklist
 			Depositfunds
 			getMissingProvision
