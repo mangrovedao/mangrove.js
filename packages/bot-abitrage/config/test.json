@@ -3,5 +3,6 @@
   "markets": [["WETH", "DAI"]],
   "MangroveJs": {
     "logLevel": "info"
-  }
+  },
+  "fee": 3000
 }

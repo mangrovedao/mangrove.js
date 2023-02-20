@@ -25,6 +25,7 @@
     "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --max-old-space-size=8192 --config test/mocha/config/integration-tests.json --exit ",
     "test:coverage": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --max-old-space-size=8192 --config test/mocha/config/coverage-tests.json --exit ",
     "start": "node build/index.js",
+    "startLocal": "node build/local.js",
     "write-env-info-file": "node ./scripts/writeEnvInfoFile.js"
   },
   "lint-staged": {
@@ -38,6 +39,10 @@
     "@types/coingecko-api": "^1.0.10",
     "@types/finalhandler": "^1.1.1",
     "@types/serve-static": "^1.13.10",
+    "@uniswap/sdk-core": "^3.1.1",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-periphery": "^1.4.3",
+    "@uniswap/v3-sdk": "^3.9.0",
     "axios": "^0.26.1",
     "big.js": "^6.1.1",
     "coingecko-api": "^1.0.10",
@@ -46,6 +51,7 @@
     "ethers": "^5.4.7",
     "fast-safe-stringify": "^2.1.1",
     "finalhandler": "^1.1.2",
+    "nyc": "^15.1.0",
     "serve-static": "^1.14.2"
   },
   "devDependencies": {
