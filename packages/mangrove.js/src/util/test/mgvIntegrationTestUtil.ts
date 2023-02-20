@@ -122,6 +122,7 @@ export enum AccountName {
   Deployer = "deployer", // Owner of deployed MGV and token contracts
   Cleaner = "cleaner", // Owner of cleaner EOA
   Maker = "maker", // Owner of maker
+  Arbitrager = "arbitrager",
 }
 
 export const getAccount = async (name: AccountName): Promise<Account> => {

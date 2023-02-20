@@ -23,6 +23,7 @@ export const mochaHooks = {
       maker: this.server.accounts[1],
       cleaner: this.server.accounts[2],
       tester: this.server.accounts[3],
+      arbitrager: this.server.accounts[4],
     };
 
     const provider = new ethers.providers.JsonRpcProvider(this.server.url);

@@ -7,5 +7,9 @@
   "runEveryXMinutes": {
     "__name": "RUN_EVERY_X_MINUTES",
     "__format": "number"
+  },
+  "fee": {
+    "__name": "FEE",
+    "__format": "number"
   }
 }
