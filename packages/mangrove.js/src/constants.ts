@@ -38,7 +38,7 @@ mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
 for (const [network, networkAddresses] of mgvCoreAddresses) {
   addresses[network] ??= {};
   for (const { name, address } of networkAddresses as any) {
-    if (addresses[network][name]) {
+    if (addresses[network][name] && addresses[network][name] !== address) {
       throw new Error(
         `address ${name} (network: ${network}) cannot be added twice. Existing address: ${
           addresses[network][name]
