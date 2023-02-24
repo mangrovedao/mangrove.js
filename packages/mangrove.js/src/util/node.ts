@@ -221,7 +221,12 @@ const deploy = async (params: deployParams) => {
     await params.provider.send("anvil_loadState", [state]);
     console.log("...done.");
   } else {
-    // await provider.send("anvil_setLoggingEnabled", [true]);
+    /* The --root parameter sets the project root dir, but, importantly, the script still runs in `cwd`. If the command below was executed with cwd=CORE_DIR, forge would not look for a .env file in directories above CORE_DIR, because CORE_DIR contains a foundry.toml file. By leaving cwd as-is, forge will look look in cwd and up until it meets a foundry.toml file or a .git directory.
+
+    The above means that a .env in the current .git directory will be picked up by forge.
+
+    For more pointers see https://github.com/foundry-rs/foundry/issues/3711
+    */
     const forgeScriptCmd = `forge script \
     --rpc-url http://${params.host}:${params.port} \
     --froms ${mnemonic.address(0)} \
