@@ -70,7 +70,7 @@ export const builder = (yargs) => {
       type: "string",
     })
     .option("fork-url", {
-      describe: "Fork URL",
+      describe: "Fork URL to be given to the newly deployed node",
       type: "string",
     })
     .option("chain-id", {
