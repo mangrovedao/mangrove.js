@@ -110,7 +110,15 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
 };
 
 /* Spawn a test node */
-const spawn = async (params: any) => {
+type spawnParams = {
+  chainId?: number;
+  forkUrl?: number;
+  host: string;
+  port: number;
+  pipe: boolean;
+};
+
+const spawn = async (params: spawnParams) => {
   const chainIdArgs = "chainId" in params ? ["--chain-id", params.chainId] : [];
   const forkUrlArgs = "forkUrl" in params ? ["--fork-url", params.forkUrl] : [];
   const anvil = childProcess.spawn(
