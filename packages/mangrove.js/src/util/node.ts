@@ -23,6 +23,43 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
+const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
+  if (typeof pipe === "undefined") {
+    pipe = true;
+  }
+  // Warning: using exec & awaiting promise instead of using the simpler `execSync`
+  // due to the following issue: when too many transactions are broadcast by the script,
+  // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
+  // Using util.promisify on childProcess.exec recreates the issue.
+  // Must be investigated further if it pops up again.
+  const scriptPromise = new Promise((ok, ko) => {
+    childProcess.exec(
+      command,
+      {
+        encoding: "utf8",
+        env: env,
+        cwd: CORE_DIR,
+      },
+      (error, stdout, stderr) => {
+        if (pipe || error) {
+          console.error("forge cmd stdout:");
+          console.error(stdout);
+        }
+        if (stderr.length > 0) {
+          console.error("forge cmd stderr:");
+          console.error(stderr);
+        }
+        if (error) {
+          throw error;
+        } else {
+          ok(stdout);
+        }
+      }
+    );
+  });
+  return scriptPromise;
+};
+
 import yargs from "yargs";
 import { JsonRpcProvider, Provider } from "@ethersproject/providers";
 
@@ -199,8 +236,7 @@ type deployParams = {
   stateCache: boolean;
   targetContract: string;
   script: string;
-  host: string;
-  port: number;
+  url: string;
   pipe: boolean;
   setMulticallCodeIfAbsent: boolean;
   setToyENSCodeIfAbsent: boolean;
@@ -234,7 +270,7 @@ const deploy = async (params: deployParams) => {
   } else {
     // await provider.send("anvil_setLoggingEnabled", [true]);
     const forgeScriptCmd = `forge script \
-    --rpc-url http://${params.host}:${params.port} \
+    --rpc-url ${params.url} \
     --froms ${mnemonic.address(0)} \
     --private-key ${mnemonic.key(0)} \
     --broadcast -vvv \
@@ -254,37 +290,8 @@ const deploy = async (params: deployParams) => {
       POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
     };
 
-    // Warning: using exec & awaiting promise instead of using the simpler `execSync`
-    // due to the following issue: when too many transactions are broadcast by the script,
-    // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
-    // Using util.promisify on childProcess.exec recreates the issue.
-    // Must be investigated further if it pops up again.
-    const scriptPromise = new Promise((ok, ko) => {
-      childProcess.exec(
-        forgeScriptCmd,
-        {
-          encoding: "utf8",
-          env: env,
-          cwd: CORE_DIR,
-        },
-        (error, stdout, stderr) => {
-          if (params.pipe || error) {
-            console.error("forge cmd stdout:");
-            console.error(stdout);
-          }
-          if (stderr.length > 0) {
-            console.error("forge cmd stderr:");
-            console.error(stderr);
-          }
-          if (error) {
-            throw error;
-          } else {
-            ok(void 0);
-          }
-        }
-      );
-    });
-    await scriptPromise;
+    await execForgeCmd(forgeScriptCmd, env, params.pipe);
+
     if (params.stateCache) {
       const stateData = await params.provider.send("anvil_dumpState", []);
       fs.writeFileSync(stateCacheFile, stateData);
@@ -297,16 +304,18 @@ const deploy = async (params: deployParams) => {
   Connect to a node. Optionally spawns it before connecting. Optionally runs
   initial deployment before connecting.
  */
-type connectParams = {
+type preConnectParams = {
   spawn: boolean;
   deploy: boolean;
   url: string;
   provider: JsonRpcProvider;
-  host: string;
-  port: number;
-  pipe: boolean;
 };
-const connect = async (params: connectParams & deployParams) => {
+type connectParams = preConnectParams &
+  ({ spawn: false } | spawnParams) &
+  deployParams;
+
+const connect = async (params: connectParams) => {
+  console.log(params);
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
     spawnInfo = await spawn(params);
@@ -352,6 +361,68 @@ const connect = async (params: connectParams & deployParams) => {
         );
       }
     },
+    /* set ERC20 token balance of account at amount (display units) or internalAmount (internal units) */
+    deal: async (dealParams: {
+      token: string;
+      account: string;
+      amount?: number;
+      internalAmount?: ethers.BigNumber;
+    }) => {
+      //  token:string,account:string,amount:string) {
+      const command = `forge script --rpc-url ${params.url} -vv GetTokenDealSlot`;
+
+      console.log("Running forge script:");
+      console.log(command);
+
+      // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
+      const env = {
+        ...process.env,
+        MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
+        POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
+        TOKEN: dealParams.token,
+        ACCOUNT: dealParams.account,
+      };
+
+      // parse script results to get storage slot and token decimals
+      let slot: string;
+      let decimals: number;
+
+      let ret: any = await execForgeCmd(command, env, false);
+      for (const line of ret.split("\n")) {
+        const slotMatch = line.match(/\s*slot:\s*(\S+)/);
+        if (slotMatch) {
+          slot = slotMatch[1];
+        }
+        const decimalsMatch = line.match(/\s*decimals:\s*(\S+)/);
+        if (decimalsMatch) {
+          decimals = parseInt(decimalsMatch[1], 10);
+        }
+      }
+
+      if ("internalAmount" in dealParams) {
+        if ("amount" in dealParams) {
+          throw new Error(
+            "Cannot specify both amount (display units) and internal amount (internal units). Please pick one."
+          );
+        }
+      } else if ("amount" in dealParams) {
+        dealParams.internalAmount = ethers.utils.parseUnits(
+          `${dealParams.amount}`,
+          decimals
+        );
+      } else {
+        throw new Error(
+          "Must specify one of dealParams.amount, dealParams.internalAmount."
+        );
+      }
+
+      const devNode = new DevNode(params.provider);
+      await devNode.setStorageAt(
+        dealParams.token,
+        slot,
+        ethers.utils.hexZeroPad(dealParams.internalAmount.toHexString(), 32)
+      );
+    },
   };
 };
 
@@ -359,7 +430,15 @@ const connect = async (params: connectParams & deployParams) => {
 export const node = (argv: any, useYargs: boolean = true) => {
   const params: any = useYargs ? computeArgv(argv) : argv;
 
-  params.url = `http://${params.host}:${params.port}`;
+  // if node is initialized with a URL, host/port
+  if (typeof params.url === "undefined") {
+    params.url = `http://${params.host}:${params.port}`;
+  } else if (params.spawn) {
+    throw new Error(
+      "spawn and url params are incompatible. If you want to spawn a node, set host and port (not url); or keep url and set spawn to false."
+    );
+  }
+
   params.provider = new ethers.providers.StaticJsonRpcProvider(params.url);
 
   const devNode = new DevNode(params.provider);
