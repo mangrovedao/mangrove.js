@@ -1,6 +1,7 @@
 # 1.2.3-0 (February 2023)
 
 - Use prerelease mangrove-core
+- adapt to abi changes in the new mangrove-core
 
 # 1.2.2 (February 2023)
 
