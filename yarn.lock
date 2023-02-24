@@ -1475,10 +1475,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/mangrove-core@git@github.com:mangrovedao/mangrove-core.git#head=adrien/get-token-deal-slot":
-  version: 1.4.2
-  resolution: "@mangrovedao/mangrove-core@git@github.com:mangrovedao/mangrove-core.git#commit=af028669205898c16c4625e7d821480c04733cd2"
-  checksum: 11a8991ae399eaaf5944a0dead914b3950d2284618d5cb94f67ff93d3c4441d59c75b93c6a03105f1d8e6587c5d072cdfccffff8ecde2dad70996d41368e6b31
+"@mangrovedao/mangrove-core@npm:^1.4.3":
+  version: 1.4.3
+  resolution: "@mangrovedao/mangrove-core@npm:1.4.3"
+  checksum: afab209469a81a9ef81200ca5ec786608e7ddd3da10248020be41650bd2e24e0f5def466cf4628820c1e8529f53a3d8ec33612d052e5b3074edcfc44be157b25
   languageName: node
   linkType: hard
 
@@ -1493,7 +1493,7 @@ __metadata:
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
     "@mangrovedao/commonlib.js": "workspace:*"
-    "@mangrovedao/mangrove-core": "git@github.com:mangrovedao/mangrove-core.git#head=adrien/get-token-deal-slot"
+    "@mangrovedao/mangrove-core": ^1.4.3
     "@typechain/ethers-v5": ^10.1.0
     "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5
