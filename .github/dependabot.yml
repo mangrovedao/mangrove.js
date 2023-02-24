@@ -5,14 +5,10 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
-    reviewers:
-      - "dontrolle"
+      interval: "weekly"
 
   # Maintain dependencies for npm and yarn
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
-    reviewers:
-      - "dontrolle"   
+      interval: "weekly"

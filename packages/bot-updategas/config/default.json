@@ -1,9 +1,7 @@
 {
   "logLevel": "debug",
   "acceptableGasGapToOracle": 0.5,
-  "oracleURL": "https://gasstation-mainnet.matic.network/v2",
-  "oracleURL_Key": "standard",
-  "oracleURL_subKey": "maxFee",
+  "network": "MATIC_MUMBAI",
   "maxUpdateConstraint": {},
   "runEveryXHours": 8
 }

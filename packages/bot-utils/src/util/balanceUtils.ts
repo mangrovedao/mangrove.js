@@ -27,7 +27,7 @@ export class BalanceUtils {
     for (const tokenConfig of tokenConfigs) {
       const token = mgv.token(tokenConfig.name);
       logPromises.push(
-        this.logTokenBalance(mgv._provider, address, token, contextInfo)
+        this.logTokenBalance(mgv.provider, address, token, contextInfo)
       );
     }
 

@@ -55,7 +55,7 @@ const mgv = await Mangrove.connect({
   // Set specific allowance
   await market.base.approveMangrove(0.42);
 
-    // Read orderbook
+    // Read order book
   market.book();
   /*
     Returns
@@ -88,7 +88,7 @@ const mgv = await Mangrove.connect({
 const filter = ["id", "wants", "gives", "gasprice", "maker"];
 await market.consoleAsks(filter);
 
-// Subscribe to orderbook
+// Subscribe to order book
 market.subscribe((event) => {
   /* `event` is an offer write, failure, success, or cancel */
   console.log(market.book());
@@ -354,7 +354,7 @@ configuration](#package-configuration)).
 
 ## Tests
 
-Tests are available in `./test/integration/*.integration.test.js`. Methods are tested using a spawned [anvil](https://book.getfoundry.sh/reference/anvil/) process. For free archive node access, get a provider URL from [Alchemy](http://alchemy.com/).
+Tests are available in `./test/integration/*.integration.test.js`. Methods are tested using a spawned [anvil](https://book.getfoundry.sh/reference/anvil/) process. For free archive node access, get a provider URL from [Alchemy](https://alchemy.com/).
 
 ```bash
 ## Run all tests

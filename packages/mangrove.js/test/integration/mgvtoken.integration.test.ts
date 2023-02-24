@@ -21,7 +21,7 @@ describe("MGV Token integration tests suite", () => {
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    mgv._provider.pollingInterval = 10;
+    mgv.provider.pollingInterval = 10;
   });
 
   afterEach(async () => {
@@ -32,7 +32,7 @@ describe("MGV Token integration tests suite", () => {
     const usdc = mgv.token("USDC");
     const allowance1 = await usdc.allowance();
     assert.deepStrictEqual(allowance1, Big(0), "allowance should start at 0");
-    const resp = await usdc.approveMangrove({ amount: 100 });
+    const resp = await usdc.approveMangrove(100);
     await resp.wait(1);
     const allowance2 = await usdc.allowance();
     assert.deepStrictEqual(allowance2, Big(100), "allowance should be 100");

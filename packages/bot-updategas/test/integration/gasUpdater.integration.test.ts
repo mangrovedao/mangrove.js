@@ -20,12 +20,9 @@ describe("GasUpdater integration tests", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
 
-  before(async function () {
+  beforeEach(async function () {
     gasUpdaterSigner = new ethers.Wallet(this.accounts.tester.key);
     // gasUpdaterSigner = await hre.ethers.getNamedSigner("gasUpdater");
-  });
-
-  beforeEach(async function () {
     mgv = await Mangrove.connect({
       //provider: this.test?.parent?.parent?.ctx.provider,
       signer: gasUpdaterSigner,
@@ -35,11 +32,11 @@ describe("GasUpdater integration tests", () => {
     mgvAdmin = await Mangrove.connect({
       //provider: this.test?.parent?.parent?.ctx.provider,
       privateKey: this.accounts.deployer.key,
-      provider: mgv._provider,
+      provider: mgv.provider,
     });
 
     // Using the mangrove.js address functionallity, since there is no reason to recreate the significant infastructure for only one Contract.
-    const oracleAddress = Mangrove.getAddress("MgvOracle", mgv._network.name);
+    const oracleAddress = Mangrove.getAddress("MgvOracle", mgv.network.name);
 
     await mgvAdmin.contract.setMonitor(oracleAddress);
     await mgvAdmin.contract.setUseOracle(true);
@@ -47,7 +44,7 @@ describe("GasUpdater integration tests", () => {
 
     const oracleContract = typechain.MgvOracle__factory.connect(
       oracleAddress,
-      mgvAdmin._signer
+      mgvAdmin.signer
     );
     await oracleContract.setMutator(gasUpdaterSigner.address);
   });

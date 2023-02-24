@@ -29,21 +29,22 @@ describe("Semibook integration tests suite", function () {
 
     mgvAdmin = await Mangrove.connect({
       privateKey: this.accounts.deployer.key,
-      provider: mgv._provider,
+      provider: mgv.provider,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts);
+    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
 
     //shorten polling for faster tests
-    (mgv._provider as any).pollingInterval = 10;
+    (mgv.provider as any).pollingInterval = 10;
     await mgv.contract["fund()"]({ value: toWei(10) });
 
-    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
+    mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
 
   afterEach(async () => {
     mgvTestUtil.stopPollOfTransactionTracking();
     mgv.disconnect();
+    mgvAdmin.disconnect();
   });
 
   // FIXME: Test cache invariants
@@ -208,6 +209,7 @@ describe("Semibook integration tests suite", function () {
       expect(config.fee).to.be.eq(fee);
       expect(config.density.eq(2)).to.be.eq(true);
       expect(config.offer_gasbase).to.be.eq(gasbase);
+      mgv.disconnect();
     });
 
     it("returns the config of the latest block as Mangrove.LocalConfig, when given no blocknumber", async function () {
@@ -241,6 +243,7 @@ describe("Semibook integration tests suite", function () {
       expect(config.fee).to.be.eq(fee);
       expect(config.density.eq(2)).to.be.eq(true);
       expect(config.offer_gasbase).to.be.eq(gasbase);
+      mgv.disconnect();
     });
   });
 
@@ -267,32 +270,6 @@ describe("Semibook integration tests suite", function () {
       await mgvTestUtil.waitForBooksForLastTx(market);
       const bestInCache = market.getSemibook("asks").getBestInCache();
       expect(bestInCache).to.be.eq(1);
-    });
-  });
-
-  describe("lastReadBlockNumber", () => {
-    it("returns block number of offer, when offer made before semibook/market", async function () {
-      const receipt = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
-      );
-      await mgvTestUtil.waitForBooksForLastTx();
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const lastReadBlockNumber = market
-        .getSemibook("asks")
-        .lastReadBlockNumber();
-      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber);
-    });
-
-    it("returns block number of offer, when offer made after semibook/market and in sync", async function () {
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const receipt = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
-      );
-      await mgvTestUtil.waitForBooksForLastTx(market);
-      const lastReadBlockNumber = market
-        .getSemibook("asks")
-        .lastReadBlockNumber();
-      expect(lastReadBlockNumber).to.be.eq(receipt.blockNumber);
     });
   });
 

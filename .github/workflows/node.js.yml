@@ -142,9 +142,10 @@ jobs:
     #   uses: dorny/test-reporter@v1
     #   if: ${{ env.commonlib_js_built && (success() || failure()) }}
     #   with:
-    #     name: commonlib.js - Tests                   # Name of the check run which will be created
+    #     name: commonlib.js - Tests                                      # Name of the check run which will be created
     #     path: packages/commonlib.js/commonlib-js-mocha-test-report.json # Path to test results
-    #     reporter: mocha-json                               # Format of test results
+    #     reporter: mocha-json                                            # Format of test results
+    #     fail-on-error: 'false'                                          # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     # save artifacts for later stages
     - name: Zip output
@@ -160,7 +161,7 @@ jobs:
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -247,9 +248,10 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.mangrove_js_built && (success() || failure()) }}
       with:
-        name: Mangrove.js Tests               # Name of the check run which will be created
+        name: Mangrove.js Tests                                     # Name of the check run which will be created
         path: ${{env.working-directory}}/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                  # Format of test results
+        reporter: mocha-json                                        # Format of test results
+        fail-on-error: 'false'                                      # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     # == verify cli can start ==
     - name: Mgv cli Tests
@@ -285,20 +287,9 @@ jobs:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
 
-    - name: Zip src (some of which is generated) for doc generation
-      uses: montudor/action-zip@v1
-      with: 
-        args: zip -qq -r mangrove-js-src.zip ${{env.working-directory}}/src
-
-    - name: Cache mangrove-js-src as artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: mangrove-js-src.zip
-        path: mangrove-js-src.zip
-
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -306,87 +297,6 @@ jobs:
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: mangrove-js ====
-
-  # ==== Job: Build mangrove.js documentation ====
-  mangrove-js-doc:
-    needs: [security-guard, commonlib-js, mangrove-js]
-
-    runs-on: ubuntu-latest
-
-    env:
-      working-directory: packages/mangrove.js
-
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}
-
-    steps:
-
-    # == Git checkout ==
-    - name: Checkout
-      uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
-
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-
-    # == yarn setup ==
-    - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-        
-    - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
-        
-    # == download and unzip artefacts ==
-    - name: Download cached mangrove-js-src artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-js-src.zip
-
-    - name: Unzip mangrove-js-src artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq -o mangrove-js-src.zip
-
-    - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: commonlib-out.zip
-
-    - name: Unzip commonlib.js artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq commonlib-out.zip
-
-    # == create and upload docs ==
-    - run: yarn run doc
-
-    - name: Archive documentation
-      uses: actions/upload-artifact@v3
-      with:
-        name: mangrove-js-documentation
-        path: ${{env.working-directory}}/docs/
-
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job mangrove-js-doc ====
 
   # ==== Job: Build and test bot-utils ====
   bot-utils:
@@ -472,13 +382,14 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_utils_built && (success() || failure()) }}
       with:
-        name: Bot Utils - Tests                   # Name of the check run which will be created
+        name: Bot Utils - Tests                             # Name of the check run which will be created
         path: packages/bot-utils/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                # Format of test results
+        fail-on-error: 'false'                              # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -603,13 +514,14 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.cleaning_bot_built && (success() || failure()) }}
       with:
-        name: Cleaning Bot - Tests                   # Name of the check run which will be created
+        name: Cleaning Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-cleaning/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                   # Format of test results
+        fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -712,13 +624,14 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.updategas_bot_built && (success() || failure()) }}
       with:
-        name: Update Gas Bot - Tests                   # Name of the check run which will be created
+        name: Update Gas Bot - Tests                            # Name of the check run which will be created
         path: packages/bot-updategas/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                    # Format of test results
+        fail-on-error: 'false'                                  # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -821,13 +734,14 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_maker_noise_built && (success() || failure()) }}
       with:
-        name: Noise Maker Bot - Tests                                # Name of the check run which will be created
+        name: Noise Maker Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-maker-noise/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                                         # Format of test results
+        reporter: mocha-json                                      # Format of test results
+        fail-on-error: 'false'                                    # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -930,13 +844,14 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_taker_greedy_built && (success() || failure()) }}
       with:
-        name: Greedy Taker Bot - Tests                                # Name of the check run which will be created
+        name: Greedy Taker Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-taker-greedy/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                                          # Format of test results
+        reporter: mocha-json                                       # Format of test results
+        fail-on-error: 'false'                                     # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
     
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -1039,13 +954,14 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.bot_failing_offer_built && (success() || failure()) }}
       with:
-        name: Failing Offer Bot - Tests                                # Name of the check run which will be created
-        path: packages/bot-failing-offer/coverage-tests-report.json # Path to test results
+        name: Failing Offer Bot - Tests                              # Name of the check run which will be created
+        path: packages/bot-failing-offer/coverage-tests-report.json  # Path to test results
         reporter: mocha-json                                         # Format of test results
+        fail-on-error: 'false'                                       # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -1148,13 +1064,14 @@ jobs:
       uses: dorny/test-reporter@v1
       if: ${{ env.template_bot_built && (success() || failure()) }}
       with:
-        name: Template Bot - Tests                   # Name of the check run which will be created
+        name: Template Bot - Tests                             # Name of the check run which will be created
         path: packages/bot-template/coverage-tests-report.json # Path to test results
-        reporter: mocha-json                               # Format of test results
+        reporter: mocha-json                                   # Format of test results
+        fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
     - name: Report Failure to Slack
       if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v1
+      uses: ravsamhq/notify-slack-action@v2
       with:
         status: ${{ job.status }}
         message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
@@ -1174,7 +1091,6 @@ jobs:
     - file-guard
     - commonlib-js
     - mangrove-js
-    - mangrove-js-doc
     - bot-utils
     - bot-cleaning
     - bot-maker-noise

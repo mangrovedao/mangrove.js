@@ -1,6 +1,56 @@
-# next version
+# 1.2.2 (February 2023)
 
+- Use AAVE faucet addresses on mumbai network
+
+# 1.2.1 (February 2023)
+
+- skipped
+
+# 1.2.0 (January 2023)
+
+- Remove inefficient synchronous block-by-block querying and updates of `Semibook`'s. Instead process events one-by-one (optimized for WebSocket subscriptions). Block-subscription have been removed from `Semibook` and `Market`. Code relying on block-by-block processing (mostly test and test-util libs) have been rewritten. APIs in `Market` and `Semibook` supporting on-block listening have been removed.
+
+# 1.1.1 (January 2023)
+
+- Improve and bugfix devNode detection (which made `Mangrove.connect()` buggy against local chains in previous version), and add options for Multicall and ToyENS usage.
+
+# 1.1.0 (January 2023)
+
+- add Mangrove.openMarkets and Mangrove.openMarketsData, reads open markets info off MgvReader
+
+# 1.0.1 (December 2022)
+
+- Updated order to return both transaction response and result
+- Add option to TradeParams, that forces usage of MangroveOrder
+- Moved ExpiryDate from RestingOrderParams to TradeParams
+
+# 1.0.0 (December 2022)
+
+- Upgraded mangrove-core dependency with new addresses
+- Bump version to 1.0.0 for initial release
+
+# 0.14.0 (December 2022)
+
+- Upgraded mangrove-core dependency to enable Polygon mainnet
+- Updated TradeParams to remove slippage
+- public fields of Mangrove class are no longer prefixed by '\_'
+- Simplifying `offerLogic` and `liquidityProvider` classes. They now respectively implement `IOfferLogic` and `ILiquidityProvider` interface
+
+# 0.13.0 (November 2022)
+
+- Add name resolution via the [ToyENS](https://github.com/mangrovedao/mangrove-core/blob/master/lib/ToyENS.sol) contract from mangrove-core if it exists at the canonical address. This enables using named contracts in mangrove.js when running a local chain. This also works if those contracts are deployed after mangrove.js has been initialized as long as the deployer registers the address in ToyENS, which all mangrove-core deployment scripts do.
+- Add `Watcher` proxy class to ease observation of async updates
+- Smaller code documentation improvements
+
+# 0.12.0 (November 2022)
+
+- Upgraded mangrove-core dependency.
+- For resting orders timeToLiveForRestingOrder is changed to expiryDate and is in Unix time.
+- For TradeParams changed to have restingOrder be a boolean on a mangroveOrder parameter.
+- MangroveOrder now supports fill-or-kill orders.
 - Fix `Semibook.simulateMarketOrder`. Fixes `Semibook.estimateVolume`, `Market.(estimateVolume[|ToReceive|ToSpend])`.
+- EOA offers (on the fly) do not require any gasreq
+- Remove unsafe option to set `price=null` in `market.{buy|sell}` as simulating true market orders is prone to sandwich attacks and therefore not encouraged.
 
 # 0.11.4 (October 2022)
 

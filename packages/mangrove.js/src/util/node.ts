@@ -12,11 +12,8 @@ const path = require("path");
 const fs = require("fs");
 import { ethers } from "ethers";
 import * as eth from "../eth";
-import { Mangrove } from "..";
-import * as ToyENS from "./ToyENSCode";
-import * as Multicall from "./MulticallCode";
 import { default as nodeCleanup } from "node-cleanup";
-import { getAllToyENSEntries } from "./toyEnsEntries";
+import DevNode from "./devNode";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8545;
@@ -27,6 +24,7 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
 import yargs from "yargs";
+import { JsonRpcProvider, Provider } from "@ethersproject/providers";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
@@ -61,7 +59,7 @@ export const builder = (yargs) => {
       default: false,
     })
     .option("deploy", {
-      describe: "Do not spawn a new node",
+      describe: "Create utility contracts at startup time",
       type: "boolean",
       default: true,
     })
@@ -82,6 +80,17 @@ export const builder = (yargs) => {
     .option("pipe", {
       describe: "Pipe all internal anvil/script data to stdout",
       default: false,
+      type: "boolean",
+    })
+    .option("set-multicall-code-if-absent", {
+      describe: "Set Multicall code if absent",
+      default: true,
+      type: "boolean",
+    })
+    .option("set-toy-ens-code-if-absent", {
+      alias: "setToyENSCodeIfAbsent",
+      describe: "Set ToyENS code if absent",
+      default: true,
       type: "boolean",
     })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
@@ -177,28 +186,26 @@ const spawn = async (params: any) => {
 };
 
 /* Run a deployment, populate Mangrove addresses */
-const deploy = async (params: any) => {
-  // setup Toy ENS if needed
-  const toyENSCode = await params.provider.send("eth_getCode", [
-    ToyENS.address,
-    "latest",
-  ]);
-  if (toyENSCode === "0x") {
-    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-    await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
+type deployParams = {
+  provider: JsonRpcProvider;
+  stateCache: boolean;
+  targetContract: string;
+  script: string;
+  host: string;
+  port: number;
+  pipe: boolean;
+  setMulticallCodeIfAbsent: boolean;
+  setToyENSCodeIfAbsent: boolean;
+};
+const deploy = async (params: deployParams) => {
+  // convenience: deploy ToyENS/Multicall if not in place yet and not forbidden by params
+  const devNode = new DevNode(params.provider);
+  if (params.setToyENSCodeIfAbsent) {
+    await devNode.setToyENSCodeIfAbsent();
   }
 
-  // setup Toy ENS if needed
-  const MulticallCode = await params.provider.send("eth_getCode", [
-    Multicall.address,
-    "latest",
-  ]);
-  if (MulticallCode === "0x") {
-    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-    await params.provider.send("anvil_setCode", [
-      Multicall.address,
-      Multicall.code,
-    ]);
+  if (params.setMulticallCodeIfAbsent) {
+    await devNode.setMulticallCodeIfAbsent();
   }
 
   // test connectivity
@@ -229,7 +236,15 @@ const deploy = async (params: any) => {
     ${params.script}`;
 
     console.log("Running forge script:");
+    // this dumps the private-key but it is a test mnemonic
     console.log(forgeScriptCmd);
+
+    // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
+    const env = {
+      ...process.env,
+      MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
+      POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
+    };
 
     // Warning: using exec & awaiting promise instead of using the simpler `execSync`
     // due to the following issue: when too many transactions are broadcast by the script,
@@ -241,7 +256,7 @@ const deploy = async (params: any) => {
         forgeScriptCmd,
         {
           encoding: "utf8",
-          env: process.env,
+          env: env,
           cwd: CORE_DIR,
         },
         (error, stdout, stderr) => {
@@ -274,14 +289,28 @@ const deploy = async (params: any) => {
   Connect to a node. Optionally spawns it before connecting. Optionally runs
   initial deployment before connecting.
  */
-const connect = async (params: any) => {
+type connectParams = {
+  spawn: boolean;
+  deploy: boolean;
+  url: string;
+  provider: JsonRpcProvider;
+  host: string;
+  port: number;
+  pipe: boolean;
+};
+const connect = async (params: connectParams & deployParams) => {
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
     spawnInfo = await spawn(params);
   }
 
+  const deployFn = () => {
+    return deploy(params);
+  };
+
+  // deploy immediately if requested, otherwise return a deploy function
   if (params.deploy) {
-    await deploy(params);
+    await deployFn();
   }
 
   // // convenience: try to populate global Mangrove instance if possible
@@ -292,17 +321,29 @@ const connect = async (params: any) => {
   // }
 
   /* Track node snapshot ids for easy snapshot/revert */
-  let lastSnapshotId;
+  let lastSnapshotId: string;
+  let snapshotBlockNumber: number;
 
   return {
     ...spawnInfo,
     url: params.url,
     accounts: anvilAccounts,
     params,
-    snapshot: async () =>
-      (lastSnapshotId = await params.provider.send("evm_snapshot", [])),
-    revert: (snapshotId = lastSnapshotId) =>
-      params.provider.send("evm_revert", [snapshotId]),
+    deploy: params.deploy ? undefined : deployFn,
+    snapshot: async () => {
+      lastSnapshotId = await params.provider.send("evm_snapshot", []);
+      snapshotBlockNumber = await params.provider.getBlockNumber();
+      return lastSnapshotId;
+    },
+    revert: async (snapshotId = lastSnapshotId) => {
+      await params.provider.send("evm_revert", [snapshotId]);
+      const blockNumberAfterRevert = await params.provider.getBlockNumber();
+      if (blockNumberAfterRevert != snapshotBlockNumber) {
+        throw Error(
+          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`
+        );
+      }
+    },
   };
 };
 
@@ -313,21 +354,19 @@ export const node = (argv: any, useYargs: boolean = true) => {
   params.url = `http://${params.host}:${params.port}`;
   params.provider = new ethers.providers.StaticJsonRpcProvider(params.url);
 
+  const devNode = new DevNode(params.provider);
+
   return {
     connect() {
       return connect(params);
     },
-    getAllToyENSEntries() {
-      return getAllToyENSEntries(params.provider);
+    watchAllToyENSEntries() {
+      return devNode.watchAllToyENSEntries(params.provider);
     },
   };
 };
 
-node.getAllToyENSEntries = getAllToyENSEntries;
-
 export default node;
-
-export { getAllToyENSEntries };
 
 /* If running as script, start anvil. */
 if (require.main === module) {

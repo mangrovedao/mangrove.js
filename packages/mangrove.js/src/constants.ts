@@ -1,6 +1,7 @@
 import knownAddresses from "./constants/addresses.json";
 import tokenDecimals from "./constants/tokenDecimals.json";
 import tokenDisplayedDecimals from "./constants/tokenDisplayedDecimals.json";
+import tokenCashness from "./constants/tokenCashness.json";
 import tokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedAsPriceDecimals.json";
 import { ethers } from "ethers";
 
@@ -27,11 +28,9 @@ for (const [network, networkAddresses] of Object.entries(mgvCore.addresses)) {
 }
 
 export { addresses };
-
-export const EOA_offer_gasreq = 5000;
-
 export const decimals = tokenDecimals;
 export const defaultDisplayedDecimals = 2;
 export const displayedDecimals = tokenDisplayedDecimals;
 export const defaultDisplayedPriceDecimals = 6;
 export const displayedPriceDecimals = tokenDisplayedAsPriceDecimals;
+export const cashness = tokenCashness;
