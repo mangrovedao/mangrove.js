@@ -455,6 +455,36 @@ export const node = (argv: any, useYargs: boolean = true) => {
 
 export default node;
 
+export const dealBuilder = (yargs) => {
+  return yargs
+    .option("host", {
+      describe: "The node hostname -- must be a dev node (anvil, hardhat, ...)",
+      type: "string",
+      default: DEFAULT_HOST,
+    })
+    .option("port", {
+      describe: "The node port -- must be a dev node (anvil, hardhat, ...)",
+      type: "string",
+      default: DEFAULT_PORT,
+    })
+    .option("token", {
+      describe: "Address of the token",
+      requiresArg: true,
+      type: "string",
+    })
+    .option("account", {
+      describe: "Address of the account to credit",
+      requiresArg: true,
+      type: "string",
+    })
+    .option("amount", {
+      describe: "Number of tokens in display units.",
+      requiresArg: true,
+      type: "number",
+    })
+    .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
+};
+
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
