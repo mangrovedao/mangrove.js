@@ -6,6 +6,7 @@ import { Mangrove, Market } from ".";
 import { Bigish } from "./types";
 import { TypedEventFilter } from "./types/typechain/common";
 import Trade from "./util/trade";
+import UnitCalculations from "./util/unitCalculations";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -119,7 +120,7 @@ class Semibook implements Iterable<Market.Offer> {
   #blockEventCallback: Listener;
   #eventFilter: TypedEventFilter<any>;
   #eventListener: Semibook.EventListener;
-  #blockListener: Semibook.BlockListener;
+  #logQueue: ethers.providers.Log[] = [];
 
   #cacheLock: Mutex; // Lock that must be acquired when modifying the cache to ensure consistency and to queue cache updating events.
   #offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
@@ -131,17 +132,10 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: Market.BA,
     eventListener: Semibook.EventListener,
-    blockListener: Semibook.BlockListener,
     options: Semibook.Options
   ): Promise<Semibook> {
     canConstructSemibook = true;
-    const semibook = new Semibook(
-      market,
-      ba,
-      eventListener,
-      blockListener,
-      options
-    );
+    const semibook = new Semibook(market, ba, eventListener, options);
     canConstructSemibook = false;
     await semibook.#initialize();
     return semibook;
@@ -149,14 +143,14 @@ class Semibook implements Iterable<Market.Offer> {
 
   /** Stop listening to events from mangrove */
   disconnect(): void {
-    this.market.mgv._provider.off("block", this.#blockEventCallback);
+    this.market.mgv.provider.off("block", this.#blockEventCallback);
   }
 
   async requestOfferListPrefix(
     options: Semibook.Options
   ): Promise<Market.Offer[]> {
     return await this.#fetchOfferListPrefix(
-      await this.market.mgv._provider.getBlockNumber(),
+      await this.market.mgv.provider.getBlockNumber(),
       undefined, // Start from best offer
       options
     );
@@ -178,7 +172,7 @@ class Semibook implements Iterable<Market.Offer> {
       offerId
     );
     return {
-      next: this.#rawIdToId(offer.next),
+      next: Semibook.rawIdToId(offer.next),
       offer_gasbase: details.offer_gasbase.toNumber(),
       ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
         this.market,
@@ -201,7 +195,7 @@ class Semibook implements Iterable<Market.Offer> {
    */
   async getConfig(blockNumber?: number): Promise<Mangrove.LocalConfig> {
     const rawConfig = await this.getRawConfig(blockNumber);
-    return this.#rawConfigToConfig(rawConfig);
+    return this.#rawLocalConfigToLocalConfig(rawConfig.local);
   }
 
   async getRawConfig(blockNumber?: number): Promise<Mangrove.RawConfig> {
@@ -518,7 +512,6 @@ class Semibook implements Iterable<Market.Offer> {
     market: Market,
     ba: Market.BA,
     eventListener: Semibook.EventListener,
-    blockListener: Semibook.BlockListener,
     options: Semibook.Options
   ) {
     if (!canConstructSemibook) {
@@ -534,10 +527,7 @@ class Semibook implements Iterable<Market.Offer> {
     this.#canInitialize = true;
     this.#cacheLock = new Mutex();
 
-    this.#blockEventCallback = (blockNumber: number) =>
-      this.#handleBlockEvent(blockNumber);
     this.#eventListener = eventListener;
-    this.#blockListener = blockListener;
     this.#eventFilter = this.#createEventFilter();
 
     this.#offerCache = new Map();
@@ -547,16 +537,19 @@ class Semibook implements Iterable<Market.Offer> {
     if (!this.#canInitialize) return;
     this.#canInitialize = false;
 
-    // To avoid missing any blocks, we register the event listener before
+    // To avoid missing any events, we register the event listener before
     // reading the offer list. However, the events must not be processed
     // before the semibook has been initialized. This is ensured by
     // locking the cache and having the event listener await and take that lock.
     await this.#cacheLock.runExclusive(async () => {
-      this.market.mgv._provider.on("block", this.#blockEventCallback);
+      // handle provider events
+      this.market.mgv.provider.on(this.#eventFilter, (log) => {
+        this.#handleBookEventFromProvider(log);
+      });
 
       // To ensure consistency in this cache, everything is initially fetched from a specific block
       this.#lastReadBlockNumber =
-        await this.market.mgv._provider.getBlockNumber();
+        await this.market.mgv.provider.getBlockNumber();
       const localConfig = await this.getConfig(this.#lastReadBlockNumber);
       this.#offer_gasbase = localConfig.offer_gasbase;
 
@@ -575,25 +568,15 @@ class Semibook implements Iterable<Market.Offer> {
     });
   }
 
-  lastReadBlockNumber(): number {
-    return this.#lastReadBlockNumber;
+  #handleBookEventFromProvider(ethersLog: ethers.providers.Log): void {
+    this.#logQueue.push(ethersLog);
+    this.#handleBookEvents();
   }
 
-  async #handleBlockEvent(blockNumber: number): Promise<void> {
+  async #handleBookEvents() {
     await this.#cacheLock.runExclusive(async () => {
-      // During initialization events may queue up, even some for the
-      // initialization block or previous ones; These should be disregarded.
-      if (blockNumber <= this.#lastReadBlockNumber) {
-        return;
-      }
-      const logs = await this.market.mgv._provider.getLogs({
-        fromBlock: blockNumber,
-        toBlock: blockNumber,
-        ...this.#eventFilter,
-      });
-      logs.forEach((l) => this.#handleBookEvent(l));
-      this.#lastReadBlockNumber = blockNumber;
-      this.#blockListener(this.#lastReadBlockNumber);
+      this.#logQueue.forEach((l) => this.#handleBookEvent(l));
+      this.#logQueue = [];
     });
   }
 
@@ -614,8 +597,8 @@ class Semibook implements Iterable<Market.Offer> {
       case "OfferWrite": {
         // We ignore the return value here because the offer may have been outside the local
         // cache, but may now enter the local cache due to its new price.
-        const id = this.#rawIdToId(event.args.id);
-        const prev = this.#rawIdToId(event.args.prev);
+        const id = Semibook.rawIdToId(event.args.id);
+        const prev = Semibook.rawIdToId(event.args.prev);
         let expectOfferInsertionInCache = true;
         this.#removeOffer(id);
 
@@ -666,7 +649,7 @@ class Semibook implements Iterable<Market.Offer> {
       }
 
       case "OfferFail": {
-        const id = this.#rawIdToId(event.args.id);
+        const id = Semibook.rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(id);
         this.#eventListener({
           cbArg: {
@@ -686,7 +669,7 @@ class Semibook implements Iterable<Market.Offer> {
       }
 
       case "OfferSuccess": {
-        const id = this.#rawIdToId(event.args.id);
+        const id = Semibook.rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(id);
         this.#eventListener({
           cbArg: {
@@ -705,7 +688,7 @@ class Semibook implements Iterable<Market.Offer> {
       }
 
       case "OfferRetract": {
-        const id = this.#rawIdToId(event.args.id);
+        const id = Semibook.rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(id);
         this.#eventListener({
           cbArg: {
@@ -722,6 +705,15 @@ class Semibook implements Iterable<Market.Offer> {
 
       case "SetGasbase":
         this.#offer_gasbase = event.args.offer_gasbase.toNumber();
+        this.#eventListener({
+          cbArg: {
+            type: event.name,
+            ba: this.ba,
+          },
+          event,
+          ethersLog: ethersLog,
+        });
+
         break;
       default:
         throw Error(`Unknown event ${event}`);
@@ -867,7 +859,7 @@ class Semibook implements Iterable<Market.Offer> {
         const offer = offers[index];
         const detail = details[index];
         return {
-          next: this.#rawIdToId(offer.next),
+          next: Semibook.rawIdToId(offer.next),
           offer_gasbase: detail.offer_gasbase.toNumber(),
           ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
             this.market,
@@ -883,26 +875,35 @@ class Semibook implements Iterable<Market.Offer> {
 
       result.push(...chunk);
 
-      fromId = this.#rawIdToId(_nextId);
+      fromId = Semibook.rawIdToId(_nextId);
     } while (!processChunk(chunk, result) && fromId !== undefined);
 
     return result;
   }
 
-  #rawConfigToConfig(cfg: Mangrove.RawConfig): Mangrove.LocalConfig {
+  #rawLocalConfigToLocalConfig(
+    local: Mangrove.RawConfig["local"]
+  ): Mangrove.LocalConfig {
     const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
+    return Semibook.rawLocalConfigToLocalConfig(local, outbound_tkn.decimals);
+  }
+
+  static rawLocalConfigToLocalConfig(
+    local: Mangrove.RawConfig["local"],
+    outboundDecimals: number
+  ): Mangrove.LocalConfig {
     return {
-      active: cfg.local.active,
-      fee: cfg.local.fee.toNumber(),
-      density: outbound_tkn.fromUnits(cfg.local.density),
-      offer_gasbase: cfg.local.offer_gasbase.toNumber(),
-      lock: cfg.local.lock,
-      best: this.#rawIdToId(cfg.local.best),
-      last: this.#rawIdToId(cfg.local.last),
+      active: local.active,
+      fee: local.fee.toNumber(),
+      density: UnitCalculations.fromUnits(local.density, outboundDecimals),
+      offer_gasbase: local.offer_gasbase.toNumber(),
+      lock: local.lock,
+      best: Semibook.rawIdToId(local.best),
+      last: Semibook.rawIdToId(local.last),
     };
   }
 
-  #rawIdToId(rawId: BigNumber): number | undefined {
+  static rawIdToId(rawId: BigNumber): number | undefined {
     const id = rawId.toNumber();
     return id === 0 ? undefined : id;
   }
@@ -934,7 +935,7 @@ class Semibook implements Iterable<Market.Offer> {
         : [topics0, quote_padded, base_padded];
 
     return {
-      address: this.market.mgv._address,
+      address: this.market.mgv.address,
       topics: topics,
     };
   }

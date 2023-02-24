@@ -25,25 +25,31 @@ let testProvider: Provider; // Only used to read state for assertions, not assoc
 let cleanerProvider: Provider; // Tied to the cleaner bot's mgvTestUtil.Account
 
 let mgv: Mangrove;
+let mgvAdmin: Mangrove;
+let mgvConfig: Mangrove;
+
 let market: Market;
 
 describe("MarketCleaner integration tests", () => {
-  before(async function () {
-    testProvider = ethers.getDefaultProvider(this.server.url);
-  });
-
   after(async function () {
     await mgvTestUtil.logAddresses();
   });
 
   beforeEach(async function () {
-    mgvTestUtil.setConfig(
-      await Mangrove.connect({
-        privateKey: this.accounts.deployer.key,
-        provider: this.server.url,
-      }),
-      this.accounts
-    );
+    testProvider = ethers.getDefaultProvider(this.server.url);
+
+    mgvConfig = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: this.server.url,
+    });
+
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: mgvConfig.provider,
+    });
+
+    mgvTestUtil.setConfig(mgvConfig, this.accounts, mgvAdmin);
+
     maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     cleaner = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Cleaner);
 
@@ -55,19 +61,21 @@ describe("MarketCleaner integration tests", () => {
     });
     market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    cleanerProvider = mgv._provider;
+    cleanerProvider = mgv.provider;
 
     // Turn up the Mangrove gasprice to increase the bounty
     await mgvTestUtil.setMgvGasPrice(50);
 
     balancesBefore = await mgvTestUtil.getBalances(accounts, testProvider);
-    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
+    mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
 
   afterEach(async function () {
     mgvTestUtil.stopPollOfTransactionTracking();
     market.disconnect();
     mgv.disconnect();
+    mgvConfig.disconnect();
+    mgvAdmin.disconnect();
 
     const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
     mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);

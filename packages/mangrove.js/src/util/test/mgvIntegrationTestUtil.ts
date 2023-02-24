@@ -39,6 +39,7 @@ export type Addresses = {
 let addresses: Addresses;
 
 let mgv: Mangrove;
+let mgvAdmin: Mangrove;
 let signers: any = {};
 
 // With the removal of hardhat, there is no "default chain" anymore
@@ -47,10 +48,15 @@ let signers: any = {};
 // We minimally disrupt this library and just add a global "mangrove"
 // to be set early in the tests.
 // TODO: Remove this hack, and either remove this lib or add an `mgv` param everywhere.
-export const setConfig = (_mgv: Mangrove, accounts: any) => {
+export const setConfig = (
+  _mgv: Mangrove,
+  accounts: any,
+  _mgvAdmin?: Mangrove
+) => {
   mgv = _mgv;
+  mgvAdmin = _mgvAdmin;
   for (const [name, { key }] of Object.entries(accounts) as any) {
-    signers[name] = new ethers.Wallet(key, mgv._provider);
+    signers[name] = new ethers.Wallet(key, mgv.provider);
   }
 };
 
@@ -59,7 +65,7 @@ export const getAddresses = async (): Promise<Addresses> => {
     const mg = await mgv.contract;
     const tm = await Mangrove.typechain.SimpleTestMaker__factory.connect(
       mgv.getAddress("SimpleTestMaker"),
-      mgv._signer
+      mgv.signer
     );
     const ta = mgv.token("TokenA").contract;
     const tb = mgv.token("TokenB").contract;
@@ -222,7 +228,7 @@ export type NewOffer = {
   gives?: ethers.BigNumberish;
   gasreq?: ethers.BigNumberish;
   shouldFail?: boolean;
-  shouldAbort?: boolean;
+  shouldReturnData?: boolean;
   shouldRevert?: boolean;
 };
 
@@ -238,16 +244,99 @@ let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
 export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
 
 /**
- * Waits for last tx to be generated and optionally the market's books to be synced
- * @param market wait for books in this market to be in sync
+ * Waits for last tx to be generated and optionally the market's books to be synced.
+ * WARNING: If `market` is given, then `SetGasbase` events (with no actual change to gasbase)
+ * are provoked to gage semibook-states. Handle accordingly in your test code.
+ * @param market wait for books in this market to be in sync.
  */
 export async function waitForBooksForLastTx(market?: Market) {
   // Wait for txs so we can get the right block number for them
   await eventsForLastTxHaveBeenGenerated();
+  if (!isTrackingPolls) {
+    throw Error(
+      "call initPollOfTransactionTracking before trying to await waitForBooksForLastTx"
+    );
+  }
   if (market) {
-    // this may be a block number slightly larger, but for tests that is ok.
-    const lastBlock = await market.mgv._provider.getBlockNumber();
-    await market.afterBlock(lastBlock, () => {});
+    /*
+      Provoke and then listen specifically for SetGasbase events for each semibook.
+      As events are received in the order over they are produced over websockets, when
+      these SetGasbase-events are processed by the semibooks, we know that any
+      previously emitted events have also been processed
+    */
+
+    let asksPromiseResolve: (value?: any) => void;
+    const askPromise = new Promise((resolve) => {
+      asksPromiseResolve = resolve;
+    });
+
+    // set up semibook subscribers
+    const asksCB = (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent
+    ) => {
+      if (cbArg.ba === "asks" && bookEvent.name === "SetGasbase") {
+        asksPromiseResolve();
+      }
+    };
+
+    let bidsPromiseResolve: (value?: any) => void;
+    const bidsPromise = new Promise((resolve) => {
+      bidsPromiseResolve = resolve;
+    });
+
+    const bidsCB = (
+      cbArg: Market.BookSubscriptionCbArgument,
+      bookEvent: Market.BookSubscriptionEvent
+    ) => {
+      if (cbArg.ba === "bids" && bookEvent.name === "SetGasbase") {
+        bidsPromiseResolve();
+      }
+    };
+
+    market.subscribe(asksCB);
+    market.subscribe(bidsCB);
+
+    // we provoke both semibooks to process events by
+    // sending a setGasbase events to both books
+    const localConfig = await market.config();
+    const asksGasBase = localConfig.asks.offer_gasbase;
+    const bidsGasBase = localConfig.bids.offer_gasbase;
+
+    if (!mgvAdmin) {
+      throw Error("_mgvAdmin is null. Setup _mgvAdmin via setConfig!");
+    }
+
+    await waitForTransaction(
+      mgvAdmin.contract.setGasbase(
+        market.base.address,
+        market.quote.address,
+        asksGasBase
+      )
+    );
+
+    await waitForTransaction(
+      mgvAdmin.contract.setGasbase(
+        market.quote.address,
+        market.base.address,
+        bidsGasBase
+      )
+    );
+
+    // and now wait for both
+    await Promise.all([askPromise, bidsPromise])
+      .then(
+        () => {},
+        (reason) => {
+          throw new Error(
+            `Error in waiting for synthetic SetGasbase events in waitForBooksForLastTx: ${reason}`
+          );
+        }
+      )
+      .finally(() => {
+        market.unsubscribe(asksCB);
+        market.unsubscribe(bidsCB);
+      });
   }
 }
 
@@ -336,7 +425,6 @@ export const postNewOffer = async ({
   gives = 1000000,
   gasreq = 5e4,
   shouldFail = false,
-  shouldAbort = false,
   shouldRevert = false,
 }: NewOffer): Promise<void> => {
   const { inboundToken, outboundToken } = getTokens(market, ba);
@@ -358,9 +446,6 @@ export const postNewOffer = async ({
 
   await waitForTransaction(
     maker.connectedContracts.testMaker.shouldFail(shouldFail)
-  );
-  await waitForTransaction(
-    maker.connectedContracts.testMaker.shouldAbort(shouldAbort)
   );
   await waitForTransaction(
     maker.connectedContracts.testMaker.shouldRevert(shouldRevert)

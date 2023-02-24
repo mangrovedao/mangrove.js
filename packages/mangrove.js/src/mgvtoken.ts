@@ -15,6 +15,40 @@ namespace MgvToken {
   };
 }
 
+// Used to ease the use of approve functions
+export type ApproveArgs =
+  | Bigish
+  | ethers.Overrides
+  | { amount: Bigish; overrides: ethers.Overrides };
+
+function convertToApproveArgs(arg: ApproveArgs): {
+  amount?: Bigish;
+  overrides: ethers.Overrides;
+} {
+  let amount: Bigish;
+  let overrides: ethers.Overrides;
+  if (arg["amount"]) {
+    amount = arg["amount"];
+  } else if (typeof arg != "object") {
+    amount = arg;
+  }
+  if (arg["overrides"]) {
+    overrides = arg["overrides"];
+  } else if (typeof arg === "object") {
+    overrides = arg as ethers.Overrides;
+  }
+
+  if (amount && overrides) {
+    return { amount, overrides };
+  } else if (amount) {
+    return { amount, overrides: {} };
+  } else if (overrides) {
+    return { overrides: overrides };
+  } else {
+    return { overrides: {} };
+  }
+}
+
 class MgvToken {
   mgv: Mangrove;
   name: string;
@@ -23,7 +57,6 @@ class MgvToken {
   decimals: number;
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
-  unitCalculations: UnitCalculations;
   constructor(
     name: string,
     mgv: Mangrove,
@@ -51,9 +84,8 @@ class MgvToken {
 
     this.contract = typechain.TestToken__factory.connect(
       this.address,
-      this.mgv._signer
+      this.mgv.signer
     );
-    this.unitCalculations = new UnitCalculations();
   }
 
   /**
@@ -69,7 +101,7 @@ class MgvToken {
    * ```
    */
   fromUnits(amount: string | number | ethers.BigNumber): Big {
-    return this.unitCalculations.fromUnits(amount, this.decimals);
+    return UnitCalculations.fromUnits(amount, this.decimals);
   }
   /**
    * Convert base/quote from public amount to internal contract amount.
@@ -86,7 +118,7 @@ class MgvToken {
    * ```
    */
   toUnits(amount: Bigish): ethers.BigNumber {
-    return this.unitCalculations.toUnits(amount, this.decimals);
+    return UnitCalculations.toUnits(amount, this.decimals);
   }
 
   /**
@@ -115,10 +147,10 @@ class MgvToken {
     params: { owner?: string; spender?: string } = {}
   ): Promise<Big> {
     if (typeof params.owner === "undefined") {
-      params.owner = await this.mgv._signer.getAddress();
+      params.owner = await this.mgv.signer.getAddress();
     }
     if (typeof params.spender === "undefined") {
-      params.spender = this.mgv._address;
+      params.spender = this.mgv.address;
     }
     const amount = await this.contract.allowance(params.owner, params.spender);
     return this.fromUnits(amount);
@@ -146,11 +178,8 @@ class MgvToken {
   /**
    * Set approval for Mangrove on `amount`.
    */
-  approveMangrove(
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
-  ): Promise<ethers.ContractTransaction> {
-    return this.approve(this.mgv._address, arg, overrides);
+  approveMangrove(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
+    return this.approve(this.mgv.address, arg);
   }
 
   /**
@@ -158,13 +187,14 @@ class MgvToken {
    */
   approve(
     spender: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
-    const _amount = arg.amount
-      ? this.toUnits(arg.amount)
-      : ethers.constants.MaxUint256;
-    return this.contract.approve(spender, _amount, overrides);
+    const args = convertToApproveArgs(arg);
+    const _amount =
+      "amount" in args
+        ? this.toUnits(args.amount)
+        : ethers.constants.MaxUint256;
+    return this.contract.approve(spender, _amount, args.overrides);
   }
 
   /**

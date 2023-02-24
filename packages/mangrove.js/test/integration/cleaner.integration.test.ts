@@ -26,7 +26,7 @@ describe("Cleaner integration tests suite", () => {
     // Workaround for the fact that Ethers.js does not expose Provider.pollingInterval in its type declarations
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    mgv._provider.pollingInterval = 10;
+    mgv.provider.pollingInterval = 10;
   });
 
   afterEach(async () => {

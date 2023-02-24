@@ -29,11 +29,6 @@ type RawOfferData = {
 };
 
 class TradeEventManagement {
-  mangroveUtils: UnitCalculations;
-  constructor(mangroveUtils?: UnitCalculations) {
-    this.mangroveUtils = mangroveUtils ? mangroveUtils : new UnitCalculations();
-  }
-
   rawOfferToOffer(
     market: Market,
     ba: Market.BA,
@@ -88,10 +83,10 @@ class TradeEventManagement {
         event.args.takerGot.add(event.args.feePaid ?? ethers.BigNumber.from(0)),
         event.args.takerGave
       ),
-      bounty: this.mangroveUtils.fromUnits(event.args.penalty, 18),
+      bounty: UnitCalculations.fromUnits(event.args.penalty, 18),
       feePaid:
         "feePaid" in event.args
-          ? this.mangroveUtils.fromUnits(event.args.feePaid, 18)
+          ? UnitCalculations.fromUnits(event.args.feePaid, 18)
           : Big(0),
     };
   }
@@ -186,7 +181,19 @@ class TradeEventManagement {
       takerGave: ethers.BigNumber
     ) => boolean
   ): Market.Summary {
-    return this.createSummaryFromEvent(evt, got, gave, partialFillFunc);
+    return this.createSummaryFromEvent(
+      {
+        args: {
+          takerGot: evt.args.takerGot,
+          takerGave: evt.args.takerGave,
+          penalty: evt.args.bounty,
+          feePaid: evt.args.fee,
+        },
+      },
+      got,
+      gave,
+      partialFillFunc
+    );
   }
 
   createRestingOrderFromEvent(

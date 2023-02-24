@@ -4,7 +4,6 @@ import Mangrove from "./mangrove";
 import MgvToken from "./mgvtoken";
 import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
-import { Deferred } from "./util";
 import Trade from "./util/trade";
 
 let canConstructMarket = false;
@@ -24,7 +23,6 @@ export const bookOptsDefault: Market.BookOptions = {
 };
 
 import type { Awaited } from "ts-essentials";
-import ThresholdBlockSubscriptions from "./ThresholdBlockSubscriptions";
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
@@ -68,22 +66,23 @@ namespace Market {
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
+  export type OrderRoute = "Mangrove" | "MangroveOrder";
+
   export type TradeParams = {
+    forceRoutingToMangroveOrder?: boolean;
     slippage?: number;
-  } & ({ mangroveOrder?: MangroveOrderParams } | { offerId?: number }) &
+    fillOrKill?: boolean;
+    expiryDate?: number;
+  } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
     (
       | { volume: Bigish; price: Bigish }
       | { total: Bigish; price: Bigish }
       | { wants: Bigish; gives: Bigish; fillWants?: boolean }
     );
 
-  export type MangroveOrderParams =
-    | { fillOrKill: boolean }
-    | {
-        expiryDate?: number;
-        restingOrder: boolean;
-        provision: Bigish;
-      };
+  export type RestingOrderParams = {
+    provision: Bigish;
+  };
 
   export type SnipeParams = {
     targets: {
@@ -122,6 +121,11 @@ namespace Market {
     what: "base" | "quote";
   };
   export type DirectionlessVolumeParams = Omit<VolumeParams, "to">;
+
+  export type OptionalParams = {
+    bookOptions: Market.BookOptions;
+    noInit: boolean;
+  };
 
   /**
    * Options that control how the book cache behaves.
@@ -178,7 +182,7 @@ namespace Market {
 
   export type BookSubscriptionCbArgument = {
     ba: Market.BA;
-    offerId: number;
+    offerId?: number;
     offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
     | { type: "OfferWrite" }
@@ -191,6 +195,7 @@ namespace Market {
       }
     | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
     | { type: "OfferRetract" }
+    | { type: "SetGasbase" }
   );
 
   export type MarketCallback<T> = (
@@ -233,7 +238,6 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
-  #blockSubscriptions: ThresholdBlockSubscriptions;
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
   #initClosure?: () => Promise<void>;
@@ -241,12 +245,13 @@ class Market {
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
-  static async connect(params: {
-    mgv: Mangrove;
-    base: string;
-    quote: string;
-    bookOptions?: Market.BookOptions;
-  }): Promise<Market> {
+  static async connect(
+    params: {
+      mgv: Mangrove;
+      base: string;
+      quote: string;
+    } & Partial<Market.OptionalParams>
+  ): Promise<Market> {
     canConstructMarket = true;
     const market = new Market(params);
     canConstructMarket = false;
@@ -317,36 +322,16 @@ class Market {
       this,
       "asks",
       (e) => this.#semibookEventCallback(e),
-      (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("asks")
     );
     const bidsPromise = Semibook.connect(
       this,
       "bids",
       (e) => this.#semibookEventCallback(e),
-      (n) => this.#semibookBlockCallback(n),
       getSemibookOpts("bids")
     );
     this.#asksSemibook = await asksPromise;
     this.#bidsSemibook = await bidsPromise;
-
-    // start block events from the last block seen by both semibooks
-    const lastBlock = Math.min(
-      this.#asksSemibook.lastReadBlockNumber(),
-      this.#bidsSemibook.lastReadBlockNumber()
-    );
-    if (!lastBlock) {
-      throw Error("Could not retrieve last block number");
-    }
-    this.#blockSubscriptions = new ThresholdBlockSubscriptions(lastBlock, 2);
-  }
-
-  #semibookBlockCallback(n: number): void {
-    // This callback may be called by the semibooks before initialization is complete,
-    // so #blockSubscriptions may not have been initialized yet.
-    if (this.#blockSubscriptions) {
-      this.#blockSubscriptions.increaseCount(n);
-    }
   }
 
   async #semibookEventCallback({
@@ -392,11 +377,6 @@ class Market {
       asks: this.#asksSemibook,
       bids: this.#bidsSemibook,
     };
-  }
-
-  /** Trigger `cb` after block `n` has been seen. */
-  afterBlock<T>(n: number, cb: (number) => T): Promise<T> {
-    return this.#blockSubscriptions.subscribe(n, cb);
   }
 
   /**
@@ -469,8 +449,8 @@ class Market {
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be true.
-   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
+   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`.
+   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`.
    * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
@@ -484,22 +464,25 @@ class Market {
    *
    * @example
    * ```
-   * const market = await mgv.market({base:"USDC",quote:"DAI"}
+   * const market = await mgv.market({base:"USDC",quote:"DAI"};
    * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
    * ```
    */
   buy(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
-    return this.trade.buy(params, overrides, this);
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
+    return this.trade.order("buy", params, this, overrides);
   }
 
   /**
    * Market sell order. Will attempt to sell base token for quote tokens.
    * Params can be of the form:
-   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`. Set `price` to null for a true market order. `fillWants` will be false.
-   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`. Set `price` to null. `fillWants` will be true.
+   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`.
+   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`.
    * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
@@ -513,15 +496,18 @@ class Market {
    *
    * @example
    * ```
-   * const market = await mgv.market({base:"USDC",quote:"DAI"}
+   * const market = await mgv.market({base:"USDC",quote:"DAI"})
    * market.sell({volume: 100, price: 1})
    * ```
    */
   sell(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
-    return this.trade.sell(params, overrides, this);
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
+    return this.trade.order("sell", params, this, overrides);
   }
 
   /**
@@ -541,8 +527,11 @@ class Market {
   snipe(
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.OrderResult> {
-    return this.trade.snipe(params, overrides, this);
+  ): Promise<{
+    result: Promise<Market.OrderResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
+    return this.trade.snipe(params, this, overrides);
   }
 
   /**
@@ -561,7 +550,7 @@ class Market {
     params: Market.SnipeParams,
     overrides: ethers.Overrides = {}
   ): Promise<Market.RawSnipeParams> {
-    return this.trade.getRawSnipeParams(params, overrides, this);
+    return this.trade.getRawSnipeParams(params, this, overrides);
   }
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
@@ -661,9 +650,9 @@ class Market {
   }
 
   /**
-   * Subscribe to orderbook updates.
+   * Subscribe to order book updates.
    *
-   * `cb` gets called whenever the orderbook is updated.
+   * `cb` gets called whenever the order book is updated.
    *  Its first argument `event` is a summary of the event. It has the following properties:
    *
    * * `type` the type of change. May be: * `"OfferWrite"`: an offer was
@@ -712,80 +701,6 @@ class Market {
         params.filter = filter;
       }
       this.#subscriptions.set(cb as Market.StorableMarketCallback, params);
-    });
-  }
-
-  /** Await until mangrove.js has processed an event that matches `filter` as
-   * part of the transaction generated by `tx`. The goal is to reuse the event
-   * processing facilities of market.ts as much as possible but still be
-   * tx-specific (and in particular fail if the tx fails).  Alternatively one
-   * could just use `await (await tx).wait(1)` but then you would not get the
-   * context provided by market.ts (current position of a new offer in the OB,
-   * for instance).
-   *
-   * Warning: if `txPromise` has already been `await`ed, its result may have
-   * already been processed by the semibook event loop, so the promise will
-   * never fulfill. */
-
-  onceWithTxPromise<T>(
-    txPromise: Promise<ethers.ContractTransaction>,
-    cb: Market.MarketCallback<T>,
-    filter?: Market.MarketFilter
-  ): Promise<T> {
-    return new Promise((ok, ko) => {
-      const txHashDeferred = new Deferred<string>();
-      const filterPromises = [];
-      let someMatch = false;
-      const _filter = async (
-        cbArg: Market.BookSubscriptionCbArgument,
-        event: Market.BookSubscriptionEvent,
-        ethersEvent: ethers.ethers.providers.Log
-      ) => {
-        const promise = (async () => {
-          const goodTx =
-            (await txHashDeferred.promise) === ethersEvent.transactionHash;
-          const match = filter(cbArg, event, ethersEvent) && goodTx;
-          someMatch = someMatch || match;
-          return match;
-        })();
-        filterPromises.push(promise);
-        return promise;
-      };
-      this.once(cb, _filter).then(ok, (e) =>
-        ko({ revert: false, exception: e })
-      );
-
-      txPromise
-        .then((resp) => {
-          // Warning: if the tx nor any with the same nonce is ever mined,
-          // the `once` and block callbacks will never be triggered and you will memory leak by queuing tasks.
-          txHashDeferred.resolve(resp.hash);
-          resp
-            .wait(1)
-            .then((recp) => {
-              this.afterBlock(recp.blockNumber, async () => {
-                this.unsubscribe(cb);
-                // only check if someMatch after the filters have executed:
-                await Promise.all(filterPromises);
-                if (!someMatch) {
-                  ko({
-                    revert: false,
-                    exception: "tx mined but filter never returned true",
-                  });
-                }
-              });
-            })
-            .catch((e) => {
-              txHashDeferred.reject(e);
-              this.unsubscribe(cb);
-              ko({ revert: true, exception: e });
-            });
-        })
-        .catch((e) => {
-          txHashDeferred.reject(e);
-          this.unsubscribe(cb);
-          ko({ revert: true, exception: e });
-        });
     });
   }
 

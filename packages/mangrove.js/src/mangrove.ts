@@ -1,15 +1,17 @@
-import { LiquidityProvider, Market, MgvToken, OfferLogic } from ".";
+import { LiquidityProvider, Market, MgvToken, OfferLogic, Semibook } from ".";
 import {
   addresses,
   defaultDisplayedDecimals,
   defaultDisplayedPriceDecimals,
   displayedDecimals as loadedDisplayedDecimals,
   displayedPriceDecimals as loadedDisplayedPriceDecimals,
+  cashness as loadedCashness,
 } from "./constants";
 import * as eth from "./eth";
-import { getAllToyENSEntries } from "./util/toyEnsEntries";
+import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
+import { ApproveArgs } from "./mgvtoken";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -50,23 +52,30 @@ namespace Mangrove {
     gasmax: number;
     dead: boolean;
   };
+
+  export type OpenMarketInfo = {
+    base: { address: string; symbol: string; decimals: number };
+    quote: { address: string; symbol: string; decimals: number };
+    asksConfig: LocalConfig;
+    bidsConfig: LocalConfig;
+  };
 }
 
 class Mangrove {
-  _provider: Provider;
-  _signer: Signer;
-  _network: eth.ProviderNetwork;
+  provider: Provider;
+  signer: Signer;
+  network: eth.ProviderNetwork;
   _readOnly: boolean;
-  _address: string;
+  address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
   cleanerContract: typechain.MgvCleaner;
+  multicallContract: typechain.Multicall2;
   // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
   // orderContract: typechain.MangroveOrder;
   orderContract: typechain.MangroveOrderEnriched;
   static typechain = typechain;
   static addresses = addresses;
-  unitCalculations = new UnitCalculations();
 
   /**
    * Creates an instance of the Mangrove Typescript object
@@ -91,16 +100,22 @@ class Mangrove {
    */
 
   static async connect(
-    options: eth.CreateSignerOptions | string = {}
+    options?: eth.CreateSignerOptions | string
   ): Promise<Mangrove> {
+    if (typeof options === "undefined") {
+      options = "http://localhost:8545";
+    }
     if (typeof options === "string") {
       options = { provider: options };
     }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
-    if (network.name === "local" && !Mangrove.addresses[network.name]) {
-      await Mangrove.fetchAllAddresses(signer.provider);
+    if ("send" in signer.provider) {
+      const devNode = new DevNode(signer.provider);
+      if (await devNode.isDevNode()) {
+        await Mangrove.initAndListenToDevNode(devNode);
+      }
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({
@@ -123,14 +138,13 @@ class Mangrove {
   }
 
   disconnect(): void {
-    this._provider.removeAllListeners();
+    this.provider.removeAllListeners();
 
     logger.debug("Disconnect from Mangrove", {
       contextInfo: "mangrove.base",
     });
   }
   //TODO types in module namespace with same name as class
-  //TODO remove _prefix on public properties
 
   constructor(params: {
     signer: Signer;
@@ -143,38 +157,39 @@ class Mangrove {
       );
     }
     // must always pass a provider-equipped signer
-    this._provider = params.signer.provider;
-    this._signer = params.signer;
-    this._network = params.network;
+    this.provider = params.signer.provider;
+    this.signer = params.signer;
+    this.network = params.network;
     this._readOnly = params.readOnly;
-    this._address = Mangrove.getAddress("Mangrove", this._network.name);
-    this.contract = typechain.Mangrove__factory.connect(
-      this._address,
-      this._signer
+    this.multicallContract = typechain.Multicall2__factory.connect(
+      Mangrove.getAddress("Multicall2", this.network.name),
+      this.signer
     );
-    const readerAddress = Mangrove.getAddress("MgvReader", this._network.name);
+    this.address = Mangrove.getAddress("Mangrove", this.network.name);
+    this.contract = typechain.Mangrove__factory.connect(
+      this.address,
+      this.signer
+    );
+    const readerAddress = Mangrove.getAddress("MgvReader", this.network.name);
     this.readerContract = typechain.MgvReader__factory.connect(
       readerAddress,
-      this._signer
+      this.signer
     );
-    const cleanerAddress = Mangrove.getAddress(
-      "MgvCleaner",
-      this._network.name
-    );
+    const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
     this.cleanerContract = typechain.MgvCleaner__factory.connect(
       cleanerAddress,
-      this._signer
+      this.signer
     );
     // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
     const orderAddress = Mangrove.getAddress(
       // "MangroveOrder",
       "MangroveOrderEnriched",
-      this._network.name
+      this.network.name
     );
     // this.orderContract = typechain.MangroveOrder__factory.connect(
     this.orderContract = typechain.MangroveOrderEnriched__factory.connect(
       orderAddress,
-      this._signer
+      this.signer
     );
   }
   /* Instance */
@@ -201,16 +216,16 @@ class Mangrove {
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(logic: string, multiMaker?: boolean): OfferLogic {
+  offerLogic(logic: string): OfferLogic {
     if (ethers.utils.isAddress(logic)) {
-      return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
+      return new OfferLogic(this, logic);
     } else {
       // loading a multi maker predeployed logic
-      const address: string = Mangrove.getAddress(logic, this._network.name);
+      const address: string = Mangrove.getAddress(logic, this.network.name);
       if (address) {
-        return new OfferLogic(this, address, true);
+        return new OfferLogic(this, address);
       } else {
-        throw Error(`Cannot find ${logic} on network ${this._network.name}`);
+        throw Error(`Cannot find ${logic} on network ${this.network.name}`);
       }
     }
   }
@@ -225,7 +240,7 @@ class Mangrove {
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
-    const EOA = await this._signer.getAddress();
+    const EOA = await this.signer.getAddress();
     if (p instanceof Market) {
       return new LiquidityProvider({
         mgv: this,
@@ -252,7 +267,7 @@ class Mangrove {
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getAddress(name: string): string {
-    return Mangrove.getAddress(name, this._network.name || "mainnet");
+    return Mangrove.getAddress(name, this.network.name || "mainnet");
   }
 
   /**
@@ -261,7 +276,7 @@ class Mangrove {
    * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.
    */
   setAddress(name: string, address: string): void {
-    Mangrove.setAddress(name, address, this._network.name || "mainnet");
+    Mangrove.setAddress(name, address, this.network.name || "mainnet");
   }
 
   /** Convert public token amount to internal token representation.
@@ -269,14 +284,22 @@ class Mangrove {
    * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
    * it is the number of decimals.
    *
+   * For convenience, has a static and an instance version.
+   *
    *  @example
    *  ```
-   *  mgv.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
+   *  Mangrove.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
+  static toUnits(
+    amount: Bigish,
+    nameOrDecimals: string | number
+  ): ethers.BigNumber {
+    return UnitCalculations.toUnits(amount, nameOrDecimals);
+  }
   toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
-    return this.unitCalculations.toUnits(amount, nameOrDecimals);
+    return Mangrove.toUnits(amount, nameOrDecimals);
   }
 
   /** Convert internal token amount to public token representation.
@@ -294,7 +317,7 @@ class Mangrove {
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
-    return this.unitCalculations.fromUnits(amount, nameOrDecimals);
+    return UnitCalculations.fromUnits(amount, nameOrDecimals);
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
@@ -324,10 +347,9 @@ class Mangrove {
 
   approveMangrove(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.token(tokenName).approveMangrove(arg, overrides);
+    return this.token(tokenName).approveMangrove(arg);
   }
 
   /**
@@ -452,17 +474,207 @@ class Mangrove {
   }
 
   /**
-   * Returns all addresses registered at the local server's Toy ENS contract.
-   * Assumes provider is connected to a local server (typically for testing/experimentation).
+   * Setup dev node necessary contracts if needed, register dev Multicall2
+   * address, listen to future additions (a script external to mangrove.js may
+   * deploy contracts during execution).
    */
-  static async fetchAllAddresses(provider: ethers.providers.Provider) {
-    const network = await eth.getProviderNetwork(provider);
-    const contracts = await getAllToyENSEntries(provider);
-    for (const { name, address, decimals } of contracts) {
+  static async initAndListenToDevNode(devNode: DevNode) {
+    const network = await eth.getProviderNetwork(devNode.provider);
+    // set necessary code
+    await devNode.setToyENSCodeIfAbsent();
+    await devNode.setMulticallCodeIfAbsent();
+    // register Multicall2
+    Mangrove.setAddress("Multicall2", devNode.multicallAddress, network.name);
+    // get currently deployed contracts & listen for future ones
+    const setAddress = (name, address, decimals) => {
       Mangrove.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
         Mangrove.setDecimals(name, decimals);
       }
+    };
+    const contracts = await devNode.watchAllToyENSEntries(setAddress);
+    for (const { name, address, decimals } of contracts) {
+      setAddress(name, address, decimals);
+    }
+  }
+
+  /**
+   * Returns open markets data according to mangrove reader.
+   * @param from: start at market `from`. Default 0.
+   * @param maxLen: max number of markets returned. Default all.
+   * @param configs: fetch market's config information. Default true.
+   * @param tokenInfo: fetch token information (symbol, decimals)
+   * @note If an open market has a token with no/bad decimals/symbol function, this function will revert.
+   */
+  async openMarketsData(
+    params: {
+      from?: number;
+      maxLen?: number | ethers.BigNumber;
+      configs?: boolean;
+      tokenInfos?: boolean;
+    } = {}
+  ): Promise<Mangrove.OpenMarketInfo[]> {
+    // set default params
+    params.from ??= 0;
+    params.maxLen ??= ethers.BigNumber.from(2).pow(256).sub(1);
+    params.configs ??= true;
+    params.tokenInfos ??= true;
+    // read open markets and their configs off mgvReader
+    const raw = await this.readerContract["openMarkets(uint256,uint256,bool)"](
+      params.from,
+      params.maxLen,
+      params.configs
+    );
+
+    // structure data object as address => (symbol,decimals,address=>config)
+    const data: Record<
+      string,
+      { symbol?: string; decimals?: number; configs?: Record<string, any> }
+    > = {};
+    raw.markets.forEach(([tkn0, tkn1], i) => {
+      data[tkn0] ??= { configs: {} };
+      data[tkn1] ??= { configs: {} };
+
+      if (params.configs) {
+        data[tkn0].configs[tkn1] = raw.configs[i].config01;
+        data[tkn1].configs[tkn0] = raw.configs[i].config10;
+      }
+    });
+
+    const addrs = Object.keys(data);
+
+    //read decimals & symbol for each token using Multicall
+    const ierc20 = typechain.IERC20__factory.createInterface();
+
+    const tryDecode = (ary: any[], fnName: "decimals" | "symbol") => {
+      return ary.forEach((returnData, i) => {
+        // will raise exception if call reverted
+        const decoded = ierc20.decodeFunctionResult(
+          fnName as any,
+          returnData
+        )[0];
+        data[addrs[i]][fnName as any] = decoded;
+      });
+    };
+
+    /* Grab decimals for all contracts */
+    const decimalArgs = addrs.map((addr) => {
+      return { target: addr, callData: ierc20.encodeFunctionData("decimals") };
+    });
+    const symbolArgs = addrs.map((addr) => {
+      return { target: addr, callData: ierc20.encodeFunctionData("symbol") };
+    });
+    const { returnData } = await this.multicallContract.callStatic.aggregate([
+      ...decimalArgs,
+      ...symbolArgs,
+    ]);
+    tryDecode(returnData.slice(0, addrs.length), "decimals");
+    tryDecode(returnData.slice(addrs.length), "symbol");
+
+    // format return value
+    return raw.markets.map(([tkn0, tkn1]) => {
+      const { baseSymbol } = Mangrove.toBaseQuoteByCashness(
+        data[tkn0].symbol,
+        data[tkn1].symbol
+      );
+      const [base, quote] =
+        baseSymbol === data[tkn0].symbol ? [tkn0, tkn1] : [tkn1, tkn0];
+
+      return {
+        base: {
+          address: base,
+          symbol: data[base].symbol,
+          decimals: data[base].decimals,
+        },
+        quote: {
+          address: quote,
+          symbol: data[quote].symbol,
+          decimals: data[quote].decimals,
+        },
+        asksConfig: params.configs
+          ? Semibook.rawLocalConfigToLocalConfig(
+              data[base].configs[quote],
+              data[base].decimals
+            )
+          : undefined,
+        bidsConfig: params.configs
+          ? Semibook.rawLocalConfigToLocalConfig(
+              data[quote].configs[base],
+              data[quote].decimals
+            )
+          : undefined,
+      };
+    });
+  }
+
+  /**
+   * Returns open markets according to mangrove reader. Will internally update Mangrove token information.
+   *
+   * @param from: start at market `from` (default: 0)
+   * @param maxLen: max number of markets returned (default: all)
+   * @param noInit: do not initialize markets (default: false)
+   * @param bookOptions: bookOptions argument to pass to every new market (default: undefined)
+   */
+  async openMarkets(
+    params: {
+      from?: number;
+      maxLen?: number;
+      noInit?: boolean;
+      bookOptions?: Market.BookOptions;
+    } = {}
+  ): Promise<Market[]> {
+    const noInit = params.noInit ?? false;
+    delete params.noInit;
+    const bookOptions = params.bookOptions;
+    delete params.bookOptions;
+    const openMarketsData = await this.openMarketsData({
+      ...params,
+      tokenInfos: true,
+      configs: false,
+    });
+    // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
+    return Promise.all(
+      openMarketsData.map(({ base, quote }) => {
+        this.token(base.symbol, {
+          address: base.address,
+          decimals: base.decimals,
+        });
+        this.token(quote.symbol, {
+          address: quote.address,
+          decimals: quote.decimals,
+        });
+        return Market.connect({
+          mgv: this,
+          base: base.symbol,
+          quote: quote.symbol,
+          bookOptions: bookOptions,
+          noInit: noInit,
+        });
+      })
+    );
+  }
+
+  // relative cashness of a token will determine which is base & which is quote
+  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of symbol string
+  setCashness(symbol: string, cashness: number) {
+    loadedCashness[symbol] = cashness;
+  }
+
+  // cashness is "how similar to cash is a token". The cashier token is the quote.
+  // toBaseQuoteByCashness orders symbols according to relative cashness.
+  // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
+  // Ordering is lex order on cashness x (string order)
+  static toBaseQuoteByCashness(symbol0: string, symbol1: string) {
+    let cash0 = 0;
+    let cash1 = 0;
+    if (symbol0 in loadedCashness && symbol1 in loadedCashness) {
+      cash0 = loadedCashness[symbol0];
+      cash1 = loadedCashness[symbol1];
+    }
+    if (cash0 < cash1 || (cash0 === cash1 && symbol0 < symbol1)) {
+      return { baseSymbol: symbol0, quoteSymbol: symbol1 };
+    } else {
+      return { baseSymbol: symbol1, quoteSymbol: symbol0 };
     }
   }
 }

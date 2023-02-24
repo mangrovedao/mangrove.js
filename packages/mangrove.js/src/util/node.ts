@@ -12,11 +12,8 @@ const path = require("path");
 const fs = require("fs");
 import { ethers } from "ethers";
 import * as eth from "../eth";
-import { Mangrove } from "..";
-import * as ToyENS from "./ToyENSCode";
-import * as Multicall from "./MulticallCode";
 import { default as nodeCleanup } from "node-cleanup";
-import { getAllToyENSEntries } from "./toyEnsEntries";
+import DevNode from "./devNode";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8545;
@@ -62,7 +59,7 @@ export const builder = (yargs) => {
       default: false,
     })
     .option("deploy", {
-      describe: "Do not spawn a new node",
+      describe: "Create utility contracts at startup time",
       type: "boolean",
       default: true,
     })
@@ -83,6 +80,17 @@ export const builder = (yargs) => {
     .option("pipe", {
       describe: "Pipe all internal anvil/script data to stdout",
       default: false,
+      type: "boolean",
+    })
+    .option("set-multicall-code-if-absent", {
+      describe: "Set Multicall code if absent",
+      default: true,
+      type: "boolean",
+    })
+    .option("set-toy-ens-code-if-absent", {
+      alias: "setToyENSCodeIfAbsent",
+      describe: "Set ToyENS code if absent",
+      default: true,
       type: "boolean",
     })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
@@ -175,7 +183,7 @@ const spawn = async (params: any) => {
 };
 
 /* Run a deployment, populate Mangrove addresses */
-const deploy = async (params: {
+type deployParams = {
   provider: JsonRpcProvider;
   stateCache: boolean;
   targetContract: string;
@@ -183,28 +191,18 @@ const deploy = async (params: {
   host: string;
   port: number;
   pipe: boolean;
-}) => {
-  // setup Toy ENS if needed
-  const toyENSCode = await params.provider.send("eth_getCode", [
-    ToyENS.address,
-    "latest",
-  ]);
-  if (toyENSCode === "0x") {
-    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-    await params.provider.send("anvil_setCode", [ToyENS.address, ToyENS.code]);
+  setMulticallCodeIfAbsent: boolean;
+  setToyENSCodeIfAbsent: boolean;
+};
+const deploy = async (params: deployParams) => {
+  // convenience: deploy ToyENS/Multicall if not in place yet and not forbidden by params
+  const devNode = new DevNode(params.provider);
+  if (params.setToyENSCodeIfAbsent) {
+    await devNode.setToyENSCodeIfAbsent();
   }
 
-  // setup Toy ENS if needed
-  const MulticallCode = await params.provider.send("eth_getCode", [
-    Multicall.address,
-    "latest",
-  ]);
-  if (MulticallCode === "0x") {
-    // will use setCode, only way to know exactly where it will be no matter the mnemonic / deriv path / etc
-    await params.provider.send("anvil_setCode", [
-      Multicall.address,
-      Multicall.code,
-    ]);
+  if (params.setMulticallCodeIfAbsent) {
+    await devNode.setMulticallCodeIfAbsent();
   }
 
   // test connectivity
@@ -281,25 +279,28 @@ const deploy = async (params: {
   Connect to a node. Optionally spawns it before connecting. Optionally runs
   initial deployment before connecting.
  */
-const connect = async (params: {
+type connectParams = {
   spawn: boolean;
   deploy: boolean;
-  url: boolean;
+  url: string;
   provider: JsonRpcProvider;
-  stateCache: boolean;
-  targetContract: string;
-  script: string;
   host: string;
   port: number;
   pipe: boolean;
-}) => {
+};
+const connect = async (params: connectParams & deployParams) => {
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
     spawnInfo = await spawn(params);
   }
 
+  const deployFn = () => {
+    return deploy(params);
+  };
+
+  // deploy immediately if requested, otherwise return a deploy function
   if (params.deploy) {
-    await deploy(params);
+    await deployFn();
   }
 
   // // convenience: try to populate global Mangrove instance if possible
@@ -318,6 +319,7 @@ const connect = async (params: {
     url: params.url,
     accounts: anvilAccounts,
     params,
+    deploy: params.deploy ? undefined : deployFn,
     snapshot: async () => {
       lastSnapshotId = await params.provider.send("evm_snapshot", []);
       snapshotBlockNumber = await params.provider.getBlockNumber();
@@ -342,21 +344,19 @@ export const node = (argv: any, useYargs: boolean = true) => {
   params.url = `http://${params.host}:${params.port}`;
   params.provider = new ethers.providers.StaticJsonRpcProvider(params.url);
 
+  const devNode = new DevNode(params.provider);
+
   return {
     connect() {
       return connect(params);
     },
-    getAllToyENSEntries() {
-      return getAllToyENSEntries(params.provider);
+    watchAllToyENSEntries() {
+      return devNode.watchAllToyENSEntries(params.provider);
     },
   };
 };
 
-node.getAllToyENSEntries = getAllToyENSEntries;
-
 export default node;
-
-export { getAllToyENSEntries };
 
 /* If running as script, start anvil. */
 if (require.main === module) {

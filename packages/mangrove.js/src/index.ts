@@ -14,7 +14,7 @@ import Semibook from "./semibook";
 import OfferLogic from "./offerLogic";
 import MgvToken from "./mgvtoken";
 import LiquidityProvider from "./liquidityProvider";
-import AaveV3Module from "./aaveV3Module";
+import TestMaker from "./util/test/TestMaker";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
 import { typechain } from "./types";
 
@@ -33,6 +33,6 @@ export {
   MgvToken,
   OfferLogic,
   LiquidityProvider,
-  AaveV3Module,
   mgvTestUtil,
+  TestMaker,
 };
