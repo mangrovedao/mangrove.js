@@ -37,15 +37,14 @@ class OfferLogic {
   }
 
   static async deploy(mgv: Mangrove): Promise<string> {
-    const signerAddress = await mgv.signer.getAddress();
     const contract = await new typechain[`OfferMaker__factory`](
       mgv.signer
     ).deploy(
       mgv.address,
-      ethers.constants.AddressZero,
-      signerAddress,
-      30000,
-      signerAddress
+      ethers.constants.AddressZero, // no router
+      await mgv.signer.getAddress(), // signer is deployer
+      50000, // 50K gasreq is large
+      ethers.constants.AddressZero // no liquidity sharing possible
     );
     await contract.deployTransaction.wait();
     return contract.address;
