@@ -16,21 +16,21 @@ const serverParams = {
 let currentProxyPort = 8546;
 
 export const mochaHooks = {
-  async beforeAll() {
-    this.server = await node(serverParams).connect();
-    this.accounts = {
-      deployer: this.server.accounts[0],
-      maker: this.server.accounts[1],
-      cleaner: this.server.accounts[2],
-      tester: this.server.accounts[3],
-      arbitrager: this.server.accounts[4],
+  async beforeAllImpl(args, hook) {
+    hook.server = await node(args).connect();
+    hook.accounts = {
+      deployer: hook.server.accounts[0],
+      maker: hook.server.accounts[1],
+      cleaner: hook.server.accounts[2],
+      tester: hook.server.accounts[3],
+      arbitrager: hook.server.accounts[4],
     };
 
-    const provider = new ethers.providers.JsonRpcProvider(this.server.url);
+    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
 
     const mgv = await Mangrove.connect({
       provider,
-      privateKey: this.accounts.deployer.key,
+      privateKey: hook.accounts.deployer.key,
     });
 
     const tokenA = mgv.token("TokenA");
@@ -39,7 +39,7 @@ export const mochaHooks = {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     mgv.provider.pollingInterval = 10;
-    await mgv.fundMangrove(10, this.accounts.deployer.address);
+    await mgv.fundMangrove(10, hook.accounts.deployer.address);
     // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
 
     await mgv.contract
@@ -50,11 +50,11 @@ export const mochaHooks = {
       .then((tx) => tx.wait());
 
     await tokenA.contract.mint(
-      this.accounts.tester.address,
+      hook.accounts.tester.address,
       mgv.toUnits(10, 18)
     );
     await tokenB.contract.mint(
-      this.accounts.tester.address,
+      hook.accounts.tester.address,
       mgv.toUnits(10, 18)
     );
 
@@ -62,17 +62,17 @@ export const mochaHooks = {
     // making sure that last one is mined before snapshotting, anvil may snapshot too early otherwise
     await tx.wait();
     mgv.disconnect();
-    await this.server.snapshot();
+    await hook.server.snapshot();
   },
 
-  async beforeEach() {
+  async beforeEachImpl(hook) {
     // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
-    if (!this.proxies) {
-      this.proxies = {};
+    if (!hook.proxies) {
+      hook.proxies = {};
     }
 
     // Tear down existing proxy - waiting for all outstanding connections to close.
-    const currentProxy = this.proxies[currentProxyPort];
+    const currentProxy = hook.proxies[currentProxyPort];
     if (currentProxy) {
       currentProxy.cancelAll = true;
       const closedDeferred = new Deferred();
@@ -118,19 +118,31 @@ export const mochaHooks = {
       },
     });
     newProxy.proxyServer.listen(currentProxyPort, serverParams.host);
-    this.proxies[currentProxyPort] = newProxy;
+    hook.proxies[currentProxyPort] = newProxy;
     // Tests reference the anvil instance through the following address.
     // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request
-    this.server.url = `http://${serverParams.host}:${currentProxyPort}`;
+    hook.server.url = `http://${serverParams.host}:${currentProxyPort}`;
 
-    await this.server.revert();
+    await hook.server.revert();
     // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
-    await this.server.snapshot();
+    await hook.server.snapshot();
+  },
+
+  async afterAllImpl(hook) {
+    if (hook.server.process) {
+      hook.server.process.kill();
+    }
+  },
+
+  async beforeAll() {
+    await mochaHooks.beforeAllImpl(serverParams, this);
+  },
+
+  async beforeEach() {
+    await mochaHooks.beforeEachImpl(this);
   },
 
   async afterAll() {
-    if (this.server.process) {
-      this.server.process.kill();
-    }
+    await mochaHooks.afterAllImpl(this);
   },
 };

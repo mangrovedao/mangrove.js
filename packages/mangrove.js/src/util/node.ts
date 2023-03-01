@@ -116,6 +116,10 @@ export const builder = (yargs) => {
       describe: "Fork URL to be given to the newly deployed node",
       type: "string",
     })
+    .option("fork-block-number", {
+      describe: "Block number to fork from",
+      type: "number",
+    })
     .option("chain-id", {
       describe: "Chain id to use in node (default is anvil's default)",
       type: "number",
@@ -164,6 +168,10 @@ type spawnParams = {
 const spawn = async (params: spawnParams) => {
   const chainIdArgs = "chainId" in params ? ["--chain-id", params.chainId] : [];
   const forkUrlArgs = "forkUrl" in params ? ["--fork-url", params.forkUrl] : [];
+  const blockNumberArgs =
+    "forkBlockNumber" in params
+      ? ["--fork-block-number", params.forkBlockNumber]
+      : [];
   const anvil = childProcess.spawn(
     "anvil",
     [
@@ -178,6 +186,11 @@ const spawn = async (params: spawnParams) => {
     ]
       .concat(chainIdArgs)
       .concat(forkUrlArgs)
+      .concat(blockNumberArgs),
+    {
+      cwd: CORE_DIR,
+    }
+
   );
 
   anvil.stdout.setEncoding("utf8");
