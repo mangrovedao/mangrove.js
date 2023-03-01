@@ -160,6 +160,7 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
 type spawnParams = {
   chainId?: number;
   forkUrl?: number;
+  forkBlockNumber?: number;
   host: string;
   port: number;
   pipe: boolean;
