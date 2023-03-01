@@ -171,10 +171,7 @@ const spawn = async (params: spawnParams) => {
       LOCAL_MNEMONIC,
     ]
       .concat(chainIdArgs)
-      .concat(forkUrlArgs),
-    {
-      cwd: CORE_DIR,
-    }
+      .concat(forkUrlArgs)
   );
 
   anvil.stdout.setEncoding("utf8");
@@ -268,12 +265,18 @@ const deploy = async (params: deployParams) => {
     await params.provider.send("anvil_loadState", [state]);
     console.log("...done.");
   } else {
-    // await provider.send("anvil_setLoggingEnabled", [true]);
+    /* The --root parameter sets the project root dir, but, importantly, the script still runs in `cwd`. If the command below was executed with cwd=CORE_DIR, forge would not look for a .env file in directories above CORE_DIR, because CORE_DIR contains a foundry.toml file. By leaving cwd as-is, forge will look look in cwd and up until it meets a foundry.toml file or a .git directory.
+
+    The above means that a .env in the current .git directory will be picked up by forge.
+
+    For more pointers see https://github.com/foundry-rs/foundry/issues/3711
+    */
     const forgeScriptCmd = `forge script \
     --rpc-url ${params.url} \
     --froms ${mnemonic.address(0)} \
     --private-key ${mnemonic.key(0)} \
     --broadcast -vvv \
+    --root ${CORE_DIR} \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
@@ -283,14 +286,7 @@ const deploy = async (params: deployParams) => {
     // this dumps the private-key but it is a test mnemonic
     console.log(forgeScriptCmd);
 
-    // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
-    const env = {
-      ...process.env,
-      MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
-      POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
-    };
-
-    await execForgeCmd(forgeScriptCmd, env, params.pipe);
+    await execForgeCmd(forgeScriptCmd, process.env, params.pipe);
 
     if (params.stateCache) {
       const stateData = await params.provider.send("anvil_dumpState", []);
