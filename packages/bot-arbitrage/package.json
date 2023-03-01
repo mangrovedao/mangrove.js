@@ -14,7 +14,7 @@
     "precommit": "lint-staged",
     "prepack": "yarn build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "build-this-package": "tsc && yarn run write-env-info-file && yarn typechain && cd mangrove-arbitrage && forge build",
+    "build-this-package": "cd mangrove-arbitrage && forge build && cd .. && yarn typechain && tsc && yarn run write-env-info-file",
     "heroku-build-this-package": "yarn run build-this-package",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "clean-this-package": "rimraf build tsconfig.tsbuildinfo",
@@ -55,7 +55,8 @@
     "find-config": "^1.0.0",
     "nyc": "^15.1.0",
     "serve-static": "^1.14.2",
-    "typechain": "^8.1.1"
+    "typechain": "^8.1.1",
+    "typescript": "^4.7.0"
   },
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
@@ -83,7 +84,6 @@
     "rimraf": "^3.0.2",
     "shelljs": "^0.8.4",
     "transparent-proxy": "^1.9.1",
-    "ts-node": "^10.2.1",
-    "typescript": "^4.4.2"
+    "ts-node": "^10.2.1"
   }
 }
