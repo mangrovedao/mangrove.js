@@ -1,0 +1,8 @@
+mgv_src/=../../node_modules/@mangrovedao/mangrove-core/src/
+mgv_lib/=../../node_modules/@mangrovedao/mangrove-core/lib/
+mgv_test/=../../node_modules/@mangrovedao/mangrove-core/test/
+mgv_script/=../../node_modules/@mangrovedao/mangrove-core/script/
+
+ds-test/=../../node_modules/@mangrovedao/mangrove-core/lib/forge-std/lib/ds-test/src/
+forge-std/=../../node_modules/@mangrovedao/mangrove-core/lib/forge-std/src/
+

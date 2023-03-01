@@ -1,6 +1,5 @@
 import { Mangrove, Market, MgvToken, ethers } from "@mangrovedao/mangrove.js";
 import UnitCalculations from "@mangrovedao/mangrove.js/dist/nodejs/util/unitCalculations";
-import { Token } from "@uniswap/sdk-core";
 import dotenvFlow from "dotenv-flow";
 import { MgvArbitrage__factory } from "./types/typechain";
 import { logger } from "./util/logger";
@@ -91,9 +90,5 @@ export class ArbBot {
       fee: fee,
       minGain: 0,
     });
-  }
-
-  mgvTokenToUniswapToken(token: MgvToken, chain: number) {
-    return new Token(chain, token.address, token.decimals);
   }
 }
