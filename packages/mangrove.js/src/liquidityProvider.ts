@@ -231,7 +231,9 @@ class LiquidityProvider {
 
     // send offer
     if (this.logic) {
-      txPromise = this.logic.contract.newOffer(
+      txPromise = this.logic.contract[
+        "newOffer(address,address,uint256,uint256,uint256)"
+      ](
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -353,7 +355,9 @@ class LiquidityProvider {
 
     // update offer
     if (this.logic) {
-      txPromise = this.logic.contract.updateOffer(
+      txPromise = this.logic.contract[
+        "updateOffer(address,address,uint256,uint256,uint256,uint256)"
+      ](
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
