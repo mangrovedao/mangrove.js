@@ -24,6 +24,5 @@ export async function handler(argv: Arguments): Promise<void> {
     },
     false
   ).connect();
-  console.log("hey?");
-  deal(argv);
+  return deal(argv);
 }
