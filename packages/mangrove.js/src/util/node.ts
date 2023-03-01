@@ -311,7 +311,6 @@ type connectParams = preConnectParams &
   deployParams;
 
 const connect = async (params: connectParams) => {
-  console.log(params);
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
     spawnInfo = await spawn(params);
