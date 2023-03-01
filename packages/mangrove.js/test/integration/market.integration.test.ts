@@ -326,6 +326,72 @@ describe("Market integration tests suite", () => {
   });
 
   describe("getPivotIdTest", () => {
+    it("returns correct Pivot ids for bids and asks", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+
+      // some bids
+      await waitForTransaction(
+        helpers.newOffer(mgv, market.quote, market.base, {
+          wants: "1",
+          gives: "1000",
+        })
+      );
+      await waitForTransaction(
+        helpers.newOffer(mgv, market.quote, market.base, {
+          wants: "1",
+          gives: "1200",
+        })
+      );
+      // some asks
+      await waitForTransaction(
+        helpers.newOffer(mgv, market.base, market.quote, {
+          wants: "1400",
+          gives: "1",
+        })
+      );
+      await waitForTransaction(
+        helpers.newOffer(mgv, market.base, market.quote, {
+          wants: "1600",
+          gives: "1",
+        })
+      );
+
+      await mgvTestUtil.waitForBooksForLastTx(market);
+
+      // Act/assert
+      assert.equal(
+        await market.getPivotId("bids", 900),
+        1,
+        "bid offer id 1 has price 1000 which is higher than 900"
+      );
+      assert.equal(
+        await market.getPivotId("bids", 1100),
+        2,
+        "bid offer id 2 has price 1200 and is higher than 1100"
+      );
+      assert.equal(
+        await market.getPivotId("bids", 1300),
+        undefined,
+        "no bid offer has price above 1300"
+      );
+      assert.equal(
+        await market.getPivotId("asks", 1300),
+        undefined,
+        "no ask offer has price below 1300"
+      );
+      assert.equal(
+        await market.getPivotId("asks", 1500),
+        1,
+        "ask offer id 1 has price 1400 which is below 1500"
+      );
+      assert.equal(
+        await market.getPivotId("asks", 1700),
+        2,
+        "ask offer id 2 has price 1600 which is below 1700"
+      );
+    });
+
     it("returns Pivot id for bids", async function () {
       // Arrange
       // let mgv:Mangrove | undefined =undefined;

@@ -13,6 +13,7 @@ import {
 } from "../types/typechain/AbstractKandelSeeder";
 
 import KandelInstance from "./kandelInstance";
+import MetadataProvider from "../util/metadataProvider";
 
 class KandelSeeder {
   mgv: Mangrove;
@@ -48,18 +49,23 @@ class KandelSeeder {
       onAave: boolean;
       base: string;
       quote: string;
-      gasprice: Big;
       liquiditySharing: boolean;
+      gaspriceFactor: number;
+      gasprice?: number; // null means use mangroves global.
     },
     overrides: ethers.Overrides = {}
   ): Promise<KandelInstance> {
     const base = this.mgv.token(params.base);
     const quote = this.mgv.token(params.quote);
 
+    const gasprice =
+      params.gaspriceFactor *
+      (params.gasprice ?? (await this.mgv.config()).gasprice);
+
     const seed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
       base: base.address,
       quote: quote.address,
-      gasprice: UnitCalculations.toUnits(params.gasprice, 0),
+      gasprice: UnitCalculations.toUnits(gasprice, 0),
       liquiditySharing: params.liquiditySharing,
     };
 
@@ -82,17 +88,19 @@ class KandelSeeder {
       switch (name) {
         case "NewKandel": {
           const kandelEvent = evt as NewKandelEvent;
-          return new KandelInstance({
+          return KandelInstance.create({
             address: kandelEvent.args.kandel,
-            mgv: this.mgv,
+            metadataProvider: MetadataProvider.create(this.mgv),
+            signer: this.mgv.signer,
           });
         }
         case "NewAaveKandel": {
           evt as NewAaveKandelEvent;
           const aaveKandelEvent = evt as NewAaveKandelEvent;
-          return new KandelInstance({
+          return KandelInstance.create({
             address: aaveKandelEvent.args.aaveKandel,
-            mgv: this.mgv,
+            metadataProvider: MetadataProvider.create(this.mgv),
+            signer: this.mgv.signer,
           });
         }
         default:

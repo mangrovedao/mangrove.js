@@ -2,6 +2,7 @@ import Mangrove from "./mangrove";
 import KandelSeeder from "./kandel/kandelSeeder";
 import KandelFarm from "./kandel/kandelFarm";
 import KandelInstance from "./kandel/kandelInstance";
+import MetadataProvider from "./util/metadataProvider";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Kandel {}
@@ -18,7 +19,11 @@ class Kandel {
   }
 
   public instance(address: string) {
-    return new KandelInstance({ address, mgv: this.mgv });
+    return KandelInstance.create({
+      address,
+      metadataProvider: MetadataProvider.create(this.mgv),
+      signer: this.mgv.signer,
+    });
   }
 
   // TODO: Factory (seeder), Repository (get instances), and Instance/Manager (work on a single instance), and some helper functions TBD where they reside.
@@ -36,7 +41,7 @@ class Kandel {
 	Utility? - list all instances, calculate distribution
   		TODO:
 				Calculatedistribution - incl needed base/quote
-        Estimate pivots
+        pivot: we should extend cache to get right pivots or call an on-chain function
 	Manage/Instance/Kandel - given instance
 			Checklist
 			Depositfunds
@@ -48,7 +53,7 @@ class Kandel {
 			Populate
 				Approve that kandel can withdraw from user
 				Populate
-			retractAndWithdraw
+			retractAndWithdraw - see KandelShutdown
 			Setgasprice
 			Setgasreq
 			Populatechunk

@@ -8,9 +8,10 @@ import { newOffer, toWei } from "../util/helpers";
 
 import { Kandel } from "../../src";
 import { Mangrove } from "../../src";
+import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import KandelFarm from "../../src/kandel/kandelFarm";
 import KandelInstance from "../../src/kandel/kandelInstance";
 
@@ -24,7 +25,6 @@ describe("Kandel integration tests suite", function () {
   let mgvAdmin: Mangrove;
 
   beforeEach(async function () {
-    //set mgv object
     mgv = await Mangrove.connect({
       provider: this.server.url,
       privateKey: this.accounts.tester.key,
@@ -53,17 +53,21 @@ describe("Kandel integration tests suite", function () {
   describe("seeder", async function () {
     [true, false].forEach((onAave) =>
       [true, false].forEach((liquiditySharing) => {
-        it(`deploys kandel and returns instance onAave:${onAave} liquiditySharing:${liquiditySharing}`, async function () {
+        it(`sow deploys kandel and returns instance onAave:${onAave} liquiditySharing:${liquiditySharing}`, async function () {
+          // Arrange
           const seeder = new Kandel({ mgv: mgv }).seeder;
 
+          // Act
           const kandel = await seeder.sow({
             base: "TokenA",
             quote: "TokenB",
-            gasprice: Big(10000),
             liquiditySharing: liquiditySharing,
             onAave: onAave,
+            gasprice: undefined,
+            gaspriceFactor: 2,
           });
 
+          // Assert
           const params = await kandel.parameters();
           assert.equal(
             params.compoundRateBase.toNumber(),
@@ -82,9 +86,36 @@ describe("Kandel integration tests suite", function () {
             onAave,
             "router should only be there for aave"
           );
+          assert.equal(
+            params.gasprice,
+            (await mgv.config()).gasprice * 2,
+            "should use Mangrove's gasprice and a multiplier."
+          );
         });
       })
     );
+    it(`sow deploys kandel with overridden gasprice for provision calculation`, async function () {
+      // Arrange
+      const seeder = new Kandel({ mgv: mgv }).seeder;
+
+      // Act
+      const kandel = await seeder.sow({
+        base: "TokenA",
+        quote: "TokenB",
+        liquiditySharing: false,
+        onAave: false,
+        gasprice: 10000,
+        gaspriceFactor: 2,
+      });
+
+      // Assert
+      const params = await kandel.parameters();
+      assert.equal(
+        params.gasprice,
+        20000,
+        "should use specified gasprice and multiplier."
+      );
+    });
   });
 
   describe("farm", async function () {
@@ -99,7 +130,7 @@ describe("Kandel integration tests suite", function () {
       await seeder.sow({
         base: "TokenA",
         quote: "TokenB",
-        gasprice: Big(10000),
+        gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: false,
       });
@@ -107,7 +138,7 @@ describe("Kandel integration tests suite", function () {
       await seeder.sow({
         base: "WETH",
         quote: "DAI",
-        gasprice: Big(10000),
+        gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: false,
       });
@@ -115,7 +146,7 @@ describe("Kandel integration tests suite", function () {
       await seeder.sow({
         base: "WETH",
         quote: "USDC",
-        gasprice: Big(10000),
+        gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: false,
       });
@@ -123,7 +154,7 @@ describe("Kandel integration tests suite", function () {
       await seeder.sow({
         base: "WETH",
         quote: "USDC",
-        gasprice: Big(10000),
+        gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: true,
       });
@@ -133,14 +164,16 @@ describe("Kandel integration tests suite", function () {
       await otherSeeder.sow({
         base: "WETH",
         quote: "USDC",
-        gasprice: Big(10000),
+        gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: true,
       });
     });
 
-    it("retrieves all kandel instances", async function () {
+    it("getKandels retrieves all kandel instances", async function () {
+      // Act
       const kandels = await farm.getKandels();
+      // Assert
       assert.equal(kandels.length, 5, "total count wrong");
       assert.equal(kandels.filter((x) => x.base == "TokenA").length, 1);
       assert.equal(kandels.filter((x) => x.base == "WETH").length, 4);
@@ -150,56 +183,123 @@ describe("Kandel integration tests suite", function () {
       assert.equal(kandels.filter((x) => x.owner == defaultOwner).length, 4);
     });
 
-    it("retrieves owned kandel instances", async function () {
+    it("getKandels retrieves owned kandel instances", async function () {
       const kandels = await farm.getKandels({ owner: defaultOwner });
       assert.equal(kandels.length, 4);
       assert.equal(kandels.filter((x) => x.owner == defaultOwner).length, 4);
     });
 
-    it("retrieves aave kandel instances", async function () {
+    it("getKandels retrieves aave kandel instances", async function () {
       const kandels = await farm.getKandels({ onAave: true });
       assert.equal(kandels.length, 2, "count wrong");
     });
 
-    it("retrieves non-aave kandel instances", async function () {
+    it("getKandels retrieves non-aave kandel instances", async function () {
       const kandels = await farm.getKandels({ onAave: false });
       assert.equal(kandels.length, 3, "count wrong");
     });
 
-    it("retrieves all market kandel instances", async function () {
+    it("getKandels retrieves all market kandel instances", async function () {
       const kandels = await farm.getKandels({ base: "WETH", quote: "USDC" });
       assert.equal(kandels.length, 3, "count wrong");
     });
-    it("retrieves all base kandel instances", async function () {
+    it("getKandels retrieves all base kandel instances", async function () {
       const kandels = await farm.getKandels({ base: "WETH" });
       assert.equal(kandels.length, 4, "count wrong");
     });
   });
 
-  [true, false].forEach((onAave) =>
-    describe(`instance onAave=${onAave}`, async function () {
+  describe("instance", async function () {
+    async function createKandel(onAave: boolean) {
+      const kandelApi = new Kandel({ mgv: mgv });
+      const seeder = new Kandel({ mgv: mgv }).seeder;
+      const kandelAddress = (
+        await seeder.sow({
+          base: "TokenA",
+          quote: "TokenB",
+          gaspriceFactor: 10,
+          liquiditySharing: false,
+          onAave: onAave,
+        })
+      ).address;
+
+      return kandelApi.instance(kandelAddress);
+    }
+    describe("router-agnostic", async function () {
       let kandel: KandelInstance;
       beforeEach(async function () {
-        const kandelApi = new Kandel({ mgv: mgv });
-        const seeder = new Kandel({ mgv: mgv }).seeder;
-        const kandelAddress = (
-          await seeder.sow({
-            base: "TokenA",
-            quote: "TokenB",
-            gasprice: Big(10000),
-            liquiditySharing: false,
-            onAave: onAave,
-          })
-        ).address;
+        kandel = await createKandel(false);
+      });
 
-        kandel = kandelApi.instance(kandelAddress);
+      it("getPivots returns pivots for current market", async function () {
+        // Arrange
+        const ratio = new Big(1.08);
+        const firstBase = Big(1);
+        const firstQuote = Big(1000);
+        const pricePoints = 6;
+        const distribution = kandel.calculateDistribution(
+          firstBase,
+          firstQuote,
+          ratio,
+          pricePoints
+        );
+        const firstAskIndex = 3;
+        const market = await kandel.createMarket(mgv);
+
+        // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
+
+        // some bids with id 1 and 2
+        await waitForTransaction(
+          helpers.newOffer(mgv, market.quote, market.base, {
+            wants: "1",
+            gives: "1050",
+          })
+        );
+        await waitForTransaction(
+          helpers.newOffer(mgv, market.quote, market.base, {
+            wants: "1",
+            gives: "1100",
+          })
+        );
+        // some asks with id 1 and 2
+        await waitForTransaction(
+          helpers.newOffer(mgv, market.base, market.quote, {
+            wants: "1300",
+            gives: "1",
+          })
+        );
+        await waitForTransaction(
+          helpers.newOffer(mgv, market.base, market.quote, {
+            wants: "1400",
+            gives: "1",
+          })
+        );
+
+        await mgvTestUtil.waitForBooksForLastTx(market);
+
+        const pivots = await kandel.getPivots(
+          market,
+          distribution,
+          firstAskIndex
+        );
+        assert.sameOrderedMembers(pivots, [1, 2, undefined, undefined, 1, 2]);
       });
-      it("has immutable data", async function () {
-        assert.equal(await kandel.base(), "TokenA");
-        assert.equal(await kandel.quote(), "TokenB");
-        assert.equal(await kandel.hasRouter(), onAave);
-        assert.equal(await kandel.reserveId(), kandel.address);
-      });
-    })
-  );
+    });
+
+    [true, false].forEach((onAave) =>
+      describe(`onAave=${onAave}`, async function () {
+        let kandel: KandelInstance;
+        beforeEach(async function () {
+          kandel = await createKandel(onAave);
+        });
+
+        it("has immutable data from chain", async function () {
+          assert.equal(await kandel.base(), "TokenA");
+          assert.equal(await kandel.quote(), "TokenB");
+          assert.equal(await kandel.hasRouter(), onAave);
+          assert.equal(await kandel.reserveId(), kandel.address);
+        });
+      })
+    );
+  });
 });
