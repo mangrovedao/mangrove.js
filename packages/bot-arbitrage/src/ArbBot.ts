@@ -1,14 +1,9 @@
 import { Mangrove, Market, MgvToken, ethers } from "@mangrovedao/mangrove.js";
 import UnitCalculations from "@mangrovedao/mangrove.js/dist/nodejs/util/unitCalculations";
-import dotenvFlow from "dotenv-flow";
-import {
-  quote as uniswapQuote,
-  getPoolContract,
-  swap,
-} from "./uniswap/libs/quote";
-import { logger } from "./util/logger";
-import { MarketPairAndFee } from "./index";
 import { Token } from "@uniswap/sdk-core";
+import dotenvFlow from "dotenv-flow";
+import { MgvArbitrage__factory } from "./types/typechain";
+import { logger } from "./util/logger";
 dotenvFlow.config();
 
 export class ArbBot {
@@ -38,133 +33,64 @@ export class ArbBot {
     }
   }
 
+  public async activateTokens(tokens: string[]) {
+    const arbAddress = Mangrove.getAddress(
+      "MgvArbitrage",
+      (await this.mgv.provider.getNetwork()).name
+    );
+    const arbContract = MgvArbitrage__factory.connect(
+      arbAddress,
+      this.mgv.signer
+    );
+    await arbContract.activateTokens(tokens);
+  }
+
   private async checkPrice(market: Market, BA: Market.BA, fee: number) {
     const bestId = market.getSemibook(BA).getBestInCache();
     const bestOffer = bestId ? await market.offerInfo(BA, bestId) : undefined;
-    let uniswapIn = BA == "asks" ? market.base : market.quote;
-    let uniswapOut = BA == "asks" ? market.quote : market.base;
-    BA == "asks" ? market.consoleAsks() : market.consoleBids();
+    let wantsToken = BA == "asks" ? market.base : market.quote;
+    let givesToken = BA == "asks" ? market.quote : market.base;
 
     if (bestOffer && bestId) {
-      const uniswapAmountOut = await uniswapQuote({
-        in: uniswapIn.address,
-        amountIn: UnitCalculations.toUnits(bestOffer.gives, uniswapIn.decimals),
-        out: uniswapOut.address,
-        fee: fee,
-        provider: this.mgv.provider,
-      });
-      let data = {
-        uniSwap: {
-          tokens: {
-            in: uniswapIn.name,
-            out: uniswapOut.name,
-          },
-          in: bestOffer.gives,
-          out: UnitCalculations.fromUnits(
-            uniswapAmountOut,
-            uniswapOut.decimals
-          ),
-        },
-        mangrove: {
-          tokens: {
-            wants: BA == "asks" ? market.quote.name : market.base.name,
-            gives: BA == "asks" ? market.base.name : market.quote.name,
-          },
-          wants: bestOffer.wants,
-          gives: bestOffer.gives,
-        },
-      };
-      logger.info("info", { data });
-      const baseBalanceNumber = await market.base.balanceOf(
-        await this.mgv.signer.getAddress()
-      );
-      const quoteBalanceNumber = await market.quote.balanceOf(
-        await this.mgv.signer.getAddress()
-      );
-      const baseBalance = UnitCalculations.toUnits(
-        baseBalanceNumber,
-        market.base.decimals
-      );
-      const quoteBalance = UnitCalculations.toUnits(
-        quoteBalanceNumber,
-        market.quote.decimals
-      );
-      logger.info("account info:", {
-        data: { base: { name: market.base.name, balance: baseBalanceNumber } },
-      });
-      logger.info("account info:", {
-        data: {
-          quote: { name: market.quote.name, balance: quoteBalanceNumber },
-        },
-      });
-
-      if (data.uniSwap.out.gt(data.mangrove.wants)) {
-        let promises = await market.snipe({
-          targets: [
-            {
-              offerId: bestId,
-              takerWants: data.mangrove.gives,
-              takerGives: data.mangrove.wants,
-            },
-          ],
-          ba: BA,
-        });
-        await promises.result;
-
-        let tx = await swap({
-          in: this.mgvTokenToUniswapToken(uniswapIn, this.mgv.network.id ?? 1),
-          out: this.mgvTokenToUniswapToken(
-            uniswapOut,
-            this.mgv.network.id ?? 1
-          ),
-          fee: fee,
-          amountIn: UnitCalculations.toUnits(
-            data.uniSwap.in,
-            uniswapIn.decimals
-          ),
-          amountOut: uniswapAmountOut,
-          signer: this.mgv.signer,
-          poolContract: this.poolContract,
-        });
-
-        const newBaseBalanceNumber = await market.base.balanceOf(
-          await this.mgv.signer.getAddress()
-        );
-        const newQuoteBalanceNumber = await market.quote.balanceOf(
-          await this.mgv.signer.getAddress()
-        );
-        const newBaseBalance = UnitCalculations.toUnits(
-          newBaseBalanceNumber,
-          market.base.decimals
-        );
-        const newQuoteBalance = UnitCalculations.toUnits(
-          newQuoteBalanceNumber,
-          market.quote.decimals
-        );
-        logger.info("info", {
-          data: {
-            base: {
-              newBalance: newBaseBalanceNumber,
-              dif: UnitCalculations.fromUnits(
-                newBaseBalance.sub(baseBalance).toString(),
-                market.base.decimals
-              ),
-            },
-          },
-        });
-        logger.info("info", {
-          data: {
-            quote: {
-              newBalance: newQuoteBalanceNumber,
-              dif: UnitCalculations.fromUnits(
-                newQuoteBalance.sub(quoteBalance).toString(),
-                market.quote.decimals
-              ),
-            },
-          },
-        });
+      try {
+        await this.doArbitrage(bestId, wantsToken, bestOffer, givesToken, fee);
+        return true;
+      } catch (e) {
+        return false;
       }
     }
+  }
+
+  private async doArbitrage(
+    bestId: number,
+    wantsToken: MgvToken,
+    bestOffer: Market.Offer,
+    givesToken: MgvToken,
+    fee: number
+  ) {
+    const arbAddress = Mangrove.getAddress(
+      "MgvArbitrage",
+      (await this.mgv.provider.getNetwork()).name
+    );
+    const arbContract = MgvArbitrage__factory.connect(
+      arbAddress,
+      this.mgv.signer
+    );
+    await arbContract.doArbitrage({
+      offerId: bestId,
+      takerWantsToken: wantsToken.address,
+      takerWants: UnitCalculations.toUnits(
+        bestOffer.gives,
+        wantsToken.decimals
+      ).toString(),
+      takerGivesToken: givesToken.address,
+      takerGives: UnitCalculations.toUnits(
+        bestOffer.wants,
+        givesToken.decimals
+      ).toString(),
+      fee: fee,
+      minGain: 0,
+    });
   }
 
   mgvTokenToUniswapToken(token: MgvToken, chain: number) {
