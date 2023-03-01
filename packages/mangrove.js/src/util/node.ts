@@ -186,11 +186,7 @@ const spawn = async (params: spawnParams) => {
     ]
       .concat(chainIdArgs)
       .concat(forkUrlArgs)
-      .concat(blockNumberArgs),
-    {
-      cwd: CORE_DIR,
-    }
-
+      .concat(blockNumberArgs)
   );
 
   anvil.stdout.setEncoding("utf8");
