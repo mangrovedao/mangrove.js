@@ -21,6 +21,15 @@
       },
       {
         "path": "./packages/bot-updategas",
+      },      
+      {
+        "path": "./packages/bot-utils",
+      },
+      {
+        "path": "./packages/bot-failing-offer",
+      },
+      {
+        "path": "./packages/bot-arbitrage",
       },
       {
         "path": "./packages/commonlib.js",

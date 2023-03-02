@@ -16,7 +16,7 @@ const serverParams = {
 let currentProxyPort = 8546;
 
 export const mochaHooks = {
-  async beforeAllImpl(args, hook) {
+  async beforeAllImpl(args: any, hook: any) {
     hook.server = await node(args).connect();
     hook.accounts = {
       deployer: hook.server.accounts[0],
@@ -65,7 +65,7 @@ export const mochaHooks = {
     await hook.server.snapshot();
   },
 
-  async beforeEachImpl(hook) {
+  async beforeEachImpl(hook: any) {
     // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
     if (!hook.proxies) {
       hook.proxies = {};
@@ -128,7 +128,7 @@ export const mochaHooks = {
     await hook.server.snapshot();
   },
 
-  async afterAllImpl(hook) {
+  async afterAllImpl(hook: any) {
     if (hook.server.process) {
       hook.server.process.kill();
     }
