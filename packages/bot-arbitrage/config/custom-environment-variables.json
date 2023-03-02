@@ -11,5 +11,17 @@
   "fee": {
     "__name": "FEE",
     "__format": "number"
+  },
+  "holdingToken": {
+    "__name": "HOLDINGTOKEN",
+    "__format": "string"
+  },
+  "exchangeFee": {
+    "__name": "EXCHANGEFEE",
+    "__format": "json"
+  },
+  "exchange": {
+    "__name": "EXCHANGE",
+    "__format": "string"
   }
 }

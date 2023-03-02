@@ -1,22 +1,21 @@
 /**
  * Integration tests of ArbBot.ts.
  */
-import { afterEach, before, beforeEach, describe, it } from "mocha";
-import * as chai from "chai";
-const { expect } = chai;
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
 import { JsonRpcProvider } from "@ethersproject/providers";
+import * as chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { afterEach, beforeEach, describe, it } from "mocha";
+const { expect } = chai;
+chai.use(chaiAsPromised);
 
-import { Mangrove, Market, MgvToken } from "@mangrovedao/mangrove.js";
-import { mgvTestUtil } from "@mangrovedao/mangrove.js";
+import { Mangrove, mgvTestUtil } from "@mangrovedao/mangrove.js";
 
-import { ethers } from "ethers";
-import { Provider } from "@ethersproject/abstract-provider";
-import { ArbBot } from "../../src/ArbBot";
-import { getPoolContract } from "../../src/uniswap/libs/quote";
 import { TestToken__factory } from "@mangrovedao/mangrove.js/src/types/typechain";
 import assert from "assert";
+import { ethers } from "ethers";
+import { ArbBot } from "../../src/ArbBot";
+import { getPoolContract } from "../../src/uniswap/libs/quote";
+import config from "../../src/util/config";
 
 let mgv: Mangrove;
 let mgvAdmin: Mangrove;
@@ -78,10 +77,10 @@ describe("ArbBot integration tests", () => {
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
-      await arbBot.run(["WETH", "DAI"], 3000);
+      await arbBot.run(["WETH", "DAI"], { fee: 3000, holdingToken: "DAI" });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
-      market = await mgv.market({ base: "WETH", quote: "DAI" }); // Why is this neccesary
+      await mgvTestUtil.waitForBooksForLastTx(market, true);
       assert.ok(!(await market.isLive("asks", offer.id)));
       assert.deepStrictEqual(
         baseBeforeBalance,
@@ -94,7 +93,7 @@ describe("ArbBot integration tests", () => {
       );
     });
 
-    it(`should should not be profitable, don't do arb`, async function () {
+    it(`should not be profitable, don't do arb`, async function () {
       let market = await mgv.market({ base: "WETH", quote: "DAI" });
       let lp = await mgv.liquidityProvider(market);
       let provision = await lp.computeAskProvision();
@@ -111,9 +110,10 @@ describe("ArbBot integration tests", () => {
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
-      await arbBot.run(["WETH", "DAI"], 3000);
+      await arbBot.run(["WETH", "DAI"], { fee: 3000, holdingToken: "DAI" });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
+      await mgvTestUtil.waitForBooksForLastTx(market, true);
       assert.ok(await market.isLive("asks", offer.id));
       assert.deepStrictEqual(
         baseBeforeBalance,
@@ -127,9 +127,103 @@ describe("ArbBot integration tests", () => {
       );
     });
 
-    // exchange on Uniswap
+    it(`should be profitable, exchange on Mangrove first`, async function () {
+      const usdc = mgv.token("USDC");
+      await impersonateTransfer({
+        provider: mgv.provider as JsonRpcProvider,
+        token: "USDC",
+        to: this.accounts.maker.address,
+        tokenAddress: usdc.address,
+        amount: usdc.toUnits(10000).toString(),
+      });
+      let usdcDaiMarket = await mgv.market({ base: "DAI", quote: "USDC" });
+      let lpDAI = await mgv.liquidityProvider(usdcDaiMarket);
+      let provisionDAI = await lpDAI.computeAskProvision();
+      await lpDAI.newAsk({ wants: 10000, gives: 10000, fund: provisionDAI });
+      await lpDAI.newBid({ wants: 10000, gives: 10000, fund: provisionDAI });
+      await lpDAI.approveAsks();
+      await lpDAI.approveBids();
 
-    // exchange on Mgv
+      let market = await mgv.market({ base: "WETH", quote: "USDC" });
+      let lp = await mgv.liquidityProvider(market);
+      let provision = await lp.computeAskProvision();
+      let offer = await lp.newAsk({ wants: 1, gives: 1, fund: provision });
+      await lp.approveAsks();
+      const poolContract = await getPoolContract({
+        in: market.base.address,
+        out: market.quote.address,
+        fee: 3000,
+        provider: mgv.provider,
+      });
+      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      await arbBot.activateTokens([
+        market.base.address,
+        market.quote.address,
+        mgv.token("DAI").address,
+      ]);
+      const mgvArbAddress = mgv.getAddress("MgvArbitrage");
+      let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
+      let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
+      await arbBot.run(["WETH", "USDC"], {
+        fee: 3000,
+        holdingToken: "DAI",
+        exchangeConfig: { exchange: "Mangrove" },
+      });
+      let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
+      let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
+      await mgvTestUtil.waitForBooksForLastTx(market, true);
+      assert.ok(!(await market.isLive("asks", offer.id)));
+      assert.deepStrictEqual(
+        baseBeforeBalance,
+        baseAfterBalance,
+        "Should have the same amount of base"
+      );
+      assert.ok(
+        quoteBeforeBalance < quoteAfterBalance,
+        "Should have gained quote"
+      );
+    });
+
+    it(`should be profitable, exchange on Uniswap first`, async function () {
+      let market = await mgv.market({ base: "WETH", quote: "USDC" });
+      let lp = await mgv.liquidityProvider(market);
+      let provision = await lp.computeAskProvision();
+      let offer = await lp.newAsk({ wants: 1, gives: 1, fund: provision });
+      await lp.approveAsks();
+      const poolContract = await getPoolContract({
+        in: market.base.address,
+        out: market.quote.address,
+        fee: 3000,
+        provider: mgv.provider,
+      });
+      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      await arbBot.activateTokens([
+        market.base.address,
+        market.quote.address,
+        mgv.token("DAI").address,
+      ]);
+      const mgvArbAddress = mgv.getAddress("MgvArbitrage");
+      let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
+      let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
+      await arbBot.run(["WETH", "USDC"], {
+        fee: 3000,
+        holdingToken: "DAI",
+        exchangeConfig: { exchange: "Uniswap", fee: 100 },
+      });
+      let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
+      let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
+      await mgvTestUtil.waitForBooksForLastTx(market, true);
+      assert.ok(!(await market.isLive("asks", offer.id)));
+      assert.deepStrictEqual(
+        baseBeforeBalance,
+        baseAfterBalance,
+        "Should have the same amount of base"
+      );
+      assert.ok(
+        quoteBeforeBalance < quoteAfterBalance,
+        "Should have gained quote"
+      );
+    });
 
     // determine gasprice and use it for minGain
 
