@@ -1,8 +1,8 @@
 import { Mangrove, ethers } from "@mangrovedao/mangrove.js";
 import { node } from "@mangrovedao/mangrove.js/dist/nodejs/util/node";
 import { mochaHooks as mgvMochahooks } from "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks";
-import * as eth from "@mangrovedao/mangrove.js/src/eth";
-import DevNode from "@mangrovedao/mangrove.js/src/util/devNode";
+import * as eth from "@mangrovedao/mangrove.js/dist/nodejs/eth";
+import DevNode from "@mangrovedao/mangrove.js/dist/nodejs/util/devNode";
 import * as childProcess from "child_process";
 import * as dotenv from "dotenv";
 

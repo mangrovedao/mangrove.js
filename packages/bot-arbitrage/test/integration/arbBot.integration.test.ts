@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { Mangrove, mgvTestUtil } from "@mangrovedao/mangrove.js";
 
-import { TestToken__factory } from "@mangrovedao/mangrove.js/src/types/typechain";
+import { TestToken__factory } from "@mangrovedao/mangrove.js/dist/nodejs/types/typechain";
 import assert from "assert";
 import { ethers } from "ethers";
 import { ArbBot } from "../../src/ArbBot";
