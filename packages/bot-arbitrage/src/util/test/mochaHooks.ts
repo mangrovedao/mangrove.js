@@ -12,6 +12,7 @@ const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
 const CORE_DIR = "";
 
 export const mochaHooks = {
+  server: { url: "", snapshot: async () => {} },
   async beforeAllImpl(args: any, hook: any) {
     hook.node = node(args);
     hook.server = await hook.node.connect();
@@ -89,13 +90,13 @@ export const mochaHooks = {
       forkBlockNumber: 39764951,
       stateCache: true,
     };
-    let hookInfo: { server: any } = { server: {} };
-    await mochaHooks.beforeAllImpl(serverParams, hookInfo);
-    const provider = new ethers.providers.JsonRpcProvider(hookInfo.server.url);
+
+    await mochaHooks.beforeAllImpl(serverParams, this);
+    const provider = new ethers.providers.JsonRpcProvider(this.server.url);
     const devNode = new DevNode(provider);
     await devNode.setToyENSCodeIfAbsent();
     await mochaHooks.deployMgvArbitrage(provider, this);
-    await hookInfo.server.snapshot();
+    await this.server.snapshot();
   },
 };
 
