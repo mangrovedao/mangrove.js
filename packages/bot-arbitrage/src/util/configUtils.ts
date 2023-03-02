@@ -33,7 +33,10 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
     };
   }
 
-  private getCorrectExchangeConfig(): UniswapExchange | MangroveExchange {
+  private getCorrectExchangeConfig():
+    | UniswapExchange
+    | MangroveExchange
+    | undefined {
     return this.getExchangeConfig() == "Mangrove"
       ? { exchange: "Mangrove" }
       : this.getExchangeConfig() == "Uniswap"
