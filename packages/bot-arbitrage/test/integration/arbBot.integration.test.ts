@@ -2,11 +2,7 @@
  * Integration tests of ArbBot.ts.
  */
 import { JsonRpcProvider } from "@ethersproject/providers";
-import * as chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import { afterEach, beforeEach, describe, it } from "mocha";
-const { expect } = chai;
-chai.use(chaiAsPromised);
 
 import { Mangrove, mgvTestUtil } from "@mangrovedao/mangrove.js";
 
@@ -15,7 +11,6 @@ import assert from "assert";
 import { ethers } from "ethers";
 import { ArbBot } from "../../src/ArbBot";
 import { getPoolContract } from "../../src/uniswap/libs/quote";
-import config from "../../src/util/config";
 
 let mgv: Mangrove;
 let mgvAdmin: Mangrove;
