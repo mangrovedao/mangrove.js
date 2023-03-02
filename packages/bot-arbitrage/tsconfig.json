@@ -2,14 +2,14 @@
   "compilerOptions": {
     "module": "CommonJS",
     "esModuleInterop": true,
+    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "target": "es2020",
     "resolveJsonModule": true,
     "strict": true,
-    "noImplicitAny": true,
     "noErrorTruncation": true,
-    "moduleResolution": "node",
     "sourceMap": true,
+    "declaration": true,
     "outDir": "build",
     "baseUrl": ".",
     "paths": {
