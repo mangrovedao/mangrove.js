@@ -247,34 +247,15 @@ describe("Kandel integration tests suite", function () {
         const market = await kandel.createMarket(mgv);
 
         // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
-
-        // some bids with id 1 and 2
-        await waitForTransaction(
-          helpers.newOffer(mgv, market.quote, market.base, {
-            wants: "1",
-            gives: "1050",
-          })
-        );
-        await waitForTransaction(
-          helpers.newOffer(mgv, market.quote, market.base, {
-            wants: "1",
-            gives: "1100",
-          })
-        );
-        // some asks with id 1 and 2
-        await waitForTransaction(
-          helpers.newOffer(mgv, market.base, market.quote, {
-            wants: "1300",
-            gives: "1",
-          })
-        );
-        await waitForTransaction(
-          helpers.newOffer(mgv, market.base, market.quote, {
-            wants: "1400",
-            gives: "1",
-          })
-        );
-
+        // prettier-ignore
+        {
+          // some bids with id 1 and 2
+          await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1050", }));
+          await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1100", }));
+          // some asks with id 1 and 2
+          await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1300", gives: "1", }));
+          await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1400", gives: "1", }));
+        }
         await mgvTestUtil.waitForBooksForLastTx(market);
 
         const pivots = await kandel.getPivots(
