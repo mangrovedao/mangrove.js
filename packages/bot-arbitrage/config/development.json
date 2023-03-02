@@ -2,5 +2,8 @@
   "logLevel": "debug",
   "markets": [["WETH", "DAI"]],
   "runEveryXMinutes": 0.5,
-  "fee": 3000
+  "fee": 3000,
+  "holdingToken": "DAI",
+  "exchangeFee": [{ "token": "USDC", "fee": 100 }],
+  "exchange": "Mangrove"
 }

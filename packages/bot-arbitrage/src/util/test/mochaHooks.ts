@@ -9,7 +9,7 @@ import * as dotenv from "dotenv";
 const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
-const CORE_DIR = "mangrove-arbitrage";
+const CORE_DIR = "";
 
 export const mochaHooks = {
   async beforeAllImpl(args, hook) {
