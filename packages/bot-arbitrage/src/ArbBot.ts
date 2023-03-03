@@ -1,7 +1,7 @@
 import { Mangrove, Market, MgvToken, ethers } from "@mangrovedao/mangrove.js";
 import UnitCalculations from "@mangrovedao/mangrove.js/dist/nodejs/util/unitCalculations";
 import dotenvFlow from "dotenv-flow";
-// import { MgvArbitrage__factory } from "./types/typechain";
+import { MgvArbitrage__factory } from "./types/typechain";
 import { logger } from "./util/logger";
 import { ArbConfig } from "./util/configUtils";
 dotenvFlow.config();
@@ -38,11 +38,11 @@ export class ArbBot {
       "MgvArbitrage",
       (await this.mgv.provider.getNetwork()).name
     );
-    // const arbContract = MgvArbitrage__factory.connect(
-    //   arbAddress,
-    //   this.mgv.signer
-    // );
-    // await arbContract.activateTokens(tokens);
+    const arbContract = MgvArbitrage__factory.connect(
+      arbAddress,
+      this.mgv.signer
+    );
+    await arbContract.activateTokens(tokens);
   }
 
   private async checkPrice(market: Market, BA: Market.BA, config: ArbConfig) {
@@ -80,68 +80,68 @@ export class ArbBot {
       "MgvArbitrage",
       (await this.mgv.provider.getNetwork()).name
     );
-    // const arbContract = MgvArbitrage__factory.connect(
-    //   arbAddress,
-    //   this.mgv.signer
-    // );
+    const arbContract = MgvArbitrage__factory.connect(
+      arbAddress,
+      this.mgv.signer
+    );
 
-    // if (holdsToken) {
-    //   await arbContract.doArbitrage({
-    //     offerId: bestId,
-    //     takerWantsToken: wantsToken.address,
-    //     takerWants: UnitCalculations.toUnits(
-    //       bestOffer.gives,
-    //       wantsToken.decimals
-    //     ).toString(),
-    //     takerGivesToken: givesToken.address,
-    //     takerGives: UnitCalculations.toUnits(
-    //       bestOffer.wants,
-    //       givesToken.decimals
-    //     ).toString(),
-    //     fee: config.fee,
-    //     minGain: 0,
-    //   });
-    // } else if (config.exchangeConfig) {
-    //   if ("fee" in config.exchangeConfig) {
-    //     await arbContract.doArbitrageExchangeOnUniswap(
-    //       {
-    //         offerId: bestId,
-    //         takerWantsToken: wantsToken.address,
-    //         takerWants: UnitCalculations.toUnits(
-    //           bestOffer.gives,
-    //           wantsToken.decimals
-    //         ).toString(),
-    //         takerGivesToken: givesToken.address,
-    //         takerGives: UnitCalculations.toUnits(
-    //           bestOffer.wants,
-    //           givesToken.decimals
-    //         ).toString(),
-    //         fee: config.fee,
-    //         minGain: 0,
-    //       },
-    //       givesToken.mgv.token(config.holdingToken).address,
-    //       config.exchangeConfig.fee
-    //     );
-    //   } else {
-    //     await arbContract.doArbitrageExchangeOnMgv(
-    //       {
-    //         offerId: bestId,
-    //         takerWantsToken: wantsToken.address,
-    //         takerWants: UnitCalculations.toUnits(
-    //           bestOffer.gives,
-    //           wantsToken.decimals
-    //         ).toString(),
-    //         takerGivesToken: givesToken.address,
-    //         takerGives: UnitCalculations.toUnits(
-    //           bestOffer.wants,
-    //           givesToken.decimals
-    //         ).toString(),
-    //         fee: config.fee,
-    //         minGain: 0,
-    //       },
-    //       givesToken.mgv.token(config.holdingToken).address
-    //     );
-    //   }
-    // }
+    if (holdsToken) {
+      await arbContract.doArbitrage({
+        offerId: bestId,
+        takerWantsToken: wantsToken.address,
+        takerWants: UnitCalculations.toUnits(
+          bestOffer.gives,
+          wantsToken.decimals
+        ).toString(),
+        takerGivesToken: givesToken.address,
+        takerGives: UnitCalculations.toUnits(
+          bestOffer.wants,
+          givesToken.decimals
+        ).toString(),
+        fee: config.fee,
+        minGain: 0,
+      });
+    } else if (config.exchangeConfig) {
+      if ("fee" in config.exchangeConfig) {
+        await arbContract.doArbitrageExchangeOnUniswap(
+          {
+            offerId: bestId,
+            takerWantsToken: wantsToken.address,
+            takerWants: UnitCalculations.toUnits(
+              bestOffer.gives,
+              wantsToken.decimals
+            ).toString(),
+            takerGivesToken: givesToken.address,
+            takerGives: UnitCalculations.toUnits(
+              bestOffer.wants,
+              givesToken.decimals
+            ).toString(),
+            fee: config.fee,
+            minGain: 0,
+          },
+          givesToken.mgv.token(config.holdingToken).address,
+          config.exchangeConfig.fee
+        );
+      } else {
+        await arbContract.doArbitrageExchangeOnMgv(
+          {
+            offerId: bestId,
+            takerWantsToken: wantsToken.address,
+            takerWants: UnitCalculations.toUnits(
+              bestOffer.gives,
+              wantsToken.decimals
+            ).toString(),
+            takerGivesToken: givesToken.address,
+            takerGives: UnitCalculations.toUnits(
+              bestOffer.wants,
+              givesToken.decimals
+            ).toString(),
+            fee: config.fee,
+            minGain: 0,
+          },
+          givesToken.mgv.token(config.holdingToken).address
+        );
+      }
+    }
   }
 }
