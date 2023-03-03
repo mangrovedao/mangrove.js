@@ -3,7 +3,6 @@ import Mangrove from "../mangrove";
 import { typechain } from "../types";
 import logger from "../util/logger";
 
-import Big from "big.js";
 import TradeEventManagement from "../util/tradeEventManagement";
 import UnitCalculations from "../util/unitCalculations";
 

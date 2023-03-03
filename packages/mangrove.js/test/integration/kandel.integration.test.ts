@@ -14,6 +14,7 @@ import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
 import KandelFarm from "../../src/kandel/kandelFarm";
 import KandelInstance from "../../src/kandel/kandelInstance";
+import { OfferForwarder__factory } from "../../dist/nodejs/types/typechain/factories/OfferForwarder__factory";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -74,6 +75,11 @@ describe("Kandel integration tests suite", function () {
             1,
             "compound rate should be set during seed"
           );
+          assert.equal(
+            params.compoundRateQuote.toNumber(),
+            1,
+            "compound rate should be set during seed"
+          );
           assert.equal("TokenA", await kandel.base(), "wrong base");
           assert.equal("TokenB", await kandel.quote(), "wrong base");
           assert.equal(
@@ -86,6 +92,9 @@ describe("Kandel integration tests suite", function () {
             onAave,
             "router should only be there for aave"
           );
+          assert.equal(params.spread, 0, "spread should be default");
+          assert.equal(params.ratio.toNumber(), 0, "ratio should be default");
+          assert.equal(params.pricePoints, 0, "pricePoints should be default");
           assert.equal(
             params.gasprice,
             (await mgv.config()).gasprice * 2,
@@ -233,6 +242,7 @@ describe("Kandel integration tests suite", function () {
 
       it("getPivots returns pivots for current market", async function () {
         // Arrange
+        const market = await kandel.createMarket(mgv);
         const ratio = new Big(1.08);
         const firstBase = Big(1);
         const firstQuote = Big(1000);
@@ -241,10 +251,11 @@ describe("Kandel integration tests suite", function () {
           firstBase,
           firstQuote,
           ratio,
-          pricePoints
+          pricePoints,
+          market.base.decimals,
+          market.quote.decimals
         );
         const firstAskIndex = 3;
-        const market = await kandel.createMarket(mgv);
 
         // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
         // prettier-ignore
@@ -265,6 +276,142 @@ describe("Kandel integration tests suite", function () {
         );
         assert.sameOrderedMembers(pivots, [1, 2, undefined, undefined, 1, 2]);
       });
+
+      it("populate populates a market, deposits and sets parameters", async function () {
+        // Arrange
+        const market = await kandel.createMarket(mgv);
+        const ratio = new Big(1.08);
+        const firstBase = Big(1);
+        const firstQuote = Big(1000);
+        const pricePoints = 6;
+        const distribution = kandel.calculateDistribution(
+          firstBase,
+          firstQuote,
+          ratio,
+          pricePoints,
+          market.base.decimals,
+          market.quote.decimals
+        );
+        const firstAskIndex = 3;
+
+        const { base, quote } = kandel.getVolumes(distribution);
+
+        const approvalTxs = await kandel.approve(market);
+        await approvalTxs[0].wait();
+        await approvalTxs[1].wait();
+
+        // Act
+        await waitForTransaction(
+          kandel.populate({
+            market,
+            distribution,
+            firstAskIndex: 3,
+            parameters: {
+              compoundRateBase: Big(0.5),
+              ratio,
+              spread: 1,
+              pricePoints: distribution.length,
+            },
+            depositBaseAmount: base,
+            depositQuoteAmount: quote,
+          })
+        );
+
+        // Assert
+        await mgvTestUtil.waitForBooksForLastTx(market);
+
+        // assert parameters are updated
+        const params = await kandel.parameters();
+
+        assert.equal(
+          params.compoundRateQuote.toNumber(),
+          1,
+          "compoundRateQuote should have been left unchanged"
+        );
+        assert.equal(
+          params.compoundRateBase.toNumber(),
+          0.5,
+          "compoundRateBase should have been updated"
+        );
+        assert.equal(
+          params.pricePoints,
+          pricePoints,
+          "pricePoints should have been updated"
+        );
+        assert.equal(
+          params.ratio.toString(),
+          ratio.toString(),
+          "ratio should have been updated"
+        );
+        assert.equal(params.spread, 1, "spread should have been updated");
+
+        const book = market.getBook();
+
+        // assert asks
+        const asks = [...book.asks];
+        assert.equal(asks.length, 3, "3 asks should be populated");
+        for (let i = 0; i < asks.length; i++) {
+          const offer = asks[i];
+          const d = distribution[firstAskIndex + i];
+          assert.equal(
+            offer.gives.toString(),
+            d.base.toString(),
+            "gives should be base for ask"
+          );
+          assert.equal(
+            offer.wants.toString(),
+            d.quote.toString(),
+            "wants should be quote for ask"
+          );
+          assert.equal(
+            offer.id,
+            await kandel.getOfferIdAtIndex("asks", d.index)
+          );
+          assert.equal(
+            d.index,
+            await kandel.getIndexOfOfferId("asks", offer.id)
+          );
+        }
+        // assert bids
+        const bids = [...book.bids];
+        assert.equal(bids.length, 3, "3 bids should be populated");
+        for (let i = 0; i < bids.length; i++) {
+          const offer = bids[bids.length - 1 - i];
+          const d = distribution[i];
+          assert.equal(
+            offer.gives.toString(),
+            d.quote.toString(),
+            "gives should be quote for bid"
+          );
+          assert.equal(
+            offer.wants.toString(),
+            d.base.toString(),
+            "wants should be base for bid"
+          );
+          assert.equal(
+            offer.id,
+            await kandel.getOfferIdAtIndex("bids", d.index)
+          );
+          assert.equal(
+            d.index,
+            await kandel.getIndexOfOfferId("bids", offer.id)
+          );
+        }
+
+        // assert provisions transferred is done by offers being able to be posted
+
+        // assert deposits
+        assert.equal(
+          (await market.base.balanceOf(kandel.address)).toString(),
+          base.toString(),
+          "Base should be deposited"
+        );
+        assert.equal(
+          (await market.quote.balanceOf(kandel.address)).toString(),
+          quote.toString(),
+          "Quote should be deposited"
+        );
+      });
     });
 
     [true, false].forEach((onAave) =>
@@ -280,6 +427,55 @@ describe("Kandel integration tests suite", function () {
           assert.equal(await kandel.hasRouter(), onAave);
           assert.equal(await kandel.reserveId(), kandel.address);
         });
+
+        [true, false].forEach((fullApprove) =>
+          [
+            [1, undefined],
+            [undefined, 2],
+            [3, 4],
+            [undefined, undefined],
+          ].forEach((bq) => {
+            const base = bq[0] ? Big(bq[0]) : undefined;
+            const quote = bq[1] ? Big(bq[1]) : undefined;
+            it(`approve approves(full=${fullApprove}) tokens for deposit base=${base?.toString()} quote=${quote?.toString()}`, async function () {
+              // Arrange
+              const market = await kandel.createMarket(mgv);
+
+              const approveArgsBase = fullApprove ? undefined : base;
+              const approveArgsQuote = fullApprove ? undefined : quote;
+
+              // Act
+              const approvalTxs = await kandel.approve(
+                market,
+                approveArgsBase,
+                approveArgsQuote
+              );
+              await approvalTxs[0].wait();
+              await approvalTxs[1].wait();
+              await waitForTransaction(kandel.deposit(market, base, quote));
+
+              // Assert
+              assert.equal(
+                (await kandel.balance(market, "asks")).toString(),
+                base?.toString() ?? "0"
+              );
+              assert.equal(
+                (await kandel.balance(market, "bids")).toString(),
+                quote?.toString() ?? "0"
+              );
+
+              if (!fullApprove) {
+                assert.isRejected(
+                  kandel.deposit(market, base, quote),
+                  "finite approval should not allow further deposits"
+                );
+              } else {
+                // "infinite" approval should allow further deposits
+                kandel.deposit(market, base, quote);
+              }
+            });
+          })
+        );
       })
     );
   });

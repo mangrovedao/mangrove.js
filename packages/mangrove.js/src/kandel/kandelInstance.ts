@@ -1,24 +1,43 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers";
 import Mangrove from "../mangrove";
-import MgvToken from "../mgvtoken";
-import logger from "../util/logger";
 import MetadataProvider from "../util/metadataProvider";
 import { typechain } from "../types";
 
 import * as KandelTypes from "../types/typechain/GeometricKandel";
 
 import Big from "big.js";
-import { PromiseOrValue } from "../types/typechain/common";
 import Market from "../market";
-import { DirectWithBidsAndAsksDistribution } from "../types/typechain/AaveKandel";
+import UnitCalculations from "../util/unitCalculations";
+import LiquidityProvider from "../liquidityProvider";
+import { ApproveArgs } from "../mgvtoken";
 
-type DistributionElement = {
+export type DistributionElement = {
   index: number;
   base: Big;
   quote: Big;
 };
-type Distribution = DistributionElement[];
+export type Distribution = DistributionElement[];
+
+export type KandelParameters = {
+  gasprice: number;
+  gasreq: number;
+  ratio: Big;
+  compoundRateBase: Big;
+  compoundRateQuote: Big;
+  spread: number;
+  pricePoints: number;
+};
+
+export type KandelParameterOverrides = {
+  gasprice?: number;
+  gasreq?: number;
+  ratio?: Big;
+  compoundRateBase?: Big;
+  compoundRateQuote?: Big;
+  spread?: number;
+  pricePoints?: number;
+};
 
 class GeometricKandelStub {
   public async PRECISION() {
@@ -32,7 +51,7 @@ class KandelInstance {
 
   kandel: typechain.GeometricKandel;
   address: string;
-  precisionDivisor: Promise<number>;
+  precision: Promise<number>;
 
   public static create(params: {
     address: string;
@@ -64,8 +83,8 @@ class KandelInstance {
     this.address = params.address;
 
     this.kandel = params.kandel;
-    this.precisionDivisor = this.kandel.PRECISION().then(
-      (x) => BigNumber.from(10).pow(x.toNumber()).toNumber(),
+    this.precision = this.kandel.PRECISION().then(
+      (x) => x.toNumber(),
       (fail) => {
         throw new Error(fail);
       }
@@ -87,17 +106,64 @@ class KandelInstance {
   }
 
   public async parameters() {
-    const params = await this.kandel.functions.params();
-    const precisionDivisor = await this.precisionDivisor;
+    const params = await this.kandel.params();
+    const precision = await this.precision;
     return {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
-      ratio: Big(params.ratio).div(precisionDivisor),
-      compoundRateBase: Big(params.compoundRateBase).div(precisionDivisor),
-      compoundRateQuote: Big(params.compoundRateQuote).div(precisionDivisor),
+      ratio: UnitCalculations.fromUnits(params.ratio, precision),
+      compoundRateBase: UnitCalculations.fromUnits(
+        params.compoundRateBase,
+        precision
+      ),
+      compoundRateQuote: UnitCalculations.fromUnits(
+        params.compoundRateQuote,
+        precision
+      ),
       spread: params.spread,
       pricePoints: params.pricePoints,
     };
+  }
+
+  async getRawParameters(parameters: KandelParameters) {
+    const precision = await this.precision;
+    return {
+      gasprice: parameters.gasprice,
+      gasreq: parameters.gasreq,
+      ratio: UnitCalculations.toUnits(parameters.ratio, precision),
+      compoundRateBase: UnitCalculations.toUnits(
+        parameters.compoundRateBase,
+        precision
+      ),
+      compoundRateQuote: UnitCalculations.toUnits(
+        parameters.compoundRateQuote,
+        precision
+      ),
+      spread: parameters.spread,
+      pricePoints: parameters.pricePoints,
+    };
+  }
+
+  public async overrideParameters(
+    parameters: KandelParameterOverrides
+  ): Promise<KandelParameters> {
+    return { ...(await this.parameters()), ...parameters };
+  }
+
+  private baToUint(ba: Market.BA): number {
+    return ba == "bids" ? 0 : 1;
+  }
+
+  public async getOfferIdAtIndex(ba: Market.BA, index: number) {
+    return (
+      await this.kandel.offerIdOfIndex(this.baToUint(ba), index)
+    ).toNumber();
+  }
+
+  public async getIndexOfOfferId(ba: Market.BA, offerId: number) {
+    return (
+      await this.kandel.indexOfOfferId(this.baToUint(ba), offerId)
+    ).toNumber();
   }
 
   public async hasRouter() {
@@ -147,17 +213,89 @@ class KandelInstance {
     firstBase: Big,
     firstQuote: Big,
     ratio: Big,
-    pricePoints: number
+    pricePoints: number,
+    baseDecimals: number,
+    quoteDecimals: number
   ) {
     const distribution: Distribution = Array(pricePoints);
 
-    const base = firstBase;
+    const base = firstBase.round(baseDecimals, Big.roundHalfUp);
     let quote = firstQuote;
     for (let i = 0; i < pricePoints; i++) {
-      distribution[i] = { index: i, base: base, quote: quote };
+      distribution[i] = {
+        index: i,
+        base: base,
+        quote: quote.round(quoteDecimals, Big.roundHalfUp),
+      };
       quote = quote.mul(ratio);
     }
     return distribution;
+  }
+
+  public getVolumes(distribution: Distribution) {
+    return distribution.reduce(
+      (a, x) => {
+        return { base: a.base.add(x.base), quote: a.quote.add(x.quote) };
+      },
+      { base: new Big(0), quote: new Big(0) }
+    );
+  }
+
+  public async approve(
+    market: Market,
+    baseArgs: ApproveArgs = {},
+    quoteArgs: ApproveArgs = {}
+  ) {
+    await this.verifyMarket(market);
+    return [
+      await market.base.approve(this.address, baseArgs),
+      await market.quote.approve(this.address, quoteArgs),
+    ];
+  }
+
+  async getDepositArrays(
+    market: Market,
+    depositBaseAmount?: Big,
+    depositQuoteAmount?: Big
+  ) {
+    const depositTokens: string[] = [];
+    const depositAmounts: BigNumber[] = [];
+    if (depositBaseAmount && depositBaseAmount.gt(0)) {
+      depositTokens.push(market.base.address);
+      depositAmounts.push(market.base.toUnits(depositBaseAmount));
+    }
+    if (depositQuoteAmount && depositQuoteAmount.gt(0)) {
+      depositTokens.push(market.quote.address);
+      depositAmounts.push(market.quote.toUnits(depositQuoteAmount));
+    }
+    return { depositTokens, depositAmounts };
+  }
+
+  public async deposit(
+    market: Market,
+    depositBaseAmount?: Big,
+    depositQuoteAmount?: Big,
+    overrides: ethers.Overrides = {}
+  ) {
+    const { depositTokens, depositAmounts } = await this.getDepositArrays(
+      market,
+      depositBaseAmount,
+      depositQuoteAmount
+    );
+    return await this.kandel.depositFunds(
+      depositTokens,
+      depositAmounts,
+      overrides
+    );
+  }
+
+  public getOutboundToken(market: Market, ba: Market.BA) {
+    return ba == "asks" ? market.base : market.quote;
+  }
+
+  public async balance(market: Market, ba: Market.BA) {
+    const balance = await this.kandel.reserveBalance(this.baToUint(ba));
+    return this.getOutboundToken(market, ba).fromUnits(balance);
   }
 
   public async createMarket(mgv: Mangrove) {
@@ -168,56 +306,96 @@ class KandelInstance {
   }
 
   public async verifyMarket(market: Market) {
-    if (market.quote.address != (await this.quote())) {
+    if (market.quote.name != (await this.quote())) {
       throw Error("Invalid quote for market");
     }
-    if (market.base.address != (await this.base())) {
+    if (market.base.name != (await this.base())) {
       throw Error("Invalid base for market");
     }
   }
 
-  public async populate(
+  public async getRequiredProvision(
     market: Market,
-    distribution: Distribution,
-    firstAskIndex: number,
-    maxOffersInOneTransaction: number = 80
+    gasreq: number,
+    gasprice: number,
+    offerCount: number
   ) {
-    await this.verifyMarket(market);
+    const provisionBid = await market.getOfferProvision(
+      "bids",
+      gasreq,
+      gasprice
+    );
+    const provisionAsk = await market.getOfferProvision(
+      "asks",
+      gasreq,
+      gasprice
+    );
+    return provisionBid.add(provisionAsk).mul(offerCount);
+  }
 
-    distribution.sort((a, b) => a.index - b.index);
-    //TODO verify ascending and delete this snippet
-    if (distribution[0].index >= distribution[1].index) {
-      throw Error("exchange a and b above :D ");
-    }
+  public async populate(
+    params: {
+      market: Market;
+      distribution: Distribution;
+      firstAskIndex: number;
+      parameters: KandelParameterOverrides;
+      depositBaseAmount?: Big;
+      depositQuoteAmount?: Big;
+      funds?: Big;
+    },
+    overrides?: ethers.Overrides
+  ) {
+    await this.verifyMarket(params.market);
 
-    const pivots = await this.getPivots(market, distribution, firstAskIndex);
+    params.distribution.sort((a, b) => a.index - b.index);
+
+    // Use 0 as pivot when none is found
+    const pivots = (
+      await this.getPivots(
+        params.market,
+        params.distribution,
+        params.firstAskIndex
+      )
+    ).map((x) => x ?? 0);
 
     const distributionStruct: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
       {
-        baseDist: Array(distribution.length),
-        quoteDist: Array(distribution.length),
-        indices: Array(distribution.length),
+        baseDist: Array(params.distribution.length),
+        quoteDist: Array(params.distribution.length),
+        indices: Array(params.distribution.length),
       };
-    distribution.forEach((o, i) => {
-      distributionStruct.baseDist[i] = BigNumber.from(o.base);
-      distributionStruct.quoteDist[i] = BigNumber.from(o.quote);
+    params.distribution.forEach((o, i) => {
+      distributionStruct.baseDist[i] = params.market.base.toUnits(o.base);
+      distributionStruct.quoteDist[i] = params.market.quote.toUnits(o.quote);
       distributionStruct.indices[i] = o.index;
     });
 
-    //TODO 3
-    const params = await this.kandel.functions.params();
-    params.ratio = 100000;
-    params.spread = 1;
-    params.pricePoints = distribution.length;
-    // TODO split into multiple txs if needed
-    // TODO calculate deposits and required gas
-    this.kandel.populate(
+    const parameters = await this.overrideParameters(params.parameters);
+    const rawParameters = await this.getRawParameters(parameters);
+    const funds =
+      params.funds ??
+      (await this.getRequiredProvision(
+        params.market,
+        rawParameters.gasreq,
+        rawParameters.gasprice,
+        params.distribution.length
+      ));
+    overrides = LiquidityProvider.optValueToPayableOverride(overrides, funds);
+
+    const { depositTokens, depositAmounts } = await this.getDepositArrays(
+      params.market,
+      params.depositBaseAmount,
+      params.depositQuoteAmount
+    );
+
+    return this.kandel.populate(
       distributionStruct,
       pivots,
-      firstAskIndex,
-      params,
-      [],
-      []
+      params.firstAskIndex,
+      rawParameters,
+      depositTokens,
+      depositAmounts,
+      overrides
     );
   }
 }
