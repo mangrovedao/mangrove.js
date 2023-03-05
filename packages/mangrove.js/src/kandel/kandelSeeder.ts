@@ -13,6 +13,7 @@ import {
 
 import KandelInstance from "./kandelInstance";
 import MetadataProvider from "../util/metadataProvider";
+import Market from "../market";
 
 class KandelSeeder {
   mgv: Mangrove;
@@ -46,24 +47,20 @@ class KandelSeeder {
   public async sow(
     params: {
       onAave: boolean;
-      base: string;
-      quote: string;
+      market: Market;
       liquiditySharing: boolean;
       gaspriceFactor: number;
       gasprice?: number; // null means use mangroves global.
     },
     overrides: ethers.Overrides = {}
   ): Promise<KandelInstance> {
-    const base = this.mgv.token(params.base);
-    const quote = this.mgv.token(params.quote);
-
     const gasprice =
       params.gaspriceFactor *
       (params.gasprice ?? (await this.mgv.config()).gasprice);
 
     const seed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
-      base: base.address,
-      quote: quote.address,
+      base: params.market.base.address,
+      quote: params.market.quote.address,
       gasprice: UnitCalculations.toUnits(gasprice, 0),
       liquiditySharing: params.liquiditySharing,
     };
@@ -91,6 +88,7 @@ class KandelSeeder {
             address: kandelEvent.args.kandel,
             metadataProvider: MetadataProvider.create(this.mgv),
             signer: this.mgv.signer,
+            market: params.market,
           });
         }
         case "NewAaveKandel": {
@@ -100,6 +98,7 @@ class KandelSeeder {
             address: aaveKandelEvent.args.aaveKandel,
             metadataProvider: MetadataProvider.create(this.mgv),
             signer: this.mgv.signer,
+            market: params.market,
           });
         }
         default:

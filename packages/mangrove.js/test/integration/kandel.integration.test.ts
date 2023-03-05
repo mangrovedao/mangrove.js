@@ -57,11 +57,11 @@ describe("Kandel integration tests suite", function () {
         it(`sow deploys kandel and returns instance onAave:${onAave} liquiditySharing:${liquiditySharing}`, async function () {
           // Arrange
           const seeder = new Kandel({ mgv: mgv }).seeder;
+          const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
           // Act
           const kandel = await seeder.sow({
-            base: "TokenA",
-            quote: "TokenB",
+            market: market,
             liquiditySharing: liquiditySharing,
             onAave: onAave,
             gasprice: undefined,
@@ -80,8 +80,9 @@ describe("Kandel integration tests suite", function () {
             1,
             "compound rate should be set during seed"
           );
-          assert.equal("TokenA", await kandel.base(), "wrong base");
-          assert.equal("TokenB", await kandel.quote(), "wrong base");
+          assert.equal("TokenA", (await kandel.base()).name, "wrong base");
+          assert.equal("TokenB", (await kandel.quote()).name, "wrong base");
+          assert.equal(market, kandel.market, "wrong market");
           assert.equal(
             liquiditySharing ? await mgv.signer.getAddress() : kandel.address,
             await kandel.reserveId(),
@@ -109,8 +110,7 @@ describe("Kandel integration tests suite", function () {
 
       // Act
       const kandel = await seeder.sow({
-        base: "TokenA",
-        quote: "TokenB",
+        market: await mgv.market({ base: "TokenA", quote: "TokenB" }),
         liquiditySharing: false,
         onAave: false,
         gasprice: 10000,
@@ -136,33 +136,32 @@ describe("Kandel integration tests suite", function () {
       defaultOwner = await mgv.signer.getAddress();
       const seeder = new Kandel({ mgv: mgv }).seeder;
 
+      const abMarket = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const wethDaiMarket = await mgv.market({ base: "WETH", quote: "DAI" });
+      const wethUsdcMarket = await mgv.market({ base: "WETH", quote: "USDC" });
       await seeder.sow({
-        base: "TokenA",
-        quote: "TokenB",
+        market: abMarket,
         gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: false,
       });
 
       await seeder.sow({
-        base: "WETH",
-        quote: "DAI",
+        market: wethDaiMarket,
         gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: false,
       });
 
       await seeder.sow({
-        base: "WETH",
-        quote: "USDC",
+        market: wethUsdcMarket,
         gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: false,
       });
 
       await seeder.sow({
-        base: "WETH",
-        quote: "USDC",
+        market: wethUsdcMarket,
         gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: true,
@@ -171,8 +170,7 @@ describe("Kandel integration tests suite", function () {
       // other maker
       const otherSeeder = new Kandel({ mgv: mgvAdmin }).seeder;
       await otherSeeder.sow({
-        base: "WETH",
-        quote: "USDC",
+        market: wethUsdcMarket,
         gaspriceFactor: 10,
         liquiditySharing: false,
         onAave: true,
@@ -222,17 +220,17 @@ describe("Kandel integration tests suite", function () {
     async function createKandel(onAave: boolean) {
       const kandelApi = new Kandel({ mgv: mgv });
       const seeder = new Kandel({ mgv: mgv }).seeder;
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const kandelAddress = (
         await seeder.sow({
-          base: "TokenA",
-          quote: "TokenB",
+          market: market,
           gaspriceFactor: 10,
           liquiditySharing: false,
           onAave: onAave,
         })
       ).address;
 
-      return kandelApi.instance(kandelAddress);
+      return kandelApi.instance(kandelAddress, market);
     }
     describe("router-agnostic", async function () {
       let kandel: KandelInstance;
@@ -242,7 +240,7 @@ describe("Kandel integration tests suite", function () {
 
       it("getPivots returns pivots for current market", async function () {
         // Arrange
-        const market = await kandel.createMarket(mgv);
+        const market = kandel.market;
         const ratio = new Big(1.08);
         const firstBase = Big(1);
         const firstQuote = Big(1000);
@@ -251,9 +249,7 @@ describe("Kandel integration tests suite", function () {
           firstBase,
           firstQuote,
           ratio,
-          pricePoints,
-          market.base.decimals,
-          market.quote.decimals
+          pricePoints
         );
         const firstAskIndex = 3;
 
@@ -279,7 +275,7 @@ describe("Kandel integration tests suite", function () {
 
       it("populate populates a market, deposits and sets parameters", async function () {
         // Arrange
-        const market = await kandel.createMarket(mgv);
+        const market = kandel.market;
         const ratio = new Big(1.08);
         const firstBase = Big(1);
         const firstQuote = Big(1000);
@@ -288,22 +284,19 @@ describe("Kandel integration tests suite", function () {
           firstBase,
           firstQuote,
           ratio,
-          pricePoints,
-          market.base.decimals,
-          market.quote.decimals
+          pricePoints
         );
         const firstAskIndex = 3;
 
-        const { base, quote } = kandel.getVolumes(distribution);
+        const { base, quote } = KandelInstance.getVolumes(distribution);
 
-        const approvalTxs = await kandel.approve(market);
+        const approvalTxs = await kandel.approve();
         await approvalTxs[0].wait();
         await approvalTxs[1].wait();
 
         // Act
         await waitForTransaction(
           kandel.populate({
-            market,
             distribution,
             firstAskIndex: 3,
             parameters: {
@@ -421,9 +414,12 @@ describe("Kandel integration tests suite", function () {
           kandel = await createKandel(onAave);
         });
 
-        it("has immutable data from chain", async function () {
-          assert.equal(await kandel.base(), "TokenA");
-          assert.equal(await kandel.quote(), "TokenB");
+        it("has expected immutable data from chain", async function () {
+          assert.equal(await kandel.kandel.BASE(), kandel.market.base.address);
+          assert.equal(
+            await kandel.kandel.QUOTE(),
+            kandel.market.quote.address
+          );
           assert.equal(await kandel.hasRouter(), onAave);
           assert.equal(await kandel.reserveId(), kandel.address);
         });
@@ -435,43 +431,40 @@ describe("Kandel integration tests suite", function () {
             [3, 4],
             [undefined, undefined],
           ].forEach((bq) => {
-            const base = bq[0] ? Big(bq[0]) : undefined;
-            const quote = bq[1] ? Big(bq[1]) : undefined;
-            it(`approve approves(full=${fullApprove}) tokens for deposit base=${base?.toString()} quote=${quote?.toString()}`, async function () {
+            const baseAmount = bq[0] ? Big(bq[0]) : undefined;
+            const quoteAmount = bq[1] ? Big(bq[1]) : undefined;
+            it(`approve approves(full=${fullApprove}) tokens for deposit base=${baseAmount?.toString()} quote=${quoteAmount?.toString()}`, async function () {
               // Arrange
-              const market = await kandel.createMarket(mgv);
-
-              const approveArgsBase = fullApprove ? undefined : base;
-              const approveArgsQuote = fullApprove ? undefined : quote;
+              const approveArgsBase = fullApprove ? undefined : baseAmount;
+              const approveArgsQuote = fullApprove ? undefined : quoteAmount;
 
               // Act
               const approvalTxs = await kandel.approve(
-                market,
                 approveArgsBase,
                 approveArgsQuote
               );
               await approvalTxs[0].wait();
               await approvalTxs[1].wait();
-              await waitForTransaction(kandel.deposit(market, base, quote));
+              await waitForTransaction(kandel.deposit(baseAmount, quoteAmount));
 
               // Assert
               assert.equal(
-                (await kandel.balance(market, "asks")).toString(),
-                base?.toString() ?? "0"
+                (await kandel.balance("asks")).toString(),
+                baseAmount?.toString() ?? "0"
               );
               assert.equal(
-                (await kandel.balance(market, "bids")).toString(),
-                quote?.toString() ?? "0"
+                (await kandel.balance("bids")).toString(),
+                quoteAmount?.toString() ?? "0"
               );
 
               if (!fullApprove) {
                 assert.isRejected(
-                  kandel.deposit(market, base, quote),
+                  kandel.deposit(baseAmount, quoteAmount),
                   "finite approval should not allow further deposits"
                 );
               } else {
                 // "infinite" approval should allow further deposits
-                kandel.deposit(market, base, quote);
+                kandel.deposit(baseAmount, quoteAmount);
               }
             });
           })
