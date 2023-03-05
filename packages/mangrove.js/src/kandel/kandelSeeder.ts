@@ -12,7 +12,6 @@ import {
 } from "../types/typechain/AbstractKandelSeeder";
 
 import KandelInstance from "./kandelInstance";
-import MetadataProvider from "../util/metadataProvider";
 import Market from "../market";
 
 class KandelSeeder {
@@ -86,7 +85,6 @@ class KandelSeeder {
           const kandelEvent = evt as NewKandelEvent;
           return KandelInstance.create({
             address: kandelEvent.args.kandel,
-            metadataProvider: MetadataProvider.create(this.mgv),
             signer: this.mgv.signer,
             market: params.market,
           });
@@ -96,7 +94,6 @@ class KandelSeeder {
           const aaveKandelEvent = evt as NewAaveKandelEvent;
           return KandelInstance.create({
             address: aaveKandelEvent.args.aaveKandel,
-            metadataProvider: MetadataProvider.create(this.mgv),
             signer: this.mgv.signer,
             market: params.market,
           });

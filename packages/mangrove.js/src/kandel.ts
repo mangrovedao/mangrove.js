@@ -2,7 +2,6 @@ import Mangrove from "./mangrove";
 import KandelSeeder from "./kandel/kandelSeeder";
 import KandelFarm from "./kandel/kandelFarm";
 import KandelInstance from "./kandel/kandelInstance";
-import MetadataProvider from "./util/metadataProvider";
 import Market from "./market";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -34,7 +33,6 @@ class Kandel {
     }
     return KandelInstance.create({
       address,
-      metadataProvider: MetadataProvider.create(this.mgv),
       signer: this.mgv.signer,
       market,
     });

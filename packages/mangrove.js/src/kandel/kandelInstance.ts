@@ -1,6 +1,5 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers";
-import MetadataProvider from "../util/metadataProvider";
 import { typechain } from "../types";
 
 import * as KandelTypes from "../types/typechain/GeometricKandel";
@@ -47,7 +46,6 @@ class KandelInstance {
 
   public static async create(params: {
     address: string;
-    metadataProvider: MetadataProvider;
     signer: ethers.Signer;
     market:
       | Market
