@@ -36,6 +36,11 @@ class KandelFarm {
     );
   }
 
+  getTokenAndAddress(address: string) {
+    const name = this.mgv.getNameFromAddress(address);
+    return { address, token: name ? this.mgv.token(name) : null };
+  }
+
   /**
    * gets all Kandels matching a given filter.
    * @param filter the filter to apply.
@@ -68,12 +73,16 @@ class KandelFarm {
               )
             )
           ).map((x) => {
+            const baseToken = this.getTokenAndAddress(x.args.base);
+            const quoteToken = this.getTokenAndAddress(x.args.quote);
             return {
               kandel: x.args.kandel,
               owner: x.args.owner,
               onAave: false,
-              base: this.mgv.getNameFromAddress(x.args.base) ?? x.args.base,
-              quote: this.mgv.getNameFromAddress(x.args.quote) ?? x.args.quote,
+              baseAddress: baseToken.address,
+              base: baseToken.token,
+              quoteAddress: quoteToken.address,
+              quote: quoteToken.token,
             };
           })
         : [];
@@ -88,12 +97,16 @@ class KandelFarm {
               )
             )
           ).map((x) => {
+            const baseToken = this.getTokenAndAddress(x.args.base);
+            const quoteToken = this.getTokenAndAddress(x.args.quote);
             return {
               kandel: x.args.aaveKandel,
               owner: x.args.owner,
               onAave: true,
-              base: this.mgv.getNameFromAddress(x.args.base) ?? x.args.base,
-              quote: this.mgv.getNameFromAddress(x.args.quote) ?? x.args.quote,
+              baseAddress: baseToken.address,
+              base: baseToken.token,
+              quoteAddress: quoteToken.address,
+              quote: quoteToken.token,
             };
           })
         : [];

@@ -104,14 +104,26 @@ describe("KandelInstance unit tests suite", () => {
           quote: Big(7),
           index: 6,
         },
+        {
+          base: Big(13),
+          quote: Big(17),
+          index: 7,
+        },
       ];
 
-      const { base, quote } = KandelInstance.getVolumes(distribution);
+      const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
+        distribution,
+        6
+      );
 
-      assert.equal(1 + 3 + 9, base.toNumber(), "base should be all the base");
       assert.equal(
-        2 + 5 + 7,
-        quote.toNumber(),
+        9 + 13,
+        baseVolume.toNumber(),
+        "base should be all the base"
+      );
+      assert.equal(
+        2 + 5,
+        quoteVolume.toNumber(),
         "quote should be all the quote"
       );
     });

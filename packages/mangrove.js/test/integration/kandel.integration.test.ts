@@ -182,11 +182,18 @@ describe("Kandel integration tests suite", function () {
       const kandels = await farm.getKandels();
       // Assert
       assert.equal(kandels.length, 5, "total count wrong");
-      assert.equal(kandels.filter((x) => x.base == "TokenA").length, 1);
-      assert.equal(kandels.filter((x) => x.base == "WETH").length, 4);
-      assert.equal(kandels.filter((x) => x.quote == "USDC").length, 3);
+      assert.equal(kandels.filter((x) => x.base?.name == "TokenA").length, 1);
+      assert.equal(kandels.filter((x) => x.base?.name == "WETH").length, 4);
+      assert.equal(
+        kandels.filter((x) => x.baseAddress == mgv.getAddress("WETH")).length,
+        4
+      );
+      assert.equal(kandels.filter((x) => x.quote?.name == "USDC").length, 3);
+      assert.equal(
+        kandels.filter((x) => x.quoteAddress == mgv.getAddress("USDC")).length,
+        3
+      );
       assert.equal(kandels.filter((x) => x.onAave).length, 2);
-
       assert.equal(kandels.filter((x) => x.owner == defaultOwner).length, 4);
     });
 
@@ -236,6 +243,18 @@ describe("Kandel integration tests suite", function () {
       let kandel: KandelInstance;
       beforeEach(async function () {
         kandel = await createKandel(false);
+      });
+
+      it("setCompoundRates sets rates", async function () {
+        // Act
+        await kandel.setCompoundRates(Big(0.5), Big(0.7));
+
+        // Assert
+        const { compoundRateBase, compoundRateQuote } =
+          await kandel.parameters();
+
+        assert(compoundRateBase.toString(), "0.5");
+        assert(compoundRateQuote.toString(), "0.7");
       });
 
       it("getPivots returns pivots for current market", async function () {
@@ -288,7 +307,10 @@ describe("Kandel integration tests suite", function () {
         );
         const firstAskIndex = 3;
 
-        const { base, quote } = KandelInstance.getVolumes(distribution);
+        const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
+          distribution,
+          firstAskIndex
+        );
 
         const approvalTxs = await kandel.approve();
         await approvalTxs[0].wait();
@@ -298,15 +320,15 @@ describe("Kandel integration tests suite", function () {
         await waitForTransaction(
           kandel.populate({
             distribution,
-            firstAskIndex: 3,
+            firstAskIndex,
             parameters: {
               compoundRateBase: Big(0.5),
               ratio,
               spread: 1,
               pricePoints: distribution.length,
             },
-            depositBaseAmount: base,
-            depositQuoteAmount: quote,
+            depositBaseAmount: baseVolume,
+            depositQuoteAmount: quoteVolume,
           })
         );
 
@@ -395,14 +417,160 @@ describe("Kandel integration tests suite", function () {
 
         // assert deposits
         assert.equal(
-          (await market.base.balanceOf(kandel.address)).toString(),
-          base.toString(),
+          (await kandel.balance("asks")).toString(),
+          baseVolume.toString(),
           "Base should be deposited"
         );
         assert.equal(
-          (await market.quote.balanceOf(kandel.address)).toString(),
-          quote.toString(),
+          (await kandel.balance("bids")).toString(),
+          quoteVolume.toString(),
           "Quote should be deposited"
+        );
+      });
+
+      async function populateKandel(params: {
+        approve: boolean;
+        deposit: boolean;
+      }) {
+        const ratio = new Big(1.08);
+        const firstBase = Big(1);
+        const firstQuote = Big(1000);
+        const pricePoints = 6;
+        const distribution = kandel.calculateDistribution(
+          firstBase,
+          firstQuote,
+          ratio,
+          pricePoints
+        );
+        const firstAskIndex = 3;
+
+        const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
+          distribution,
+          firstAskIndex
+        );
+        if (params.approve) {
+          const approvalTxs = await kandel.approve();
+          await approvalTxs[0].wait();
+          await approvalTxs[1].wait();
+        }
+
+        // Act
+        await waitForTransaction(
+          kandel.populate({
+            distribution,
+            firstAskIndex,
+            parameters: {
+              compoundRateBase: Big(0.5),
+              ratio,
+              spread: 1,
+              pricePoints: distribution.length,
+            },
+            depositBaseAmount: params.deposit ? baseVolume : Big(0),
+            depositQuoteAmount: params.deposit ? quoteVolume : Big(0),
+          })
+        );
+
+        return {
+          ratio,
+          firstBase,
+          firstQuote,
+          pricePoints,
+          distribution,
+          firstAskIndex,
+          baseVolume,
+          quoteVolume,
+        };
+      }
+
+      it("pending, volume, reserve correct after populate with deposit", async function () {
+        // all zeros prior to populate
+        assert.equal((await kandel.balance("asks")).toString(), "0");
+        assert.equal((await kandel.balance("bids")).toString(), "0");
+        assert.equal((await kandel.pending("asks")).toString(), "0");
+        assert.equal((await kandel.pending("bids")).toString(), "0");
+        assert.equal((await kandel.offeredVolume("asks")).toString(), "0");
+        assert.equal((await kandel.offeredVolume("bids")).toString(), "0");
+
+        const { baseVolume, quoteVolume } = await populateKandel({
+          approve: true,
+          deposit: true,
+        });
+        // assert deposits
+        assert.equal(
+          (await kandel.balance("asks")).toString(),
+          baseVolume.toString(),
+          "Base should be deposited"
+        );
+        assert.equal(
+          (await kandel.balance("bids")).toString(),
+          quoteVolume.toString(),
+          "Quote should be deposited"
+        );
+
+        // assert pending
+        assert.equal(
+          (await kandel.pending("asks")).toString(),
+          "0",
+          "No ask volume should be pending"
+        );
+        assert.equal(
+          (await kandel.pending("bids")).toString(),
+          "0",
+          "No bid volume should be pending"
+        );
+
+        // assert offered volume
+        assert.equal(
+          (await kandel.offeredVolume("asks")).toString(),
+          baseVolume.toString(),
+          "Base should be offered"
+        );
+        assert.equal(
+          (await kandel.offeredVolume("bids")).toString(),
+          quoteVolume.toString(),
+          "Quote should be offered"
+        );
+      });
+
+      it("pending, volume, reserve correct after populate without deposit", async function () {
+        const { baseVolume, quoteVolume } = await populateKandel({
+          approve: false,
+          deposit: false,
+        });
+        // assert deposits
+        assert.equal(
+          (await kandel.balance("asks")).toString(),
+          "0",
+          "no base should be deposited"
+        );
+        assert.equal(
+          (await kandel.balance("bids")).toString(),
+          "0",
+          "no quote should be deposited"
+        );
+
+        // assert pending
+        assert.equal(
+          (await kandel.pending("asks")).toString(),
+          (-baseVolume).toString(),
+          "entire ask volume should be pending"
+        );
+        assert.equal(
+          (await kandel.pending("bids")).toString(),
+          (-quoteVolume).toString(),
+          "entire quote volume should be pending"
+        );
+
+        // assert offered volume
+        assert.equal(
+          (await kandel.offeredVolume("asks")).toString(),
+          baseVolume.toString(),
+          "Base should be offered"
+        );
+        assert.equal(
+          (await kandel.offeredVolume("bids")).toString(),
+          quoteVolume.toString(),
+          "Quote should be offered"
         );
       });
     });

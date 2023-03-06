@@ -238,16 +238,24 @@ class KandelInstance {
     return distribution;
   }
 
-  public getVolumes(distribution: Distribution) {
-    return this.getVolumes(distribution);
+  public getVolumes(distribution: Distribution, firstAskIndex: number) {
+    return this.getVolumes(distribution, firstAskIndex);
   }
 
-  public static getVolumes(distribution: Distribution) {
+  public static getVolumes(distribution: Distribution, firstAskIndex: number) {
     return distribution.reduce(
       (a, x) => {
-        return { base: a.base.add(x.base), quote: a.quote.add(x.quote) };
+        return this.getBA(x.index, firstAskIndex) == "bids"
+          ? {
+              baseVolume: a.baseVolume,
+              quoteVolume: a.quoteVolume.add(x.quote),
+            }
+          : {
+              baseVolume: a.baseVolume.add(x.base),
+              quoteVolume: a.quoteVolume,
+            };
       },
-      { base: new Big(0), quote: new Big(0) }
+      { baseVolume: new Big(0), quoteVolume: new Big(0) }
     );
   }
 
@@ -296,8 +304,18 @@ class KandelInstance {
   }
 
   public async balance(ba: Market.BA) {
-    const balance = await this.kandel.reserveBalance(this.baToUint(ba));
-    return this.getOutboundToken(ba).fromUnits(balance);
+    const x = await this.kandel.reserveBalance(this.baToUint(ba));
+    return this.getOutboundToken(ba).fromUnits(x);
+  }
+
+  public async pending(ba: Market.BA) {
+    const x = await this.kandel.pending(this.baToUint(ba));
+    return this.getOutboundToken(ba).fromUnits(x);
+  }
+
+  public async offeredVolume(ba: Market.BA) {
+    const x = await this.kandel.offeredVolume(this.baToUint(ba));
+    return this.getOutboundToken(ba).fromUnits(x);
   }
 
   public async getRequiredProvision(
@@ -375,6 +393,18 @@ class KandelInstance {
       rawParameters,
       depositTokens,
       depositAmounts,
+      overrides
+    );
+  }
+
+  public async setCompoundRates(
+    compoundRateBase: Big,
+    compoundRateQuote: Big,
+    overrides: ethers.Overrides = {}
+  ) {
+    await this.kandel.setCompoundRates(
+      UnitCalculations.toUnits(compoundRateBase, this.precision),
+      UnitCalculations.toUnits(compoundRateQuote, this.precision),
       overrides
     );
   }
