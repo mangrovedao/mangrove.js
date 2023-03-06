@@ -336,6 +336,41 @@ class KandelInstance {
     return provisionBid.add(provisionAsk).mul(offerCount);
   }
 
+  public getRawDistribution(distribution: Distribution) {
+    const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
+      {
+        baseDist: Array(distribution.length),
+        quoteDist: Array(distribution.length),
+        indices: Array(distribution.length),
+      };
+    distribution.forEach((o, i) => {
+      rawDistribution.baseDist[i] = this.market.base.toUnits(o.base);
+      rawDistribution.quoteDist[i] = this.market.quote.toUnits(o.quote);
+      rawDistribution.indices[i] = o.index;
+    });
+    return rawDistribution;
+  }
+
+  public chunk(
+    pivots: number[],
+    distribution: Distribution,
+    maxOffersInChunk: number
+  ) {
+    const chunks: {
+      pivots: number[];
+      rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct;
+    }[] = [];
+    for (let i = 0; i < distribution.length; i += maxOffersInChunk) {
+      const pivotsChunk = pivots.slice(i, i + maxOffersInChunk);
+      const distributionChunk = distribution.slice(i, i + maxOffersInChunk);
+      chunks.push({
+        pivots: pivotsChunk,
+        rawDistribution: this.getRawDistribution(distributionChunk),
+      });
+    }
+    return chunks;
+  }
+
   public async populate(
     params: {
       distribution: Distribution;
@@ -344,8 +379,9 @@ class KandelInstance {
       depositBaseAmount?: Big;
       depositQuoteAmount?: Big;
       funds?: Big;
+      maxOffersInChunk?: number;
     },
-    overrides?: ethers.Overrides
+    overrides: ethers.Overrides = {}
   ) {
     params.distribution.sort((a, b) => a.index - b.index);
 
@@ -358,17 +394,11 @@ class KandelInstance {
       )
     ).map((x) => x ?? 0);
 
-    const distributionStruct: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
-      {
-        baseDist: Array(params.distribution.length),
-        quoteDist: Array(params.distribution.length),
-        indices: Array(params.distribution.length),
-      };
-    params.distribution.forEach((o, i) => {
-      distributionStruct.baseDist[i] = this.market.base.toUnits(o.base);
-      distributionStruct.quoteDist[i] = this.market.quote.toUnits(o.quote);
-      distributionStruct.indices[i] = o.index;
-    });
+    const rawDistributions = this.chunk(
+      pivots,
+      params.distribution,
+      params.maxOffersInChunk ?? 80
+    );
 
     const parameters = await this.overrideParameters(params.parameters);
     const rawParameters = await this.getRawParameters(parameters);
@@ -379,22 +409,36 @@ class KandelInstance {
         rawParameters.gasprice,
         params.distribution.length
       ));
-    overrides = LiquidityProvider.optValueToPayableOverride(overrides, funds);
 
     const { depositTokens, depositAmounts } = await this.getDepositArrays(
       params.depositBaseAmount,
       params.depositQuoteAmount
     );
 
-    return this.kandel.populate(
-      distributionStruct,
-      pivots,
-      params.firstAskIndex,
-      rawParameters,
-      depositTokens,
-      depositAmounts,
-      overrides
-    );
+    const txs = [
+      await this.kandel.populate(
+        rawDistributions[0].rawDistribution,
+        rawDistributions[0].pivots,
+        params.firstAskIndex,
+        rawParameters,
+        depositTokens,
+        depositAmounts,
+        LiquidityProvider.optValueToPayableOverride(overrides, funds)
+      ),
+    ];
+
+    for (let i = 1; i < rawDistributions.length; i++) {
+      txs.push(
+        await this.kandel.populateChunk(
+          rawDistributions[i].rawDistribution,
+          rawDistributions[i].pivots,
+          params.firstAskIndex,
+          overrides
+        )
+      );
+    }
+
+    return txs;
   }
 
   public async setCompoundRates(

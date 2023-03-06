@@ -5,6 +5,7 @@ import { Market, MgvToken, Mangrove } from "../..";
 import * as typechain from "../../types/typechain";
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Deferred } from "../../util";
+import { PromiseOrValue } from "../../types/typechain/common";
 
 export type Account = {
   name: string;
@@ -401,8 +402,24 @@ export const stopPollOfTransactionTracking = (): void => {
  * it allows us to track when events for the last tx have been generated.
  * NB: Only works when this is awaited before sending more tx's.
  */
+export async function waitForTransactions(
+  txPromises: PromiseOrValue<PromiseOrValue<ContractTransaction>[]>
+): Promise<TransactionReceipt[]> {
+  const txs = await txPromises;
+  const receipts: TransactionReceipt[] = Array(txs.length);
+  for (let i = 0; i < txs.length; i++) {
+    receipts[i] = await waitForTransaction(txs[i]);
+  }
+  return receipts;
+}
+
+/**
+ * Use this to await transactions. In addition to convenience,
+ * it allows us to track when events for the last tx have been generated.
+ * NB: Only works when this is awaited before sending more tx's.
+ */
 export async function waitForTransaction(
-  txPromise: Promise<ContractTransaction>
+  txPromise: PromiseOrValue<ContractTransaction>
 ): Promise<TransactionReceipt> {
   awaitedPollId = undefined;
   lastTxReceipt = undefined;

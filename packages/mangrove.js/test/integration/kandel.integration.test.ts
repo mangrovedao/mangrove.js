@@ -1,20 +1,21 @@
 // Integration tests for Semibook.ts
 import { describe, beforeEach, afterEach, it } from "mocha";
-import { expect, assert } from "chai";
+import { assert } from "chai";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
-import { newOffer, toWei } from "../util/helpers";
+import { waitForTransactions } from "../../src/util/test/mgvIntegrationTestUtil";
+
+import { toWei } from "../util/helpers";
 
 import { Kandel } from "../../src";
 import { Mangrove } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { BigNumber, ethers } from "ethers";
 import KandelFarm from "../../src/kandel/kandelFarm";
 import KandelInstance from "../../src/kandel/kandelInstance";
-import { OfferForwarder__factory } from "../../dist/nodejs/types/typechain/factories/OfferForwarder__factory";
+import TradeEventManagement from "../../src/util/tradeEventManagement";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -292,140 +293,163 @@ describe("Kandel integration tests suite", function () {
         assert.sameOrderedMembers(pivots, [1, 2, undefined, undefined, 1, 2]);
       });
 
-      it("populate populates a market, deposits and sets parameters", async function () {
-        // Arrange
-        const market = kandel.market;
-        const ratio = new Big(1.08);
-        const firstBase = Big(1);
-        const firstQuote = Big(1000);
-        const pricePoints = 6;
-        const distribution = kandel.calculateDistribution(
-          firstBase,
-          firstQuote,
-          ratio,
-          pricePoints
-        );
-        const firstAskIndex = 3;
+      [true, false].forEach((inChunks) => {
+        it(`populate populates a market, deposits and sets parameters inChunks=${inChunks}`, async function () {
+          // Arrange
+          const market = kandel.market;
+          const ratio = new Big(1.08);
+          const firstBase = Big(1);
+          const firstQuote = Big(1000);
+          const pricePoints = 6;
+          const distribution = kandel.calculateDistribution(
+            firstBase,
+            firstQuote,
+            ratio,
+            pricePoints
+          );
+          const firstAskIndex = 3;
 
-        const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
-          distribution,
-          firstAskIndex
-        );
-
-        const approvalTxs = await kandel.approve();
-        await approvalTxs[0].wait();
-        await approvalTxs[1].wait();
-
-        // Act
-        await waitForTransaction(
-          kandel.populate({
+          const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
             distribution,
-            firstAskIndex,
-            parameters: {
-              compoundRateBase: Big(0.5),
-              ratio,
-              spread: 1,
-              pricePoints: distribution.length,
-            },
-            depositBaseAmount: baseVolume,
-            depositQuoteAmount: quoteVolume,
-          })
-        );
+            firstAskIndex
+          );
 
-        // Assert
-        await mgvTestUtil.waitForBooksForLastTx(market);
+          const approvalTxs = await kandel.approve();
+          await approvalTxs[0].wait();
+          await approvalTxs[1].wait();
 
-        // assert parameters are updated
-        const params = await kandel.parameters();
+          // Act
+          const receipts = await waitForTransactions(
+            await kandel.populate({
+              distribution,
+              firstAskIndex,
+              parameters: {
+                compoundRateBase: Big(0.5),
+                ratio,
+                spread: 1,
+                pricePoints: distribution.length,
+              },
+              depositBaseAmount: baseVolume,
+              depositQuoteAmount: quoteVolume,
+              maxOffersInChunk: inChunks ? 3 : undefined,
+            })
+          );
 
-        assert.equal(
-          params.compoundRateQuote.toNumber(),
-          1,
-          "compoundRateQuote should have been left unchanged"
-        );
-        assert.equal(
-          params.compoundRateBase.toNumber(),
-          0.5,
-          "compoundRateBase should have been updated"
-        );
-        assert.equal(
-          params.pricePoints,
-          pricePoints,
-          "pricePoints should have been updated"
-        );
-        assert.equal(
-          params.ratio.toString(),
-          ratio.toString(),
-          "ratio should have been updated"
-        );
-        assert.equal(params.spread, 1, "spread should have been updated");
+          // Assert
+          await mgvTestUtil.waitForBooksForLastTx(market);
 
-        const book = market.getBook();
+          // assert parameters are updated
+          const params = await kandel.parameters();
 
-        // assert asks
-        const asks = [...book.asks];
-        assert.equal(asks.length, 3, "3 asks should be populated");
-        for (let i = 0; i < asks.length; i++) {
-          const offer = asks[i];
-          const d = distribution[firstAskIndex + i];
           assert.equal(
-            offer.gives.toString(),
-            d.base.toString(),
-            "gives should be base for ask"
+            params.compoundRateQuote.toNumber(),
+            1,
+            "compoundRateQuote should have been left unchanged"
           );
           assert.equal(
-            offer.wants.toString(),
-            d.quote.toString(),
-            "wants should be quote for ask"
+            params.compoundRateBase.toNumber(),
+            0.5,
+            "compoundRateBase should have been updated"
           );
           assert.equal(
-            offer.id,
-            await kandel.getOfferIdAtIndex("asks", d.index)
+            params.pricePoints,
+            pricePoints,
+            "pricePoints should have been updated"
           );
           assert.equal(
-            d.index,
-            await kandel.getIndexOfOfferId("asks", offer.id)
+            params.ratio.toString(),
+            ratio.toString(),
+            "ratio should have been updated"
           );
-        }
-        // assert bids
-        const bids = [...book.bids];
-        assert.equal(bids.length, 3, "3 bids should be populated");
-        for (let i = 0; i < bids.length; i++) {
-          const offer = bids[bids.length - 1 - i];
-          const d = distribution[i];
-          assert.equal(
-            offer.gives.toString(),
-            d.quote.toString(),
-            "gives should be quote for bid"
-          );
-          assert.equal(
-            offer.wants.toString(),
-            d.base.toString(),
-            "wants should be base for bid"
-          );
-          assert.equal(
-            offer.id,
-            await kandel.getOfferIdAtIndex("bids", d.index)
-          );
-          assert.equal(
-            d.index,
-            await kandel.getIndexOfOfferId("bids", offer.id)
-          );
-        }
+          assert.equal(params.spread, 1, "spread should have been updated");
 
-        // assert provisions transferred is done by offers being able to be posted
+          // assert expected offer writes
+          const allEvents = receipts
+            .map((r) =>
+              new TradeEventManagement().getContractEventsFromReceipt(
+                r,
+                mgv.contract
+              )
+            )
+            .flat();
+          const countOfferWrites = allEvents.reduce(
+            (totalOfferWrites, e) =>
+              totalOfferWrites + (e["name"] == "OfferWrite" ? 1 : 0),
+            0
+          );
+          assert.equal(
+            countOfferWrites,
+            6,
+            "there should be 1 offerWrite for each offer"
+          );
 
-        // assert deposits
-        assert.equal(
-          (await kandel.balance("asks")).toString(),
-          baseVolume.toString(),
-          "Base should be deposited"
-        );
-        assert.equal(
-          (await kandel.balance("bids")).toString(),
-          quoteVolume.toString(),
-          "Quote should be deposited"
-        );
+          const book = market.getBook();
+
+          // assert asks
+          const asks = [...book.asks];
+          assert.equal(asks.length, 3, "3 asks should be populated");
+          for (let i = 0; i < asks.length; i++) {
+            const offer = asks[i];
+            const d = distribution[firstAskIndex + i];
+            assert.equal(
+              offer.gives.toString(),
+              d.base.toString(),
+              "gives should be base for ask"
+            );
+            assert.equal(
+              offer.wants.toString(),
+              d.quote.toString(),
+              "wants should be quote for ask"
+            );
+            assert.equal(
+              offer.id,
+              await kandel.getOfferIdAtIndex("asks", d.index)
+            );
+            assert.equal(
+              d.index,
+              await kandel.getIndexOfOfferId("asks", offer.id)
+            );
+          }
+          // assert bids
+          const bids = [...book.bids];
+          assert.equal(bids.length, 3, "3 bids should be populated");
+          for (let i = 0; i < bids.length; i++) {
+            const offer = bids[bids.length - 1 - i];
+            const d = distribution[i];
+            assert.equal(
+              offer.gives.toString(),
+              d.quote.toString(),
+              "gives should be quote for bid"
+            );
+            assert.equal(
+              offer.wants.toString(),
+              d.base.toString(),
+              "wants should be base for bid"
+            );
+            assert.equal(
+              offer.id,
+              await kandel.getOfferIdAtIndex("bids", d.index)
+            );
+            assert.equal(
+              d.index,
+              await kandel.getIndexOfOfferId("bids", offer.id)
+            );
+          }
+
+          // assert provisions transferred is done by offers being able to be posted
+
+          // assert deposits
+          assert.equal(
+            (await kandel.balance("asks")).toString(),
+            baseVolume.toString(),
+            "Base should be deposited"
+          );
+          assert.equal(
+            (await kandel.balance("bids")).toString(),
+            quoteVolume.toString(),
+            "Quote should be deposited"
+          );
+        });
       });
 
       async function populateKandel(params: {
@@ -455,7 +479,7 @@ describe("Kandel integration tests suite", function () {
         }
 
         // Act
-        await waitForTransaction(
+        await waitForTransactions(
           kandel.populate({
             distribution,
             firstAskIndex,
