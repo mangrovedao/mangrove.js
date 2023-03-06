@@ -9,8 +9,8 @@ import { ConfigUtils } from "./util/configUtils";
 import http from "http";
 import { Wallet } from "ethers";
 import { BaseProvider } from "@ethersproject/providers";
-import { getPoolContract } from "./uniswap/libs/quote";
-import { SWAP_ROUTER_ADDRESS } from "./uniswap/libs/constants";
+import { getPoolContract } from "./uniswap/libs/uniswapUtils";
+import { SWAP_ROUTER_ADDRESS } from "./uniswap/libs/uniswapUtils";
 
 dotenvFlow.config();
 

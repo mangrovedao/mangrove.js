@@ -10,7 +10,7 @@ import { TestToken__factory } from "@mangrovedao/mangrove.js/dist/nodejs/types/t
 import assert from "assert";
 import { ethers } from "ethers";
 import { ArbBot } from "../../src/ArbBot";
-import { getPoolContract } from "../../src/uniswap/libs/quote";
+import { getPoolContract } from "../../src/uniswap/libs/uniswapUtils";
 
 let mgv: Mangrove;
 let mgvAdmin: Mangrove;
