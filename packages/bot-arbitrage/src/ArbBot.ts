@@ -20,7 +20,13 @@ export class ArbBot {
     this.poolContract = _poolContract;
   }
 
-  public async run(marketConfig: [string, string], config: ArbConfig) {
+  public async run(
+    marketConfig: [string, string],
+    config: ArbConfig
+  ): Promise<{
+    askTransaction: ethers.ContractTransaction;
+    bidTransaction: ethers.ContractTransaction;
+  }> {
     try {
       const [base, quote] = marketConfig;
       const market = await this.mgv.market({
@@ -43,8 +49,22 @@ export class ArbBot {
         .getExternalPriceFromInAndOut(nativeToken.name, config.holdingToken)
         .price();
 
-      await this.checkPrice(market, "asks", config, gasprice, holdsTokenPrice);
-      await this.checkPrice(market, "bids", config, gasprice, holdsTokenPrice);
+      return {
+        askTransaction: await this.checkPrice(
+          market,
+          "asks",
+          config,
+          gasprice,
+          holdsTokenPrice
+        ),
+        bidTransaction: await this.checkPrice(
+          market,
+          "bids",
+          config,
+          gasprice,
+          holdsTokenPrice
+        ),
+      };
     } catch (error) {
       logger.error("Error starting bots for market", { data: marketConfig });
       logger.error(error);
@@ -79,14 +99,14 @@ export class ArbBot {
     config: ArbConfig,
     gasprice: BigNumber,
     holdsTokenPrice: Big
-  ) {
+  ): Promise<ethers.ContractTransaction> {
     const bestId = market.getSemibook(BA).getBestInCache();
     const bestOffer = bestId ? await market.offerInfo(BA, bestId) : undefined;
     let wantsToken = BA == "asks" ? market.base : market.quote;
     let givesToken = BA == "asks" ? market.quote : market.base;
 
     if (bestOffer && bestId) {
-      const t = await this.isProfitable(
+      const result = await this.isProfitable(
         bestId,
         wantsToken,
         bestOffer,
@@ -95,15 +115,15 @@ export class ArbBot {
         gasprice,
         holdsTokenPrice
       );
-      if (t.isProfitable) {
-        return await this.doArbitrage(
+      if (result.isProfitable) {
+        return (await this.doArbitrage(
           bestId,
           wantsToken,
           bestOffer,
           givesToken,
-          t.costInHoldingToken,
+          result.costInHoldingToken,
           config
-        );
+        )) as ethers.ContractTransaction;
       }
     }
   }
@@ -120,7 +140,6 @@ export class ArbBot {
     isProfitable: boolean;
     costInHoldingToken: BigNumberish;
   }> {
-    const deci = this.mgv.token(config.holdingToken).decimals;
     try {
       let gasused = await this.estimateArbGas(
         bestId,
@@ -133,7 +152,7 @@ export class ArbBot {
       const costInHoldingToken = holdsTokenPrice
         .mul(costInNative.toString())
         .round();
-      const t = await this.staticArbGas(
+      const t = await this.staticArb(
         bestId,
         wantsToken,
         bestOffer,
@@ -170,7 +189,7 @@ export class ArbBot {
     return gasused as BigNumber;
   }
 
-  private async staticArbGas(
+  private async staticArb(
     bestId: number,
     wantsToken: MgvToken,
     bestOffer: Market.Offer,

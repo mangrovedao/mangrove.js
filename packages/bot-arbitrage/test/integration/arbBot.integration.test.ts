@@ -131,6 +131,14 @@ describe("ArbBot integration tests", () => {
         tokenAddress: usdc.address,
         amount: usdc.toUnits(10000).toString(),
       });
+      const dai = mgv.token("DAI");
+      await impersonateTransfer({
+        provider: mgv.provider as JsonRpcProvider,
+        token: "DAI",
+        to: this.accounts.maker.address,
+        tokenAddress: dai.address,
+        amount: dai.toUnits(10000).toString(),
+      });
       let usdcDaiMarket = await mgv.market({ base: "DAI", quote: "USDC" });
       let lpDAI = await mgv.liquidityProvider(usdcDaiMarket);
       let provisionDAI = await lpDAI.computeAskProvision();
@@ -159,6 +167,7 @@ describe("ArbBot integration tests", () => {
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
+      let holdingTokenBeforeBalance = await dai.balanceOf(mgvArbAddress);
       await arbBot.run(["WETH", "USDC"], {
         fee: 3000,
         holdingToken: "DAI",
@@ -166,6 +175,7 @@ describe("ArbBot integration tests", () => {
       });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
+      let holdingTokenAfterBalance = await dai.balanceOf(mgvArbAddress);
       await mgvTestUtil.waitForBooksForLastTx(market, true);
       assert.ok(!(await market.isLive("asks", offer.id)));
       assert.deepStrictEqual(
@@ -173,9 +183,14 @@ describe("ArbBot integration tests", () => {
         baseAfterBalance,
         "Should have the same amount of base"
       );
+      assert.deepStrictEqual(
+        quoteBeforeBalance,
+        quoteAfterBalance,
+        "Should have the same amount of base"
+      );
       assert.ok(
-        quoteBeforeBalance < quoteAfterBalance,
-        "Should have gained quote"
+        holdingTokenBeforeBalance < holdingTokenAfterBalance,
+        "Should have gained holding token"
       );
     });
 
@@ -200,13 +215,23 @@ describe("ArbBot integration tests", () => {
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
-      await arbBot.run(["WETH", "USDC"], {
+      let holdingTokenBeforeBalance = await mgv
+        .token("DAI")
+        .balanceOf(mgvArbAddress);
+      let transactions = await arbBot.run(["WETH", "USDC"], {
         fee: 3000,
         holdingToken: "DAI",
         exchangeConfig: { exchange: "Uniswap", fee: 100 },
       });
+      if (transactions.askTransaction)
+        mgvTestUtil.waitForTransaction(transactions.askTransaction);
+      if (transactions.bidTransaction)
+        mgvTestUtil.waitForTransaction(transactions.bidTransaction);
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
+      let holdingTokenAfterBalance = await mgv
+        .token("DAI")
+        .balanceOf(mgvArbAddress);
       await mgvTestUtil.waitForBooksForLastTx(market, true);
       assert.ok(!(await market.isLive("asks", offer.id)));
       assert.deepStrictEqual(
@@ -214,13 +239,16 @@ describe("ArbBot integration tests", () => {
         baseAfterBalance,
         "Should have the same amount of base"
       );
+      assert.deepStrictEqual(
+        quoteBeforeBalance,
+        quoteAfterBalance,
+        "Should have the same amount of base"
+      );
       assert.ok(
-        quoteBeforeBalance < quoteAfterBalance,
-        "Should have gained quote"
+        holdingTokenBeforeBalance < holdingTokenAfterBalance,
+        "Should have gained holding token"
       );
     });
-
-    // determine gasprice and use it for minGain
 
     // maybe expand to be able to snipe multiple offers
 
