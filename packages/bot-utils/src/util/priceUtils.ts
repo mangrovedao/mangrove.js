@@ -5,12 +5,11 @@ import { IConfig } from "config";
 import { fetchJson } from "ethers/lib/utils";
 import random from "random";
 import * as log from "./logger";
+import { Network, Alchemy } from "alchemy-sdk";
 
 export class PriceUtils {
-  #config: IConfig;
   logger: CommonLogger;
   constructor(config: IConfig) {
-    this.#config = config;
     this.logger = log.logger(config);
   }
 
@@ -24,6 +23,93 @@ export class PriceUtils {
     return price.gt(0) ? price : referencePrice;
   }
 
+  public getExternalPriceFromInAndOut(
+    inToken: string,
+    outToken: string
+  ): {
+    apiUrl: string;
+    getJson: () => Promise<any>;
+    price: () => Promise<Big | undefined>;
+  } {
+    const cryptoCompareUrl = `https://min-api.cryptocompare.com/data/price?fsym=${inToken}&tsyms=${outToken}`;
+    return {
+      apiUrl: cryptoCompareUrl,
+      getJson: () => fetchJson(cryptoCompareUrl),
+      price: async () =>
+        this.priceFromJson(await fetchJson(cryptoCompareUrl), outToken),
+    };
+  }
+
+  async priceFromJson(json: any, outToken: string) {
+    if (json[outToken] !== undefined) {
+      const referencePrice = new Big(json[outToken]);
+      return referencePrice;
+    }
+  }
+
+  public async getExternalPrice(market: Market, ba: Market.BA) {
+    const externalPrice = this.getExternalPriceFromInAndOut(
+      market.base.name,
+      market.quote.name
+    );
+    try {
+      this.logger.debug("Getting external price reference", {
+        contextInfo: "maker",
+        base: market.base.name,
+        quote: market.quote.name,
+        ba: ba,
+        data: {
+          apiUrl: externalPrice.apiUrl,
+        },
+      });
+      const price = await externalPrice.price();
+      if (price !== undefined) {
+        const referencePrice = price;
+        this.logger.info(
+          "Using external price reference as order book is empty",
+          {
+            contextInfo: "maker",
+            base: market.base.name,
+            quote: market.quote.name,
+            ba: ba,
+            data: {
+              referencePrice,
+              apiUrl: externalPrice.apiUrl,
+            },
+          }
+        );
+        return referencePrice;
+      }
+
+      this.logger.warn(
+        `Response did not contain a ${market.quote.name} field`,
+        {
+          contextInfo: "maker",
+          base: market.base.name,
+          quote: market.quote.name,
+          ba: ba,
+          data: {
+            apiUrl: externalPrice.apiUrl,
+            responseJson: await externalPrice.getJson(),
+          },
+        }
+      );
+
+      return;
+    } catch (e) {
+      this.logger.error(`Error encountered while fetching external price`, {
+        contextInfo: "maker",
+        base: market.base.name,
+        quote: market.quote.name,
+        ba: ba,
+        data: {
+          reason: e,
+          apiUrl: externalPrice.apiUrl,
+        },
+      });
+      return;
+    }
+  }
   public async getReferencePrice(
     market: Market,
     ba: Market.BA,
@@ -43,60 +129,24 @@ export class PriceUtils {
       return bestOffer.price;
     }
 
-    const cryptoCompareUrl = `https://min-api.cryptocompare.com/data/price?fsym=${market.base.name}&tsyms=${market.quote.name}`;
-    try {
-      this.logger.debug("Getting external price reference", {
-        contextInfo: "maker",
-        base: market.base.name,
-        quote: market.quote.name,
-        ba: ba,
-        data: {
-          cryptoCompareUrl,
-        },
-      });
-      const json = await fetchJson(cryptoCompareUrl);
-      if (json[market.quote.name] !== undefined) {
-        const referencePrice = new Big(json[market.quote.name]);
-        this.logger.info(
-          "Using external price reference as order book is empty",
-          {
-            contextInfo: "maker",
-            base: market.base.name,
-            quote: market.quote.name,
-            ba: ba,
-            data: {
-              referencePrice,
-              cryptoCompareUrl,
-            },
-          }
-        );
-        return referencePrice;
-      }
+    await this.getExternalPrice(market, ba);
+  }
 
-      this.logger.warn(
-        `Response did not contain a ${market.quote.name} field`,
-        {
-          contextInfo: "maker",
-          base: market.base.name,
-          quote: market.quote.name,
-          ba: ba,
-          data: { cryptoCompareUrl, responseJson: json },
-        }
+  public async getGasPrice(APIKEY: string, network: string) {
+    const networkIndex = Object.entries(Network).find((item) =>
+      item[0].includes(network.toUpperCase())
+    );
+    if (!networkIndex) {
+      throw new Error(
+        `Given network: ${network}, is not in the alchemy networks`
       );
-
-      return;
-    } catch (e) {
-      this.logger.error(`Error encountered while fetching external price`, {
-        contextInfo: "maker",
-        base: market.base.name,
-        quote: market.quote.name,
-        ba: ba,
-        data: {
-          reason: e,
-          cryptoCompareUrl,
-        },
-      });
-      return;
     }
+
+    const alchemy = new Alchemy({
+      apiKey: APIKEY,
+      network: networkIndex[1],
+    });
+
+    return await alchemy.core.getGasPrice();
   }
 }

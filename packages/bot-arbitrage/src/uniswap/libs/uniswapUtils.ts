@@ -1,43 +1,25 @@
 import IUniswapV3Factory from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json";
 import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json";
-import Quoter from "@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json";
-import { BigNumber, Signer, ethers, providers } from "ethers";
-import {
-  MAX_FEE_PER_GAS,
-  MAX_PRIORITY_FEE_PER_GAS,
-  POOL_FACTORY_CONTRACT_ADDRESS,
-  QUOTER_CONTRACT_ADDRESS,
-  SWAP_ROUTER_ADDRESS,
-} from "./constants";
+import { ethers, providers } from "ethers";
 
 export type TokenInfo = {
   address: string;
   decimals: number;
 };
 
-export async function quote(params: {
-  in: string;
-  amountIn: BigNumber;
-  out: string;
-  fee: number;
-  provider: providers.Provider;
-}): Promise<BigNumber> {
-  const quoterContract = new ethers.Contract(
-    QUOTER_CONTRACT_ADDRESS,
-    Quoter.abi,
-    params.provider
-  );
-  const amounIn = params.amountIn.toString();
-  const quotedAmountOut = await quoterContract.callStatic.quoteExactInputSingle(
-    params.in,
-    params.out,
-    params.fee,
-    amounIn,
-    0
-  );
+// This file stores web3 related constants such as addresses, token definitions, ETH currency references and ABI's
 
-  return quotedAmountOut;
-}
+// Addresses
+
+export const POOL_FACTORY_CONTRACT_ADDRESS =
+  "0x1F98431c8aD98523631AE4a59f267346ea31F984";
+export const QUOTER_CONTRACT_ADDRESS =
+  "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6";
+
+export const SWAP_ROUTER_ADDRESS = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+
+export const MAX_FEE_PER_GAS = 100000000000;
+export const MAX_PRIORITY_FEE_PER_GAS = 100000000000;
 
 export async function getPoolContract(params: {
   in: string;
