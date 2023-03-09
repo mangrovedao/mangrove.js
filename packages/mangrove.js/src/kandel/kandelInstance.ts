@@ -9,13 +9,8 @@ import Market from "../market";
 import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
-
-export type DistributionElement = {
-  index: number;
-  base: Big;
-  quote: Big;
-};
-export type Distribution = DistributionElement[];
+import KandelStatus, { OffersWithPrices } from "./kandelStatus";
+import KandelCalculation, { Distribution } from "./kandelCalculation";
 
 export type KandelParameters = {
   gasprice: number;
@@ -43,6 +38,8 @@ class KandelInstance {
   address: string;
   precision: number;
   market: Market;
+  calculation: KandelCalculation;
+  status: KandelStatus;
 
   public static async create(params: {
     address: string;
@@ -63,11 +60,17 @@ class KandelInstance {
         ? await params.market(await kandel.BASE(), await kandel.QUOTE())
         : params.market;
 
+    const calculation = new KandelCalculation(
+      market.base.decimals,
+      market.quote.decimals
+    );
     return new KandelInstance({
       address: params.address,
       precision: precision,
       market: market,
       kandel,
+      kandelStatus: new KandelStatus(calculation),
+      kandelCalculation: calculation,
     });
   }
 
@@ -76,18 +79,22 @@ class KandelInstance {
     kandel: typechain.GeometricKandel;
     market: Market;
     precision: number;
+    kandelStatus: KandelStatus;
+    kandelCalculation: KandelCalculation;
   }) {
     this.address = params.address;
     this.kandel = params.kandel;
     this.market = params.market;
     this.precision = params.precision;
+    this.status = params.kandelStatus;
+    this.calculation = params.kandelCalculation;
   }
 
-  public async base() {
+  public base() {
     return this.market.base;
   }
 
-  public async quote() {
+  public quote() {
     return this.market.quote;
   }
 
@@ -116,18 +123,17 @@ class KandelInstance {
   }
 
   async getRawParameters(parameters: KandelParameters) {
-    const precision = await this.precision;
     return {
       gasprice: parameters.gasprice,
       gasreq: parameters.gasreq,
-      ratio: UnitCalculations.toUnits(parameters.ratio, precision),
+      ratio: UnitCalculations.toUnits(parameters.ratio, this.precision),
       compoundRateBase: UnitCalculations.toUnits(
         parameters.compoundRateBase,
-        precision
+        this.precision
       ),
       compoundRateQuote: UnitCalculations.toUnits(
         parameters.compoundRateQuote,
-        precision
+        this.precision
       ),
       spread: parameters.spread,
       pricePoints: parameters.pricePoints,
@@ -142,6 +148,10 @@ class KandelInstance {
 
   private baToUint(ba: Market.BA): number {
     return ba == "bids" ? 0 : 1;
+  }
+
+  private UintToBa(ba: number): Market.BA {
+    return ba == 0 ? "bids" : "asks";
   }
 
   public async getOfferIdAtIndex(ba: Market.BA, index: number) {
@@ -160,31 +170,15 @@ class KandelInstance {
     return (await this.kandel.router()) != (await this.kandel.NO_ROUTER());
   }
 
-  static getBA(index: number, firstAskIndex: number): Market.BA {
-    return index >= firstAskIndex ? "asks" : "bids";
-  }
-
-  public static getPrices(distribution: Distribution, firstAskIndex: number) {
-    const prices: Big[] = Array(distribution.length);
-
-    distribution.forEach(async (o, i) => {
-      const ba = this.getBA(o.index, firstAskIndex);
-      const [gives, wants] =
-        ba == "asks" ? [o.base, o.quote] : [o.quote, o.base];
-      prices[i] = Market.getPrice(ba, gives, wants);
-    });
-    return prices;
-  }
-
   public async getPivots(
     market: Market,
     distribution: Distribution,
     firstAskIndex: number
   ) {
-    const prices = KandelInstance.getPrices(distribution, firstAskIndex);
+    const prices = this.calculation.getPrices(distribution);
     const pivots: number[] = Array(distribution.length);
     for (let i = 0; i < distribution.length; i++) {
-      const ba = KandelInstance.getBA(distribution[i].index, firstAskIndex);
+      const ba = this.calculation.getBA(distribution[i].index, firstAskIndex);
       pivots[i] = await market.getPivotId(ba, prices[i]);
     }
     return pivots;
@@ -205,58 +199,16 @@ class KandelInstance {
     ratio: Big,
     pricePoints: number
   ) {
-    return KandelInstance.calculateDistribution(
+    return this.calculation.calculateDistribution(
       firstBase,
       firstQuote,
       ratio,
-      pricePoints,
-      this.market.base.decimals,
-      this.market.quote.decimals
+      pricePoints
     );
-  }
-
-  public static calculateDistribution(
-    firstBase: Big,
-    firstQuote: Big,
-    ratio: Big,
-    pricePoints: number,
-    baseDecimals: number,
-    quoteDecimals: number
-  ) {
-    const distribution: Distribution = Array(pricePoints);
-
-    const base = firstBase.round(baseDecimals, Big.roundHalfUp);
-    let quote = firstQuote;
-    for (let i = 0; i < pricePoints; i++) {
-      distribution[i] = {
-        index: i,
-        base: base,
-        quote: quote.round(quoteDecimals, Big.roundHalfUp),
-      };
-      quote = quote.mul(ratio);
-    }
-    return distribution;
   }
 
   public getVolumes(distribution: Distribution, firstAskIndex: number) {
-    return this.getVolumes(distribution, firstAskIndex);
-  }
-
-  public static getVolumes(distribution: Distribution, firstAskIndex: number) {
-    return distribution.reduce(
-      (a, x) => {
-        return this.getBA(x.index, firstAskIndex) == "bids"
-          ? {
-              baseVolume: a.baseVolume,
-              quoteVolume: a.quoteVolume.add(x.quote),
-            }
-          : {
-              baseVolume: a.baseVolume.add(x.base),
-              quoteVolume: a.quoteVolume,
-            };
-      },
-      { baseVolume: new Big(0), quoteVolume: new Big(0) }
-    );
+    return this.calculation.getVolumes(distribution, firstAskIndex);
   }
 
   public async approve(
@@ -351,26 +303,6 @@ class KandelInstance {
     return rawDistribution;
   }
 
-  public chunk(
-    pivots: number[],
-    distribution: Distribution,
-    maxOffersInChunk: number
-  ) {
-    const chunks: {
-      pivots: number[];
-      rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct;
-    }[] = [];
-    for (let i = 0; i < distribution.length; i += maxOffersInChunk) {
-      const pivotsChunk = pivots.slice(i, i + maxOffersInChunk);
-      const distributionChunk = distribution.slice(i, i + maxOffersInChunk);
-      chunks.push({
-        pivots: pivotsChunk,
-        rawDistribution: this.getRawDistribution(distributionChunk),
-      });
-    }
-    return chunks;
-  }
-
   public async populate(
     params: {
       distribution: Distribution;
@@ -383,7 +315,7 @@ class KandelInstance {
     },
     overrides: ethers.Overrides = {}
   ) {
-    params.distribution.sort((a, b) => a.index - b.index);
+    this.calculation.sortByIndex(params.distribution);
 
     // Use 0 as pivot when none is found
     const pivots = (
@@ -394,7 +326,7 @@ class KandelInstance {
       )
     ).map((x) => x ?? 0);
 
-    const rawDistributions = this.chunk(
+    const distributions = this.calculation.chunk(
       pivots,
       params.distribution,
       params.maxOffersInChunk ?? 80
@@ -417,8 +349,8 @@ class KandelInstance {
 
     const txs = [
       await this.kandel.populate(
-        rawDistributions[0].rawDistribution,
-        rawDistributions[0].pivots,
+        this.getRawDistribution(distributions[0].distribution),
+        distributions[0].pivots,
         params.firstAskIndex,
         rawParameters,
         depositTokens,
@@ -427,11 +359,11 @@ class KandelInstance {
       ),
     ];
 
-    for (let i = 1; i < rawDistributions.length; i++) {
+    for (let i = 1; i < distributions.length; i++) {
       txs.push(
         await this.kandel.populateChunk(
-          rawDistributions[i].rawDistribution,
-          rawDistributions[i].pivots,
+          this.getRawDistribution(distributions[i].distribution),
+          distributions[i].pivots,
           params.firstAskIndex,
           overrides
         )
@@ -451,6 +383,50 @@ class KandelInstance {
       UnitCalculations.toUnits(compoundRateQuote, this.precision),
       overrides
     );
+  }
+
+  public async getOfferIds() {
+    const pricePoints = (await this.parameters()).pricePoints;
+    const mapping: { ba: Market.BA; offerId: number; index: number }[] = [];
+    for (let index = 0; index < pricePoints; index++) {
+      for (const ba of ["bids" as Market.BA, "asks" as Market.BA]) {
+        const offerId = await this.getOfferIdAtIndex(ba, index);
+        if (offerId > 0) {
+          mapping.push({ ba, offerId, index });
+        }
+      }
+    }
+    return mapping;
+
+    /* TODO return (await this.kandel.queryFilter(this.kandel.filters.SetIndexMapping()))
+      .map(x => { return { ba: this.baToUint(x.args.ba), offerId: x.args.id, index: x.args.index }; });
+    }*/
+  }
+
+  public async getOfferStatus(midPrice: Big) {
+    const parameters = await this.parameters();
+    const ratio = parameters.ratio;
+    const pricePoints = parameters.pricePoints;
+
+    const offerIds = await this.getOfferIds();
+    const offers = await Promise.all(
+      offerIds.map(async (x) => {
+        const offer = await this.market.getSemibook(x.ba).offerInfo(x.offerId);
+        return { ...x, live: offer ? true : false, price: offer.price };
+      })
+    );
+    return this.status.getOfferStatuses(midPrice, ratio, pricePoints, offers);
+  }
+
+  public async getOfferStatusFromOffers(
+    midPrice: Big,
+    offers: OffersWithPrices
+  ) {
+    const parameters = await this.parameters();
+    const ratio = parameters.ratio;
+    const pricePoints = parameters.pricePoints;
+
+    return this.status.getOfferStatuses(midPrice, ratio, pricePoints, offers);
   }
 }
 

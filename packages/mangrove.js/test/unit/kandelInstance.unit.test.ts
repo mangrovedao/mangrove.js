@@ -2,7 +2,9 @@
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
-import KandelInstance, { Distribution } from "../../src/kandel/kandelInstance";
+import KandelCalculation, {
+  Distribution,
+} from "../../src/kandel/kandelCalculation";
 
 describe("KandelInstance unit tests suite", () => {
   describe("calculateDistribution", () => {
@@ -11,13 +13,11 @@ describe("KandelInstance unit tests suite", () => {
       const firstBase = Big(2);
       const firstQuote = Big(3000);
       const pricePoints = 10;
-      const distribution = KandelInstance.calculateDistribution(
+      const distribution = new KandelCalculation(12, 12).calculateDistribution(
         firstBase,
         firstQuote,
         ratio,
-        pricePoints,
-        12,
-        12
+        pricePoints
       );
 
       let price = firstQuote.div(firstBase);
@@ -35,13 +35,11 @@ describe("KandelInstance unit tests suite", () => {
       const firstBase = Big(2);
       const firstQuote = Big(3000);
       const pricePoints = 10;
-      const distribution = KandelInstance.calculateDistribution(
+      const distribution = new KandelCalculation(4, 6).calculateDistribution(
         firstBase,
         firstQuote,
         ratio,
-        pricePoints,
-        4,
-        6
+        pricePoints
       );
 
       distribution.forEach((e) => {
@@ -64,16 +62,14 @@ describe("KandelInstance unit tests suite", () => {
       const firstBase = Big(3);
       const firstQuote = Big(5000);
       const pricePoints = 10;
-      const distribution = KandelInstance.calculateDistribution(
+      const calculation = new KandelCalculation(12, 12);
+      const distribution = calculation.calculateDistribution(
         firstBase,
         firstQuote,
         ratio,
-        pricePoints,
-        12,
-        12
+        pricePoints
       );
-      const firstAskIndex = 5;
-      const prices = KandelInstance.getPrices(distribution, firstAskIndex);
+      const prices = calculation.getPrices(distribution);
 
       let price = firstQuote.div(firstBase);
       distribution.forEach((e, i) => {
@@ -111,10 +107,10 @@ describe("KandelInstance unit tests suite", () => {
         },
       ];
 
-      const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
-        distribution,
-        6
-      );
+      const { baseVolume, quoteVolume } = new KandelCalculation(
+        0,
+        0
+      ).getVolumes(distribution, 6);
 
       assert.equal(
         9 + 13,
@@ -127,5 +123,6 @@ describe("KandelInstance unit tests suite", () => {
         "quote should be all the quote"
       );
     });
+    //TODO add unit tests for getofferstatuses
   });
 });

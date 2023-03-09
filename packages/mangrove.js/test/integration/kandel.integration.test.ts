@@ -3,8 +3,10 @@ import { describe, beforeEach, afterEach, it } from "mocha";
 import { assert } from "chai";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-const waitForTransaction = mgvTestUtil.waitForTransaction;
-import { waitForTransactions } from "../../src/util/test/mgvIntegrationTestUtil";
+import {
+  waitForTransaction,
+  waitForTransactions,
+} from "../../src/util/test/mgvIntegrationTestUtil";
 
 import { toWei } from "../util/helpers";
 
@@ -309,7 +311,7 @@ describe("Kandel integration tests suite", function () {
           );
           const firstAskIndex = 3;
 
-          const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
+          const { baseVolume, quoteVolume } = kandel.getVolumes(
             distribution,
             firstAskIndex
           );
@@ -468,7 +470,7 @@ describe("Kandel integration tests suite", function () {
         );
         const firstAskIndex = 3;
 
-        const { baseVolume, quoteVolume } = KandelInstance.getVolumes(
+        const { baseVolume, quoteVolume } = kandel.getVolumes(
           distribution,
           firstAskIndex
         );
@@ -597,6 +599,23 @@ describe("Kandel integration tests suite", function () {
           "Quote should be offered"
         );
       });
+
+      //       it("offerStatus retrieves prices if any live offers", async function () {
+      //         // Arrange
+      //         await populateKandel({ approve: false, deposit: false });
+
+      // //TODO snipe
+
+      //         // Assert
+      //         await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+
+      //         const offers = kandel.getOfferStatus();
+
+      //         assert.equal(offers.length, 6);
+      //         assert.deepEqual(offers[0], { ba: "bids", live: true, price =, id: 12 })
+
+      //         assert.fail("TODO");
+      //       });
     });
 
     [true, false].forEach((onAave) =>
