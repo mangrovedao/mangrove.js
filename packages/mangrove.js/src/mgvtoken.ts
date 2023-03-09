@@ -31,10 +31,12 @@ function convertToApproveArgs(arg: ApproveArgs): {
     amount = arg["amount"];
   } else if (typeof arg != "object") {
     amount = arg;
+  } else if (typeof arg === "object" && arg["sqrt"]) {
+    amount = arg as Big;
   }
   if (arg["overrides"]) {
     overrides = arg["overrides"];
-  } else if (typeof arg === "object") {
+  } else if (typeof arg === "object" && !arg["sqrt"]) {
     overrides = arg as ethers.Overrides;
   }
 

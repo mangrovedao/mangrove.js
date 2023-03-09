@@ -19,6 +19,7 @@ build({
     resolve({
       "@mangrovedao/commonlib.js": "../../shims/commonlib.ts",
       "./util/readJsonWallet": "../shims/readJsonWallet.ts",
+      "./util/test/TestMaker": "../shims/TestMaker.ts",
     }),
   ],
 });

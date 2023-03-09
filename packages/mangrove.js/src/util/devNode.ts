@@ -95,18 +95,21 @@ namespace DevNode {
 
   export type provider = ethers.providers.JsonRpcProvider;
 
-  export type info = { setCode: string };
+  export type info = { setCode: string; setStorageAt: string };
 }
 
 export const devNodeInfos: { [key: string]: DevNode.info } = {
   anvil: {
     setCode: "anvil_setCode",
+    setStorageAt: "anvil_setStorageAt",
   },
   Hardhat: {
     setCode: "hardhat_setCode",
+    setStorageAt: "hardhat_setStorageAt",
   },
   Ganache: {
     setCode: "evm_setAccountCode",
+    setStorageAt: "evm_setAccountStorageAt",
   },
 };
 
@@ -155,6 +158,12 @@ class DevNode {
   async setCode(address: string, newCode: string): Promise<any> {
     const method = (await this.info()).setCode;
     return await this.provider.send(method, [address, newCode]);
+  }
+
+  async setStorageAt(address: string, slot: string, val: string): Promise<any> {
+    const method = (await this.info()).setStorageAt;
+    console.log(method, address, slot, val);
+    return await this.provider.send(method, [address, slot, val]);
   }
 
   async hasCode(address: string): Promise<boolean> {
