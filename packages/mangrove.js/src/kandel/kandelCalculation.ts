@@ -44,6 +44,81 @@ class KandelCalculation {
     return this.getPrices(expectedDistribution);
   }
 
+  public calculatePricesFromMinMaxRatio(
+    minPrice: Big,
+    maxPrice: Big,
+    ratio: Big
+  ) {
+    if (minPrice.lte(0)) {
+      throw Error("minPrice must be positive");
+    }
+    if (ratio.lte(Big(1))) {
+      throw Error("ratio must be larger than 1");
+    }
+    const prices: Big[] = [];
+    let price = minPrice;
+    while (price.lte(maxPrice)) {
+      prices.push(price);
+      if (prices.length > 255) {
+        throw Error(
+          "minPrice and maxPrice are too far apart, too many price points needed."
+        );
+      }
+      price = price.mul(ratio);
+    }
+
+    if (prices.length < 2) {
+      throw Error(
+        "minPrice and maxPrice are too close. There must be room for at least two price points"
+      );
+    }
+
+    return prices;
+  }
+
+  public calculateFirstAskIndex(midPrice: Big, prices: Big[]) {
+    // First ask should be after mid price - leave hole at mid price
+    const firstAskIndex = prices.findIndex((x) => x.gt(midPrice));
+
+    // Index beyond max index if no index found.
+    return firstAskIndex == -1 ? prices.length : firstAskIndex;
+  }
+
+  public calculateDistributionFixedVolume(
+    prices: Big[],
+    baseVolume: Big,
+    quoteVolume: Big,
+    firstAskIndex: number
+  ): Distribution {
+    const pricePoints = prices.length;
+    const { bids, asks } = this.getBaCount(pricePoints, firstAskIndex);
+
+    const volumePerAsk = asks
+      ? baseVolume.div(asks).round(this.baseDecimals, Big.roundDown)
+      : undefined;
+    const volumePerBid = bids
+      ? quoteVolume.div(bids).round(this.quoteDecimals, Big.roundDown)
+      : undefined;
+
+    const distribution = prices.map((p, index) =>
+      this.getBA(index, firstAskIndex) == "bids"
+        ? {
+            index,
+            base: volumePerBid.div(p).round(this.baseDecimals, Big.roundHalfUp),
+            quote: volumePerBid,
+          }
+        : {
+            index,
+            base: volumePerAsk,
+            quote: volumePerAsk
+              .mul(p)
+              .round(this.quoteDecimals, Big.roundHalfUp),
+          }
+    );
+
+    return distribution;
+  }
+
   public sortByIndex(list: { index: number }[]) {
     return list.sort((a, b) => a.index - b.index);
   }
@@ -67,6 +142,26 @@ class KandelCalculation {
       },
       { baseVolume: new Big(0), quoteVolume: new Big(0) }
     );
+  }
+
+  public getBaCount(pricePoints: number, firstAskIndex: number) {
+    if (firstAskIndex > pricePoints) {
+      firstAskIndex = pricePoints;
+    }
+    return { bids: firstAskIndex, asks: pricePoints - firstAskIndex };
+  }
+
+  public getMinimumBaseQuoteVolumesForUniformOutbound(
+    pricePoints: number,
+    firstAskIndex: number,
+    minimumBase: Big,
+    minimumQuote: Big
+  ) {
+    const { bids, asks } = this.getBaCount(pricePoints, firstAskIndex);
+    return {
+      minimumBaseVolume: minimumBase.mul(asks),
+      minimumQuoteVolume: minimumQuote.mul(bids),
+    };
   }
 
   public calculateDistribution(

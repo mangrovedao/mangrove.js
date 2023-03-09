@@ -5,8 +5,207 @@ import { describe, it } from "mocha";
 import KandelCalculation, {
   Distribution,
 } from "../../src/kandel/kandelCalculation";
+import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 
 describe("KandelCalculation unit tests suite", () => {
+  describe("calculatePricesFromMinMaxRatio", () => {
+    it("calculates expected price points", () => {
+      // Arrange/act
+      const prices = new KandelCalculation(4, 6).calculatePricesFromMinMaxRatio(
+        Big(1000),
+        Big(32000),
+        Big(2)
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        prices.map((x) => x.toNumber()),
+        [1000, 2000, 4000, 8000, 16000, 32000]
+      );
+    });
+
+    it("handles error scenarios", () => {
+      // Arrange
+      const sut = new KandelCalculation(4, 6);
+
+      // Act/Assert
+      assert.throws(
+        () => sut.calculatePricesFromMinMaxRatio(Big(0), Big(1000), Big(2)),
+        new Error("minPrice must be positive")
+      );
+      assert.throws(
+        () => sut.calculatePricesFromMinMaxRatio(Big(1), Big(1000), Big(1)),
+        new Error("ratio must be larger than 1")
+      );
+      assert.throws(
+        () =>
+          sut.calculatePricesFromMinMaxRatio(Big(1), Big(100000), Big(1.001)),
+        new Error(
+          "minPrice and maxPrice are too far apart, too many price points needed."
+        )
+      );
+      assert.throws(
+        () => sut.calculatePricesFromMinMaxRatio(Big(1), Big(1), Big(1.001)),
+        new Error(
+          "minPrice and maxPrice are too close. There must be room for at least two price points"
+        )
+      );
+    });
+  });
+
+  describe("calculateDistributionFixedVolume", () => {
+    it("can calculate distribution with fixed base volume and fixed quote volume which follows geometric price distribution", () => {
+      // Arrange
+      const sut = new KandelCalculation(4, 6);
+      const prices = [1000, 2000, 4000, 8000, 16000, 32000];
+      const firstAskIndex = 3;
+
+      // Act
+      const distribution = sut.calculateDistributionFixedVolume(
+        prices.map((x) => Big(x)),
+        Big(3),
+        Big(3000),
+        firstAskIndex
+      );
+
+      // Assert
+      const calculatedPrices = sut
+        .getPrices(distribution)
+        .map((x) => x.toNumber());
+      assert.deepStrictEqual(
+        prices,
+        calculatedPrices,
+        "re-calculated prices do not match original prices"
+      );
+      distribution
+        .filter((x) => x.index < firstAskIndex)
+        .forEach((x) => {
+          assert.equal(x.quote.toNumber(), 1000);
+        });
+      distribution
+        .filter((x) => x.index >= firstAskIndex)
+        .forEach((x) => {
+          assert.equal(x.base.toNumber(), 1);
+        });
+    });
+
+    bidsAsks.forEach((ba) => {
+      it(`can calculate distribution with only ${ba}`, () => {
+        // Arrange
+        const sut = new KandelCalculation(4, 6);
+        const prices = [1000, 2000];
+        const firstAskIndex = ba == "bids" ? 10 : 0;
+
+        // Act
+        const distribution = sut.calculateDistributionFixedVolume(
+          prices.map((x) => Big(x)),
+          Big(2),
+          Big(2000),
+          firstAskIndex
+        );
+
+        // Assert
+        const calculatedPrices = sut
+          .getPrices(distribution)
+          .map((x) => x.toNumber());
+        assert.deepStrictEqual(
+          prices,
+          calculatedPrices,
+          "re-calculated prices do not match original prices"
+        );
+        if (ba == "bids") {
+          distribution.forEach((x) => {
+            assert.equal(x.quote.toNumber(), 1000);
+          });
+        } else {
+          distribution.forEach((x) => {
+            assert.equal(x.base.toNumber(), 1);
+          });
+        }
+      });
+    });
+
+    it("rounds off base and gives according to decimals", () => {
+      // Arrange
+      const sut = new KandelCalculation(4, 6);
+      const ratio = 1.01;
+      const prices = [
+        1000,
+        1000 * ratio,
+        1000 * ratio ** 2,
+        1000 * ratio ** 3,
+        1000 * ratio ** 4,
+        1000 * ratio ** 5,
+      ];
+      const firstAskIndex = 3;
+      const desiredBaseVolume = Big(3);
+      const desiredQuoteVolume = Big(3000);
+
+      // Act
+      const distribution = sut.calculateDistributionFixedVolume(
+        prices.map((x) => Big(x)),
+        desiredBaseVolume,
+        desiredQuoteVolume,
+        firstAskIndex
+      );
+
+      // Assert
+      distribution.forEach((e) => {
+        assert.equal(
+          e.base.round(4).toString(),
+          e.base.toString(),
+          "base should be rounded"
+        );
+        assert.equal(
+          e.quote.round(6).toString(),
+          e.quote.toString(),
+          "quote should be rounded"
+        );
+      });
+
+      const { baseVolume, quoteVolume } = sut.getVolumes(
+        distribution,
+        firstAskIndex
+      );
+      assert.equal(baseVolume.lte(desiredBaseVolume), true);
+      assert.equal(quoteVolume.lte(desiredQuoteVolume), true);
+    });
+  });
+
+  describe("calculateFirstAskIndex", () => {
+    [
+      { midPrice: 999, expected: 0 },
+      { midPrice: 1000, expected: 1 },
+      { midPrice: 1001, expected: 1 },
+      { midPrice: 3001, expected: 3 },
+    ].forEach(({ midPrice, expected }) => {
+      it(`can get firstAskIndex=${expected} in rage`, () => {
+        const prices = [1000, 2000, 3000].map((x) => Big(x));
+        assert.equal(
+          new KandelCalculation(4, 6).calculateFirstAskIndex(
+            Big(midPrice),
+            prices
+          ),
+          expected
+        );
+      });
+    });
+  });
+
+  describe("getMinimumBaseQuoteVolumes", () => {
+    it("calculates correct necessary volumes", () => {
+      // Arrange/Act
+      const { minimumBaseVolume, minimumQuoteVolume } = new KandelCalculation(
+        4,
+        6
+      ).getMinimumBaseQuoteVolumesForUniformOutbound(10, 3, Big(1), Big(2));
+
+      // Assert
+      assert.equal(minimumBaseVolume.toNumber(), 7);
+      assert.equal(minimumQuoteVolume.toNumber(), 6);
+    });
+  });
+
   describe("calculateDistribution", () => {
     it("can calculate distribution with fixed base volume which follows geometric distribution", () => {
       // Arrange
