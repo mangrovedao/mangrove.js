@@ -6,7 +6,7 @@ import KandelCalculation, {
   Distribution,
 } from "../../src/kandel/kandelCalculation";
 
-describe("KandelInstance unit tests suite", () => {
+describe("KandelCalculation unit tests suite", () => {
   describe("calculateDistribution", () => {
     it("can calculate distribution with fixed base volume which follows geometric distribution", async function () {
       const ratio = new Big(1.08);
@@ -123,6 +123,5 @@ describe("KandelInstance unit tests suite", () => {
         "quote should be all the quote"
       );
     });
-    //TODO add unit tests for getofferstatuses
   });
 });
