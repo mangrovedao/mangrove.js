@@ -41,7 +41,7 @@ let addresses: Addresses;
 
 let mgv: Mangrove;
 let mgvAdmin: Mangrove;
-let signers: any = {};
+const signers: any = {};
 
 // With the removal of hardhat, there is no "default chain" anymore
 // (it used to be implicit since we ran the ethereum local server in-process).
@@ -327,7 +327,9 @@ export async function waitForBooksForLastTx(market?: Market) {
     // and now wait for both
     await Promise.all([askPromise, bidsPromise])
       .then(
-        () => {},
+        () => {
+          /* do nothing */
+        },
         (reason) => {
           throw new Error(
             `Error in waiting for synthetic SetGasbase events in waitForBooksForLastTx: ${reason}`

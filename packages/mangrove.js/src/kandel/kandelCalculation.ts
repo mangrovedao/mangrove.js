@@ -27,6 +27,23 @@ class KandelCalculation {
     return prices;
   }
 
+  public getPricesFromPrice(
+    index: number,
+    priceAtIndex: Big,
+    ratio: Big,
+    pricePoints: number
+  ) {
+    const priceOfIndex0 = priceAtIndex.div(ratio.pow(index));
+
+    const expectedDistribution = this.calculateDistribution(
+      Big(1),
+      priceOfIndex0,
+      ratio,
+      pricePoints
+    );
+    return this.getPrices(expectedDistribution);
+  }
+
   public sortByIndex(list: { index: number }[]) {
     return list.sort((a, b) => a.index - b.index);
   }

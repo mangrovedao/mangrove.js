@@ -600,22 +600,23 @@ describe("Kandel integration tests suite", function () {
         );
       });
 
-      //       it("offerStatus retrieves prices if any live offers", async function () {
-      //         // Arrange
-      //         await populateKandel({ approve: false, deposit: false });
+      it("getOfferStatuses retrieves status", async function () {
+        // Arrange
+        await populateKandel({ approve: false, deposit: false });
 
-      // //TODO snipe
+        // Act
+        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        const statuses = await kandel.getOfferStatuses(Big(1170));
 
-      //         // Assert
-      //         await mgvTestUtil.waitForBooksForLastTx(kandel.market);
-
-      //         const offers = kandel.getOfferStatus();
-
-      //         assert.equal(offers.length, 6);
-      //         assert.deepEqual(offers[0], { ba: "bids", live: true, price =, id: 12 })
-
-      //         assert.fail("TODO");
-      //       });
+        // Assert
+        assert.equal(6, statuses.statuses.length);
+        assert.equal(statuses.baseOffer.ba, "bids");
+        assert.equal(statuses.baseOffer.index, 2);
+        assert.equal(
+          statuses.statuses[4].asks.price.round(0).toString(),
+          "1360"
+        );
+      });
     });
 
     [true, false].forEach((onAave) =>

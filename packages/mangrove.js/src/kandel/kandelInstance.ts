@@ -403,19 +403,28 @@ class KandelInstance {
     }*/
   }
 
-  public async getOfferStatus(midPrice: Big) {
-    const parameters = await this.parameters();
-    const ratio = parameters.ratio;
-    const pricePoints = parameters.pricePoints;
-
+  public async getOffers() {
     const offerIds = await this.getOfferIds();
-    const offers = await Promise.all(
+    return await Promise.all(
       offerIds.map(async (x) => {
         const offer = await this.market.getSemibook(x.ba).offerInfo(x.offerId);
-        return { ...x, live: offer ? true : false, price: offer.price };
+        return { ...x, offer: offer };
       })
     );
-    return this.status.getOfferStatuses(midPrice, ratio, pricePoints, offers);
+  }
+
+  public async getOfferStatuses(midPrice: Big) {
+    const offers = (await this.getOffers()).map(
+      ({ offer, offerId, index, ba }) => ({
+        ba,
+        offerId,
+        index,
+        live: offer ? true : false,
+        price: offer.price,
+      })
+    );
+
+    return this.getOfferStatusFromOffers(midPrice, offers);
   }
 
   public async getOfferStatusFromOffers(
