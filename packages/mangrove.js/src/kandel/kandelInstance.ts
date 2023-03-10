@@ -432,10 +432,14 @@ class KandelInstance {
     offers: OffersWithPrices
   ) {
     const parameters = await this.parameters();
-    const ratio = parameters.ratio;
-    const pricePoints = parameters.pricePoints;
 
-    return this.status.getOfferStatuses(midPrice, ratio, pricePoints, offers);
+    return this.status.getOfferStatuses(
+      midPrice,
+      parameters.ratio,
+      parameters.pricePoints,
+      parameters.spread,
+      offers
+    );
   }
 }
 

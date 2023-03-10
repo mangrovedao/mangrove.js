@@ -63,6 +63,7 @@ class KandelStatus {
     midPrice: Big,
     ratio: Big,
     pricePoints: number,
+    spread: number,
     offers: OffersWithPrices
   ): Statuses {
     const liveOffers = offers.filter((x) => x.live && x.index < pricePoints);
@@ -91,7 +92,8 @@ class KandelStatus {
     );
 
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
-    // then both offers can be expected live - but due to spread that will not happen in Kandel.
+    // then both offers can be expected live.
+    // Note - this first pass does not consider spread, see further down.
     const statuses = expectedPrices.map((p) => {
       return {
         expectedLiveBid: p.lte(midPrice),
@@ -109,7 +111,35 @@ class KandelStatus {
         statuses[index][ba] = { live, offerId, price };
       });
 
-    // Some offers
+    // Offers are allowed to be dead if their dual offer is live
+    statuses.forEach((s, index) => {
+      if (s.expectedLiveAsk && (s.asks?.live ?? false) == false) {
+        const dualIndex = this.calculation.getDualIndex(
+          "asks",
+          index,
+          pricePoints,
+          spread
+        );
+        if (statuses[dualIndex].bids?.live) {
+          s.expectedLiveAsk = false;
+        }
+      }
+      if (s.expectedLiveBid && (s.bids?.live ?? false) == false) {
+        const dualIndex = this.calculation.getDualIndex(
+          "bids",
+          index,
+          pricePoints,
+          spread
+        );
+        if (statuses[dualIndex].asks?.live) {
+          s.expectedLiveBid = false;
+        }
+      }
+    });
+
+    // In case retract and withdraw was not invoked prior to re-populate, then some live offers can
+    // be outside range. But this will not happen with correct usage of the contract.
+    // Dead offers outside range can happen if range is shrunk and is not an issue and not reported.
     const liveOutOfRange = offers
       .filter((x) => x.index > pricePoints && x.live)
       .map(({ ba, offerId, index }) => {

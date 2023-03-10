@@ -127,6 +127,28 @@ class KandelCalculation {
     return index >= firstAskIndex ? "asks" : "bids";
   }
 
+  public getDualIndex(
+    ba: Market.BA,
+    index: number,
+    pricePoints: number,
+    step: number
+  ) {
+    // From solidity: GeometricKandel.transportDestination
+    let better = 0;
+    if (ba == "asks") {
+      better = index + step;
+      if (better >= pricePoints) {
+        better = pricePoints - 1;
+      }
+    } else {
+      if (index >= step) {
+        better = index - step;
+      }
+      // else better is 0
+    }
+    return better;
+  }
+
   public getVolumes(distribution: Distribution, firstAskIndex: number) {
     return distribution.reduce(
       (a, x) => {
