@@ -136,14 +136,17 @@ describe("KandelStatus unit tests suite", () => {
       const pricePoints = 6;
       const ratio = Big(2);
       const midPrice = Big(5000);
-      const dist = sut.calculation.calculateDistribution(
-        Big(2),
-        Big(2000),
+      const originalPrices = sut.calculation.calculatePrices({
+        minPrice: Big(1000),
         ratio,
-        pricePoints
+        pricePoints,
+      });
+      const dist = sut.calculation.calculateDistributionConstantBase(
+        originalPrices,
+        Big(2)
       );
 
-      const prices = sut.calculation.getPrices(dist);
+      const prices = sut.calculation.getPricesForDistribution(dist);
 
       // Act
       const statuses = sut.getOfferStatuses(

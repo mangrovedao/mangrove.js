@@ -8,6 +8,13 @@ export type DistributionElement = {
 };
 export type Distribution = DistributionElement[];
 
+export type PriceDistributionParams = {
+  minPrice?: Big;
+  maxPrice?: Big;
+  ratio?: Big;
+  pricePoints?: number;
+};
+
 /** @title Helper for calculating details about about a Kandel instance. */
 class KandelCalculation {
   baseDecimals: number;
@@ -18,13 +25,30 @@ class KandelCalculation {
     this.quoteDecimals = quoteDecimals;
   }
 
-  public getPrices(distribution: Distribution) {
-    const prices: Big[] = Array(distribution.length);
+  public calculatePrices(params: PriceDistributionParams) {
+    let { minPrice, maxPrice, ratio } = params;
+    const { pricePoints } = params;
+    if (minPrice && maxPrice && ratio && !pricePoints) {
+      // we have all we need
+    } else {
+      if (pricePoints < 2) {
+        throw Error("There must be at least 2 price points");
+      } else if (minPrice && maxPrice && !ratio && pricePoints) {
+        ratio = Big(
+          Math.pow(maxPrice.div(minPrice).toNumber(), 1 / (pricePoints - 1))
+        );
+      } else if (minPrice && !maxPrice && ratio && pricePoints) {
+        maxPrice = minPrice.mul(ratio.pow(pricePoints - 1));
+      } else if (!minPrice && maxPrice && ratio && pricePoints) {
+        minPrice = maxPrice.div(ratio.pow(pricePoints - 1));
+      } else {
+        throw Error(
+          "Exactly three of minPrice, maxPrice, ratio, and pricePoints must be given"
+        );
+      }
+    }
 
-    distribution.forEach(async (o, i) => {
-      prices[i] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
-    });
-    return prices;
+    return this.calculatePricesFromMinMaxRatio(minPrice, maxPrice, ratio);
   }
 
   public getPricesFromPrice(
@@ -35,13 +59,11 @@ class KandelCalculation {
   ) {
     const priceOfIndex0 = priceAtIndex.div(ratio.pow(index));
 
-    const expectedDistribution = this.calculateDistribution(
-      Big(1),
-      priceOfIndex0,
+    return this.calculatePrices({
+      minPrice: priceOfIndex0,
       ratio,
-      pricePoints
-    );
-    return this.getPrices(expectedDistribution);
+      pricePoints,
+    });
   }
 
   public calculatePricesFromMinMaxRatio(
@@ -76,6 +98,15 @@ class KandelCalculation {
     return prices;
   }
 
+  public getPricesForDistribution(distribution: Distribution) {
+    const prices: Big[] = Array(distribution.length);
+
+    distribution.forEach(async (o, i) => {
+      prices[i] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
+    });
+    return prices;
+  }
+
   public calculateFirstAskIndex(midPrice: Big, prices: Big[]) {
     // First ask should be after mid price - leave hole at mid price
     const firstAskIndex = prices.findIndex((x) => x.gt(midPrice));
@@ -84,39 +115,112 @@ class KandelCalculation {
     return firstAskIndex == -1 ? prices.length : firstAskIndex;
   }
 
-  public calculateDistributionFixedVolume(
-    prices: Big[],
-    baseVolume: Big,
-    quoteVolume: Big,
-    firstAskIndex: number
-  ): Distribution {
-    const pricePoints = prices.length;
+  public calculateConstantOutbound(
+    pricePoints: number,
+    firstAskIndex: number,
+    totalBase: Big,
+    totalQuote: Big
+  ) {
     const { bids, asks } = this.getBaCount(pricePoints, firstAskIndex);
 
-    const volumePerAsk = asks
-      ? baseVolume.div(asks).round(this.baseDecimals, Big.roundDown)
-      : undefined;
-    const volumePerBid = bids
-      ? quoteVolume.div(bids).round(this.quoteDecimals, Big.roundDown)
-      : undefined;
+    return {
+      askGives: asks
+        ? totalBase.div(asks).round(this.baseDecimals, Big.roundDown)
+        : Big(0),
+      bidGives: bids
+        ? totalQuote.div(bids).round(this.quoteDecimals, Big.roundDown)
+        : Big(0),
+    };
+  }
 
+  public calculateDistributionConstantOutbound(
+    prices: Big[],
+    askGives: Big,
+    bidGives: Big,
+    firstAskIndex: number
+  ): Distribution {
     const distribution = prices.map((p, index) =>
       this.getBA(index, firstAskIndex) == "bids"
         ? {
             index,
-            base: volumePerBid.div(p).round(this.baseDecimals, Big.roundHalfUp),
-            quote: volumePerBid,
+            base: bidGives.div(p).round(this.baseDecimals, Big.roundHalfUp),
+            quote: bidGives,
           }
         : {
             index,
-            base: volumePerAsk,
-            quote: volumePerAsk
-              .mul(p)
-              .round(this.quoteDecimals, Big.roundHalfUp),
+            base: askGives,
+            quote: askGives.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
           }
     );
 
     return distribution;
+  }
+
+  public calculateDistributionConstantBase(prices: Big[], constantBase: Big) {
+    const base = constantBase.round(this.baseDecimals, Big.roundHalfUp);
+    return prices.map((p, index) => ({
+      index,
+      base: base,
+      quote: base.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
+    }));
+  }
+
+  public getMinimumBaseQuoteVolumesForConstantOutbound(
+    pricePoints: number,
+    firstAskIndex: number,
+    minimumBase: Big,
+    minimumQuote: Big
+  ) {
+    const { bids, asks } = this.getBaCount(pricePoints, firstAskIndex);
+    return {
+      minimumBaseVolume: minimumBase.mul(asks),
+      minimumQuoteVolume: minimumQuote.mul(bids),
+    };
+  }
+
+  public getVolumesForDistribution(
+    distribution: Distribution,
+    firstAskIndex: number
+  ) {
+    return distribution.reduce(
+      (a, x) => {
+        return this.getBA(x.index, firstAskIndex) == "bids"
+          ? {
+              totalBase: a.totalBase,
+              totalQuote: a.totalQuote.add(x.quote),
+            }
+          : {
+              totalBase: a.totalBase.add(x.base),
+              totalQuote: a.totalQuote,
+            };
+      },
+      { totalBase: new Big(0), totalQuote: new Big(0) }
+    );
+  }
+
+  public calculateDistributionFromMidPrice(
+    priceDistributionParams: PriceDistributionParams,
+    midPrice: Big,
+    initialAskGives: Big,
+    initialBidGives?: Big
+  ) {
+    const prices = this.calculatePrices(priceDistributionParams);
+    const firstAskIndex = this.calculateFirstAskIndex(midPrice, prices);
+    const distribution = initialBidGives
+      ? this.calculateDistributionConstantOutbound(
+          prices,
+          initialAskGives,
+          initialBidGives,
+          firstAskIndex
+        )
+      : this.calculateDistributionConstantBase(prices, initialAskGives);
+    const volumes = this.getVolumesForDistribution(distribution, firstAskIndex);
+
+    return {
+      firstAskIndex,
+      distribution,
+      volumes,
+    };
   }
 
   public sortByIndex(list: { index: number }[]) {
@@ -149,62 +253,11 @@ class KandelCalculation {
     return better;
   }
 
-  public getVolumes(distribution: Distribution, firstAskIndex: number) {
-    return distribution.reduce(
-      (a, x) => {
-        return this.getBA(x.index, firstAskIndex) == "bids"
-          ? {
-              baseVolume: a.baseVolume,
-              quoteVolume: a.quoteVolume.add(x.quote),
-            }
-          : {
-              baseVolume: a.baseVolume.add(x.base),
-              quoteVolume: a.quoteVolume,
-            };
-      },
-      { baseVolume: new Big(0), quoteVolume: new Big(0) }
-    );
-  }
-
   public getBaCount(pricePoints: number, firstAskIndex: number) {
     if (firstAskIndex > pricePoints) {
       firstAskIndex = pricePoints;
     }
     return { bids: firstAskIndex, asks: pricePoints - firstAskIndex };
-  }
-
-  public getMinimumBaseQuoteVolumesForUniformOutbound(
-    pricePoints: number,
-    firstAskIndex: number,
-    minimumBase: Big,
-    minimumQuote: Big
-  ) {
-    const { bids, asks } = this.getBaCount(pricePoints, firstAskIndex);
-    return {
-      minimumBaseVolume: minimumBase.mul(asks),
-      minimumQuoteVolume: minimumQuote.mul(bids),
-    };
-  }
-
-  public calculateDistribution(
-    firstBase: Big,
-    firstQuote: Big,
-    ratio: Big,
-    pricePoints: number
-  ) {
-    const distribution: Distribution = Array(pricePoints);
-
-    const base = firstBase.round(this.baseDecimals, Big.roundHalfUp);
-    let quote = firstQuote;
-    for (let i = 0; i < pricePoints; i++) {
-      distribution[i] = {
-        index: i,
-        base: base,
-        quote: quote.round(this.quoteDecimals, Big.roundHalfUp),
-      };
-      quote = quote.mul(ratio);
-    }
-    return distribution;
   }
 
   public chunk(

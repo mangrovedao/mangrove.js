@@ -10,7 +10,10 @@ import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
 import KandelStatus, { OffersWithPrices } from "./kandelStatus";
-import KandelCalculation, { Distribution } from "./kandelCalculation";
+import KandelCalculation, {
+  Distribution,
+  PriceDistributionParams,
+} from "./kandelCalculation";
 
 export type KandelParameters = {
   gasprice: number;
@@ -175,7 +178,7 @@ class KandelInstance {
     distribution: Distribution,
     firstAskIndex: number
   ) {
-    const prices = this.calculation.getPrices(distribution);
+    const prices = this.calculation.getPricesForDistribution(distribution);
     const pivots: number[] = Array(distribution.length);
     for (let i = 0; i < distribution.length; i++) {
       const ba = this.calculation.getBA(distribution[i].index, firstAskIndex);
@@ -184,31 +187,42 @@ class KandelInstance {
     return pivots;
   }
 
-  public async calculateDistributionFromMidPrice(
-    minPrice: Big,
+  public calculateDistributionFromMidPrice(
+    priceDistributionParams: PriceDistributionParams,
     midPrice: Big,
-    maxPrice: Big,
-    ratio: Big = Big(1)
+    initialAskGives: Big,
+    initialBidGives?: Big
   ) {
-    //TODO - calculate based on Research's formula.
-  }
-
-  public calculateDistribution(
-    firstBase: Big,
-    firstQuote: Big,
-    ratio: Big,
-    pricePoints: number
-  ) {
-    return this.calculation.calculateDistribution(
-      firstBase,
-      firstQuote,
-      ratio,
-      pricePoints
+    return this.calculation.calculateDistributionFromMidPrice(
+      priceDistributionParams,
+      midPrice,
+      initialAskGives,
+      initialBidGives
     );
   }
 
-  public getVolumes(distribution: Distribution, firstAskIndex: number) {
-    return this.calculation.getVolumes(distribution, firstAskIndex);
+  public calculateConstantOutbound(
+    pricePoints: number,
+    firstAskIndex: number,
+    totalBase: Big,
+    totalQuote: Big
+  ) {
+    return this.calculation.calculateConstantOutbound(
+      pricePoints,
+      firstAskIndex,
+      totalBase,
+      totalQuote
+    );
+  }
+
+  public getVolumesForDistribution(
+    distribution: Distribution,
+    firstAskIndex: number
+  ) {
+    return this.calculation.getVolumesForDistribution(
+      distribution,
+      firstAskIndex
+    );
   }
 
   public async approve(

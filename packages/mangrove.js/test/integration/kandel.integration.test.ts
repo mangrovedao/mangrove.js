@@ -267,13 +267,12 @@ describe("Kandel integration tests suite", function () {
         const firstBase = Big(1);
         const firstQuote = Big(1000);
         const pricePoints = 6;
-        const distribution = kandel.calculateDistribution(
-          firstBase,
-          firstQuote,
-          ratio,
-          pricePoints
-        );
-        const firstAskIndex = 3;
+        const { distribution, firstAskIndex } =
+          kandel.calculateDistributionFromMidPrice(
+            { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
+            Big(1200),
+            firstBase
+          );
 
         // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
         // prettier-ignore
@@ -303,15 +302,14 @@ describe("Kandel integration tests suite", function () {
           const firstBase = Big(1);
           const firstQuote = Big(1000);
           const pricePoints = 6;
-          const distribution = kandel.calculateDistribution(
-            firstBase,
-            firstQuote,
-            ratio,
-            pricePoints
-          );
-          const firstAskIndex = 3;
+          const { distribution, firstAskIndex } =
+            kandel.calculateDistributionFromMidPrice(
+              { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
+              Big(1200),
+              firstBase
+            );
 
-          const { baseVolume, quoteVolume } = kandel.getVolumes(
+          const { baseVolume, quoteVolume } = kandel.getVolumesForDistribution(
             distribution,
             firstAskIndex
           );
@@ -462,15 +460,14 @@ describe("Kandel integration tests suite", function () {
         const firstBase = Big(1);
         const firstQuote = Big(1000);
         const pricePoints = 6;
-        const distribution = kandel.calculateDistribution(
-          firstBase,
-          firstQuote,
-          ratio,
-          pricePoints
-        );
-        const firstAskIndex = 3;
+        const { distribution, firstAskIndex } =
+          kandel.calculateDistributionFromMidPrice(
+            { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
+            Big(1200),
+            firstBase
+          );
 
-        const { baseVolume, quoteVolume } = kandel.getVolumes(
+        const { baseVolume, quoteVolume } = kandel.getVolumesForDistribution(
           distribution,
           firstAskIndex
         );

@@ -8,6 +8,68 @@ import KandelCalculation, {
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 
 describe("KandelCalculation unit tests suite", () => {
+  describe("calculatePrices", () => {
+    it("calculates sames prices for all combinations ", () => {
+      // Arrange
+      const minPrice = Big(1001);
+      const maxPrice = Big(1588.461197266944);
+      const ratio = Big(1.08);
+      const pricePoints = 7;
+      const sut = new KandelCalculation(4, 6);
+
+      // Act
+      const prices1 = sut.calculatePrices({ minPrice, maxPrice, ratio });
+      const prices2 = sut.calculatePrices({ minPrice, maxPrice, pricePoints });
+      const prices3 = sut.calculatePrices({ minPrice, ratio, pricePoints });
+      const prices4 = sut.calculatePrices({ maxPrice, ratio, pricePoints });
+
+      // Assert
+      const expectedPrices = [
+        1001, 1081.08, 1167.5664, 1260.971712, 1361.84944896, 1470.7974048768,
+        1588.461197266944,
+      ];
+      assert.deepStrictEqual(
+        prices1.map((x) => x.toNumber()),
+        expectedPrices
+      );
+      assert.deepStrictEqual(
+        prices2.map((x) => x.toNumber()),
+        expectedPrices
+      );
+      assert.deepStrictEqual(
+        prices3.map((x) => x.toNumber()),
+        expectedPrices
+      );
+      assert.deepStrictEqual(
+        prices4.map((x) => x.toNumber()),
+        expectedPrices
+      );
+    });
+
+    it("throws error if not enough parameters are given", () => {
+      const sut = new KandelCalculation(4, 6);
+      assert.throws(
+        () => sut.calculatePrices({ minPrice: Big(1), maxPrice: Big(2) }),
+        new Error(
+          "Exactly three of minPrice, maxPrice, ratio, and pricePoints must be given"
+        )
+      );
+    });
+
+    it("throws error if only 1 price point", () => {
+      const sut = new KandelCalculation(4, 6);
+      assert.throws(
+        () =>
+          sut.calculatePrices({
+            minPrice: Big(1),
+            maxPrice: Big(2),
+            pricePoints: 1,
+          }),
+        new Error("There must be at least 2 price points")
+      );
+    });
+  });
+
   describe("calculatePricesFromMinMaxRatio", () => {
     it("calculates expected price points", () => {
       // Arrange/act
@@ -53,7 +115,7 @@ describe("KandelCalculation unit tests suite", () => {
     });
   });
 
-  describe("calculateDistributionFixedVolume", () => {
+  describe("calculateDistributionConstantOutbound", () => {
     it("can calculate distribution with fixed base volume and fixed quote volume which follows geometric price distribution", () => {
       // Arrange
       const sut = new KandelCalculation(4, 6);
@@ -61,16 +123,16 @@ describe("KandelCalculation unit tests suite", () => {
       const firstAskIndex = 3;
 
       // Act
-      const distribution = sut.calculateDistributionFixedVolume(
+      const distribution = sut.calculateDistributionConstantOutbound(
         prices.map((x) => Big(x)),
-        Big(3),
-        Big(3000),
+        Big(1),
+        Big(1000),
         firstAskIndex
       );
 
       // Assert
       const calculatedPrices = sut
-        .getPrices(distribution)
+        .getPricesForDistribution(distribution)
         .map((x) => x.toNumber());
       assert.deepStrictEqual(
         prices,
@@ -97,16 +159,16 @@ describe("KandelCalculation unit tests suite", () => {
         const firstAskIndex = ba == "bids" ? 10 : 0;
 
         // Act
-        const distribution = sut.calculateDistributionFixedVolume(
+        const distribution = sut.calculateDistributionConstantOutbound(
           prices.map((x) => Big(x)),
-          Big(2),
-          Big(2000),
+          Big(1),
+          Big(1000),
           firstAskIndex
         );
 
         // Assert
         const calculatedPrices = sut
-          .getPrices(distribution)
+          .getPricesForDistribution(distribution)
           .map((x) => x.toNumber());
         assert.deepStrictEqual(
           prices,
@@ -141,11 +203,18 @@ describe("KandelCalculation unit tests suite", () => {
       const desiredBaseVolume = Big(3);
       const desiredQuoteVolume = Big(3000);
 
-      // Act
-      const distribution = sut.calculateDistributionFixedVolume(
-        prices.map((x) => Big(x)),
+      const { askGives, bidGives } = sut.calculateConstantOutbound(
+        prices.length,
+        firstAskIndex,
         desiredBaseVolume,
-        desiredQuoteVolume,
+        desiredQuoteVolume
+      );
+
+      // Act
+      const distribution = sut.calculateDistributionConstantOutbound(
+        prices.map((x) => Big(x)),
+        askGives,
+        bidGives,
         firstAskIndex
       );
 
@@ -163,12 +232,12 @@ describe("KandelCalculation unit tests suite", () => {
         );
       });
 
-      const { baseVolume, quoteVolume } = sut.getVolumes(
+      const { totalBase, totalQuote } = sut.getVolumesForDistribution(
         distribution,
         firstAskIndex
       );
-      assert.equal(baseVolume.lte(desiredBaseVolume), true);
-      assert.equal(quoteVolume.lte(desiredQuoteVolume), true);
+      assert.equal(totalBase.lte(desiredBaseVolume), true);
+      assert.equal(totalQuote.lte(desiredQuoteVolume), true);
     });
   });
 
@@ -192,13 +261,13 @@ describe("KandelCalculation unit tests suite", () => {
     });
   });
 
-  describe("getMinimumBaseQuoteVolumes", () => {
+  describe("getMinimumBaseQuoteVolumesForConstantOutbound", () => {
     it("calculates correct necessary volumes", () => {
       // Arrange/Act
       const { minimumBaseVolume, minimumQuoteVolume } = new KandelCalculation(
         4,
         6
-      ).getMinimumBaseQuoteVolumesForUniformOutbound(10, 3, Big(1), Big(2));
+      ).getMinimumBaseQuoteVolumesForConstantOutbound(10, 3, Big(1), Big(2));
 
       // Assert
       assert.equal(minimumBaseVolume.toNumber(), 7);
@@ -206,20 +275,24 @@ describe("KandelCalculation unit tests suite", () => {
     });
   });
 
-  describe("calculateDistribution", () => {
+  describe("calculateDistributionConstantBase", () => {
     it("can calculate distribution with fixed base volume which follows geometric distribution", () => {
       // Arrange
       const ratio = new Big(1.08);
       const firstBase = Big(2);
       const firstQuote = Big(3000);
       const pricePoints = 10;
+      const sut = new KandelCalculation(12, 12);
+      const prices = sut.calculatePrices({
+        minPrice: firstQuote.div(firstBase),
+        ratio,
+        pricePoints,
+      });
 
       // Act
-      const distribution = new KandelCalculation(12, 12).calculateDistribution(
-        firstBase,
-        firstQuote,
-        ratio,
-        pricePoints
+      const distribution = sut.calculateDistributionConstantBase(
+        prices,
+        firstBase
       );
 
       // Assert
@@ -239,13 +312,17 @@ describe("KandelCalculation unit tests suite", () => {
       const firstBase = Big(2);
       const firstQuote = Big(3000);
       const pricePoints = 10;
+      const sut = new KandelCalculation(4, 6);
+      const prices = sut.calculatePrices({
+        minPrice: firstQuote.div(firstBase),
+        ratio,
+        pricePoints,
+      });
 
       // Act
-      const distribution = new KandelCalculation(4, 6).calculateDistribution(
-        firstBase,
-        firstQuote,
-        ratio,
-        pricePoints
+      const distribution = sut.calculateDistributionConstantBase(
+        prices,
+        firstBase
       );
 
       // Assert
@@ -263,23 +340,28 @@ describe("KandelCalculation unit tests suite", () => {
       });
     });
   });
-  describe("getPrices", () => {
+  describe("getPricesForDistribution", () => {
     it("returns prices according to bid/ask", () => {
       // Arrange
       const ratio = new Big(1.09);
       const firstBase = Big(3);
       const firstQuote = Big(5000);
       const pricePoints = 10;
-      const calculation = new KandelCalculation(12, 12);
-      const distribution = calculation.calculateDistribution(
-        firstBase,
-        firstQuote,
+      const sut = new KandelCalculation(12, 12);
+      const originalPrices = sut.calculatePrices({
+        minPrice: firstQuote.div(firstBase),
         ratio,
-        pricePoints
+        pricePoints,
+      });
+
+      // Act
+      const distribution = sut.calculateDistributionConstantBase(
+        originalPrices,
+        firstBase
       );
 
       // Act
-      const prices = calculation.getPrices(distribution);
+      const prices = sut.getPricesForDistribution(distribution);
 
       // Assert
       let price = firstQuote.div(firstBase);
@@ -293,7 +375,75 @@ describe("KandelCalculation unit tests suite", () => {
       });
     });
   });
-  describe("getVolumes", () => {
+
+  describe("calculateDistributionFromMidPrice", () => {
+    it("can calculate distribution with constant base", () => {
+      // Arrange
+      const ratio = new Big(2);
+      const minPrice = Big(1000);
+      const pricePoints = 5;
+      const sut = new KandelCalculation(4, 6);
+
+      // Act
+      const result = sut.calculateDistributionFromMidPrice(
+        { minPrice, ratio, pricePoints },
+        Big(7000),
+        Big(1)
+      );
+
+      // Assert
+      assert.equal(result.firstAskIndex, 3);
+      assert.equal(result.volumes.totalBase.toNumber(), 2);
+      assert.equal(result.volumes.totalQuote.toNumber(), 7000);
+      assert.equal(result.distribution.length, pricePoints);
+      result.distribution.forEach((d, i) => {
+        assert.equal(d.base.toNumber(), 1, `wrong base at ${i}`);
+        assert.equal(
+          d.quote.toNumber(),
+          minPrice.mul(ratio.pow(i)).toNumber(),
+          `wrong quote at ${i}`
+        );
+      });
+    });
+
+    it("can calculate distribution with constant outbound", () => {
+      // Arrange
+      const ratio = new Big(2);
+      const minPrice = Big(1000);
+      const pricePoints = 5;
+      const sut = new KandelCalculation(4, 6);
+
+      // Act
+      const result = sut.calculateDistributionFromMidPrice(
+        { minPrice, ratio, pricePoints },
+        Big(7000),
+        Big(1),
+        Big(1000)
+      );
+
+      // Assert
+      assert.equal(result.firstAskIndex, 3);
+      assert.equal(result.volumes.totalBase.toNumber(), 2);
+      assert.equal(result.volumes.totalQuote.toNumber(), 3000);
+      assert.equal(result.distribution.length, pricePoints);
+      result.distribution.forEach((d, i) => {
+        assert.equal(
+          d.base.toNumber(),
+          i >= result.firstAskIndex ? 1 : 1 / ratio.pow(i).toNumber(),
+          `wrong base at ${i}`
+        );
+        assert.equal(
+          d.quote.toNumber(),
+          i >= result.firstAskIndex
+            ? minPrice.mul(ratio.pow(i)).toNumber()
+            : 1000,
+          `wrong quote at ${i}`
+        );
+      });
+    });
+  });
+
+  describe("getVolumesForDistribution", () => {
     it("sums up the base and quote volume of the distribution", () => {
       // Arrange
       const distribution: Distribution = [
@@ -320,20 +470,16 @@ describe("KandelCalculation unit tests suite", () => {
       ];
 
       // Act
-      const { baseVolume, quoteVolume } = new KandelCalculation(
+      const { totalBase, totalQuote } = new KandelCalculation(
         0,
         0
-      ).getVolumes(distribution, 6);
+      ).getVolumesForDistribution(distribution, 6);
 
       // Assert
-      assert.equal(
-        9 + 13,
-        baseVolume.toNumber(),
-        "base should be all the base"
-      );
+      assert.equal(9 + 13, totalBase.toNumber(), "base should be all the base");
       assert.equal(
         2 + 5,
-        quoteVolume.toNumber(),
+        totalQuote.toNumber(),
         "quote should be all the quote"
       );
     });
@@ -393,8 +539,8 @@ describe("KandelCalculation unit tests suite", () => {
 
       // Assert
       assert.deepStrictEqual(
-        prices.map((x) => x.toString()),
-        ["1000", "2000", "4000", "8000", "16000", "32000"]
+        prices.map((x) => x.toNumber()),
+        [1000, 2000, 4000, 8000, 16000, 32000]
       );
     });
     it("gets first price from first", () => {
@@ -403,13 +549,13 @@ describe("KandelCalculation unit tests suite", () => {
         0,
         Big(16000),
         Big(2),
-        1
+        2
       );
 
       // Act/assert
       assert.deepStrictEqual(
-        prices.map((x) => x.toString()),
-        ["16000"]
+        prices.map((x) => x.toNumber()),
+        [16000, 32000]
       );
     });
   });
