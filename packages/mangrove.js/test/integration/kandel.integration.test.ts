@@ -309,7 +309,7 @@ describe("Kandel integration tests suite", function () {
               firstBase
             );
 
-          const { baseVolume, quoteVolume } = kandel.getVolumesForDistribution(
+          const { totalBase, totalQuote } = kandel.getVolumesForDistribution(
             distribution,
             firstAskIndex
           );
@@ -329,8 +329,8 @@ describe("Kandel integration tests suite", function () {
                 spread: 1,
                 pricePoints: distribution.length,
               },
-              depositBaseAmount: baseVolume,
-              depositQuoteAmount: quoteVolume,
+              depositBaseAmount: totalBase,
+              depositQuoteAmount: totalQuote,
               maxOffersInChunk: inChunks ? 3 : undefined,
             })
           );
@@ -441,12 +441,12 @@ describe("Kandel integration tests suite", function () {
           // assert deposits
           assert.equal(
             (await kandel.balance("asks")).toString(),
-            baseVolume.toString(),
+            totalBase.toString(),
             "Base should be deposited"
           );
           assert.equal(
             (await kandel.balance("bids")).toString(),
-            quoteVolume.toString(),
+            totalQuote.toString(),
             "Quote should be deposited"
           );
         });
@@ -467,7 +467,7 @@ describe("Kandel integration tests suite", function () {
             firstBase
           );
 
-        const { baseVolume, quoteVolume } = kandel.getVolumesForDistribution(
+        const { totalBase, totalQuote } = kandel.getVolumesForDistribution(
           distribution,
           firstAskIndex
         );
@@ -488,8 +488,8 @@ describe("Kandel integration tests suite", function () {
               spread: 1,
               pricePoints: distribution.length,
             },
-            depositBaseAmount: params.deposit ? baseVolume : Big(0),
-            depositQuoteAmount: params.deposit ? quoteVolume : Big(0),
+            depositBaseAmount: params.deposit ? totalBase : Big(0),
+            depositQuoteAmount: params.deposit ? totalQuote : Big(0),
           })
         );
 
@@ -500,8 +500,8 @@ describe("Kandel integration tests suite", function () {
           pricePoints,
           distribution,
           firstAskIndex,
-          baseVolume,
-          quoteVolume,
+          totalBase,
+          totalQuote,
         };
       }
 
@@ -514,19 +514,19 @@ describe("Kandel integration tests suite", function () {
         assert.equal((await kandel.offeredVolume("asks")).toString(), "0");
         assert.equal((await kandel.offeredVolume("bids")).toString(), "0");
 
-        const { baseVolume, quoteVolume } = await populateKandel({
+        const { totalBase, totalQuote } = await populateKandel({
           approve: true,
           deposit: true,
         });
         // assert deposits
         assert.equal(
           (await kandel.balance("asks")).toString(),
-          baseVolume.toString(),
+          totalBase.toString(),
           "Base should be deposited"
         );
         assert.equal(
           (await kandel.balance("bids")).toString(),
-          quoteVolume.toString(),
+          totalQuote.toString(),
           "Quote should be deposited"
         );
 
@@ -545,18 +545,18 @@ describe("Kandel integration tests suite", function () {
         // assert offered volume
         assert.equal(
           (await kandel.offeredVolume("asks")).toString(),
-          baseVolume.toString(),
+          totalBase.toString(),
           "Base should be offered"
         );
         assert.equal(
           (await kandel.offeredVolume("bids")).toString(),
-          quoteVolume.toString(),
+          totalQuote.toString(),
           "Quote should be offered"
         );
       });
 
       it("pending, volume, reserve correct after populate without deposit", async function () {
-        const { baseVolume, quoteVolume } = await populateKandel({
+        const { totalBase, totalQuote } = await populateKandel({
           approve: false,
           deposit: false,
         });
@@ -575,24 +575,24 @@ describe("Kandel integration tests suite", function () {
         // assert pending
         assert.equal(
           (await kandel.pending("asks")).toString(),
-          (-baseVolume).toString(),
+          (-totalBase).toString(),
           "entire ask volume should be pending"
         );
         assert.equal(
           (await kandel.pending("bids")).toString(),
-          (-quoteVolume).toString(),
+          (-totalQuote).toString(),
           "entire quote volume should be pending"
         );
 
         // assert offered volume
         assert.equal(
           (await kandel.offeredVolume("asks")).toString(),
-          baseVolume.toString(),
+          totalBase.toString(),
           "Base should be offered"
         );
         assert.equal(
           (await kandel.offeredVolume("bids")).toString(),
-          quoteVolume.toString(),
+          totalQuote.toString(),
           "Quote should be offered"
         );
       });
