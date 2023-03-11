@@ -125,16 +125,17 @@ describe("KandelCalculation unit tests suite", () => {
         [
           { ba: "bids", base: Big(11), quote: Big(2000), index: 0 },
           { ba: "bids", base: Big(21), quote: Big(1000), index: 1 },
-          { ba: "asks", base: Big(1), quote: Big(44), index: 0 },
-          { ba: "asks", base: Big(1), quote: Big(44), index: 0 },
+          { ba: "asks", base: Big(1), quote: Big(44), index: 2 },
+          { ba: "asks", base: Big(1), quote: Big(44), index: 3 },
+          { ba: "asks", base: Big(1), quote: Big(44), index: 4 },
         ],
         Big(3),
-        Big(3000)
+        Big(2000)
       );
 
       // Assert
-      assert.equal(askGives.toNumber(), 2);
-      assert.equal(bidGives.toNumber(), 3000);
+      assert.equal(askGives.toNumber(), 1);
+      assert.equal(bidGives.toNumber(), 1000);
     });
   });
 
