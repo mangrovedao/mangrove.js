@@ -249,16 +249,6 @@ const deploy = async (params: deployParams) => {
     await devNode.setMulticallCodeIfAbsent();
   }
 
-  // test connectivity
-  try {
-    await params.provider.send("eth_chainId", []);
-  } catch (err) {
-    throw new Error(
-      "Could not get chain id, is the anvil node running?\nOriginal error: \n" +
-        err.toString()
-    );
-  }
-
   if (params.stateCache && fs.existsSync(stateCacheFile)) {
     const state = fs.readFileSync(stateCacheFile, "utf8");
     console.log("Loading state from cache...");
@@ -314,6 +304,16 @@ const connect = async (params: connectParams) => {
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
     spawnInfo = await spawn(params);
+  }
+
+  // test connectivity
+  try {
+    await params.provider.send("eth_chainId", []);
+  } catch (err) {
+    throw new Error(
+      "Could not get chain id, is the node running?\nOriginal error: \n" +
+        err.toString()
+    );
   }
 
   const deployFn = () => {
