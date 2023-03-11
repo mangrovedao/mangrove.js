@@ -1,9 +1,7 @@
 {
   "mainnet": {},
-  "rinkeby": {},
   "goerli": {},
   "kovan": {},
-  "ropsten": {},
   "maticmum": {
     "WETH": "0xD087ff96281dcf722AEa82aCA57E8545EA9e6C96",
     "WMATIC": "0xf237dE5664D3c2D2545684E76fef02A3A58A364c",

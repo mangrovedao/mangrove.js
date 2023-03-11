@@ -6,6 +6,8 @@ export const command = "print <base> <quote>";
 export const aliases = [];
 export const describe = "print the offers on a market";
 
+const DEFAULT_NODE_URL = "http://localhost:8545";
+
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const builder = (yargs) => {
   return yargs
@@ -13,7 +15,7 @@ export const builder = (yargs) => {
     .positional("quote", { type: "string", demandOption: true })
     .option("maxOffers", { type: "number", default: 10 })
     .option("ba", { choices: ["asks", "bids"] })
-    .option("nodeUrl", { type: "string", demandOption: true });
+    .option("nodeUrl", { type: "string", default: DEFAULT_NODE_URL });
 };
 
 type Arguments = yargs.Arguments<ReturnType<typeof builder>>;

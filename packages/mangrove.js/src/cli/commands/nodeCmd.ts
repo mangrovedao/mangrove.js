@@ -21,7 +21,8 @@ export async function handler(argv: Arguments): Promise<void> {
     },
     false
   ).connect();
-  if (spawnEndedPromise) {
+  // if we spawned the node, wait for it to end, otherwise end now
+  if (typeof spawnEndedPromise !== "undefined") {
     console.log("Node ready.");
     await spawnEndedPromise;
   }

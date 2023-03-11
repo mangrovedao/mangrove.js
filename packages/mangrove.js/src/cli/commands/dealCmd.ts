@@ -14,7 +14,7 @@ type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
 export { builder };
 
 export async function handler(argv: Arguments): Promise<void> {
-  const { spawnEndedPromise, deal } = await node(
+  const { deal } = await node(
     {
       spawn: false,
       deploy: false,

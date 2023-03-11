@@ -113,7 +113,8 @@ export const builder = (yargs) => {
       type: "string",
     })
     .option("chain-id", {
-      describe: "Chain id to use in node (default is anvil's default)",
+      describe:
+        "Chain id to use in node, if spawning (default is anvil's default)",
       type: "number",
     })
     .option("pipe", {
@@ -507,6 +508,7 @@ if (require.main === module) {
     const { spawnEndedPromise } = await node({
       pipe: true,
     }).connect();
+    // if we spawned the node, wait for it to end, otherwise end now
     if (spawnEndedPromise) {
       console.log("Node ready.");
       await spawnEndedPromise;
