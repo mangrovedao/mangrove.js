@@ -143,7 +143,8 @@ describe("KandelStatus unit tests suite", () => {
       });
       const dist = sut.calculation.calculateDistributionConstantBase(
         originalPrices,
-        Big(2)
+        Big(2),
+        3
       );
 
       const prices = sut.calculation.getPricesForDistribution(dist);

@@ -267,12 +267,11 @@ describe("Kandel integration tests suite", function () {
         const firstBase = Big(1);
         const firstQuote = Big(1000);
         const pricePoints = 6;
-        const { distribution, firstAskIndex } =
-          kandel.calculateDistributionFromMidPrice(
-            { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
-            Big(1200),
-            firstBase
-          );
+        const { distribution } = kandel.calculateDistributionFromMidPrice(
+          { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
+          Big(1200),
+          firstBase
+        );
 
         // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
         // prettier-ignore
@@ -286,11 +285,7 @@ describe("Kandel integration tests suite", function () {
         }
         await mgvTestUtil.waitForBooksForLastTx(market);
 
-        const pivots = await kandel.getPivots(
-          market,
-          distribution,
-          firstAskIndex
-        );
+        const pivots = await kandel.getPivots(market, distribution);
         assert.sameOrderedMembers(pivots, [1, 2, undefined, undefined, 1, 2]);
       });
 
@@ -302,17 +297,14 @@ describe("Kandel integration tests suite", function () {
           const firstBase = Big(1);
           const firstQuote = Big(1000);
           const pricePoints = 6;
-          const { distribution, firstAskIndex } =
-            kandel.calculateDistributionFromMidPrice(
-              { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
-              Big(1200),
-              firstBase
-            );
-
-          const { totalBase, totalQuote } = kandel.getVolumesForDistribution(
-            distribution,
-            firstAskIndex
+          const { distribution } = kandel.calculateDistributionFromMidPrice(
+            { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
+            Big(1200),
+            firstBase
           );
+
+          const { totalBase, totalQuote } =
+            kandel.getVolumesForDistribution(distribution);
 
           const approvalTxs = await kandel.approve();
           await approvalTxs[0].wait();
@@ -322,7 +314,6 @@ describe("Kandel integration tests suite", function () {
           const receipts = await waitForTransactions(
             await kandel.populate({
               distribution,
-              firstAskIndex,
               parameters: {
                 compoundRateBase: Big(0.5),
                 ratio,
@@ -384,13 +375,14 @@ describe("Kandel integration tests suite", function () {
           );
 
           const book = market.getBook();
+          const asks = [...book.asks];
+          const bids = [...book.bids];
 
           // assert asks
-          const asks = [...book.asks];
           assert.equal(asks.length, 3, "3 asks should be populated");
           for (let i = 0; i < asks.length; i++) {
             const offer = asks[i];
-            const d = distribution[firstAskIndex + i];
+            const d = distribution[bids.length + i];
             assert.equal(
               offer.gives.toString(),
               d.base.toString(),
@@ -411,7 +403,6 @@ describe("Kandel integration tests suite", function () {
             );
           }
           // assert bids
-          const bids = [...book.bids];
           assert.equal(bids.length, 3, "3 bids should be populated");
           for (let i = 0; i < bids.length; i++) {
             const offer = bids[bids.length - 1 - i];
@@ -460,17 +451,14 @@ describe("Kandel integration tests suite", function () {
         const firstBase = Big(1);
         const firstQuote = Big(1000);
         const pricePoints = 6;
-        const { distribution, firstAskIndex } =
-          kandel.calculateDistributionFromMidPrice(
-            { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
-            Big(1200),
-            firstBase
-          );
-
-        const { totalBase, totalQuote } = kandel.getVolumesForDistribution(
-          distribution,
-          firstAskIndex
+        const { distribution } = kandel.calculateDistributionFromMidPrice(
+          { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
+          Big(1200),
+          firstBase
         );
+
+        const { totalBase, totalQuote } =
+          kandel.getVolumesForDistribution(distribution);
         if (params.approve) {
           const approvalTxs = await kandel.approve();
           await approvalTxs[0].wait();
@@ -481,7 +469,6 @@ describe("Kandel integration tests suite", function () {
         await waitForTransactions(
           kandel.populate({
             distribution,
-            firstAskIndex,
             parameters: {
               compoundRateBase: Big(0.5),
               ratio,
@@ -499,7 +486,6 @@ describe("Kandel integration tests suite", function () {
           firstQuote,
           pricePoints,
           distribution,
-          firstAskIndex,
           totalBase,
           totalQuote,
         };

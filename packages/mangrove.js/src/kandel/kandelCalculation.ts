@@ -2,6 +2,7 @@ import Big from "big.js";
 import Market from "../market";
 
 export type DistributionElement = {
+  ba: Market.BA;
   index: number;
   base: Big;
   quote: Big;
@@ -116,12 +117,12 @@ class KandelCalculation {
   }
 
   public calculateConstantOutbound(
-    pricePoints: number,
-    firstAskIndex: number,
+    distribution: Distribution,
     totalBase: Big,
     totalQuote: Big
   ) {
-    const { bids, asks } = this.getBaCount(pricePoints, firstAskIndex);
+    const bids = distribution.filter((x) => x.ba == "bids").length;
+    const asks = distribution.filter((x) => x.ba == "asks").length;
 
     return {
       askGives: asks
@@ -145,46 +146,37 @@ class KandelCalculation {
             index,
             base: bidGives.div(p).round(this.baseDecimals, Big.roundHalfUp),
             quote: bidGives,
+            ba: "bids" as Market.BA,
           }
         : {
             index,
             base: askGives,
             quote: askGives.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
+            ba: "asks" as Market.BA,
           }
     );
 
     return distribution;
   }
 
-  public calculateDistributionConstantBase(prices: Big[], constantBase: Big) {
+  public calculateDistributionConstantBase(
+    prices: Big[],
+    constantBase: Big,
+    firstAskIndex: number
+  ): Distribution {
     const base = constantBase.round(this.baseDecimals, Big.roundHalfUp);
     return prices.map((p, index) => ({
       index,
       base: base,
       quote: base.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
+      ba: this.getBA(index, firstAskIndex),
     }));
   }
 
-  public getMinimumBaseQuoteVolumesForConstantOutbound(
-    pricePoints: number,
-    firstAskIndex: number,
-    minimumBase: Big,
-    minimumQuote: Big
-  ) {
-    const { bids, asks } = this.getBaCount(pricePoints, firstAskIndex);
-    return {
-      minimumBaseVolume: minimumBase.mul(asks),
-      minimumQuoteVolume: minimumQuote.mul(bids),
-    };
-  }
-
-  public getVolumesForDistribution(
-    distribution: Distribution,
-    firstAskIndex: number
-  ) {
+  public getVolumesForDistribution(distribution: Distribution) {
     return distribution.reduce(
       (a, x) => {
-        return this.getBA(x.index, firstAskIndex) == "bids"
+        return x.ba == "bids"
           ? {
               totalBase: a.totalBase,
               totalQuote: a.totalQuote.add(x.quote),
@@ -213,14 +205,21 @@ class KandelCalculation {
           initialBidGives,
           firstAskIndex
         )
-      : this.calculateDistributionConstantBase(prices, initialAskGives);
-    const volumes = this.getVolumesForDistribution(distribution, firstAskIndex);
+      : this.calculateDistributionConstantBase(
+          prices,
+          initialAskGives,
+          firstAskIndex
+        );
+    const volumes = this.getVolumesForDistribution(distribution);
 
     return {
-      firstAskIndex,
       distribution,
       volumes,
     };
+  }
+
+  public getFirstAskIndex(distribution: Distribution) {
+    return distribution.find((x) => x.ba == "asks").index;
   }
 
   public sortByIndex(list: { index: number }[]) {

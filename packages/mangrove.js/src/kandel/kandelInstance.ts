@@ -173,16 +173,11 @@ class KandelInstance {
     return (await this.kandel.router()) != (await this.kandel.NO_ROUTER());
   }
 
-  public async getPivots(
-    market: Market,
-    distribution: Distribution,
-    firstAskIndex: number
-  ) {
+  public async getPivots(market: Market, distribution: Distribution) {
     const prices = this.calculation.getPricesForDistribution(distribution);
     const pivots: number[] = Array(distribution.length);
     for (let i = 0; i < distribution.length; i++) {
-      const ba = this.calculation.getBA(distribution[i].index, firstAskIndex);
-      pivots[i] = await market.getPivotId(ba, prices[i]);
+      pivots[i] = await market.getPivotId(distribution[i].ba, prices[i]);
     }
     return pivots;
   }
@@ -202,27 +197,19 @@ class KandelInstance {
   }
 
   public calculateConstantOutbound(
-    pricePoints: number,
-    firstAskIndex: number,
+    distribution: Distribution,
     totalBase: Big,
     totalQuote: Big
   ) {
     return this.calculation.calculateConstantOutbound(
-      pricePoints,
-      firstAskIndex,
+      distribution,
       totalBase,
       totalQuote
     );
   }
 
-  public getVolumesForDistribution(
-    distribution: Distribution,
-    firstAskIndex: number
-  ) {
-    return this.calculation.getVolumesForDistribution(
-      distribution,
-      firstAskIndex
-    );
+  public getVolumesForDistribution(distribution: Distribution) {
+    return this.calculation.getVolumesForDistribution(distribution);
   }
 
   public async approve(
@@ -317,10 +304,13 @@ class KandelInstance {
     return rawDistribution;
   }
 
+  public verifyDistribution(distribution: Distribution) {
+    //TODO
+  }
+
   public async populate(
     params: {
       distribution: Distribution;
-      firstAskIndex: number;
       parameters: KandelParameterOverrides;
       depositBaseAmount?: Big;
       depositQuoteAmount?: Big;
@@ -331,14 +321,12 @@ class KandelInstance {
   ) {
     this.calculation.sortByIndex(params.distribution);
 
+    this.verifyDistribution(params.distribution);
+
     // Use 0 as pivot when none is found
-    const pivots = (
-      await this.getPivots(
-        this.market,
-        params.distribution,
-        params.firstAskIndex
-      )
-    ).map((x) => x ?? 0);
+    const pivots = (await this.getPivots(this.market, params.distribution)).map(
+      (x) => x ?? 0
+    );
 
     const distributions = this.calculation.chunk(
       pivots,
@@ -361,11 +349,15 @@ class KandelInstance {
       params.depositQuoteAmount
     );
 
+    const firstAskIndex = this.calculation.getFirstAskIndex(
+      params.distribution
+    );
+
     const txs = [
       await this.kandel.populate(
         this.getRawDistribution(distributions[0].distribution),
         distributions[0].pivots,
-        params.firstAskIndex,
+        firstAskIndex,
         rawParameters,
         depositTokens,
         depositAmounts,
@@ -378,7 +370,7 @@ class KandelInstance {
         await this.kandel.populateChunk(
           this.getRawDistribution(distributions[i].distribution),
           distributions[i].pivots,
-          params.firstAskIndex,
+          firstAskIndex,
           overrides
         )
       );
