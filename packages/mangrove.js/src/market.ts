@@ -668,6 +668,16 @@ class Market {
     this.prettyP.consoleOffers(this.getSemibook("bids"), filter);
   }
 
+  /** Pretty prints the current book (asks then bids, price decreases each line) */
+  consoleBook(filter?: prettyPrintFilter): void {
+    this.prettyP.consoleOffers(
+      this.getSemibook("asks").iter().toArray().reverse(),
+      filter
+    );
+    console.log("▲asks  ▼bids");
+    this.prettyP.consoleOffers(this.getSemibook("bids"), filter);
+  }
+
   /** Pretty prints the current state of the asks or bids of the market */
   prettyPrint(ba: Market.BA, filter: prettyPrintFilter): void {
     const offers = this.getSemibook(ba);
