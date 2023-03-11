@@ -3,6 +3,7 @@ import tokenDecimals from "./constants/tokenDecimals.json";
 import tokenDisplayedDecimals from "./constants/tokenDisplayedDecimals.json";
 import tokenCashness from "./constants/tokenCashness.json";
 import tokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedAsPriceDecimals.json";
+import networks from "./constants/networks";
 import { ethers } from "ethers";
 
 import mgvCore from "@mangrovedao/mangrove-core";
@@ -52,6 +53,7 @@ for (const [network, networkAddresses] of mgvCoreAddresses) {
 
 export { addresses };
 export const decimals = tokenDecimals;
+export { networks };
 export const defaultDisplayedDecimals = 2;
 export const displayedDecimals = tokenDisplayedDecimals;
 export const defaultDisplayedPriceDecimals = 6;

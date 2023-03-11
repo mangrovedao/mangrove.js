@@ -23,6 +23,8 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
+import { networks, addresses } from "../constants";
+
 const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
   if (typeof pipe === "undefined") {
     pipe = true;
@@ -363,6 +365,25 @@ const connect = async (params: connectParams) => {
       amount?: number;
       internalAmount?: ethers.BigNumber;
     }) => {
+      let tokenAddress;
+      try {
+        tokenAddress = ethers.utils.getAddress(dealParams.token);
+      } catch (e) {
+        const chainId = params.provider.network.chainId;
+        const networkName = networks[chainId];
+        if (typeof networkName === "undefined") {
+          throw new Error(
+            `Error while attempting to lookup ${dealParams.token} as a token name: chainId ${chainId} does not map to a known network`
+          );
+        }
+        tokenAddress = addresses[networkName][dealParams.token];
+        if (typeof tokenAddress === "undefined") {
+          throw new Error(
+            `Error while attempting to lookup ${dealParams.token} as a token name: name does not map to a known address on network ${networkName}`
+          );
+        }
+      }
+
       //  token:string,account:string,amount:string) {
       const command = `forge script --rpc-url ${params.url} -vv GetTokenDealSlot`;
 
@@ -452,6 +473,21 @@ export default node;
 
 export const dealBuilder = (yargs) => {
   return yargs
+    .positional("token", {
+      describe: "Address or name of the token",
+      demandOption: true,
+      type: "string",
+    })
+    .positional("to", {
+      describe: "Address of the account to credit",
+      demandOption: true,
+      type: "string",
+    })
+    .positional("amount", {
+      describe: "Number of tokens in display units.",
+      demandOption: true,
+      type: "number",
+    })
     .option("host", {
       describe: "The node hostname -- must be a dev node (anvil, hardhat, ...)",
       type: "string",
@@ -461,21 +497,6 @@ export const dealBuilder = (yargs) => {
       describe: "The node port -- must be a dev node (anvil, hardhat, ...)",
       type: "string",
       default: DEFAULT_PORT,
-    })
-    .option("token", {
-      describe: "Address of the token",
-      requiresArg: true,
-      type: "string",
-    })
-    .option("account", {
-      describe: "Address of the account to credit",
-      requiresArg: true,
-      type: "string",
-    })
-    .option("amount", {
-      describe: "Number of tokens in display units.",
-      requiresArg: true,
-      type: "number",
     })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
