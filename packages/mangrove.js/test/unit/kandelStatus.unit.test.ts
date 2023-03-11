@@ -99,7 +99,7 @@ describe("KandelStatus unit tests suite", () => {
     sut = new KandelStatus(new KandelCalculation(4, 6));
   });
 
-  describe("getIndexOfPriceClosestToMid", () => {
+  describe(KandelStatus.prototype.getIndexOfPriceClosestToMid.name, () => {
     it(`gets offer if single`, () => {
       const index = sut.getIndexOfPriceClosestToMid(Big(5), [Big(1)]);
       assert.equal(index, 0);
@@ -118,7 +118,7 @@ describe("KandelStatus unit tests suite", () => {
     });
   });
 
-  describe("getOfferStatuses", () => {
+  describe(KandelStatus.prototype.getOfferStatuses.name, () => {
     it("throws on no live offers", () => {
       assert.throws(
         () =>

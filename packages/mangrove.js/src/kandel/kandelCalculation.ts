@@ -133,29 +133,29 @@ class KandelCalculation {
 
   public calculateConstantOutboundPerOffer(
     distribution: Distribution,
-    totalBase: Big,
-    totalQuote?: Big
+    availableBase: Big,
+    availableQuote?: Big
   ) {
     const bids = distribution.filter((x) => x.ba == "bids").length;
     const asks = distribution.filter((x) => x.ba == "asks").length;
 
     return {
-      askGives: this.calculateOfferGives("asks", asks, totalBase),
-      bidGives: totalQuote
-        ? this.calculateOfferGives("bids", bids, totalQuote)
+      askGives: this.calculateOfferGives("asks", asks, availableBase),
+      bidGives: availableQuote
+        ? this.calculateOfferGives("bids", bids, availableQuote)
         : undefined,
     };
   }
 
-  public setOutboundPerOfferFromTotals(
+  public setOutboundPerOfferFromAvailable(
     distribution: Distribution,
-    totalBase: Big,
-    totalQuote?: Big
+    availableBase: Big,
+    availableQuote?: Big
   ) {
     const initialGives = this.calculateConstantOutboundPerOffer(
       distribution,
-      totalBase,
-      totalQuote
+      availableBase,
+      availableQuote
     );
 
     const prices = this.getPricesForDistribution(distribution);
@@ -206,20 +206,20 @@ class KandelCalculation {
     }));
   }
 
-  public getVolumesForDistribution(distribution: Distribution) {
+  public getRequiredAllocationForDistribution(distribution: Distribution) {
     return distribution.reduce(
       (a, x) => {
         return x.ba == "bids"
           ? {
-              totalBase: a.totalBase,
-              totalQuote: a.totalQuote.add(x.quote),
+              requiredBase: a.requiredBase,
+              requiredQuote: a.requiredQuote.add(x.quote),
             }
           : {
-              totalBase: a.totalBase.add(x.base),
-              totalQuote: a.totalQuote,
+              requiredBase: a.requiredBase.add(x.base),
+              requiredQuote: a.requiredQuote,
             };
       },
-      { totalBase: new Big(0), totalQuote: new Big(0) }
+      { requiredBase: new Big(0), requiredQuote: new Big(0) }
     );
   }
 
@@ -257,7 +257,7 @@ class KandelCalculation {
           initialAskGives,
           firstAskIndex
         );
-    const volumes = this.getVolumesForDistribution(distribution);
+    const volumes = this.getRequiredAllocationForDistribution(distribution);
 
     return {
       distribution,

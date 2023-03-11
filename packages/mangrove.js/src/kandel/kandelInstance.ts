@@ -199,20 +199,20 @@ class KandelInstance {
     );
   }
 
-  public setOutboundPerOfferFromTotals(
+  public setOutboundPerOfferFromAvailable(
     distribution: Distribution,
-    totalBase: Big,
-    totalQuote?: Big
+    availableBase: Big,
+    availableQuote?: Big
   ) {
-    return this.calculation.setOutboundPerOfferFromTotals(
+    return this.calculation.setOutboundPerOfferFromAvailable(
       distribution,
-      totalBase,
-      totalQuote
+      availableBase,
+      availableQuote
     );
   }
 
-  public getVolumesForDistribution(distribution: Distribution) {
-    return this.calculation.getVolumesForDistribution(distribution);
+  public getRequiredAllocationForDistribution(distribution: Distribution) {
+    return this.calculation.getRequiredAllocationForDistribution(distribution);
   }
 
   public async approve(
