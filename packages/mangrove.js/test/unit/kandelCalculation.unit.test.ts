@@ -139,6 +139,90 @@ describe("KandelCalculation unit tests suite", () => {
     });
   });
 
+  describe("setOutboundPerOfferFromTotals", () => {
+    it("can set new constant base", () => {
+      // Arrange
+      const sut = new KandelCalculation(4, 6);
+      const distribution = sut.calculateDistributionFromMidPrice(
+        { minPrice: Big(1000), ratio: Big(2), pricePoints: 7 },
+        Big(5000),
+        Big(1)
+      );
+
+      // Act
+      const newDistribution = sut.setOutboundPerOfferFromTotals(
+        distribution.distribution,
+        distribution.volumes.totalBase.mul(2)
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        sut.getPricesForDistribution(distribution.distribution),
+        sut.getPricesForDistribution(newDistribution.distribution)
+      );
+      assert.equal(
+        distribution.volumes.totalBase.mul(2).toNumber(),
+        newDistribution.volumes.totalBase.toNumber()
+      );
+      assert.equal(
+        1,
+        [...new Set(newDistribution.distribution.map((x) => x.base))].length
+      );
+    });
+
+    it("can set new constant gives", () => {
+      // Arrange
+      const sut = new KandelCalculation(4, 6);
+      const distribution = sut.calculateDistributionFromMidPrice(
+        { minPrice: Big(1000), ratio: Big(2), pricePoints: 7 },
+        Big(5000),
+        Big(1),
+        Big(1000)
+      );
+
+      // Act
+      const newDistribution = sut.setOutboundPerOfferFromTotals(
+        distribution.distribution,
+        distribution.volumes.totalBase.mul(2),
+        distribution.volumes.totalQuote.mul(2)
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        sut.getPricesForDistribution(distribution.distribution),
+        sut.getPricesForDistribution(newDistribution.distribution)
+      );
+      assert.equal(
+        distribution.volumes.totalBase.mul(2).toNumber(),
+        newDistribution.volumes.totalBase.toNumber()
+      );
+      assert.equal(
+        distribution.volumes.totalQuote.mul(2).toNumber(),
+        newDistribution.volumes.totalQuote.toNumber()
+      );
+      assert.equal(
+        1,
+        [
+          ...new Set(
+            newDistribution.distribution
+              .filter((x) => x.ba == "asks")
+              .map((x) => x.base)
+          ),
+        ].length
+      );
+      assert.equal(
+        1,
+        [
+          ...new Set(
+            newDistribution.distribution
+              .filter((x) => x.ba == "bids")
+              .map((x) => x.quote)
+          ),
+        ].length
+      );
+    });
+  });
+
   describe("calculateDistributionConstantOutbound", () => {
     it("can calculate distribution with fixed base volume and fixed quote volume which follows geometric price distribution", () => {
       // Arrange

@@ -116,22 +116,55 @@ class KandelCalculation {
     return firstAskIndex == -1 ? prices.length : firstAskIndex;
   }
 
+  public calculateOfferGives(
+    ba: Market.BA,
+    offerCount: number,
+    totalVolume: Big
+  ) {
+    return offerCount
+      ? totalVolume
+          .div(offerCount)
+          .round(
+            ba == "asks" ? this.baseDecimals : this.quoteDecimals,
+            Big.roundDown
+          )
+      : Big(0);
+  }
+
   public calculateConstantOutboundPerOffer(
     distribution: Distribution,
     totalBase: Big,
-    totalQuote: Big
+    totalQuote?: Big
   ) {
     const bids = distribution.filter((x) => x.ba == "bids").length;
     const asks = distribution.filter((x) => x.ba == "asks").length;
 
     return {
-      askGives: asks
-        ? totalBase.div(asks).round(this.baseDecimals, Big.roundDown)
-        : Big(0),
-      bidGives: bids
-        ? totalQuote.div(bids).round(this.quoteDecimals, Big.roundDown)
-        : Big(0),
+      askGives: this.calculateOfferGives("asks", asks, totalBase),
+      bidGives: totalQuote
+        ? this.calculateOfferGives("bids", bids, totalQuote)
+        : undefined,
     };
+  }
+
+  public setOutboundPerOfferFromTotals(
+    distribution: Distribution,
+    totalBase: Big,
+    totalQuote?: Big
+  ) {
+    const initialGives = this.calculateConstantOutboundPerOffer(
+      distribution,
+      totalBase,
+      totalQuote
+    );
+
+    const prices = this.getPricesForDistribution(distribution);
+    return this.calculateDistributionFromPrices(
+      prices,
+      this.getFirstAskIndex(distribution),
+      initialGives.askGives,
+      initialGives.bidGives
+    );
   }
 
   public calculateDistributionConstantOutbound(
@@ -198,6 +231,20 @@ class KandelCalculation {
   ) {
     const prices = this.calculatePrices(priceDistributionParams);
     const firstAskIndex = this.calculateFirstAskIndex(midPrice, prices);
+    return this.calculateDistributionFromPrices(
+      prices,
+      firstAskIndex,
+      initialAskGives,
+      initialBidGives
+    );
+  }
+
+  public calculateDistributionFromPrices(
+    prices: Big[],
+    firstAskIndex: number,
+    initialAskGives: Big,
+    initialBidGives?: Big
+  ) {
     const distribution = initialBidGives
       ? this.calculateDistributionConstantOutbound(
           prices,
