@@ -116,7 +116,7 @@ class KandelCalculation {
     return firstAskIndex == -1 ? prices.length : firstAskIndex;
   }
 
-  public calculateConstantOutbound(
+  public calculateConstantOutboundPerOffer(
     distribution: Distribution,
     totalBase: Big,
     totalQuote: Big

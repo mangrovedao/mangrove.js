@@ -115,13 +115,13 @@ describe("KandelCalculation unit tests suite", () => {
     });
   });
 
-  describe("calculateConstantOutbound", () => {
+  describe("calculateConstantOutboundPerOffer", () => {
     it("can calculate constant outbound", () => {
       // Arrange
       const sut = new KandelCalculation(4, 6);
 
       // Act
-      const distribution = sut.calculateConstantOutbound(
+      const { askGives, bidGives } = sut.calculateConstantOutboundPerOffer(
         [
           { ba: "bids", base: Big(11), quote: Big(2000), index: 0 },
           { ba: "bids", base: Big(21), quote: Big(1000), index: 1 },
@@ -131,6 +131,10 @@ describe("KandelCalculation unit tests suite", () => {
         Big(3),
         Big(3000)
       );
+
+      // Assert
+      assert.equal(askGives.toNumber(), 2);
+      assert.equal(bidGives.toNumber(), 3000);
     });
   });
 

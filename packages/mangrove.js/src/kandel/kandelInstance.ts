@@ -199,12 +199,12 @@ class KandelInstance {
     );
   }
 
-  public calculateConstantOutbound(
+  public calculateConstantOutboundPerOffer(
     distribution: Distribution,
     totalBase: Big,
     totalQuote: Big
   ) {
-    return this.calculation.calculateConstantOutbound(
+    return this.calculation.calculateConstantOutboundPerOffer(
       distribution,
       totalBase,
       totalQuote
