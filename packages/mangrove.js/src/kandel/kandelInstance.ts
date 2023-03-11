@@ -107,25 +107,24 @@ class KandelInstance {
 
   public async parameters() {
     const params = await this.kandel.params();
-    const precision = await this.precision;
     return {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
-      ratio: UnitCalculations.fromUnits(params.ratio, precision),
+      ratio: UnitCalculations.fromUnits(params.ratio, this.precision),
       compoundRateBase: UnitCalculations.fromUnits(
         params.compoundRateBase,
-        precision
+        this.precision
       ),
       compoundRateQuote: UnitCalculations.fromUnits(
         params.compoundRateQuote,
-        precision
+        this.precision
       ),
       spread: params.spread,
       pricePoints: params.pricePoints,
     };
   }
 
-  async getRawParameters(parameters: KandelParameters) {
+  getRawParameters(parameters: KandelParameters) {
     return {
       gasprice: parameters.gasprice,
       gasreq: parameters.gasreq,
@@ -155,6 +154,10 @@ class KandelInstance {
 
   private UintToBa(ba: number): Market.BA {
     return ba == 0 ? "bids" : "asks";
+  }
+
+  public getOutboundToken(ba: Market.BA) {
+    return ba == "asks" ? this.market.base : this.market.quote;
   }
 
   public async getOfferIdAtIndex(ba: Market.BA, index: number) {
@@ -222,7 +225,7 @@ class KandelInstance {
     ];
   }
 
-  async getDepositArrays(depositBaseAmount?: Big, depositQuoteAmount?: Big) {
+  getDepositArrays(depositBaseAmount?: Big, depositQuoteAmount?: Big) {
     const depositTokens: string[] = [];
     const depositAmounts: BigNumber[] = [];
     if (depositBaseAmount && depositBaseAmount.gt(0)) {
@@ -241,7 +244,7 @@ class KandelInstance {
     depositQuoteAmount?: Big,
     overrides: ethers.Overrides = {}
   ) {
-    const { depositTokens, depositAmounts } = await this.getDepositArrays(
+    const { depositTokens, depositAmounts } = this.getDepositArrays(
       depositBaseAmount,
       depositQuoteAmount
     );
@@ -250,10 +253,6 @@ class KandelInstance {
       depositAmounts,
       overrides
     );
-  }
-
-  public getOutboundToken(ba: Market.BA) {
-    return ba == "asks" ? this.market.base : this.market.quote;
   }
 
   public async balance(ba: Market.BA) {
@@ -335,7 +334,7 @@ class KandelInstance {
     );
 
     const parameters = await this.overrideParameters(params.parameters);
-    const rawParameters = await this.getRawParameters(parameters);
+    const rawParameters = this.getRawParameters(parameters);
     const funds =
       params.funds ??
       (await this.getRequiredProvision(
