@@ -29,6 +29,7 @@ const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
     ...env,
     MUMBAI_NODE_URL: env.MUMBAI_NODE_URL ?? "",
     POLYGON_NODE_URL: env.POLYGON_NODE_URL ?? "",
+    POLYGON_API_KEY: env.POLYGON_API_KEY ?? "",
   };
 
   if (typeof pipe === "undefined") {
