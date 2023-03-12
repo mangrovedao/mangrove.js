@@ -1,7 +1,6 @@
 import * as ethers from "ethers";
 import Mangrove from "../mangrove";
 import { typechain } from "../types";
-import logger from "../util/logger";
 
 import TradeEventManagement from "../util/tradeEventManagement";
 import UnitCalculations from "../util/unitCalculations";
@@ -14,6 +13,7 @@ import {
 import KandelInstance from "./kandelInstance";
 import Market from "../market";
 
+/** Seeder for creating Kandel instances on-chain. */
 class KandelSeeder {
   mgv: Mangrove;
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
@@ -21,6 +21,9 @@ class KandelSeeder {
   aaveKandelSeeder: typechain.AaveKandelSeeder;
   kandelSeeder: typechain.KandelSeeder;
 
+  /** Constructor
+   * @param params.mgv The Mangrove to deploy to.
+   */
   public constructor(params: { mgv: Mangrove }) {
     this.mgv = params.mgv;
 
@@ -43,8 +46,16 @@ class KandelSeeder {
     );
   }
 
+  /** Create a new Kandel instance.
+   * @param seed The parameters for sowing the Kandel instance.
+   * @param seed.onAave Whether to create an AaveKandel which supplies liquidity on Aave to earn yield, or a standard Kandel.
+   * @param seed.market The market to create the Kandel for.
+   * @param seed.liquiditySharing Whether to enable liquidity sharing for the Kandel so that the signer can publish the same liquidity for multiple router-based Kandels (currently AaveKandel).
+   * @param seed.gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
+   * @param seed.gasprice The gasprice to use for the Kandel (before multiplying with the factor). If null, then Mangrove's global gasprice will be used.
+   */
   public async sow(
-    params: {
+    seed: {
       onAave: boolean;
       market: Market;
       liquiditySharing: boolean;
@@ -52,30 +63,37 @@ class KandelSeeder {
       gasprice?: number; // null means use mangroves global.
     },
     overrides: ethers.Overrides = {}
-  ): Promise<KandelInstance> {
+  ): Promise<ethers.ethers.ContractTransaction> {
     const gasprice =
-      params.gaspriceFactor *
-      (params.gasprice ?? (await this.mgv.config()).gasprice);
+      seed.gaspriceFactor *
+      (seed.gasprice ?? (await this.mgv.config()).gasprice);
 
-    const seed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
-      base: params.market.base.address,
-      quote: params.market.quote.address,
+    const rawSeed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
+      base: seed.market.base.address,
+      quote: seed.market.quote.address,
       gasprice: UnitCalculations.toUnits(gasprice, 0),
-      liquiditySharing: params.liquiditySharing,
+      liquiditySharing: seed.liquiditySharing,
     };
 
-    const responsePromise = params.onAave
-      ? this.aaveKandelSeeder.sow(seed, overrides)
-      : this.kandelSeeder.sow(seed, overrides);
-    const receipt = await (await responsePromise).wait();
+    const responsePromise = seed.onAave
+      ? this.aaveKandelSeeder.sow(rawSeed, overrides)
+      : this.kandelSeeder.sow(rawSeed, overrides);
+    return responsePromise;
+  }
 
-    logger.debug("Kandel sow raw receipt", {
-      contextInfo: "kandel.seeder",
-      data: { receipt: receipt },
-    });
-
+  /** Gets the Kandel instance created in a transaction via sow.
+   * @param params.receipt The receipt of the transaction.
+   * @param params.onAave Whether the Kandel is an AaveKandel.
+   * @param params.market The market the Kandel is for.
+   * @returns The Kandel instance created in the transaction.
+   */
+  public async getKandelFromReceipt(params: {
+    receipt: ethers.ethers.ContractReceipt;
+    onAave: boolean;
+    market: Market;
+  }) {
     const events = this.tradeEventManagement.getContractEventsFromReceipt(
-      receipt,
+      params.receipt,
       params.onAave ? this.aaveKandelSeeder : this.kandelSeeder
     );
     for (const evt of events) {

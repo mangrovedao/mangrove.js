@@ -7,17 +7,27 @@ import Market from "./market";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Kandel {}
 
+/** Entrypoint for the Kandel strategies. Kandel is an Automated Market Making strategy that uses on-chain order flow to repost offers instantly, without any latency. Within a market and price range you select, Kandel automatically posts bids and asks. Its main goal is to buy low and sell high - profits are made through accumulated spread. */
 class Kandel {
   seeder: KandelSeeder;
   farm: KandelFarm;
   mgv: Mangrove;
 
+  /** Constructor
+   * @param params.mgv The Mangrove to interact with.
+   */
   public constructor(params: { mgv: Mangrove }) {
     this.mgv = params.mgv;
     this.seeder = new KandelSeeder(params);
     this.farm = new KandelFarm(params);
   }
 
+  /** Creates a KandelInstance object to interact with a Kandel strategy on Mangrove.
+   * @param address The address of the Kandel strategy.
+   * @param params.market The market used by the Kandel instance or a factory function to create the market.
+   * @returns A new KandelInstance.
+   * @dev If a factory function is provided for the market, then remember to disconnect market when no longer needed.
+   */
   public instance(
     address: string,
     market:

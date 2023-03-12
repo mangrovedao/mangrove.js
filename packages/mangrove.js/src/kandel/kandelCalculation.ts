@@ -1,14 +1,25 @@
 import Big from "big.js";
 import Market from "../market";
 
-export type DistributionElement = {
-  ba: Market.BA;
+/** Distribution of bids and asks and their base and quote amounts.
+ * @param offerType Whether the offer is a bid or an ask.
+ * @param index The index of the price point in Kandel.
+ * @param base The amount of base tokens for the offer.
+ * @param quote The amount of quote tokens for the offer.
+ */
+export type Distribution = {
+  offerType: Market.BA;
   index: number;
   base: Big;
   quote: Big;
-};
-export type Distribution = DistributionElement[];
+}[];
 
+/** Parameters for calculating a geometric price distribution. Exactly three must be provided.
+ * @param minPrice The minimum price in the distribution.
+ * @param maxPrice The maximum price in the distribution.
+ * @param ratio The ratio between each price point.
+ * @param pricePoints The number of price points in the distribution.
+ */
 export type PriceDistributionParams = {
   minPrice?: Big;
   maxPrice?: Big;
@@ -117,7 +128,7 @@ class KandelCalculation {
   }
 
   public calculateOfferGives(
-    ba: Market.BA,
+    offerType: Market.BA,
     offerCount: number,
     totalVolume: Big
   ) {
@@ -125,7 +136,7 @@ class KandelCalculation {
       ? totalVolume
           .div(offerCount)
           .round(
-            ba == "asks" ? this.baseDecimals : this.quoteDecimals,
+            offerType == "asks" ? this.baseDecimals : this.quoteDecimals,
             Big.roundDown
           )
       : Big(0);
@@ -136,8 +147,8 @@ class KandelCalculation {
     availableBase: Big,
     availableQuote?: Big
   ) {
-    const bids = distribution.filter((x) => x.ba == "bids").length;
-    const asks = distribution.filter((x) => x.ba == "asks").length;
+    const bids = distribution.filter((x) => x.offerType == "bids").length;
+    const asks = distribution.filter((x) => x.offerType == "asks").length;
 
     return {
       askGives: this.calculateOfferGives("asks", asks, availableBase),
@@ -147,7 +158,7 @@ class KandelCalculation {
     };
   }
 
-  public setOutboundPerOfferFromAvailable(
+  public recalculateDistributionFromAvailable(
     distribution: Distribution,
     availableBase: Big,
     availableQuote?: Big
@@ -179,13 +190,13 @@ class KandelCalculation {
             index,
             base: bidGives.div(p).round(this.baseDecimals, Big.roundHalfUp),
             quote: bidGives,
-            ba: "bids" as Market.BA,
+            offerType: "bids" as Market.BA,
           }
         : {
             index,
             base: askGives,
             quote: askGives.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
-            ba: "asks" as Market.BA,
+            offerType: "asks" as Market.BA,
           }
     );
 
@@ -202,14 +213,14 @@ class KandelCalculation {
       index,
       base: base,
       quote: base.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
-      ba: this.getBA(index, firstAskIndex),
+      offerType: this.getBA(index, firstAskIndex),
     }));
   }
 
-  public getRequiredAllocationForDistribution(distribution: Distribution) {
+  public getOfferedVolumeForDistribution(distribution: Distribution) {
     return distribution.reduce(
       (a, x) => {
-        return x.ba == "bids"
+        return x.offerType == "bids"
           ? {
               requiredBase: a.requiredBase,
               requiredQuote: a.requiredQuote.add(x.quote),
@@ -257,16 +268,16 @@ class KandelCalculation {
           initialAskGives,
           firstAskIndex
         );
-    const volumes = this.getRequiredAllocationForDistribution(distribution);
+    const offeredVolume = this.getOfferedVolumeForDistribution(distribution);
 
     return {
       distribution,
-      volumes,
+      offeredVolume,
     };
   }
 
   public getFirstAskIndex(distribution: Distribution) {
-    return distribution.find((x) => x.ba == "asks").index;
+    return distribution.find((x) => x.offerType == "asks").index;
   }
 
   public sortByIndex(list: { index: number }[]) {
@@ -278,14 +289,14 @@ class KandelCalculation {
   }
 
   public getDualIndex(
-    ba: Market.BA,
+    offerType: Market.BA,
     index: number,
     pricePoints: number,
     step: number
   ) {
     // From solidity: GeometricKandel.transportDestination
     let better = 0;
-    if (ba == "asks") {
+    if (offerType == "asks") {
       better = index + step;
       if (better >= pricePoints) {
         better = pricePoints - 1;

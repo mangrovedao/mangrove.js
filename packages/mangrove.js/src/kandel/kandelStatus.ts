@@ -2,37 +2,64 @@ import Big from "big.js";
 import Market from "../market";
 import KandelCalculation from "./kandelCalculation";
 
+/** Offers with their price, liveness, and Kandel index.
+ * @param offerType Whether the offer is a bid or an ask.
+ * @param price The price of the offer.
+ * @param index The index of the price point in Kandel.
+ * @param offerId The Mangrove offer id of the offer.
+ * @param live Whether the offer is live.
+ */
 export type OffersWithPrices = {
-  ba: Market.BA;
+  offerType: Market.BA;
   price: Big;
   index: number;
   offerId: number;
   live: boolean;
 }[];
 
+/** The status of an offer at a price point.
+ * @param expectedLiveBid Whether a bid is expected to be live.
+ * @param expectedLiveAsk Whether an ask is expected to be live.
+ * @param expectedPrice The expected price of the offer based on extrapolation from a live offer near the mid price.
+ * @param asks The status of the current ask at the price point or undefined if there never was an ask at this point.
+ * @param asks.live Whether the offer is live.
+ * @param asks.offerId The Mangrove offer id.
+ * @param asks.price The actual price of the offer.
+ * @param bids The status of the current bid at the price point or undefined if there is no bid.
+ * @param bids.live Whether the offer is live.
+ * @param bids.offerId The Mangrove offer id.
+ * @param bids.price The actual price of the offer.
+ */
+export type OfferStatus = {
+  expectedLiveBid: boolean;
+  expectedLiveAsk: boolean;
+  expectedPrice: Big;
+  asks: {
+    live: boolean;
+    offerId: number;
+    price: Big;
+  };
+  bids: {
+    live: boolean;
+    offerId: number;
+    price: Big;
+  };
+};
+
+/** Statuses of offers at each price point.
+ * @param statuses The status of each offer.
+ * @param liveOutOfRange Offers that are live but have an index above pricePoints. This does not happen if populate is not called when offers are live.
+ * @param baseOffer The live offer that is selected near the mid price and used to calculate expected prices.
+ */
 export type Statuses = {
-  statuses: {
-    expectedLiveBid: boolean;
-    expectedLiveAsk: boolean;
-    expectedPrice: Big;
-    asks: {
-      live: boolean;
-      offerId: number;
-      price: Big;
-    };
-    bids: {
-      live: boolean;
-      offerId: number;
-      price: Big;
-    };
-  }[];
+  statuses: OfferStatus[];
   liveOutOfRange: {
-    ba: Market.BA;
+    offerType: Market.BA;
     offerId: number;
     index: number;
   }[];
   baseOffer: {
-    ba: Market.BA;
+    offerType: Market.BA;
     index: number;
     offerId: number;
   };
@@ -107,8 +134,8 @@ class KandelStatus {
     // Merge with actual statuses
     offers
       .filter((x) => x.index < pricePoints)
-      .forEach(({ ba, index, live, offerId, price }) => {
-        statuses[index][ba] = { live, offerId, price };
+      .forEach(({ offerType, index, live, offerId, price }) => {
+        statuses[index][offerType] = { live, offerId, price };
       });
 
     // Offers are allowed to be dead if their dual offer is live
@@ -142,14 +169,18 @@ class KandelStatus {
     // Dead offers outside range can happen if range is shrunk and is not an issue and not reported.
     const liveOutOfRange = offers
       .filter((x) => x.index > pricePoints && x.live)
-      .map(({ ba, offerId, index }) => {
-        return { ba, offerId, index };
+      .map(({ offerType, offerId, index }) => {
+        return { offerType, offerId, index };
       });
 
     return {
       statuses,
       liveOutOfRange,
-      baseOffer: { ba: offer.ba, index: offer.index, offerId: offer.offerId },
+      baseOffer: {
+        offerType: offer.offerType,
+        index: offer.index,
+        offerId: offer.offerId,
+      },
     };
   }
 }

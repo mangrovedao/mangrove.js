@@ -7,8 +7,8 @@ import KandelCalculation from "../../src/kandel/kandelCalculation";
 import KandelStatus, { Statuses } from "../../src/kandel/kandelStatus";
 
 describe("KandelStatus unit tests suite", () => {
-  function getOfferId(ba: Market.BA, index: number) {
-    return ba == "asks" ? (index + 1) * 100 : (index + 1) * 1000;
+  function getOfferId(offerType: Market.BA, index: number) {
+    return offerType == "asks" ? (index + 1) * 100 : (index + 1) * 1000;
   }
   function assertEqual(
     actual: { live: boolean; offerId: number; price: Big },
@@ -55,9 +55,9 @@ describe("KandelStatus unit tests suite", () => {
         price: Big;
       };
     }[];
-    expectedBaseOffer: { ba: Market.BA; index: number; offerId: number };
+    expectedBaseOffer: { offerType: Market.BA; index: number; offerId: number };
     expectedLiveOutOfRange: {
-      ba: Market.BA;
+      offerType: Market.BA;
       offerId: number;
       index: number;
     }[];
@@ -123,7 +123,13 @@ describe("KandelStatus unit tests suite", () => {
       assert.throws(
         () =>
           sut.getOfferStatuses(Big(5), Big(1), 10, 1, [
-            { ba: "bids", index: 22, live: false, price: Big(1), offerId: 1 },
+            {
+              offerType: "bids",
+              index: 22,
+              live: false,
+              price: Big(1),
+              offerId: 1,
+            },
           ]),
         new Error(
           "Unable to determine distribution: no offers in range are live"
@@ -156,12 +162,12 @@ describe("KandelStatus unit tests suite", () => {
         pricePoints,
         1,
         prices.map((p, i) => {
-          const ba = p.gte(midPrice) ? "asks" : "bids";
+          const offerType = p.gte(midPrice) ? "asks" : "bids";
           return {
-            ba: ba,
+            offerType,
             index: i,
             live: p != undefined,
-            offerId: getOfferId(ba, i),
+            offerId: getOfferId(offerType, i),
             price: p,
           };
         })
@@ -171,7 +177,7 @@ describe("KandelStatus unit tests suite", () => {
       assertStatuses({
         statuses,
         expectedBaseOffer: {
-          ba: "bids",
+          offerType: "bids",
           index: 2,
           offerId: getOfferId("bids", 2),
         },
@@ -210,15 +216,33 @@ describe("KandelStatus unit tests suite", () => {
 
       // Act
       const statuses = sut.getOfferStatuses(midPrice, ratio, pricePoints, 1, [
-        { ba: "bids", price: Big(1001), index: 0, offerId: 43, live: false },
-        { ba: "bids", price: Big(2000), index: 1, offerId: 42, live: true },
-        { ba: "bids", price: Big(15000), index: 4, offerId: 55, live: true },
+        {
+          offerType: "bids",
+          price: Big(1001),
+          index: 0,
+          offerId: 43,
+          live: false,
+        },
+        {
+          offerType: "bids",
+          price: Big(2000),
+          index: 1,
+          offerId: 42,
+          live: true,
+        },
+        {
+          offerType: "bids",
+          price: Big(15000),
+          index: 4,
+          offerId: 55,
+          live: true,
+        },
       ]);
 
       // Assert
       assertStatuses({
         expectedBaseOffer: {
-          ba: "bids",
+          offerType: "bids",
           index: 1,
           offerId: 42,
         },
@@ -296,42 +320,42 @@ describe("KandelStatus unit tests suite", () => {
             spread,
             [
               {
-                ba: "bids",
+                offerType: "bids",
                 price: Big(1000),
                 index: 0,
                 offerId: 42,
                 live: true,
               },
               {
-                ba: "bids",
+                offerType: "bids",
                 price: Big(2000),
                 index: 1,
                 offerId: 43,
                 live: dead < 3,
               },
               {
-                ba: "bids",
+                offerType: "bids",
                 price: Big(4000),
                 index: 2,
                 offerId: 44,
                 live: dead < 1,
               },
               {
-                ba: "asks",
+                offerType: "asks",
                 price: Big(8000),
                 index: 3,
                 offerId: 45,
                 live: dead < 2,
               },
               {
-                ba: "asks",
+                offerType: "asks",
                 price: Big(16000),
                 index: 4,
                 offerId: 46,
                 live: dead < 4,
               },
               {
-                ba: "asks",
+                offerType: "asks",
                 price: Big(32000),
                 index: 5,
                 offerId: 47,
@@ -377,18 +401,30 @@ describe("KandelStatus unit tests suite", () => {
 
       // Act
       const statuses = sut.getOfferStatuses(midPrice, ratio, pricePoints, 1, [
-        { ba: "bids", price: Big(5000), index: 3, offerId: 42, live: true },
-        { ba: "bids", price: Big(2000), index: 1, offerId: 43, live: true },
+        {
+          offerType: "bids",
+          price: Big(5000),
+          index: 3,
+          offerId: 42,
+          live: true,
+        },
+        {
+          offerType: "bids",
+          price: Big(2000),
+          index: 1,
+          offerId: 43,
+          live: true,
+        },
       ]);
 
       // Assert
       assertStatuses({
         expectedBaseOffer: {
-          ba: "bids",
+          offerType: "bids",
           index: 1,
           offerId: 43,
         },
-        expectedLiveOutOfRange: [{ ba: "bids", index: 3, offerId: 42 }],
+        expectedLiveOutOfRange: [{ offerType: "bids", index: 3, offerId: 42 }],
         expectedStatuses: [
           { expectedLiveBid: true, expectedPrice: Big(1000) },
           {

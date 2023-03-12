@@ -42,13 +42,13 @@ class KandelFarm {
   }
 
   /**
-   * gets all Kandels matching a given filter.
-   * @param filter the filter to apply.
-   * @param filter.owner the Kandel instance owner - the one who invoked sow.
-   * @param filter.base the base token for the Kandel instance.
-   * @param filter.quote the quote token for the Kandel instance.
-   * @param filter.onAave whether the Kandel instance uses the Aave router.
-   * @returns all kandels matching the filter.
+   * Gets all Kandels matching a given filter.
+   * @param filter The filter to apply.
+   * @param filter.owner The Kandel instance owner - the one who invoked sow.
+   * @param filter.base The base token for the Kandel instance.
+   * @param filter.quote The quote token for the Kandel instance.
+   * @param filter.onAave Whether the Kandel instance uses the Aave router.
+   * @returns All kandels matching the filter.
    */
   public async getKandels(filter?: {
     owner?: PromiseOrValue<string> | null;
