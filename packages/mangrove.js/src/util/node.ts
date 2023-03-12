@@ -24,6 +24,13 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
 const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
+  // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
+  env = {
+    ...env,
+    MUMBAI_NODE_URL: env.MUMBAI_NODE_URL ?? "",
+    POLYGON_NODE_URL: env.POLYGON_NODE_URL ?? "",
+  };
+
   if (typeof pipe === "undefined") {
     pipe = true;
   }
@@ -372,8 +379,6 @@ const connect = async (params: connectParams) => {
       // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
       const env = {
         ...process.env,
-        MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
-        POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
         TOKEN: dealParams.token,
         ACCOUNT: dealParams.account,
       };
