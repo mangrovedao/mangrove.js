@@ -1,15 +1,12 @@
-// Integration tests for Semibook.ts
 import { describe, beforeEach, afterEach, it } from "mocha";
-import { expect, assert } from "chai";
+import { assert } from "chai";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-const waitForTransaction = mgvTestUtil.waitForTransaction;
-import { newOffer, toWei } from "../util/helpers";
+import { toWei } from "../util/helpers";
 
 import { Mangrove } from "../../src";
 
 import { Big } from "big.js";
-import { BigNumber } from "ethers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -73,11 +70,20 @@ describe("Mangrove integration tests suite", function () {
         mgv.getAddress("TokenA"),
         mgv.getAddress("TokenB")
       );
-      let markets = await mgv.openMarkets();
+      const markets = await mgv.openMarkets();
       assert.equal(
         markets.length - marketsBefore.length,
         1,
         "1 market should have opened"
+      );
+    });
+
+    it("has reverse lookup of address", function () {
+      const address = mgv.getAddress("TokenA");
+      assert.equal(mgv.getNameFromAddress(address), "TokenA");
+      assert.equal(
+        mgv.getNameFromAddress("0xdeaddeaddeaddaeddeaddeaddeaddeaddeaddead"),
+        null
       );
     });
 
