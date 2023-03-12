@@ -97,6 +97,7 @@ export const mochaHooks = {
         if (newProxy.cancelAll) {
           console.log("mochaHooks: Got request after cancelled!");
           session.destroy();
+          //console.dir(data.toString());
           return null;
         }
         return data;

@@ -63,17 +63,12 @@ describe("Kandel integration tests suite", function () {
           const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
           // Act
-          const kandelTx = seeder.sow({
+          const { kandel } = await seeder.sow({
             market: market,
             liquiditySharing: liquiditySharing,
             onAave: onAave,
             gasprice: undefined,
             gaspriceFactor: 2,
-          });
-          const kandel = await seeder.getKandelFromReceipt({
-            receipt: await waitForTransaction(kandelTx),
-            onAave,
-            market,
           });
 
           // Assert
@@ -118,21 +113,15 @@ describe("Kandel integration tests suite", function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
       // Act
-      const kandelTx = await seeder.sow({
+      const { kandel } = await seeder.sow({
         market: market,
         liquiditySharing: false,
         onAave: false,
         gasprice: 10000,
         gaspriceFactor: 2,
       });
-      const receipt = await waitForTransaction(kandelTx);
 
       // Assert
-      const kandel = await seeder.getKandelFromReceipt({
-        receipt,
-        onAave: false,
-        market,
-      });
       const params = await kandel.getParameters();
       assert.equal(
         params.gasprice,
@@ -243,15 +232,14 @@ describe("Kandel integration tests suite", function () {
       const kandelApi = new Kandel({ mgv: mgv });
       const seeder = new Kandel({ mgv: mgv }).seeder;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const kandelTx = await seeder.sow({
-        market: market,
-        gaspriceFactor: 10,
-        liquiditySharing: false,
-        onAave: onAave,
-      });
-      const receipt = await waitForTransaction(kandelTx);
-      const kandel = seeder.getKandelFromReceipt({ receipt, market, onAave });
-      const kandelAddress = (await kandel).address;
+      const kandelAddress = (
+        await seeder.sow({
+          market: market,
+          gaspriceFactor: 10,
+          liquiditySharing: false,
+          onAave: onAave,
+        })
+      ).kandel.address;
 
       return kandelApi.instance(kandelAddress, market);
     }

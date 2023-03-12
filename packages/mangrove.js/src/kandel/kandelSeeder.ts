@@ -63,7 +63,7 @@ class KandelSeeder {
       gasprice?: number; // null means use mangroves global.
     },
     overrides: ethers.Overrides = {}
-  ): Promise<ethers.ethers.ContractTransaction> {
+  ) {
     const gasprice =
       seed.gaspriceFactor *
       (seed.gasprice ?? (await this.mgv.config()).gasprice);
@@ -75,10 +75,17 @@ class KandelSeeder {
       liquiditySharing: seed.liquiditySharing,
     };
 
-    const responsePromise = seed.onAave
+    const response = seed.onAave
       ? this.aaveKandelSeeder.sow(rawSeed, overrides)
       : this.kandelSeeder.sow(rawSeed, overrides);
-    return responsePromise;
+
+    const receipt = await (await response).wait();
+    const kandel = await this.getKandelFromReceipt({
+      receipt,
+      onAave: seed.onAave,
+      market: seed.market,
+    });
+    return { kandel, response };
   }
 
   /** Gets the Kandel instance created in a transaction via sow.
@@ -116,10 +123,11 @@ class KandelSeeder {
             market: params.market,
           });
         }
-        default:
-          return null;
       }
     }
+    throw Error(
+      "Unable to get Kandel from receipt. Did not find expected events."
+    );
   }
 }
 
