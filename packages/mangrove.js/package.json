@@ -63,7 +63,7 @@
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/commonlib.js": "workspace:*",
-    "@mangrovedao/mangrove-core": "^1.4.3-0",
+    "@mangrovedao/mangrove-core": "^1.4.4-0",
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
     "esbuild-plugin-resolve": "^1.0.3",
