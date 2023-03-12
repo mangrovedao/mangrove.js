@@ -159,6 +159,11 @@ class KandelInstance {
     return this.getOutboundToken(offerType).fromUnits(x);
   }
 
+  /** Retrieves the provision available on Mangrove for Kandel, in ethers */
+  public async mangroveBalance() {
+    return await this.market.mgv.balanceOf(this.address);
+  }
+
   /** Determines the required provision for the number of offers.
    * @param gasreq The gas required to execute a trade.
    * @param gasprice The gas price to calculate provision for.
@@ -434,7 +439,7 @@ class KandelInstance {
         offerType,
         offerId,
         index,
-        live: offer ? true : false,
+        live: this.market.isLiveOffer(offer),
         price: offer.price,
       })
     );
@@ -516,6 +521,37 @@ class KandelInstance {
     );
   }
 
+  async getRawDistributionChunks(params: {
+    distribution: Distribution;
+    maxOffersInChunk?: number;
+  }) {
+    this.calculation.sortByIndex(params.distribution);
+    this.verifyDistribution(params.distribution);
+
+    // Use 0 as pivot when none is found
+    const pivots = (await this.getPivots(params.distribution)).map(
+      (x) => x ?? 0
+    );
+
+    const distributions = this.calculation.chunkDistribution(
+      pivots,
+      params.distribution,
+      params.maxOffersInChunk ?? 80
+    );
+
+    const firstAskIndex = this.calculation.getFirstAskIndex(
+      params.distribution
+    );
+
+    return {
+      rawDistributions: distributions.map(({ pivots, distribution }) => ({
+        pivots,
+        rawDistribution: this.getRawDistribution(distribution),
+      })),
+      firstAskIndex,
+    };
+  }
+
   /** Populates the offers in the distribution for the Kandel instance and sets parameters.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
@@ -524,7 +560,7 @@ class KandelInstance {
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
    * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to getRequiredProvision.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then 80 is used.
-   * @param overrides The ethers overrides to use when calling the populate function.
+   * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.
    * @remarks If this function is invoked with new ratio, pricePoints, or spread, then first retract all offers; otherwise, Kandel will enter an inconsistent state.
    */
@@ -538,22 +574,7 @@ class KandelInstance {
       maxOffersInChunk?: number;
     },
     overrides: ethers.Overrides = {}
-  ) {
-    this.calculation.sortByIndex(params.distribution);
-
-    this.verifyDistribution(params.distribution);
-
-    // Use 0 as pivot when none is found
-    const pivots = (await this.getPivots(params.distribution)).map(
-      (x) => x ?? 0
-    );
-
-    const distributions = this.calculation.chunk(
-      pivots,
-      params.distribution,
-      params.maxOffersInChunk ?? 80
-    );
-
+  ): Promise<ethers.ethers.ContractTransaction[]> {
     const parameters = await this.getParametersWithOverrides(params.parameters);
     const rawParameters = this.getRawParameters(parameters);
     const funds =
@@ -564,19 +585,18 @@ class KandelInstance {
         params.distribution.length
       ));
 
-    const { depositTokens, depositAmounts } = await this.getDepositArrays(
+    const { depositTokens, depositAmounts } = this.getDepositArrays(
       params.depositBaseAmount,
       params.depositQuoteAmount
     );
 
-    const firstAskIndex = this.calculation.getFirstAskIndex(
-      params.distribution
-    );
+    const { firstAskIndex, rawDistributions } =
+      await this.getRawDistributionChunks(params);
 
     const txs = [
       await this.kandel.populate(
-        this.getRawDistribution(distributions[0].distribution),
-        distributions[0].pivots,
+        rawDistributions[0].rawDistribution,
+        rawDistributions[0].pivots,
         firstAskIndex,
         rawParameters,
         depositTokens,
@@ -585,11 +605,51 @@ class KandelInstance {
       ),
     ];
 
-    for (let i = 1; i < distributions.length; i++) {
+    return txs.concat(
+      await this.populateChunks(
+        firstAskIndex,
+        rawDistributions.slice(1),
+        overrides
+      )
+    );
+  }
+
+  /** Populates the offers in the distribution for the Kandel instance. To set parameters or add funds, use populate.
+   * @param params The parameters for populating the offers.
+   * @param params.distribution The distribution of offers to populate.
+   * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then 80 is used.
+   * @param overrides The ethers overrides to use when calling the populateChunk function.
+   * @returns The transaction(s) used to populate the offers.
+   */
+  public async populateChunk(
+    params: { distribution: Distribution; maxOffersInChunk?: number },
+    overrides: ethers.Overrides = {}
+  ) {
+    const { firstAskIndex, rawDistributions } =
+      await this.getRawDistributionChunks(params);
+
+    return await this.populateChunks(
+      firstAskIndex,
+      rawDistributions,
+      overrides
+    );
+  }
+
+  async populateChunks(
+    firstAskIndex: number,
+    rawDistributions: {
+      pivots: number[];
+      rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct;
+    }[],
+    overrides: ethers.Overrides = {}
+  ) {
+    const txs: ethers.ethers.ContractTransaction[] = [];
+
+    for (let i = 0; i < rawDistributions.length; i++) {
       txs.push(
         await this.kandel.populateChunk(
-          this.getRawDistribution(distributions[i].distribution),
-          distributions[i].pivots,
+          rawDistributions[i].rawDistribution,
+          rawDistributions[i].pivots,
           firstAskIndex,
           overrides
         )
@@ -614,6 +674,143 @@ class KandelInstance {
       UnitCalculations.toUnits(compoundRateQuote, this.precision),
       overrides
     );
+  }
+
+  /** Retracts offers and withdraws tokens and provision
+   * @param params The parameters.
+   * @param params.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
+   * @param params.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
+   * @param params.withdrawFunds The amount of funds to withdraw in ethers. If not provided, then the entire provision on Mangrove is withdrawn.
+   * @param params.withdrawBaseAmount The amount of base to withdraw. If not provided, then the entire base balance on Kandel is withdrawn.
+   * @param params.withdrawQuoteAmount The amount of quote to withdraw. If not provided, then the entire quote balance on Kandel is withdrawn.
+   * @param params.recipientAddress The address to withdraw the tokens to. If not provided, then the address of the signer is used.
+   * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then 80 is used.
+   * @param overrides The ethers overrides to use when calling the retractAndWithdraw, and retractOffers functions.
+   * @returns The transaction(s) used to retract the offers.
+   * @remarks This function or retractOffers should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
+   * @remarks If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
+   */
+  public async retractAndWithdraw(
+    params: {
+      startIndex?: number;
+      endIndex?: number;
+      withdrawFunds?: Big;
+      withdrawBaseAmount?: Big;
+      withdrawQuoteAmount?: Big;
+      recipientAddress?: string;
+      maxOffersInChunk?: number;
+    } = {},
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ethers.ContractTransaction[]> {
+    const baseAmount =
+      params.withdrawBaseAmount ?? (await this.balance("asks"));
+    const quoteAmount =
+      params.withdrawQuoteAmount ?? (await this.balance("bids"));
+    const { depositAmounts, depositTokens } = this.getDepositArrays(
+      baseAmount,
+      quoteAmount
+    );
+    const recipientAddress =
+      params.recipientAddress ?? (await this.market.mgv.signer.getAddress());
+    const freeWei = params.withdrawFunds
+      ? UnitCalculations.toUnits(params.withdrawFunds, 18)
+      : ethers.BigNumber.from(2).pow(256).sub(1);
+
+    const { txs, lastChunk } = await this.retractOfferChunks(
+      { retractParams: params, skipLast: true },
+      overrides
+    );
+
+    txs.push(
+      await this.kandel.retractAndWithdraw(
+        lastChunk.from,
+        lastChunk.to,
+        depositTokens,
+        depositAmounts,
+        freeWei,
+        recipientAddress,
+        overrides
+      )
+    );
+
+    return txs;
+  }
+
+  /** Retracts offers
+   * @param params The parameters.
+   * @param params.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
+   * @param params.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
+   * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then 80 is used.
+   * @param overrides The ethers overrides to use when calling the retractOffers function.
+   * @returns The transaction(s) used to retract the offers.
+   * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
+   * @remarks If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
+   */
+  public async retractOffers(
+    params: {
+      startIndex?: number;
+      endIndex?: number;
+      maxOffersInChunk?: number;
+    } = {},
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ethers.ContractTransaction[]> {
+    return (
+      await this.retractOfferChunks(
+        { retractParams: params, skipLast: false },
+        overrides
+      )
+    ).txs;
+  }
+
+  async retractOfferChunks(
+    params: {
+      retractParams: {
+        startIndex?: number;
+        endIndex?: number;
+        maxOffersInChunk?: number;
+      };
+      skipLast: boolean;
+    },
+    overrides: ethers.Overrides
+  ) {
+    const from = params.retractParams.startIndex ?? 0;
+    const to =
+      params.retractParams.endIndex ?? (await this.getParameters()).pricePoints;
+
+    const chunks = this.calculation.chunkIndices(
+      from,
+      to,
+      params.retractParams.maxOffersInChunk ?? 80
+    );
+
+    // Retract in opposite order as populate
+    chunks.reverse();
+
+    const txs: ethers.ethers.ContractTransaction[] = [];
+
+    const lastChunk = chunks[chunks.length - 1];
+    for (let i = 0; i < chunks.length - 1; i++) {
+      txs.push(
+        await this.kandel.retractOffers(chunks[i].from, chunks[i].to, overrides)
+      );
+    }
+
+    if (!params.skipLast) {
+      txs.push(
+        await this.kandel.retractOffers(lastChunk.from, lastChunk.to, overrides)
+      );
+    }
+
+    return { txs, lastChunk };
+  }
+
+  /** Adds ethers for provisioning offers on Mangrove for the Kandel instance.
+   * @param funds The amount of funds to add in ethers.
+   * @param overrides The ethers overrides to use when calling the fund function.
+   * @returns The transaction used to fund the Kandel instance.
+   */
+  public async fundOnMangrove(funds: Big, overrides: ethers.Overrides = {}) {
+    return await this.market.mgv.fundMangrove(funds, this.address, overrides);
   }
 }
 

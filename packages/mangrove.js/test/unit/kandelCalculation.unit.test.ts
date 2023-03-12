@@ -600,10 +600,10 @@ describe("KandelCalculation unit tests suite", () => {
       });
     }
   );
-  describe(KandelCalculation.prototype.chunk.name, () => {
+  describe(KandelCalculation.prototype.chunkDistribution.name, () => {
     it("can chunk", () => {
       // Arrange/act
-      const chunks = new KandelCalculation(0, 0).chunk(
+      const chunks = new KandelCalculation(0, 0).chunkDistribution(
         [1, 2, 3],
         [
           { base: Big(1), quote: Big(2), index: 1, offerType: "bids" },
@@ -621,6 +621,17 @@ describe("KandelCalculation unit tests suite", () => {
       assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
       assert.equal(chunks[0].distribution[1].base.toNumber(), 3);
       assert.equal(chunks[1].distribution[0].base.toNumber(), 5);
+    });
+  });
+  describe(KandelCalculation.prototype.chunkIndices.name, () => {
+    it("can chunk", () => {
+      // Arrange/act
+      const chunks = new KandelCalculation(0, 0).chunkIndices(1, 4, 2);
+
+      // Assert
+      assert.equal(chunks.length, 2);
+      assert.deepStrictEqual(chunks[0], { from: 1, to: 3 });
+      assert.deepStrictEqual(chunks[1], { from: 3, to: 4 });
     });
   });
   describe(KandelCalculation.prototype.sortByIndex.name, () => {

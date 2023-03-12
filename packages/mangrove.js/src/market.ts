@@ -404,6 +404,10 @@ class Market {
 
   async isLive(ba: Market.BA, offerId: number): Promise<boolean> {
     const offer: Market.Offer = await this.getSemibook(ba).offerInfo(offerId);
+    return this.isLiveOffer(offer);
+  }
+
+  isLiveOffer(offer: Market.Offer): boolean {
     return offer.gives.gt(0);
   }
 

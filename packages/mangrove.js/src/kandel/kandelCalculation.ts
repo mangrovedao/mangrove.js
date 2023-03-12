@@ -317,7 +317,7 @@ class KandelCalculation {
     return { bids: firstAskIndex, asks: pricePoints - firstAskIndex };
   }
 
-  public chunk(
+  public chunkDistribution(
     pivots: number[],
     distribution: Distribution,
     maxOffersInChunk: number
@@ -332,6 +332,17 @@ class KandelCalculation {
       chunks.push({
         pivots: pivotsChunk,
         distribution: distributionChunk,
+      });
+    }
+    return chunks;
+  }
+
+  public chunkIndices(from: number, to: number, maxOffersInChunk: number) {
+    const chunks: { from: number; to: number }[] = [];
+    for (let i = from; i < to; i += maxOffersInChunk) {
+      chunks.push({
+        from: i,
+        to: Math.min(i + maxOffersInChunk, to),
       });
     }
     return chunks;
