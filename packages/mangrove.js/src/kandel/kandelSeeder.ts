@@ -52,7 +52,7 @@ class KandelSeeder {
    * @param seed.market The market to create the Kandel for.
    * @param seed.liquiditySharing Whether to enable liquidity sharing for the Kandel so that the signer can publish the same liquidity for multiple router-based Kandels (currently AaveKandel).
    * @param seed.gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
-   * @param seed.gasprice The gasprice to use for the Kandel (before multiplying with the factor). If null, then Mangrove's global gasprice will be used.
+   * @param seed.gasprice The gasprice (in gwei) to use for the Kandel (before multiplying with the factor). If null, then Mangrove's global gasprice will be used.
    */
   public async sow(
     seed: {
@@ -79,16 +79,22 @@ class KandelSeeder {
       ? this.aaveKandelSeeder.sow(rawSeed, overrides)
       : this.kandelSeeder.sow(rawSeed, overrides);
 
-    const receipt = await (await response).wait();
-    const kandel = await this.getKandelFromReceipt({
-      receipt,
-      onAave: seed.onAave,
-      market: seed.market,
-    });
-    return { kandel, response };
+    const func = async (
+      response: Promise<ethers.ethers.ContractTransaction>
+    ) => {
+      const receipt = await (await response).wait();
+      return await this.getKandelFromReceipt({
+        receipt,
+        onAave: seed.onAave,
+        market: seed.market,
+      });
+    };
+
+    return { response, kandelPromise: func(response) };
   }
 
   /** Gets the Kandel instance created in a transaction via sow.
+   * @param params The parameters.
    * @param params.receipt The receipt of the transaction.
    * @param params.onAave Whether the Kandel is an AaveKandel.
    * @param params.market The market the Kandel is for.

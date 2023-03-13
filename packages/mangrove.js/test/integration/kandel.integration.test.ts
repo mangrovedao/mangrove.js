@@ -64,13 +64,14 @@ describe("Kandel integration tests suite", function () {
           const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
           // Act
-          const { kandel } = await seeder.sow({
+          const { kandelPromise } = await seeder.sow({
             market: market,
             liquiditySharing: liquiditySharing,
             onAave: onAave,
             gasprice: undefined,
             gaspriceFactor: 2,
           });
+          const kandel = await kandelPromise;
 
           // Assert
           const params = await kandel.getParameters();
@@ -114,13 +115,14 @@ describe("Kandel integration tests suite", function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
       // Act
-      const { kandel } = await seeder.sow({
+      const { kandelPromise } = await seeder.sow({
         market: market,
         liquiditySharing: false,
         onAave: false,
         gasprice: 10000,
         gaspriceFactor: 2,
       });
+      const kandel = await kandelPromise;
 
       // Assert
       const params = await kandel.getParameters();
@@ -144,42 +146,42 @@ describe("Kandel integration tests suite", function () {
       const abMarket = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const wethDaiMarket = await mgv.market({ base: "WETH", quote: "DAI" });
       const wethUsdcMarket = await mgv.market({ base: "WETH", quote: "USDC" });
-      await seeder.sow({
-        market: abMarket,
-        gaspriceFactor: 10,
-        liquiditySharing: false,
-        onAave: false,
-      });
+      await (await seeder.sow({
+          market: abMarket,
+          gaspriceFactor: 10,
+          liquiditySharing: false,
+          onAave: false,
+        })).kandelPromise;
 
-      await seeder.sow({
-        market: wethDaiMarket,
-        gaspriceFactor: 10,
-        liquiditySharing: false,
-        onAave: false,
-      });
+      await (await seeder.sow({
+          market: wethDaiMarket,
+          gaspriceFactor: 10,
+          liquiditySharing: false,
+          onAave: false,
+        })).kandelPromise;
 
-      await seeder.sow({
-        market: wethUsdcMarket,
-        gaspriceFactor: 10,
-        liquiditySharing: false,
-        onAave: false,
-      });
+      await (await seeder.sow({
+          market: wethUsdcMarket,
+          gaspriceFactor: 10,
+          liquiditySharing: false,
+          onAave: false,
+        })).kandelPromise;
 
-      await seeder.sow({
-        market: wethUsdcMarket,
-        gaspriceFactor: 10,
-        liquiditySharing: false,
-        onAave: true,
-      });
+      await (await seeder.sow({
+          market: wethUsdcMarket,
+          gaspriceFactor: 10,
+          liquiditySharing: false,
+          onAave: true,
+        })).kandelPromise;
 
       // other maker
       const otherSeeder = new KandelStrategies({ mgv: mgvAdmin }).seeder;
-      await otherSeeder.sow({
-        market: wethUsdcMarket,
-        gaspriceFactor: 10,
-        liquiditySharing: false,
-        onAave: true,
-      });
+      await (await otherSeeder.sow({
+          market: wethUsdcMarket,
+          gaspriceFactor: 10,
+          liquiditySharing: false,
+          onAave: true,
+        })).kandelPromise;
     });
 
     it("getKandels retrieves all kandel instances", async function () {
@@ -236,13 +238,15 @@ describe("Kandel integration tests suite", function () {
       const seeder = new KandelStrategies({ mgv: mgv }).seeder;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const kandelAddress = (
-        await seeder.sow({
-          market: market,
-          gaspriceFactor: 10,
-          liquiditySharing: false,
-          onAave: onAave,
-        })
-      ).kandel.address;
+        await (
+          await seeder.sow({
+            market: market,
+            gaspriceFactor: 10,
+            liquiditySharing: false,
+            onAave: onAave,
+          })
+        ).kandelPromise
+      ).address;
 
       return kandelApi.instance(kandelAddress, market);
     }
