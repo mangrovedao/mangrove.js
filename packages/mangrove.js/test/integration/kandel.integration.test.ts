@@ -254,11 +254,15 @@ describe("Kandel integration tests suite", function () {
       const firstBase = Big(1);
       const firstQuote = Big(1000);
       const pricePoints = 6;
-      const { distribution } = kandel.calculateDistribution(
-        { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
-        Big(1200),
-        firstBase
-      );
+      const distribution = kandel.calculateDistribution({
+        priceParams: {
+          minPrice: firstQuote.div(firstBase),
+          ratio,
+          pricePoints,
+        },
+        midPrice: Big(1200),
+        initialAskGives: firstBase,
+      });
 
       const { requiredBase, requiredQuote } =
         kandel.getOfferedVolumeForDistribution(distribution);
@@ -301,7 +305,12 @@ describe("Kandel integration tests suite", function () {
 
       it("setCompoundRates sets rates", async function () {
         // Act
-        await waitForTransaction(kandel.setCompoundRates(Big(0.5), Big(0.7)));
+        await waitForTransaction(
+          kandel.setCompoundRates({
+            compoundRateBase: Big(0.5),
+            compoundRateQuote: Big(0.7),
+          })
+        );
 
         // Assert
         const { compoundRateBase, compoundRateQuote } =
@@ -318,11 +327,15 @@ describe("Kandel integration tests suite", function () {
         const firstBase = Big(1);
         const firstQuote = Big(1000);
         const pricePoints = 6;
-        const { distribution } = kandel.calculateDistribution(
-          { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
-          Big(1200),
-          firstBase
-        );
+        const distribution = kandel.calculateDistribution({
+          priceParams: {
+            minPrice: firstQuote.div(firstBase),
+            ratio,
+            pricePoints,
+          },
+          midPrice: Big(1200),
+          initialAskGives: firstBase,
+        });
 
         // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
         // prettier-ignore
@@ -348,11 +361,15 @@ describe("Kandel integration tests suite", function () {
           const firstBase = Big(1);
           const firstQuote = Big(1000);
           const pricePoints = 6;
-          const { distribution } = kandel.calculateDistribution(
-            { minPrice: firstQuote.div(firstBase), ratio, pricePoints },
-            Big(1200),
-            firstBase
-          );
+          const distribution = kandel.calculateDistribution({
+            priceParams: {
+              minPrice: firstQuote.div(firstBase),
+              ratio,
+              pricePoints,
+            },
+            midPrice: Big(1200),
+            initialAskGives: firstBase,
+          });
 
           const { requiredBase, requiredQuote } =
             kandel.getOfferedVolumeForDistribution(distribution);
@@ -631,13 +648,13 @@ describe("Kandel integration tests suite", function () {
       it("can go through life-cycle with numbers as Bigish", async function () {
         // Arrange
         const ratio = 1.08;
-        const firstBase = 1;
+        const initialAskGives = 1;
         const pricePoints = 6;
-        const { distribution } = kandel.calculateDistribution(
-          { minPrice: 1000, ratio, pricePoints },
-          1200,
-          firstBase
-        );
+        const distribution = kandel.calculateDistribution({
+          priceParams: { minPrice: 1000, ratio, pricePoints },
+          midPrice: 1200,
+          initialAskGives,
+        });
 
         const approvalTxs = await kandel.approve();
         await approvalTxs[0].wait();
@@ -659,7 +676,10 @@ describe("Kandel integration tests suite", function () {
           })
         );
 
-        await kandel.setCompoundRates(1, 1);
+        await kandel.setCompoundRates({
+          compoundRateBase: 1,
+          compoundRateQuote: 1,
+        });
         await kandel.fundOnMangrove(1);
 
         await waitForTransactions(
@@ -674,7 +694,7 @@ describe("Kandel integration tests suite", function () {
         const statuses = await kandel.getOfferStatuses(1170);
         assert.equal(6, statuses.statuses.length);
 
-        await kandel.deposit(1, 10);
+        await kandel.deposit({ baseAmount: 1, quoteAmount: 10 });
 
         await kandel.retractAndWithdraw({
           withdrawBaseAmount: 1,
@@ -828,13 +848,13 @@ describe("Kandel integration tests suite", function () {
           const kandelBaseBalance = await kandel.balance("asks");
           const kandelQuoteBalance = await kandel.balance("bids");
           const kandelMgvBalance = await kandel.mangroveBalance();
-          const params = await kandel.getParameters();
+          const { gasreq, gasprice } = await kandel.getParameters();
 
-          const retractedOffersProvision = await kandel.getRequiredProvision(
-            params.gasreq,
-            params.gasprice,
-            1
-          );
+          const retractedOffersProvision = await kandel.getRequiredProvision({
+            gasreq,
+            gasprice,
+            offerCount: 1,
+          });
           const withdrawnFunds = Big(0.001);
 
           // Act
@@ -907,7 +927,9 @@ describe("Kandel integration tests suite", function () {
               );
               await approvalTxs[0].wait();
               await approvalTxs[1].wait();
-              await waitForTransaction(kandel.deposit(baseAmount, quoteAmount));
+              await waitForTransaction(
+                kandel.deposit({ baseAmount, quoteAmount })
+              );
 
               // Assert
               assert.equal(
@@ -921,12 +943,12 @@ describe("Kandel integration tests suite", function () {
 
               if (!fullApprove) {
                 assert.isRejected(
-                  kandel.deposit(baseAmount, quoteAmount),
+                  kandel.deposit({ baseAmount, quoteAmount }),
                   "finite approval should not allow further deposits"
                 );
               } else {
                 // "infinite" approval should allow further deposits
-                kandel.deposit(baseAmount, quoteAmount);
+                kandel.deposit({ baseAmount, quoteAmount });
               }
             });
           })

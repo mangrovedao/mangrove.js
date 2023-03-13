@@ -165,28 +165,29 @@ class KandelInstance {
   }
 
   /** Determines the required provision for the number of offers.
-   * @param gasreq The gas required to execute a trade.
-   * @param gasprice The gas price to calculate provision for.
-   * @param offerCount The number of offers to calculate provision for.
+   * @param params The parameters used to calculate the provision.
+   * @param params.gasreq The gas required to execute a trade.
+   * @param params.gasprice The gas price to calculate provision for.
+   * @param params.offerCount The number of offers to calculate provision for.
    * @returns The provision required for the number of offers.
    * @remarks This takes into account that each price point can become both an ask and a bid which both require provision.
    */
-  public async getRequiredProvision(
-    gasreq: number,
-    gasprice: number,
-    offerCount: number
-  ) {
+  public async getRequiredProvision(params: {
+    gasreq: number;
+    gasprice: number;
+    offerCount: number;
+  }) {
     const provisionBid = await this.market.getOfferProvision(
       "bids",
-      gasreq,
-      gasprice
+      params.gasreq,
+      params.gasprice
     );
     const provisionAsk = await this.market.getOfferProvision(
       "asks",
-      gasreq,
-      gasprice
+      params.gasreq,
+      params.gasprice
     );
-    return provisionBid.add(provisionAsk).mul(offerCount);
+    return provisionBid.add(provisionAsk).mul(params.offerCount);
   }
 
   /** Retrieves the current Kandel parameters */
@@ -325,43 +326,45 @@ class KandelInstance {
   }
 
   /** Calculates distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
-   * @param priceDistributionParams The parameters for the geometric price distribution.
-   * @param midPrice The mid-price used to determine when to switch from bids to asks.
-   * @param initialAskGives The initial amount of base to give for all asks.
-   * @param initialBidGives The initial amount of quote to give for all bids. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
+   * @param params The parameters for the geometric distribution.
+   * @param params.priceParams The parameters for the geometric price distribution. @see PriceDistributionParams.
+   * @param params.midPrice The mid-price used to determine when to switch from bids to asks.
+   * @param params.initialAskGives The initial amount of base to give for all asks.
+   * @param params.initialBidGives The initial amount of quote to give for all bids. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote amounts along with the required volume of base and quote for the distribution to be fully provisioned.
    * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
    */
-  public calculateDistribution(
-    priceDistributionParams: PriceDistributionParams,
-    midPrice: Bigish,
-    initialAskGives: Bigish,
-    initialBidGives?: Bigish
-  ) {
+  public calculateDistribution(params: {
+    priceParams: PriceDistributionParams;
+    midPrice: Bigish;
+    initialAskGives: Bigish;
+    initialBidGives?: Bigish;
+  }) {
     return this.calculation.calculateDistributionFromMidPrice(
-      priceDistributionParams,
-      Big(midPrice),
-      Big(initialAskGives),
-      initialBidGives ? Big(initialBidGives) : undefined
+      params.priceParams,
+      Big(params.midPrice),
+      Big(params.initialAskGives),
+      params.initialBidGives ? Big(params.initialBidGives) : undefined
     );
   }
 
   /** Recalculates the outbound for offers in the distribution such that the available base and quote is consumed uniformly, while preserving the price distribution.
-   * @param distribution The distribution to reset the outbound for.
-   * @param availableBase The available base to consume.
-   * @param availableQuote The available quote to consume. If not provided, then the base for asks is also used as base for bids, and the quote the bid gives is set to according to the price.
+   * @param params The parameters for the recalculation.
+   * @param params.distribution The distribution to reset the outbound for.
+   * @param params.availableBase The available base to consume.
+   * @param params.availableQuote The available quote to consume. If not provided, then the base for asks is also used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote amounts along with the required volume of base and quote for the distribution to be fully provisioned.
    * @remarks The required volume can be slightly less than available due to rounding due to token decimals.
    */
-  public recalculateDistributionFromAvailable(
-    distribution: Distribution,
-    availableBase: Bigish,
-    availableQuote?: Bigish
-  ) {
+  public recalculateDistributionFromAvailable(params: {
+    distribution: Distribution;
+    availableBase: Bigish;
+    availableQuote?: Bigish;
+  }) {
     return this.calculation.recalculateDistributionFromAvailable(
-      distribution,
-      Big(availableBase),
-      availableQuote ? Big(availableQuote) : undefined
+      params.distribution,
+      Big(params.availableBase),
+      params.availableQuote ? Big(params.availableQuote) : undefined
     );
   }
 
@@ -466,12 +469,13 @@ class KandelInstance {
       })
     );
 
-    return this.getOfferStatusFromOffers(midPrice, offers);
+    return this.getOfferStatusFromOffers({ midPrice, offers });
   }
 
   /** Determines the status of the Kandel instance based on the passed in offers.
-   * @param midPrice The current mid price of the market used to discern expected bids from asks.
-   * @param offers The offers used as a basis for determining the status. This should include all live and dead offers.
+   * @param params The parameters to use to determine the status.
+   * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
+   * @param params.offers The offers used as a basis for determining the status. This should include all live and dead offers.
    * @returns The status of the Kandel instance.
    * @throws If no offers are live. At least one live offer is required to determine the status.
    * @remarks The expected prices is determined by extrapolating from a live offer closest to the mid price.
@@ -479,18 +483,18 @@ class KandelInstance {
    * @remarks This may not hold if an offer deep in the book has been sniped in which case a dual offer will exist on the wrong side of mid price but quickly be taken due to a good price (Kandel still earns on the spread).
    * @remarks Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
    */
-  public async getOfferStatusFromOffers(
-    midPrice: Bigish,
-    offers: OffersWithPrices
-  ) {
+  public async getOfferStatusFromOffers(params: {
+    midPrice: Bigish;
+    offers: OffersWithPrices;
+  }) {
     const parameters = await this.getParameters();
 
     return this.status.getOfferStatuses(
-      Big(midPrice),
+      Big(params.midPrice),
       parameters.ratio,
       parameters.pricePoints,
       parameters.spread,
-      offers
+      params.offers
     );
   }
 
@@ -508,36 +512,36 @@ class KandelInstance {
     ];
   }
 
-  private getDepositArrays(
-    depositBaseAmount?: Bigish,
-    depositQuoteAmount?: Bigish
-  ) {
+  private getDepositArrays(baseAmount?: Bigish, quoteAmount?: Bigish) {
     const depositTokens: string[] = [];
     const depositAmounts: BigNumber[] = [];
-    if (depositBaseAmount && Big(depositBaseAmount).gt(0)) {
+    if (baseAmount && Big(baseAmount).gt(0)) {
       depositTokens.push(this.market.base.address);
-      depositAmounts.push(this.market.base.toUnits(depositBaseAmount));
+      depositAmounts.push(this.market.base.toUnits(baseAmount));
     }
-    if (depositQuoteAmount && Big(depositQuoteAmount).gt(0)) {
+    if (quoteAmount && Big(quoteAmount).gt(0)) {
       depositTokens.push(this.market.quote.address);
-      depositAmounts.push(this.market.quote.toUnits(depositQuoteAmount));
+      depositAmounts.push(this.market.quote.toUnits(quoteAmount));
     }
     return { depositTokens, depositAmounts };
   }
 
   /** Deposits the amounts on the Kandel instance to be available for offers.
-   * @param depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
-   * @param depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
+   * @param params The parameters to use when depositing funds.
+   * @param params.baseAmount The amount of base to deposit. If not provided, then no base is deposited.
+   * @param params.quoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
    * @param overrides The ethers overrides to use when calling the deposit function.
    */
   public async deposit(
-    depositBaseAmount?: Bigish,
-    depositQuoteAmount?: Bigish,
+    params: {
+      baseAmount?: Bigish;
+      quoteAmount?: Bigish;
+    },
     overrides: ethers.Overrides = {}
   ) {
     const { depositTokens, depositAmounts } = this.getDepositArrays(
-      depositBaseAmount,
-      depositQuoteAmount
+      params.baseAmount,
+      params.quoteAmount
     );
     return await this.kandel.depositFunds(
       depositTokens,
@@ -604,11 +608,11 @@ class KandelInstance {
     const rawParameters = this.getRawParameters(parameters);
     const funds =
       params.funds ??
-      (await this.getRequiredProvision(
-        rawParameters.gasreq,
-        rawParameters.gasprice,
-        params.distribution.length
-      ));
+      (await this.getRequiredProvision({
+        gasreq: rawParameters.gasreq,
+        gasprice: rawParameters.gasprice,
+        offerCount: params.distribution.length,
+      }));
 
     const { depositTokens, depositAmounts } = this.getDepositArrays(
       params.depositBaseAmount,
@@ -685,18 +689,21 @@ class KandelInstance {
   }
 
   /** Sets the compound rates for the Kandel instance.
-   * @param compoundRateBase The compound rate for the base token. As a percentage of the spread that is to be compounded for base.
-   * @param compoundRateQuote The compound rate for the quote token. As a percentage of the spread that is to be compounded for quote.
+   * @param params The compound rates.
+   * @param params.compoundRateBase The compound rate for the base token. As a percentage of the spread that is to be compounded for base.
+   * @param params.compoundRateQuote The compound rate for the quote token. As a percentage of the spread that is to be compounded for quote.
    * @param overrides The ethers overrides to use when calling the setCompoundRates function.
    */
   public async setCompoundRates(
-    compoundRateBase: Bigish,
-    compoundRateQuote: Bigish,
+    params: {
+      compoundRateBase: Bigish;
+      compoundRateQuote: Bigish;
+    },
     overrides: ethers.Overrides = {}
   ) {
     return await this.kandel.setCompoundRates(
-      UnitCalculations.toUnits(compoundRateBase, this.precision),
-      UnitCalculations.toUnits(compoundRateQuote, this.precision),
+      UnitCalculations.toUnits(params.compoundRateBase, this.precision),
+      UnitCalculations.toUnits(params.compoundRateQuote, this.precision),
       overrides
     );
   }

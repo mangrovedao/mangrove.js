@@ -156,24 +156,29 @@ describe("KandelCalculation unit tests suite", () => {
           Big(1)
         );
 
+        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
+
         // Act
         const newDistribution = sut.recalculateDistributionFromAvailable(
-          distribution.distribution,
-          distribution.offeredVolume.requiredBase.mul(2)
+          distribution,
+          offeredVolume.requiredBase.mul(2)
         );
 
         // Assert
         assert.deepStrictEqual(
-          sut.getPricesForDistribution(distribution.distribution),
-          sut.getPricesForDistribution(newDistribution.distribution)
+          sut.getPricesForDistribution(distribution),
+          sut.getPricesForDistribution(newDistribution)
         );
+        const newOfferedVolume =
+          sut.getOfferedVolumeForDistribution(newDistribution);
+
         assert.equal(
-          distribution.offeredVolume.requiredBase.mul(2).toNumber(),
-          newDistribution.offeredVolume.requiredBase.toNumber()
+          offeredVolume.requiredBase.mul(2).toNumber(),
+          newOfferedVolume.requiredBase.toNumber()
         );
         assert.equal(
           1,
-          [...new Set(newDistribution.distribution.map((x) => x.base))].length
+          [...new Set(newDistribution.map((x) => x.base))].length
         );
       });
 
@@ -186,32 +191,36 @@ describe("KandelCalculation unit tests suite", () => {
           Big(1),
           Big(1000)
         );
+        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
 
         // Act
         const newDistribution = sut.recalculateDistributionFromAvailable(
-          distribution.distribution,
-          distribution.offeredVolume.requiredBase.mul(2),
-          distribution.offeredVolume.requiredQuote.mul(2)
+          distribution,
+          offeredVolume.requiredBase.mul(2),
+          offeredVolume.requiredQuote.mul(2)
         );
 
         // Assert
         assert.deepStrictEqual(
-          sut.getPricesForDistribution(distribution.distribution),
-          sut.getPricesForDistribution(newDistribution.distribution)
+          sut.getPricesForDistribution(distribution),
+          sut.getPricesForDistribution(distribution)
+        );
+        const newOfferedVolume =
+          sut.getOfferedVolumeForDistribution(newDistribution);
+
+        assert.equal(
+          offeredVolume.requiredBase.mul(2).toNumber(),
+          newOfferedVolume.requiredBase.toNumber()
         );
         assert.equal(
-          distribution.offeredVolume.requiredBase.mul(2).toNumber(),
-          newDistribution.offeredVolume.requiredBase.toNumber()
-        );
-        assert.equal(
-          distribution.offeredVolume.requiredQuote.mul(2).toNumber(),
-          newDistribution.offeredVolume.requiredQuote.toNumber()
+          offeredVolume.requiredQuote.mul(2).toNumber(),
+          newOfferedVolume.requiredQuote.toNumber()
         );
         assert.equal(
           1,
           [
             ...new Set(
-              newDistribution.distribution
+              newDistribution
                 .filter((x) => x.offerType == "asks")
                 .map((x) => x.base)
             ),
@@ -221,7 +230,7 @@ describe("KandelCalculation unit tests suite", () => {
           1,
           [
             ...new Set(
-              newDistribution.distribution
+              newDistribution
                 .filter((x) => x.offerType == "bids")
                 .map((x) => x.quote)
             ),
@@ -491,17 +500,18 @@ describe("KandelCalculation unit tests suite", () => {
         const sut = new KandelCalculation(4, 6);
 
         // Act
-        const result = sut.calculateDistributionFromMidPrice(
+        const distribution = sut.calculateDistributionFromMidPrice(
           { minPrice, ratio, pricePoints },
           Big(7000),
           Big(1)
         );
+        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
 
         // Assert
-        assert.equal(result.offeredVolume.requiredBase.toNumber(), 2);
-        assert.equal(result.offeredVolume.requiredQuote.toNumber(), 7000);
-        assert.equal(result.distribution.length, pricePoints);
-        result.distribution.forEach((d, i) => {
+        assert.equal(offeredVolume.requiredBase.toNumber(), 2);
+        assert.equal(offeredVolume.requiredQuote.toNumber(), 7000);
+        assert.equal(distribution.length, pricePoints);
+        distribution.forEach((d, i) => {
           assert.equal(d.base.toNumber(), 1, `wrong base at ${i}`);
           assert.equal(
             d.quote.toNumber(),
@@ -519,7 +529,7 @@ describe("KandelCalculation unit tests suite", () => {
         const sut = new KandelCalculation(4, 6);
 
         // Act
-        const result = sut.calculateDistributionFromMidPrice(
+        const distribution = sut.calculateDistributionFromMidPrice(
           { minPrice, ratio, pricePoints },
           Big(7000),
           Big(1),
@@ -527,10 +537,11 @@ describe("KandelCalculation unit tests suite", () => {
         );
 
         // Assert
-        assert.equal(result.offeredVolume.requiredBase.toNumber(), 2);
-        assert.equal(result.offeredVolume.requiredQuote.toNumber(), 3000);
-        assert.equal(result.distribution.length, pricePoints);
-        result.distribution.forEach((d, i) => {
+        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
+        assert.equal(offeredVolume.requiredBase.toNumber(), 2);
+        assert.equal(offeredVolume.requiredQuote.toNumber(), 3000);
+        assert.equal(distribution.length, pricePoints);
+        distribution.forEach((d, i) => {
           assert.equal(
             d.base.toNumber(),
             d.offerType == "asks" ? 1 : 1 / ratio.pow(i).toNumber(),

@@ -276,12 +276,7 @@ class KandelCalculation {
           initialAskGives,
           firstAskIndex
         );
-    const offeredVolume = this.getOfferedVolumeForDistribution(distribution);
-
-    return {
-      distribution,
-      offeredVolume,
-    };
+    return distribution;
   }
 
   public getFirstAskIndex(distribution: Distribution) {
