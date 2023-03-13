@@ -1,9 +1,9 @@
-// Unit tests for Trade.ts
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
-import KandelCalculation from "../../src/kandel/kandelCalculation";
+import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
+import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 import KandelStatus, { Statuses } from "../../src/kandel/kandelStatus";
 
 describe("KandelStatus unit tests suite", () => {
@@ -96,7 +96,10 @@ describe("KandelStatus unit tests suite", () => {
 
   let sut: KandelStatus;
   beforeEach(() => {
-    sut = new KandelStatus(new KandelCalculation(4, 6));
+    sut = new KandelStatus(
+      new KandelDistributionHelper(4, 6),
+      new KandelPriceCalculation()
+    );
   });
 
   describe(KandelStatus.prototype.getIndexOfPriceClosestToMid.name, () => {
@@ -142,18 +145,18 @@ describe("KandelStatus unit tests suite", () => {
       const pricePoints = 6;
       const ratio = Big(2);
       const midPrice = Big(5000);
-      const originalPrices = sut.calculation.calculatePrices({
+      const originalPrices = sut.priceCalculation.calculatePrices({
         minPrice: Big(1000),
         ratio,
         pricePoints,
       });
-      const dist = sut.calculation.calculateDistributionConstantBase(
+      const dist = sut.distributionHelper.calculateDistributionConstantBase(
         originalPrices,
         Big(2),
         3
       );
 
-      const prices = sut.calculation.getPricesForDistribution(dist);
+      const prices = sut.priceCalculation.getPricesForDistribution(dist);
 
       // Act
       const statuses = sut.getOfferStatuses(

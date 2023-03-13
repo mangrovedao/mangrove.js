@@ -14,6 +14,10 @@ class KandelFarm {
   aaveKandelSeeder: typechain.AaveKandelSeeder;
   kandelSeeder: typechain.KandelSeeder;
 
+  /** Constructor
+   * @param params The parameters.
+   * @param params.mgv The Mangrove to get kandels for.
+   */
   public constructor(params: { mgv: Mangrove }) {
     this.mgv = params.mgv;
 

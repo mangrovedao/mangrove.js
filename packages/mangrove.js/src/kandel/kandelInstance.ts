@@ -10,10 +10,11 @@ import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
 import KandelStatus, { OffersWithPrices } from "./kandelStatus";
-import KandelCalculation, {
+import KandelDistributionHelper, {
   Distribution,
-  PriceDistributionParams,
-} from "./kandelCalculation";
+} from "./kandelDistributionHelper";
+import KandelDistributionGenerator from "./KandelDistributionGenerator";
+import KandelPriceCalculation from "./kandelPriceCalculation";
 
 /**
  * @notice Parameters for a Kandel instance.
@@ -55,7 +56,7 @@ class KandelInstance {
   address: string;
   precision: number;
   market: Market;
-  calculation: KandelCalculation;
+  generator: KandelDistributionGenerator;
   status: KandelStatus;
 
   /** Creates a KandelInstance object to interact with a Kandel strategy on Mangrove.
@@ -85,17 +86,22 @@ class KandelInstance {
         ? await params.market(await kandel.BASE(), await kandel.QUOTE())
         : params.market;
 
-    const calculation = new KandelCalculation(
+    const priceCalculation = new KandelPriceCalculation();
+    const distributionHelper = new KandelDistributionHelper(
       market.base.decimals,
       market.quote.decimals
     );
+    const generator = new KandelDistributionGenerator(
+      distributionHelper,
+      priceCalculation
+    );
     return new KandelInstance({
       address: params.address,
-      precision: precision,
-      market: market,
+      precision,
+      market,
       kandel,
-      kandelStatus: new KandelStatus(calculation),
-      kandelCalculation: calculation,
+      kandelStatus: new KandelStatus(distributionHelper, priceCalculation),
+      generator,
     });
   }
 
@@ -105,14 +111,14 @@ class KandelInstance {
     market: Market;
     precision: number;
     kandelStatus: KandelStatus;
-    kandelCalculation: KandelCalculation;
+    generator: KandelDistributionGenerator;
   }) {
     this.address = params.address;
     this.kandel = params.kandel;
     this.market = params.market;
     this.precision = params.precision;
     this.status = params.kandelStatus;
-    this.calculation = params.kandelCalculation;
+    this.generator = params.generator;
   }
 
   /** Gets the base of the market Kandel is making  */
@@ -314,7 +320,8 @@ class KandelInstance {
    * @returns The pivots to use when populating the distribution.
    */
   public async getPivots(distribution: Distribution) {
-    const prices = this.calculation.getPricesForDistribution(distribution);
+    const prices =
+      this.generator.priceCalculation.getPricesForDistribution(distribution);
     const pivots: number[] = Array(distribution.length);
     for (let i = 0; i < distribution.length; i++) {
       pivots[i] = await this.market.getPivotId(
@@ -323,57 +330,6 @@ class KandelInstance {
       );
     }
     return pivots;
-  }
-
-  /** Calculates distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
-   * @param params The parameters for the geometric distribution.
-   * @param params.priceParams The parameters for the geometric price distribution. @see PriceDistributionParams.
-   * @param params.midPrice The mid-price used to determine when to switch from bids to asks.
-   * @param params.initialAskGives The initial amount of base to give for all asks.
-   * @param params.initialBidGives The initial amount of quote to give for all bids. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
-   * @returns The distribution of bids and asks and their base and quote amounts along with the required volume of base and quote for the distribution to be fully provisioned.
-   * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
-   */
-  public calculateDistribution(params: {
-    priceParams: PriceDistributionParams;
-    midPrice: Bigish;
-    initialAskGives: Bigish;
-    initialBidGives?: Bigish;
-  }) {
-    return this.calculation.calculateDistributionFromMidPrice(
-      params.priceParams,
-      Big(params.midPrice),
-      Big(params.initialAskGives),
-      params.initialBidGives ? Big(params.initialBidGives) : undefined
-    );
-  }
-
-  /** Recalculates the outbound for offers in the distribution such that the available base and quote is consumed uniformly, while preserving the price distribution.
-   * @param params The parameters for the recalculation.
-   * @param params.distribution The distribution to reset the outbound for.
-   * @param params.availableBase The available base to consume.
-   * @param params.availableQuote The available quote to consume. If not provided, then the base for asks is also used as base for bids, and the quote the bid gives is set to according to the price.
-   * @returns The distribution of bids and asks and their base and quote amounts along with the required volume of base and quote for the distribution to be fully provisioned.
-   * @remarks The required volume can be slightly less than available due to rounding due to token decimals.
-   */
-  public recalculateDistributionFromAvailable(params: {
-    distribution: Distribution;
-    availableBase: Bigish;
-    availableQuote?: Bigish;
-  }) {
-    return this.calculation.recalculateDistributionFromAvailable(
-      params.distribution,
-      Big(params.availableBase),
-      params.availableQuote ? Big(params.availableQuote) : undefined
-    );
-  }
-
-  /** Gets the required volume of base and quote for the distribution to be fully provisioned.
-   * @param distribution The distribution to get the offered volume for.
-   * @returns The offered volume of base and quote for the distribution to be fully provisioned.
-   */
-  public getOfferedVolumeForDistribution(distribution: Distribution) {
-    return this.calculation.getOfferedVolumeForDistribution(distribution);
   }
 
   /** Verifies the distribution is valid.
@@ -554,7 +510,7 @@ class KandelInstance {
     distribution: Distribution;
     maxOffersInChunk?: number;
   }) {
-    this.calculation.sortByIndex(params.distribution);
+    this.generator.distributionHelper.sortByIndex(params.distribution);
     this.verifyDistribution(params.distribution);
 
     // Use 0 as pivot when none is found
@@ -562,13 +518,13 @@ class KandelInstance {
       (x) => x ?? 0
     );
 
-    const distributions = this.calculation.chunkDistribution(
+    const distributions = this.generator.distributionHelper.chunkDistribution(
       pivots,
       params.distribution,
       params.maxOffersInChunk ?? 80
     );
 
-    const firstAskIndex = this.calculation.getFirstAskIndex(
+    const firstAskIndex = this.generator.distributionHelper.getFirstAskIndex(
       params.distribution
     );
 
@@ -809,7 +765,7 @@ class KandelInstance {
     const to =
       params.retractParams.endIndex ?? (await this.getParameters()).pricePoints;
 
-    const chunks = this.calculation.chunkIndices(
+    const chunks = this.generator.distributionHelper.chunkIndices(
       from,
       to,
       params.retractParams.maxOffersInChunk ?? 80

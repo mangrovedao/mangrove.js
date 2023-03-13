@@ -1,6 +1,7 @@
 import Big from "big.js";
 import Market from "../market";
-import KandelCalculation from "./kandelCalculation";
+import KandelDistributionHelper from "./kandelDistributionHelper";
+import KandelPriceCalculation from "./kandelPriceCalculation";
 
 /** Offers with their price, liveness, and Kandel index.
  * @param offerType Whether the offer is a bid or an ask.
@@ -67,10 +68,15 @@ export type Statuses = {
 
 /** @title Helper for getting status about a Kandel instance. */
 class KandelStatus {
-  calculation: KandelCalculation;
+  distributionHelper: KandelDistributionHelper;
+  priceCalculation: KandelPriceCalculation;
 
-  public constructor(calculation: KandelCalculation) {
-    this.calculation = calculation;
+  public constructor(
+    distributionHelper: KandelDistributionHelper,
+    priceCalculation: KandelPriceCalculation
+  ) {
+    this.priceCalculation = priceCalculation;
+    this.distributionHelper = distributionHelper;
   }
 
   public getIndexOfPriceClosestToMid(midPrice: Big, prices: Big[]) {
@@ -111,7 +117,7 @@ class KandelStatus {
 
     // We can now calculate expected prices of all indices, but it may not entirely match live offer's prices
     // due to rounding and due to slight drift of prices during order execution.
-    const expectedPrices = this.calculation.getPricesFromPrice(
+    const expectedPrices = this.priceCalculation.getPricesFromPrice(
       offer.index,
       offer.price,
       ratio,
@@ -141,7 +147,7 @@ class KandelStatus {
     // Offers are allowed to be dead if their dual offer is live
     statuses.forEach((s, index) => {
       if (s.expectedLiveAsk && (s.asks?.live ?? false) == false) {
-        const dualIndex = this.calculation.getDualIndex(
+        const dualIndex = this.distributionHelper.getDualIndex(
           "asks",
           index,
           pricePoints,
@@ -152,7 +158,7 @@ class KandelStatus {
         }
       }
       if (s.expectedLiveBid && (s.bids?.live ?? false) == false) {
-        const dualIndex = this.calculation.getDualIndex(
+        const dualIndex = this.distributionHelper.getDualIndex(
           "bids",
           index,
           pricePoints,

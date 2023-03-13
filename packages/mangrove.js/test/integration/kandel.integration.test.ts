@@ -232,9 +232,10 @@ describe("Kandel integration tests suite", function () {
 
   describe("instance", async function () {
     let kandel: KandelInstance;
+    let kandelStrategies: KandelStrategies;
 
     async function createKandel(onAave: boolean) {
-      const kandelApi = new KandelStrategies({ mgv: mgv });
+      kandelStrategies = new KandelStrategies({ mgv: mgv });
       const seeder = new KandelStrategies({ mgv: mgv }).seeder;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const kandelAddress = (
@@ -248,7 +249,7 @@ describe("Kandel integration tests suite", function () {
         ).kandelPromise
       ).address;
 
-      return kandelApi.instance(kandelAddress, market);
+      return kandelStrategies.instance({ address: kandelAddress, market });
     }
     async function populateKandel(params: {
       approve: boolean;
@@ -258,7 +259,7 @@ describe("Kandel integration tests suite", function () {
       const firstBase = Big(1);
       const firstQuote = Big(1000);
       const pricePoints = 6;
-      const distribution = kandel.calculateDistribution({
+      const distribution = kandel.generator.calculateDistribution({
         priceParams: {
           minPrice: firstQuote.div(firstBase),
           ratio,
@@ -269,7 +270,7 @@ describe("Kandel integration tests suite", function () {
       });
 
       const { requiredBase, requiredQuote } =
-        kandel.getOfferedVolumeForDistribution(distribution);
+        kandel.generator.getOfferedVolumeForDistribution(distribution);
       if (params.approve) {
         const approvalTxs = await kandel.approve();
         await approvalTxs[0].wait();
@@ -331,15 +332,17 @@ describe("Kandel integration tests suite", function () {
         const firstBase = Big(1);
         const firstQuote = Big(1000);
         const pricePoints = 6;
-        const distribution = kandel.calculateDistribution({
-          priceParams: {
-            minPrice: firstQuote.div(firstBase),
-            ratio,
-            pricePoints,
-          },
-          midPrice: Big(1200),
-          initialAskGives: firstBase,
-        });
+        const distribution = kandelStrategies
+          .generator(market)
+          .calculateDistribution({
+            priceParams: {
+              minPrice: firstQuote.div(firstBase),
+              ratio,
+              pricePoints,
+            },
+            midPrice: Big(1200),
+            initialAskGives: firstBase,
+          });
 
         // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
         // prettier-ignore
@@ -365,7 +368,7 @@ describe("Kandel integration tests suite", function () {
           const firstBase = Big(1);
           const firstQuote = Big(1000);
           const pricePoints = 6;
-          const distribution = kandel.calculateDistribution({
+          const distribution = kandel.generator.calculateDistribution({
             priceParams: {
               minPrice: firstQuote.div(firstBase),
               ratio,
@@ -376,7 +379,7 @@ describe("Kandel integration tests suite", function () {
           });
 
           const { requiredBase, requiredQuote } =
-            kandel.getOfferedVolumeForDistribution(distribution);
+            kandel.generator.getOfferedVolumeForDistribution(distribution);
 
           const approvalTxs = await kandel.approve();
           await approvalTxs[0].wait();
@@ -654,7 +657,7 @@ describe("Kandel integration tests suite", function () {
         const ratio = 1.08;
         const initialAskGives = 1;
         const pricePoints = 6;
-        const distribution = kandel.calculateDistribution({
+        const distribution = kandel.generator.calculateDistribution({
           priceParams: { minPrice: 1000, ratio, pricePoints },
           midPrice: 1200,
           initialAskGives,

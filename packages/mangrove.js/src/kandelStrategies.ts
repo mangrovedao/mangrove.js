@@ -3,6 +3,9 @@ import KandelSeeder from "./kandel/kandelSeeder";
 import KandelFarm from "./kandel/kandelFarm";
 import KandelInstance from "./kandel/kandelInstance";
 import Market from "./market";
+import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
+import KandelDistributionGenerator from "./kandel/KandelDistributionGenerator";
+import KandelPriceCalculation from "./kandel/kandelPriceCalculation";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -24,29 +27,42 @@ class KandelStrategies {
   }
 
   /** Creates a KandelInstance object to interact with a Kandel strategy on Mangrove.
-   * @param address The address of the Kandel strategy.
+   * @param params The parameters for creating the KandelInstance.
+   * @param params.address The address of the Kandel strategy.
    * @param params.market The market used by the Kandel instance or a factory function to create the market.
    * @returns A new KandelInstance.
    * @dev If a factory function is provided for the market, then remember to disconnect market when no longer needed.
    */
-  public instance(
-    address: string,
+  public instance(params: {
+    address: string;
     market:
       | Market
-      | ((baseAddress: string, quoteAddress: string) => Promise<Market>)
-  ) {
-    if (!market) {
-      market = (baseAddress: string, quoteAddress: string) =>
+      | ((baseAddress: string, quoteAddress: string) => Promise<Market>);
+  }) {
+    const market =
+      params.market ??
+      ((baseAddress: string, quoteAddress: string) =>
         this.mgv.market({
           base: this.mgv.getNameFromAddress(baseAddress),
           quote: this.mgv.getNameFromAddress(quoteAddress),
-        });
-    }
+        }));
+
     return KandelInstance.create({
-      address,
+      address: params.address,
       signer: this.mgv.signer,
       market,
     });
+  }
+
+  /** Creates a generator for generating Kandel distributions for the given market.
+   * @param market The market to calculate for.
+   * @returns A new KandelDistributionGenerator.
+   */
+  public generator(market: Market) {
+    return new KandelDistributionGenerator(
+      new KandelDistributionHelper(market.base.decimals, market.quote.decimals),
+      new KandelPriceCalculation()
+    );
   }
 }
 
