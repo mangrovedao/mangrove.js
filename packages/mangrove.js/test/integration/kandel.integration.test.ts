@@ -10,7 +10,7 @@ import {
 
 import { toWei } from "../util/helpers";
 
-import { Kandel } from "../../src";
+import { KandelStrategies } from "../../src";
 import { Mangrove } from "../../src";
 import * as helpers from "../util/helpers";
 
@@ -60,7 +60,7 @@ describe("Kandel integration tests suite", function () {
       [true, false].forEach((liquiditySharing) => {
         it(`sow deploys kandel and returns instance onAave:${onAave} liquiditySharing:${liquiditySharing}`, async function () {
           // Arrange
-          const seeder = new Kandel({ mgv: mgv }).seeder;
+          const seeder = new KandelStrategies({ mgv: mgv }).seeder;
           const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
           // Act
@@ -110,7 +110,7 @@ describe("Kandel integration tests suite", function () {
     );
     it(`sow deploys kandel with overridden gasprice for provision calculation`, async function () {
       // Arrange
-      const seeder = new Kandel({ mgv: mgv }).seeder;
+      const seeder = new KandelStrategies({ mgv: mgv }).seeder;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
       // Act
@@ -137,9 +137,9 @@ describe("Kandel integration tests suite", function () {
     let defaultOwner: string;
 
     beforeEach(async function () {
-      farm = new Kandel({ mgv: mgv }).farm;
+      farm = new KandelStrategies({ mgv: mgv }).farm;
       defaultOwner = await mgv.signer.getAddress();
-      const seeder = new Kandel({ mgv: mgv }).seeder;
+      const seeder = new KandelStrategies({ mgv: mgv }).seeder;
 
       const abMarket = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const wethDaiMarket = await mgv.market({ base: "WETH", quote: "DAI" });
@@ -173,7 +173,7 @@ describe("Kandel integration tests suite", function () {
       });
 
       // other maker
-      const otherSeeder = new Kandel({ mgv: mgvAdmin }).seeder;
+      const otherSeeder = new KandelStrategies({ mgv: mgvAdmin }).seeder;
       await otherSeeder.sow({
         market: wethUsdcMarket,
         gaspriceFactor: 10,
@@ -232,8 +232,8 @@ describe("Kandel integration tests suite", function () {
     let kandel: KandelInstance;
 
     async function createKandel(onAave: boolean) {
-      const kandelApi = new Kandel({ mgv: mgv });
-      const seeder = new Kandel({ mgv: mgv }).seeder;
+      const kandelApi = new KandelStrategies({ mgv: mgv });
+      const seeder = new KandelStrategies({ mgv: mgv }).seeder;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const kandelAddress = (
         await seeder.sow({
