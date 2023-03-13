@@ -627,6 +627,60 @@ describe("Kandel integration tests suite", function () {
           "1360"
         );
       });
+
+      it("can go through life-cycle with numbers as Bigish", async function () {
+        // Arrange
+        const ratio = 1.08;
+        const firstBase = 1;
+        const pricePoints = 6;
+        const { distribution } = kandel.calculateDistribution(
+          { minPrice: 1000, ratio, pricePoints },
+          1200,
+          firstBase
+        );
+
+        const approvalTxs = await kandel.approve();
+        await approvalTxs[0].wait();
+        await approvalTxs[1].wait();
+
+        // Act
+        await waitForTransactions(
+          kandel.populate({
+            distribution,
+            parameters: {
+              compoundRateBase: 0.5,
+              compoundRateQuote: 0.75,
+              ratio,
+              spread: 1,
+              pricePoints: distribution.length,
+            },
+            depositBaseAmount: 7,
+            depositQuoteAmount: 10000,
+          })
+        );
+
+        await kandel.setCompoundRates(1, 1);
+        await kandel.fundOnMangrove(1);
+
+        await waitForTransactions(
+          kandel.retractOffers(
+            { startIndex: 0, endIndex: 1 },
+            { gasLimit: 1000000 }
+          )
+        );
+
+        // Act
+        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        const statuses = await kandel.getOfferStatuses(1170);
+        assert.equal(6, statuses.statuses.length);
+
+        await kandel.deposit(1, 10);
+
+        await kandel.retractAndWithdraw({
+          withdrawBaseAmount: 1,
+          withdrawQuoteAmount: 10,
+        });
+      });
     });
 
     [true, false].forEach((onAave) =>

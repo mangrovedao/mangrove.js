@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers";
-import { typechain } from "../types";
+import { Bigish, typechain } from "../types";
 
 import * as KandelTypes from "../types/typechain/GeometricKandel";
 
@@ -42,9 +42,9 @@ export type KandelParameters = {
 export type KandelParameterOverrides = {
   gasprice?: number;
   gasreq?: number;
-  ratio?: Big;
-  compoundRateBase?: Big;
-  compoundRateQuote?: Big;
+  ratio?: Bigish;
+  compoundRateBase?: Bigish;
+  compoundRateQuote?: Bigish;
   spread?: number;
   pricePoints?: number;
 };
@@ -238,7 +238,29 @@ class KandelInstance {
   public async getParametersWithOverrides(
     parameters: KandelParameterOverrides
   ): Promise<KandelParameters> {
-    return { ...(await this.getParameters()), ...parameters };
+    const current = await this.getParameters();
+    if (parameters.ratio) {
+      current.ratio = Big(parameters.ratio);
+    }
+    if (parameters.compoundRateBase) {
+      current.compoundRateBase = Big(parameters.compoundRateBase);
+    }
+    if (parameters.compoundRateQuote) {
+      current.compoundRateQuote = Big(parameters.compoundRateQuote);
+    }
+    if (parameters.gasprice) {
+      current.gasprice = parameters.gasprice;
+    }
+    if (parameters.gasreq) {
+      current.gasreq = parameters.gasreq;
+    }
+    if (parameters.spread) {
+      current.spread = parameters.spread;
+    }
+    if (parameters.pricePoints) {
+      current.pricePoints = parameters.pricePoints;
+    }
+    return current;
   }
 
   private offerTypeToUint(offerType: Market.BA): number {
@@ -312,15 +334,15 @@ class KandelInstance {
    */
   public calculateDistribution(
     priceDistributionParams: PriceDistributionParams,
-    midPrice: Big,
-    initialAskGives: Big,
-    initialBidGives?: Big
+    midPrice: Bigish,
+    initialAskGives: Bigish,
+    initialBidGives?: Bigish
   ) {
     return this.calculation.calculateDistributionFromMidPrice(
       priceDistributionParams,
-      midPrice,
-      initialAskGives,
-      initialBidGives
+      Big(midPrice),
+      Big(initialAskGives),
+      initialBidGives ? Big(initialBidGives) : undefined
     );
   }
 
@@ -333,13 +355,13 @@ class KandelInstance {
    */
   public recalculateDistributionFromAvailable(
     distribution: Distribution,
-    availableBase: Big,
-    availableQuote?: Big
+    availableBase: Bigish,
+    availableQuote?: Bigish
   ) {
     return this.calculation.recalculateDistributionFromAvailable(
       distribution,
-      availableBase,
-      availableQuote
+      Big(availableBase),
+      availableQuote ? Big(availableQuote) : undefined
     );
   }
 
@@ -433,7 +455,7 @@ class KandelInstance {
    * @param midPrice The current mid price of the market used to discern expected bids from asks.
    * @returns The status of all offers.
    */
-  public async getOfferStatuses(midPrice: Big) {
+  public async getOfferStatuses(midPrice: Bigish) {
     const offers = (await this.getOffers()).map(
       ({ offer, offerId, index, offerType }) => ({
         offerType,
@@ -458,13 +480,13 @@ class KandelInstance {
    * @remarks Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
    */
   public async getOfferStatusFromOffers(
-    midPrice: Big,
+    midPrice: Bigish,
     offers: OffersWithPrices
   ) {
     const parameters = await this.getParameters();
 
     return this.status.getOfferStatuses(
-      midPrice,
+      Big(midPrice),
       parameters.ratio,
       parameters.pricePoints,
       parameters.spread,
@@ -486,14 +508,17 @@ class KandelInstance {
     ];
   }
 
-  private getDepositArrays(depositBaseAmount?: Big, depositQuoteAmount?: Big) {
+  private getDepositArrays(
+    depositBaseAmount?: Bigish,
+    depositQuoteAmount?: Bigish
+  ) {
     const depositTokens: string[] = [];
     const depositAmounts: BigNumber[] = [];
-    if (depositBaseAmount && depositBaseAmount.gt(0)) {
+    if (depositBaseAmount && Big(depositBaseAmount).gt(0)) {
       depositTokens.push(this.market.base.address);
       depositAmounts.push(this.market.base.toUnits(depositBaseAmount));
     }
-    if (depositQuoteAmount && depositQuoteAmount.gt(0)) {
+    if (depositQuoteAmount && Big(depositQuoteAmount).gt(0)) {
       depositTokens.push(this.market.quote.address);
       depositAmounts.push(this.market.quote.toUnits(depositQuoteAmount));
     }
@@ -506,8 +531,8 @@ class KandelInstance {
    * @param overrides The ethers overrides to use when calling the deposit function.
    */
   public async deposit(
-    depositBaseAmount?: Big,
-    depositQuoteAmount?: Big,
+    depositBaseAmount?: Bigish,
+    depositQuoteAmount?: Bigish,
     overrides: ethers.Overrides = {}
   ) {
     const { depositTokens, depositAmounts } = this.getDepositArrays(
@@ -568,9 +593,9 @@ class KandelInstance {
     params: {
       distribution: Distribution;
       parameters: KandelParameterOverrides;
-      depositBaseAmount?: Big;
-      depositQuoteAmount?: Big;
-      funds?: Big;
+      depositBaseAmount?: Bigish;
+      depositQuoteAmount?: Bigish;
+      funds?: Bigish;
       maxOffersInChunk?: number;
     },
     overrides: ethers.Overrides = {}
@@ -665,8 +690,8 @@ class KandelInstance {
    * @param overrides The ethers overrides to use when calling the setCompoundRates function.
    */
   public async setCompoundRates(
-    compoundRateBase: Big,
-    compoundRateQuote: Big,
+    compoundRateBase: Bigish,
+    compoundRateQuote: Bigish,
     overrides: ethers.Overrides = {}
   ) {
     return await this.kandel.setCompoundRates(
@@ -694,9 +719,9 @@ class KandelInstance {
     params: {
       startIndex?: number;
       endIndex?: number;
-      withdrawFunds?: Big;
-      withdrawBaseAmount?: Big;
-      withdrawQuoteAmount?: Big;
+      withdrawFunds?: Bigish;
+      withdrawBaseAmount?: Bigish;
+      withdrawQuoteAmount?: Bigish;
       recipientAddress?: string;
       maxOffersInChunk?: number;
     } = {},
@@ -809,7 +834,7 @@ class KandelInstance {
    * @param overrides The ethers overrides to use when calling the fund function.
    * @returns The transaction used to fund the Kandel instance.
    */
-  public async fundOnMangrove(funds: Big, overrides: ethers.Overrides = {}) {
+  public async fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
     return await this.market.mgv.fundMangrove(funds, this.address, overrides);
   }
 }

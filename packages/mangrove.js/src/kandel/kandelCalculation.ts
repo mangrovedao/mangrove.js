@@ -1,4 +1,5 @@
 import Big from "big.js";
+import { Bigish } from "../types";
 import Market from "../market";
 
 /** Distribution of bids and asks and their base and quote amounts.
@@ -21,9 +22,9 @@ export type Distribution = {
  * @param pricePoints The number of price points in the distribution.
  */
 export type PriceDistributionParams = {
-  minPrice?: Big;
-  maxPrice?: Big;
-  ratio?: Big;
+  minPrice?: Bigish;
+  maxPrice?: Bigish;
+  ratio?: Bigish;
   pricePoints?: number;
 };
 
@@ -47,12 +48,15 @@ class KandelCalculation {
         throw Error("There must be at least 2 price points");
       } else if (minPrice && maxPrice && !ratio && pricePoints) {
         ratio = Big(
-          Math.pow(maxPrice.div(minPrice).toNumber(), 1 / (pricePoints - 1))
+          Math.pow(
+            Big(maxPrice).div(minPrice).toNumber(),
+            1 / (pricePoints - 1)
+          )
         );
       } else if (minPrice && !maxPrice && ratio && pricePoints) {
-        maxPrice = minPrice.mul(ratio.pow(pricePoints - 1));
+        maxPrice = Big(minPrice).mul(Big(ratio).pow(pricePoints - 1));
       } else if (!minPrice && maxPrice && ratio && pricePoints) {
-        minPrice = maxPrice.div(ratio.pow(pricePoints - 1));
+        minPrice = Big(maxPrice).div(Big(ratio).pow(pricePoints - 1));
       } else {
         throw Error(
           "Exactly three of minPrice, maxPrice, ratio, and pricePoints must be given"
@@ -60,7 +64,11 @@ class KandelCalculation {
       }
     }
 
-    return this.calculatePricesFromMinMaxRatio(minPrice, maxPrice, ratio);
+    return this.calculatePricesFromMinMaxRatio(
+      Big(minPrice),
+      Big(maxPrice),
+      Big(ratio)
+    );
   }
 
   public getPricesFromPrice(
