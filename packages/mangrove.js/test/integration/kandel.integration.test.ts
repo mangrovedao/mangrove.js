@@ -201,13 +201,19 @@ describe("Kandel integration tests suite", function () {
         3
       );
       assert.equal(kandels.filter((x) => x.onAave).length, 2);
-      assert.equal(kandels.filter((x) => x.owner == defaultOwner).length, 4);
+      assert.equal(
+        kandels.filter((x) => x.ownerAddress == defaultOwner).length,
+        4
+      );
     });
 
     it("getKandels retrieves owned kandel instances", async function () {
       const kandels = await farm.getKandels({ owner: defaultOwner });
       assert.equal(kandels.length, 4);
-      assert.equal(kandels.filter((x) => x.owner == defaultOwner).length, 4);
+      assert.equal(
+        kandels.filter((x) => x.ownerAddress == defaultOwner).length,
+        4
+      );
     });
 
     it("getKandels retrieves aave kandel instances", async function () {

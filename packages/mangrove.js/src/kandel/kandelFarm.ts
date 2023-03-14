@@ -80,8 +80,8 @@ class KandelFarm {
             const baseToken = this.getTokenAndAddress(x.args.base);
             const quoteToken = this.getTokenAndAddress(x.args.quote);
             return {
-              kandel: x.args.kandel,
-              owner: x.args.owner,
+              kandelAddress: x.args.kandel,
+              ownerAddress: x.args.owner,
               onAave: false,
               baseAddress: baseToken.address,
               base: baseToken.token,
@@ -104,8 +104,8 @@ class KandelFarm {
             const baseToken = this.getTokenAndAddress(x.args.base);
             const quoteToken = this.getTokenAndAddress(x.args.quote);
             return {
-              kandel: x.args.aaveKandel,
-              owner: x.args.owner,
+              kandelAddress: x.args.aaveKandel,
+              ownerAddress: x.args.owner,
               onAave: true,
               baseAddress: baseToken.address,
               base: baseToken.token,
