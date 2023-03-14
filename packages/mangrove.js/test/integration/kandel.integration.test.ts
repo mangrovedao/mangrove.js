@@ -756,6 +756,7 @@ describe("Kandel integration tests suite", function () {
             );
 
             // Assert
+            await mgvTestUtil.waitForBooksForLastTx(kandel.market);
             const deadOffers = (await kandel.getOffers()).filter(
               (x) => !kandel.market.isLiveOffer(x.offer)
             ).length;

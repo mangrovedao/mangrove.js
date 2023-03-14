@@ -1,7 +1,7 @@
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
-import KandelCalculation from "../../dist/nodejs/kandel/kandelCalculation";
+import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
 describe("KandelPriceCalculation unit tests suite", () => {
@@ -152,7 +152,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
           pricePoints,
         });
 
-        const distribution = new KandelCalculation(
+        const distribution = new KandelDistributionHelper(
           12,
           12
         ).calculateDistributionConstantBase(originalPrices, firstBase, 3);
