@@ -1,3 +1,7 @@
+# 1.2.4-1 (March 2023)
+
+- Use no_env_vars profile
+
 # 1.2.3-0 (February 2023)
 
 - Use prerelease mangrove-core
