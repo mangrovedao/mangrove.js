@@ -1,3 +1,16 @@
+# 1.2.5 (March 2023)
+
+- Add back env vars temporarily
+- Safety release to supersede prerelease erroneously released
+
+# 1.2.3 (February 2023)
+
+- Add permit features
+- Correctly read addresses from mangrove-core
+- `mgv deal` to deal arbitrary tokens (WIP)
+- Reverse lookup name from address
+- mgvToken approval accepts Big
+
 # 1.2.2 (February 2023)
 
 - Use AAVE faucet addresses on mumbai network
