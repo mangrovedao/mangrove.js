@@ -27,6 +27,14 @@ const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
   if (typeof pipe === "undefined") {
     pipe = true;
   }
+  // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
+  const full_env = {
+    ...process.env,
+    MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
+    POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
+    POLYGON_API_KEY: process.env.POLYGON_API_KEY ?? "",
+  };
+
   // Warning: using exec & awaiting promise instead of using the simpler `execSync`
   // due to the following issue: when too many transactions are broadcast by the script,
   // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
@@ -37,7 +45,7 @@ const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
       command,
       {
         encoding: "utf8",
-        env: env,
+        env: full_env,
         cwd: CORE_DIR,
       },
       (error, stdout, stderr) => {
