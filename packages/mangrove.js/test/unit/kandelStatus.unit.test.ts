@@ -262,15 +262,14 @@ describe("KandelStatus unit tests suite", () => {
             bids: { live: true, offerId: 42, price: Big(2000) },
           },
           { expectedLiveBid: true, expectedPrice: Big(4000) },
-          // next not expected live since next-next (dual) is live
-          { expectedLiveAsk: false, expectedPrice: Big(8000) },
+          { expectedLiveAsk: true, expectedPrice: Big(8000) },
           {
             expectedLiveAsk: true,
             expectedPrice: Big(16000),
             bids: { live: true, offerId: 55, price: Big(15000) },
           },
           {
-            expectedLiveAsk: true,
+            expectedLiveAsk: false,
             expectedPrice: Big(32000),
           },
         ],
@@ -296,7 +295,7 @@ describe("KandelStatus unit tests suite", () => {
       {
         spread: 2,
         dead: 3,
-        unexpectedDeadBid: [2],
+        unexpectedDeadBid: [1],
         unexpectedDeadAsk: [3],
         reason: "dual is dead for some",
       },
@@ -380,16 +379,14 @@ describe("KandelStatus unit tests suite", () => {
               assert.equal(statuses.statuses[i].expectedLiveBid, false);
               assert.equal(statuses.statuses[i].expectedLiveAsk, true);
             } else {
-              assert.equal(
-                statuses.statuses[i].bids != undefined ||
-                  statuses.statuses[i].asks != undefined,
-                true
-              );
-              assert.equal(
-                statuses.statuses[i].expectedLiveBid ||
-                  statuses.statuses[i].expectedLiveAsk,
-                true
-              );
+              if (statuses.statuses[i].expectedLiveBid) {
+                // since it is not unexpected, then it should be live
+                assert.equal(statuses.statuses[i].bids.live, true);
+              }
+              if (statuses.statuses[i].expectedLiveAsk) {
+                // since it is not unexpected, then it should be live
+                assert.equal(statuses.statuses[i].asks.live, true);
+              }
             }
           }
         });

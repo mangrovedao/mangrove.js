@@ -148,7 +148,7 @@ class KandelStatus {
     statuses.forEach((s, index) => {
       if (s.expectedLiveAsk && (s.asks?.live ?? false) == false) {
         const dualIndex = this.distributionHelper.getDualIndex(
-          "asks",
+          "bids",
           index,
           pricePoints,
           spread
@@ -159,7 +159,7 @@ class KandelStatus {
       }
       if (s.expectedLiveBid && (s.bids?.live ?? false) == false) {
         const dualIndex = this.distributionHelper.getDualIndex(
-          "bids",
+          "asks",
           index,
           pricePoints,
           spread
