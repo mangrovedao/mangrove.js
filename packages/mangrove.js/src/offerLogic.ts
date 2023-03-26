@@ -41,8 +41,10 @@ class OfferLogic {
       mgv.signer
     ).deploy(
       mgv.address,
-      ethers.constants.AddressZero,
-      await mgv.signer.getAddress()
+      ethers.constants.AddressZero, // no router
+      await mgv.signer.getAddress(), // signer is deployer
+      50000, // 50K gasreq is large
+      ethers.constants.AddressZero // no liquidity sharing possible
     );
     await contract.deployTransaction.wait();
     return contract.address;

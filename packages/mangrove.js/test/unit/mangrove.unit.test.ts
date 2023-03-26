@@ -45,6 +45,7 @@ describe("Mangrove functionality", () => {
       const ADDR1 = "0x0000000000000000000000000000000000000001";
       ens["set(string,address)"]("Mangrove", ADDR1);
       await watcher.watchFor((k, v) => k === "Mangrove" && v == ADDR1);
+      mgv.disconnect();
     });
 
     // can't make this test go through mangrove since Mangrove can't connect without an existing Mangrove instance -- so we're just testing watchAllToyENSEntries watch functionality here
