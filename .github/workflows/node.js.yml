@@ -184,6 +184,9 @@ jobs:
       run:
         working-directory: ${{env.working-directory}}
 
+    permissions:
+      checks: write
+
     strategy:
       matrix:
         node-version: [16.x]
