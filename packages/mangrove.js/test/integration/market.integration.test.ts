@@ -7,13 +7,13 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import assert from "assert";
-import { LiquidityProvider, Mangrove, Market, Semibook } from "../../src";
+import { Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
-import { Bigish } from "../../dist/nodejs/types";
+import { Bigish } from "../../src/types";
 import { MgvReader } from "../../src/types/typechain/MgvReader";
 import { Deferred } from "../../src/util";
 
@@ -326,6 +326,29 @@ describe("Market integration tests suite", () => {
   });
 
   describe("getPivotIdTest", () => {
+    // prettier-ignore
+    it("returns correct Pivot ids for bids and asks", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+
+      // some bids
+      await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1000", }));
+      await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1200", }));
+      // some asks
+      await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1400", gives: "1", }));
+      await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1600", gives: "1", }));
+
+      await mgvTestUtil.waitForBooksForLastTx(market);
+
+      // Act/assert
+      assert.equal(await market.getPivotId("bids", 900), 1, "bid offer id 1 has price 1000 which is higher than 900");
+      assert.equal(await market.getPivotId("bids", 1100), 2, "bid offer id 2 has price 1200 and is higher than 1100");
+      assert.equal(await market.getPivotId("bids", 1300), undefined, "no bid offer has price above 1300");
+      assert.equal(await market.getPivotId("asks", 1300), undefined, "no ask offer has price below 1300");
+      assert.equal(await market.getPivotId("asks", 1500), 1, "ask offer id 1 has price 1400 which is below 1500");
+      assert.equal(await market.getPivotId("asks", 1700), 2, "ask offer id 2 has price 1600 which is below 1700");
+    });
+
     it("returns Pivot id for bids", async function () {
       // Arrange
       // let mgv:Mangrove | undefined =undefined;
@@ -337,7 +360,7 @@ describe("Market integration tests suite", () => {
 
       const ba = "asks";
       const price: Bigish = "234";
-      const pivotId: number = 231;
+      const pivotId = 231;
       mockito
         .when(mockedMarket.getSemibook(ba))
         .thenReturn(mockito.instance(semiBook));
@@ -1154,7 +1177,7 @@ describe("Market integration tests suite", () => {
     );
 
     // Actual snipe
-    var didThrow = false;
+    let didThrow = false;
     try {
       const snipePromises = await market.snipe(
         {
@@ -1394,8 +1417,6 @@ describe("Market integration tests suite", () => {
     /* Start testing */
 
     const book = await market.requestBook({ maxOffers: 3 });
-    market.consoleAsks(["id", "maker"]);
-    market.consoleBids(["id", "maker"]);
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }) => {
