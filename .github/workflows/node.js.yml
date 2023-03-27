@@ -97,6 +97,9 @@ jobs:
       run:
         working-directory: ${{env.working-directory}}
 
+    permissions:
+      checks: write
+
     strategy:
       matrix:
         node-version: [16.x]
@@ -315,6 +318,9 @@ jobs:
       run:
         working-directory: ${{env.working-directory}}
 
+    permissions:
+      checks: write
+
     strategy:
       matrix:
         node-version: [16.x]
@@ -438,6 +444,9 @@ jobs:
       run:
         working-directory: ${{env.working-directory}}
 
+    permissions:
+      checks: write
+
     strategy:
       matrix:
         node-version: [16.x]
@@ -546,6 +555,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -657,6 +669,9 @@ jobs:
       run:
         working-directory: ${{env.working-directory}}
 
+    permissions:
+      checks: write
+
     strategy:
       matrix:
         node-version: [16.x]
@@ -767,6 +782,9 @@ jobs:
       run:
         working-directory: ${{env.working-directory}}
 
+    permissions:
+      checks: write
+
     strategy:
       matrix:
         node-version: [16.x]
@@ -864,7 +882,7 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-taker-greedy ====        
 
- # ==== Job: Build and test bot-failing-offer ====
+  # ==== Job: Build and test bot-failing-offer ====
   bot-failing-offer:
     needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
@@ -876,6 +894,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -986,6 +1007,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
