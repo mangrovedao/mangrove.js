@@ -21,13 +21,11 @@ describe("Mangrove functionality", () => {
       // start server
       const server = await node({
         ...defaultServerParams,
-        port: 8544,
+        port: 8544, // use port number below the one used in mochaHooks.ts
       }).connect();
 
-      // connect mgv
-      const provider = new ethers.providers.JsonRpcProvider(server.url);
       const mgv = await Mangrove.connect({
-        provider,
+        provider: server.url,
         privateKey: server.accounts[0].key,
       });
       (mgv.provider as any).pollingInterval = 10;
@@ -46,6 +44,7 @@ describe("Mangrove functionality", () => {
       ens["set(string,address)"]("Mangrove", ADDR1);
       await watcher.watchFor((k, v) => k === "Mangrove" && v == ADDR1);
       mgv.disconnect();
+      server.process.kill();
     });
 
     // can't make this test go through mangrove since Mangrove can't connect without an existing Mangrove instance -- so we're just testing watchAllToyENSEntries watch functionality here
@@ -53,7 +52,7 @@ describe("Mangrove functionality", () => {
       // start server but deploy nothing
       const server = await node({
         ...defaultServerParams,
-        port: 8547,
+        port: 8543, // use port number below the one used in mochaHooks.ts
         deploy: false,
       }).connect();
 
@@ -61,7 +60,7 @@ describe("Mangrove functionality", () => {
 
       // promise that will resolve when Mangrove is registered to ToyENS
       const prom = new Promise<void>((ok) => {
-        watchAllToyENSEntries(provider, (name, address, decimals) => {
+        watchAllToyENSEntries(provider, (name) => {
           if (name === "Mangrove") {
             ok();
           }
@@ -73,6 +72,8 @@ describe("Mangrove functionality", () => {
 
       // make sure that deployment is detected
       await prom;
+      provider.removeAllListeners();
+      server.process.kill();
     });
   });
 });

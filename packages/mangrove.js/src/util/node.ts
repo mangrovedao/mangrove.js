@@ -67,7 +67,7 @@ const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
 };
 
 import yargs from "yargs";
-import { JsonRpcProvider, Provider } from "@ethersproject/providers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
