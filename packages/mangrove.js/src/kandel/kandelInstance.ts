@@ -551,8 +551,8 @@ class KandelInstance {
    */
   public async populate(
     params: {
-      distribution: Distribution;
-      parameters: KandelParameterOverrides;
+      distribution?: Distribution;
+      parameters?: KandelParameterOverrides;
       depositBaseAmount?: Bigish;
       depositQuoteAmount?: Bigish;
       funds?: Bigish;
@@ -560,14 +560,16 @@ class KandelInstance {
     },
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ethers.ContractTransaction[]> {
-    const parameters = await this.getParametersWithOverrides(params.parameters);
+    const parameters = await this.getParametersWithOverrides(
+      params.parameters ?? {}
+    );
     const rawParameters = this.getRawParameters(parameters);
     const funds =
       params.funds ??
       (await this.getRequiredProvision({
         gasreq: rawParameters.gasreq,
         gasprice: rawParameters.gasprice,
-        offerCount: params.distribution.length,
+        offerCount: params.distribution?.length ?? 0,
       }));
 
     const { depositTokens, depositAmounts } = this.getDepositArrays(
@@ -576,12 +578,23 @@ class KandelInstance {
     );
 
     const { firstAskIndex, rawDistributions } =
-      await this.getRawDistributionChunks(params);
+      await this.getRawDistributionChunks({
+        distribution: params.distribution ?? [],
+        maxOffersInChunk: params.maxOffersInChunk,
+      });
+
+    const firstDistribution =
+      rawDistributions.length > 0
+        ? rawDistributions[0]
+        : {
+            rawDistribution: { indices: [], quoteDist: [], baseDist: [] },
+            pivots: [],
+          };
 
     const txs = [
       await this.kandel.populate(
-        rawDistributions[0].rawDistribution,
-        rawDistributions[0].pivots,
+        firstDistribution.rawDistribution,
+        firstDistribution.pivots,
         firstAskIndex,
         rawParameters,
         depositTokens,

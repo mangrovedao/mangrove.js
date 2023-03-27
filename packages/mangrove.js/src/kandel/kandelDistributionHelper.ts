@@ -116,7 +116,10 @@ class KandelDistributionHelper {
   }
 
   public getFirstAskIndex(distribution: Distribution) {
-    return distribution.find((x) => x.offerType == "asks").index;
+    return (
+      distribution.find((x) => x.offerType == "asks")?.index ??
+      distribution.length
+    );
   }
 
   public sortByIndex(list: { index: number }[]) {

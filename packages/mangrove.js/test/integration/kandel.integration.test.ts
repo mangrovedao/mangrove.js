@@ -524,6 +524,42 @@ describe("Kandel integration tests suite", function () {
         });
       });
 
+      it("populate can be called to set spread", async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        // Act
+        await waitForTransactions(
+          kandel.populate({ parameters: { spread: 4 } })
+        );
+
+        // Assert
+        const params = await kandel.getParameters();
+        assert.equal(params.spread, 4, "spread should have been updated");
+      });
+
+      it("populate can be with new distribution", async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        const distribution = kandel.generator.calculateDistribution({
+          priceParams: { minPrice: 900, ratio: 1.01, pricePoints: 6 },
+          midPrice: 1000,
+          initialAskGives: 1,
+        });
+
+        // Act
+        await waitForTransactions(kandel.populate({ distribution }));
+
+        // Assert
+        const statuses = await kandel.getOfferStatuses(1000);
+        assert.equal(
+          statuses.statuses[0].bids.price.toNumber(),
+          900,
+          "distribution should have been updated"
+        );
+      });
+
       it("pending, volume, reserve correct after populate with deposit", async function () {
         // all zeros prior to populate
         assert.equal((await kandel.balance("asks")).toString(), "0");

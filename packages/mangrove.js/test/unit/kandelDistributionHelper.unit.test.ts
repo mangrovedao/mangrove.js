@@ -29,7 +29,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Assert
         assert.equal(askGives.toNumber(), 1);
-        assert.equal(bidGives.toNumber(), 1000);
+        assert.equal(bidGives?.toNumber(), 1000);
       });
     }
   );
@@ -89,6 +89,10 @@ describe("KandelDistributionHelper unit tests suite", () => {
           );
 
           // Assert
+          assert.equal(
+            sut.getFirstAskIndex(distribution),
+            offerType == "asks" ? 0 : distribution.length
+          );
           const calculatedPrices = new KandelPriceCalculation()
             .getPricesForDistribution(distribution)
             .map((x) => x.toNumber());
