@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { Mangrove, Semibook } from "../..";
 import { node, dealBuilder as builder } from "../../util/node";
 
-export const command = "deal";
+export const command = "deal <token> <account> <amount>";
 export const aliases = [];
 export const describe = "Deal tokens to an address.";
 
