@@ -23,6 +23,7 @@ namespace LiquidityProvider {
     mgv: Mangrove;
     logic?: OfferLogic;
     eoa?: string;
+    gasreq: number;
     market: Market;
   };
   /** Connect to MangroveOffer.
@@ -57,6 +58,7 @@ class LiquidityProvider {
   eoa?: string; // signer's address
   market: Market; // API market abstraction over Mangrove's offer lists
   prettyP = new PrettyPrint();
+  gasreq: number;
 
   constructor(p: LiquidityProvider.ConstructionParams) {
     if (p.eoa || p.logic) {
@@ -64,6 +66,7 @@ class LiquidityProvider {
       this.logic = p.logic;
       this.market = p.market;
       this.eoa = p.eoa;
+      this.gasreq = p.gasreq;
     } else {
       throw Error(
         "Missing EOA or onchain logic to build a Liquidity Provider object"
@@ -239,6 +242,7 @@ class LiquidityProvider {
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
         pivot ? pivot : 0,
+        this.gasreq,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {
@@ -247,7 +251,7 @@ class LiquidityProvider {
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
-        0, //gasreq
+        this.gasreq,
         0, //gasprice
         pivot ? pivot : 0,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
@@ -364,6 +368,7 @@ class LiquidityProvider {
         outbound_tkn.toUnits(gives),
         (await this.market.getPivotId(p.ba, price)) ?? 0,
         id,
+        this.gasreq,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {

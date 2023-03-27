@@ -267,12 +267,14 @@ class Mangrove {
         mgv: this,
         eoa: EOA,
         market: p,
+        gasreq: 0,
       });
     } else {
       return new LiquidityProvider({
         mgv: this,
         eoa: EOA,
         market: await this.market(p),
+        gasreq: 0,
       });
     }
   }
