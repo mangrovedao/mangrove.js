@@ -18,7 +18,7 @@ import PrettyPrint, { prettyPrintFilter } from "../prettyPrint";
 import { LiquidityProvider } from "../..";
 import * as typechain from "../../types/typechain";
 import { waitForTransaction } from "./mgvIntegrationTestUtil";
-import { node } from "../../util/node";
+import { deal } from "../../util/node";
 
 /** Usage example
   Terminal 1: 
@@ -139,18 +139,12 @@ class TestMaker {
       this.contract.approveMgv(inbound_tkn.address, ethers.constants.MaxUint256)
     );
 
-    if (!(this.mgv.provider instanceof ethers.providers.JsonRpcProvider)) {
-      throw new Error("TestMaker requires a JsonRpcProvider");
-    }
-    const url = this.mgv.provider.connection.url;
-
     // Ensure maker has the right amount of tokens
     const internalBal = await outbound_tkn.contract.balanceOf(
       this.contract.address
     );
-    await (
-      await node({ url: url, spawn: false, deploy: false }).connect()
-    ).deal({
+
+    deal(this.mgv.provider, {
       token: outbound_tkn.address,
       account: this.contract.address,
       internalAmount: internalBal.add(outbound_tkn.toUnits(gives)),

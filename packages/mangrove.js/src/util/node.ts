@@ -25,6 +25,13 @@ const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
 import { networks, addresses } from "../constants";
 
+export type DealParams = {
+  token: string;
+  account: string;
+  amount?: number;
+  internalAmount?: ethers.BigNumber;
+};
+
 const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
   // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
   env = {
@@ -366,85 +373,96 @@ const connect = async (params: connectParams) => {
       }
     },
     /* set ERC20 token balance of account at amount (display units) or internalAmount (internal units) */
-    deal: async (dealParams: {
-      token: string;
-      account: string;
-      amount?: number;
-      internalAmount?: ethers.BigNumber;
-    }) => {
-      let tokenAddress;
-      try {
-        tokenAddress = ethers.utils.getAddress(dealParams.token);
-      } catch (e) {
-        const chainId = params.provider.network.chainId;
-        const networkName = networks[chainId];
-        if (typeof networkName === "undefined") {
-          throw new Error(
-            `Error while attempting to lookup ${dealParams.token} as a token name: chainId ${chainId} does not map to a known network`
-          );
-        }
-        tokenAddress = addresses[networkName][dealParams.token];
-        if (typeof tokenAddress === "undefined") {
-          throw new Error(
-            `Error while attempting to lookup ${dealParams.token} as a token name: name does not map to a known address on network ${networkName}`
-          );
-        }
-      }
-
-      //  token:string,account:string,amount:string) {
-      const command = `forge script --rpc-url ${params.url} -vv GetTokenDealSlot`;
-
-      console.log("Running forge script:");
-      console.log(command);
-
-      // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
-      const env = {
-        ...process.env,
-        TOKEN: dealParams.token,
-        ACCOUNT: dealParams.account,
-      };
-
-      // parse script results to get storage slot and token decimals
-      let slot: string;
-      let decimals: number;
-
-      let ret: any = await execForgeCmd(command, env, false);
-      for (const line of ret.split("\n")) {
-        const slotMatch = line.match(/\s*slot:\s*(\S+)/);
-        if (slotMatch) {
-          slot = slotMatch[1];
-        }
-        const decimalsMatch = line.match(/\s*decimals:\s*(\S+)/);
-        if (decimalsMatch) {
-          decimals = parseInt(decimalsMatch[1], 10);
-        }
-      }
-
-      if ("internalAmount" in dealParams) {
-        if ("amount" in dealParams) {
-          throw new Error(
-            "Cannot specify both amount (display units) and internal amount (internal units). Please pick one."
-          );
-        }
-      } else if ("amount" in dealParams) {
-        dealParams.internalAmount = ethers.utils.parseUnits(
-          `${dealParams.amount}`,
-          decimals
-        );
-      } else {
-        throw new Error(
-          "Must specify one of dealParams.amount, dealParams.internalAmount."
-        );
-      }
-
-      const devNode = new DevNode(params.provider);
-      await devNode.setStorageAt(
-        dealParams.token,
-        slot,
-        ethers.utils.hexZeroPad(dealParams.internalAmount.toHexString(), 32)
-      );
+    deal: async (dealParams: DealParams) => {
+      return deal(params.provider, dealParams);
     },
   };
+};
+
+export const deal = async (
+  provider: ethers.providers.Provider,
+  dealParams: DealParams
+): Promise<void> => {
+  const url = (provider as any).connection?.url;
+  if (typeof url === "undefined") {
+    throw new Error("node.deal requires provider.connection.url to be defined");
+  }
+
+  const chainId = (provider as any).network?.chainId;
+  if (typeof chainId === "undefined") {
+    throw new Error("node.deal requires provider.network.chainId to exist");
+  }
+
+  let tokenAddress;
+  try {
+    tokenAddress = ethers.utils.getAddress(dealParams.token);
+  } catch (e) {
+    const networkName = networks[chainId];
+    if (typeof networkName === "undefined") {
+      throw new Error(
+        `Error while attempting to lookup ${dealParams.token} as a token name: chainId ${chainId} does not map to a known network`
+      );
+    }
+    tokenAddress = addresses[networkName][dealParams.token];
+    if (typeof tokenAddress === "undefined") {
+      throw new Error(
+        `Error while attempting to lookup ${dealParams.token} as a token name: name does not map to a known address on network ${networkName}`
+      );
+    }
+  }
+
+  //  token:string,account:string,amount:string)
+  const command = `forge script --rpc-url ${url} -vv GetTokenDealSlot`;
+
+  console.log("Running forge script:");
+  console.log(command);
+
+  // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
+  const env = {
+    ...process.env,
+    TOKEN: dealParams.token,
+    ACCOUNT: dealParams.account,
+  };
+
+  // parse script results to get storage slot and token decimals
+  let slot: string;
+  let decimals: number;
+
+  let ret: any = await execForgeCmd(command, env, false);
+  for (const line of ret.split("\n")) {
+    const slotMatch = line.match(/\s*slot:\s*(\S+)/);
+    if (slotMatch) {
+      slot = slotMatch[1];
+    }
+    const decimalsMatch = line.match(/\s*decimals:\s*(\S+)/);
+    if (decimalsMatch) {
+      decimals = parseInt(decimalsMatch[1], 10);
+    }
+  }
+
+  if ("internalAmount" in dealParams) {
+    if ("amount" in dealParams) {
+      throw new Error(
+        "Cannot specify both amount (display units) and internal amount (internal units). Please pick one."
+      );
+    }
+  } else if ("amount" in dealParams) {
+    dealParams.internalAmount = ethers.utils.parseUnits(
+      `${dealParams.amount}`,
+      decimals
+    );
+  } else {
+    throw new Error(
+      "Must specify one of dealParams.amount, dealParams.internalAmount."
+    );
+  }
+
+  const devNode = new DevNode(provider);
+  await devNode.setStorageAt(
+    dealParams.token,
+    slot,
+    ethers.utils.hexZeroPad(dealParams.internalAmount.toHexString(), 32)
+  );
 };
 
 /* Generate initial parameters with yargs, add data, then return node actions. */
