@@ -42,7 +42,7 @@
     "json-truncate": "^3.0.0",
     "logform": "^2.5.1",
     "loglevel": "^1.8.0",
-    "object-inspect": "^1.12.2",
+    "object-inspect": "^1.12.3",
     "triple-beam": "^1.3.0"
   },
   "devDependencies": {
