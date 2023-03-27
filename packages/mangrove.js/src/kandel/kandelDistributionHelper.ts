@@ -71,6 +71,40 @@ class KandelDistributionHelper {
     };
   }
 
+  /** Rounds a base amount according to the token's decimals.
+   * @param base The base amount to round.
+   * @returns The rounded base amount.
+   */
+  public roundBase(base: Big) {
+    return base.round(this.baseDecimals, Big.roundHalfUp);
+  }
+
+  /** Rounds a quote amount according to the token's decimals.
+   * @param quote The quote amount to round.
+   * @returns The rounded quote amount.
+   */
+  public roundQuote(quote: Big) {
+    return quote.round(this.quoteDecimals, Big.roundHalfUp);
+  }
+
+  /** Calculates a rounded quote amount given a base amount and a price.
+   * @param base The base amount.
+   * @param price The price.
+   * @returns The quote amount.
+   */
+  public quoteFromBaseAndPrice(base: Big, price: Big) {
+    return this.roundQuote(base.mul(price));
+  }
+
+  /** Calculates a rounded base amount given a quote amount and a price.
+   * @param quote The quote amount.
+   * @param price The price.
+   * @returns The base amount.
+   */
+  public baseFromQuoteAndPrice(quote: Big, price: Big) {
+    return this.roundBase(quote.div(price));
+  }
+
   /** Calculates distribution of bids and asks with constant gives and a matching wants given the price distribution.
    * @param prices The price distribution.
    * @param askGives The constant gives for asks.
@@ -88,14 +122,14 @@ class KandelDistributionHelper {
       this.getBA(index, firstAskIndex) == "bids"
         ? {
             index,
-            base: bidGives.div(p).round(this.baseDecimals, Big.roundHalfUp),
+            base: this.baseFromQuoteAndPrice(bidGives, p),
             quote: bidGives,
             offerType: "bids" as Market.BA,
           }
         : {
             index,
             base: askGives,
-            quote: askGives.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
+            quote: this.quoteFromBaseAndPrice(askGives, p),
             offerType: "asks" as Market.BA,
           }
     );
@@ -114,11 +148,11 @@ class KandelDistributionHelper {
     constantBase: Big,
     firstAskIndex: number
   ): Distribution {
-    const base = constantBase.round(this.baseDecimals, Big.roundHalfUp);
+    const base = this.roundBase(constantBase);
     return prices.map((p, index) => ({
       index,
       base: base,
-      quote: base.mul(p).round(this.quoteDecimals, Big.roundHalfUp),
+      quote: this.quoteFromBaseAndPrice(base, p),
       offerType: this.getBA(index, firstAskIndex),
     }));
   }
