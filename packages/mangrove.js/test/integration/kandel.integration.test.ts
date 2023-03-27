@@ -552,6 +552,7 @@ describe("Kandel integration tests suite", function () {
         await waitForTransactions(kandel.populate({ distribution }));
 
         // Assert
+        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
         const statuses = await kandel.getOfferStatuses(1000);
         assert.equal(
           statuses.statuses[0].bids.price.toNumber(),
