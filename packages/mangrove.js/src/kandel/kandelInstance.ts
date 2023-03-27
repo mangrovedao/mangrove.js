@@ -105,6 +105,7 @@ class KandelInstance {
     });
   }
 
+  /** Constructor. @see create */
   private constructor(params: {
     address: string;
     kandel: typechain.GeometricKandel;
@@ -216,9 +217,9 @@ class KandelInstance {
     };
   }
 
-  /** Convert public Kandel parameters to ethers representation.
+  /** Convert public Kandel parameters to internal representation.
    * @param parameters The Kandel parameters.
-   * @returns The raw parameters.
+   * @returns The raw parameters using internal representation.
    */
   private getRawParameters(parameters: KandelParameters) {
     return {
@@ -270,10 +271,18 @@ class KandelInstance {
     return current;
   }
 
+  /** Converts an offer type to internal representation.
+   * @param offerType The offer type.
+   * @returns The internal representation.
+   */
   private offerTypeToUint(offerType: Market.BA): number {
     return offerType == "bids" ? 0 : 1;
   }
 
+  /** Converts a internal offer type representation to enum.
+   * @param offerType The internal offer type.
+   * @returns The offer type enum.
+   */
   private UintToOfferType(offerType: number): Market.BA {
     return offerType == 0 ? "bids" : "asks";
   }
@@ -506,6 +515,12 @@ class KandelInstance {
     );
   }
 
+  /** Splits the distribution into chunks and converts it to internal representation.
+   * @param params The parameters.
+   * @param params.distribution The distribution to split.
+   * @param params.maxOffersInChunk The maximum number of offers in a chunk. Defaults to 80.
+   * @returns The raw distributions in internal representation and the index of the first ask.
+   */
   async getRawDistributionChunks(params: {
     distribution: Distribution;
     maxOffersInChunk?: number;
@@ -633,6 +648,12 @@ class KandelInstance {
     );
   }
 
+  /** Populates the offers in the distribution for the Kandel instance.
+   * @param firstAskIndex The index of the first ask in the distribution.
+   * @param rawDistributions The raw chunked distributions in internal representation to populate.
+   * @param overrides The ethers overrides to use when calling the populateChunk function.
+   * @returns The transaction(s) used to populate the offers.
+   */
   async populateChunks(
     firstAskIndex: number,
     rawDistributions: {
@@ -763,6 +784,16 @@ class KandelInstance {
     ).txs;
   }
 
+  /** Retracts offers
+   * @param params The parameters.
+   * @param params.retractParams The parameters for retracting offers.
+   * @param params.retractParams.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
+   * @param params.retractParams.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
+   * @param params.retractParams.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then 80 is used.
+   * @param params.skipLast Whether to skip the last chunk. This is used to allow the last chunk to be retracted while withdrawing funds.
+   * @param overrides The ethers overrides to use when calling the retractOffers function.
+   * @returns The transaction(s) used to retract the offers.
+   */
   async retractOfferChunks(
     params: {
       retractParams: {

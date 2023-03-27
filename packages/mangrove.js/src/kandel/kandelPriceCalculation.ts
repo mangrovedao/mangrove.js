@@ -17,6 +17,15 @@ export type PriceDistributionParams = {
 
 /** @title Helper for calculating details about about a Kandel instance. */
 class KandelPriceCalculation {
+  /** Calculates prices to match the geometric price distribution given by parameters.
+   * @param params Parameters for calculating a geometric price distribution. Exactly three must be provided.
+   * @param params.minPrice The minimum price in the distribution.
+   * @param params.maxPrice The maximum price in the distribution.
+   * @param params.ratio The ratio between each price point.
+   * @param params.pricePoints The number of price points in the distribution.
+   * @returns The prices in the distribution.
+   * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
+   */
   public calculatePrices(params: PriceDistributionParams) {
     let { minPrice, maxPrice, ratio } = params;
     const { pricePoints } = params;
@@ -50,6 +59,13 @@ class KandelPriceCalculation {
     );
   }
 
+  /** Gets the prices for the geometric distribution based on a single known price at an index.
+   * @param index The index of the known price.
+   * @param priceAtIndex The known price.
+   * @param ratio The ratio between each price point.
+   * @param pricePoints The number of price points in the distribution.
+   * @returns The prices in the distribution.
+   */
   public getPricesFromPrice(
     index: number,
     priceAtIndex: Big,
@@ -65,6 +81,12 @@ class KandelPriceCalculation {
     });
   }
 
+  /** Calculates the resulting number of price points from a min price, max price, and a ratio.
+   * @param minPrice The minimum price in the distribution.
+   * @param maxPrice The maximum price in the distribution.
+   * @param ratio The ratio between each price point.
+   * @returns The prices in the distribution.
+   */
   public calculatePricesFromMinMaxRatio(
     minPrice: Big,
     maxPrice: Big,
@@ -97,6 +119,10 @@ class KandelPriceCalculation {
     return prices;
   }
 
+  /** Gets the prices for the distribution.
+   * @param distribution The distribution.
+   * @returns The prices in the distribution.
+   */
   public getPricesForDistribution(distribution: Distribution) {
     const prices: Big[] = Array(distribution.length);
 
@@ -106,6 +132,11 @@ class KandelPriceCalculation {
     return prices;
   }
 
+  /** Calculates the index of the first ask given the mid price.
+   * @param midPrice The mid price.
+   * @param prices The prices in the distribution.
+   * @returns The index of the first ask.
+   */
   public calculateFirstAskIndex(midPrice: Big, prices: Big[]) {
     // First ask should be after mid price - leave hole at mid price
     const firstAskIndex = prices.findIndex((x) => x.gt(midPrice));

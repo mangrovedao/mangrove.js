@@ -8,14 +8,14 @@ import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
 describe("KandelDistributionHelper unit tests suite", () => {
   describe(
-    KandelDistributionHelper.prototype.calculateConstantOutboundPerOffer.name,
+    KandelDistributionHelper.prototype.calculateConstantGivesPerOffer.name,
     () => {
       it("can calculate constant outbound", () => {
         // Arrange
         const sut = new KandelDistributionHelper(4, 6);
 
         // Act
-        const { askGives, bidGives } = sut.calculateConstantOutboundPerOffer(
+        const { askGives, bidGives } = sut.calculateConstantGivesPerOffer(
           [
             { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
             { offerType: "bids", base: Big(21), quote: Big(1000), index: 1 },
@@ -35,8 +35,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
   );
 
   describe(
-    KandelDistributionHelper.prototype.calculateDistributionConstantOutbound
-      .name,
+    KandelDistributionHelper.prototype.calculateDistributionConstantGives.name,
     () => {
       it("can calculate distribution with fixed base volume and fixed quote volume which follows geometric price distribution", () => {
         // Arrange
@@ -45,7 +44,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const firstAskIndex = 3;
 
         // Act
-        const distribution = sut.calculateDistributionConstantOutbound(
+        const distribution = sut.calculateDistributionConstantGives(
           prices.map((x) => Big(x)),
           Big(1),
           Big(1000),
@@ -81,7 +80,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
           const firstAskIndex = offerType == "bids" ? 10 : 0;
 
           // Act
-          const distribution = sut.calculateDistributionConstantOutbound(
+          const distribution = sut.calculateDistributionConstantGives(
             prices.map((x) => Big(x)),
             Big(1),
             Big(1000),
@@ -130,7 +129,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const desiredQuoteVolume = Big(3000);
 
         // Act
-        const distribution = sut.calculateDistributionConstantOutbound(
+        const distribution = sut.calculateDistributionConstantGives(
           prices.map((x) => Big(x)),
           Big(1),
           Big(1000),

@@ -48,9 +48,9 @@ class KandelDistributionGenerator {
     );
   }
 
-  /** Recalculates the outbound for offers in the distribution such that the available base and quote is consumed uniformly, while preserving the price distribution.
+  /** Recalculates the gives for offers in the distribution such that the available base and quote is consumed uniformly, while preserving the price distribution.
    * @param params The parameters for the recalculation.
-   * @param params.distribution The distribution to reset the outbound for.
+   * @param params.distribution The distribution to reset the gives for.
    * @param params.availableBase The available base to consume.
    * @param params.availableQuote The available quote to consume. If not provided, then the base for asks is also used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote amounts along with the required volume of base and quote for the distribution to be fully provisioned.
@@ -61,12 +61,11 @@ class KandelDistributionGenerator {
     availableBase: Bigish;
     availableQuote?: Bigish;
   }) {
-    const initialGives =
-      this.distributionHelper.calculateConstantOutboundPerOffer(
-        params.distribution,
-        Big(params.availableBase),
-        params.availableQuote ? Big(params.availableQuote) : undefined
-      );
+    const initialGives = this.distributionHelper.calculateConstantGivesPerOffer(
+      params.distribution,
+      Big(params.availableBase),
+      params.availableQuote ? Big(params.availableQuote) : undefined
+    );
 
     const prices = this.priceCalculation.getPricesForDistribution(
       params.distribution

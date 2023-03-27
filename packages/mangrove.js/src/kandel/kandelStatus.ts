@@ -71,6 +71,10 @@ class KandelStatus {
   distributionHelper: KandelDistributionHelper;
   priceCalculation: KandelPriceCalculation;
 
+  /** Constructor
+   * @param distributionHelper The KandelDistributionHelper instance.
+   * @param priceCalculation The KandelPriceCalculation instance.
+   */
   public constructor(
     distributionHelper: KandelDistributionHelper,
     priceCalculation: KandelPriceCalculation
@@ -79,6 +83,11 @@ class KandelStatus {
     this.distributionHelper = distributionHelper;
   }
 
+  /** Gets the index of the offer with a price closest to the mid price (since precision matters most there since it is used to distinguish expected dead from live.)
+   * @param midPrice The mid price.
+   * @param prices The prices of the offers.
+   * @returns The index of the offer with a price closest to the mid price.
+   */
   public getIndexOfPriceClosestToMid(midPrice: Big, prices: Big[]) {
     // We need any live offer to extrapolate prices from, we take one closest to mid price since precision matters most there
     // since it is used to distinguish expected dead from live.
@@ -92,6 +101,19 @@ class KandelStatus {
     return diffs[0].i;
   }
 
+  /** Determines the status of the Kandel instance based on the passed in offers.
+   * @param midPrice The current mid price of the market used to discern expected bids from asks.
+   * @param ratio The ratio of the geometric distribution.
+   * @param pricePoints The number of price points in the Kandel instance.
+   * @param spread The spread used when transporting funds from an offer to its dual.
+   * @param offers The offers to determine the status of.
+   * @returns The status of the Kandel instance.
+   * @throws If no offers are live. At least one live offer is required to determine the status.
+   * @remarks The expected prices is determined by extrapolating from a live offer closest to the mid price.
+   * @remarks Offers are expected to be live bids below the mid price and asks above.
+   * @remarks This may not hold if an offer deep in the book has been sniped in which case a dual offer will exist on the wrong side of mid price but quickly be taken due to a good price (Kandel still earns on the spread).
+   * @remarks Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
+   */
   public getOfferStatuses(
     midPrice: Big,
     ratio: Big,
