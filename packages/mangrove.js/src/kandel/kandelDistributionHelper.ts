@@ -193,9 +193,9 @@ class KandelDistributionHelper {
     return distribution;
   }
 
-  /** Gets the index of the first ask in the distribution
+  /** Gets the index of the first ask in the distribution. If there are no asks, then the length of the distribution is returned.
    * @param distribution The distribution to get the index from.
-   * @returns The index of the first ask in the distribution.
+   * @returns The index of the first ask in the distribution; or the length of the distribution if there are no asks.
    */
   public getFirstAskIndex(distribution: Distribution) {
     return (
