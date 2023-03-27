@@ -14,6 +14,7 @@ import { ethers } from "ethers";
 import * as eth from "../eth";
 import { default as nodeCleanup } from "node-cleanup";
 import DevNode from "./devNode";
+import Mangrove from "../mangrove";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8545;
@@ -403,12 +404,7 @@ export const deal = async (
         `Error while attempting to lookup ${dealParams.token} as a token name: chainId ${chainId} does not map to a known network`
       );
     }
-    tokenAddress = addresses[networkName][dealParams.token];
-    if (typeof tokenAddress === "undefined") {
-      throw new Error(
-        `Error while attempting to lookup ${dealParams.token} as a token name: name does not map to a known address on network ${networkName}`
-      );
-    }
+    tokenAddress = Mangrove.getAddress(dealParams.token, networkName);
   }
 
   //  token:string,account:string,amount:string)
@@ -420,7 +416,7 @@ export const deal = async (
   // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
   const env = {
     ...process.env,
-    TOKEN: dealParams.token,
+    TOKEN: tokenAddress,
     ACCOUNT: dealParams.account,
   };
 
@@ -459,7 +455,7 @@ export const deal = async (
 
   const devNode = new DevNode(provider);
   await devNode.setStorageAt(
-    dealParams.token,
+    tokenAddress,
     slot,
     ethers.utils.hexZeroPad(dealParams.internalAmount.toHexString(), 32)
   );
@@ -498,10 +494,10 @@ export const dealBuilder = (yargs) => {
   return yargs
     .positional("token", {
       describe: "Address or name of the token",
-      demandOption: true,
       type: "string",
+      demandOption: true,
     })
-    .positional("to", {
+    .positional("account", {
       describe: "Address of the account to credit",
       demandOption: true,
       type: "string",
