@@ -388,7 +388,7 @@ export const deal = async (
     throw new Error("node.deal requires provider.connection.url to be defined");
   }
 
-  const chainId = (provider as any).network?.chainId;
+  const chainId = (await provider.getNetwork()).chainId;
   if (typeof chainId === "undefined") {
     throw new Error("node.deal requires provider.network.chainId to exist");
   }
