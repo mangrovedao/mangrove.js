@@ -1475,12 +1475,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/mangrove-core@npm:^1.4.3":
-  version: 1.4.3
-  resolution: "@mangrovedao/mangrove-core@npm:1.4.3"
-  checksum: afab209469a81a9ef81200ca5ec786608e7ddd3da10248020be41650bd2e24e0f5def466cf4628820c1e8529f53a3d8ec33612d052e5b3074edcfc44be157b25
+"@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/MGV/mangrove-core::locator=mangrove-monorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/MGV/mangrove-core::locator=mangrove-monorepo%40workspace%3A."
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@mangrovedao/mangrove.js@workspace:*, @mangrovedao/mangrove.js@workspace:packages/mangrove.js":
   version: 0.0.0-use.local
