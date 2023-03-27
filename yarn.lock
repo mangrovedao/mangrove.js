@@ -1465,7 +1465,7 @@ __metadata:
     loglevel: ^1.8.0
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
-    object-inspect: ^1.12.2
+    object-inspect: ^1.12.3
     prettier: 2.7.1
     prettier-eslint: ^15.0.1
     rimraf: ^3.0.2
@@ -5830,13 +5830,6 @@ fsevents@~2.3.2:
   version: 1.11.0
   resolution: "object-inspect@npm:1.11.0"
   checksum: 8c64f89ce3a7b96b6925879ad5f6af71d498abc217e136660efecd97452991216f375a7eb47cb1cb50643df939bf0c7cc391567b7abc6a924d04679705e58e27
-  languageName: node
-  linkType: hard
-
-"object-inspect@npm:^1.12.2":
-  version: 1.12.2
-  resolution: "object-inspect@npm:1.12.2"
-  checksum: a534fc1b8534284ed71f25ce3a496013b7ea030f3d1b77118f6b7b1713829262be9e6243acbcb3ef8c626e2b64186112cb7f6db74e37b2789b9c789ca23048b2
   languageName: node
   linkType: hard
 
