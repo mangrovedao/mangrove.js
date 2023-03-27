@@ -60,7 +60,7 @@ describe("Kandel integration tests suite", function () {
       [true, false].forEach((liquiditySharing) => {
         it(`sow deploys kandel and returns instance onAave:${onAave} liquiditySharing:${liquiditySharing}`, async function () {
           // Arrange
-          const seeder = new KandelStrategies({ mgv: mgv }).seeder;
+          const seeder = new KandelStrategies(mgv).seeder;
           const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
           // Act
@@ -85,8 +85,8 @@ describe("Kandel integration tests suite", function () {
             1,
             "compound rate should be set during seed"
           );
-          assert.equal("TokenA", (await kandel.getBase()).name, "wrong base");
-          assert.equal("TokenB", (await kandel.quote()).name, "wrong base");
+          assert.equal("TokenA", kandel.getBase().name, "wrong base");
+          assert.equal("TokenB", kandel.getQuote().name, "wrong base");
           assert.equal(market, kandel.market, "wrong market");
           assert.equal(
             liquiditySharing ? await mgv.signer.getAddress() : kandel.address,
@@ -111,7 +111,7 @@ describe("Kandel integration tests suite", function () {
     );
     it(`sow deploys kandel with overridden gasprice for provision calculation`, async function () {
       // Arrange
-      const seeder = new KandelStrategies({ mgv: mgv }).seeder;
+      const seeder = new KandelStrategies(mgv).seeder;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
       // Act
@@ -139,9 +139,9 @@ describe("Kandel integration tests suite", function () {
     let defaultOwner: string;
 
     beforeEach(async function () {
-      farm = new KandelStrategies({ mgv: mgv }).farm;
+      farm = new KandelStrategies(mgv).farm;
       defaultOwner = await mgv.signer.getAddress();
-      const seeder = new KandelStrategies({ mgv: mgv }).seeder;
+      const seeder = new KandelStrategies(mgv).seeder;
 
       const abMarket = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const wethDaiMarket = await mgv.market({ base: "WETH", quote: "DAI" });
@@ -175,7 +175,7 @@ describe("Kandel integration tests suite", function () {
         })).kandelPromise;
 
       // other maker
-      const otherSeeder = new KandelStrategies({ mgv: mgvAdmin }).seeder;
+      const otherSeeder = new KandelStrategies(mgvAdmin).seeder;
       await (await otherSeeder.sow({
           market: wethUsdcMarket,
           gaspriceFactor: 10,
@@ -241,8 +241,8 @@ describe("Kandel integration tests suite", function () {
     let kandelStrategies: KandelStrategies;
 
     async function createKandel(onAave: boolean) {
-      kandelStrategies = new KandelStrategies({ mgv: mgv });
-      const seeder = new KandelStrategies({ mgv: mgv }).seeder;
+      kandelStrategies = new KandelStrategies(mgv);
+      const seeder = new KandelStrategies(mgv).seeder;
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const kandelAddress = (
         await (
@@ -512,12 +512,12 @@ describe("Kandel integration tests suite", function () {
 
           // assert deposits
           assert.equal(
-            (await kandel.balance("asks")).toString(),
+            (await kandel.getBalance("asks")).toString(),
             requiredBase.toString(),
             "Base should be deposited"
           );
           assert.equal(
-            (await kandel.balance("bids")).toString(),
+            (await kandel.getBalance("bids")).toString(),
             requiredQuote.toString(),
             "Quote should be deposited"
           );
@@ -562,12 +562,12 @@ describe("Kandel integration tests suite", function () {
 
       it("pending, volume, reserve correct after populate with deposit", async function () {
         // all zeros prior to populate
-        assert.equal((await kandel.balance("asks")).toString(), "0");
-        assert.equal((await kandel.balance("bids")).toString(), "0");
-        assert.equal((await kandel.unpublished("asks")).toString(), "0");
-        assert.equal((await kandel.unpublished("bids")).toString(), "0");
-        assert.equal((await kandel.offeredVolume("asks")).toString(), "0");
-        assert.equal((await kandel.offeredVolume("bids")).toString(), "0");
+        assert.equal((await kandel.getBalance("asks")).toString(), "0");
+        assert.equal((await kandel.getBalance("bids")).toString(), "0");
+        assert.equal((await kandel.getUnpublished("asks")).toString(), "0");
+        assert.equal((await kandel.getUnpublished("bids")).toString(), "0");
+        assert.equal((await kandel.getOfferedVolume("asks")).toString(), "0");
+        assert.equal((await kandel.getOfferedVolume("bids")).toString(), "0");
 
         const { requiredBase, requiredQuote } = await populateKandel({
           approve: true,
@@ -575,36 +575,36 @@ describe("Kandel integration tests suite", function () {
         });
         // assert deposits
         assert.equal(
-          (await kandel.balance("asks")).toString(),
+          (await kandel.getBalance("asks")).toString(),
           requiredBase.toString(),
           "Base should be deposited"
         );
         assert.equal(
-          (await kandel.balance("bids")).toString(),
+          (await kandel.getBalance("bids")).toString(),
           requiredQuote.toString(),
           "Quote should be deposited"
         );
 
         // assert pending
         assert.equal(
-          (await kandel.unpublished("asks")).toString(),
+          (await kandel.getUnpublished("asks")).toString(),
           "0",
           "No ask volume should be pending"
         );
         assert.equal(
-          (await kandel.unpublished("bids")).toString(),
+          (await kandel.getUnpublished("bids")).toString(),
           "0",
           "No bid volume should be pending"
         );
 
         // assert offered volume
         assert.equal(
-          (await kandel.offeredVolume("asks")).toString(),
+          (await kandel.getOfferedVolume("asks")).toString(),
           requiredBase.toString(),
           "Base should be offered"
         );
         assert.equal(
-          (await kandel.offeredVolume("bids")).toString(),
+          (await kandel.getOfferedVolume("bids")).toString(),
           requiredQuote.toString(),
           "Quote should be offered"
         );
@@ -617,36 +617,36 @@ describe("Kandel integration tests suite", function () {
         });
         // assert deposits
         assert.equal(
-          (await kandel.balance("asks")).toString(),
+          (await kandel.getBalance("asks")).toString(),
           "0",
           "no base should be deposited"
         );
         assert.equal(
-          (await kandel.balance("bids")).toString(),
+          (await kandel.getBalance("bids")).toString(),
           "0",
           "no quote should be deposited"
         );
 
         // assert pending
         assert.equal(
-          (await kandel.unpublished("asks")).toString(),
+          (await kandel.getUnpublished("asks")).toString(),
           (-requiredBase).toString(),
           "entire ask volume should be pending"
         );
         assert.equal(
-          (await kandel.unpublished("bids")).toString(),
+          (await kandel.getUnpublished("bids")).toString(),
           (-requiredQuote).toString(),
           "entire quote volume should be pending"
         );
 
         // assert offered volume
         assert.equal(
-          (await kandel.offeredVolume("asks")).toString(),
+          (await kandel.getOfferedVolume("asks")).toString(),
           requiredBase.toString(),
           "Base should be offered"
         );
         assert.equal(
-          (await kandel.offeredVolume("bids")).toString(),
+          (await kandel.getOfferedVolume("bids")).toString(),
           requiredQuote.toString(),
           "Quote should be offered"
         );
@@ -655,7 +655,7 @@ describe("Kandel integration tests suite", function () {
       it("fundOnMangrove adds funds", async () => {
         // Arrange
         await populateKandel({ approve: false, deposit: false });
-        const balanceBefore = await kandel.mangroveBalance();
+        const balanceBefore = await kandel.getMangroveBalance();
         const funds = Big(0.42);
 
         // Act
@@ -664,7 +664,7 @@ describe("Kandel integration tests suite", function () {
         // Assert
         assert.equal(
           balanceBefore.add(funds).toNumber(),
-          (await kandel.mangroveBalance()).toNumber()
+          (await kandel.getMangroveBalance()).toNumber()
         );
       });
 
@@ -781,8 +781,8 @@ describe("Kandel integration tests suite", function () {
             );
 
             // Assert
-            assert.equal((await kandel.offeredVolume("bids")).toNumber(), 0);
-            assert.equal((await kandel.offeredVolume("asks")).toNumber(), 0);
+            assert.equal((await kandel.getOfferedVolume("bids")).toNumber(), 0);
+            assert.equal((await kandel.getOfferedVolume("asks")).toNumber(), 0);
           });
           it(`retractOffers can withdraw select offers inChunks=${inChunks}`, async () => {
             // Arrange
@@ -824,11 +824,11 @@ describe("Kandel integration tests suite", function () {
             );
 
             // Assert
-            assert.equal((await kandel.balance("asks")).toNumber(), 0);
-            assert.equal((await kandel.balance("bids")).toNumber(), 0);
-            assert.equal((await kandel.offeredVolume("bids")).toNumber(), 0);
-            assert.equal((await kandel.offeredVolume("asks")).toNumber(), 0);
-            assert.equal((await kandel.mangroveBalance()).toNumber(), 0);
+            assert.equal((await kandel.getBalance("asks")).toNumber(), 0);
+            assert.equal((await kandel.getBalance("bids")).toNumber(), 0);
+            assert.equal((await kandel.getOfferedVolume("bids")).toNumber(), 0);
+            assert.equal((await kandel.getOfferedVolume("asks")).toNumber(), 0);
+            assert.equal((await kandel.getMangroveBalance()).toNumber(), 0);
             assert.equal(
               nativeBalance.lt(
                 UnitCalculations.fromUnits(
@@ -854,12 +854,12 @@ describe("Kandel integration tests suite", function () {
               approve: true,
               deposit: true,
             });
-            const offeredQuoteBefore = await kandel.offeredVolume("bids");
-            const offeredBaseBefore = await kandel.offeredVolume("asks");
+            const offeredQuoteBefore = await kandel.getOfferedVolume("bids");
+            const offeredBaseBefore = await kandel.getOfferedVolume("asks");
 
             await waitForTransactions(await kandel.retractOffers());
-            assert.equal((await kandel.offeredVolume("bids")).toNumber(), 0);
-            assert.equal((await kandel.offeredVolume("asks")).toNumber(), 0);
+            assert.equal((await kandel.getOfferedVolume("bids")).toNumber(), 0);
+            assert.equal((await kandel.getOfferedVolume("asks")).toNumber(), 0);
 
             // Act
             await waitForTransactions(
@@ -871,11 +871,11 @@ describe("Kandel integration tests suite", function () {
 
             // Assert
             assert.equal(
-              (await kandel.offeredVolume("bids")).toNumber(),
+              (await kandel.getOfferedVolume("bids")).toNumber(),
               offeredQuoteBefore.toNumber()
             );
             assert.equal(
-              (await kandel.offeredVolume("asks")).toNumber(),
+              (await kandel.getOfferedVolume("asks")).toNumber(),
               offeredBaseBefore.toNumber()
             );
           });
@@ -895,9 +895,9 @@ describe("Kandel integration tests suite", function () {
             18
           );
 
-          const kandelBaseBalance = await kandel.balance("asks");
-          const kandelQuoteBalance = await kandel.balance("bids");
-          const kandelMgvBalance = await kandel.mangroveBalance();
+          const kandelBaseBalance = await kandel.getBalance("asks");
+          const kandelQuoteBalance = await kandel.getBalance("bids");
+          const kandelMgvBalance = await kandel.getMangroveBalance();
           const { gasreq, gasprice } = await kandel.getParameters();
 
           const retractedOffersProvision = await kandel.getRequiredProvision({
@@ -922,11 +922,11 @@ describe("Kandel integration tests suite", function () {
           // Assert
           await mgvTestUtil.waitForBooksForLastTx(kandel.market);
           assert.equal(
-            (await kandel.balance("asks")).toNumber(),
+            (await kandel.getBalance("asks")).toNumber(),
             kandelBaseBalance.sub(1).toNumber()
           );
           assert.equal(
-            (await kandel.balance("bids")).toNumber(),
+            (await kandel.getBalance("bids")).toNumber(),
             kandelQuoteBalance.sub(1000).toNumber()
           );
           const deadOffers = (await kandel.getOffers()).filter(
@@ -934,7 +934,7 @@ describe("Kandel integration tests suite", function () {
           ).length;
           assert.equal(deadOffers, 2);
           assert.equal(
-            (await kandel.mangroveBalance()).toNumber(),
+            (await kandel.getMangroveBalance()).toNumber(),
             kandelMgvBalance
               .add(retractedOffersProvision.sub(withdrawnFunds))
               .toNumber()
@@ -983,11 +983,11 @@ describe("Kandel integration tests suite", function () {
 
               // Assert
               assert.equal(
-                (await kandel.balance("asks")).toString(),
+                (await kandel.getBalance("asks")).toString(),
                 baseAmount?.toString() ?? "0"
               );
               assert.equal(
-                (await kandel.balance("bids")).toString(),
+                (await kandel.getBalance("bids")).toString(),
                 quoteAmount?.toString() ?? "0"
               );
 

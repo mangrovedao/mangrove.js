@@ -129,7 +129,7 @@ class KandelInstance {
   }
 
   /** Gets the quote of the market Kandel is making  */
-  public quote() {
+  public getQuote() {
     return this.market.quote;
   }
 
@@ -143,7 +143,7 @@ class KandelInstance {
    * @returns The balance of the asset.
    * @remarks with liquidity sharing and a router, this will be shared among other Kandel instances.
    */
-  public async balance(offerType: Market.BA) {
+  public async getBalance(offerType: Market.BA) {
     const x = await this.kandel.reserveBalance(this.offerTypeToUint(offerType));
     return this.getOutboundToken(offerType).fromUnits(x);
   }
@@ -153,7 +153,7 @@ class KandelInstance {
    * @returns the unpublished liquidity.
    * @remarks with liquidity sharing and a router, the balance will be shared among other Kandel instances and the unpublished can be seen as a buffer.
    */
-  public async unpublished(offerType: Market.BA) {
+  public async getUnpublished(offerType: Market.BA) {
     const x = await this.kandel.pending(this.offerTypeToUint(offerType));
     return this.getOutboundToken(offerType).fromUnits(x);
   }
@@ -162,13 +162,13 @@ class KandelInstance {
    * @param offerType The offer type.
    * @returns The offered volume.
    */
-  public async offeredVolume(offerType: Market.BA) {
+  public async getOfferedVolume(offerType: Market.BA) {
     const x = await this.kandel.offeredVolume(this.offerTypeToUint(offerType));
     return this.getOutboundToken(offerType).fromUnits(x);
   }
 
   /** Retrieves the provision available on Mangrove for Kandel, in ethers */
-  public async mangroveBalance() {
+  public async getMangroveBalance() {
     return await this.market.mgv.balanceOf(this.address);
   }
 
@@ -726,9 +726,9 @@ class KandelInstance {
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ethers.ContractTransaction[]> {
     const baseAmount =
-      params.withdrawBaseAmount ?? (await this.balance("asks"));
+      params.withdrawBaseAmount ?? (await this.getBalance("asks"));
     const quoteAmount =
-      params.withdrawQuoteAmount ?? (await this.balance("bids"));
+      params.withdrawQuoteAmount ?? (await this.getBalance("bids"));
     const { depositAmounts, depositTokens } = this.getDepositArrays(
       baseAmount,
       quoteAmount

@@ -18,12 +18,12 @@ class KandelStrategies {
   public mgv: Mangrove;
 
   /** Constructor
-   * @param params.mgv The Mangrove to interact with.
+   * @param mgv The Mangrove to interact with.
    */
-  public constructor(params: { mgv: Mangrove }) {
-    this.mgv = params.mgv;
-    this.seeder = new KandelSeeder(params);
-    this.farm = new KandelFarm(params);
+  public constructor(mgv: Mangrove) {
+    this.mgv = mgv;
+    this.seeder = new KandelSeeder(mgv);
+    this.farm = new KandelFarm(mgv);
   }
 
   /** Creates a KandelInstance object to interact with a Kandel strategy on Mangrove.
