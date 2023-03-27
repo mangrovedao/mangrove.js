@@ -15,11 +15,10 @@ class KandelFarm {
   kandelSeeder: typechain.KandelSeeder;
 
   /** Constructor
-   * @param params The parameters.
-   * @param params.mgv The Mangrove to get kandels for.
+   * @param mgv The Mangrove to get kandels for.
    */
-  public constructor(params: { mgv: Mangrove }) {
-    this.mgv = params.mgv;
+  public constructor(mgv: Mangrove) {
+    this.mgv = mgv;
 
     const kandelSeederAddress = Mangrove.getAddress(
       "KandelSeeder",

@@ -22,10 +22,10 @@ class KandelSeeder {
   kandelSeeder: typechain.KandelSeeder;
 
   /** Constructor
-   * @param params.mgv The Mangrove to deploy to.
+   * @param mgv The Mangrove to deploy to.
    */
-  public constructor(params: { mgv: Mangrove }) {
-    this.mgv = params.mgv;
+  public constructor(mgv: Mangrove) {
+    this.mgv = mgv;
 
     const kandelSeederAddress = Mangrove.getAddress(
       "KandelSeeder",

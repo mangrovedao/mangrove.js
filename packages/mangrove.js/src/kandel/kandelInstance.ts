@@ -39,6 +39,7 @@ export type KandelParameters = {
 /**
  * @notice Parameters for a Kandel instance where provided properties override current values.
  * @see KandelParameters for more information.
+ * @remarks Cannot simply be Partial<KandelParameters> due to Big vs Bigish.
  */
 export type KandelParameterOverrides = {
   gasprice?: number;
