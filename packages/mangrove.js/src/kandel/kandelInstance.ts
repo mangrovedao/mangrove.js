@@ -10,11 +10,10 @@ import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
 import KandelStatus, { OffersWithPrices } from "./kandelStatus";
-import KandelDistributionHelper, {
-  Distribution,
-} from "./kandelDistributionHelper";
+import KandelDistributionHelper from "./kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandelPriceCalculation";
+import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 
 /**
  * @notice Parameters for a Kandel instance.
@@ -37,7 +36,7 @@ export type KandelParameters = {
 };
 
 /**
- * @notice Parameters for a Kandel instance where provided properties override current values.
+ * @notice Parameters for a Kandel instance where provided properties override current values. Note that ratio and pricePoints are normally provided via the KandelDistribution.
  * @see KandelParameters for more information.
  * @remarks Cannot simply be Partial<KandelParameters> due to Big vs Bigish.
  */
@@ -242,14 +241,28 @@ class KandelInstance {
 
   /** Gets new Kandel parameters based on current and some overrides.
    * @param parameters The Kandel parameters to override, those left out will keep their current value.
+   * @param distributionRatio The ratio of the Kandel distribution.
+   * @param distributionPricePoints The number of price points of the Kandel distribution.
    * @returns The new Kandel parameters.
+   * @remarks Ratio and price points provided in the parameters must match a provided distribution.
    */
   public async getParametersWithOverrides(
-    parameters: KandelParameterOverrides
+    parameters: KandelParameterOverrides,
+    distributionRatio?: Bigish,
+    distributionPricePoints?: number
   ): Promise<KandelParameters> {
     const current = await this.getParameters();
-    if (parameters.ratio) {
-      current.ratio = Big(parameters.ratio);
+    if (parameters.ratio != null || distributionRatio != null) {
+      if (
+        parameters.ratio != null &&
+        distributionRatio != null &&
+        !Big(parameters.ratio).eq(distributionRatio)
+      ) {
+        throw Error(
+          "ratio in parameter overrides does not match the ratio of the distribution."
+        );
+      }
+      current.ratio = Big(parameters.ratio ?? distributionRatio);
     }
     if (parameters.compoundRateBase) {
       current.compoundRateBase = Big(parameters.compoundRateBase);
@@ -266,8 +279,18 @@ class KandelInstance {
     if (parameters.spread) {
       current.spread = parameters.spread;
     }
-    if (parameters.pricePoints) {
-      current.pricePoints = parameters.pricePoints;
+    if (parameters.pricePoints != null || distributionPricePoints != null) {
+      if (
+        parameters.pricePoints != null &&
+        distributionPricePoints != null &&
+        parameters.pricePoints != distributionPricePoints
+      ) {
+        throw Error(
+          "pricePoints in parameter overrides does not match the pricePoints of the distribution."
+        );
+      }
+
+      current.pricePoints = parameters.pricePoints ?? distributionPricePoints;
     }
     return current;
   }
@@ -329,48 +352,23 @@ class KandelInstance {
    * @param distribution The distribution to get pivots for.
    * @returns The pivots to use when populating the distribution.
    */
-  public async getPivots(distribution: Distribution) {
-    const prices =
-      this.generator.priceCalculation.getPricesForDistribution(distribution);
-    const pivots: number[] = Array(distribution.length);
-    for (let i = 0; i < distribution.length; i++) {
+  public async getPivots(distribution: KandelDistribution) {
+    const prices = distribution.getPricesForDistribution();
+    const pivots: number[] = Array(distribution.getOfferCount());
+    for (let i = 0; i < pivots.length; i++) {
       pivots[i] = await this.market.getPivotId(
-        distribution[i].offerType,
+        distribution.offers[i].offerType,
         prices[i]
       );
     }
     return pivots;
   }
 
-  /** Verifies the distribution is valid.
-   * @param distribution The distribution to verify.
-   * @remarks Throws if the distribution is invalid.
-   * @remarks The verification checks that indices are ascending and bids come before asks.
-   * @remarks The price distribution is not verified.
-   */
-  public verifyDistribution(distribution: Distribution) {
-    if (distribution.length == 0) {
-      return;
-    }
-    let lastOfferType = distribution[0].offerType;
-    for (let i = 1; i < distribution.length; i++) {
-      if (distribution[i].index <= distribution[i - 1].index) {
-        throw new Error("Invalid distribution: indices are not ascending");
-      }
-      if (distribution[i].offerType != lastOfferType) {
-        if (distribution[i].offerType == "bids") {
-          throw new Error("Invalid distribution: bids should come before asks");
-        }
-        lastOfferType = distribution[i].offerType;
-      }
-    }
-  }
-
   /** Convert public Kandel distribution to internal representation.
    * @param distribution The Kandel distribution.
    * @returns The internal representation of the Kandel distribution.
    */
-  public getRawDistribution(distribution: Distribution) {
+  public getRawDistribution(distribution: OfferDistribution) {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
       {
         baseDist: Array(distribution.length),
@@ -523,26 +521,22 @@ class KandelInstance {
    * @returns The raw distributions in internal representation and the index of the first ask.
    */
   async getRawDistributionChunks(params: {
-    distribution: Distribution;
+    distribution: KandelDistribution;
     maxOffersInChunk?: number;
   }) {
-    this.generator.distributionHelper.sortByIndex(params.distribution);
-    this.verifyDistribution(params.distribution);
+    params.distribution.verifyDistribution();
 
     // Use 0 as pivot when none is found
     const pivots = (await this.getPivots(params.distribution)).map(
       (x) => x ?? 0
     );
 
-    const distributions = this.generator.distributionHelper.chunkDistribution(
+    const distributions = params.distribution.chunkDistribution(
       pivots,
-      params.distribution,
       params.maxOffersInChunk ?? 80
     );
 
-    const firstAskIndex = this.generator.distributionHelper.getFirstAskIndex(
-      params.distribution
-    );
+    const firstAskIndex = params.distribution.getFirstAskIndex();
 
     return {
       rawDistributions: distributions.map(({ pivots, distribution }) => ({
@@ -567,7 +561,7 @@ class KandelInstance {
    */
   public async populate(
     params: {
-      distribution?: Distribution;
+      distribution?: KandelDistribution;
       parameters?: KandelParameterOverrides;
       depositBaseAmount?: Bigish;
       depositQuoteAmount?: Bigish;
@@ -576,16 +570,26 @@ class KandelInstance {
     },
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ethers.ContractTransaction[]> {
+    const parameterOverrides = params.parameters ?? {};
     const parameters = await this.getParametersWithOverrides(
-      params.parameters ?? {}
+      parameterOverrides,
+      params.distribution?.ratio,
+      params.distribution?.pricePoints
     );
+    const distribution =
+      params.distribution ??
+      this.generator.distributionHelper.createEmptyDistribution(
+        parameters.ratio,
+        parameters.pricePoints
+      );
+
     const rawParameters = this.getRawParameters(parameters);
     const funds =
       params.funds ??
       (await this.getRequiredProvision({
         gasreq: rawParameters.gasreq,
         gasprice: rawParameters.gasprice,
-        offerCount: params.distribution?.length ?? 0,
+        offerCount: params.distribution?.getOfferCount() ?? 0,
       }));
 
     const { depositTokens, depositAmounts } = this.getDepositArrays(
@@ -595,7 +599,7 @@ class KandelInstance {
 
     const { firstAskIndex, rawDistributions } =
       await this.getRawDistributionChunks({
-        distribution: params.distribution ?? [],
+        distribution,
         maxOffersInChunk: params.maxOffersInChunk,
       });
 
@@ -636,7 +640,7 @@ class KandelInstance {
    * @returns The transaction(s) used to populate the offers.
    */
   public async populateChunk(
-    params: { distribution: Distribution; maxOffersInChunk?: number },
+    params: { distribution: KandelDistribution; maxOffersInChunk?: number },
     overrides: ethers.Overrides = {}
   ) {
     const { firstAskIndex, rawDistributions } =

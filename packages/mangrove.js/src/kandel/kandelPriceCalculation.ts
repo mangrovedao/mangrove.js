@@ -1,6 +1,5 @@
 import Big from "big.js";
 import { Bigish } from "../types";
-import { Distribution } from "./kandelDistributionHelper";
 
 /** Parameters for calculating a geometric price distribution. Exactly three must be provided.
  * @param minPrice The minimum price in the distribution.
@@ -52,11 +51,14 @@ class KandelPriceCalculation {
       }
     }
 
-    return this.calculatePricesFromMinMaxRatio(
-      Big(minPrice),
-      Big(maxPrice),
-      Big(ratio)
-    );
+    return {
+      ratio: Big(ratio),
+      prices: this.calculatePricesFromMinMaxRatio(
+        Big(minPrice),
+        Big(maxPrice),
+        Big(ratio)
+      ),
+    };
   }
 
   /** Gets the prices for the geometric distribution based on a single known price at an index.
@@ -116,19 +118,6 @@ class KandelPriceCalculation {
       );
     }
 
-    return prices;
-  }
-
-  /** Gets the prices for the distribution.
-   * @param distribution The distribution.
-   * @returns The prices in the distribution.
-   */
-  public getPricesForDistribution(distribution: Distribution) {
-    const prices: Big[] = Array(distribution.length);
-
-    distribution.forEach(async (o, i) => {
-      prices[i] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
-    });
     return prices;
   }
 
