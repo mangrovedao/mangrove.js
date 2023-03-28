@@ -4,7 +4,7 @@ import { describe, it } from "mocha";
 import KandelDistributionHelper, {
   Distribution,
 } from "../../src/kandel/kandelDistributionHelper";
-import KandelDistributionGenerator from "../../src/kandel/KandelDistributionGenerator";
+import KandelDistributionGenerator from "../../src/kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
 describe("KandelDistributionGenerator unit tests suite", () => {

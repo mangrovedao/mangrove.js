@@ -4,7 +4,7 @@ import KandelFarm from "./kandel/kandelFarm";
 import KandelInstance from "./kandel/kandelInstance";
 import Market from "./market";
 import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
-import KandelDistributionGenerator from "./kandel/KandelDistributionGenerator";
+import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandel/kandelPriceCalculation";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace

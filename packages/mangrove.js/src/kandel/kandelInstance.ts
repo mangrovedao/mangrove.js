@@ -13,7 +13,7 @@ import KandelStatus, { OffersWithPrices } from "./kandelStatus";
 import KandelDistributionHelper, {
   Distribution,
 } from "./kandelDistributionHelper";
-import KandelDistributionGenerator from "./KandelDistributionGenerator";
+import KandelDistributionGenerator from "./kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandelPriceCalculation";
 
 /**

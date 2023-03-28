@@ -2,7 +2,7 @@ import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
 import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
-import KandelDistributionGenerator from "../../src/kandel/KandelDistributionGenerator";
+import KandelDistributionGenerator from "../../src/kandel/kandelDistributionGenerator";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
