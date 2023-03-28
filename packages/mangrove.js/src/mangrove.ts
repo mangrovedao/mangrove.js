@@ -92,9 +92,7 @@ class Mangrove {
   readerContract: typechain.MgvReader;
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
-  // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
-  // orderContract: typechain.MangroveOrder;
-  orderContract: typechain.MangroveOrderEnriched;
+  orderContract: typechain.MangroveOrder;
   static typechain = typechain;
   static addresses = addresses;
 
@@ -201,14 +199,12 @@ class Mangrove {
       cleanerAddress,
       this.signer
     );
-    // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
     const orderAddress = Mangrove.getAddress(
-      // "MangroveOrder",
-      "MangroveOrderEnriched",
+      "MangroveOrder",
       this.network.name
     );
     // this.orderContract = typechain.MangroveOrder__factory.connect(
-    this.orderContract = typechain.MangroveOrderEnriched__factory.connect(
+    this.orderContract = typechain.MangroveOrder__factory.connect(
       orderAddress,
       this.signer
     );
@@ -267,12 +263,14 @@ class Mangrove {
         mgv: this,
         eoa: EOA,
         market: p,
+        gasreq: 0,
       });
     } else {
       return new LiquidityProvider({
         mgv: this,
         eoa: EOA,
         market: await this.market(p),
+        gasreq: 0,
       });
     }
   }

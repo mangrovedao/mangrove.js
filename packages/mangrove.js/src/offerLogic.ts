@@ -17,7 +17,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
-
+const SimpleMakerGasreq = 20000;
 /**
  * The OfferLogic class connects to a Maker contract
  */
@@ -36,15 +36,15 @@ class OfferLogic {
     );
   }
 
-  static async deploy(mgv: Mangrove): Promise<string> {
+  static async deploy(mgv: Mangrove, gasreq?: number): Promise<string> {
     const contract = await new typechain[`OfferMaker__factory`](
       mgv.signer
     ).deploy(
       mgv.address,
       ethers.constants.AddressZero, // no router
-      await mgv.signer.getAddress(), // signer is deployer
-      50000, // 50K gasreq is large
-      ethers.constants.AddressZero // no liquidity sharing possible
+      await mgv.signer.getAddress(),
+      gasreq ? gasreq : SimpleMakerGasreq,
+      ethers.constants.AddressZero
     );
     await contract.deployTransaction.wait();
     return contract.address;
@@ -189,12 +189,14 @@ class OfferLogic {
         mgv: this.mgv,
         logic: this,
         market: p,
+        gasreq: await this.offerGasreq(),
       });
     } else {
       return new LiquidityProvider({
         mgv: this.mgv,
         logic: this,
         market: await this.mgv.market(p),
+        gasreq: await this.offerGasreq(),
       });
     }
   }

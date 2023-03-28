@@ -23,6 +23,7 @@ namespace LiquidityProvider {
     mgv: Mangrove;
     logic?: OfferLogic;
     eoa?: string;
+    gasreq: number;
     market: Market;
   };
   /** Connect to MangroveOffer.
@@ -57,6 +58,7 @@ class LiquidityProvider {
   eoa?: string; // signer's address
   market: Market; // API market abstraction over Mangrove's offer lists
   prettyP = new PrettyPrint();
+  gasreq: number;
 
   constructor(p: LiquidityProvider.ConstructionParams) {
     if (p.eoa || p.logic) {
@@ -64,6 +66,7 @@ class LiquidityProvider {
       this.logic = p.logic;
       this.market = p.market;
       this.eoa = p.eoa;
+      this.gasreq = p.gasreq;
     } else {
       throw Error(
         "Missing EOA or onchain logic to build a Liquidity Provider object"
@@ -179,14 +182,6 @@ class LiquidityProvider {
     }
   }
 
-  async #gasreq(): Promise<number> {
-    if (this.eoa) {
-      return 0;
-    } else {
-      return await this.logic.offerGasreq();
-    }
-  }
-
   /** Post a new ask */
   newAsk(
     p: LiquidityProvider.OfferParams,
@@ -231,14 +226,13 @@ class LiquidityProvider {
 
     // send offer
     if (this.logic) {
-      txPromise = this.logic.contract[
-        "newOffer(address,address,uint256,uint256,uint256)"
-      ](
+      txPromise = this.logic.contract.newOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
         pivot ? pivot : 0,
+        this.gasreq,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {
@@ -247,7 +241,7 @@ class LiquidityProvider {
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
-        0, //gasreq
+        this.gasreq,
         0, //gasprice
         pivot ? pivot : 0,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
@@ -355,15 +349,14 @@ class LiquidityProvider {
 
     // update offer
     if (this.logic) {
-      txPromise = this.logic.contract[
-        "updateOffer(address,address,uint256,uint256,uint256,uint256)"
-      ](
+      txPromise = this.logic.contract.updateOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
         outbound_tkn.toUnits(gives),
         (await this.market.getPivotId(p.ba, price)) ?? 0,
         id,
+        this.gasreq,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {
@@ -472,7 +465,7 @@ class LiquidityProvider {
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
-    const gasreq = opts.gasreq ? opts.gasreq : await this.#gasreq();
+    const gasreq = opts.gasreq ? opts.gasreq : this.gasreq;
     const gasprice = opts.gasprice ? opts.gasprice : 0;
     // this computes the total provision required for a new offer on the market
     const provision = await this.market.getOfferProvision(ba, gasreq, gasprice);
