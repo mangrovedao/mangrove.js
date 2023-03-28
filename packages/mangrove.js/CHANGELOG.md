@@ -1,3 +1,9 @@
+# 1.2.4-2 (March 2023)
+
+- Draft version of Kandel SDK
+- Use prerelease mangrove-core
+- adapt to abi changes in the new mangrove-core
+
 # 1.2.4-1 (March 2023)
 
 - Use no_env_vars profile
