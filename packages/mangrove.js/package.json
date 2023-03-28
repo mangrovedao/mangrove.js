@@ -63,12 +63,13 @@
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/commonlib.js": "workspace:*",
-    "@mangrovedao/mangrove-core": "^1.4.3",
+    "@mangrovedao/mangrove-core": "^1.4.6-0",
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
     "esbuild-plugin-resolve": "^1.0.3",
     "ethers": "^5.7.2",
-    "node-cleanup": "^2.1.2"
+    "node-cleanup": "^2.1.2",
+    "yargs": "^17.3.0"
   },
   "devDependencies": {
     "@espendk/json-file-reporter": "^1.4.2",
@@ -76,10 +77,10 @@
     "@ethersproject/bytes": "^5.7.0",
     "@ethersproject/hardware-wallets": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
-    "@typechain/ethers-v5": "^10.1.0",
+    "@typechain/ethers-v5": "^10.2.0",
     "@types/big.js": "^6.1.6",
     "@types/chai-as-promised": "^7.1.5",
-    "@types/mocha": "^9.1.1",
+    "@types/mocha": "^10.0.1",
     "@types/node": "^18.0.0",
     "@types/shelljs": "^0.8.11",
     "@types/yargs": "^17.0.12",
@@ -93,8 +94,8 @@
     "esbuild": "^0.16.16",
     "eslint": "^8.31.0",
     "eslint-config-prettier": "^8.5.0",
-    "lint-staged": "^13.0.3",
-    "mocha": "^10.0.0",
+    "lint-staged": "^13.2.0",
+    "mocha": "^10.2.0",
     "mocha-multi-reporters": "^1.5.1",
     "npm-run-all": "^4.1.5",
     "nyc": "^15.1.0",
@@ -102,12 +103,12 @@
     "rimraf": "^3.0.2",
     "shx": "^0.3.4",
     "transparent-proxy": "^1.9.1",
-    "ts-essentials": "^9.1.2",
+    "ts-essentials": "^9.3.1",
     "ts-mockito": "^2.0.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
     "typedoc": "^0.23.24",
-    "typescript": "^4.7.0",
-    "yargs": "^17.3.0"
-  }
+    "typescript": "^4.7.0"
+  },
+  "stableVersion": "1.2.2"
 }

@@ -24,6 +24,12 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
 const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
+  // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
+  env = {
+    ...env,
+    FOUNDRY_PROFILE: "no_env_vars",
+  };
+
   if (typeof pipe === "undefined") {
     pipe = true;
   }
@@ -69,7 +75,7 @@ const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
 };
 
 import yargs from "yargs";
-import { JsonRpcProvider, Provider } from "@ethersproject/providers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
@@ -380,8 +386,6 @@ const connect = async (params: connectParams) => {
       // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
       const env = {
         ...process.env,
-        MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
-        POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
         TOKEN: dealParams.token,
         ACCOUNT: dealParams.account,
       };

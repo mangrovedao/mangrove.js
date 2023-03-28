@@ -97,6 +97,20 @@ export const mochaHooks = {
         if (newProxy.cancelAll) {
           console.log("mochaHooks: Got request after cancelled!");
           session.destroy();
+          // The following can be used for debugging what is calling:
+          // console.dir(data.toString());
+          // and for created providers:
+          // provider.on('debug', (info) => {
+          //   console.log("======================");
+          //   console.log("ACTION");
+          //   console.log(info.action);
+          //   console.log("REQUEST");
+          //   console.log(info.request);
+          //   console.log("RESPONSE");
+          //   console.log(info.response);
+          //   console.log("======================");
+          // });
+
           return null;
         }
         return data;

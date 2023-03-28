@@ -299,7 +299,7 @@ class Mangrove {
   }
 
   /**
-   * Read a contract address on the current network.
+   * Gets the name of an address on the current network.
    *
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
@@ -318,6 +318,13 @@ class Mangrove {
       }
     }
     return null;
+  }
+
+  /** Gets the token corresponding to the address if it is known; otherwise, null.
+   */
+  getTokenAndAddress(address: string) {
+    const name = this.getNameFromAddress(address);
+    return { address, token: name ? this.token(name) : null };
   }
 
   /** Convert public token amount to internal token representation.
