@@ -89,7 +89,9 @@ describe("Kandel integration tests suite", function () {
           assert.equal("TokenB", kandel.getQuote().name, "wrong base");
           assert.equal(market, kandel.market, "wrong market");
           assert.equal(
-            liquiditySharing ? await mgv.signer.getAddress() : kandel.address,
+            liquiditySharing && onAave
+              ? await mgv.signer.getAddress()
+              : kandel.address,
             await kandel.getReserveId(),
             "wrong reserve"
           );
