@@ -1,10 +1,8 @@
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
-import KandelDistributionHelper, {
-  Distribution,
-} from "../../src/kandel/kandelDistributionHelper";
-import KandelDistributionGenerator from "../../src/kandel/KandelDistributionGenerator";
+import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
+import KandelDistributionGenerator from "../../src/kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
 describe("KandelDistributionGenerator unit tests suite", () => {
@@ -27,7 +25,7 @@ describe("KandelDistributionGenerator unit tests suite", () => {
           initialAskGives: Big(1),
         });
 
-        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
 
         // Act
         const newDistribution = sut.recalculateDistributionFromAvailable({
@@ -37,11 +35,11 @@ describe("KandelDistributionGenerator unit tests suite", () => {
 
         // Assert
         assert.deepStrictEqual(
-          sut.priceCalculation.getPricesForDistribution(distribution),
-          sut.priceCalculation.getPricesForDistribution(newDistribution)
+          distribution.getPricesForDistribution(),
+          newDistribution.getPricesForDistribution()
         );
         const newOfferedVolume =
-          sut.getOfferedVolumeForDistribution(newDistribution);
+          newDistribution.getOfferedVolumeForDistribution();
 
         assert.equal(
           offeredVolume.requiredBase.mul(2).toNumber(),
@@ -49,7 +47,7 @@ describe("KandelDistributionGenerator unit tests suite", () => {
         );
         assert.equal(
           1,
-          [...new Set(newDistribution.map((x) => x.base))].length
+          [...new Set(newDistribution.offers.map((x) => x.base))].length
         );
       });
 
@@ -61,7 +59,7 @@ describe("KandelDistributionGenerator unit tests suite", () => {
           initialAskGives: Big(1),
           initialBidGives: Big(1000),
         });
-        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
 
         // Act
         const newDistribution = sut.recalculateDistributionFromAvailable({
@@ -72,11 +70,11 @@ describe("KandelDistributionGenerator unit tests suite", () => {
 
         // Assert
         assert.deepStrictEqual(
-          sut.priceCalculation.getPricesForDistribution(distribution),
-          sut.priceCalculation.getPricesForDistribution(distribution)
+          distribution.getPricesForDistribution(),
+          newDistribution.getPricesForDistribution()
         );
         const newOfferedVolume =
-          sut.getOfferedVolumeForDistribution(newDistribution);
+          newDistribution.getOfferedVolumeForDistribution();
 
         assert.equal(
           offeredVolume.requiredBase.mul(2).toNumber(),
@@ -90,7 +88,7 @@ describe("KandelDistributionGenerator unit tests suite", () => {
           1,
           [
             ...new Set(
-              newDistribution
+              newDistribution.offers
                 .filter((x) => x.offerType == "asks")
                 .map((x) => x.base)
             ),
@@ -100,7 +98,7 @@ describe("KandelDistributionGenerator unit tests suite", () => {
           1,
           [
             ...new Set(
-              newDistribution
+              newDistribution.offers
                 .filter((x) => x.offerType == "bids")
                 .map((x) => x.quote)
             ),
@@ -125,13 +123,13 @@ describe("KandelDistributionGenerator unit tests suite", () => {
           midPrice: Big(7000),
           initialAskGives: Big(1),
         });
-        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
 
         // Assert
         assert.equal(offeredVolume.requiredBase.toNumber(), 2);
         assert.equal(offeredVolume.requiredQuote.toNumber(), 7000);
-        assert.equal(distribution.length, pricePoints);
-        distribution.forEach((d, i) => {
+        assert.equal(distribution.pricePoints, pricePoints);
+        distribution.offers.forEach((d, i) => {
           assert.equal(d.base.toNumber(), 1, `wrong base at ${i}`);
           assert.equal(
             d.quote.toNumber(),
@@ -156,11 +154,11 @@ describe("KandelDistributionGenerator unit tests suite", () => {
         });
 
         // Assert
-        const offeredVolume = sut.getOfferedVolumeForDistribution(distribution);
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
         assert.equal(offeredVolume.requiredBase.toNumber(), 2);
         assert.equal(offeredVolume.requiredQuote.toNumber(), 3000);
-        assert.equal(distribution.length, pricePoints);
-        distribution.forEach((d, i) => {
+        assert.equal(distribution.pricePoints, pricePoints);
+        distribution.offers.forEach((d, i) => {
           assert.equal(
             d.base.toNumber(),
             d.offerType == "asks" ? 1 : 1 / ratio.pow(i).toNumber(),
@@ -174,57 +172,6 @@ describe("KandelDistributionGenerator unit tests suite", () => {
             `wrong quote at ${i}`
           );
         });
-      });
-    }
-  );
-
-  describe(
-    KandelDistributionGenerator.prototype.getOfferedVolumeForDistribution.name,
-    () => {
-      it("sums up the base and quote volume of the distribution", () => {
-        // Arrange
-        const distribution: Distribution = [
-          {
-            base: Big(1),
-            quote: Big(2),
-            index: 4,
-            offerType: "bids",
-          },
-          {
-            base: Big(3),
-            quote: Big(5),
-            index: 5,
-            offerType: "bids",
-          },
-          {
-            base: Big(9),
-            quote: Big(7),
-            index: 6,
-            offerType: "asks",
-          },
-          {
-            base: Big(13),
-            quote: Big(17),
-            index: 7,
-            offerType: "asks",
-          },
-        ];
-
-        // Act
-        const { requiredBase, requiredQuote } =
-          sut.getOfferedVolumeForDistribution(distribution);
-
-        // Assert
-        assert.equal(
-          9 + 13,
-          requiredBase.toNumber(),
-          "base should be all the base"
-        );
-        assert.equal(
-          2 + 5,
-          requiredQuote.toNumber(),
-          "quote should be all the quote"
-        );
       });
     }
   );

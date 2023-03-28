@@ -2,38 +2,10 @@ import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
 import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
-import KandelDistributionGenerator from "../../src/kandel/KandelDistributionGenerator";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
 describe("KandelDistributionHelper unit tests suite", () => {
-  describe(
-    KandelDistributionHelper.prototype.calculateConstantGivesPerOffer.name,
-    () => {
-      it("can calculate constant outbound", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(4, 6);
-
-        // Act
-        const { askGives, bidGives } = sut.calculateConstantGivesPerOffer(
-          [
-            { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
-            { offerType: "bids", base: Big(21), quote: Big(1000), index: 1 },
-            { offerType: "asks", base: Big(1), quote: Big(44), index: 2 },
-            { offerType: "asks", base: Big(1), quote: Big(44), index: 3 },
-            { offerType: "asks", base: Big(1), quote: Big(44), index: 4 },
-          ],
-          Big(3),
-          Big(2000)
-        );
-
-        // Assert
-        assert.equal(askGives.toNumber(), 1);
-        assert.equal(bidGives?.toNumber(), 1000);
-      });
-    }
-  );
-
   describe(
     KandelDistributionHelper.prototype.calculateDistributionConstantGives.name,
     () => {
@@ -45,6 +17,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Act
         const distribution = sut.calculateDistributionConstantGives(
+          Big(2),
           prices.map((x) => Big(x)),
           Big(1),
           Big(1000),
@@ -52,20 +25,20 @@ describe("KandelDistributionHelper unit tests suite", () => {
         );
 
         // Assert
-        const calculatedPrices = new KandelPriceCalculation()
-          .getPricesForDistribution(distribution)
+        const calculatedPrices = distribution
+          .getPricesForDistribution()
           .map((x) => x.toNumber());
         assert.deepStrictEqual(
           prices,
           calculatedPrices,
           "re-calculated prices do not match original prices"
         );
-        distribution
+        distribution.offers
           .filter((x) => x.index < firstAskIndex)
           .forEach((x) => {
             assert.equal(x.quote.toNumber(), 1000);
           });
-        distribution
+        distribution.offers
           .filter((x) => x.index >= firstAskIndex)
           .forEach((x) => {
             assert.equal(x.base.toNumber(), 1);
@@ -81,6 +54,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
           // Act
           const distribution = sut.calculateDistributionConstantGives(
+            Big(2),
             prices.map((x) => Big(x)),
             Big(1),
             Big(1000),
@@ -88,12 +62,13 @@ describe("KandelDistributionHelper unit tests suite", () => {
           );
 
           // Assert
+          assert.equal(distribution.ratio.toNumber(), 2);
           assert.equal(
-            sut.getFirstAskIndex(distribution),
-            offerType == "asks" ? 0 : distribution.length
+            distribution.getFirstAskIndex(),
+            offerType == "asks" ? 0 : distribution.pricePoints
           );
-          const calculatedPrices = new KandelPriceCalculation()
-            .getPricesForDistribution(distribution)
+          const calculatedPrices = distribution
+            .getPricesForDistribution()
             .map((x) => x.toNumber());
           assert.deepStrictEqual(
             prices,
@@ -101,11 +76,11 @@ describe("KandelDistributionHelper unit tests suite", () => {
             "re-calculated prices do not match original prices"
           );
           if (offerType == "bids") {
-            distribution.forEach((x) => {
+            distribution.offers.forEach((x) => {
               assert.equal(x.quote.toNumber(), 1000);
             });
           } else {
-            distribution.forEach((x) => {
+            distribution.offers.forEach((x) => {
               assert.equal(x.base.toNumber(), 1);
             });
           }
@@ -130,6 +105,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Act
         const distribution = sut.calculateDistributionConstantGives(
+          Big(ratio),
           prices.map((x) => Big(x)),
           Big(1),
           Big(1000),
@@ -137,7 +113,8 @@ describe("KandelDistributionHelper unit tests suite", () => {
         );
 
         // Assert
-        distribution.forEach((e) => {
+        assert.equal(distribution.ratio.toNumber(), ratio);
+        distribution.offers.forEach((e) => {
           assert.equal(
             e.base.round(4).toString(),
             e.base.toString(),
@@ -150,10 +127,8 @@ describe("KandelDistributionHelper unit tests suite", () => {
           );
         });
 
-        const { requiredBase, requiredQuote } = new KandelDistributionGenerator(
-          sut,
-          new KandelPriceCalculation()
-        ).getOfferedVolumeForDistribution(distribution);
+        const { requiredBase, requiredQuote } =
+          distribution.getOfferedVolumeForDistribution();
         assert.equal(requiredBase.lte(desiredBaseVolume), true);
         assert.equal(requiredQuote.lte(desiredQuoteVolume), true);
       });
@@ -171,7 +146,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const pricePoints = 10;
         const sut = new KandelDistributionHelper(12, 12);
         const firstAskIndex = 5;
-        const prices = new KandelPriceCalculation().calculatePrices({
+        const pricesAndRatio = new KandelPriceCalculation().calculatePrices({
           minPrice: firstQuote.div(firstBase),
           ratio,
           pricePoints,
@@ -179,14 +154,15 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Act
         const distribution = sut.calculateDistributionConstantBase(
-          prices,
+          pricesAndRatio.ratio,
+          pricesAndRatio.prices,
           firstBase,
           firstAskIndex
         );
 
         // Assert
         let price = firstQuote.div(firstBase);
-        distribution.forEach((e, i) => {
+        distribution.offers.forEach((e, i) => {
           assert.equal(e.offerType, i < firstAskIndex ? "bids" : "asks");
           assert.equal(
             e.quote.div(e.base).toNumber(),
@@ -203,7 +179,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const firstQuote = Big(3000);
         const pricePoints = 10;
         const sut = new KandelDistributionHelper(4, 6);
-        const prices = new KandelPriceCalculation().calculatePrices({
+        const pricesAndRatio = new KandelPriceCalculation().calculatePrices({
           minPrice: firstQuote.div(firstBase),
           ratio,
           pricePoints,
@@ -211,13 +187,14 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Act
         const distribution = sut.calculateDistributionConstantBase(
-          prices,
+          pricesAndRatio.ratio,
+          pricesAndRatio.prices,
           firstBase,
           5
         );
 
         // Assert
-        distribution.forEach((e) => {
+        distribution.offers.forEach((e) => {
           assert.equal(
             e.base.round(4).toString(),
             e.base.toString(),
@@ -232,29 +209,6 @@ describe("KandelDistributionHelper unit tests suite", () => {
       });
     }
   );
-  describe(KandelDistributionHelper.prototype.chunkDistribution.name, () => {
-    it("can chunk", () => {
-      // Arrange/act
-      const chunks = new KandelDistributionHelper(0, 0).chunkDistribution(
-        [1, 2, 3],
-        [
-          { base: Big(1), quote: Big(2), index: 1, offerType: "bids" },
-          { base: Big(3), quote: Big(4), index: 2, offerType: "bids" },
-          { base: Big(5), quote: Big(9), index: 3, offerType: "bids" },
-        ],
-        2
-      );
-
-      // Assert
-      assert.equal(chunks.length, 2);
-      assert.deepStrictEqual(chunks[0].pivots, [1, 2]);
-      assert.deepStrictEqual(chunks[1].pivots, [3]);
-
-      assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
-      assert.equal(chunks[0].distribution[1].base.toNumber(), 3);
-      assert.equal(chunks[1].distribution[0].base.toNumber(), 5);
-    });
-  });
   describe(KandelDistributionHelper.prototype.chunkIndices.name, () => {
     it("can chunk", () => {
       // Arrange/act
@@ -264,26 +218,6 @@ describe("KandelDistributionHelper unit tests suite", () => {
       assert.equal(chunks.length, 2);
       assert.deepStrictEqual(chunks[0], { from: 1, to: 3 });
       assert.deepStrictEqual(chunks[1], { from: 3, to: 4 });
-    });
-  });
-  describe(KandelDistributionHelper.prototype.sortByIndex.name, () => {
-    it("sorts", () => {
-      // Arrange
-      const list = [
-        { a: "1", index: 2 },
-        { a: "3", index: 1 },
-        { a: "0", index: 9 },
-      ];
-
-      // Act
-      new KandelDistributionHelper(0, 0).sortByIndex(list);
-
-      // Assert
-      assert.deepStrictEqual(list, [
-        { a: "3", index: 1 },
-        { a: "1", index: 2 },
-        { a: "0", index: 9 },
-      ]);
     });
   });
 });

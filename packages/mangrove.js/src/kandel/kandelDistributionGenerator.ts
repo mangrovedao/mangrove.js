@@ -1,8 +1,7 @@
 import Big from "big.js";
 import { Bigish } from "../types";
-import KandelDistributionHelper, {
-  Distribution,
-} from "./kandelDistributionHelper";
+import KandelDistribution from "./kandelDistribution";
+import KandelDistributionHelper from "./kandelDistributionHelper";
 import KandelPriceCalculation, {
   PriceDistributionParams,
 } from "./kandelPriceCalculation";
@@ -35,13 +34,16 @@ class KandelDistributionGenerator {
     initialAskGives: Bigish;
     initialBidGives?: Bigish;
   }) {
-    const prices = this.priceCalculation.calculatePrices(params.priceParams);
+    const pricesAndRatio = this.priceCalculation.calculatePrices(
+      params.priceParams
+    );
     const firstAskIndex = this.priceCalculation.calculateFirstAskIndex(
       Big(params.midPrice),
-      prices
+      pricesAndRatio.prices
     );
     return this.distributionHelper.calculateDistributionFromPrices(
-      prices,
+      pricesAndRatio.ratio,
+      pricesAndRatio.prices,
       firstAskIndex,
       Big(params.initialAskGives),
       params.initialBidGives ? Big(params.initialBidGives) : undefined
@@ -57,45 +59,22 @@ class KandelDistributionGenerator {
    * @remarks The required volume can be slightly less than available due to rounding due to token decimals.
    */
   public recalculateDistributionFromAvailable(params: {
-    distribution: Distribution;
+    distribution: KandelDistribution;
     availableBase: Bigish;
     availableQuote?: Bigish;
   }) {
-    const initialGives = this.distributionHelper.calculateConstantGivesPerOffer(
-      params.distribution,
+    const initialGives = params.distribution.calculateConstantGivesPerOffer(
       Big(params.availableBase),
       params.availableQuote ? Big(params.availableQuote) : undefined
     );
 
-    const prices = this.priceCalculation.getPricesForDistribution(
-      params.distribution
-    );
+    const prices = params.distribution.getPricesForDistribution();
     return this.distributionHelper.calculateDistributionFromPrices(
+      params.distribution.ratio,
       prices,
-      this.distributionHelper.getFirstAskIndex(params.distribution),
+      params.distribution.getFirstAskIndex(),
       initialGives.askGives,
       initialGives.bidGives
-    );
-  }
-
-  /** Gets the required volume of base and quote for the distribution to be fully provisioned.
-   * @param distribution The distribution to get the offered volume for.
-   * @returns The offered volume of base and quote for the distribution to be fully provisioned.
-   */
-  public getOfferedVolumeForDistribution(distribution: Distribution) {
-    return distribution.reduce(
-      (a, x) => {
-        return x.offerType == "bids"
-          ? {
-              requiredBase: a.requiredBase,
-              requiredQuote: a.requiredQuote.add(x.quote),
-            }
-          : {
-              requiredBase: a.requiredBase.add(x.base),
-              requiredQuote: a.requiredQuote,
-            };
-      },
-      { requiredBase: new Big(0), requiredQuote: new Big(0) }
     );
   }
 }

@@ -144,7 +144,7 @@ class KandelStatus {
       offer.price,
       ratio,
       pricePoints
-    );
+    ).prices;
 
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
     // then both offers can be expected live.

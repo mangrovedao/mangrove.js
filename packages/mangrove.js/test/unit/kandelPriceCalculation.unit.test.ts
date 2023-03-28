@@ -15,10 +15,26 @@ describe("KandelPriceCalculation unit tests suite", () => {
       const sut = new KandelPriceCalculation();
 
       // Act
-      const prices1 = sut.calculatePrices({ minPrice, maxPrice, ratio });
-      const prices2 = sut.calculatePrices({ minPrice, maxPrice, pricePoints });
-      const prices3 = sut.calculatePrices({ minPrice, ratio, pricePoints });
-      const prices4 = sut.calculatePrices({ maxPrice, ratio, pricePoints });
+      const pricesAndRatio1 = sut.calculatePrices({
+        minPrice,
+        maxPrice,
+        ratio,
+      });
+      const pricesAndRatio2 = sut.calculatePrices({
+        minPrice,
+        maxPrice,
+        pricePoints,
+      });
+      const pricesAndRatio3 = sut.calculatePrices({
+        minPrice,
+        ratio,
+        pricePoints,
+      });
+      const pricesAndRatio4 = sut.calculatePrices({
+        maxPrice,
+        ratio,
+        pricePoints,
+      });
 
       // Assert
       const expectedPrices = [
@@ -26,21 +42,25 @@ describe("KandelPriceCalculation unit tests suite", () => {
         1588.461197266944,
       ];
       assert.deepStrictEqual(
-        prices1.map((x) => x.toNumber()),
+        pricesAndRatio1.prices.map((x) => x.toNumber()),
         expectedPrices
       );
       assert.deepStrictEqual(
-        prices2.map((x) => x.toNumber()),
+        pricesAndRatio2.prices.map((x) => x.toNumber()),
         expectedPrices
       );
       assert.deepStrictEqual(
-        prices3.map((x) => x.toNumber()),
+        pricesAndRatio3.prices.map((x) => x.toNumber()),
         expectedPrices
       );
       assert.deepStrictEqual(
-        prices4.map((x) => x.toNumber()),
+        pricesAndRatio4.prices.map((x) => x.toNumber()),
         expectedPrices
       );
+      assert.equal(pricesAndRatio1.ratio.toNumber(), ratio.toNumber());
+      assert.equal(pricesAndRatio2.ratio.toNumber(), ratio.toNumber());
+      assert.equal(pricesAndRatio3.ratio.toNumber(), ratio.toNumber());
+      assert.equal(pricesAndRatio4.ratio.toNumber(), ratio.toNumber());
     });
 
     it("throws error if not enough parameters are given", () => {
@@ -136,48 +156,10 @@ describe("KandelPriceCalculation unit tests suite", () => {
     });
   });
 
-  describe(
-    KandelPriceCalculation.prototype.getPricesForDistribution.name,
-    () => {
-      it("returns prices according to bid/ask", () => {
-        // Arrange
-        const ratio = new Big(1.09);
-        const firstBase = Big(3);
-        const firstQuote = Big(5000);
-        const pricePoints = 10;
-        const sut = new KandelPriceCalculation();
-        const originalPrices = sut.calculatePrices({
-          minPrice: firstQuote.div(firstBase),
-          ratio,
-          pricePoints,
-        });
-
-        const distribution = new KandelDistributionHelper(
-          12,
-          12
-        ).calculateDistributionConstantBase(originalPrices, firstBase, 3);
-
-        // Act
-        const prices = sut.getPricesForDistribution(distribution);
-
-        // Assert
-        let price = firstQuote.div(firstBase);
-        distribution.forEach((e, i) => {
-          assert.equal(
-            prices[i].toNumber(),
-            price.toNumber(),
-            `Price is not as expected at ${i}`
-          );
-          price = price.mul(ratio);
-        });
-      });
-    }
-  );
-
   describe(KandelPriceCalculation.prototype.getPricesFromPrice.name, () => {
     it("gets first price from end", () => {
       // Arrange/act
-      const prices = new KandelPriceCalculation().getPricesFromPrice(
+      const pricesAndRatio = new KandelPriceCalculation().getPricesFromPrice(
         4,
         Big(16000),
         Big(2),
@@ -185,14 +167,15 @@ describe("KandelPriceCalculation unit tests suite", () => {
       );
 
       // Assert
+      assert.equal(pricesAndRatio.ratio.toNumber(), 2);
       assert.deepStrictEqual(
-        prices.map((x) => x.toNumber()),
+        pricesAndRatio.prices.map((x) => x.toNumber()),
         [1000, 2000, 4000, 8000, 16000, 32000]
       );
     });
     it("gets first price from first", () => {
       // Arrange
-      const prices = new KandelPriceCalculation().getPricesFromPrice(
+      const pricesAndRatio = new KandelPriceCalculation().getPricesFromPrice(
         0,
         Big(16000),
         Big(2),
@@ -200,8 +183,9 @@ describe("KandelPriceCalculation unit tests suite", () => {
       );
 
       // Act/assert
+      assert.equal(pricesAndRatio.ratio.toNumber(), 2);
       assert.deepStrictEqual(
-        prices.map((x) => x.toNumber()),
+        pricesAndRatio.prices.map((x) => x.toNumber()),
         [16000, 32000]
       );
     });

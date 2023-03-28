@@ -1,4 +1,3 @@
-// Integration tests for Semibook.ts
 import { describe, beforeEach, afterEach, it } from "mocha";
 import { assert } from "chai";
 
@@ -278,7 +277,7 @@ describe("Kandel integration tests suite", function () {
       });
 
       const { requiredBase, requiredQuote } =
-        kandel.generator.getOfferedVolumeForDistribution(distribution);
+        distribution.getOfferedVolumeForDistribution();
       if (params.approve) {
         const approvalTxs = await kandel.approve();
         await approvalTxs[0].wait();
@@ -291,9 +290,7 @@ describe("Kandel integration tests suite", function () {
           distribution,
           parameters: {
             compoundRateBase: Big(0.5),
-            ratio,
             spread: 1,
-            pricePoints: distribution.length,
           },
           depositBaseAmount: params.deposit ? requiredBase : Big(0),
           depositQuoteAmount: params.deposit ? requiredQuote : Big(0),
@@ -387,7 +384,7 @@ describe("Kandel integration tests suite", function () {
           });
 
           const { requiredBase, requiredQuote } =
-            kandel.generator.getOfferedVolumeForDistribution(distribution);
+            distribution.getOfferedVolumeForDistribution();
 
           const approvalTxs = await kandel.approve();
           await approvalTxs[0].wait();
@@ -399,9 +396,7 @@ describe("Kandel integration tests suite", function () {
               distribution,
               parameters: {
                 compoundRateBase: Big(0.5),
-                ratio,
                 spread: 1,
-                pricePoints: distribution.length,
               },
               depositBaseAmount: requiredBase,
               depositQuoteAmount: requiredQuote,
@@ -465,7 +460,7 @@ describe("Kandel integration tests suite", function () {
           assert.equal(asks.length, 3, "3 asks should be populated");
           for (let i = 0; i < asks.length; i++) {
             const offer = asks[i];
-            const d = distribution[bids.length + i];
+            const d = distribution.offers[bids.length + i];
             assert.equal(
               offer.gives.toString(),
               d.base.toString(),
@@ -489,7 +484,7 @@ describe("Kandel integration tests suite", function () {
           assert.equal(bids.length, 3, "3 bids should be populated");
           for (let i = 0; i < bids.length; i++) {
             const offer = bids[bids.length - 1 - i];
-            const d = distribution[i];
+            const d = distribution.offers[i];
             assert.equal(
               offer.gives.toString(),
               d.quote.toString(),
@@ -560,6 +555,42 @@ describe("Kandel integration tests suite", function () {
           statuses.statuses[0].bids.price.toNumber(),
           900,
           "distribution should have been updated"
+        );
+      });
+
+      it("populate throws if ratio parameters do not match", async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        // Act/Assert
+        assert.isRejected(
+          kandel.populate({
+            parameters: { ratio: 2 },
+            distribution:
+              kandel.generator.distributionHelper.createEmptyDistribution(
+                Big(1),
+                5
+              ),
+          }),
+          "ratio in parameter overrides does not match the ratio of the distribution."
+        );
+      });
+
+      it("populate throws if pricePoints parameters do not match", async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        // Act/Assert
+        assert.isRejected(
+          kandel.populate({
+            parameters: { pricePoints: 2 },
+            distribution:
+              kandel.generator.distributionHelper.createEmptyDistribution(
+                Big(1),
+                5
+              ),
+          }),
+          "pricePoints in parameter overrides does not match the pricePoints of the distribution."
         );
       });
 
@@ -721,7 +752,7 @@ describe("Kandel integration tests suite", function () {
               compoundRateQuote: 0.75,
               ratio,
               spread: 1,
-              pricePoints: distribution.length,
+              pricePoints: distribution.pricePoints,
             },
             depositBaseAmount: 7,
             depositQuoteAmount: 10000,
