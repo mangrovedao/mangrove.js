@@ -182,14 +182,6 @@ class LiquidityProvider {
     }
   }
 
-  async #gasreq(): Promise<number> {
-    if (this.eoa) {
-      return 0;
-    } else {
-      return await this.logic.offerGasreq();
-    }
-  }
-
   /** Post a new ask */
   newAsk(
     p: LiquidityProvider.OfferParams,
@@ -477,7 +469,7 @@ class LiquidityProvider {
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
-    const gasreq = opts.gasreq ? opts.gasreq : await this.#gasreq();
+    const gasreq = opts.gasreq ? opts.gasreq : this.gasreq;
     const gasprice = opts.gasprice ? opts.gasprice : 0;
     // this computes the total provision required for a new offer on the market
     const provision = await this.market.getOfferProvision(ba, gasreq, gasprice);

@@ -36,14 +36,14 @@ class OfferLogic {
     );
   }
 
-  static async deploy(mgv: Mangrove): Promise<string> {
+  static async deploy(mgv: Mangrove, gasreq?: number): Promise<string> {
     const contract = await new typechain[`OfferMaker__factory`](
       mgv.signer
     ).deploy(
       mgv.address,
       ethers.constants.AddressZero, // no router
       await mgv.signer.getAddress(),
-      SimpleMakerGasreq,
+      gasreq ? gasreq : SimpleMakerGasreq,
       ethers.constants.AddressZero
     );
     await contract.deployTransaction.wait();

@@ -37,7 +37,7 @@ describe("OfferMaker", () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       mgv.provider.pollingInterval = 10;
-      const mkr_address = await OfferLogic.deploy(mgv);
+      const mkr_address = await OfferLogic.deploy(mgv, 30000);
       const logic = mgv.offerLogic(mkr_address);
       const lp = await logic.liquidityProvider({
         base: "TokenA",
