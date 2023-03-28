@@ -1,5 +1,4 @@
 import * as ethers from "ethers";
-import { BigNumber } from "ethers";
 import { Bigish, typechain } from "../types";
 
 import * as KandelTypes from "../types/typechain/GeometricKandel";
@@ -389,22 +388,15 @@ class KandelInstance {
    * @returns The Mangrove offer ids for all offers along with their offer type and Kandel index.
    */
   public async getOfferIds() {
-    const pricePoints = (await this.getParameters()).pricePoints;
-    const mapping: { offerType: Market.BA; offerId: number; index: number }[] =
-      [];
-    for (let index = 0; index < pricePoints; index++) {
-      for (const offerType of ["bids" as Market.BA, "asks" as Market.BA]) {
-        const offerId = await this.getOfferIdAtIndex(offerType, index);
-        if (offerId > 0) {
-          mapping.push({ offerType, offerId, index });
-        }
-      }
-    }
-    return mapping;
-
-    /* TODO return (await this.kandel.queryFilter(this.kandel.filters.SetIndexMapping()))
-      .map(x => { return { offerType: this.offerTypeToUint(x.args.offerType), offerId: x.args.id, index: x.args.index }; });
-    }*/
+    return (
+      await this.kandel.queryFilter(this.kandel.filters.SetIndexMapping())
+    ).map((x) => {
+      return {
+        offerType: this.UintToOfferType(x.args.ba),
+        offerId: x.args.offerId.toNumber(),
+        index: x.args.index.toNumber(),
+      };
+    });
   }
 
   /** Retrieves all offers for the Kandel instance by querying the market. */
@@ -478,20 +470,6 @@ class KandelInstance {
     ];
   }
 
-  private getDepositArrays(baseAmount?: Bigish, quoteAmount?: Bigish) {
-    const depositTokens: string[] = [];
-    const depositAmounts: BigNumber[] = [];
-    if (baseAmount && Big(baseAmount).gt(0)) {
-      depositTokens.push(this.market.base.address);
-      depositAmounts.push(this.market.base.toUnits(baseAmount));
-    }
-    if (quoteAmount && Big(quoteAmount).gt(0)) {
-      depositTokens.push(this.market.quote.address);
-      depositAmounts.push(this.market.quote.toUnits(quoteAmount));
-    }
-    return { depositTokens, depositAmounts };
-  }
-
   /** Deposits the amounts on the Kandel instance to be available for offers.
    * @param params The parameters to use when depositing funds.
    * @param params.baseAmount The amount of base to deposit. If not provided, then no base is deposited.
@@ -505,13 +483,9 @@ class KandelInstance {
     },
     overrides: ethers.Overrides = {}
   ) {
-    const { depositTokens, depositAmounts } = this.getDepositArrays(
-      params.baseAmount,
-      params.quoteAmount
-    );
     return await this.kandel.depositFunds(
-      depositTokens,
-      depositAmounts,
+      this.market.base.toUnits(params.baseAmount ?? 0),
+      this.market.quote.toUnits(params.quoteAmount ?? 0),
       overrides
     );
   }
@@ -588,11 +562,6 @@ class KandelInstance {
         offerCount: params.distribution?.length ?? 0,
       }));
 
-    const { depositTokens, depositAmounts } = this.getDepositArrays(
-      params.depositBaseAmount,
-      params.depositQuoteAmount
-    );
-
     const { firstAskIndex, rawDistributions } =
       await this.getRawDistributionChunks({
         distribution: params.distribution ?? [],
@@ -613,8 +582,8 @@ class KandelInstance {
         firstDistribution.pivots,
         firstAskIndex,
         rawParameters,
-        depositTokens,
-        depositAmounts,
+        this.market.base.toUnits(params.depositBaseAmount ?? 0),
+        this.market.quote.toUnits(params.depositQuoteAmount ?? 0),
         LiquidityProvider.optValueToPayableOverride(overrides, funds)
       ),
     ];
@@ -729,10 +698,7 @@ class KandelInstance {
       params.withdrawBaseAmount ?? (await this.getBalance("asks"));
     const quoteAmount =
       params.withdrawQuoteAmount ?? (await this.getBalance("bids"));
-    const { depositAmounts, depositTokens } = this.getDepositArrays(
-      baseAmount,
-      quoteAmount
-    );
+
     const recipientAddress =
       params.recipientAddress ?? (await this.market.mgv.signer.getAddress());
     const freeWei = params.withdrawFunds
@@ -748,8 +714,8 @@ class KandelInstance {
       await this.kandel.retractAndWithdraw(
         lastChunk.from,
         lastChunk.to,
-        depositTokens,
-        depositAmounts,
+        this.market.base.toUnits(baseAmount),
+        this.market.quote.toUnits(quoteAmount),
         freeWei,
         recipientAddress,
         overrides
