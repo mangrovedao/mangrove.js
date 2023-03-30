@@ -178,11 +178,6 @@ class KandelInstance {
     return this.getOutboundToken(offerType).fromUnits(x);
   }
 
-  /** Retrieves the provision available on Mangrove for Kandel, in ethers */
-  public async getMangroveBalance() {
-    return await this.market.mgv.balanceOf(this.address);
-  }
-
   /** Determines the required provision for the number of offers.
    * @param params The parameters used to calculate the provision.
    * @param params.gasreq The gas required to execute a trade.
@@ -351,13 +346,6 @@ class KandelInstance {
     return (
       await this.kandel.indexOfOfferId(this.offerTypeToUint(offerType), offerId)
     ).toNumber();
-  }
-
-  /** Determines whether the Kandel instance has a router
-   * @returns True if the Kandel instance has a router, false otherwise.
-   */
-  public async hasRouter() {
-    return (await this.kandel.router()) != (await this.kandel.NO_ROUTER());
   }
 
   /** Retrieves pivots to use for populating the offers in the distribution
@@ -818,15 +806,6 @@ class KandelInstance {
     }
 
     return { txs, lastChunk };
-  }
-
-  /** Adds ethers for provisioning offers on Mangrove for the Kandel instance.
-   * @param funds The amount of funds to add in ethers.
-   * @param overrides The ethers overrides to use when calling the fund function.
-   * @returns The transaction used to fund the Kandel instance.
-   */
-  public async fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
-    return await this.market.mgv.fundMangrove(funds, this.address, overrides);
   }
 }
 

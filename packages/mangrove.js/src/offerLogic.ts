@@ -155,10 +155,10 @@ class OfferLogic {
     return await this.mgv.balanceOf(this.address);
   }
 
-  /** Adds ethers for provisioning offers on Mangrove for the Kandel instance.
+  /** Adds ethers for provisioning offers on Mangrove for the offer logic.
    * @param funds The amount of funds to add in ethers.
    * @param overrides The ethers overrides to use when calling the fund function.
-   * @returns The transaction used to fund the Kandel instance.
+   * @returns The transaction used to fund the offer logic.
    */
   public async fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
     return await this.mgv.fundMangrove(funds, this.address, overrides);
