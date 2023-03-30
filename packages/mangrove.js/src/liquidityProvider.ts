@@ -5,6 +5,7 @@ import Market from "./market";
 // syntactic sugar
 import { Bigish } from "./types";
 import Mangrove from "./mangrove";
+import { typechain } from "./types";
 
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
@@ -55,6 +56,7 @@ namespace LiquidityProvider {
 class LiquidityProvider {
   mgv: Mangrove; // API abstraction of the Mangrove ethers.js contract
   logic?: OfferLogic; // API abstraction of the underlying offer logic ethers.js contract
+  contract?: typechain.ILiquidityProvider;
   eoa?: string; // signer's address
   market: Market; // API market abstraction over Mangrove's offer lists
   prettyP = new PrettyPrint();
@@ -64,6 +66,12 @@ class LiquidityProvider {
     if (p.eoa || p.logic) {
       this.mgv = p.mgv;
       this.logic = p.logic;
+      this.contract = p.logic
+        ? typechain.ILiquidityProvider__factory.connect(
+            p.logic.address,
+            p.logic.signerOrProvider
+          )
+        : undefined;
       this.market = p.market;
       this.eoa = p.eoa;
       this.gasreq = p.gasreq;
@@ -225,8 +233,8 @@ class LiquidityProvider {
     let txPromise: Promise<ethers.ContractTransaction> = null;
 
     // send offer
-    if (this.logic) {
-      txPromise = this.logic.contract.newOffer(
+    if (this.contract) {
+      txPromise = this.contract.newOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -348,8 +356,8 @@ class LiquidityProvider {
     let txPromise: Promise<ethers.ContractTransaction> = null;
 
     // update offer
-    if (this.logic) {
-      txPromise = this.logic.contract.updateOffer(
+    if (this.contract) {
+      txPromise = this.contract.updateOffer(
         outbound_tkn.address,
         inbound_tkn.address,
         inbound_tkn.toUnits(wants),
@@ -414,7 +422,7 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<void> {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-    const retracter = this.logic ? this.logic.contract : this.mgv.contract;
+    const retracter = this.contract ?? this.mgv.contract;
 
     let txPromise: Promise<ethers.ContractTransaction> = null;
 

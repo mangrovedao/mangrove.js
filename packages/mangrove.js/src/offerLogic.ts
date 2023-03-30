@@ -24,15 +24,17 @@ const SimpleMakerGasreq = 20000;
 
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.ILiquidityProvider;
+  contract: typechain.IOfferLogic;
   address: string;
+  signerOrProvider: SignerOrProvider;
 
   constructor(mgv: Mangrove, logic: string, signer?: SignerOrProvider) {
     this.mgv = mgv;
     this.address = logic;
-    this.contract = typechain.ILiquidityProvider__factory.connect(
+    this.signerOrProvider = signer ?? this.mgv.signer;
+    this.contract = typechain.IOfferLogic__factory.connect(
       logic,
-      signer ? signer : this.mgv.signer
+      this.signerOrProvider
     );
   }
 
@@ -59,7 +61,7 @@ class OfferLogic {
     if (router_address != ethers.constants.AddressZero) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
-        this.mgv.signer
+        this.signerOrProvider
       );
     }
   }
@@ -144,23 +146,6 @@ class OfferLogic {
     return this.contract.activate(tokenAddresses, overrides);
   }
 
-  // todo look in the tx receipt for the `Debit(maker, amount)` log emitted by mangrove in order to returned a value to user
-  retractOffer(
-    outbound_tkn: string,
-    inbound_tkn: string,
-    id: number,
-    deprovision: boolean,
-    overrides: ethers.Overrides
-  ): Promise<TransactionResponse> {
-    return this.contract.retractOffer(
-      this.mgv.token(outbound_tkn).address,
-      this.mgv.token(inbound_tkn).address,
-      id,
-      deprovision,
-      overrides
-    );
-  }
-
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
   /** tx will revert is signer is not the admin of the OfferLogic onchain contract */
   async withdrawFromMangrove(
@@ -174,7 +159,7 @@ class OfferLogic {
     );
   }
 
-  /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object */
+  /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object. This assumes the underlying contract is an ILiquidityProvider. */
   async liquidityProvider(
     p:
       | Market
