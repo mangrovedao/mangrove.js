@@ -22,6 +22,7 @@ import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
 import KandelFarm from "./kandel/kandelFarm";
 import KandelSeeder from "./kandel/kandelSeeder";
 import KandelInstance from "./kandel/kandelInstance";
+import OfferMaker from "./offerMaker";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -45,4 +46,5 @@ export {
   KandelFarm,
   KandelSeeder,
   KandelInstance,
+  OfferMaker,
 };

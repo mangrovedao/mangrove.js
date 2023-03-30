@@ -1,6 +1,5 @@
 import * as ethers from "ethers";
 import Market from "./market";
-// syntactic sugar
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
@@ -17,11 +16,9 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
-const SimpleMakerGasreq = 20000;
 /**
- * The OfferLogic class connects to a Maker contract
+ * @title The OfferLogic class connects to a Maker contract implementing the IOfferLogic interface.
  */
-
 class OfferLogic {
   mgv: Mangrove;
   contract: typechain.IOfferLogic;
@@ -38,20 +35,6 @@ class OfferLogic {
     );
   }
 
-  static async deploy(mgv: Mangrove, gasreq?: number): Promise<string> {
-    const contract = await new typechain[`OfferMaker__factory`](
-      mgv.signer
-    ).deploy(
-      mgv.address,
-      ethers.constants.AddressZero, // no router
-      await mgv.signer.getAddress(),
-      gasreq ? gasreq : SimpleMakerGasreq,
-      ethers.constants.AddressZero
-    );
-    await contract.deployTransaction.wait();
-    return contract.address;
-  }
-
   /**
    * @note Returns this logic's router. If logic has no router this call will return `undefined`
    * @returns the router ethers.js contract responding to the `AbstractRouter` abi.
@@ -64,6 +47,13 @@ class OfferLogic {
         this.signerOrProvider
       );
     }
+  }
+
+  /** Determines whether the offer logic has a router
+   * @returns True if the offer logic has a router, false otherwise.
+   */
+  public async hasRouter() {
+    return (await this.contract.router()) != ethers.constants.AddressZero;
   }
 
   /**
@@ -103,16 +93,25 @@ class OfferLogic {
     }
   }
 
-  // returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
-  connect(sOp: SignerOrProvider): OfferLogic {
-    return new OfferLogic(this.mgv, this.contract.address, sOp);
+  /** Returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
+   * @param signerOrProvider the new signer or provider to connect to the contract.
+   * @returns a new `OfferLogic` object with a different signer or provider.
+   */
+  connect(signerOrProvider: SignerOrProvider): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.address, signerOrProvider);
   }
 
+  /** Retrieves the gasreq necessary for offers of this OfferLogic to execute a trade. */
   async offerGasreq(): Promise<number> {
-    const gr = await this.contract.offerGasreq();
-    return gr.toNumber();
+    const offerGasreq = await this.contract.offerGasreq();
+    return offerGasreq.toNumber();
   }
 
+  /** Sets the admin of the contract if the Contract implements the AccessControlled interface.
+   * @param newAdmin the new admin address.
+   * @param overrides The ethers overrides to use when calling the setAdmin function.
+   * @returns The transaction used to set the new admin.
+   */
   setAdmin(
     newAdmin: string,
     overrides: ethers.Overrides = {}
@@ -124,6 +123,9 @@ class OfferLogic {
     return accessControlled.setAdmin(newAdmin, overrides);
   }
 
+  /** Retrieves the current admin of the contract if the contract implements the AccessControlled interface
+   * @returns The address of the current admin.
+   */
   admin(): Promise<string> {
     const accessControlled = typechain.AccessControlled__factory.connect(
       this.address,
@@ -135,6 +137,8 @@ class OfferLogic {
   /**
    * @note (contract admin action) activates logic
    * @param tokenNames the names of the tokens one wishes the logic to trade
+   * @param overrides The ethers overrides to use when calling the activate function.
+   * @returns The transaction used to activate the OfferLogic.
    * */
   activate(
     tokenNames: string[],
@@ -144,6 +148,20 @@ class OfferLogic {
       (tokenName) => this.mgv.token(tokenName).address
     );
     return this.contract.activate(tokenAddresses, overrides);
+  }
+
+  /** Retrieves the provision available on Mangrove for the offer logic, in ethers */
+  public async getMangroveBalance() {
+    return await this.mgv.balanceOf(this.address);
+  }
+
+  /** Adds ethers for provisioning offers on Mangrove for the Kandel instance.
+   * @param funds The amount of funds to add in ethers.
+   * @param overrides The ethers overrides to use when calling the fund function.
+   * @returns The transaction used to fund the Kandel instance.
+   */
+  public async fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
+    return await this.mgv.fundMangrove(funds, this.address, overrides);
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */

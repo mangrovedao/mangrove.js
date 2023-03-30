@@ -1,10 +1,10 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
 
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
 
 import assert from "assert";
-import { Mangrove, OfferLogic, LiquidityProvider } from "../../src";
+import { Mangrove, OfferLogic, LiquidityProvider, OfferMaker } from "../../src";
 import { approxEq } from "../util/helpers";
 
 import { Big } from "big.js";
@@ -37,7 +37,7 @@ describe("OfferMaker", () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       mgv.provider.pollingInterval = 10;
-      const mkr_address = await OfferLogic.deploy(mgv, 30000);
+      const mkr_address = await OfferMaker.deploy(mgv, 30000);
       const logic = mgv.offerLogic(mkr_address);
       const lp = await logic.liquidityProvider({
         base: "TokenA",
@@ -68,7 +68,7 @@ describe("OfferMaker", () => {
       // @ts-ignore
       mgv.provider.pollingInterval = 10;
 
-      const mkr_address = await OfferLogic.deploy(mgv);
+      const mkr_address = await OfferMaker.deploy(mgv);
       const logic = mgv.offerLogic(mkr_address);
       const market = await mgv.market({
         base: "TokenA",
@@ -249,12 +249,12 @@ describe("OfferMaker", () => {
           gives: 20,
           fund: prov,
         });
-        let prov_before_cancel = await mgv.provider.getBalance(
+        const prov_before_cancel = await mgv.provider.getBalance(
           await onchain_lp.mgv.signer.getAddress()
         );
 
         await onchain_lp.retractBid(ofrId, true); // with deprovision
-        let prov_after_cancel = await mgv.provider.getBalance(
+        const prov_after_cancel = await mgv.provider.getBalance(
           await onchain_lp.mgv.signer.getAddress()
         );
         assert(
@@ -267,7 +267,7 @@ describe("OfferMaker", () => {
         );
 
         await onchain_lp.retractBid(ofrId, true);
-        let prov_after_cancel2 = await mgv.provider.getBalance(
+        const prov_after_cancel2 = await mgv.provider.getBalance(
           await onchain_lp.mgv.signer.getAddress()
         );
         assert(
