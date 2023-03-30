@@ -13,6 +13,7 @@ import KandelDistributionHelper from "./kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandelPriceCalculation";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
+import OfferLogic from "../offerLogic";
 
 /**
  * @notice Parameters for a Kandel instance.
@@ -58,6 +59,9 @@ class KandelInstance {
   generator: KandelDistributionGenerator;
   status: KandelStatus;
 
+  /** Expose logic relevant for all offer logic implementations, including Kandel.  */
+  offerLogic: OfferLogic;
+
   /** Creates a KandelInstance object to interact with a Kandel strategy on Mangrove.
    * @param params The parameters used to create an instance.
    * @param params.address The address of the Kandel instance.
@@ -85,6 +89,12 @@ class KandelInstance {
         ? await params.market(await kandel.BASE(), await kandel.QUOTE())
         : params.market;
 
+    const offerLogic = new OfferLogic(
+      market.mgv,
+      params.address,
+      params.signer
+    );
+
     const priceCalculation = new KandelPriceCalculation();
     const distributionHelper = new KandelDistributionHelper(
       market.base.decimals,
@@ -101,6 +111,7 @@ class KandelInstance {
       kandel,
       kandelStatus: new KandelStatus(distributionHelper, priceCalculation),
       generator,
+      offerLogic,
     });
   }
 
@@ -112,6 +123,7 @@ class KandelInstance {
     precision: number;
     kandelStatus: KandelStatus;
     generator: KandelDistributionGenerator;
+    offerLogic: OfferLogic;
   }) {
     this.address = params.address;
     this.kandel = params.kandel;
@@ -119,6 +131,7 @@ class KandelInstance {
     this.precision = params.precision;
     this.status = params.kandelStatus;
     this.generator = params.generator;
+    this.offerLogic = params.offerLogic;
   }
 
   /** Gets the base of the market Kandel is making  */
