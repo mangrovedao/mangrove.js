@@ -453,7 +453,8 @@ export const postNewOffer = async ({
   await waitForTransaction(
     maker.connectedContracts.testMaker.approveMgv(
       outboundToken.address,
-      ethers.constants.MaxUint256
+      ethers.constants.MaxUint256,
+      { gasLimit: 100_000 }
     )
   );
 
@@ -546,42 +547,4 @@ export const mint = async (
   amount: number
 ): Promise<void> => {
   await rawMint(token, receiver.address, token.toUnits(amount));
-};
-
-export const approveMgv = async (
-  token: MgvToken,
-  owner: Account,
-  amount: number
-): Promise<void> => {
-  const addresses = await getAddresses();
-  await approve(token, owner, addresses.mangrove.address, amount);
-};
-
-export const approve = async (
-  token: MgvToken,
-  owner: Account,
-  spenderAddress: string,
-  amount: number
-): Promise<void> => {
-  switch (token.name) {
-    case "TokenA":
-      await waitForTransaction(
-        owner.connectedContracts.tokenA.approve(
-          spenderAddress,
-          token.toUnits(amount)
-        )
-      );
-
-      break;
-
-    case "TokenB":
-      await waitForTransaction(
-        owner.connectedContracts.tokenB.approve(
-          spenderAddress,
-          token.toUnits(amount)
-        )
-      );
-
-      break;
-  }
 };
