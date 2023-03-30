@@ -3,13 +3,11 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { utils } from "ethers";
 
-import assert, { ifError, throws } from "assert";
+import assert from "assert";
 import { Mangrove, LiquidityProvider, Market } from "../../src";
 
 import { Big } from "big.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { cat } from "shelljs";
-import { expect } from "chai";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -34,7 +32,7 @@ describe("RestingOrder", () => {
 
       // interpreting mangroveOrder as a maker contract
       const logic = mgv.offerLogic(mgv.orderContract.address);
-      const lp = await logic.liquidityProvider({
+      const lp = await LiquidityProvider.connect(logic, {
         base: "TokenA",
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
@@ -71,7 +69,7 @@ describe("RestingOrder", () => {
         bookOptions: { maxOffers: 30 },
       });
 
-      orderContractAsLP = await logic.liquidityProvider(market);
+      orderContractAsLP = await LiquidityProvider.connect(logic, market);
 
       await w(orderContractAsLP.logic.activate(["TokenA", "TokenB"]));
 

@@ -39,7 +39,7 @@ describe("OfferMaker", () => {
       mgv.provider.pollingInterval = 10;
       const mkr_address = await OfferMaker.deploy(mgv, 30000);
       const logic = mgv.offerLogic(mkr_address);
-      const lp = await logic.liquidityProvider({
+      const lp = await LiquidityProvider.connect(logic, {
         base: "TokenA",
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
@@ -75,7 +75,7 @@ describe("OfferMaker", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
-      onchain_lp = await logic.liquidityProvider(market);
+      onchain_lp = await LiquidityProvider.connect(logic, market);
       eoa_lp = await mgv.liquidityProvider(market);
     });
 

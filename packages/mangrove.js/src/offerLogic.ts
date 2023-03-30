@@ -1,9 +1,8 @@
 import * as ethers from "ethers";
-import Market from "./market";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { LiquidityProvider, Mangrove } from ".";
+import { Mangrove } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { ApproveArgs } from "./mgvtoken";
 
@@ -175,33 +174,6 @@ class OfferLogic {
       await this.mgv.signer.getAddress(),
       overrides
     );
-  }
-
-  /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object. This assumes the underlying contract is an ILiquidityProvider. */
-  async liquidityProvider(
-    p:
-      | Market
-      | {
-          base: string;
-          quote: string;
-          bookOptions?: Market.BookOptions;
-        }
-  ): Promise<LiquidityProvider> {
-    if (p instanceof Market) {
-      return new LiquidityProvider({
-        mgv: this.mgv,
-        logic: this,
-        market: p,
-        gasreq: await this.offerGasreq(),
-      });
-    } else {
-      return new LiquidityProvider({
-        mgv: this.mgv,
-        logic: this,
-        market: await this.mgv.market(p),
-        gasreq: await this.offerGasreq(),
-      });
-    }
   }
 }
 

@@ -82,6 +82,38 @@ class LiquidityProvider {
     }
   }
 
+  /** Connects the logic to a Market in order to pass market orders. This assumes the underlying contract of offer logic is an ILiquidityProvider.
+   * @param offerLogic The offer logic.
+   * @param p The market to connect to. Can be a Market object or a market descriptor.
+   * @returns A LiquidityProvider.
+   */
+  static async connect(
+    offerLogic: OfferLogic,
+    p:
+      | Market
+      | {
+          base: string;
+          quote: string;
+          bookOptions?: Market.BookOptions;
+        }
+  ): Promise<LiquidityProvider> {
+    if (p instanceof Market) {
+      return new LiquidityProvider({
+        mgv: offerLogic.mgv,
+        logic: offerLogic,
+        market: p,
+        gasreq: await offerLogic.offerGasreq(),
+      });
+    } else {
+      return new LiquidityProvider({
+        mgv: offerLogic.mgv,
+        logic: offerLogic,
+        market: await offerLogic.mgv.market(p),
+        gasreq: await offerLogic.offerGasreq(),
+      });
+    }
+  }
+
   computeOfferProvision(
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
