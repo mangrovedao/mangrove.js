@@ -174,28 +174,6 @@ describe("KandelDistribution unit tests suite", () => {
     });
   });
 
-  describe(KandelDistribution.prototype.sortByIndex.name, () => {
-    it("sorts", () => {
-      // Arrange
-      const list = [
-        { a: "1", index: 2 },
-        { a: "3", index: 1 },
-        { a: "0", index: 9 },
-      ];
-      const sut = new KandelDistribution(Big(1), 0, [], 4, 6);
-
-      // Act
-      sut.sortByIndex(list);
-
-      // Assert
-      assert.deepStrictEqual(list, [
-        { a: "3", index: 1 },
-        { a: "1", index: 2 },
-        { a: "0", index: 9 },
-      ]);
-    });
-  });
-
   describe(KandelDistribution.prototype.getPricesForDistribution.name, () => {
     it("returns prices according to bid/ask", () => {
       // Arrange
