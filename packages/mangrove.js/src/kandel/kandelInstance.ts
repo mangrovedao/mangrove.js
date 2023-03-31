@@ -52,6 +52,8 @@ export type KandelParameterOverrides = {
 
 /** @title Management of a single Kandel instance. */
 class KandelInstance {
+  maxUint256 = ethers.BigNumber.from(2).pow(256).sub(1);
+
   kandel: typechain.GeometricKandel;
   address: string;
   precision: number;
@@ -176,32 +178,6 @@ class KandelInstance {
   public async getOfferedVolume(offerType: Market.BA) {
     const x = await this.kandel.offeredVolume(this.offerTypeToUint(offerType));
     return this.getOutboundToken(offerType).fromUnits(x);
-  }
-
-  /** Determines the required provision for the number of offers.
-   * @param params The parameters used to calculate the provision.
-   * @param params.gasreq The gas required to execute a trade.
-   * @param params.gasprice The gas price to calculate provision for.
-   * @param params.offerCount The number of offers to calculate provision for.
-   * @returns The provision required for the number of offers.
-   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision.
-   */
-  public async getRequiredProvision(params: {
-    gasreq: number;
-    gasprice: number;
-    offerCount: number;
-  }) {
-    const provisionBid = await this.market.getOfferProvision(
-      "bids",
-      params.gasreq,
-      params.gasprice
-    );
-    const provisionAsk = await this.market.getOfferProvision(
-      "asks",
-      params.gasreq,
-      params.gasprice
-    );
-    return provisionBid.add(provisionAsk).mul(params.offerCount);
   }
 
   /** Retrieves the current Kandel parameters */
@@ -455,6 +431,33 @@ class KandelInstance {
     );
   }
 
+  /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
+   * @param params The parameters for the distribution.
+   * @param params.explicitOffers The explicit offers to use.
+   * @param params.explicitOffers[].index The index of the offer.
+   * @param params.explicitOffers[].offerType The type of the offer.
+   * @param params.explicitOffers[].price The price of the offer.
+   * @param params.explicitOffers[].gives The amount of base or quote that the offer gives.
+   * @returns The new distribution.
+   */
+  public async createDistributionWithOffers(params: {
+    explicitOffers: {
+      index: number;
+      offerType: Market.BA;
+      price: Bigish;
+      gives: Bigish;
+    }[];
+  }) {
+    const parameters = await this.getParameters();
+    return this.generator.createDistributionWithOffers({
+      explicitOffers: params.explicitOffers,
+      distribution: {
+        ratio: parameters.ratio,
+        pricePoints: parameters.pricePoints,
+      },
+    });
+  }
+
   /** Approves the Kandel instance for transferring from signer to itself.
    * @param baseArgs The arguments for approving the base token. If not provided, then infinite approval is used.
    * @param quoteArgs The arguments for approving the quote token. If not provided, then infinite approval is used.
@@ -551,21 +554,23 @@ class KandelInstance {
       params.distribution?.ratio,
       params.distribution?.pricePoints
     );
+    // If no distribution is provided, then create an empty distribution to pass information around.
     const distribution =
       params.distribution ??
-      this.generator.distributionHelper.createEmptyDistribution(
-        parameters.ratio,
-        parameters.pricePoints
-      );
+      this.generator.createDistributionWithOffers({
+        explicitOffers: [],
+        distribution: parameters,
+      });
 
     const rawParameters = this.getRawParameters(parameters);
     const funds =
       params.funds ??
-      (await this.getRequiredProvision({
+      (await distribution?.getRequiredProvision({
+        market: this.market,
         gasreq: rawParameters.gasreq,
         gasprice: rawParameters.gasprice,
-        offerCount: params.distribution?.getOfferCount() ?? 0,
-      }));
+      })) ??
+      0;
 
     const { firstAskIndex, rawDistributions } =
       await this.getRawDistributionChunks({
@@ -673,6 +678,22 @@ class KandelInstance {
     );
   }
 
+  /** Determines the internal amounts to withdraw - defaults to everything (type(uint).max) if value not provided.
+   * @param baseAmount The amount of base to withdraw.
+   * @param quoteAmount The amount of quote to withdraw.
+   * @returns The internal amounts to withdraw.
+   */
+  private getRawWithdrawAmounts(baseAmount?: Bigish, quoteAmount?: Bigish) {
+    return {
+      baseAmount: baseAmount
+        ? this.market.base.toUnits(baseAmount)
+        : this.maxUint256,
+      quoteAmount: quoteAmount
+        ? this.market.quote.toUnits(quoteAmount)
+        : this.maxUint256,
+    };
+  }
+
   /** Retracts offers and withdraws tokens and provision
    * @param params The parameters.
    * @param params.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
@@ -699,16 +720,16 @@ class KandelInstance {
     } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ethers.ContractTransaction[]> {
-    const baseAmount =
-      params.withdrawBaseAmount ?? (await this.getBalance("asks"));
-    const quoteAmount =
-      params.withdrawQuoteAmount ?? (await this.getBalance("bids"));
+    const { baseAmount, quoteAmount } = this.getRawWithdrawAmounts(
+      params.withdrawBaseAmount,
+      params.withdrawQuoteAmount
+    );
 
     const recipientAddress =
       params.recipientAddress ?? (await this.market.mgv.signer.getAddress());
     const freeWei = params.withdrawFunds
       ? UnitCalculations.toUnits(params.withdrawFunds, 18)
-      : ethers.BigNumber.from(2).pow(256).sub(1);
+      : this.maxUint256;
 
     const { txs, lastChunk } = await this.retractOfferChunks(
       { retractParams: params, skipLast: true },
@@ -719,8 +740,8 @@ class KandelInstance {
       await this.kandel.retractAndWithdraw(
         lastChunk.from,
         lastChunk.to,
-        this.market.base.toUnits(baseAmount),
-        this.market.quote.toUnits(quoteAmount),
+        baseAmount,
+        quoteAmount,
         freeWei,
         recipientAddress,
         overrides
@@ -806,6 +827,37 @@ class KandelInstance {
     }
 
     return { txs, lastChunk };
+  }
+
+  /** Withdraws tokens from the Kandel instance.
+   * @param params The parameters.
+   * @param params.baseAmount The amount of base to withdraw. If not provided, then the entire base balance on Kandel is withdrawn.
+   * @param params.quoteAmount The amount of quote to withdraw. If not provided, then the entire quote balance on Kandel is withdrawn.
+   * @param params.recipientAddress The address to withdraw the tokens to. If not provided, then the address of the signer is used.
+   * @param overrides The ethers overrides to use when calling the retractAndWithdraw, and retractOffers functions.
+   * @returns The transaction used to withdraw the offers.
+   * @remarks it is up to the caller to make sure there are still enough funds for live offers.
+   */
+  public async withdraw(
+    params: {
+      baseAmount?: Bigish;
+      quoteAmount?: Bigish;
+      recipientAddress?: string;
+    } = {},
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ethers.ContractTransaction> {
+    const { baseAmount, quoteAmount } = this.getRawWithdrawAmounts(
+      params.baseAmount,
+      params.quoteAmount
+    );
+    const recipientAddress =
+      params.recipientAddress ?? (await this.market.mgv.signer.getAddress());
+    return await this.kandel.withdrawFunds(
+      baseAmount,
+      quoteAmount,
+      recipientAddress,
+      overrides
+    );
   }
 }
 

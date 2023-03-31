@@ -1,5 +1,6 @@
 import Big from "big.js";
 import Market from "../market";
+import KandelDistributionHelper from "./kandelDistributionHelper";
 
 /** Distribution of bids and asks and their base and quote amounts.
  * @param offerType Whether the offer is a bid or an ask.
@@ -21,6 +22,7 @@ class KandelDistribution {
   quoteDecimals: number;
   ratio: Big;
   pricePoints: number;
+  helper: KandelDistributionHelper;
 
   /** Constructor
    * @param offers The distribution of bids and asks.
@@ -36,20 +38,13 @@ class KandelDistribution {
     baseDecimals: number,
     quoteDecimals: number
   ) {
-    this.sortByIndex(offers);
+    this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
+    this.helper.sortByIndex(offers);
     this.ratio = ratio;
     this.pricePoints = pricePoints;
     this.offers = offers;
     this.baseDecimals = baseDecimals;
     this.quoteDecimals = quoteDecimals;
-  }
-
-  /** Sorts an array in-place according to an index property in ascending order.
-   * @param list The list to sort.
-   * @returns The sorted list.
-   */
-  public sortByIndex(list: { index: number }[]) {
-    return list.sort((a, b) => a.index - b.index);
   }
 
   /** Gets the number of offers in the distribution. This can be lower than the number of price points when a subset is considered.
@@ -186,6 +181,25 @@ class KandelDistribution {
         lastOfferType = this.offers[i].offerType;
       }
     }
+  }
+
+  /** Determines the required provision for the offers in the distribution.
+   * @param params The parameters used to calculate the provision.
+   * @param params.market The market to get provisions for bids and asks from.
+   * @param params.gasreq The gas required to execute a trade.
+   * @param params.gasprice The gas price to calculate provision for.
+   * @returns The provision required for the number of offers.
+   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision.
+   */
+  public async getRequiredProvision(params: {
+    market: Market;
+    gasreq: number;
+    gasprice: number;
+  }) {
+    return this.helper.getRequiredProvision({
+      ...params,
+      offerCount: this.getOfferCount(),
+    });
   }
 }
 

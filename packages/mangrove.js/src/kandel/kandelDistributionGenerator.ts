@@ -1,4 +1,5 @@
 import Big from "big.js";
+import Market from "../market";
 import { Bigish } from "../types";
 import KandelDistribution from "./kandelDistribution";
 import KandelDistributionHelper from "./kandelDistributionHelper";
@@ -75,6 +76,48 @@ class KandelDistributionGenerator {
       params.distribution.getFirstAskIndex(),
       initialGives.askGives,
       initialGives.bidGives
+    );
+  }
+
+  /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
+   * @param params The parameters for the distribution.
+   * @param params.explicitOffers The explicit offers to use.
+   * @param params.explicitOffers[].index The index of the offer.
+   * @param params.explicitOffers[].offerType The type of the offer.
+   * @param params.explicitOffers[].price The price of the offer.
+   * @param params.explicitOffers[].gives The amount of base or quote that the offer gives.
+   * @param params.distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
+   * @returns The new distribution.
+   */
+  public createDistributionWithOffers(params: {
+    explicitOffers: {
+      index: number;
+      offerType: Market.BA;
+      price: Bigish;
+      gives: Bigish;
+    }[];
+    distribution:
+      | {
+          ratio: Bigish;
+          pricePoints: number;
+        }
+      | KandelDistribution;
+  }) {
+    const distribution =
+      params.distribution instanceof KandelDistribution
+        ? params.distribution
+        : {
+            ratio: Big(params.distribution.ratio),
+            pricePoints: params.distribution.pricePoints,
+          };
+    return this.distributionHelper.createDistributionWithOffers(
+      params.explicitOffers.map(({ index, offerType, price, gives }) => ({
+        index,
+        offerType,
+        price: Big(price),
+        gives: Big(gives),
+      })),
+      distribution
     );
   }
 }

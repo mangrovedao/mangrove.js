@@ -12,6 +12,22 @@ import {
 
 import KandelInstance from "./kandelInstance";
 import Market from "../market";
+import KandelDistribution from "./kandelDistribution";
+
+/** The parameters for sowing the Kandel instance.
+ * @param onAave Whether to create an AaveKandel which supplies liquidity on Aave to earn yield, or a standard Kandel.
+ * @param market The market to create the Kandel for.
+ * @param liquiditySharing Whether to enable liquidity sharing for the Kandel so that the signer can publish the same liquidity for multiple router-based Kandels (currently AaveKandel).
+ * @param gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
+ * @param gasprice The gasprice (in gwei) to use for the Kandel (before multiplying with the factor). If null, then Mangrove's global gasprice will be used.
+ */
+export type KandelSeed = {
+  onAave: boolean;
+  market: Market;
+  liquiditySharing: boolean;
+  gaspriceFactor: number;
+  gasprice?: number;
+};
 
 /** Seeder for creating Kandel instances on-chain. */
 class KandelSeeder {
@@ -48,25 +64,9 @@ class KandelSeeder {
 
   /** Create a new Kandel instance.
    * @param seed The parameters for sowing the Kandel instance.
-   * @param seed.onAave Whether to create an AaveKandel which supplies liquidity on Aave to earn yield, or a standard Kandel.
-   * @param seed.market The market to create the Kandel for.
-   * @param seed.liquiditySharing Whether to enable liquidity sharing for the Kandel so that the signer can publish the same liquidity for multiple router-based Kandels (currently AaveKandel).
-   * @param seed.gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
-   * @param seed.gasprice The gasprice (in gwei) to use for the Kandel (before multiplying with the factor). If null, then Mangrove's global gasprice will be used.
    */
-  public async sow(
-    seed: {
-      onAave: boolean;
-      market: Market;
-      liquiditySharing: boolean;
-      gaspriceFactor: number;
-      gasprice?: number; // null means use mangroves global.
-    },
-    overrides: ethers.Overrides = {}
-  ) {
-    const gasprice =
-      seed.gaspriceFactor *
-      (seed.gasprice ?? (await this.mgv.config()).gasprice);
+  public async sow(seed: KandelSeed, overrides: ethers.Overrides = {}) {
+    const gasprice = await this.getBufferedGasprice(seed);
 
     const rawSeed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
       base: seed.market.base.address,
@@ -134,6 +134,53 @@ class KandelSeeder {
     throw Error(
       "Unable to get Kandel from receipt. Did not find expected events."
     );
+  }
+
+  /** Retrieves the default gasreq for the Kandel type.
+   * @param onAave Whether to get the gasreq for an AaveKandel or a standard Kandel.
+   * @returns The gasreq for the Kandel type.
+   */
+  public async getDefaultGasreq(onAave: boolean) {
+    return (
+      onAave
+        ? (await this.aaveKandelSeeder.KANDEL_GASREQ()).add(
+            await typechain.AbstractRouter__factory.connect(
+              await this.aaveKandelSeeder.AAVE_ROUTER(),
+              this.mgv.signer
+            ).routerGasreq()
+          )
+        : await this.kandelSeeder.KANDEL_GASREQ()
+    ).toNumber();
+  }
+
+  /** Retrieves the gasprice for the Kandel type multiplied by the buffer factor.
+   * @param seed The parameters for sowing the Kandel instance.
+   * @returns The gasprice for the Kandel type multiplied by the buffer factor.
+   */
+  public async getBufferedGasprice(seed: KandelSeed) {
+    return (
+      seed.gaspriceFactor *
+      (seed.gasprice ?? (await this.mgv.config()).gasprice)
+    );
+  }
+
+  /** Determines the required provision for the distribution prior to sowing.
+   * @param seed The parameters for sowing the Kandel instance.
+   * @param distribution The distribution to determine the provision for.
+   * @returns The provision required for the distribution.
+   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision.
+   */
+  public async getRequiredProvision(
+    seed: KandelSeed,
+    distribution: KandelDistribution
+  ) {
+    const gasreq = await this.getDefaultGasreq(seed.onAave);
+    const gasprice = await this.getBufferedGasprice(seed);
+    return distribution.getRequiredProvision({
+      market: seed.market,
+      gasprice,
+      gasreq,
+    });
   }
 }
 

@@ -209,6 +209,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
       });
     }
   );
+
   describe(KandelDistributionHelper.prototype.chunkIndices.name, () => {
     it("can chunk", () => {
       // Arrange/act
@@ -218,6 +219,28 @@ describe("KandelDistributionHelper unit tests suite", () => {
       assert.equal(chunks.length, 2);
       assert.deepStrictEqual(chunks[0], { from: 1, to: 3 });
       assert.deepStrictEqual(chunks[1], { from: 3, to: 4 });
+    });
+  });
+
+  describe(KandelDistributionHelper.prototype.sortByIndex.name, () => {
+    it("sorts", () => {
+      // Arrange
+      const list = [
+        { a: "1", index: 2 },
+        { a: "3", index: 1 },
+        { a: "0", index: 9 },
+      ];
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      sut.sortByIndex(list);
+
+      // Assert
+      assert.deepStrictEqual(list, [
+        { a: "3", index: 1 },
+        { a: "1", index: 2 },
+        { a: "0", index: 9 },
+      ]);
     });
   });
 });

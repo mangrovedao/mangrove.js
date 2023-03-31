@@ -9,7 +9,12 @@ import {
 
 import { toWei } from "../util/helpers";
 
-import { KandelStrategies } from "../../src";
+import {
+  KandelDistribution,
+  KandelSeeder,
+  KandelStrategies,
+  Market,
+} from "../../src";
 import { Mangrove } from "../../src";
 import * as helpers from "../util/helpers";
 
@@ -55,21 +60,37 @@ describe("Kandel integration tests suite", function () {
   });
 
   describe("seeder", async function () {
+    let seeder: KandelSeeder;
+    let distribution: KandelDistribution;
+    let market: Market;
+
+    beforeEach(async () => {
+      const strategies = new KandelStrategies(mgv);
+      seeder = new KandelStrategies(mgv).seeder;
+      market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      distribution = strategies.generator(market).calculateDistribution({
+        priceParams: { minPrice: 900, ratio: 1.01, pricePoints: 6 },
+        midPrice: 1000,
+        initialAskGives: 1,
+      });
+    });
     [true, false].forEach((onAave) =>
       [true, false].forEach((liquiditySharing) => {
         it(`sow deploys kandel and returns instance onAave:${onAave} liquiditySharing:${liquiditySharing}`, async function () {
           // Arrange
-          const seeder = new KandelStrategies(mgv).seeder;
-          const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-          // Act
-          const { kandelPromise } = await seeder.sow({
+          const seed = {
             market: market,
             liquiditySharing: liquiditySharing,
             onAave: onAave,
             gasprice: undefined,
             gaspriceFactor: 2,
-          });
+          };
+          // Act
+          const preSowRequiredProvision = await seeder.getRequiredProvision(
+            seed,
+            distribution
+          );
+          const { kandelPromise } = await seeder.sow(seed);
           const kandel = await kandelPromise;
 
           // Assert
@@ -107,22 +128,34 @@ describe("Kandel integration tests suite", function () {
             (await mgv.config()).gasprice * 2,
             "should use Mangrove's gasprice and a multiplier."
           );
+          assert.equal(
+            preSowRequiredProvision.toNumber(),
+            (
+              await distribution.getRequiredProvision({
+                market,
+                gasreq: params.gasreq,
+                gasprice: params.gasprice,
+              })
+            ).toNumber()
+          );
         });
       })
     );
     it(`sow deploys kandel with overridden gasprice for provision calculation`, async function () {
       // Arrange
-      const seeder = new KandelStrategies(mgv).seeder;
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-      // Act
-      const { kandelPromise } = await seeder.sow({
+      const seed = {
         market: market,
         liquiditySharing: false,
         onAave: false,
         gasprice: 10000,
         gaspriceFactor: 2,
-      });
+      };
+      // Act
+      const preSowRequiredProvision = await seeder.getRequiredProvision(
+        seed,
+        distribution
+      );
+      const { kandelPromise } = await seeder.sow(seed);
       const kandel = await kandelPromise;
 
       // Assert
@@ -131,6 +164,16 @@ describe("Kandel integration tests suite", function () {
         params.gasprice,
         20000,
         "should use specified gasprice and multiplier."
+      );
+      assert.equal(
+        preSowRequiredProvision.toNumber(),
+        (
+          await distribution.getRequiredProvision({
+            market,
+            gasreq: params.gasreq,
+            gasprice: params.gasprice,
+          })
+        ).toNumber()
       );
     });
   });
@@ -567,9 +610,9 @@ describe("Kandel integration tests suite", function () {
           kandel.populate({
             parameters: { ratio: 2 },
             distribution:
-              kandel.generator.distributionHelper.createEmptyDistribution(
-                Big(1),
-                5
+              kandel.generator.distributionHelper.createDistributionWithOffers(
+                [],
+                { ratio: Big(1), pricePoints: 5 }
               ),
           }),
           "ratio in parameter overrides does not match the ratio of the distribution."
@@ -585,9 +628,9 @@ describe("Kandel integration tests suite", function () {
           kandel.populate({
             parameters: { pricePoints: 2 },
             distribution:
-              kandel.generator.distributionHelper.createEmptyDistribution(
-                Big(1),
-                5
+              kandel.generator.distributionHelper.createDistributionWithOffers(
+                [],
+                { ratio: Big(1), pricePoints: 5 }
               ),
           }),
           "pricePoints in parameter overrides does not match the pricePoints of the distribution."
@@ -702,6 +745,109 @@ describe("Kandel integration tests suite", function () {
         );
       });
 
+      it(`deposit can deposit to Kandel`, async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        const kandelBaseBalance = await kandel.getBalance("asks");
+        const kandelQuoteBalance = await kandel.getBalance("bids");
+
+        // Act
+        await waitForTransaction(
+          await kandel.deposit({ baseAmount: 1, quoteAmount: 1000 })
+        );
+
+        // Assert
+        assert.equal(
+          (await kandel.getBalance("asks")).toNumber(),
+          kandelBaseBalance.add(1).toNumber()
+        );
+        assert.equal(
+          (await kandel.getBalance("bids")).toNumber(),
+          kandelQuoteBalance.add(1000).toNumber()
+        );
+      });
+
+      it(`withdraw can withdraw all amounts`, async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        const recipient = await kandel.market.mgv.signer.getAddress();
+        const recipientBaseBalance = await kandel.market.base.balanceOf(
+          recipient
+        );
+        const recipientQuoteBalance = await kandel.market.base.balanceOf(
+          recipient
+        );
+
+        // Act
+        await waitForTransaction(await kandel.withdraw());
+
+        // Assert
+        assert.equal((await kandel.getBalance("asks")).toNumber(), 0);
+        assert.equal((await kandel.getBalance("bids")).toNumber(), 0);
+        assert.equal(
+          recipientBaseBalance.lt(
+            await kandel.market.base.balanceOf(recipient)
+          ),
+          true
+        );
+        assert.equal(
+          recipientQuoteBalance.lt(
+            await kandel.market.quote.balanceOf(recipient)
+          ),
+          true
+        );
+      });
+
+      it(`withdraw can withdraw specific amounts to recipient`, async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        const recipient = (
+          await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker)
+        ).address;
+        const recipientBaseBalance = await kandel.market.base.balanceOf(
+          recipient
+        );
+        const recipientQuoteBalance = await kandel.market.base.balanceOf(
+          recipient
+        );
+        const kandelBaseBalance = await kandel.getBalance("asks");
+        const kandelQuoteBalance = await kandel.getBalance("bids");
+
+        // Act
+        await waitForTransaction(
+          await kandel.withdraw({
+            baseAmount: 1,
+            quoteAmount: 1000,
+            recipientAddress: recipient,
+          })
+        );
+
+        // Assert
+        assert.equal(
+          (await kandel.getBalance("asks")).toNumber(),
+          kandelBaseBalance.sub(1).toNumber()
+        );
+        assert.equal(
+          (await kandel.getBalance("bids")).toNumber(),
+          kandelQuoteBalance.sub(1000).toNumber()
+        );
+        assert.equal(
+          recipientBaseBalance.lt(
+            await kandel.market.base.balanceOf(recipient)
+          ),
+          true
+        );
+        assert.equal(
+          recipientQuoteBalance.lt(
+            await kandel.market.quote.balanceOf(recipient)
+          ),
+          true
+        );
+      });
+
       it("getOfferStatuses retrieves status", async function () {
         // Arrange
         await populateKandel({ approve: false, deposit: false });
@@ -725,6 +871,77 @@ describe("Kandel integration tests suite", function () {
         assert.equal(
           statuses.statuses[4].asks.price.round(0).toString(),
           "1360"
+        );
+      });
+
+      it("getOfferStatuses retrieves status", async function () {
+        // Arrange
+        await populateKandel({ approve: false, deposit: false });
+        await waitForTransactions(
+          kandel.retractOffers(
+            { startIndex: 0, endIndex: 1 },
+            { gasLimit: 1000000 }
+          )
+        );
+
+        // Act
+        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        const statuses = await kandel.getOfferStatuses(Big(1170));
+
+        // Assert
+        assert.equal(6, statuses.statuses.length);
+        assert.equal(statuses.baseOffer.offerType, "bids");
+        assert.equal(statuses.baseOffer.index, 2);
+        assert.equal(statuses.statuses[0].bids.live, false);
+        assert.equal(statuses.statuses[0].expectedLiveBid, true);
+        assert.equal(
+          statuses.statuses[4].asks.price.round(0).toString(),
+          "1360"
+        );
+      });
+
+      it("createDistributionWithOffers can be used to heal an offer", async function () {
+        // Arrange
+        await populateKandel({ approve: false, deposit: false });
+        await waitForTransactions(
+          kandel.retractOffers(
+            { startIndex: 0, endIndex: 1 },
+            { gasLimit: 1000000 }
+          )
+        );
+        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        const statuses = await kandel.getOfferStatuses(Big(1170));
+        assert.equal(statuses.statuses[0].bids.live, false);
+        assert.equal(statuses.statuses[0].expectedLiveBid, true);
+        const parameters = await kandel.getParameters();
+
+        // Act
+        const singleOfferDistribution =
+          await kandel.createDistributionWithOffers({
+            explicitOffers: [
+              {
+                index: 0,
+                offerType: "bids",
+                price: statuses.statuses[0].expectedPrice,
+                gives: 1000,
+              },
+            ],
+          });
+        await waitForTransactions(
+          kandel.populateChunk({ distribution: singleOfferDistribution })
+        );
+
+        // Assert
+        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        const statusesPost = await kandel.getOfferStatuses(Big(1170));
+        assert.equal(statusesPost.statuses[0].bids.live, true);
+        assert.equal(
+          singleOfferDistribution.ratio.toNumber(),
+          parameters.ratio.toNumber()
+        );
+        assert.equal(
+          singleOfferDistribution.pricePoints,
+          parameters.pricePoints
         );
       });
 
@@ -838,6 +1055,7 @@ describe("Kandel integration tests suite", function () {
             ).length;
             assert.equal(deadOffers, 2);
           });
+
           it(`retractAndWithdraw can withdraw all offers and amounts inChunks=${inChunks}`, async () => {
             // Arrange
             await populateKandel({ approve: true, deposit: true });
@@ -937,11 +1155,13 @@ describe("Kandel integration tests suite", function () {
           const kandelMgvBalance = await kandel.offerLogic.getMangroveBalance();
           const { gasreq, gasprice } = await kandel.getParameters();
 
-          const retractedOffersProvision = await kandel.getRequiredProvision({
-            gasreq,
-            gasprice,
-            offerCount: 1,
-          });
+          const retractedOffersProvision =
+            await kandel.generator.distributionHelper.getRequiredProvision({
+              market: kandel.market,
+              gasreq,
+              gasprice,
+              offerCount: 1,
+            });
           const withdrawnFunds = Big(0.001);
 
           // Act

@@ -16,6 +16,14 @@ class KandelDistributionHelper {
     this.quoteDecimals = quoteDecimals;
   }
 
+  /** Sorts an array in-place according to an index property in ascending order.
+   * @param list The list to sort.
+   * @returns The sorted list.
+   */
+  public sortByIndex(list: { index: number }[]) {
+    return list.sort((a, b) => a.index - b.index);
+  }
+
   /** Rounds a base amount according to the token's decimals.
    * @param base The base amount to round.
    * @returns The rounded base amount.
@@ -151,17 +159,42 @@ class KandelDistributionHelper {
     return distribution;
   }
 
-  /** Creates an empty distribution with no offers.
-   * @returns The empty distribution.
+  /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
+   * @param explicitOffers The explicit offers to use.
+   * @param explicitOffers[].index The index of the offer.
+   * @param explicitOffers[].offerType The type of the offer.
+   * @param explicitOffers[].price The price of the offer.
+   * @param explicitOffers[].gives The amount of base or quote that the offer gives.
+   * @param distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
+   * @returns The new distribution.
    */
-  public createEmptyDistribution(
-    ratio: Big,
-    pricePoints: number
-  ): KandelDistribution {
+  public createDistributionWithOffers(
+    explicitOffers: {
+      index: number;
+      offerType: Market.BA;
+      price: Big;
+      gives: Big;
+    }[],
+    distribution:
+      | {
+          ratio: Big;
+          pricePoints?: number;
+        }
+      | KandelDistribution
+  ) {
+    const offers = explicitOffers.map(({ index, offerType, price, gives }) => ({
+      index,
+      offerType,
+      base:
+        offerType == "asks" ? gives : this.baseFromQuoteAndPrice(gives, price),
+      quote:
+        offerType == "bids" ? gives : this.quoteFromBaseAndPrice(gives, price),
+    }));
+
     return new KandelDistribution(
-      ratio,
-      pricePoints,
-      [],
+      distribution.ratio,
+      distribution.pricePoints ?? offers.length,
+      offers,
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -220,6 +253,34 @@ class KandelDistributionHelper {
       });
     }
     return chunks;
+  }
+
+  /** Determines the required provision for the offers in the distribution.
+   * @param params The parameters used to calculate the provision.
+   * @param params.market The market to get provisions for bids and asks from.
+   * @param params.gasreq The gas required to execute a trade.
+   * @param params.gasprice The gas price to calculate provision for.
+   * @param params.offerCount The number of offers to calculate provision for.
+   * @returns The provision required for the number of offers.
+   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision.
+   */
+  public async getRequiredProvision(params: {
+    market: Market;
+    gasreq: number;
+    gasprice: number;
+    offerCount: number;
+  }) {
+    const provisionBid = await params.market.getOfferProvision(
+      "bids",
+      params.gasreq,
+      params.gasprice
+    );
+    const provisionAsk = await params.market.getOfferProvision(
+      "asks",
+      params.gasreq,
+      params.gasprice
+    );
+    return provisionBid.add(provisionAsk).mul(params.offerCount);
   }
 }
 
