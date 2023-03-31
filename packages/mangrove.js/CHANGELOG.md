@@ -1,3 +1,8 @@
+# 1.2.4-3 (March 2023)
+
+- Added calculation of provision, withdrawal, access to offer logic to Kandel SDK
+- Use next prerelease mangrove-core
+
 # 1.2.4-2 (March 2023)
 
 - Draft version of Kandel SDK
