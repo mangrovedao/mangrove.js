@@ -95,7 +95,7 @@ describe("Kandel integration tests suite", function () {
             "wrong reserve"
           );
           assert.equal(
-            await kandel.hasRouter(),
+            await kandel.offerLogic.hasRouter(),
             onAave,
             "router should only be there for aave"
           );
@@ -689,16 +689,16 @@ describe("Kandel integration tests suite", function () {
       it("fundOnMangrove adds funds", async () => {
         // Arrange
         await populateKandel({ approve: false, deposit: false });
-        const balanceBefore = await kandel.getMangroveBalance();
+        const balanceBefore = await kandel.offerLogic.getMangroveBalance();
         const funds = Big(0.42);
 
         // Act
-        await kandel.fundOnMangrove(funds);
+        await kandel.offerLogic.fundOnMangrove(funds);
 
         // Assert
         assert.equal(
           balanceBefore.add(funds).toNumber(),
-          (await kandel.getMangroveBalance()).toNumber()
+          (await kandel.offerLogic.getMangroveBalance()).toNumber()
         );
       });
 
@@ -763,7 +763,7 @@ describe("Kandel integration tests suite", function () {
           compoundRateBase: 1,
           compoundRateQuote: 1,
         });
-        await kandel.fundOnMangrove(1);
+        await kandel.offerLogic.fundOnMangrove(1);
 
         await waitForTransactions(
           kandel.retractOffers(
@@ -798,7 +798,7 @@ describe("Kandel integration tests suite", function () {
             await kandel.kandel.QUOTE(),
             kandel.market.quote.address
           );
-          assert.equal(await kandel.hasRouter(), onAave);
+          assert.equal(await kandel.offerLogic.hasRouter(), onAave);
           assert.equal(await kandel.getReserveId(), kandel.address);
         });
 
@@ -862,7 +862,10 @@ describe("Kandel integration tests suite", function () {
             assert.equal((await kandel.getBalance("bids")).toNumber(), 0);
             assert.equal((await kandel.getOfferedVolume("bids")).toNumber(), 0);
             assert.equal((await kandel.getOfferedVolume("asks")).toNumber(), 0);
-            assert.equal((await kandel.getMangroveBalance()).toNumber(), 0);
+            assert.equal(
+              (await kandel.offerLogic.getMangroveBalance()).toNumber(),
+              0
+            );
             assert.equal(
               nativeBalance.lt(
                 UnitCalculations.fromUnits(
@@ -931,7 +934,7 @@ describe("Kandel integration tests suite", function () {
 
           const kandelBaseBalance = await kandel.getBalance("asks");
           const kandelQuoteBalance = await kandel.getBalance("bids");
-          const kandelMgvBalance = await kandel.getMangroveBalance();
+          const kandelMgvBalance = await kandel.offerLogic.getMangroveBalance();
           const { gasreq, gasprice } = await kandel.getParameters();
 
           const retractedOffersProvision = await kandel.getRequiredProvision({
@@ -968,7 +971,7 @@ describe("Kandel integration tests suite", function () {
           ).length;
           assert.equal(deadOffers, 2);
           assert.equal(
-            (await kandel.getMangroveBalance()).toNumber(),
+            (await kandel.offerLogic.getMangroveBalance()).toNumber(),
             kandelMgvBalance
               .add(retractedOffersProvision.sub(withdrawnFunds))
               .toNumber()

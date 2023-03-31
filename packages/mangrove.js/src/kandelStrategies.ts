@@ -12,9 +12,13 @@ namespace KandelStrategies {}
 
 /** Entrypoint for the Kandel strategies. Kandel is an Automated Market Making strategy that uses on-chain order flow to repost offers instantly, without any latency. Within a market and price range you select, Kandel automatically posts bids and asks. Its main goal is to buy low and sell high - profits are made through accumulated spread. */
 class KandelStrategies {
-  /**  */
+  /** Seeder for creating Kandel instances on-chain. */
   public seeder: KandelSeeder;
+
+  /** Repository for Kandel instances. */
   public farm: KandelFarm;
+
+  /** The Mangrove to interact with. */
   public mgv: Mangrove;
 
   /** Constructor

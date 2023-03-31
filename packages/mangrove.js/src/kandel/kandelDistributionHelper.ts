@@ -119,14 +119,6 @@ class KandelDistributionHelper {
     );
   }
 
-  /** Calculates distribution of bids and asks with constant gives and a matching wants given the price distribution.
-   * @param prices The price distribution.
-   * @param askGives The constant gives for asks.
-   * @param bidGives The constant gives for bids.
-   * @param firstAskIndex The index of the first ask in the distribution.
-   * @returns The distribution of bids and asks and their base and quote.
-   */
-
   /** Calculates distribution of bids and asks and their base and quote amounts to match the price distribution.
    * @param ratio The ratio used when calculating the price distribution.
    * @param prices The price distribution.
