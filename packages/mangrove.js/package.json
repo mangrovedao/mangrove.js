@@ -93,7 +93,7 @@
     "dir-compare": "^4.0.0",
     "esbuild": "^0.16.16",
     "eslint": "^8.31.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-prettier": "^8.8.0",
     "lint-staged": "^13.2.0",
     "mocha": "^10.2.0",
     "mocha-multi-reporters": "^1.5.1",
