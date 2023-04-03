@@ -67,7 +67,7 @@
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
     "esbuild-plugin-resolve": "^1.0.3",
-    "ethers": "^5.7.2",
+    "ethers": "^6.2.3",
     "node-cleanup": "^2.1.2",
     "yargs": "^17.3.0"
   },
