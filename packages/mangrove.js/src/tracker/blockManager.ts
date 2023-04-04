@@ -55,7 +55,6 @@ type BlockManagerOptions = {
 export class BlockManager {
   private blocksByNumber: Record<number, Block> = {};
   private lastBlock: Block;
-  private lastQueriedLogBlocknumber: number;
 
   private blockCached: number = 0;
 
@@ -63,7 +62,6 @@ export class BlockManager {
 
   public initialize(block: Block) {
     this.lastBlock = block;
-    this.lastQueriedLogBlocknumber = block.number;
 
     this.blocksByNumber[block.number] = block;
     this.blockCached = 1;
@@ -196,7 +194,6 @@ export class BlockManager {
       this.setLastBlock(toBlock);
     }
 
-    let newLastLogBlockNumber = this.lastQueriedLogBlocknumber;
     for (const log of logs) {
       const block = this.blocksByNumber[log.blockNumber];
       if (block.hash !== log.blockHash) {
@@ -208,19 +205,23 @@ export class BlockManager {
 
         return this.queryLogs(fromBlock, toBlock, rec + 1, _commonAncestor);
       }
-
-      newLastLogBlockNumber = log.blockNumber;
     }
-
-    this.lastQueriedLogBlocknumber = newLastLogBlockNumber;
 
     return { error: undefined, logs, commonAncestor };
   }
 
   async handleBlock(newBlock: Block): Promise<HandleBlockResult> {
+    const cachedBlock = this.blocksByNumber[newBlock.number];
+    if (cachedBlock && cachedBlock.hash === newBlock.hash) {
+      logger.debug(
+        `handleBlock() block already in cache, ignoring... (${newBlock.hash}, ${newBlock.number})`
+      );
+      return { error: undefined, logs: [] };
+    }
+
     if (newBlock.parentHash !== this.lastBlock.hash) {
       logger.debug(
-        `handleBlock: (last: (${this.lastBlock.hash}, ${this.lastBlock.number})) (new: (${newBlock.hash}, ${newBlock.number})) `
+        `handleBlock() (last: (${this.lastBlock.hash}, ${this.lastBlock.number})) (new: (${newBlock.hash}, ${newBlock.number})) `
       );
       // Reorg detected, chain is inconsitent
 

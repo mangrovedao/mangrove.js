@@ -55,7 +55,7 @@ const generateMockLog = (blockNumber: number, blockHash: string): Log => {
   };
 };
 
-describe("Block Manager", () => {
+describe.only("Block Manager", () => {
   const blockChain1: Record<number, BlockAndLogs> = {
     1: {
       block: {
@@ -262,5 +262,28 @@ describe("Block Manager", () => {
     assert.equal(logs!.length, 1);
     assert.equal(logs![0].blockNumber, 2);
     assert.equal(logs![0].blockHash, "0x2c");
+  });
+
+  it("detect already handle block", async () => {
+    const mockRpc = new MockRpc(blockChain1);
+
+    const blockManager = new BlockManager({
+      maxBlockCached: 50,
+      getBlock: mockRpc.getBlock.bind(mockRpc),
+      getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetLogs: 5,
+      retryDelayGeLogsMs: 200,
+    });
+
+    blockManager.initialize(blockChain1[1].block);
+
+    let { error, logs, rollback } = await blockManager.handleBlock(
+      blockChain1[1].block
+    );
+
+    assert.equal(error, undefined);
+    assert.deepEqual(rollback, undefined);
+    assert.notEqual(logs, undefined);
+    assert.equal(logs!.length, 0);
   });
 });
