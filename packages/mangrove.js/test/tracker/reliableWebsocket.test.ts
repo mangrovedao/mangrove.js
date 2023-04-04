@@ -1,3 +1,4 @@
+import { sleep } from "@mangrovedao/commonlib.js";
 import assert from "assert";
 import { describe, it } from "mocha";
 import { WebSocketServer, WebSocket } from "ws";
@@ -8,11 +9,6 @@ import {
 import { enableLogging } from "../../src/util/logger";
 
 enableLogging();
-
-const sleep = (delayMs) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, delayMs);
-  });
 
 describe("Reliable Websocket", () => {
   const host = "127.0.0.1";
