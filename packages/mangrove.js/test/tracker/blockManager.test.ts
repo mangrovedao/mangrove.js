@@ -50,7 +50,7 @@ const generateMockLog = (blockNumber: number, blockHash: string): Log => {
   };
 };
 
-describe.only("Block Manager", () => {
+describe("Block Manager", () => {
   const blockChain1: Record<number, BlockAndLogs> = {
     1: {
       block: {
