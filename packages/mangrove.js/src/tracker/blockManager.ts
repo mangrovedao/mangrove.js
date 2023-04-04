@@ -73,6 +73,8 @@ export class BlockManager {
     this.lastBlock = block;
     this.blocksByNumber[block.number] = block;
     this.blockCached++;
+
+    logger.debug(`setLastBlock() (${block.hash}, ${block.number})`);
   }
 
   private async findCommonAncestor(): Promise<ErrorOrCommonAncestor> {
@@ -133,6 +135,9 @@ export class BlockManager {
 
   async handleReorg(newBlock: Block): Promise<ErrorOrReorg> {
     let { error, commonAncestor } = await this.findCommonAncestor();
+    logger.debug(
+      `handleReorg(): commonAncestor (${commonAncestor.hash}, ${commonAncestor.number})`
+    );
 
     // error happen when we didn't find any common ancestor in the cache
     if (error) {
@@ -168,6 +173,9 @@ export class BlockManager {
     rec: number,
     commonAncestor?: Block
   ): Promise<ErrorOrLogsWithCommonAncestor> {
+    logger.debug(
+      `queryLogs(): fromBlock (${fromBlock.hash}, ${fromBlock.number}), toBlock (${toBlock.hash}, ${toBlock.number})`
+    );
     if (rec > this.options.maxRetryGetLogs) {
       return { error: "MaxRetryReach", logs: undefined };
     }
@@ -182,7 +190,11 @@ export class BlockManager {
       return this.queryLogs(fromBlock, toBlock, rec + 1);
     }
 
-    this.setLastBlock(toBlock);
+    /* DIRTY: if we detected a reorg we repoplate the chain until toBlock.number
+     * */
+    if (!commonAncestor) {
+      this.setLastBlock(toBlock);
+    }
 
     let newLastLogBlockNumber = this.lastQueriedLogBlocknumber;
     for (const log of logs) {
@@ -194,8 +206,7 @@ export class BlockManager {
           return { error: reorgError, logs: undefined };
         }
 
-        //TODO: increase rec ???
-        return this.queryLogs(fromBlock, toBlock, rec);
+        return this.queryLogs(fromBlock, toBlock, rec + 1, _commonAncestor);
       }
 
       newLastLogBlockNumber = log.blockNumber;
@@ -209,7 +220,7 @@ export class BlockManager {
   async handleBlock(newBlock: Block): Promise<HandleBlockResult> {
     if (newBlock.parentHash !== this.lastBlock.hash) {
       logger.debug(
-        `reorg: (last: (${this.lastBlock.hash}, ${this.lastBlock.number})) (new: (${newBlock.hash}, ${newBlock.number})) `
+        `handleBlock: (last: (${this.lastBlock.hash}, ${this.lastBlock.number})) (new: (${newBlock.hash}, ${newBlock.number})) `
       );
       // Reorg detected, chain is inconsitent
 

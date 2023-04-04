@@ -236,4 +236,31 @@ describe("Block Manager", () => {
     assert.equal(logs![1].blockNumber, 3);
     assert.equal(logs![1].blockHash, "0x3c");
   });
+
+  it("1 block back 1 block long simulate block change in getLogs", async () => {
+    const mockRpc = new MockRpc(blockChain1);
+
+    const blockManager = new BlockManager({
+      maxBlockCached: 50,
+      getBlock: mockRpc.getBlock.bind(mockRpc),
+      getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetLogs: 5,
+      retryDelayGeLogsMs: 200,
+    });
+
+    blockManager.initialize(blockChain1[1].block);
+
+    /* start with blockChain2 but send blockChain1 block*/
+    mockRpc.blockByNumber = blockChain2;
+    let { error, logs, rollback } = await blockManager.handleBlock(
+      blockChain1[2].block
+    );
+
+    assert.equal(error, undefined);
+    assert.deepEqual(rollback, blockChain2[1].block);
+    assert.notEqual(logs, undefined);
+    assert.equal(logs!.length, 1);
+    assert.equal(logs![0].blockNumber, 2);
+    assert.equal(logs![0].blockHash, "0x2c");
+  });
 });
