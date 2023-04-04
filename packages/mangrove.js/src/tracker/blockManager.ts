@@ -116,7 +116,7 @@ class BlockManager {
     return { error: "NoCommonAncestorFoundInCache", commonAncestor: undefined };
   }
 
-  async repopulateValidChainUntilBlock(
+  private async repopulateValidChainUntilBlock(
     newBlock: BlockManager.Block,
     rec: number = 0
   ): Promise<{ error: BlockManager.MaxRetryError }> {
@@ -144,7 +144,7 @@ class BlockManager {
     return { error: undefined };
   }
 
-  async handleReorg(
+  private async handleReorg(
     newBlock: BlockManager.Block
   ): Promise<BlockManager.ErrorOrReorg> {
     let { error, commonAncestor } = await this.findCommonAncestor();
