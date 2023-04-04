@@ -49,6 +49,8 @@ namespace BlockManager {
     maxBlockCached: number;
     getBlock: (number: number) => Promise<ErrorOrBlock>;
     getLogs: (from: number, to: number) => Promise<ErrorOrLogs>;
+    maxRetryGetBlock: number;
+    retryDelayGetBlockMs: number;
     maxRetryGetLogs: number;
     retryDelayGeLogsMs: number;
   };
@@ -80,7 +82,13 @@ class BlockManager {
     logger.debug(`setLastBlock() (${block.hash}, ${block.number})`);
   }
 
-  private async findCommonAncestor(): Promise<BlockManager.ErrorOrCommonAncestor> {
+  private async findCommonAncestor(
+    rec: number = 0
+  ): Promise<BlockManager.ErrorOrCommonAncestor> {
+    if (rec === this.options.maxRetryGetBlock) {
+      return { error: "FailedGetBlock", commonAncestor: undefined };
+    }
+
     if (this.blockCached == 1) {
       // TODO: handle specific case
       return {
@@ -95,8 +103,8 @@ class BlockManager {
       const fetchedBlock = await this.options.getBlock(currentBlockNumber); // TODO: handle error
 
       if (fetchedBlock.error) {
-        // TODO Do something
-        return { error: "FailedGetBlock", commonAncestor: undefined };
+        await sleep(this.options.retryDelayGetBlockMs);
+        return this.findCommonAncestor(rec + 1);
       }
 
       const cachedBlock = this.blocksByNumber[currentBlockNumber];
@@ -140,14 +148,15 @@ class BlockManager {
     newBlock: BlockManager.Block
   ): Promise<BlockManager.ErrorOrReorg> {
     let { error, commonAncestor } = await this.findCommonAncestor();
-    logger.debug(
-      `handleReorg(): commonAncestor (${commonAncestor.hash}, ${commonAncestor.number})`
-    );
 
     // error happen when we didn't find any common ancestor in the cache
     if (error) {
       return { error, commonAncestor: undefined };
     }
+
+    logger.debug(
+      `handleReorg(): commonAncestor (${commonAncestor.hash}, ${commonAncestor.number})`
+    );
 
     for (let i = commonAncestor.number + 1; i <= this.lastBlock.number; ++i) {
       delete this.blocksByNumber[i];
@@ -256,6 +265,9 @@ class BlockManager {
         rollback: queryLogsAncestor ? queryLogsAncestor : reorgAncestor,
       };
     } else {
+      logger.debug(
+        `handleBlock() normal (${newBlock.hash}, ${newBlock.number})`
+      );
       const {
         error: queryLogsError,
         logs,

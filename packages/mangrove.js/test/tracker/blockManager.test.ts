@@ -12,6 +12,9 @@ type BlockAndLogs = {
 };
 
 class MockRpc {
+  private countFailingGetBlock = 0;
+  private countFailingGetLogs = 0;
+
   constructor(public blockByNumber: Record<number, BlockAndLogs>) {}
 
   async getBlock(number: number): Promise<BlockManager.ErrorOrBlock> {
@@ -33,6 +36,32 @@ class MockRpc {
     }
 
     return { error: undefined, logs };
+  }
+
+  failingBeforeXCallGetBlock(
+    x: number
+  ): (number: number) => Promise<BlockManager.ErrorOrBlock> {
+    return async (number: number) => {
+      if (this.countFailingGetBlock !== x) {
+        this.countFailingGetBlock++;
+        return { error: "BlockNotFound", block: undefined };
+      }
+
+      return this.getBlock(number);
+    };
+  }
+
+  failingBeforeXCallGetLogs(
+    x: number
+  ): (from: number, to: number) => Promise<BlockManager.ErrorOrLogs> {
+    return async (from: number, to: number) => {
+      if (this.countFailingGetLogs !== x) {
+        this.countFailingGetLogs++;
+        return { error: "BlockNotFound", logs: undefined };
+      }
+
+      return this.getLogs(from, to);
+    };
   }
 }
 
@@ -112,6 +141,8 @@ describe("Block Manager", () => {
       maxBlockCached: 50,
       getBlock: mockRpc.getBlock.bind(mockRpc),
       getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
       maxRetryGetLogs: 5,
       retryDelayGeLogsMs: 200,
     });
@@ -137,6 +168,8 @@ describe("Block Manager", () => {
       maxBlockCached: 50,
       getBlock: mockRpc.getBlock.bind(mockRpc),
       getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
       maxRetryGetLogs: 5,
       retryDelayGeLogsMs: 200,
     });
@@ -168,6 +201,8 @@ describe("Block Manager", () => {
       maxBlockCached: 50,
       getBlock: mockRpc.getBlock.bind(mockRpc),
       getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
       maxRetryGetLogs: 5,
       retryDelayGeLogsMs: 200,
     });
@@ -202,6 +237,8 @@ describe("Block Manager", () => {
       maxBlockCached: 50,
       getBlock: mockRpc.getBlock.bind(mockRpc),
       getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
       maxRetryGetLogs: 5,
       retryDelayGeLogsMs: 200,
     });
@@ -239,6 +276,8 @@ describe("Block Manager", () => {
       maxBlockCached: 50,
       getBlock: mockRpc.getBlock.bind(mockRpc),
       getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
       maxRetryGetLogs: 5,
       retryDelayGeLogsMs: 200,
     });
@@ -266,6 +305,8 @@ describe("Block Manager", () => {
       maxBlockCached: 50,
       getBlock: mockRpc.getBlock.bind(mockRpc),
       getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
       maxRetryGetLogs: 5,
       retryDelayGeLogsMs: 200,
     });
@@ -280,5 +321,65 @@ describe("Block Manager", () => {
     assert.deepEqual(rollback, undefined);
     assert.notEqual(logs, undefined);
     assert.equal(logs!.length, 0);
+  });
+
+  it("no reorg but fail getLogs", async () => {
+    const mockRpc = new MockRpc(blockChain1);
+
+    const blockManager = new BlockManager({
+      maxBlockCached: 50,
+      getBlock: mockRpc.getBlock.bind(mockRpc),
+      getLogs: mockRpc.failingBeforeXCallGetLogs(3).bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
+      maxRetryGetLogs: 5,
+      retryDelayGeLogsMs: 200,
+    });
+
+    blockManager.initialize(blockChain1[1].block);
+
+    const { error, logs, rollback } = await blockManager.handleBlock(
+      blockChain1[2].block
+    );
+
+    assert.equal(error, undefined);
+    assert.equal(rollback, undefined);
+    assert.notEqual(logs, undefined);
+    assert.equal(logs!.length, 1);
+    assert.equal(logs![0].blockNumber, 2);
+    assert.equal(logs![0].blockHash, "0x2");
+  });
+
+  it("1 block back 1 block long with failing get block", async () => {
+    const mockRpc = new MockRpc(blockChain1);
+
+    const blockManager = new BlockManager({
+      maxBlockCached: 50,
+      getBlock: mockRpc.failingBeforeXCallGetBlock(3).bind(mockRpc),
+      getLogs: mockRpc.getLogs.bind(mockRpc),
+      maxRetryGetBlock: 5,
+      retryDelayGetBlockMs: 200,
+      maxRetryGetLogs: 5,
+      retryDelayGeLogsMs: 200,
+    });
+
+    blockManager.initialize(blockChain1[1].block);
+
+    let { error, logs, rollback } = await blockManager.handleBlock(
+      blockChain1[2].block
+    );
+
+    mockRpc.blockByNumber = blockChain2;
+
+    ({ error, logs, rollback } = await blockManager.handleBlock(
+      blockChain2[2].block
+    ));
+
+    assert.equal(error, undefined);
+    assert.deepEqual(rollback, blockChain2[1].block);
+    assert.notEqual(logs, undefined);
+    assert.equal(logs!.length, 1);
+    assert.equal(logs![0].blockNumber, 2);
+    assert.equal(logs![0].blockHash, "0x2c");
   });
 });
