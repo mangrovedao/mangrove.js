@@ -1,25 +1,20 @@
 import assert from "assert";
 import { describe, it } from "mocha";
 import { enableLogging } from "../../src/util/logger";
-import {
-  Block,
-  BlockManager,
-  ErrorOrBlock,
-  ErrorOrLogs,
-} from "../../src/tracker/blockManager";
+import BlockManager from "../../src/tracker/blockManager";
 import { Log } from "@ethersproject/providers";
 
 enableLogging();
 
 type BlockAndLogs = {
-  block: Block;
+  block: BlockManager.Block;
   logs: Log[];
 };
 
 class MockRpc {
   constructor(public blockByNumber: Record<number, BlockAndLogs>) {}
 
-  async getBlock(number: number): Promise<ErrorOrBlock> {
+  async getBlock(number: number): Promise<BlockManager.ErrorOrBlock> {
     const block = this.blockByNumber[number];
     if (!block) {
       return { error: "BlockNotFound", block: undefined };
@@ -27,7 +22,7 @@ class MockRpc {
     return { error: undefined, block: block.block };
   }
 
-  async getLogs(from: number, to: number): Promise<ErrorOrLogs> {
+  async getLogs(from: number, to: number): Promise<BlockManager.ErrorOrLogs> {
     const logs: Log[] = [];
     for (let i = from; i <= to; ++i) {
       const block = this.blockByNumber[i];

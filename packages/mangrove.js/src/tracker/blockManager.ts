@@ -2,72 +2,77 @@ import { Log } from "@ethersproject/providers";
 import { sleep } from "@mangrovedao/commonlib.js";
 import logger from "../util/logger";
 
-export type Block = {
-  number: number;
-  parentHash: string;
-  hash: string;
-};
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace BlockManager {
+  export type Block = {
+    number: number;
+    parentHash: string;
+    hash: string;
+  };
 
-type BlockError = "BlockNotFound";
+  type BlockError = "BlockNotFound";
 
-export type ErrorOrBlock =
-  | ({ error: BlockError } & { block: undefined })
-  | ({ error: undefined } & { block: Block });
+  export type ErrorOrBlock =
+    | ({ error: BlockError } & { block: undefined })
+    | ({ error: undefined } & { block: Block });
 
-type MaxRetryError = "MaxRetryReach";
+  export type MaxRetryError = "MaxRetryReach";
 
-type CommonAncestorError = "NoCommonAncestorFoundInCache" | "FailedGetBlock";
+  type CommonAncestorError = "NoCommonAncestorFoundInCache" | "FailedGetBlock";
 
-type ErrorOrCommonAncestor =
-  | ({ error: CommonAncestorError } & { commonAncestor: undefined })
-  | ({ error: undefined } & { commonAncestor: Block });
+  export type ErrorOrCommonAncestor =
+    | ({ error: CommonAncestorError } & { commonAncestor: undefined })
+    | ({ error: undefined } & { commonAncestor: Block });
 
-type CommonAncestorOrBlockError =
-  | BlockError
-  | CommonAncestorError
-  | MaxRetryError;
+  type CommonAncestorOrBlockError =
+    | BlockError
+    | CommonAncestorError
+    | MaxRetryError;
 
-type ErrorOrReorg =
-  | ({ error: CommonAncestorOrBlockError } & { commonAncestor: undefined })
-  | ({ error: undefined } & { commonAncestor: Block });
+  export type ErrorOrReorg =
+    | ({ error: CommonAncestorOrBlockError } & { commonAncestor: undefined })
+    | ({ error: undefined } & { commonAncestor: Block });
 
-type ErrorLog = "FailedFetchingLog" | MaxRetryError;
+  type ErrorLog = "FailedFetchingLog" | MaxRetryError;
 
-export type ErrorOrLogs =
-  | ({ error: ErrorLog | CommonAncestorOrBlockError } & { logs: undefined })
-  | ({ error: undefined } & { logs: Log[] });
+  export type ErrorOrLogs =
+    | ({ error: ErrorLog | CommonAncestorOrBlockError } & { logs: undefined })
+    | ({ error: undefined } & { logs: Log[] });
 
-type ErrorOrLogsWithCommonAncestor = ErrorOrLogs & { commonAncestor?: Block };
+  export type ErrorOrLogsWithCommonAncestor = ErrorOrLogs & {
+    commonAncestor?: Block;
+  };
 
-type HandleBlockResult = ErrorOrLogs & { rollback?: Block };
+  export type HandleBlockResult = ErrorOrLogs & { rollback?: Block };
 
-type BlockManagerOptions = {
-  maxBlockCached: number;
-  getBlock: (number: number) => Promise<ErrorOrBlock>;
-  getLogs: (from: number, to: number) => Promise<ErrorOrLogs>;
-  maxRetryGetLogs: number;
-  retryDelayGeLogsMs: number;
-};
+  export type Options = {
+    maxBlockCached: number;
+    getBlock: (number: number) => Promise<ErrorOrBlock>;
+    getLogs: (from: number, to: number) => Promise<ErrorOrLogs>;
+    maxRetryGetLogs: number;
+    retryDelayGeLogsMs: number;
+  };
+}
 
 /*
  * The BlockManager class is a reliable way of handling chain reorganisation.
  */
-export class BlockManager {
-  private blocksByNumber: Record<number, Block> = {};
-  private lastBlock: Block;
+class BlockManager {
+  private blocksByNumber: Record<number, BlockManager.Block> = {};
+  private lastBlock: BlockManager.Block;
 
   private blockCached: number = 0;
 
-  constructor(private options: BlockManagerOptions) {}
+  constructor(private options: BlockManager.Options) {}
 
-  public initialize(block: Block) {
+  public initialize(block: BlockManager.Block) {
     this.lastBlock = block;
 
     this.blocksByNumber[block.number] = block;
     this.blockCached = 1;
   }
 
-  private setLastBlock(block: Block) {
+  private setLastBlock(block: BlockManager.Block) {
     this.lastBlock = block;
     this.blocksByNumber[block.number] = block;
     this.blockCached++;
@@ -75,7 +80,7 @@ export class BlockManager {
     logger.debug(`setLastBlock() (${block.hash}, ${block.number})`);
   }
 
-  private async findCommonAncestor(): Promise<ErrorOrCommonAncestor> {
+  private async findCommonAncestor(): Promise<BlockManager.ErrorOrCommonAncestor> {
     if (this.blockCached == 1) {
       // TODO: handle specific case
       return {
@@ -104,14 +109,14 @@ export class BlockManager {
   }
 
   async repopulateValidChainUntilBlock(
-    newBlock: Block,
+    newBlock: BlockManager.Block,
     rec: number = 0
-  ): Promise<{ error: MaxRetryError }> {
+  ): Promise<{ error: BlockManager.MaxRetryError }> {
     if (rec > 5) {
       return { error: "MaxRetryReach" };
     }
 
-    const blocksPromises: Promise<ErrorOrBlock>[] = [];
+    const blocksPromises: Promise<BlockManager.ErrorOrBlock>[] = [];
     for (let i = this.lastBlock.number + 1; i <= newBlock.number; ++i) {
       blocksPromises.push(this.options.getBlock(i));
     }
@@ -131,7 +136,9 @@ export class BlockManager {
     return { error: undefined };
   }
 
-  async handleReorg(newBlock: Block): Promise<ErrorOrReorg> {
+  async handleReorg(
+    newBlock: BlockManager.Block
+  ): Promise<BlockManager.ErrorOrReorg> {
     let { error, commonAncestor } = await this.findCommonAncestor();
     logger.debug(
       `handleReorg(): commonAncestor (${commonAncestor.hash}, ${commonAncestor.number})`
@@ -166,11 +173,11 @@ export class BlockManager {
    *
    */
   private async queryLogs(
-    fromBlock: Block,
-    toBlock: Block,
+    fromBlock: BlockManager.Block,
+    toBlock: BlockManager.Block,
     rec: number,
-    commonAncestor?: Block
-  ): Promise<ErrorOrLogsWithCommonAncestor> {
+    commonAncestor?: BlockManager.Block
+  ): Promise<BlockManager.ErrorOrLogsWithCommonAncestor> {
     logger.debug(
       `queryLogs(): fromBlock (${fromBlock.hash}, ${fromBlock.number}), toBlock (${toBlock.hash}, ${toBlock.number})`
     );
@@ -210,7 +217,9 @@ export class BlockManager {
     return { error: undefined, logs, commonAncestor };
   }
 
-  async handleBlock(newBlock: Block): Promise<HandleBlockResult> {
+  async handleBlock(
+    newBlock: BlockManager.Block
+  ): Promise<BlockManager.HandleBlockResult> {
     const cachedBlock = this.blocksByNumber[newBlock.number];
     if (cachedBlock && cachedBlock.hash === newBlock.hash) {
       logger.debug(
@@ -261,3 +270,5 @@ export class BlockManager {
     }
   }
 }
+
+export default BlockManager;
