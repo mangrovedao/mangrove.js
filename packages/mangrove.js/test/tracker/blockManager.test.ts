@@ -601,5 +601,132 @@ describe("Block Manager", () => {
         blockChain2[2].state[subscriber2.address]
       );
     });
+
+    it("handle block no reorg subscribeToLogs after initialize", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
+      const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
+      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+
+      await blockManager.handleBlock(blockChain1[2].block);
+
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain1[2].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain1[2].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber2.getLatestState(),
+        blockChain1[2].state[subscriber2.address]
+      );
+    });
+
+    it("2 blocks back 2 block long", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
+      const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
+
+      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
+      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[3].block
+      ));
+
+      subscriber1.blockByNumber = blockChain2;
+      subscriber2.blockByNumber = blockChain2;
+      mockRpc.blockByNumber = blockChain2;
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[3].block
+      ));
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 2);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2c");
+
+      assert.equal(logs![1].blockNumber, 3);
+      assert.equal(logs![1].blockHash, "0x3c");
+    });
+
+    it("reorg when fetching subscriber state", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
+      const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      await blockManager.handleBlock(blockChain1[2].block);
+
+      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
+      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+
+      subscriber1.blockByNumber = blockChain2;
+      subscriber2.blockByNumber = blockChain2;
+      mockRpc.blockByNumber = blockChain2;
+
+      await blockManager.handleBlock(blockChain2[3].block);
+
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain2[3].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain2[3].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber2.getLatestState(),
+        blockChain2[3].state[subscriber2.address]
+      );
+    });
   });
 });
