@@ -1,6 +1,8 @@
 import { Log } from "@ethersproject/providers";
 import { sleep } from "@mangrovedao/commonlib.js";
+import { getAddress } from "ethers/lib/utils";
 import logger from "../util/logger";
+import { LogSubscriber } from "./logSubscriber";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace BlockManager {
@@ -33,22 +35,36 @@ namespace BlockManager {
     | ({ error: CommonAncestorOrBlockError } & { commonAncestor: undefined })
     | ({ error: undefined } & { commonAncestor: Block });
 
-  type ErrorLog = "FailedFetchingLog" | MaxRetryError;
+  type ErrorLog = "FailedFetchingLog";
 
   export type ErrorOrLogs =
-    | ({ error: ErrorLog | CommonAncestorOrBlockError } & { logs: undefined })
+    | ({ error: ErrorLog } & { logs: undefined })
     | ({ error: undefined } & { logs: Log[] });
 
-  export type ErrorOrLogsWithCommonAncestor = ErrorOrLogs & {
+  export type ErrorOrQueryLogs =
+    | ({ error: ErrorLog | CommonAncestorOrBlockError | MaxRetryError } & {
+        logs: undefined;
+      })
+    | ({ error: undefined } & { logs: Log[] });
+
+  export type ErrorOrLogsWithCommonAncestor = ErrorOrQueryLogs & {
     commonAncestor?: Block;
   };
 
-  export type HandleBlockResult = ErrorOrLogs & { rollback?: Block };
+  export type HandleBlockResult =
+    | ({ error?: ErrorLog | CommonAncestorOrBlockError | MaxRetryError } & {
+        logs: undefined;
+      } & { rollback: undefined })
+    | ({ error?: undefined } & { logs: Log[]; rollback?: Block });
 
   export type Options = {
     maxBlockCached: number;
     getBlock: (number: number) => Promise<ErrorOrBlock>;
-    getLogs: (from: number, to: number) => Promise<ErrorOrLogs>;
+    getLogs: (
+      from: number,
+      to: number,
+      addresses: string[]
+    ) => Promise<ErrorOrLogs>;
     maxRetryGetBlock: number;
     retryDelayGetBlockMs: number;
     maxRetryGetLogs: number;
@@ -63,15 +79,35 @@ class BlockManager {
   private blocksByNumber: Record<number, BlockManager.Block> = {};
   private lastBlock: BlockManager.Block;
 
+  private subscribersByAddress: Record<string, LogSubscriber> = {};
+  private subscibedAddresses: string[] = [];
+
+  private subscribersWaitingToBeInitialized: string[] = [];
+
   private blockCached: number = 0;
 
   constructor(private options: BlockManager.Options) {}
 
-  public initialize(block: BlockManager.Block) {
+  public async initialize(block: BlockManager.Block) {
     this.lastBlock = block;
 
     this.blocksByNumber[block.number] = block;
     this.blockCached = 1;
+
+    await this.handleSubscribersInitialize();
+  }
+
+  /* subscribeToLogs enable a subscription for all logs emitted for the contract at address adress
+   * only one subscription can exist by address. Calling a second time this function with the same
+   * addressWill result in cancelling the previous subscription.
+   * */
+  public subscribeToLogs(address: string, subscriber: LogSubscriber) {
+    const checksumAddress = getAddress(address);
+
+    logger.debug(`subscribeToLogs() ${checksumAddress}`);
+    this.subscribersByAddress[checksumAddress] = subscriber;
+    this.subscibedAddresses.push(checksumAddress);
+    this.subscribersWaitingToBeInitialized.push(address);
   }
 
   private setLastBlock(block: BlockManager.Block) {
@@ -134,7 +170,7 @@ class BlockManager {
     for (const errorOrBlock of errorsOrBlocks.values()) {
       // TODO: handle failure here
       if (this.lastBlock.hash != errorOrBlock.block.parentHash) {
-        await sleep(200);
+        await sleep(this.options.retryDelayGetBlockMs);
         return await this.repopulateValidChainUntilBlock(newBlock, rec);
       } else {
         this.setLastBlock(errorOrBlock.block);
@@ -196,7 +232,8 @@ class BlockManager {
 
     const { error, logs } = await this.options.getLogs(
       fromBlock.number + 1,
-      toBlock.number
+      toBlock.number,
+      this.subscibedAddresses
     );
 
     if (error) {
@@ -226,6 +263,70 @@ class BlockManager {
     return { error: undefined, logs, commonAncestor };
   }
 
+  private async handleSubscribersInitialize(rec: number = 0) {
+    if (
+      this.subscibedAddresses.length === 0 &&
+      rec !== this.options.maxRetryGetBlock
+    ) {
+      return;
+    }
+
+    const toInitialize = this.subscibedAddresses;
+    this.subscibedAddresses = [];
+
+    const promises = toInitialize.map((address) =>
+      this.subscribersByAddress[address].initialize(this.lastBlock.number)
+    );
+
+    const results = await Promise.all(promises);
+
+    for (const [i, res] of Object.entries(results)) {
+      const address = toInitialize[i];
+      if (res.error) {
+        this.subscibedAddresses.push(address); // if init failed try again later
+      } else {
+        const cachedBlock = this.blocksByNumber[res.block.number];
+        if (cachedBlock.hash !== res.block.hash) {
+          const { error: reorgError, commonAncestor: _commonAncestor } =
+            await this.handleReorg(res.block);
+          if (reorgError) {
+            return { error: reorgError, logs: undefined };
+          }
+
+          this.subscibedAddresses.push(...toInitialize);
+          return this.handleSubscribersInitialize(rec + 1);
+        }
+
+        const subscriber = this.subscribersByAddress[address];
+        subscriber.initializedAt = res.block;
+        subscriber.lastSeenEventBlockNumber = res.block.number;
+      }
+    }
+  }
+
+  private applyLogs(logs: Log[]) {
+    if (this.subscibedAddresses.length === 0) {
+      return;
+    }
+
+    for (const log of logs) {
+      const checksumAddress = getAddress(log.address);
+      log.address = checksumAddress; // DIRTY: Maybe do it at the RPC level ?
+
+      const subscriber = this.subscribersByAddress[checksumAddress];
+      subscriber.handleLog(log);
+    }
+  }
+
+  private rollbackSubscribers(block: BlockManager.Block) {
+    for (const subscriber of Object.values(this.subscribersByAddress)) {
+      // TODO: corner case if initializedAt > rollback.number
+      if (subscriber.lastSeenEventBlockNumber > block.number) {
+        subscriber.rollback(block);
+      }
+    }
+  }
+
   async handleBlock(
     newBlock: BlockManager.Block
   ): Promise<BlockManager.HandleBlockResult> {
@@ -234,8 +335,10 @@ class BlockManager {
       logger.debug(
         `handleBlock() block already in cache, ignoring... (${newBlock.hash}, ${newBlock.number})`
       );
-      return { error: undefined, logs: [] };
+      return { error: undefined, logs: [], rollback: undefined };
     }
+
+    await this.handleSubscribersInitialize(); // allow dynamic subscribing
 
     if (newBlock.parentHash !== this.lastBlock.hash) {
       logger.debug(
@@ -245,25 +348,29 @@ class BlockManager {
 
       const { error: reorgError, commonAncestor: reorgAncestor } =
         await this.handleReorg(newBlock);
+
       if (reorgError) {
-        return { error: reorgError, logs: undefined };
+        return { error: reorgError, logs: undefined, rollback: undefined };
       }
 
       const {
         error: queryLogsError,
-        logs,
         commonAncestor: queryLogsAncestor,
+        logs,
       } = await this.queryLogs(reorgAncestor, newBlock, 0);
 
       if (queryLogsError) {
-        return { error: queryLogsError, logs: undefined };
+        return { error: queryLogsError, logs: undefined, rollback: undefined };
       }
 
-      return {
-        error: undefined,
-        logs,
-        rollback: queryLogsAncestor ? queryLogsAncestor : reorgAncestor,
-      };
+      const rollbackToBlock = queryLogsAncestor
+        ? queryLogsAncestor
+        : reorgAncestor;
+
+      this.rollbackSubscribers(rollbackToBlock);
+      this.applyLogs(logs);
+
+      return { error: undefined, logs, rollback: rollbackToBlock };
     } else {
       logger.debug(
         `handleBlock() normal (${newBlock.hash}, ${newBlock.number})`
@@ -271,14 +378,19 @@ class BlockManager {
       const {
         error: queryLogsError,
         logs,
-        commonAncestor: queryLogsAncestor,
+        commonAncestor,
       } = await this.queryLogs(this.lastBlock, newBlock, 0);
 
       if (queryLogsError) {
-        return { error: queryLogsError, logs: undefined };
+        return { error: queryLogsError, logs: undefined, rollback: undefined };
       }
 
-      return { error: undefined, logs, rollback: queryLogsAncestor };
+      if (commonAncestor) {
+        this.rollbackSubscribers(commonAncestor);
+      }
+      this.applyLogs(logs);
+
+      return { error: undefined, logs, rollback: commonAncestor };
     }
   }
 }

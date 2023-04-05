@@ -1,0 +1,87 @@
+import { JsonRpcProvider, Log } from "@ethersproject/providers";
+import { hexlify } from "ethers/lib/utils";
+import logger from "../util/logger";
+import BlockManager from "./blockManager";
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace ReliableProvider {
+  export type Options = {
+    provider: JsonRpcProvider;
+  };
+}
+
+abstract class ReliableProvider {
+  private BlockManager: BlockManager;
+
+  private queue: BlockManager.Block[] = [];
+
+  private inProcess: boolean = false;
+
+  constructor(private options: ReliableProvider.Options) {}
+
+  public initialize() {}
+
+  abstract getLatestBlock();
+
+  public addBlockToQueue(block: BlockManager.Block) {
+    this.queue.push(block);
+    this.tick();
+  }
+
+  private async tick() {
+    if (this.inProcess) {
+      return;
+    }
+
+    this.inProcess = true;
+
+    let until = this.queue.length;
+    for (let i = 0; i < until; ++i) {
+      await this.BlockManager.handleBlock(this.queue[i]); // blocks needs to be handle in order
+      until = this.queue.length; // queue can grow during the async call
+    }
+
+    this.queue = [];
+    this.inProcess = false;
+  }
+
+  private async getBlock(number: number): Promise<BlockManager.ErrorOrBlock> {
+    try {
+      const block = await this.options.provider.getBlock(number);
+      return {
+        error: undefined,
+        block: {
+          parentHash: block.parentHash,
+          hash: block.hash,
+          number: block.number,
+        },
+      };
+    } catch (e) {
+      return { error: "BlockNotFound", block: undefined };
+    }
+  }
+
+  private async getLogs(
+    from: number,
+    to: number,
+    addresses: string[]
+  ): Promise<BlockManager.ErrorOrLogs> {
+    try {
+      // TODO: cannot use provider.getLogs as it does not support multiplesAddress
+      const logs: Log[] = await this.options.provider.send("eth_getLogs", [
+        {
+          address: addresses,
+          fromBlock: hexlify(from),
+          toBlock: hexlify(to),
+          // topics: []
+        },
+      ]);
+
+      return { error: undefined, logs };
+    } catch (e) {
+      return { error: "FailedFetchingLog", logs: undefined };
+    }
+  }
+}
+
+export default ReliableProvider;

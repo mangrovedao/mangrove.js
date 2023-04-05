@@ -3,6 +3,7 @@ import { describe, it } from "mocha";
 import { enableLogging } from "../../src/util/logger";
 import BlockManager from "../../src/tracker/blockManager";
 import { Log } from "@ethersproject/providers";
+import { constants } from "ethers";
 
 enableLogging();
 
@@ -25,7 +26,11 @@ class MockRpc {
     return { error: undefined, block: block.block };
   }
 
-  async getLogs(from: number, to: number): Promise<BlockManager.ErrorOrLogs> {
+  async getLogs(
+    from: number,
+    to: number,
+    addresses: string[]
+  ): Promise<BlockManager.ErrorOrLogs> {
     const logs: Log[] = [];
     for (let i = from; i <= to; ++i) {
       const block = this.blockByNumber[i];
@@ -53,14 +58,18 @@ class MockRpc {
 
   failingBeforeXCallGetLogs(
     x: number
-  ): (from: number, to: number) => Promise<BlockManager.ErrorOrLogs> {
-    return async (from: number, to: number) => {
+  ): (
+    from: number,
+    to: number,
+    addresses: string[]
+  ) => Promise<BlockManager.ErrorOrLogs> {
+    return async (from: number, to: number, addresses: string[]) => {
       if (this.countFailingGetLogs !== x) {
         this.countFailingGetLogs++;
-        return { error: "BlockNotFound", logs: undefined };
+        return { error: "FailedFetchingLog", logs: undefined };
       }
 
-      return this.getLogs(from, to);
+      return this.getLogs(from, to, addresses);
     };
   }
 }
@@ -71,7 +80,7 @@ const generateMockLog = (blockNumber: number, blockHash: string): Log => {
     blockHash,
     transactionIndex: 0,
     removed: false,
-    address: "0x000",
+    address: constants.AddressZero,
     data: "",
     topics: [],
     transactionHash: "",
