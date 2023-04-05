@@ -168,7 +168,6 @@ class BlockManager {
     const errorsOrBlocks = await Promise.all(blocksPromises);
 
     for (const errorOrBlock of errorsOrBlocks.values()) {
-      // TODO: handle failure here
       if (this.lastBlock.hash != errorOrBlock.block.parentHash) {
         await sleep(this.options.retryDelayGetBlockMs);
         return await this.repopulateValidChainUntilBlock(newBlock, rec);
@@ -320,9 +319,12 @@ class BlockManager {
   }
 
   private rollbackSubscribers(block: BlockManager.Block) {
-    for (const subscriber of Object.values(this.subscribersByAddress)) {
-      // TODO: corner case if initializedAt > rollback.number
-      if (subscriber.lastSeenEventBlockNumber > block.number) {
+    for (const [address, subscriber] of Object.entries(
+      this.subscribersByAddress
+    )) {
+      if (subscriber.initializedAt.number > block.number) {
+        this.subscribersWaitingToBeInitialized.push(address);
+      } else if (subscriber.lastSeenEventBlockNumber > block.number) {
         subscriber.rollback(block);
         subscriber.lastSeenEventBlockNumber = block.number;
       }
@@ -371,6 +373,7 @@ class BlockManager {
 
       this.rollbackSubscribers(rollbackToBlock);
       this.applyLogs(logs);
+      await this.handleSubscribersInitialize();
 
       return { error: undefined, logs, rollback: rollbackToBlock };
     } else {
@@ -391,6 +394,7 @@ class BlockManager {
         this.rollbackSubscribers(commonAncestor);
       }
       this.applyLogs(logs);
+      await this.handleSubscribersInitialize();
 
       return { error: undefined, logs, rollback: commonAncestor };
     }
