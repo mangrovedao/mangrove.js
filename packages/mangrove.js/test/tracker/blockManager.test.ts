@@ -3,20 +3,21 @@ import { describe, it } from "mocha";
 import { enableLogging } from "../../src/util/logger";
 import BlockManager from "../../src/tracker/blockManager";
 import { Log } from "@ethersproject/providers";
-import { constants } from "ethers";
+import { LogSubscriber } from "../../src/tracker/logSubscriber";
 
 enableLogging();
 
-type BlockAndLogs = {
+type BlockLogsState = {
   block: BlockManager.Block;
   logs: Log[];
+  state: Record<string, string>;
 };
 
 class MockRpc {
   private countFailingGetBlock = 0;
   private countFailingGetLogs = 0;
 
-  constructor(public blockByNumber: Record<number, BlockAndLogs>) {}
+  constructor(public blockByNumber: Record<number, BlockLogsState>) {}
 
   async getBlock(number: number): Promise<BlockManager.ErrorOrBlock> {
     const block = this.blockByNumber[number];
@@ -74,13 +75,67 @@ class MockRpc {
   }
 }
 
-const generateMockLog = (blockNumber: number, blockHash: string): Log => {
+class MockSubscriber extends LogSubscriber {
+  public stateByBlockNumber: Record<number, string> = {};
+
+  constructor(
+    public address: string,
+    public blockByNumber: Record<number, BlockLogsState>
+  ) {
+    super();
+  }
+
+  async initialize(blockNumber: number): Promise<BlockManager.ErrorOrBlock> {
+    const block = this.blockByNumber[blockNumber];
+    if (!block) {
+      return { error: "BlockNotFound", block: undefined };
+    }
+
+    this.stateByBlockNumber[block.block.number] = block.state[this.address];
+
+    return { error: undefined, block: block.block };
+  }
+
+  handleLog(log: Log): void {
+    let currentState = this.stateByBlockNumber[log.blockNumber];
+    if (!currentState) {
+      this.stateByBlockNumber[log.blockNumber] =
+        this.stateByBlockNumber[this.lastSeenEventBlockNumber];
+      currentState = this.stateByBlockNumber[log.blockNumber];
+    }
+
+    this.stateByBlockNumber[
+      log.blockNumber
+    ] = `${currentState}-${log.blockHash}`;
+  }
+
+  rollback(block: BlockManager.Block): void {
+    for (let i = block.number + 1; i <= this.lastSeenEventBlockNumber; ++i) {
+      if (this.stateByBlockNumber[i]) {
+        delete this.stateByBlockNumber[i];
+      }
+    }
+  }
+
+  getLatestState(): string {
+    return this.stateByBlockNumber[this.lastSeenEventBlockNumber];
+  }
+}
+
+const addressSubscriber1 = "0xf237dE5664D3c2D2545684E76fef02A3A58A364c";
+const addressSubscriber2 = "0xD087ff96281dcf722AEa82aCA57E8545EA9e6C96";
+
+const generateMockLog = (
+  blockNumber: number,
+  blockHash: string,
+  address: string
+): Log => {
   return {
     blockNumber,
     blockHash,
     transactionIndex: 0,
     removed: false,
-    address: constants.AddressZero,
+    address,
     data: "",
     topics: [],
     transactionHash: "",
@@ -89,14 +144,21 @@ const generateMockLog = (blockNumber: number, blockHash: string): Log => {
 };
 
 describe("Block Manager", () => {
-  const blockChain1: Record<number, BlockAndLogs> = {
+  const blockChain1: Record<number, BlockLogsState> = {
     1: {
       block: {
         parentHash: "0x0",
         hash: "0x1",
         number: 1,
       },
-      logs: [generateMockLog(1, "0x1")],
+      logs: [
+        generateMockLog(1, "0x1", addressSubscriber1),
+        generateMockLog(1, "0x1", addressSubscriber2),
+      ],
+      state: {
+        [addressSubscriber1]: "sub1-0x1",
+        [addressSubscriber2]: "sub2-0x1",
+      },
     },
     2: {
       block: {
@@ -104,7 +166,14 @@ describe("Block Manager", () => {
         hash: "0x2",
         number: 2,
       },
-      logs: [generateMockLog(2, "0x2")],
+      logs: [
+        generateMockLog(2, "0x2", addressSubscriber1),
+        generateMockLog(2, "0x2", addressSubscriber1),
+      ],
+      state: {
+        [addressSubscriber1]: "sub1-0x1-0x2-0x2",
+        [addressSubscriber2]: "sub2-0x1",
+      },
     },
     3: {
       block: {
@@ -112,18 +181,32 @@ describe("Block Manager", () => {
         hash: "0x3",
         number: 3,
       },
-      logs: [generateMockLog(3, "0x3")],
+      logs: [
+        generateMockLog(3, "0x3", addressSubscriber1),
+        generateMockLog(3, "0x3", addressSubscriber2),
+      ],
+      state: {
+        [addressSubscriber1]: "sub1-0x1-0x2-0x2-0x3",
+        [addressSubscriber2]: "sub2-0x1-0x3",
+      },
     },
   };
 
-  const blockChain2: Record<number, BlockAndLogs> = {
+  const blockChain2: Record<number, BlockLogsState> = {
     1: {
       block: {
         parentHash: "0x0",
         hash: "0x1",
         number: 1,
       },
-      logs: [generateMockLog(1, "0x1")],
+      logs: [
+        generateMockLog(1, "0x1", addressSubscriber1),
+        generateMockLog(1, "0x1", addressSubscriber2),
+      ],
+      state: {
+        [addressSubscriber1]: "sub1-0x1",
+        [addressSubscriber2]: "sub2-0x1",
+      },
     },
     2: {
       block: {
@@ -131,7 +214,11 @@ describe("Block Manager", () => {
         hash: "0x2c",
         number: 2,
       },
-      logs: [generateMockLog(2, "0x2c")],
+      logs: [generateMockLog(2, "0x2c", addressSubscriber2)],
+      state: {
+        [addressSubscriber1]: "sub1-0x1",
+        [addressSubscriber2]: "sub2-0x1-0x2c",
+      },
     },
     3: {
       block: {
@@ -139,256 +226,380 @@ describe("Block Manager", () => {
         hash: "0x3c",
         number: 3,
       },
-      logs: [generateMockLog(3, "0x3c")],
+      logs: [generateMockLog(3, "0x3c", addressSubscriber2)],
+      state: {
+        [addressSubscriber1]: "sub1-0x1",
+        [addressSubscriber2]: "sub2-0x1-0x2c-0x3c",
+      },
     },
   };
 
-  it("no reorg", async () => {
-    const mockRpc = new MockRpc(blockChain1);
+  describe("Block Manager Without subscriber", () => {
+    it("no reorg", async () => {
+      const mockRpc = new MockRpc(blockChain1);
 
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.getBlock.bind(mockRpc),
-      getLogs: mockRpc.getLogs.bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      const { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+
+      assert.equal(error, undefined);
+      assert.equal(rollback, undefined);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 2);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2");
+
+      assert.equal(logs![1].blockNumber, 2);
+      assert.equal(logs![1].blockHash, "0x2");
     });
 
-    blockManager.initialize(blockChain1[1].block);
+    it("1 block back 1 block long", async () => {
+      const mockRpc = new MockRpc(blockChain1);
 
-    const { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[2].block
-    );
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
 
-    assert.equal(error, undefined);
-    assert.equal(rollback, undefined);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 1);
-    assert.equal(logs![0].blockNumber, 2);
-    assert.equal(logs![0].blockHash, "0x2");
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+
+      mockRpc.blockByNumber = blockChain2;
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[2].block
+      ));
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 1);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2c");
+    });
+
+    it("2 blocks back 1 block long", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[3].block
+      ));
+
+      mockRpc.blockByNumber = blockChain2;
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[2].block
+      ));
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 1);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2c");
+    });
+
+    it("2 blocks back 2 block long", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[3].block
+      ));
+
+      mockRpc.blockByNumber = blockChain2;
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[3].block
+      ));
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 2);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2c");
+
+      assert.equal(logs![1].blockNumber, 3);
+      assert.equal(logs![1].blockHash, "0x3c");
+    });
+
+    it("1 block back 1 block long simulate block change in getLogs", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      /* start with blockChain2 but send blockChain1 block*/
+      mockRpc.blockByNumber = blockChain2;
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 1);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2c");
+    });
+
+    it("detect already handle block", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[1].block
+      );
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, undefined);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 0);
+    });
+
+    it("no reorg but fail getLogs", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.failingBeforeXCallGetLogs(3).bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      const { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+
+      assert.equal(error, undefined);
+      assert.equal(rollback, undefined);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 2);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2");
+      assert.equal(logs![1].blockNumber, 2);
+      assert.equal(logs![1].blockHash, "0x2");
+    });
+
+    it("1 block back 1 block long with failing get block", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.failingBeforeXCallGetBlock(3).bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+
+      mockRpc.blockByNumber = blockChain2;
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[2].block
+      ));
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 1);
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2c");
+    });
   });
 
-  it("1 block back 1 block long", async () => {
-    const mockRpc = new MockRpc(blockChain1);
+  describe("Block Manager with subscriber", () => {
+    it("initialize subscribers", async () => {
+      const mockRpc = new MockRpc(blockChain1);
 
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.getBlock.bind(mockRpc),
-      getLogs: mockRpc.getLogs.bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
+      const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
+
+      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
+      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain1[1].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber2.getLatestState(),
+        blockChain1[1].state[subscriber2.address]
+      );
     });
 
-    blockManager.initialize(blockChain1[1].block);
+    it("handle block no reorg", async () => {
+      const mockRpc = new MockRpc(blockChain1);
 
-    let { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[2].block
-    );
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
 
-    mockRpc.blockByNumber = blockChain2;
+      const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
+      const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-    ({ error, logs, rollback } = await blockManager.handleBlock(
-      blockChain2[2].block
-    ));
+      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
+      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
 
-    assert.equal(error, undefined);
-    assert.deepEqual(rollback, blockChain2[1].block);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 1);
-    assert.equal(logs![0].blockNumber, 2);
-    assert.equal(logs![0].blockHash, "0x2c");
-  });
+      await blockManager.initialize(blockChain1[1].block);
 
-  it("2 blocks back 1 block long", async () => {
-    const mockRpc = new MockRpc(blockChain1);
+      await blockManager.handleBlock(blockChain1[2].block);
 
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.getBlock.bind(mockRpc),
-      getLogs: mockRpc.getLogs.bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain1[2].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain1[2].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber2.getLatestState(),
+        blockChain1[2].state[subscriber2.address]
+      );
     });
 
-    blockManager.initialize(blockChain1[1].block);
+    it("1 block back 1 block logn reorg", async () => {
+      const mockRpc = new MockRpc(blockChain1);
 
-    let { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[2].block
-    );
-    ({ error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[3].block
-    ));
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
 
-    mockRpc.blockByNumber = blockChain2;
+      const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
+      const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-    ({ error, logs, rollback } = await blockManager.handleBlock(
-      blockChain2[2].block
-    ));
+      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
+      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
 
-    assert.equal(error, undefined);
-    assert.deepEqual(rollback, blockChain2[1].block);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 1);
-    assert.equal(logs![0].blockNumber, 2);
-    assert.equal(logs![0].blockHash, "0x2c");
-  });
+      await blockManager.initialize(blockChain1[1].block);
 
-  it("2 blocks back 2 block long", async () => {
-    const mockRpc = new MockRpc(blockChain1);
+      await blockManager.handleBlock(blockChain1[2].block);
 
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.getBlock.bind(mockRpc),
-      getLogs: mockRpc.getLogs.bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
+      subscriber1.blockByNumber = blockChain2;
+      subscriber2.blockByNumber = blockChain2;
+      mockRpc.blockByNumber = blockChain2;
+
+      await blockManager.handleBlock(blockChain2[2].block);
+
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain2[2].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain2[2].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber2.getLatestState(),
+        blockChain2[2].state[subscriber2.address]
+      );
     });
-
-    blockManager.initialize(blockChain1[1].block);
-
-    let { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[2].block
-    );
-    ({ error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[3].block
-    ));
-
-    mockRpc.blockByNumber = blockChain2;
-
-    ({ error, logs, rollback } = await blockManager.handleBlock(
-      blockChain2[3].block
-    ));
-
-    assert.equal(error, undefined);
-    assert.deepEqual(rollback, blockChain2[1].block);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 2);
-    assert.equal(logs![0].blockNumber, 2);
-    assert.equal(logs![0].blockHash, "0x2c");
-
-    assert.equal(logs![1].blockNumber, 3);
-    assert.equal(logs![1].blockHash, "0x3c");
-  });
-
-  it("1 block back 1 block long simulate block change in getLogs", async () => {
-    const mockRpc = new MockRpc(blockChain1);
-
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.getBlock.bind(mockRpc),
-      getLogs: mockRpc.getLogs.bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
-    });
-
-    blockManager.initialize(blockChain1[1].block);
-
-    /* start with blockChain2 but send blockChain1 block*/
-    mockRpc.blockByNumber = blockChain2;
-    let { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[2].block
-    );
-
-    assert.equal(error, undefined);
-    assert.deepEqual(rollback, blockChain2[1].block);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 1);
-    assert.equal(logs![0].blockNumber, 2);
-    assert.equal(logs![0].blockHash, "0x2c");
-  });
-
-  it("detect already handle block", async () => {
-    const mockRpc = new MockRpc(blockChain1);
-
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.getBlock.bind(mockRpc),
-      getLogs: mockRpc.getLogs.bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
-    });
-
-    blockManager.initialize(blockChain1[1].block);
-
-    let { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[1].block
-    );
-
-    assert.equal(error, undefined);
-    assert.deepEqual(rollback, undefined);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 0);
-  });
-
-  it("no reorg but fail getLogs", async () => {
-    const mockRpc = new MockRpc(blockChain1);
-
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.getBlock.bind(mockRpc),
-      getLogs: mockRpc.failingBeforeXCallGetLogs(3).bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
-    });
-
-    blockManager.initialize(blockChain1[1].block);
-
-    const { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[2].block
-    );
-
-    assert.equal(error, undefined);
-    assert.equal(rollback, undefined);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 1);
-    assert.equal(logs![0].blockNumber, 2);
-    assert.equal(logs![0].blockHash, "0x2");
-  });
-
-  it("1 block back 1 block long with failing get block", async () => {
-    const mockRpc = new MockRpc(blockChain1);
-
-    const blockManager = new BlockManager({
-      maxBlockCached: 50,
-      getBlock: mockRpc.failingBeforeXCallGetBlock(3).bind(mockRpc),
-      getLogs: mockRpc.getLogs.bind(mockRpc),
-      maxRetryGetBlock: 5,
-      retryDelayGetBlockMs: 200,
-      maxRetryGetLogs: 5,
-      retryDelayGeLogsMs: 200,
-    });
-
-    blockManager.initialize(blockChain1[1].block);
-
-    let { error, logs, rollback } = await blockManager.handleBlock(
-      blockChain1[2].block
-    );
-
-    mockRpc.blockByNumber = blockChain2;
-
-    ({ error, logs, rollback } = await blockManager.handleBlock(
-      blockChain2[2].block
-    ));
-
-    assert.equal(error, undefined);
-    assert.deepEqual(rollback, blockChain2[1].block);
-    assert.notEqual(logs, undefined);
-    assert.equal(logs!.length, 1);
-    assert.equal(logs![0].blockNumber, 2);
-    assert.equal(logs![0].blockHash, "0x2c");
   });
 });

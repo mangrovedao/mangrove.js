@@ -265,14 +265,14 @@ class BlockManager {
 
   private async handleSubscribersInitialize(rec: number = 0) {
     if (
-      this.subscibedAddresses.length === 0 &&
-      rec !== this.options.maxRetryGetBlock
+      this.subscibedAddresses.length === 0 ||
+      rec === this.options.maxRetryGetBlock
     ) {
       return;
     }
 
-    const toInitialize = this.subscibedAddresses;
-    this.subscibedAddresses = [];
+    const toInitialize = this.subscribersWaitingToBeInitialized;
+    this.subscribersWaitingToBeInitialized = [];
 
     const promises = toInitialize.map((address) =>
       this.subscribersByAddress[address].initialize(this.lastBlock.number)
@@ -283,7 +283,7 @@ class BlockManager {
     for (const [i, res] of Object.entries(results)) {
       const address = toInitialize[i];
       if (res.error) {
-        this.subscibedAddresses.push(address); // if init failed try again later
+        this.subscribersWaitingToBeInitialized.push(address); // if init failed try again later
       } else {
         const cachedBlock = this.blocksByNumber[res.block.number];
         if (cachedBlock.hash !== res.block.hash) {
@@ -293,7 +293,7 @@ class BlockManager {
             return { error: reorgError, logs: undefined };
           }
 
-          this.subscibedAddresses.push(...toInitialize);
+          this.subscribersWaitingToBeInitialized.push(...toInitialize);
           return this.handleSubscribersInitialize(rec + 1);
         }
 
@@ -315,6 +315,7 @@ class BlockManager {
 
       const subscriber = this.subscribersByAddress[checksumAddress];
       subscriber.handleLog(log);
+      subscriber.lastSeenEventBlockNumber = log.blockNumber;
     }
   }
 
@@ -323,6 +324,7 @@ class BlockManager {
       // TODO: corner case if initializedAt > rollback.number
       if (subscriber.lastSeenEventBlockNumber > block.number) {
         subscriber.rollback(block);
+        subscriber.lastSeenEventBlockNumber = block.number;
       }
     }
   }
