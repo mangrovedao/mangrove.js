@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Log } from "@ethersproject/providers";
+import { Block, JsonRpcProvider, Log } from "@ethersproject/providers";
 import { hexlify } from "ethers/lib/utils";
 import logger from "../util/logger";
 import BlockManager from "./blockManager";
@@ -7,19 +7,36 @@ import BlockManager from "./blockManager";
 namespace ReliableProvider {
   export type Options = {
     provider: JsonRpcProvider;
+    maxBlockCached: number;
+    maxRetryGetBlock: number;
+    retryDelayGetBlockMs: number;
+    maxRetryGetLogs: number;
+    retryDelayGeLogsMs: number;
   };
 }
 
 abstract class ReliableProvider {
-  private BlockManager: BlockManager;
+  private blockManager: BlockManager;
 
   private queue: BlockManager.Block[] = [];
 
   private inProcess: boolean = false;
 
-  constructor(private options: ReliableProvider.Options) {}
+  constructor(private options: ReliableProvider.Options) {
+    this.blockManager = new BlockManager({
+      maxBlockCached: options.maxBlockCached,
+      getBlock: this.getBlock.bind(this),
+      getLogs: this.getLogs.bind(this),
+      maxRetryGetBlock: options.maxRetryGetLogs,
+      retryDelayGetBlockMs: options.maxRetryGetBlock,
+      maxRetryGetLogs: options.maxRetryGetLogs,
+      retryDelayGeLogsMs: options.retryDelayGeLogsMs,
+    });
+  }
 
-  public initialize() {}
+  public initialize(block: Block) {
+    this.blockManager.initialize(block);
+  }
 
   abstract getLatestBlock();
 
@@ -37,7 +54,7 @@ abstract class ReliableProvider {
 
     let until = this.queue.length;
     for (let i = 0; i < until; ++i) {
-      await this.BlockManager.handleBlock(this.queue[i]); // blocks needs to be handle in order
+      await this.blockManager.handleBlock(this.queue[i]); // blocks needs to be handle in order
       until = this.queue.length; // queue can grow during the async call
     }
 
