@@ -488,6 +488,32 @@ describe("Block Manager", () => {
       assert.equal(logs![0].blockNumber, 2);
       assert.equal(logs![0].blockHash, "0x2c");
     });
+
+    it("Reorg older than initialize", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[3].block);
+
+      mockRpc.blockByNumber = blockChain2;
+
+      const { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[2].block
+      );
+
+      assert.equal(error, undefined);
+      assert.equal(rollback, blockChain2[2].block);
+      assert.equal(logs, undefined);
+    });
   });
 
   describe("Block Manager with subscriber", () => {

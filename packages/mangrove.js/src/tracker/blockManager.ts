@@ -31,9 +31,11 @@ namespace BlockManager {
     | CommonAncestorError
     | MaxRetryError;
 
+  type ReInitializeBlockManagerError = "ReInitializeBlockManager";
+
   export type ErrorOrReorg =
     | ({ error: CommonAncestorOrBlockError } & { commonAncestor: undefined })
-    | ({ error: undefined } & { commonAncestor: Block });
+    | ({ error?: ReInitializeBlockManagerError } & { commonAncestor: Block });
 
   type ErrorLog = "FailedFetchingLog";
 
@@ -42,7 +44,13 @@ namespace BlockManager {
     | ({ error: undefined } & { logs: Log[] });
 
   export type ErrorOrQueryLogs =
-    | ({ error: ErrorLog | CommonAncestorOrBlockError | MaxRetryError } & {
+    | ({
+        error:
+          | ErrorLog
+          | CommonAncestorOrBlockError
+          | MaxRetryError
+          | ReInitializeBlockManagerError;
+      } & {
         logs: undefined;
       })
     | ({ error: undefined } & { logs: Log[] });
@@ -89,10 +97,14 @@ class BlockManager {
   constructor(private options: BlockManager.Options) {}
 
   public async initialize(block: BlockManager.Block) {
+    logger.debug(`initialize() (${block.hash}, ${block.number})`);
     this.lastBlock = block;
 
+    this.blocksByNumber = {};
     this.blocksByNumber[block.number] = block;
     this.blockCached = 1;
+
+    this.subscribersWaitingToBeInitialized = this.subscibedAddresses;
 
     await this.handleSubscribersInitialize();
   }
@@ -186,6 +198,10 @@ class BlockManager {
 
     // error happen when we didn't find any common ancestor in the cache
     if (error) {
+      if (error === "NoCommonAncestorFoundInCache") {
+        await this.initialize(newBlock);
+        return { error: "ReInitializeBlockManager", commonAncestor: newBlock };
+      }
       return { error, commonAncestor: undefined };
     }
 
@@ -354,6 +370,9 @@ class BlockManager {
         await this.handleReorg(newBlock);
 
       if (reorgError) {
+        if (reorgError === "ReInitializeBlockManager") {
+          return { error: undefined, logs: undefined, rollback: reorgAncestor };
+        }
         return { error: reorgError, logs: undefined, rollback: undefined };
       }
 
@@ -364,6 +383,13 @@ class BlockManager {
       } = await this.queryLogs(reorgAncestor, newBlock, 0);
 
       if (queryLogsError) {
+        if (queryLogsError === "ReInitializeBlockManager") {
+          return {
+            error: undefined,
+            logs: undefined,
+            rollback: queryLogsAncestor,
+          };
+        }
         return { error: queryLogsError, logs: undefined, rollback: undefined };
       }
 
@@ -387,6 +413,13 @@ class BlockManager {
       } = await this.queryLogs(this.lastBlock, newBlock, 0);
 
       if (queryLogsError) {
+        if (queryLogsError === "ReInitializeBlockManager") {
+          return {
+            error: undefined,
+            logs: undefined,
+            rollback: commonAncestor,
+          };
+        }
         return { error: queryLogsError, logs: undefined, rollback: undefined };
       }
 
