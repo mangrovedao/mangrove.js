@@ -1,7 +1,6 @@
 import { JsonRpcProvider, Log } from "@ethersproject/providers";
 import { hexlify } from "ethers/lib/utils";
-import logger from "../util/logger";
-import BlockManager from "./blockManager";
+import BlockManager from "../blockManager";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace ReliableProvider {
@@ -22,7 +21,7 @@ abstract class ReliableProvider {
 
   private inProcess: boolean = false;
 
-  constructor(private options: ReliableProvider.Options) {
+  constructor(protected options: ReliableProvider.Options) {
     this.blockManager = new BlockManager({
       maxBlockCached: options.maxBlockCached,
       getBlock: this.getBlock.bind(this),

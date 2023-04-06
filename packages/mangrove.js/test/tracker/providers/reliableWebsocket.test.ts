@@ -5,8 +5,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import {
   ReliableWebSocket,
   ReliableWebsocketOptions,
-} from "../../src/tracker/reliableWebsocket";
-import { enableLogging } from "../../src/util/logger";
+} from "../../../src/tracker/providers/reliableWebsocket";
+import { enableLogging } from "../../../src/util/logger";
 
 enableLogging();
 

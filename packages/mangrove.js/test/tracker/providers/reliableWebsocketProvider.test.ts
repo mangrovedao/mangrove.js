@@ -1,13 +1,13 @@
 import assert from "assert";
 import { describe, it } from "mocha";
-import { enableLogging } from "../../src/util/logger";
+import { enableLogging } from "../../../src/util/logger";
 
 enableLogging();
 
-import ReliableWebSocketProvider from "../../src/tracker/reliableWebsocketProvider";
+import ReliableWebSocketProvider from "../../../src/tracker/providers/reliableWebsocketProvider";
 import { sleep } from "@mangrovedao/commonlib.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import BlockManager from "../../src/tracker/blockManager";
+import BlockManager from "../../../src/tracker/blockManager";
 import { WebSocketServer, WebSocket } from "ws";
 
 const mockRPCMessages = [
