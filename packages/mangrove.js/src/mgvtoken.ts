@@ -211,7 +211,7 @@ class MgvToken {
   }
 
   /**
-   * Transfers `value` amount of tokens to address `to`
+   * @note Transfers `value` amount of tokens to address `to`
    */
   async transfer(
     to: string,
@@ -219,6 +219,18 @@ class MgvToken {
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
     return this.contract.transfer(to, this.toUnits(value), overrides);
+  }
+
+  /**
+   * @note Transfers some `value` from address `from` to address `to`, if `from` has approved signer to do so.
+   */
+  async transferFrom(
+    from: string,
+    to: string,
+    value: Bigish,
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ContractTransaction> {
+    return this.contract.transferFrom(from, to, this.toUnits(value), overrides);
   }
 }
 

@@ -55,6 +55,15 @@ class OfferLogic {
     return (await this.contract.router()) != ethers.constants.AddressZero;
   }
 
+  /** @note Tells contract to use a new router
+   * @param routerAddress the address of the new router. Use ethers.constants.AddressZero if the intend is to stop using a router.
+   */
+  public async setRouter(
+    routerAddress: string
+  ): Promise<ethers.ContractTransaction> {
+    return await this.contract.setRouter(routerAddress);
+  }
+
   /**
    * @note Approves the logic to spend `token`s on signer's behalf.
    * This has to be done for each token the signer's wishes to ask or bid for.
