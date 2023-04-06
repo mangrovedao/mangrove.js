@@ -100,7 +100,7 @@ class BlockManager {
   private subscribersByAddress: Record<string, LogSubscriber> = {};
   private subscibedAddresses: string[] = [];
 
-  private subscribersWaitingToBeInitialized: string[] = [];
+  private waitingToBeInitializedSet: Set<string> = new Set<string>();
 
   private blockCached: number = 0;
 
@@ -114,9 +114,7 @@ class BlockManager {
     this.blocksByNumber[block.number] = block;
     this.blockCached = 1;
 
-    this.subscribersWaitingToBeInitialized = this.subscibedAddresses.map(
-      (addr) => addr
-    );
+    this.waitingToBeInitializedSet = new Set(this.subscibedAddresses);
 
     await this.handleSubscribersInitialize();
   }
@@ -134,8 +132,9 @@ class BlockManager {
 
     logger.debug(`subscribeToLogs() ${checksumAddress}`);
     this.subscribersByAddress[checksumAddress] = subscriber;
+
     this.subscibedAddresses.push(checksumAddress);
-    this.subscribersWaitingToBeInitialized.push(address);
+    this.waitingToBeInitializedSet.add(checksumAddress);
   }
 
   private setLastBlock(block: BlockManager.Block) {
@@ -316,22 +315,23 @@ class BlockManager {
   }
 
   /**
-   * Call initialize on all subscribers in subscribersWaitingToBeInitialized
-   * In case of detected reorg reconstruct the chain accordingly
+   * Call initialize on all subscribers in waitingToBeInitializedSet.
+   *
+   * This function can initialize subscriber with a block which have hash !== this.lastBlock.hash
    */
   private async handleSubscribersInitialize(
     rec: number = 0,
     commonAncestor?: BlockManager.Block
   ): Promise<BlockManager.ErrorOrReorg> {
     if (
-      this.subscribersWaitingToBeInitialized.length === 0 ||
+      this.waitingToBeInitializedSet.size === 0 ||
       rec === this.options.maxRetryGetBlock
     ) {
       return { error: undefined, commonAncestor: undefined };
     }
 
-    const toInitialize = this.subscribersWaitingToBeInitialized;
-    this.subscribersWaitingToBeInitialized = [];
+    const toInitialize = Array.from(this.waitingToBeInitializedSet);
+    this.waitingToBeInitializedSet = new Set();
 
     const promises = toInitialize.map((address) =>
       this.subscribersByAddress[address].initialize(this.lastBlock.number)
@@ -342,7 +342,7 @@ class BlockManager {
     for (const [i, res] of Object.entries(results)) {
       const address = toInitialize[i];
       if (res.error) {
-        this.subscribersWaitingToBeInitialized.push(address); // if init failed try again later
+        this.waitingToBeInitializedSet.add(address); // if init failed try again later
       } else {
         const subscriber = this.subscribersByAddress[address];
         subscriber.initializedAt = res.block;
@@ -379,16 +379,36 @@ class BlockManager {
     for (const [address, subscriber] of Object.entries(
       this.subscribersByAddress
     )) {
-      if (
-        subscriber.initializedAt.number > block.number ||
-        (subscriber.initializedAt.number === block.number &&
-          subscriber.initializedAt.hash !== block.hash)
-      ) {
-        this.subscribersWaitingToBeInitialized.push(address);
+      if (subscriber.initializedAt.number > block.number) {
+        this.waitingToBeInitializedSet.add(address);
+        logger.debug(
+          `addToInitializeList() ${address} ${getStringBlock(
+            subscriber.initializedAt
+          )} ${getStringBlock(block)}`
+        );
       } else if (subscriber.lastSeenEventBlockNumber > block.number) {
         subscriber.rollback(block);
         subscriber.lastSeenEventBlockNumber = block.number;
         logger.debug(`rollback() ${address} ${getStringBlock(block)}`);
+      }
+    }
+  }
+
+  private verifySubscribers() {
+    for (const [address, subscriber] of Object.entries(
+      this.subscribersByAddress
+    )) {
+      if (subscriber.initializedAt) {
+        const cachedBlock =
+          this.blocksByNumber[subscriber.initializedAt.number];
+        if (cachedBlock.hash !== subscriber.initializedAt.hash) {
+          this.waitingToBeInitializedSet.add(address);
+          logger.debug(
+            `verifySubscriber() detected wrong subscriber ${address} ${getStringBlock(
+              subscriber.initializedAt
+            )} !== ${getStringBlock(cachedBlock)}`
+          );
+        }
       }
     }
   }
@@ -449,6 +469,7 @@ class BlockManager {
 
       this.rollbackSubscribers(rollbackToBlock);
       this.applyLogs(logs);
+      this.verifySubscribers();
 
       await this.handleSubscribersInitialize();
 
@@ -476,6 +497,9 @@ class BlockManager {
         this.rollbackSubscribers(commonAncestor);
       }
       this.applyLogs(logs);
+      this.verifySubscribers();
+
+      await this.handleSubscribersInitialize();
 
       return { error: undefined, logs, rollback: commonAncestor };
     }

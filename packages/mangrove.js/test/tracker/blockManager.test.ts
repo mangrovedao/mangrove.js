@@ -143,7 +143,7 @@ const generateMockLog = (
   };
 };
 
-describe.only("Block Manager", () => {
+describe("Block Manager", () => {
   const blockChain1: Record<number, BlockLogsState> = {
     1: {
       block: {

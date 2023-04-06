@@ -2,7 +2,7 @@ import { Log } from "@ethersproject/providers";
 import BlockManager from "./blockManager";
 
 export abstract class LogSubscriber {
-  initializedAt: BlockManager.Block;
+  initializedAt?: BlockManager.Block;
   lastSeenEventBlockNumber: number;
 
   abstract initialize(blockNumber: number): Promise<BlockManager.ErrorOrBlock>;
