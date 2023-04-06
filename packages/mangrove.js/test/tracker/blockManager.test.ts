@@ -232,6 +232,18 @@ describe("Block Manager", () => {
         [addressSubscriber2]: "sub2-0x1-0x2c-0x3c",
       },
     },
+    4: {
+      block: {
+        parentHash: "0x3c",
+        hash: "0x4c",
+        number: 4,
+      },
+      logs: [],
+      state: {
+        [addressSubscriber1]: "sub1-0x1",
+        [addressSubscriber2]: "sub2-0x1-0x2c-0x3c",
+      },
+    },
   };
 
   describe("Block Manager Without subscriber", () => {

@@ -60,7 +60,13 @@ namespace BlockManager {
   };
 
   export type HandleBlockResult =
-    | ({ error?: ErrorLog | CommonAncestorOrBlockError | MaxRetryError } & {
+    | ({
+        error?:
+          | ErrorLog
+          | CommonAncestorOrBlockError
+          | MaxRetryError
+          | ReInitializeBlockManagerError;
+      } & {
         logs: undefined;
       } & { rollback: undefined })
     | ({ error?: undefined } & { logs: Log[]; rollback?: Block });
@@ -84,7 +90,8 @@ namespace BlockManager {
  * The BlockManager class is a reliable way of handling chain reorganisation.
  */
 class BlockManager {
-  private blocksByNumber: Record<number, BlockManager.Block> = {};
+  private blocksByNumber: Record<number, BlockManager.Block> = {}; // blocks cache
+
   private lastBlock: BlockManager.Block;
 
   private subscribersByAddress: Record<string, LogSubscriber> = {};
@@ -104,7 +111,9 @@ class BlockManager {
     this.blocksByNumber[block.number] = block;
     this.blockCached = 1;
 
-    this.subscribersWaitingToBeInitialized = this.subscibedAddresses;
+    this.subscribersWaitingToBeInitialized = this.subscibedAddresses.map(
+      (addr) => addr
+    );
 
     await this.handleSubscribersInitialize();
   }
@@ -134,6 +143,11 @@ class BlockManager {
     logger.debug(`setLastBlock() (${block.hash}, ${block.number})`);
   }
 
+  /**
+   * Find commonAncestor between RPC is the local cache.
+   * This methods compare blocks between cache and RPC until it finds a matching block.
+   * It reutn the matching block
+   */
   private async findCommonAncestor(
     rec: number = 0
   ): Promise<BlockManager.ErrorOrCommonAncestor> {
@@ -168,11 +182,18 @@ class BlockManager {
     return { error: "NoCommonAncestorFoundInCache", commonAncestor: undefined };
   }
 
-  private async repopulateValidChainUntilBlock(
+  /**
+   * Fetch the chain from this.lastBlock.number + 1 until newBlock.number.
+   * Try to reconstruct a valid chain in cache.
+   *
+   * A valid chain is a chain where block with sucessing block number are
+   * linked with parentHash and hash.
+   */
+  private async populateValidChainUntilBlock(
     newBlock: BlockManager.Block,
     rec: number = 0
   ): Promise<{ error: BlockManager.MaxRetryError }> {
-    if (rec > 5) {
+    if (rec > this.options.maxRetryGetBlock) {
       return { error: "MaxRetryReach" };
     }
 
@@ -185,8 +206,10 @@ class BlockManager {
 
     for (const errorOrBlock of errorsOrBlocks.values()) {
       if (this.lastBlock.hash != errorOrBlock.block.parentHash) {
+        // TODO: this.lastBlock.hash could have been reorg ?
+        // is it an issue as we are exiting on rec === maxRetryGetBlock
         await sleep(this.options.retryDelayGetBlockMs);
-        return await this.repopulateValidChainUntilBlock(newBlock, rec);
+        return await this.populateValidChainUntilBlock(newBlock, rec);
       } else {
         this.setLastBlock(errorOrBlock.block);
       }
@@ -195,6 +218,10 @@ class BlockManager {
     return { error: undefined };
   }
 
+  /**
+   * Establish a valid chain with last block = newBlock.number
+   * return found commonAncestor
+   */
   private async handleReorg(
     newBlock: BlockManager.Block
   ): Promise<BlockManager.ErrorOrReorg> {
@@ -220,8 +247,9 @@ class BlockManager {
 
     this.lastBlock = commonAncestor;
 
-    const { error: repopulateError } =
-      await this.repopulateValidChainUntilBlock(newBlock);
+    const { error: repopulateError } = await this.populateValidChainUntilBlock(
+      newBlock
+    );
 
     if (repopulateError) {
       return { error, commonAncestor: undefined };
@@ -282,12 +310,19 @@ class BlockManager {
     return { error: undefined, logs, commonAncestor };
   }
 
-  private async handleSubscribersInitialize(rec: number = 0) {
+  /**
+   * Call initialize on all subscribers in subscribersWaitingToBeInitialized
+   * In case of detected reorg reconstruct the chain accordingly
+   */
+  private async handleSubscribersInitialize(
+    rec: number = 0,
+    commonAncestor?: BlockManager.Block
+  ): Promise<BlockManager.ErrorOrReorg> {
     if (
-      this.subscibedAddresses.length === 0 ||
+      this.subscribersWaitingToBeInitialized.length === 0 ||
       rec === this.options.maxRetryGetBlock
     ) {
-      return;
+      return { error: undefined, commonAncestor: undefined };
     }
 
     const toInitialize = this.subscribersWaitingToBeInitialized;
@@ -304,23 +339,13 @@ class BlockManager {
       if (res.error) {
         this.subscribersWaitingToBeInitialized.push(address); // if init failed try again later
       } else {
-        const cachedBlock = this.blocksByNumber[res.block.number];
-        if (cachedBlock.hash !== res.block.hash) {
-          const { error: reorgError, commonAncestor: _commonAncestor } =
-            await this.handleReorg(res.block);
-          if (reorgError) {
-            return { error: reorgError, logs: undefined };
-          }
-
-          this.subscribersWaitingToBeInitialized.push(...toInitialize);
-          return this.handleSubscribersInitialize(rec + 1);
-        }
-
         const subscriber = this.subscribersByAddress[address];
         subscriber.initializedAt = res.block;
         subscriber.lastSeenEventBlockNumber = res.block.number;
       }
     }
+
+    return { error: undefined, commonAncestor: commonAncestor };
   }
 
   private applyLogs(logs: Log[]) {
@@ -342,7 +367,11 @@ class BlockManager {
     for (const [address, subscriber] of Object.entries(
       this.subscribersByAddress
     )) {
-      if (subscriber.initializedAt.number > block.number) {
+      if (
+        subscriber.initializedAt.number > block.number ||
+        (subscriber.initializedAt.number === block.number &&
+          subscriber.initializedAt.hash !== block.hash)
+      ) {
         this.subscribersWaitingToBeInitialized.push(address);
       } else if (subscriber.lastSeenEventBlockNumber > block.number) {
         subscriber.rollback(block);
@@ -362,7 +391,7 @@ class BlockManager {
       return { error: undefined, logs: [], rollback: undefined };
     }
 
-    await this.handleSubscribersInitialize(); // allow dynamic subscribing
+    await this.handleSubscribersInitialize();
 
     if (newBlock.parentHash !== this.lastBlock.hash) {
       logger.debug(
@@ -403,6 +432,7 @@ class BlockManager {
 
       this.rollbackSubscribers(rollbackToBlock);
       this.applyLogs(logs);
+
       await this.handleSubscribersInitialize();
 
       return { error: undefined, logs, rollback: rollbackToBlock };
@@ -431,7 +461,6 @@ class BlockManager {
         this.rollbackSubscribers(commonAncestor);
       }
       this.applyLogs(logs);
-      await this.handleSubscribersInitialize();
 
       return { error: undefined, logs, rollback: commonAncestor };
     }
