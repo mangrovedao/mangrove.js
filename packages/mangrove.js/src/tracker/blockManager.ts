@@ -82,7 +82,7 @@ namespace BlockManager {
     maxRetryGetBlock: number;
     retryDelayGetBlockMs: number;
     maxRetryGetLogs: number;
-    retryDelayGeLogsMs: number;
+    retryDelayGetLogsMs: number;
   };
 }
 
@@ -199,20 +199,27 @@ class BlockManager {
       return { error: "MaxRetryReach" };
     }
 
+    /* fetch all blocks between this.lastBlock excluded and newBlock included '*/
     const blocksPromises: Promise<BlockManager.ErrorOrBlock>[] = [];
     for (let i = this.lastBlock.number + 1; i <= newBlock.number; ++i) {
       blocksPromises.push(this.options.getBlock(i));
+      // TODO: write a test if some getBlock fail
     }
 
     const errorsOrBlocks = await Promise.all(blocksPromises);
 
     for (const errorOrBlock of errorsOrBlocks.values()) {
+      /* check that queried block is chaining with lastBlock  */
       if (this.lastBlock.hash != errorOrBlock.block.parentHash) {
-        // TODO: this.lastBlock.hash could have been reorg ?
-        // is it an issue as we are exiting on rec === maxRetryGetBlock
+        /* TODO: this.lastBlock.hash could have been reorg ? */
+
+        /* the rpc might be late, wait retryDelayGetBlockMs to let it catch up*/
         await sleep(this.options.retryDelayGetBlockMs);
-        return await this.populateValidChainUntilBlock(newBlock, rec);
+
+        /* retry until rec === maxRetryGetBlock */
+        return await this.populateValidChainUntilBlock(newBlock, rec + 1);
       } else {
+        /* queried block is the successor of this.lastBlock add it to the cache */
         this.setLastBlock(errorOrBlock.block);
       }
     }
@@ -229,12 +236,13 @@ class BlockManager {
   ): Promise<BlockManager.ErrorOrReorg> {
     let { error, commonAncestor } = await this.findCommonAncestor();
 
-    // error happen when we didn't find any common ancestor in the cache
     if (error) {
       if (error === "NoCommonAncestorFoundInCache") {
+        /* we didn't find matching ancestor between our cache and rpc. re-initialize with newBlock */
         await this.initialize(newBlock);
         return { error: "ReInitializeBlockManager", commonAncestor: newBlock };
       }
+      /* findCommonAncestor did not succeed, bail out */
       return { error, commonAncestor: undefined };
     }
 
@@ -242,18 +250,22 @@ class BlockManager {
       `handleReorg(): commonAncestor ${getStringBlock(commonAncestor)}`
     );
 
+    /* remove all blocks that has been reorged from cache */
     for (let i = commonAncestor.number + 1; i <= this.lastBlock.number; ++i) {
       delete this.blocksByNumber[i];
       this.blockCached--;
     }
 
+    /* commonAncestor is the new cache latest block */
     this.lastBlock = commonAncestor;
 
+    /* reconstruct a valid chain from the latest block to newBlock.number */
     const { error: repopulateError } = await this.populateValidChainUntilBlock(
       newBlock
     );
 
     if (repopulateError) {
+      /* populateValidChainUntilBlock did not succeed, bail out */
       return { error, commonAncestor: undefined };
     }
 
@@ -287,26 +299,31 @@ class BlockManager {
       this.subscibedAddresses
     );
 
+    /* if getLogs fail retry this.options.maxRetryGetLogs  */
     if (error) {
-      sleep(this.options.retryDelayGeLogsMs);
+      /* the rpc might be a bit late, wait retryDelayGetLogsMs to let it catch up */
+      sleep(this.options.retryDelayGetLogsMs);
       return this.queryLogs(fromBlock, toBlock, rec + 1);
     }
 
-    /* DIRTY: if we detected a reorg we repoplate the chain until toBlock.number
-     * */
+    /* DIRTY: if we detected a reorg we already repoplate the chain until toBlock.number */
     if (!commonAncestor) {
       this.setLastBlock(toBlock);
     }
 
     for (const log of logs) {
       const block = this.blocksByNumber[log.blockNumber];
+
+      /* check if queried log comes from a known block in our cache */
       if (block.hash !== log.blockHash) {
+        /* queried log comes from a block we don't know we detected a reorg */
         const { error: reorgError, commonAncestor: _commonAncestor } =
           await this.handleReorg(toBlock);
+
         if (reorgError) {
           return { error: reorgError, logs: undefined };
         }
-
+        /* Our cache is consistent again we retry queryLogs */
         return this.queryLogs(fromBlock, toBlock, rec + 1, _commonAncestor);
       }
     }
@@ -317,17 +334,14 @@ class BlockManager {
   /**
    * Call initialize on all subscribers in waitingToBeInitializedSet.
    *
-   * This function can initialize subscriber with a block which have hash !== this.lastBlock.hash
+   * This function can initialize subscriber with a block which have hash !== this.lastBlock.hash,
+   * it's ok because later we are calling verifySubscribers to check if it's the case.
    */
-  private async handleSubscribersInitialize(
-    rec: number = 0,
-    commonAncestor?: BlockManager.Block
-  ): Promise<BlockManager.ErrorOrReorg> {
+  private async handleSubscribersInitialize(): Promise<void> {
     if (
-      this.waitingToBeInitializedSet.size === 0 ||
-      rec === this.options.maxRetryGetBlock
+      this.waitingToBeInitializedSet.size === 0 // if there is nothing to do bail out
     ) {
-      return { error: undefined, commonAncestor: undefined };
+      return;
     }
 
     const toInitialize = Array.from(this.waitingToBeInitializedSet);
@@ -342,7 +356,8 @@ class BlockManager {
     for (const [i, res] of Object.entries(results)) {
       const address = toInitialize[i];
       if (res.error) {
-        this.waitingToBeInitializedSet.add(address); // if init failed try again later
+        /* initialize call failed retry later by adding it back to the set */
+        this.waitingToBeInitializedSet.add(address);
       } else {
         const subscriber = this.subscribersByAddress[address];
         subscriber.initializedAt = res.block;
@@ -354,7 +369,7 @@ class BlockManager {
       }
     }
 
-    return { error: undefined, commonAncestor: commonAncestor };
+    return;
   }
 
   private applyLogs(logs: Log[]) {
@@ -380,6 +395,9 @@ class BlockManager {
       this.subscribersByAddress
     )) {
       if (subscriber.initializedAt.number > block.number) {
+        /* subscriber has been initialized at a block newer than block
+         * it needs to be initialized again.
+         **/
         this.waitingToBeInitializedSet.add(address);
         logger.debug(
           `addToInitializeList() ${address} ${getStringBlock(
@@ -401,7 +419,11 @@ class BlockManager {
       if (subscriber.initializedAt) {
         const cachedBlock =
           this.blocksByNumber[subscriber.initializedAt.number];
+
         if (cachedBlock.hash !== subscriber.initializedAt.hash) {
+          /* subscriber initializedAt block is different from block in cache
+           *  a reorg happened during initialiation. Retry initialiation later.
+           **/
           this.waitingToBeInitializedSet.add(address);
           logger.debug(
             `verifySubscriber() detected wrong subscriber ${address} ${getStringBlock(
@@ -418,6 +440,7 @@ class BlockManager {
   ): Promise<BlockManager.HandleBlockResult> {
     const cachedBlock = this.blocksByNumber[newBlock.number];
     if (cachedBlock && cachedBlock.hash === newBlock.hash) {
+      /* newBlock is already stored in cache bail out*/
       logger.debug(
         `handleBlock() block already in cache, ignoring... (${getStringBlock(
           newBlock
@@ -429,12 +452,12 @@ class BlockManager {
     await this.handleSubscribersInitialize();
 
     if (newBlock.parentHash !== this.lastBlock.hash) {
+      /* newBlock is not successor of this.lastBlock a reorg has been detected */
       logger.debug(
         `handleBlock() (last: ${getStringBlock(
           this.lastBlock
         )}) (new: ${getStringBlock(newBlock)}) `
       );
-      // Reorg detected, chain is inconsitent
 
       const { error: reorgError, commonAncestor: reorgAncestor } =
         await this.handleReorg(newBlock);
