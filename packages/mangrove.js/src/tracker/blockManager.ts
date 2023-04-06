@@ -109,6 +109,10 @@ class BlockManager {
     await this.handleSubscribersInitialize();
   }
 
+  public getLastBlock(): BlockManager.Block {
+    return this.lastBlock;
+  }
+
   /* subscribeToLogs enable a subscription for all logs emitted for the contract at address adress
    * only one subscription can exist by address. Calling a second time this function with the same
    * addressWill result in cancelling the previous subscription.

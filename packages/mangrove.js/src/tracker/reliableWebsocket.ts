@@ -5,7 +5,8 @@ export type ReliableWebsocketOptions = {
   wsUrl: string;
   pingIntervalMs: number;
   pingTimeoutMs: number;
-  msgHandler?: (ws: WebSocket, msg: string) => void;
+  msgHandler: (ws: WebSocket, msg: string) => void;
+  initMessages: string[];
 };
 
 /*
@@ -22,7 +23,7 @@ export class ReliableWebSocket {
 
   private lastCloseTimestampMs: number = 0;
 
-  constructor(private options: ReliableWebsocketOptions) {}
+  constructor(protected options: ReliableWebsocketOptions) {}
 
   public async initialize() {
     try {
@@ -39,7 +40,7 @@ export class ReliableWebSocket {
           this.pingTimeoutId = undefined;
 
           this.ws.on("error", this.onError.bind(this));
-          this.ws.on("open", this.heartbeat.bind(this));
+          this.ws.on("open", this.onOpen.bind(this));
           this.ws.on("close", this.onClose.bind(this));
           this.ws.on("pong", this.onPong.bind(this));
 
@@ -55,6 +56,11 @@ export class ReliableWebSocket {
     } catch (e) {
       throw e;
     }
+  }
+
+  private onOpen() {
+    this.options.initMessages.forEach((msg) => this.ws.send(msg));
+    this.heartbeat();
   }
 
   private heartbeat() {

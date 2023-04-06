@@ -22,6 +22,8 @@ describe("Reliable Websocket", () => {
     wsUrl,
     pingIntervalMs,
     pingTimeoutMs,
+    msgHandler: (ws: WebSocket, msg: string) => {},
+    initMessages: [],
   };
 
   let websocketServer: WebSocketServer;

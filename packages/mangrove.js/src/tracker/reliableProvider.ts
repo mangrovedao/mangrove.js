@@ -1,4 +1,4 @@
-import { Block, JsonRpcProvider, Log } from "@ethersproject/providers";
+import { JsonRpcProvider, Log } from "@ethersproject/providers";
 import { hexlify } from "ethers/lib/utils";
 import logger from "../util/logger";
 import BlockManager from "./blockManager";
@@ -16,7 +16,7 @@ namespace ReliableProvider {
 }
 
 abstract class ReliableProvider {
-  private blockManager: BlockManager;
+  public blockManager: BlockManager;
 
   private queue: BlockManager.Block[] = [];
 
@@ -34,11 +34,13 @@ abstract class ReliableProvider {
     });
   }
 
-  public initialize(block: Block) {
-    this.blockManager.initialize(block);
-  }
+  abstract getLatestBlock(): Promise<void>;
 
-  abstract getLatestBlock();
+  public async initialize(block: BlockManager.Block) {
+    this.blockManager.initialize(block);
+
+    await this.getLatestBlock();
+  }
 
   public addBlockToQueue(block: BlockManager.Block) {
     this.queue.push(block);
@@ -84,7 +86,10 @@ abstract class ReliableProvider {
     addresses: string[]
   ): Promise<BlockManager.ErrorOrLogs> {
     try {
-      // TODO: cannot use provider.getLogs as it does not support multiplesAddress
+      if (addresses.length === 0) {
+        return { error: undefined, logs: [] };
+      }
+      // cannot use provider.getLogs as it does not support multiplesAddress
       const logs: Log[] = await this.options.provider.send("eth_getLogs", [
         {
           address: addresses,
