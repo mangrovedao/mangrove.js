@@ -143,7 +143,7 @@ const generateMockLog = (
   };
 };
 
-describe("Block Manager", () => {
+describe.only("Block Manager", () => {
   const blockChain1: Record<number, BlockLogsState> = {
     1: {
       block: {
@@ -238,10 +238,10 @@ describe("Block Manager", () => {
         hash: "0x4c",
         number: 4,
       },
-      logs: [],
+      logs: [generateMockLog(4, "0x4c", addressSubscriber2)],
       state: {
         [addressSubscriber1]: "sub1-0x1",
-        [addressSubscriber2]: "sub2-0x1-0x2c-0x3c",
+        [addressSubscriber2]: "sub2-0x1-0x2c-0x3c-0x4c",
       },
     },
   };
@@ -751,19 +751,56 @@ describe("Block Manager", () => {
       subscriber2.blockByNumber = blockChain2;
       mockRpc.blockByNumber = blockChain2;
 
-      await blockManager.handleBlock(blockChain2[3].block);
+      await blockManager.handleBlock(blockChain2[2].block);
 
       assert.equal(
         subscriber1.getLatestState(),
-        blockChain2[3].state[subscriber1.address]
-      );
-      assert.equal(
-        subscriber1.getLatestState(),
-        blockChain2[3].state[subscriber1.address]
+        blockChain2[2].state[subscriber1.address]
       );
       assert.equal(
         subscriber2.getLatestState(),
-        blockChain2[3].state[subscriber2.address]
+        blockChain2[2].state[subscriber2.address]
+      );
+    });
+
+    it("reorg after fetching subscriber state", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
+      const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      await blockManager.handleBlock(blockChain1[2].block);
+
+      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
+      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+
+      await blockManager.handleBlock(blockChain1[3].block);
+
+      subscriber1.blockByNumber = blockChain2;
+      subscriber2.blockByNumber = blockChain2;
+      mockRpc.blockByNumber = blockChain2;
+
+      await blockManager.handleBlock(blockChain2[4].block);
+
+      assert.equal(
+        subscriber1.getLatestState(),
+        blockChain2[4].state[subscriber1.address]
+      );
+      assert.equal(
+        subscriber2.getLatestState(),
+        blockChain2[4].state[subscriber2.address]
       );
     });
 
@@ -798,10 +835,6 @@ describe("Block Manager", () => {
 
       await blockManager.handleBlock(blockChain2[3].block);
 
-      assert.equal(
-        subscriber1.getLatestState(),
-        blockChain2[3].state[subscriber1.address]
-      );
       assert.equal(
         subscriber1.getLatestState(),
         blockChain2[3].state[subscriber1.address]

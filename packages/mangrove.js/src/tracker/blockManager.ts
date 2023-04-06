@@ -86,6 +86,9 @@ namespace BlockManager {
   };
 }
 
+const getStringBlock = (block: BlockManager.Block): string =>
+  `(${block.parentHash}, ${block.hash}, ${block.number})`;
+
 /*
  * The BlockManager class is a reliable way of handling chain reorganisation.
  */
@@ -104,7 +107,7 @@ class BlockManager {
   constructor(private options: BlockManager.Options) {}
 
   public async initialize(block: BlockManager.Block) {
-    logger.debug(`initialize() (${block.hash}, ${block.number})`);
+    logger.debug(`initialize() ${getStringBlock(block)}`);
     this.lastBlock = block;
 
     this.blocksByNumber = {};
@@ -140,7 +143,7 @@ class BlockManager {
     this.blocksByNumber[block.number] = block;
     this.blockCached++;
 
-    logger.debug(`setLastBlock() (${block.hash}, ${block.number})`);
+    logger.debug(`setLastBlock() ${getStringBlock(block)}`);
   }
 
   /**
@@ -237,7 +240,7 @@ class BlockManager {
     }
 
     logger.debug(
-      `handleReorg(): commonAncestor (${commonAncestor.hash}, ${commonAncestor.number})`
+      `handleReorg(): commonAncestor ${getStringBlock(commonAncestor)}`
     );
 
     for (let i = commonAncestor.number + 1; i <= this.lastBlock.number; ++i) {
@@ -271,7 +274,9 @@ class BlockManager {
     commonAncestor?: BlockManager.Block
   ): Promise<BlockManager.ErrorOrLogsWithCommonAncestor> {
     logger.debug(
-      `queryLogs(): fromBlock (${fromBlock.hash}, ${fromBlock.number}), toBlock (${toBlock.hash}, ${toBlock.number})`
+      `queryLogs(): fromBlock ${getStringBlock(
+        fromBlock
+      )}, toBlock ${getStringBlock(toBlock)}`
     );
     if (rec > this.options.maxRetryGetLogs) {
       return { error: "MaxRetryReach", logs: undefined };
@@ -342,6 +347,10 @@ class BlockManager {
         const subscriber = this.subscribersByAddress[address];
         subscriber.initializedAt = res.block;
         subscriber.lastSeenEventBlockNumber = res.block.number;
+
+        logger.debug(
+          `subscriberInitialize() ${address} ${getStringBlock(res.block)}`
+        );
       }
     }
 
@@ -360,6 +369,9 @@ class BlockManager {
       const subscriber = this.subscribersByAddress[checksumAddress];
       subscriber.handleLog(log);
       subscriber.lastSeenEventBlockNumber = log.blockNumber;
+      logger.debug(
+        `handleLog() ${log.address} (${log.blockHash}, ${log.blockNumber})`
+      );
     }
   }
 
@@ -376,6 +388,7 @@ class BlockManager {
       } else if (subscriber.lastSeenEventBlockNumber > block.number) {
         subscriber.rollback(block);
         subscriber.lastSeenEventBlockNumber = block.number;
+        logger.debug(`rollback() ${address} ${getStringBlock(block)}`);
       }
     }
   }
@@ -386,7 +399,9 @@ class BlockManager {
     const cachedBlock = this.blocksByNumber[newBlock.number];
     if (cachedBlock && cachedBlock.hash === newBlock.hash) {
       logger.debug(
-        `handleBlock() block already in cache, ignoring... (${newBlock.hash}, ${newBlock.number})`
+        `handleBlock() block already in cache, ignoring... (${getStringBlock(
+          newBlock
+        )})`
       );
       return { error: undefined, logs: [], rollback: undefined };
     }
@@ -395,7 +410,9 @@ class BlockManager {
 
     if (newBlock.parentHash !== this.lastBlock.hash) {
       logger.debug(
-        `handleBlock() (last: (${this.lastBlock.hash}, ${this.lastBlock.number})) (new: (${newBlock.hash}, ${newBlock.number})) `
+        `handleBlock() (last: ${getStringBlock(
+          this.lastBlock
+        )}) (new: ${getStringBlock(newBlock)}) `
       );
       // Reorg detected, chain is inconsitent
 
@@ -413,7 +430,7 @@ class BlockManager {
         error: queryLogsError,
         commonAncestor: queryLogsAncestor,
         logs,
-      } = await this.queryLogs(reorgAncestor, newBlock, 0);
+      } = await this.queryLogs(reorgAncestor, newBlock, 0, reorgAncestor);
 
       if (queryLogsError) {
         if (queryLogsError === "ReInitializeBlockManager") {
@@ -437,9 +454,7 @@ class BlockManager {
 
       return { error: undefined, logs, rollback: rollbackToBlock };
     } else {
-      logger.debug(
-        `handleBlock() normal (${newBlock.hash}, ${newBlock.number})`
-      );
+      logger.debug(`handleBlock() normal (${getStringBlock(newBlock)})`);
       const {
         error: queryLogsError,
         logs,
