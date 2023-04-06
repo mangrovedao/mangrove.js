@@ -1,3 +1,8 @@
+# next
+
+- offerLogics support for `setRouter` function
+- mgvtokens support for `transferFrom` function
+
 # 1.2.4-3 (March 2023)
 
 - Added calculation of provision, withdrawal, access to offer logic to Kandel SDK
