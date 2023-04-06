@@ -501,6 +501,49 @@ describe("Block Manager", () => {
       assert.equal(logs![0].blockHash, "0x2c");
     });
 
+    it("1 block back 1 block long with failing get block", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 50,
+        getBlock: mockRpc.failingBeforeXCallGetBlock(6).bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGeLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+
+      mockRpc.blockByNumber = blockChain2;
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[2].block
+      ));
+
+      assert.equal(error, "FailedGetBlock");
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[3].block
+      ));
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
+      assert.notEqual(logs, undefined);
+      assert.equal(logs!.length, 2);
+
+      assert.equal(logs![0].blockNumber, 2);
+      assert.equal(logs![0].blockHash, "0x2c");
+
+      assert.equal(logs![1].blockNumber, 3);
+      assert.equal(logs![1].blockHash, "0x3c");
+    });
+
     it("Reorg older than initialize", async () => {
       const mockRpc = new MockRpc(blockChain1);
 
