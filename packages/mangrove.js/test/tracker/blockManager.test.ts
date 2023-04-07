@@ -257,7 +257,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -287,7 +287,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -320,7 +320,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -356,7 +356,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -395,7 +395,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -424,7 +424,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -449,7 +449,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -478,7 +478,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -511,7 +511,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[1].block);
@@ -554,7 +554,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       await blockManager.initialize(blockChain1[3].block);
@@ -582,7 +582,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
@@ -613,7 +613,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
@@ -650,7 +650,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
@@ -693,7 +693,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
@@ -730,7 +730,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
@@ -777,7 +777,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
@@ -816,7 +816,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
@@ -857,7 +857,7 @@ describe("Block Manager", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       });
 
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);

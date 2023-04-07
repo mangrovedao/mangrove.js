@@ -340,11 +340,11 @@ class BlockManager {
    * This function can initialize subscriber with a block which have hash !== this.lastBlock.hash,
    * it's ok because later we are calling verifySubscribers to check if it's the case.
    */
-  private async handleSubscribersInitialize(): Promise<void> {
+  private async handleSubscribersInitialize(): Promise<string[]> {
     if (
       this.waitingToBeInitializedSet.size === 0 // if there is nothing to do bail out
     ) {
-      return;
+      return [];
     }
 
     const toInitialize = Array.from(this.waitingToBeInitializedSet);
@@ -372,7 +372,7 @@ class BlockManager {
       }
     }
 
-    return;
+    return toInitialize;
   }
 
   /**
@@ -424,12 +424,10 @@ class BlockManager {
 
   /**
    * Verify that subscriber has been initialized with a block that we know in cache
-   * TODO: has cache is shrinking we should call this function only on subscriber that just got initialized
    */
-  private verifySubscribers() {
-    for (const [address, subscriber] of Object.entries(
-      this.subscribersByAddress
-    )) {
+  private verifySubscribers(initializedSubscribers: string[]) {
+    for (const address of initializedSubscribers) {
+      const subscriber = this.subscribersByAddress[address];
       if (subscriber.initializedAt) {
         const cachedBlock =
           this.blocksByNumber[subscriber.initializedAt.number];
@@ -466,7 +464,7 @@ class BlockManager {
       return { error: undefined, logs: [], rollback: undefined };
     }
 
-    await this.handleSubscribersInitialize();
+    const subscribersInitialized = await this.handleSubscribersInitialize();
 
     if (newBlock.parentHash !== this.lastBlock.hash) {
       /* newBlock is not successor of this.lastBlock a reorg has been detected */
@@ -509,7 +507,7 @@ class BlockManager {
 
       this.rollbackSubscribers(rollbackToBlock);
       this.applyLogs(logs);
-      this.verifySubscribers();
+      this.verifySubscribers(subscribersInitialized);
 
       await this.handleSubscribersInitialize();
 
@@ -537,7 +535,7 @@ class BlockManager {
         this.rollbackSubscribers(commonAncestor);
       }
       this.applyLogs(logs);
-      this.verifySubscribers();
+      this.verifySubscribers(subscribersInitialized);
 
       await this.handleSubscribersInitialize();
 

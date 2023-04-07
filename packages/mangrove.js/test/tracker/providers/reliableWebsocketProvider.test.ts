@@ -62,7 +62,7 @@ describe("ReliableWebSocketProvider", () => {
         maxRetryGetBlock: 5,
         retryDelayGetBlockMs: 200,
         maxRetryGetLogs: 5,
-        retryDelayGeLogsMs: 200,
+        retryDelayGetLogsMs: 200,
       },
       {
         wsUrl: wsUrl,

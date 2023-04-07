@@ -10,7 +10,7 @@ namespace ReliableProvider {
     maxRetryGetBlock: number;
     retryDelayGetBlockMs: number;
     maxRetryGetLogs: number;
-    retryDelayGeLogsMs: number;
+    retryDelayGetLogsMs: number;
   };
 }
 
@@ -29,7 +29,7 @@ abstract class ReliableProvider {
       maxRetryGetBlock: options.maxRetryGetLogs,
       retryDelayGetBlockMs: options.maxRetryGetBlock,
       maxRetryGetLogs: options.maxRetryGetLogs,
-      retryDelayGeLogsMs: options.retryDelayGeLogsMs,
+      retryDelayGetLogsMs: options.retryDelayGetLogsMs,
     });
   }
 
