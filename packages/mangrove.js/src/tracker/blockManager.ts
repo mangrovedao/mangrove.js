@@ -90,12 +90,12 @@ const getStringBlock = (block: BlockManager.Block): string =>
   `(${block.parentHash}, ${block.hash}, ${block.number})`;
 
 /*
- * The BlockManager class is a reliable way of handling chain reorganisation.
+ * The BlockManager class is a reliable way of handling chain reorganization.
  */
 class BlockManager {
   private blocksByNumber: Record<number, BlockManager.Block> = {}; // blocks cache
 
-  private lastBlock: BlockManager.Block;
+  private lastBlock: BlockManager.Block; // latest block in cach
 
   private subscribersByAddress: Record<string, LogSubscriber> = {};
   private subscibedAddresses: string[] = [];
@@ -106,6 +106,9 @@ class BlockManager {
 
   constructor(private options: BlockManager.Options) {}
 
+  /**
+   * Initialize the BlockManager cache with block
+   */
   public async initialize(block: BlockManager.Block) {
     logger.debug(`initialize() ${getStringBlock(block)}`);
     this.lastBlock = block;
@@ -372,6 +375,9 @@ class BlockManager {
     return;
   }
 
+  /**
+   * For each logs find if there is a matching subscriber, then call handle log on the subscriber
+   */
   private applyLogs(logs: Log[]) {
     if (this.subscibedAddresses.length === 0) {
       return;
@@ -390,6 +396,10 @@ class BlockManager {
     }
   }
 
+  /**
+   * Call rollback subscriber on all subscriber with lastSeenEventBlockNumber > block.number,
+   * schedule re-initialize for subscriber with initializedAt > block.number
+   */
   private rollbackSubscribers(block: BlockManager.Block) {
     for (const [address, subscriber] of Object.entries(
       this.subscribersByAddress
@@ -412,6 +422,10 @@ class BlockManager {
     }
   }
 
+  /**
+   * Verify that subscriber has been initialized with a block that we know in cache
+   * TODO: has cache is shrinking we should call this function only on subscriber that just got initialized
+   */
   private verifySubscribers() {
     for (const [address, subscriber] of Object.entries(
       this.subscribersByAddress
@@ -435,6 +449,9 @@ class BlockManager {
     }
   }
 
+  /**
+   * Add new block in BlockManager cache detect reorganization and ensure that cache is consistent
+   */
   async handleBlock(
     newBlock: BlockManager.Block
   ): Promise<BlockManager.HandleBlockResult> {
