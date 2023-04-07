@@ -12,7 +12,7 @@ namespace BlockManager {
     hash: string;
   };
 
-  type BlockError = "BlockNotFound";
+  export type BlockError = "BlockNotFound";
 
   export type ErrorOrBlock =
     | ({ error: BlockError } & { block: undefined })
@@ -387,10 +387,6 @@ class BlockManager {
         /* initialize call failed retry later by adding it back to the set */
         this.waitingToBeInitializedSet.add(address);
       } else {
-        const subscriber = this.subscribersByAddress[address];
-        subscriber.initializedAt = res.block;
-        subscriber.lastSeenEventBlockNumber = res.block.number;
-
         logger.debug(
           `subscriberInitialize() ${address} ${getStringBlock(res.block)}`
         );
@@ -414,7 +410,6 @@ class BlockManager {
 
       const subscriber = this.subscribersByAddress[checksumAddress];
       subscriber.handleLog(log);
-      subscriber.lastSeenEventBlockNumber = log.blockNumber;
       logger.debug(
         `handleLog() ${log.address} (${log.blockHash}, ${log.blockNumber})`
       );
@@ -441,7 +436,6 @@ class BlockManager {
         );
       } else if (subscriber.lastSeenEventBlockNumber > block.number) {
         subscriber.rollback(block);
-        subscriber.lastSeenEventBlockNumber = block.number;
         logger.debug(`rollback() ${address} ${getStringBlock(block)}`);
       }
     }

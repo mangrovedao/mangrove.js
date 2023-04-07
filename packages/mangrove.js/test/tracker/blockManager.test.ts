@@ -3,7 +3,11 @@ import { describe, it } from "mocha";
 import { enableLogging } from "../../src/util/logger";
 import BlockManager from "../../src/tracker/blockManager";
 import { Log } from "@ethersproject/providers";
-import { LogSubscriber } from "../../src/tracker/logSubscriber";
+import {
+  ErrorOrState,
+  LogSubscriber,
+  StateLogSubsriber,
+} from "../../src/tracker/logSubscriber";
 
 enableLogging();
 
@@ -75,9 +79,7 @@ class MockRpc {
   }
 }
 
-class MockSubscriber extends LogSubscriber {
-  public stateByBlockNumber: Record<number, string> = {};
-
+class MockSubscriber extends StateLogSubsriber<string> {
   constructor(
     public address: string,
     public blockByNumber: Record<number, BlockLogsState>
@@ -85,40 +87,25 @@ class MockSubscriber extends LogSubscriber {
     super();
   }
 
-  async initialize(blockNumber: number): Promise<BlockManager.ErrorOrBlock> {
+  copy(str: string): string {
+    return `${str}`;
+  }
+
+  async stateInitialize(blockNumber: number): Promise<ErrorOrState<string>> {
     const block = this.blockByNumber[blockNumber];
     if (!block) {
-      return { error: "BlockNotFound", block: undefined };
+      return { error: "BlockNotFound", block: undefined, state: undefined };
     }
 
-    this.stateByBlockNumber[block.block.number] = block.state[this.address];
-
-    return { error: undefined, block: block.block };
+    return {
+      error: undefined,
+      block: block.block,
+      state: block.state[this.address],
+    };
   }
 
-  handleLog(log: Log): void {
-    let currentState = this.stateByBlockNumber[log.blockNumber];
-    if (!currentState) {
-      this.stateByBlockNumber[log.blockNumber] =
-        this.stateByBlockNumber[this.lastSeenEventBlockNumber];
-      currentState = this.stateByBlockNumber[log.blockNumber];
-    }
-
-    this.stateByBlockNumber[
-      log.blockNumber
-    ] = `${currentState}-${log.blockHash}`;
-  }
-
-  rollback(block: BlockManager.Block): void {
-    for (let i = block.number + 1; i <= this.lastSeenEventBlockNumber; ++i) {
-      if (this.stateByBlockNumber[i]) {
-        delete this.stateByBlockNumber[i];
-      }
-    }
-  }
-
-  getLatestState(): string {
-    return this.stateByBlockNumber[this.lastSeenEventBlockNumber];
+  stateHandleLog(state: string, log: Log): string {
+    return `${state}-${log.blockHash}`;
   }
 }
 
