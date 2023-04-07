@@ -71,21 +71,46 @@ namespace BlockManager {
       } & { rollback: undefined })
     | ({ error?: undefined } & { logs: Log[]; rollback?: Block });
 
+  /**
+   * Options that control how the BlockManager cache behaves.
+   */
   export type Options = {
+    /**
+     * The maximum number of blocks to store in the cache
+     */
     maxBlockCached: number;
+    /**
+     *  getBlock with `number` == block number. return a block or and error
+     */
     getBlock: (number: number) => Promise<ErrorOrBlock>;
+    /**
+     *  getLogs return emitted logs by `addresses` between from (included) and to (included),
+     */
     getLogs: (
       from: number,
       to: number,
       addresses: string[]
     ) => Promise<ErrorOrLogs>;
+    /**
+     * The count of retry before bailing out after a failling getBlock
+     */
     maxRetryGetBlock: number;
+    /**
+     * Delay between every getBlock retry
+     */
     retryDelayGetBlockMs: number;
+    /**
+     * The count of retry before bailing out after a failling getLogs
+     */
     maxRetryGetLogs: number;
+    /**
+     * Delay between every getLogs retry
+     */
     retryDelayGetLogsMs: number;
   };
 }
 
+/* transform a block object to a string */
 const getStringBlock = (block: BlockManager.Block): string =>
   `(${block.parentHash}, ${block.hash}, ${block.number})`;
 
