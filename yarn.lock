@@ -1362,7 +1362,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.50.0
     "@typescript-eslint/parser": ^5.48.1
-    alchemy-sdk: ^2.4.2
+    alchemy-sdk: ^2.7.0
     axios: ^0.27.2
     big.js: ^6.2.1
     chai: ^4.3.7
@@ -2163,9 +2163,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"alchemy-sdk@npm:^2.4.2":
-  version: 2.4.3
-  resolution: "alchemy-sdk@npm:2.4.3"
+"alchemy-sdk@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "alchemy-sdk@npm:2.7.0"
   dependencies:
     "@ethersproject/abi": ^5.7.0
     "@ethersproject/abstract-provider": ^5.7.0
@@ -2181,7 +2181,7 @@ __metadata:
     axios: ^0.26.1
     sturdy-websocket: ^0.2.1
     websocket: ^1.0.34
-  checksum: e78a1fb18152bb6690075f90f687572d693edf8d34bda07d18cf8b676491ad06f12afd5a71bb9cf266702bc91fdb62780ab9110868bf9d0a6941e300d87f5d0d
+  checksum: 8a1f66e3a6fd5686a9302a3fad9a21db15e4426ed38fefec49480a65b17989d52b65cac31eb9621504d1228ad110cba91a5c0d93cdd3eec2abafccc0efd28c87
   languageName: node
   linkType: hard
 
