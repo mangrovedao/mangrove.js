@@ -19,15 +19,12 @@ namespace BlockManager {
   export type BlockError = "BlockNotFound";
 
   export type ErrorOrBlock = Result<Block, BlockError>;
-  // | ({ error: undefined } & { block: Block });
 
   export type MaxRetryError = "MaxRetryReach";
 
   type CommonAncestorError = "NoCommonAncestorFoundInCache" | "FailedGetBlock";
 
-  export type ErrorOrCommonAncestor =
-    | ({ error: CommonAncestorError } & { commonAncestor: undefined })
-    | ({ error: undefined } & { commonAncestor: Block });
+  export type ErrorOrCommonAncestor = Result<Block, CommonAncestorError>;
 
   type CommonAncestorOrBlockError =
     | BlockError
@@ -189,13 +186,13 @@ class BlockManager {
     rec: number = 0
   ): Promise<BlockManager.ErrorOrCommonAncestor> {
     if (rec === this.options.maxRetryGetBlock) {
-      return { error: "FailedGetBlock", commonAncestor: undefined };
+      return { error: "FailedGetBlock", ok: undefined };
     }
 
     if (this.countsBlocksCached == 1) {
       return {
         error: "NoCommonAncestorFoundInCache",
-        commonAncestor: undefined,
+        ok: undefined,
       };
     }
 
@@ -211,11 +208,11 @@ class BlockManager {
 
       const cachedBlock = this.blocksByNumber[currentBlockNumber];
       if (fetchedBlock.ok.hash === cachedBlock.hash) {
-        return { error: undefined, commonAncestor: cachedBlock };
+        return { error: undefined, ok: cachedBlock };
       }
     }
 
-    return { error: "NoCommonAncestorFoundInCache", commonAncestor: undefined };
+    return { error: "NoCommonAncestorFoundInCache", ok: undefined };
   }
 
   /**
@@ -268,7 +265,7 @@ class BlockManager {
   private async handleReorg(
     newBlock: BlockManager.Block
   ): Promise<BlockManager.ErrorOrReorg> {
-    let { error, commonAncestor } = await this.findCommonAncestor();
+    let { error, ok: commonAncestor } = await this.findCommonAncestor();
 
     if (error) {
       if (error === "NoCommonAncestorFoundInCache") {
