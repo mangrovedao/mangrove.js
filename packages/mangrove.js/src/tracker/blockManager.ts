@@ -131,7 +131,7 @@ class BlockManager {
 
   private waitingToBeInitializedSet: Set<string> = new Set<string>();
 
-  private blocksCached: number = 0;
+  private countsBlocksCached: number = 0;
 
   constructor(private options: BlockManager.CreateOptions) {}
 
@@ -144,7 +144,7 @@ class BlockManager {
 
     this.blocksByNumber = {};
     this.blocksByNumber[block.number] = block;
-    this.blocksCached = 1;
+    this.countsBlocksCached = 1;
 
     this.waitingToBeInitializedSet = new Set(this.subscribedAddresses);
 
@@ -172,7 +172,7 @@ class BlockManager {
   private setLastBlock(block: BlockManager.Block) {
     this.lastBlock = block;
     this.blocksByNumber[block.number] = block;
-    this.blocksCached++;
+    this.countsBlocksCached++;
 
     logger.debug(`setLastBlock() ${getStringBlock(block)}`);
   }
@@ -189,14 +189,14 @@ class BlockManager {
       return { error: "FailedGetBlock", commonAncestor: undefined };
     }
 
-    if (this.blocksCached == 1) {
+    if (this.countsBlocksCached == 1) {
       return {
         error: "NoCommonAncestorFoundInCache",
         commonAncestor: undefined,
       };
     }
 
-    for (let i = 0; i < this.blocksCached; ++i) {
+    for (let i = 0; i < this.countsBlocksCached; ++i) {
       const currentBlockNumber = this.lastBlock.number - i;
 
       const fetchedBlock = await this.options.getBlock(currentBlockNumber);
@@ -284,7 +284,7 @@ class BlockManager {
     /* remove all blocks that has been reorged from cache */
     for (let i = commonAncestor.number + 1; i <= this.lastBlock.number; ++i) {
       delete this.blocksByNumber[i];
-      this.blocksCached--;
+      this.countsBlocksCached--;
     }
 
     /* commonAncestor is the new cache latest block */
