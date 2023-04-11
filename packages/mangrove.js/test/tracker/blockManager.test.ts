@@ -40,12 +40,12 @@ class MockRpc {
     for (let i = from; i <= to; ++i) {
       const block = this.blockByNumber[i];
       if (!block) {
-        return { error: "FailedFetchingLog", logs: undefined };
+        return { error: "FailedFetchingLog", ok: undefined };
       }
       logs.push(...block.logs);
     }
 
-    return { error: undefined, logs };
+    return { error: undefined, ok: logs };
   }
 
   failingBeforeXCallGetBlock(
@@ -71,7 +71,7 @@ class MockRpc {
     return async (from: number, to: number, addresses: string[]) => {
       if (this.countFailingGetLogs !== x) {
         this.countFailingGetLogs++;
-        return { error: "FailedFetchingLog", logs: undefined };
+        return { error: "FailedFetchingLog", ok: undefined };
       }
 
       return this.getLogs(from, to, addresses);

@@ -81,7 +81,7 @@ abstract class ReliableProvider {
   ): Promise<BlockManager.ErrorOrLogs> {
     try {
       if (addresses.length === 0) {
-        return { error: undefined, logs: [] };
+        return { error: undefined, ok: [] };
       }
       // cannot use provider.getLogs as it does not support multiplesAddress
       const logs: Log[] = await this.options.provider.send("eth_getLogs", [
@@ -93,9 +93,9 @@ abstract class ReliableProvider {
         },
       ]);
 
-      return { error: undefined, logs };
+      return { error: undefined, ok: logs };
     } catch (e) {
-      return { error: "FailedFetchingLog", logs: undefined };
+      return { error: "FailedFetchingLog", ok: undefined };
     }
   }
 }

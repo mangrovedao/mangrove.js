@@ -39,9 +39,7 @@ namespace BlockManager {
 
   type ErrorLog = "FailedFetchingLog";
 
-  export type ErrorOrLogs =
-    | ({ error: ErrorLog } & { logs: undefined })
-    | ({ error: undefined } & { logs: Log[] });
+  export type ErrorOrLogs = Result<Log[], ErrorLog>;
 
   export type ErrorOrQueryLogs =
     | ({
@@ -324,7 +322,7 @@ class BlockManager {
       return { error: "MaxRetryReach", logs: undefined };
     }
 
-    const { error, logs } = await this.options.getLogs(
+    const { error, ok: logs } = await this.options.getLogs(
       fromBlock.number + 1,
       toBlock.number,
       this.subscribedAddresses
