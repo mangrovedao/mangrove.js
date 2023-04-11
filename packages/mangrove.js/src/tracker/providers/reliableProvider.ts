@@ -63,14 +63,14 @@ abstract class ReliableProvider {
       const block = await this.options.provider.getBlock(number);
       return {
         error: undefined,
-        block: {
+        ok: {
           parentHash: block.parentHash,
           hash: block.hash,
           number: block.number,
         },
       };
     } catch (e) {
-      return { error: "BlockNotFound", block: undefined };
+      return { error: "BlockNotFound", ok: undefined };
     }
   }
 

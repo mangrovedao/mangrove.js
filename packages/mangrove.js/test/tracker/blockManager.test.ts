@@ -26,9 +26,9 @@ class MockRpc {
   async getBlock(number: number): Promise<BlockManager.ErrorOrBlock> {
     const block = this.blockByNumber[number];
     if (!block) {
-      return { error: "BlockNotFound", block: undefined };
+      return { error: "BlockNotFound", ok: undefined };
     }
-    return { error: undefined, block: block.block };
+    return { error: undefined, ok: block.block };
   }
 
   async getLogs(
@@ -54,7 +54,7 @@ class MockRpc {
     return async (number: number) => {
       if (this.countFailingGetBlock !== x) {
         this.countFailingGetBlock++;
-        return { error: "BlockNotFound", block: undefined };
+        return { error: "BlockNotFound", ok: undefined };
       }
 
       return this.getBlock(number);

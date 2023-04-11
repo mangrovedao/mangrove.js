@@ -4,6 +4,10 @@ import { getAddress } from "ethers/lib/utils";
 import logger from "../util/logger";
 import { LogSubscriber } from "./logSubscriber";
 
+export type Result<T, E = Error> =
+  | { ok: T; error: E }
+  | { ok: undefined; error: undefined };
+
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace BlockManager {
   export type Block = {
@@ -14,9 +18,8 @@ namespace BlockManager {
 
   export type BlockError = "BlockNotFound";
 
-  export type ErrorOrBlock =
-    | ({ error: BlockError } & { block: undefined })
-    | ({ error: undefined } & { block: Block });
+  export type ErrorOrBlock = Result<Block, BlockError>;
+  // | ({ error: undefined } & { block: Block });
 
   export type MaxRetryError = "MaxRetryReach";
 
@@ -207,7 +210,7 @@ class BlockManager {
       }
 
       const cachedBlock = this.blocksByNumber[currentBlockNumber];
-      if (fetchedBlock.block.hash === cachedBlock.hash) {
+      if (fetchedBlock.ok.hash === cachedBlock.hash) {
         return { error: undefined, commonAncestor: cachedBlock };
       }
     }
@@ -241,7 +244,7 @@ class BlockManager {
 
     for (const errorOrBlock of errorsOrBlocks.values()) {
       /* check that queried block is chaining with lastBlock  */
-      if (this.lastBlock.hash != errorOrBlock.block.parentHash) {
+      if (this.lastBlock.hash != errorOrBlock.ok.parentHash) {
         /* TODO: this.lastBlock.hash could have been reorg ? */
 
         /* the getBlock might fail for some reason, wait retryDelayGetBlockMs to let it catch up*/
@@ -251,7 +254,7 @@ class BlockManager {
         return await this.populateValidChainUntilBlock(newBlock, rec + 1);
       } else {
         /* queried block is the successor of this.lastBlock add it to the cache */
-        this.setLastBlock(errorOrBlock.block);
+        this.setLastBlock(errorOrBlock.ok);
       }
     }
 
@@ -391,7 +394,7 @@ class BlockManager {
         this.waitingToBeInitializedSet.add(address);
       } else {
         logger.debug(
-          `subscriberInitialize() ${address} ${getStringBlock(res.block)}`
+          `subscriberInitialize() ${address} ${getStringBlock(res.ok)}`
         );
       }
     }

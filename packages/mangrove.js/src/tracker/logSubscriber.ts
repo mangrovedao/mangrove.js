@@ -40,7 +40,7 @@ export abstract class StateLogSubsriber<T> extends LogSubscriber {
     const { error, state, block } = await this.stateInitialize(blockNumber);
 
     if (error) {
-      return { error, block: undefined };
+      return { error, ok: undefined };
     }
 
     this.initializedAt = block;
@@ -48,7 +48,7 @@ export abstract class StateLogSubsriber<T> extends LogSubscriber {
 
     this.stateByBlockNumber[block.number] = state;
 
-    return { error: undefined, block };
+    return { error: undefined, ok: block };
   }
 
   abstract stateHandleLog(state: T, log: Log): T;
