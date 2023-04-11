@@ -5,10 +5,10 @@ import { enableLogging } from "../../../src/util/logger";
 enableLogging();
 
 import ReliableWebSocketProvider from "../../../src/tracker/providers/reliableWebsocketProvider";
-import { sleep } from "@mangrovedao/commonlib.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import BlockManager from "../../../src/tracker/blockManager";
 import { WebSocketServer, WebSocket } from "ws";
+import { sleep } from "@mangrovedao/commonlib.js";
 
 const mockRPCMessages = [
   '{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":{"baseFeePerGas":"0x788da4e57","difficulty":"0x0","extraData":"0x496c6c756d696e61746520446d6f63726174697a6520447374726962757465","gasLimit":"0x1c9c380","gasUsed":"0xc5718a","hash":"0x4ad7be68fcc73e24d114b249096c2cf43ad6d29c6667a1af89f86d45b5ad9ad4","logsBloom":"0x5fa010464104d1483149ca24cb90522269e94094ec894615142310605c9005060ce80380550053f464411989c85a05302b29143c9b18bac6360d45001c256c2adc66709042e2c86c688b5a0ef0b03cbc891402c344451a18ecaa3c4088c33181e24826c286260c8b90e6ba4c04d6196d4e129b55035c355bd812c4f01e597805bc95ba9008fb61c8fadde54816b1e013d14bd821f70d41ac4578c4d08e3485ae8a5ec9e6d94265136a5266cc9b350dca9042021538f6adaa03fb1d7661fc5203cd18058a749ba741580e035e00dd70b84bb9b5ac506ba0154585310e8800e8d491f6fe580594841c72af569418071c829d72425b12aa8463a18fe8929284fc07","miner":"0xdafea492d9c6733ae3d56b7ed1adb60692c98bc5","mixHash":"0xe2529b54095ed47e44e5b579e19edeadab29961d4a112f26878aa9751a6d06da","nonce":"0x0000000000000000","number":"0x1033e8c","parentHash":"0x330a7e7d51b9cef001d39c149505414ca581fdfcae90b7acd0da8dfd729f6c16","receiptsRoot":"0x96f5caeb18d6cbdbdc89e357a56054817f1be38d3a3de0bd05175cd1cb79e8e0","sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","size":"0x25540","stateRoot":"0x253cbb9422e406f538fe9094a3388a1f1d46461df5e264f622a238be64089116","timestamp":"0x642ec7e3","transactionsRoot":"0x1ec1d358e25029da30dc79632ec9c2ed462ff9cd6b8a7e61e565c0acfdef098b"},"subscription":"0xc75d722ad5a585755f47bd368ce29308"}}',

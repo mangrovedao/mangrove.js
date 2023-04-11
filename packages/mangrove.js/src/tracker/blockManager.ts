@@ -81,7 +81,7 @@ namespace BlockManager {
     maxBlockCached: number;
 
     /**
-     * The count of retry before bailing out after a failling getBlock
+     * The count of retry before bailing out after a failing getBlock
      */
     maxRetryGetBlock: number;
     /**
@@ -89,7 +89,7 @@ namespace BlockManager {
      */
     retryDelayGetBlockMs: number;
     /**
-     * The count of retry before bailing out after a failling getLogs
+     * The count of retry before bailing out after a failing getLogs
      */
     maxRetryGetLogs: number;
     /**
@@ -100,7 +100,7 @@ namespace BlockManager {
 
   export type CreateOptions = Options & {
     /**
-     *  getBlock with `number` == block number. return a block or and error
+     *  getBlock with `number` == block number. Return a block or and error
      */
     getBlock: (number: number) => Promise<ErrorOrBlock>;
     /**
@@ -124,14 +124,14 @@ const getStringBlock = (block: BlockManager.Block): string =>
 class BlockManager {
   private blocksByNumber: Record<number, BlockManager.Block> = {}; // blocks cache
 
-  private lastBlock: BlockManager.Block; // latest block in cach
+  private lastBlock: BlockManager.Block; // latest block in cache
 
   private subscribersByAddress: Record<string, LogSubscriber> = {};
-  private subscibedAddresses: string[] = [];
+  private subscribedAddresses: string[] = [];
 
   private waitingToBeInitializedSet: Set<string> = new Set<string>();
 
-  private blockCached: number = 0;
+  private blocksCached: number = 0;
 
   constructor(private options: BlockManager.CreateOptions) {}
 
@@ -144,9 +144,9 @@ class BlockManager {
 
     this.blocksByNumber = {};
     this.blocksByNumber[block.number] = block;
-    this.blockCached = 1;
+    this.blocksCached = 1;
 
-    this.waitingToBeInitializedSet = new Set(this.subscibedAddresses);
+    this.waitingToBeInitializedSet = new Set(this.subscribedAddresses);
 
     await this.handleSubscribersInitialize();
   }
@@ -155,9 +155,9 @@ class BlockManager {
     return this.lastBlock;
   }
 
-  /* subscribeToLogs enable a subscription for all logs emitted for the contract at address adress
+  /* subscribeToLogs enable a subscription for all logs emitted for the contract at address
    * only one subscription can exist by address. Calling a second time this function with the same
-   * addressWill result in cancelling the previous subscription.
+   * address will result in cancelling the previous subscription.
    * */
   public subscribeToLogs(address: string, subscriber: LogSubscriber) {
     const checksumAddress = getAddress(address);
@@ -165,14 +165,14 @@ class BlockManager {
     logger.debug(`subscribeToLogs() ${checksumAddress}`);
     this.subscribersByAddress[checksumAddress] = subscriber;
 
-    this.subscibedAddresses.push(checksumAddress);
+    this.subscribedAddresses.push(checksumAddress);
     this.waitingToBeInitializedSet.add(checksumAddress);
   }
 
   private setLastBlock(block: BlockManager.Block) {
     this.lastBlock = block;
     this.blocksByNumber[block.number] = block;
-    this.blockCached++;
+    this.blocksCached++;
 
     logger.debug(`setLastBlock() ${getStringBlock(block)}`);
   }
@@ -180,7 +180,7 @@ class BlockManager {
   /**
    * Find commonAncestor between RPC is the local cache.
    * This methods compare blocks between cache and RPC until it finds a matching block.
-   * It reutn the matching block
+   * It return the matching block
    */
   private async findCommonAncestor(
     rec: number = 0
@@ -189,18 +189,17 @@ class BlockManager {
       return { error: "FailedGetBlock", commonAncestor: undefined };
     }
 
-    if (this.blockCached == 1) {
-      // TODO: handle specific case
+    if (this.blocksCached == 1) {
       return {
         error: "NoCommonAncestorFoundInCache",
         commonAncestor: undefined,
       };
     }
 
-    for (let i = 0; i < this.blockCached; ++i) {
+    for (let i = 0; i < this.blocksCached; ++i) {
       const currentBlockNumber = this.lastBlock.number - i;
 
-      const fetchedBlock = await this.options.getBlock(currentBlockNumber); // TODO: handle error
+      const fetchedBlock = await this.options.getBlock(currentBlockNumber);
 
       if (fetchedBlock.error) {
         await sleep(this.options.retryDelayGetBlockMs);
@@ -220,8 +219,9 @@ class BlockManager {
    * Fetch the chain from this.lastBlock.number + 1 until newBlock.number.
    * Try to reconstruct a valid chain in cache.
    *
-   * A valid chain is a chain where block with sucessing block number are
-   * linked with parentHash and hash.
+   * A valid chain is a chain where blocks are chained with their successor with parentHash.
+   *
+   * block1(parentHash: "0x0", hash: "0x1") => block2("0x1", hash: "0x2")
    */
   private async populateValidChainUntilBlock(
     newBlock: BlockManager.Block,
@@ -235,7 +235,6 @@ class BlockManager {
     const blocksPromises: Promise<BlockManager.ErrorOrBlock>[] = [];
     for (let i = this.lastBlock.number + 1; i <= newBlock.number; ++i) {
       blocksPromises.push(this.options.getBlock(i));
-      // TODO: write a test if some getBlock fail
     }
 
     const errorsOrBlocks = await Promise.all(blocksPromises);
@@ -245,7 +244,7 @@ class BlockManager {
       if (this.lastBlock.hash != errorOrBlock.block.parentHash) {
         /* TODO: this.lastBlock.hash could have been reorg ? */
 
-        /* the rpc might be late, wait retryDelayGetBlockMs to let it catch up*/
+        /* the getBlock might fail for some reason, wait retryDelayGetBlockMs to let it catch up*/
         await sleep(this.options.retryDelayGetBlockMs);
 
         /* retry until rec === maxRetryGetBlock */
@@ -285,7 +284,7 @@ class BlockManager {
     /* remove all blocks that has been reorged from cache */
     for (let i = commonAncestor.number + 1; i <= this.lastBlock.number; ++i) {
       delete this.blocksByNumber[i];
-      this.blockCached--;
+      this.blocksCached--;
     }
 
     /* commonAncestor is the new cache latest block */
@@ -328,7 +327,7 @@ class BlockManager {
     const { error, logs } = await this.options.getLogs(
       fromBlock.number + 1,
       toBlock.number,
-      this.subscibedAddresses
+      this.subscribedAddresses
     );
 
     /* if getLogs fail retry this.options.maxRetryGetLogs  */
@@ -404,7 +403,7 @@ class BlockManager {
    * For each logs find if there is a matching subscriber, then call handle log on the subscriber
    */
   private applyLogs(logs: Log[]) {
-    if (this.subscibedAddresses.length === 0) {
+    if (this.subscribedAddresses.length === 0) {
       return;
     }
 
@@ -471,7 +470,7 @@ class BlockManager {
   }
 
   /**
-   * Add new block in BlockManager cache detect reorganization and ensure that cache is consistent
+   * Add new block in BlockManager cache, detect reorganization, and ensure that cache is consistent
    */
   async handleBlock(
     newBlock: BlockManager.Block
