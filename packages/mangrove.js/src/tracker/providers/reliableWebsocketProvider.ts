@@ -8,6 +8,7 @@ import { JsonRPC } from "./jsonRpc";
 
 const newHeadsMsg = `{"id": 1, "method": "eth_subscribe", "params": ["newHeads"]}`;
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 namespace ReliableWebsocketProvider {
   export type Options = Omit<
     ReliableWebsocketOptions,
