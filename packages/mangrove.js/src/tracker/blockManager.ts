@@ -5,8 +5,8 @@ import logger from "../util/logger";
 import { LogSubscriber } from "./logSubscriber";
 
 export type Result<T, E = Error> =
-  | { ok: T; error: E }
-  | { ok: undefined; error: undefined };
+  | { ok: T; error: undefined }
+  | { ok: undefined; error: E };
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace BlockManager {
@@ -170,6 +170,13 @@ class BlockManager {
     this.lastBlock = block;
     this.blocksByNumber[block.number] = block;
     this.countsBlocksCached++;
+
+    if (this.countsBlocksCached > this.options.maxBlockCached) {
+      delete this.blocksByNumber[
+        this.lastBlock.number - this.options.maxBlockCached
+      ];
+      this.countsBlocksCached--;
+    }
 
     logger.debug(`setLastBlock() ${getStringBlock(block)}`);
   }

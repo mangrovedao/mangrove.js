@@ -5,7 +5,6 @@ import BlockManager from "../../src/tracker/blockManager";
 import { Log } from "@ethersproject/providers";
 import {
   ErrorOrState,
-  LogSubscriber,
   StateLogSubsriber,
 } from "../../src/tracker/logSubscriber";
 
@@ -554,6 +553,40 @@ describe("Block Manager", () => {
 
       assert.equal(error, undefined);
       assert.equal(rollback, blockChain2[2].block);
+      assert.equal(logs, undefined);
+    });
+
+    it("1 block back 1 block long bigger than cache", async () => {
+      const mockRpc = new MockRpc(blockChain1);
+
+      const blockManager = new BlockManager({
+        maxBlockCached: 2,
+        getBlock: mockRpc.getBlock.bind(mockRpc),
+        getLogs: mockRpc.getLogs.bind(mockRpc),
+        maxRetryGetBlock: 5,
+        retryDelayGetBlockMs: 200,
+        maxRetryGetLogs: 5,
+        retryDelayGetLogsMs: 200,
+      });
+
+      await blockManager.initialize(blockChain1[1].block);
+
+      let { error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[2].block
+      );
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain1[3].block
+      ));
+
+      mockRpc.blockByNumber = blockChain2;
+
+      ({ error, logs, rollback } = await blockManager.handleBlock(
+        blockChain2[1].block
+      ));
+
+      assert.equal(error, undefined);
+      assert.deepEqual(rollback, blockChain2[1].block);
       assert.equal(logs, undefined);
     });
   });
