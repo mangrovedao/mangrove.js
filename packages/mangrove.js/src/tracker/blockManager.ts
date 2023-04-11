@@ -79,18 +79,7 @@ namespace BlockManager {
      * The maximum number of blocks to store in the cache
      */
     maxBlockCached: number;
-    /**
-     *  getBlock with `number` == block number. return a block or and error
-     */
-    getBlock: (number: number) => Promise<ErrorOrBlock>;
-    /**
-     *  getLogs return emitted logs by `addresses` between from (included) and to (included),
-     */
-    getLogs: (
-      from: number,
-      to: number,
-      addresses: string[]
-    ) => Promise<ErrorOrLogs>;
+
     /**
      * The count of retry before bailing out after a failling getBlock
      */
@@ -107,6 +96,21 @@ namespace BlockManager {
      * Delay between every getLogs retry
      */
     retryDelayGetLogsMs: number;
+  };
+
+  export type CreateOptions = Options & {
+    /**
+     *  getBlock with `number` == block number. return a block or and error
+     */
+    getBlock: (number: number) => Promise<ErrorOrBlock>;
+    /**
+     *  getLogs return emitted logs by `addresses` between from (included) and to (included),
+     */
+    getLogs: (
+      from: number,
+      to: number,
+      addresses: string[]
+    ) => Promise<ErrorOrLogs>;
   };
 }
 
@@ -129,7 +133,7 @@ class BlockManager {
 
   private blockCached: number = 0;
 
-  constructor(private options: BlockManager.Options) {}
+  constructor(private options: BlockManager.CreateOptions) {}
 
   /**
    * Initialize the BlockManager cache with block

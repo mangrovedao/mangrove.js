@@ -4,13 +4,8 @@ import BlockManager from "../blockManager";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace ReliableProvider {
-  export type Options = {
+  export type Options = BlockManager.Options & {
     provider: JsonRpcProvider;
-    maxBlockCached: number;
-    maxRetryGetBlock: number;
-    retryDelayGetBlockMs: number;
-    maxRetryGetLogs: number;
-    retryDelayGetLogsMs: number;
   };
 }
 
