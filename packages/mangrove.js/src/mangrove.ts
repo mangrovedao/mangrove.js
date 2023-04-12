@@ -107,7 +107,7 @@ class Mangrove {
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
-  reliableProvider: ReliableProvider;
+  reliableProvider?: ReliableProvider;
 
   static typechain = typechain;
   static addresses = addresses;
@@ -241,7 +241,7 @@ class Mangrove {
     signer: Signer;
     network: eth.ProviderNetwork;
     readOnly: boolean;
-    providerUrl: string;
+    providerUrl?: string;
     blockManagerOptions: BlockManager.Options;
     reliableWebSocketProvider: ReliableWebsocketProvider.Options;
     reliableHttpProvider: ReliableHttpProvider.Options;
@@ -284,6 +284,10 @@ class Mangrove {
       orderAddress,
       this.signer
     );
+
+    if (!params.providerUrl) {
+      return;
+    }
 
     if (params.providerUrl.startsWith("ws")) {
       this.reliableProvider = new ReliableWebsocketProvider(
