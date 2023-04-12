@@ -146,9 +146,24 @@ class Mangrove {
         providerUrl: options,
       };
     }
+    if (typeof options.provider === "string") {
+      options.providerUrl = options.provider;
+    }
+    if (typeof options.provider === "object") {
+      options.providerUrl = (
+        options.provider as JsonRpcProvider
+      ).connection.url; // this is a hack I don't want to spend much time here. Let's discus in PR review
+      /*
+       * the problem is that Provider interface does not provide a way of getting url, as I
+       * implemented our own provider for events, providerUrl becomes mandatory. Should I replace
+       * all Mangrove.connect call with the according new interface ?
+       * Btw, can't we handle the provider ourself ? does the user really needs to specifiy it's own subscriber ?
+       * */
+    }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
+
     if ("send" in signer.provider) {
       const devNode = new DevNode(signer.provider);
       if (await devNode.isDevNode()) {
@@ -188,7 +203,6 @@ class Mangrove {
         estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
       };
     }
-
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
