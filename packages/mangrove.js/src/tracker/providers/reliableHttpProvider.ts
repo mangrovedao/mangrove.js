@@ -9,6 +9,8 @@ namespace ReliableHttpProvider {
 }
 
 class ReliableHttpProvider extends ReliableProvider {
+  private shouldStop: boolean = false;
+
   constructor(
     options: ReliableProvider.Options,
     private httpOptions: ReliableHttpProvider.Options
@@ -16,7 +18,16 @@ class ReliableHttpProvider extends ReliableProvider {
     super(options);
   }
 
+  async _initialize(): Promise<void> {
+    this.shouldStop = false;
+    await this.getLatestBlock();
+  }
+
   async getLatestBlock() {
+    if (this.shouldStop) {
+      return;
+    }
+
     try {
       const blockHeader: Block = await this.options.provider.getBlock("latest");
       await this.blockManager.handleBlock({
@@ -29,6 +40,10 @@ class ReliableHttpProvider extends ReliableProvider {
 
     await sleep(this.httpOptions.estimatedBlockTimeMs);
     this.getLatestBlock();
+  }
+
+  stop(): void {
+    this.shouldStop = true;
   }
 }
 

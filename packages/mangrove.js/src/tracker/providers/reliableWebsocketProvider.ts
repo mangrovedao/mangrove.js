@@ -31,8 +31,12 @@ class ReliableWebsocketProvider extends ReliableProvider {
     });
   }
 
-  async getLatestBlock() {
+  async _initialize(): Promise<void> {
     await this.reliableWebSocket.initialize();
+  }
+
+  stop(): void {
+    this.reliableWebSocket.stop();
   }
 
   private handleMessage(_: WebSocket, msg: string) {

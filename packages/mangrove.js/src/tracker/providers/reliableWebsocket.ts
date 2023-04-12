@@ -15,6 +15,8 @@ export type ReliableWebsocketOptions = {
  */
 
 export class ReliableWebSocket {
+  private shouldStop: boolean = false;
+
   private ws: WebSocket;
   private pingTimeoutId: NodeJS.Timeout;
   private initCb: (value: unknown) => void | undefined;
@@ -26,6 +28,7 @@ export class ReliableWebSocket {
   constructor(protected options: ReliableWebsocketOptions) {}
 
   public async initialize() {
+    this.shouldStop = false;
     try {
       await new Promise((resolve, reject) => {
         try {
@@ -56,6 +59,11 @@ export class ReliableWebSocket {
     } catch (e) {
       throw e;
     }
+  }
+
+  public stop() {
+    this.shouldStop = true;
+    this.ws.terminate();
   }
 
   private onOpen() {
@@ -102,6 +110,8 @@ export class ReliableWebSocket {
     this.lastCloseTimestampMs = now;
 
     logger.debug("connection is dead try to reconnect");
-    this.initialize();
+    if (!this.shouldStop) {
+      this.initialize();
+    }
   }
 }

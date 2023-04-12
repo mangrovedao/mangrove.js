@@ -28,13 +28,15 @@ abstract class ReliableProvider {
     });
   }
 
-  abstract getLatestBlock(): Promise<void>;
+  abstract _initialize(): Promise<void>;
 
   public async initialize(block: BlockManager.Block) {
     this.blockManager.initialize(block);
 
-    await this.getLatestBlock();
+    await this._initialize();
   }
+
+  public abstract stop(): void;
 
   public addBlockToQueue(block: BlockManager.Block) {
     this.queue.push(block);
