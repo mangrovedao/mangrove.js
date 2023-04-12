@@ -20,7 +20,8 @@ export const mochaHooks = {
     if (process.env.MOCHA_WORKER_ID) {
       // running in parallel mode - change port
       serverParams.port =
-        serverParams.port + Number(process.env.MOCHA_WORKER_ID);
+        serverParams.port + 1000 * Number(process.env.MOCHA_WORKER_ID);
+      currentProxyPort = serverParams.port + 1;
     }
     this.server = await node(serverParams).connect();
     this.accounts = {
