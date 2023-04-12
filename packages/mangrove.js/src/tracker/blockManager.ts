@@ -1,5 +1,5 @@
 import { Log } from "@ethersproject/providers";
-import * as commonlib from "@mangrovedao/commonlib.js";
+import { sleep } from "@mangrovedao/commonlib.js";
 import { getAddress } from "ethers/lib/utils";
 import logger from "../util/logger";
 import { LogSubscriber } from "./logSubscriber";
@@ -206,7 +206,7 @@ class BlockManager {
       const fetchedBlock = await this.options.getBlock(currentBlockNumber);
 
       if (fetchedBlock.error) {
-        await commonlib.sleep(this.options.retryDelayGetBlockMs);
+        await sleep(this.options.retryDelayGetBlockMs);
         return this.findCommonAncestor(rec + 1);
       }
 
@@ -249,7 +249,7 @@ class BlockManager {
         /* TODO: this.lastBlock.hash could have been reorg ? */
 
         /* the getBlock might fail for some reason, wait retryDelayGetBlockMs to let it catch up*/
-        await commonlib.sleep(this.options.retryDelayGetBlockMs);
+        await sleep(this.options.retryDelayGetBlockMs);
 
         /* retry until rec === maxRetryGetBlock */
         return await this.populateValidChainUntilBlock(newBlock, rec + 1);
@@ -337,7 +337,7 @@ class BlockManager {
     /* if getLogs fail retry this.options.maxRetryGetLogs  */
     if (error) {
       /* the rpc might be a bit late, wait retryDelayGetLogsMs to let it catch up */
-      await commonlib.sleep(this.options.retryDelayGetLogsMs);
+      await sleep(this.options.retryDelayGetLogsMs);
       return this.queryLogs(fromBlock, toBlock, rec + 1);
     }
 

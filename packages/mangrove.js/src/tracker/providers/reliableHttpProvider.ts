@@ -1,5 +1,5 @@
 import { Block } from "@ethersproject/providers";
-import * as commonlib from "@mangrovedao/commonlib.js";
+import { sleep } from "@mangrovedao/commonlib.js";
 import ReliableProvider from "./reliableProvider";
 
 namespace ReliableHttpProvider {
@@ -27,7 +27,7 @@ class ReliableHttpProvider extends ReliableProvider {
       await this.blockManager.handleBlock(blockHeader);
     } catch (e) {}
 
-    await commonlib.sleep(this.httpOptions.estimatedBlockTimeMs);
+    await sleep(this.httpOptions.estimatedBlockTimeMs);
     this.getLatestBlock();
   }
 }
