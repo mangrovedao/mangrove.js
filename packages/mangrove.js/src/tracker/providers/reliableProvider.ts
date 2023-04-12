@@ -79,20 +79,24 @@ abstract class ReliableProvider {
   private async getLogs(
     from: number,
     to: number,
-    addresses: string[]
+    addressesAndTopics: BlockManager.AddressAndTopics[]
   ): Promise<BlockManager.ErrorOrLogs> {
     try {
-      if (addresses.length === 0) {
+      if (addressesAndTopics.length === 0) {
         return { error: undefined, ok: [] };
       }
+      const fromBlock = hexlify(from);
+      const toBlock = hexlify(to);
       // cannot use provider.getLogs as it does not support multiplesAddress
       const logs: Log[] = await this.options.provider.send("eth_getLogs", [
-        {
-          address: addresses,
-          fromBlock: hexlify(from),
-          toBlock: hexlify(to),
-          // topics: []
-        },
+        addressesAndTopics.map((addressAndTopics) => ({
+          address: addressAndTopics.address,
+          fromBlock,
+          toBlock,
+          topics: addressAndTopics.topics.length
+            ? addressAndTopics.topics
+            : undefined,
+        })),
       ]);
 
       return { error: undefined, ok: logs };

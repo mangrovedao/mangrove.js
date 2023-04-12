@@ -33,7 +33,7 @@ class MockRpc {
   async getLogs(
     from: number,
     to: number,
-    addresses: string[]
+    addresses: BlockManager.AddressAndTopics[]
   ): Promise<BlockManager.ErrorOrLogs> {
     const logs: Log[] = [];
     for (let i = from; i <= to; ++i) {
@@ -65,9 +65,13 @@ class MockRpc {
   ): (
     from: number,
     to: number,
-    addresses: string[]
+    addresses: BlockManager.AddressAndTopics[]
   ) => Promise<BlockManager.ErrorOrLogs> {
-    return async (from: number, to: number, addresses: string[]) => {
+    return async (
+      from: number,
+      to: number,
+      addresses: BlockManager.AddressAndTopics[]
+    ) => {
       if (this.countFailingGetLogs !== x) {
         this.countFailingGetLogs++;
         return { error: "FailedFetchingLog", ok: undefined };
@@ -105,6 +109,13 @@ class MockSubscriber extends StateLogSubsriber<string> {
 
   stateHandleLog(state: string, log: Log): string {
     return `${state}-${log.blockHash}`;
+  }
+
+  getAddressAndTopics(): BlockManager.AddressAndTopics {
+    return {
+      address: this.address,
+      topics: [],
+    };
   }
 }
 
@@ -608,8 +619,14 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       await blockManager.initialize(blockChain1[1].block);
 
@@ -639,8 +656,14 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       await blockManager.initialize(blockChain1[1].block);
 
@@ -676,8 +699,14 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       await blockManager.initialize(blockChain1[1].block);
 
@@ -721,8 +750,14 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       await blockManager.handleBlock(blockChain1[2].block);
 
@@ -756,8 +791,14 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       await blockManager.initialize(blockChain1[1].block);
 
@@ -807,8 +848,14 @@ describe("Block Manager", () => {
 
       await blockManager.handleBlock(blockChain1[2].block);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       subscriber1.blockByNumber = blockChain2;
       subscriber2.blockByNumber = blockChain2;
@@ -846,8 +893,14 @@ describe("Block Manager", () => {
 
       await blockManager.handleBlock(blockChain1[2].block);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       await blockManager.handleBlock(blockChain1[3].block);
 
@@ -887,8 +940,14 @@ describe("Block Manager", () => {
 
       await blockManager.handleBlock(blockChain1[2].block);
 
-      blockManager.subscribeToLogs(subscriber1.address, subscriber1);
-      blockManager.subscribeToLogs(subscriber2.address, subscriber2);
+      blockManager.subscribeToLogs(
+        subscriber1.getAddressAndTopics(),
+        subscriber1
+      );
+      blockManager.subscribeToLogs(
+        subscriber2.getAddressAndTopics(),
+        subscriber2
+      );
 
       await blockManager.handleBlock(blockChain1[3].block);
 

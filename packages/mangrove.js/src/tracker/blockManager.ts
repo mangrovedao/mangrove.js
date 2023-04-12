@@ -95,6 +95,11 @@ namespace BlockManager {
     retryDelayGetLogsMs: number;
   };
 
+  export type AddressAndTopics = {
+    address: string;
+    topics: string[];
+  };
+
   export type CreateOptions = Options & {
     /**
      *  getBlock with `number` == block number. Return a block or and error
@@ -106,7 +111,7 @@ namespace BlockManager {
     getLogs: (
       from: number,
       to: number,
-      addresses: string[]
+      addressAndTopics: AddressAndTopics[]
     ) => Promise<ErrorOrLogs>;
   };
 }
@@ -124,7 +129,7 @@ class BlockManager {
   private lastBlock: BlockManager.Block; // latest block in cache
 
   private subscribersByAddress: Record<string, LogSubscriber> = {};
-  private subscribedAddresses: string[] = [];
+  private subscribedAddresses: BlockManager.AddressAndTopics[] = [];
 
   private waitingToBeInitializedSet: Set<string> = new Set<string>();
 
@@ -143,7 +148,9 @@ class BlockManager {
     this.blocksByNumber[block.number] = block;
     this.countsBlocksCached = 1;
 
-    this.waitingToBeInitializedSet = new Set(this.subscribedAddresses);
+    this.waitingToBeInitializedSet = new Set(
+      this.subscribedAddresses.map((addrAndTopics) => addrAndTopics.address)
+    );
 
     await this.handleSubscribersInitialize();
   }
@@ -156,13 +163,19 @@ class BlockManager {
    * only one subscription can exist by address. Calling a second time this function with the same
    * address will result in cancelling the previous subscription.
    * */
-  public subscribeToLogs(address: string, subscriber: LogSubscriber) {
-    const checksumAddress = getAddress(address);
+  public subscribeToLogs(
+    addressAndTopics: BlockManager.AddressAndTopics,
+    subscriber: LogSubscriber
+  ) {
+    const checksumAddress = getAddress(addressAndTopics.address);
 
     logger.debug(`subscribeToLogs() ${checksumAddress}`);
     this.subscribersByAddress[checksumAddress] = subscriber;
 
-    this.subscribedAddresses.push(checksumAddress);
+    this.subscribedAddresses.push({
+      address: checksumAddress,
+      topics: addressAndTopics.topics,
+    });
     this.waitingToBeInitializedSet.add(checksumAddress);
   }
 
