@@ -1,6 +1,6 @@
 import { Log } from "@ethersproject/providers";
-import { sleep } from "@mangrovedao/commonlib.js";
 import { getAddress } from "ethers/lib/utils";
+import { sleep } from "../util/sleep";
 import logger from "../util/logger";
 import { LogSubscriber } from "./logSubscriber";
 

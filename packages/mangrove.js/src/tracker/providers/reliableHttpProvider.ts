@@ -1,5 +1,5 @@
 import { Block } from "@ethersproject/providers";
-import { sleep } from "@mangrovedao/commonlib.js";
+import { sleep } from "../../util/sleep";
 import ReliableProvider from "./reliableProvider";
 
 namespace ReliableHttpProvider {
