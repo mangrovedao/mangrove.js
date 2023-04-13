@@ -1,5 +1,4 @@
 import { Block } from "@ethersproject/providers";
-import { sleep } from "../../util/sleep";
 import ReliableProvider from "./reliableProvider";
 
 namespace ReliableHttpProvider {
@@ -38,8 +37,10 @@ class ReliableHttpProvider extends ReliableProvider {
       await this.blockManager.handleBlock(blockHeader);
     } catch (e) {}
 
-    await sleep(this.httpOptions.estimatedBlockTimeMs);
-    this.getLatestBlock();
+    setTimeout(
+      this.getLatestBlock.bind(this),
+      this.httpOptions.estimatedBlockTimeMs
+    );
   }
 
   stop(): void {
