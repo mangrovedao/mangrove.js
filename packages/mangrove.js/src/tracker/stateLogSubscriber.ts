@@ -1,0 +1,113 @@
+import { Log } from "@ethersproject/providers";
+import { Mutex } from "async-mutex";
+
+import BlockManager from "./blockManager";
+import LogSubscriber from "./logSubscriber";
+
+namespace StateLogSubsriber {
+  export type StateAndBlock<T> = {
+    block: BlockManager.BlockWithoutParentHash;
+    state: T;
+  };
+}
+
+/**
+ * StateLogSubsriber is an abstract implementation of LogSubscriber which keep
+ * one state object for each new block found in `handleLog` and store it in cache.
+ * This class handle rollback by using previous state found in cache.
+ */
+abstract class StateLogSubsriber<
+  T,
+  ParsedEvent
+> extends LogSubscriber<ParsedEvent> {
+  private stateByBlockNumber: Record<number, T> = {}; // state by blockNumber
+  protected cacheLock: Mutex; // Lock that must be acquired when modifying the cache to ensure consistency and to queue cache updating events.
+
+  constructor() {
+    super();
+    this.cacheLock = new Mutex();
+  }
+
+  /* copy function from object type T to new type T */
+  abstract copy(data: T): T;
+
+  /* initialize the state at blockNumber `blockNumber` */
+  abstract stateInitialize(
+    block: BlockManager.BlockWithoutParentHash
+  ): Promise<LogSubscriber.ErrorOrState<T>>;
+
+  /* return latest state */
+  public getLatestState(): StateLogSubsriber.StateAndBlock<T> {
+    return {
+      block: this.lastSeenEventBlock,
+      state: this.stateByBlockNumber[this.lastSeenEventBlock.number],
+    };
+  }
+
+  /* initialize subscriber by calling stateInitialize */
+  public async initialize(
+    block: BlockManager.BlockWithoutParentHash
+  ): Promise<LogSubscriber.InitialzeErrorOrBlock> {
+    this.stateByBlockNumber = {};
+
+    this.initializedAt = undefined;
+    this.lastSeenEventBlock = undefined;
+    const { error, ok } = await this.stateInitialize(block);
+
+    if (error) {
+      return { error, ok: undefined };
+    }
+
+    const { state } = ok;
+
+    this.stateByBlockNumber[block.number] = state;
+
+    return { error: undefined, ok: block };
+  }
+
+  /** create a new state with the applied `log` and return it, no copy should be made.
+   * as it's already handle by `handleLog`
+   */
+  abstract stateHandleLog(state: T, log: Log, event?: ParsedEvent): T;
+
+  /** handle received log by creating new cached state if we found a block that is newer
+   * than our cache. Then let implementation `stateHandleLog` modify the state.
+   */
+  public async handleLog(log: Log, event?: ParsedEvent): Promise<void> {
+    await this.cacheLock.runExclusive(() => {
+      let currentState = this.stateByBlockNumber[log.blockNumber];
+      if (!currentState) {
+        this.stateByBlockNumber[log.blockNumber] = this.copy(
+          this.stateByBlockNumber[this.lastSeenEventBlock.number]
+        );
+        currentState = this.stateByBlockNumber[log.blockNumber];
+      }
+
+      this.stateByBlockNumber[log.blockNumber] = this.stateHandleLog(
+        currentState,
+        log,
+        event
+      );
+      this.lastSeenEventBlock = {
+        number: log.blockNumber,
+        hash: log.blockHash,
+      };
+    });
+  }
+
+  /* rollback state by using state in cache */
+  public rollback(block: BlockManager.Block): void {
+    if (!this.lastSeenEventBlock) {
+      return;
+    }
+
+    for (let i = block.number + 1; i <= this.lastSeenEventBlock.number; ++i) {
+      if (this.stateByBlockNumber[i]) {
+        delete this.stateByBlockNumber[i];
+      }
+    }
+    this.lastSeenEventBlock = block;
+  }
+}
+
+export default StateLogSubsriber;

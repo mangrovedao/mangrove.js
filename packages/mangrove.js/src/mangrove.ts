@@ -37,6 +37,8 @@ import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
 import ReliableHttpProvider from "./tracker/providers/reliableHttpProvider";
 import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
+import ReaderMultiWrapper from "./util/multi/readerMultiWrapper";
+import MangroveEventSubscriber from "./mangroveEventSubscriber";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
@@ -104,10 +106,12 @@ class Mangrove {
   address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
+  readerWrappedContract: ReaderMultiWrapper;
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
   reliableProvider?: ReliableProvider;
+  mangroveEventSubscriber?: MangroveEventSubscriber;
 
   static typechain = typechain;
   static addresses = addresses;
@@ -214,6 +218,8 @@ class Mangrove {
       reliableHttpProvider: options.reliableHttpProviderOptions,
     });
 
+    await mgv.initializeProvider();
+
     canConstructMangrove = false;
 
     logger.debug("Initialize Mangrove", {
@@ -270,6 +276,12 @@ class Mangrove {
       readerAddress,
       this.signer
     );
+
+    this.readerWrappedContract = new ReaderMultiWrapper(
+      this.readerContract,
+      this.multicallContract
+    );
+
     const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
     this.cleanerContract = typechain.MgvCleaner__factory.connect(
       cleanerAddress,
@@ -306,6 +318,29 @@ class Mangrove {
         params.reliableHttpProvider
       );
     }
+
+    this.mangroveEventSubscriber = new MangroveEventSubscriber(
+      this.provider,
+      this.contract,
+      this.reliableProvider.blockManager
+    );
+  }
+
+  /**
+   * Initialize reliable provider
+   */
+  private async initializeProvider(): Promise<void> {
+    if (!this.reliableProvider) {
+      return;
+    }
+
+    const block = await this.provider.getBlock("latest");
+
+    await this.reliableProvider.initialize({
+      parentHash: block.parentHash,
+      hash: block.hash,
+      number: block.number,
+    });
   }
   /* Instance */
   /************** */

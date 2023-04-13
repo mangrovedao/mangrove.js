@@ -2,11 +2,9 @@ import assert from "assert";
 import { describe, it } from "mocha";
 import { enableLogging } from "../../src/util/logger";
 import BlockManager from "../../src/tracker/blockManager";
+import StateLogSubsriber from "../../src/tracker/stateLogSubscriber";
+import LogSubscriber from "../../src/tracker/logSubscriber";
 import { Log } from "@ethersproject/providers";
-import {
-  ErrorOrState,
-  StateLogSubsriber,
-} from "../../src/tracker/logSubscriber";
 
 enableLogging();
 
@@ -82,7 +80,7 @@ class MockRpc {
   }
 }
 
-class MockSubscriber extends StateLogSubsriber<string> {
+class MockSubscriber extends StateLogSubsriber<string, any> {
   constructor(
     public address: string,
     public blockByNumber: Record<number, BlockLogsState>
@@ -94,16 +92,20 @@ class MockSubscriber extends StateLogSubsriber<string> {
     return `${str}`;
   }
 
-  async stateInitialize(blockNumber: number): Promise<ErrorOrState<string>> {
-    const block = this.blockByNumber[blockNumber];
+  async stateInitialize(
+    wantedBlock: BlockManager.BlockWithoutParentHash
+  ): Promise<LogSubscriber.ErrorOrState<any>> {
+    const block = this.blockByNumber[wantedBlock.number];
     if (!block) {
-      return { error: "BlockNotFound", block: undefined, state: undefined };
+      return { error: "FailedInitialize", ok: undefined };
     }
 
     return {
       error: undefined,
-      block: block.block,
-      state: block.state[this.address],
+      ok: {
+        block: block.block,
+        state: block.state[this.address],
+      },
     };
   }
 
@@ -631,11 +633,11 @@ describe("Block Manager", () => {
       await blockManager.initialize(blockChain1[1].block);
 
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain1[1].state[subscriber1.address]
       );
       assert.equal(
-        subscriber2.getLatestState(),
+        subscriber2.getLatestState().state,
         blockChain1[1].state[subscriber2.address]
       );
     });
@@ -670,15 +672,15 @@ describe("Block Manager", () => {
       await blockManager.handleBlock(blockChain1[2].block);
 
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain1[2].state[subscriber1.address]
       );
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain1[2].state[subscriber1.address]
       );
       assert.equal(
-        subscriber2.getLatestState(),
+        subscriber2.getLatestState().state,
         blockChain1[2].state[subscriber2.address]
       );
     });
@@ -719,15 +721,15 @@ describe("Block Manager", () => {
       await blockManager.handleBlock(blockChain2[2].block);
 
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain2[2].state[subscriber1.address]
       );
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain2[2].state[subscriber1.address]
       );
       assert.equal(
-        subscriber2.getLatestState(),
+        subscriber2.getLatestState().state,
         blockChain2[2].state[subscriber2.address]
       );
     });
@@ -762,15 +764,15 @@ describe("Block Manager", () => {
       await blockManager.handleBlock(blockChain1[2].block);
 
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain1[2].state[subscriber1.address]
       );
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain1[2].state[subscriber1.address]
       );
       assert.equal(
-        subscriber2.getLatestState(),
+        subscriber2.getLatestState().state,
         blockChain1[2].state[subscriber2.address]
       );
     });
@@ -864,11 +866,11 @@ describe("Block Manager", () => {
       await blockManager.handleBlock(blockChain2[2].block);
 
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain2[2].state[subscriber1.address]
       );
       assert.equal(
-        subscriber2.getLatestState(),
+        subscriber2.getLatestState().state,
         blockChain2[2].state[subscriber2.address]
       );
     });
@@ -911,11 +913,11 @@ describe("Block Manager", () => {
       await blockManager.handleBlock(blockChain2[4].block);
 
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain2[4].state[subscriber1.address]
       );
       assert.equal(
-        subscriber2.getLatestState(),
+        subscriber2.getLatestState().state,
         blockChain2[4].state[subscriber2.address]
       );
     });
@@ -958,11 +960,11 @@ describe("Block Manager", () => {
       await blockManager.handleBlock(blockChain2[3].block);
 
       assert.equal(
-        subscriber1.getLatestState(),
+        subscriber1.getLatestState().state,
         blockChain2[3].state[subscriber1.address]
       );
       assert.equal(
-        subscriber2.getLatestState(),
+        subscriber2.getLatestState().state,
         blockChain2[3].state[subscriber2.address]
       );
     });

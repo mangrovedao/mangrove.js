@@ -2,18 +2,17 @@ import { Log } from "@ethersproject/providers";
 import { getAddress } from "ethers/lib/utils";
 import { sleep } from "../util/sleep";
 import logger from "../util/logger";
-import { LogSubscriber } from "./logSubscriber";
-
-export type Result<T, E = Error> =
-  | { ok: T; error: undefined }
-  | { ok: undefined; error: E };
+import LogSubscriber from "./logSubscriber";
+import { Result } from "../util/types";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace BlockManager {
-  export type Block = {
+  export type BlockWithoutParentHash = {
     number: number;
-    parentHash: string;
     hash: string;
+  };
+  export type Block = BlockWithoutParentHash & {
+    parentHash: string;
   };
 
   export type BlockError = "BlockNotFound";
@@ -117,8 +116,17 @@ namespace BlockManager {
 }
 
 /* transform a block object to a string */
-const getStringBlock = (block: BlockManager.Block): string =>
-  `(${block.parentHash}, ${block.hash}, ${block.number})`;
+const getStringBlock = (
+  block: BlockManager.Block | BlockManager.BlockWithoutParentHash
+): string => {
+  if ((block as BlockManager.Block).parentHash) {
+    return `(${(block as BlockManager.Block).parentHash}, ${block.hash}, ${
+      block.number
+    })`;
+  } else {
+    return `(${block.hash}, ${block.number})`;
+  }
+};
 
 /*
  * The BlockManager class is a reliable way of handling chain reorganization.
@@ -128,7 +136,7 @@ class BlockManager {
 
   private lastBlock: BlockManager.Block; // latest block in cache
 
-  private subscribersByAddress: Record<string, LogSubscriber> = {};
+  private subscribersByAddress: Record<string, LogSubscriber<any>> = {};
   private subscribedAddresses: BlockManager.AddressAndTopics[] = [];
 
   private waitingToBeInitializedSet: Set<string> = new Set<string>();
@@ -165,7 +173,7 @@ class BlockManager {
    * */
   public subscribeToLogs(
     addressAndTopics: BlockManager.AddressAndTopics,
-    subscriber: LogSubscriber
+    subscriber: LogSubscriber<any>
   ) {
     const checksumAddress = getAddress(addressAndTopics.address);
 
@@ -396,7 +404,7 @@ class BlockManager {
     this.waitingToBeInitializedSet = new Set();
 
     const promises = toInitialize.map((address) =>
-      this.subscribersByAddress[address].initialize(this.lastBlock.number)
+      this.subscribersByAddress[address].initialize(this.lastBlock)
     );
 
     const results = await Promise.all(promises);
@@ -407,6 +415,9 @@ class BlockManager {
         /* initialize call failed retry later by adding it back to the set */
         this.waitingToBeInitializedSet.add(address);
       } else {
+        const subscriber = this.subscribersByAddress[address];
+        subscriber.initializedAt = res.ok;
+        subscriber.lastSeenEventBlock = res.ok;
         logger.debug(
           `subscriberInitialize() ${address} ${getStringBlock(res.ok)}`
         );
@@ -419,7 +430,7 @@ class BlockManager {
   /**
    * For each logs find if there is a matching subscriber, then call handle log on the subscriber
    */
-  private applyLogs(logs: Log[]) {
+  private async applyLogs(logs: Log[]) {
     if (this.subscribedAddresses.length === 0) {
       return;
     }
@@ -429,7 +440,7 @@ class BlockManager {
       log.address = checksumAddress; // DIRTY: Maybe do it at the RPC level ?
 
       const subscriber = this.subscribersByAddress[checksumAddress];
-      subscriber.handleLog(log);
+      await subscriber.handleLog(log); // await log one by one to insure consitent state between listener
       logger.debug(
         `handleLog() ${log.address} (${log.blockHash}, ${log.blockNumber})`
       );
@@ -454,7 +465,10 @@ class BlockManager {
             subscriber.initializedAt
           )} ${getStringBlock(block)}`
         );
-      } else if (subscriber.lastSeenEventBlockNumber > block.number) {
+      } else if (
+        subscriber.lastSeenEventBlock &&
+        subscriber.lastSeenEventBlock.number > block.number
+      ) {
         subscriber.rollback(block);
         logger.debug(`rollback() ${address} ${getStringBlock(block)}`);
       }
@@ -545,7 +559,7 @@ class BlockManager {
         : reorgAncestor;
 
       this.rollbackSubscribers(rollbackToBlock);
-      this.applyLogs(logs);
+      await this.applyLogs(logs);
       this.verifySubscribers(subscribersInitialized);
 
       await this.handleSubscribersInitialize();
@@ -573,7 +587,7 @@ class BlockManager {
       if (commonAncestor) {
         this.rollbackSubscribers(commonAncestor);
       }
-      this.applyLogs(logs);
+      await this.applyLogs(logs);
       this.verifySubscribers(subscribersInitialized);
 
       await this.handleSubscribersInitialize();
