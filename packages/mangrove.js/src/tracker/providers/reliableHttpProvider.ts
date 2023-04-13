@@ -34,7 +34,6 @@ class ReliableHttpProvider extends ReliableProvider {
         hash: blockHeader.hash,
         number: blockHeader.number,
       });
-      await this.blockManager.handleBlock(blockHeader);
     } catch (e) {}
 
     setTimeout(
