@@ -14,11 +14,12 @@ import KandelDistributionGenerator from "./kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandelPriceCalculation";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import OfferLogic from "../offerLogic";
+import KandelConfiguration from "./kandelConfiguration";
 
 /**
  * @notice Parameters for a Kandel instance.
  * @param gasprice The gas price used when provisioning offers.
- * @param gasreq The gas required to execute a trade.
+ * @param gasreq The gas required to execute a trade. The default gasreq is taken into account for the default minimumBasePerOffer and minimumQuotePerOffer in KandelConfiguration. A higher gasreq will require higher gives per offer to avoid density errors.
  * @param ratio The ratio of the geometric progression of prices.
  * @param compoundRateBase The rate at which the base token is compounded.
  * @param compoundRateQuote The rate at which the quote token is compounded.
@@ -58,6 +59,7 @@ class KandelInstance {
   market: Market;
   generator: KandelDistributionGenerator;
   status: KandelStatus;
+  configuration: KandelConfiguration;
 
   /** Expose logic relevant for all offer logic implementations, including Kandel.  */
   offerLogic: OfferLogic;
@@ -112,6 +114,7 @@ class KandelInstance {
       kandelStatus: new KandelStatus(distributionHelper, priceCalculation),
       generator,
       offerLogic,
+      configuration: new KandelConfiguration(),
     });
   }
 
@@ -124,6 +127,7 @@ class KandelInstance {
     kandelStatus: KandelStatus;
     generator: KandelDistributionGenerator;
     offerLogic: OfferLogic;
+    configuration: KandelConfiguration;
   }) {
     this.address = params.address;
     this.kandel = params.kandel;
@@ -132,6 +136,7 @@ class KandelInstance {
     this.status = params.kandelStatus;
     this.generator = params.generator;
     this.offerLogic = params.offerLogic;
+    this.configuration = params.configuration;
   }
 
   /** Gets the base of the market Kandel is making  */
@@ -490,10 +495,19 @@ class KandelInstance {
     );
   }
 
+  /** Gets the most specific available recommended configuration for Kandel instances. */
+  getMostSpecificConfig() {
+    return this.configuration.getMostSpecificConfig(
+      this.market.mgv.network.name,
+      this.getBase().name,
+      this.getQuote().name
+    );
+  }
+
   /** Splits the distribution into chunks and converts it to internal representation.
    * @param params The parameters.
    * @param params.distribution The distribution to split.
-   * @param params.maxOffersInChunk The maximum number of offers in a chunk. Defaults to 80.
+   * @param params.maxOffersInChunk The maximum number of offers in a chunk. If not provided, then KandelConfiguration is used.
    * @returns The raw distributions in internal representation and the index of the first ask.
    */
   async getRawDistributionChunks(params: {
@@ -509,7 +523,8 @@ class KandelInstance {
 
     const distributions = params.distribution.chunkDistribution(
       pivots,
-      params.maxOffersInChunk ?? 80
+      params.maxOffersInChunk ??
+        this.getMostSpecificConfig().maxOffersInPopulateChunk
     );
 
     const firstAskIndex = params.distribution.getFirstAskIndex();
@@ -530,7 +545,7 @@ class KandelInstance {
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
    * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to getRequiredProvision.
-   * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then 80 is used.
+   * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.
    * @remarks If this function is invoked with new ratio, pricePoints, or spread, then first retract all offers; otherwise, Kandel will enter an inconsistent state.
@@ -608,7 +623,7 @@ class KandelInstance {
   /** Populates the offers in the distribution for the Kandel instance. To set parameters or add funds, use populate.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
-   * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then 80 is used.
+   * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populateChunk function.
    * @returns The transaction(s) used to populate the offers.
    */
@@ -700,7 +715,7 @@ class KandelInstance {
    * @param params.withdrawBaseAmount The amount of base to withdraw. If not provided, then the entire base balance on Kandel is withdrawn.
    * @param params.withdrawQuoteAmount The amount of quote to withdraw. If not provided, then the entire quote balance on Kandel is withdrawn.
    * @param params.recipientAddress The address to withdraw the tokens to. If not provided, then the address of the signer is used.
-   * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then 80 is used.
+   * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the retractAndWithdraw, and retractOffers functions.
    * @returns The transaction(s) used to retract the offers.
    * @remarks This function or retractOffers should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
@@ -753,7 +768,7 @@ class KandelInstance {
    * @param params The parameters.
    * @param params.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
    * @param params.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
-   * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then 80 is used.
+   * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
    * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
@@ -780,7 +795,7 @@ class KandelInstance {
    * @param params.retractParams The parameters for retracting offers.
    * @param params.retractParams.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
    * @param params.retractParams.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
-   * @param params.retractParams.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then 80 is used.
+   * @param params.retractParams.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then KandelConfiguration is used.
    * @param params.skipLast Whether to skip the last chunk. This is used to allow the last chunk to be retracted while withdrawing funds.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
@@ -803,7 +818,8 @@ class KandelInstance {
     const chunks = this.generator.distributionHelper.chunkIndices(
       from,
       to,
-      params.retractParams.maxOffersInChunk ?? 80
+      params.retractParams.maxOffersInChunk ??
+        this.getMostSpecificConfig().maxOffersInRetractChunk
     );
 
     // Retract in opposite order as populate
