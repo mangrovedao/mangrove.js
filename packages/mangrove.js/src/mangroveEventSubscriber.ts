@@ -1,14 +1,24 @@
 import { Log, Provider } from "@ethersproject/providers";
 import { Contract } from "ethers";
 import Market from "./market";
+import Semibook from "./semibook";
 import BlockManager from "./tracker/blockManager";
 import LogSubscriber from "./tracker/logSubscriber";
+import logger from "./util/logger";
+
+const BookSubscriptionEventsSet = new Set([
+  "OfferWrite",
+  "OfferFail",
+  "OfferSuccess",
+  "OfferRetract",
+  "SetGasbase",
+]);
 
 class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent> {
   private bookEventSubscribers: Record<
     string,
     LogSubscriber<Market.BookSubscriptionEvent>
-  > = {};
+  >;
 
   constructor(
     private provider: Provider,
@@ -16,7 +26,11 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     private blockManager: BlockManager
   ) {
     super();
-    this.blockManager.subscribeToLogs(
+    this.bookEventSubscribers = {};
+  }
+
+  public async enableSubscriptions() {
+    await this.blockManager.subscribeToLogs(
       {
         address: this.contract.address,
         topics: [],
@@ -25,18 +39,21 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     );
   }
 
-  public async subscribeToMarket(
-    market: Market,
-    asksSemibook: LogSubscriber<Market.BookSubscriptionEvent>,
-    bidsSemibook: LogSubscriber<Market.BookSubscriptionEvent>
-  ) {
+  public async subscribeToSemibook(semibook: Semibook) {
     const identifier =
-      `${market.base.address}_${market.quote.address}`.toLowerCase();
-    this.bookEventSubscribers[identifier] = asksSemibook;
+      semibook.ba === "asks"
+        ? `${semibook.market.base.address}_${semibook.market.quote.address}`.toLowerCase()
+        : `${semibook.market.quote.address}_${semibook.market.base.address}`.toLowerCase();
 
-    const reversedIdentifier =
-      `${market.quote.address}_${market.base.address}`.toLowerCase();
-    this.bookEventSubscribers[reversedIdentifier] = bidsSemibook;
+    logger.debug(
+      `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
+    );
+    await semibook.initialize(this.blockManager.lastBlock); // TODO: (!!!WARNING!!!) verifySubscriber needs to be forwarded somehow
+    logger.debug(
+      `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
+    );
+
+    this.bookEventSubscribers[identifier] = semibook;
   }
 
   /**
@@ -65,16 +82,19 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
   /**
    * handle log
    */
-  public handleLog(log: Log): Promise<void> {
-    const event: Market.BookSubscriptionEvent = this.contract.parseLog(log);
-
+  public async handleLog(log: Log): Promise<void> {
+    const event: Market.BookSubscriptionEvent =
+      this.contract.interface.parseLog(log) as any; // wrap this in try catch
     const identifier = `${event.args[0]}_${event.args[1]}`.toLowerCase(); // outbound_tkn_inbound_tkn
+
+    if (!BookSubscriptionEventsSet.has(event.name)) {
+      return; // ignore events
+    }
 
     const sub = this.bookEventSubscribers[identifier];
     if (!sub) {
       return;
     }
-
     return sub.handleLog(log, event);
   }
 

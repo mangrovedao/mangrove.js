@@ -59,6 +59,7 @@ namespace Market {
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[];
     restingOrder?: Market.OfferSlim;
   };
+
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
     | ({ name: "OfferFail" } & TCM.OfferFailEvent)
@@ -221,7 +222,6 @@ namespace Market {
     givenResidue: Big;
   };
 }
-
 // no unsubscribe yet
 /**
  * The Market class focuses on a Mangrove market.
@@ -408,6 +408,9 @@ class Market {
   }
 
   isLiveOffer(offer: Market.Offer): boolean {
+    if (!offer.gives.gt) {
+      console.log(offer);
+    }
     return offer.gives.gt(0);
   }
 

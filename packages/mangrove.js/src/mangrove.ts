@@ -113,6 +113,7 @@ class Mangrove {
   reliableProvider?: ReliableProvider;
   mangroveEventSubscriber?: MangroveEventSubscriber;
 
+  static devNode: DevNode;
   static typechain = typechain;
   static addresses = addresses;
 
@@ -169,9 +170,9 @@ class Mangrove {
     const network = await eth.getProviderNetwork(signer.provider);
 
     if ("send" in signer.provider) {
-      const devNode = new DevNode(signer.provider);
-      if (await devNode.isDevNode()) {
-        await Mangrove.initAndListenToDevNode(devNode);
+      Mangrove.devNode = new DevNode(signer.provider);
+      if (await Mangrove.devNode.isDevNode()) {
+        await Mangrove.initAndListenToDevNode(Mangrove.devNode);
       }
     }
 
@@ -236,6 +237,9 @@ class Mangrove {
 
   disconnect(): void {
     this.provider.removeAllListeners();
+    if (this.reliableProvider) {
+      this.reliableProvider.stop();
+    }
 
     logger.debug("Disconnect from Mangrove", {
       contextInfo: "mangrove.base",
@@ -333,6 +337,7 @@ class Mangrove {
     if (!this.reliableProvider) {
       return;
     }
+    logger.debug(`Initialize reliable provider`);
 
     const block = await this.provider.getBlock("latest");
 
@@ -341,6 +346,8 @@ class Mangrove {
       hash: block.hash,
       number: block.number,
     });
+
+    await this.mangroveEventSubscriber.enableSubscriptions();
   }
   /* Instance */
   /************** */
@@ -362,6 +369,9 @@ class Mangrove {
         bookOptions: params.bookOptions,
       },
     });
+    if (this.reliableProvider && this.reliableProvider.getLatestBlock) {
+      await this.reliableProvider.getLatestBlock(); // trigger a quick update to get latest block on market initialization
+    }
     return await Market.connect({ ...params, mgv: this });
   }
 

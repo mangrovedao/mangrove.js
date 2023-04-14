@@ -1,11 +1,13 @@
 import { Listener, Log } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
+import clone from "just-clone";
 import { Mangrove, Market } from ".";
 import BlockManager from "./tracker/blockManager";
 import LogSubscriber from "./tracker/logSubscriber";
 import StateLogSubsriber from "./tracker/stateLogSubscriber";
 import { Bigish } from "./types";
+import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
@@ -148,8 +150,11 @@ class Semibook
     const semibook = new Semibook(market, ba, eventListener, options);
     canConstructSemibook = false;
 
-    if (market.mgv.reliableProvider) {
-      // market.mgv.reliableProvider.blockManager.subscribeToLogs()
+    if (market.mgv.mangroveEventSubscriber) {
+      logger.debug(
+        `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`
+      );
+      await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
     }
 
     return semibook;
@@ -161,13 +166,7 @@ class Semibook
   }
 
   public copy(state: Semibook.State): Semibook.State {
-    return {
-      bestInCache: state.bestInCache,
-      worstInCache: state.worstInCache,
-      offerCache: new Map(
-        JSON.parse(JSON.stringify(Array.from(state.offerCache)))
-      ), // we should probably use a lib
-    };
+    return clone(state);
   }
 
   async requestOfferListPrefix(
@@ -276,6 +275,7 @@ class Semibook
   /** Returns an iterator over the offers in the cache. */
   [Symbol.iterator](): Semibook.CacheIterator {
     const { state } = this.getLatestState();
+
     return new CacheIterator(state.offerCache, state.bestInCache);
   }
 
@@ -628,7 +628,19 @@ class Semibook
       };
     }
 
-    return { error: "FailedInitialize", ok: undefined };
+    const state: Semibook.State = {
+      bestInCache: undefined,
+      worstInCache: undefined,
+      offerCache: new Map(),
+    };
+
+    return {
+      error: undefined,
+      ok: {
+        block,
+        state,
+      },
+    };
   }
 
   public stateHandleLog(
@@ -913,6 +925,14 @@ class Semibook
 
       if (res.error) {
         return { error: "FailedInitialize", ok: undefined };
+      }
+
+      if (Mangrove.devNode.isDevNode()) {
+        /**
+         * I think that there is a bug in anvil resulting in multicallv2 returning blockHash as zero address
+         * https://github.com/foundry-rs/foundry/pull/2502
+         */
+        res.ok.block.hash = block.hash;
       }
 
       if (res.ok.block.hash !== block.hash) {

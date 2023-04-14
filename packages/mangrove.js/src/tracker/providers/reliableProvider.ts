@@ -7,6 +7,10 @@ namespace ReliableProvider {
   export type Options = BlockManager.Options & {
     provider: JsonRpcProvider;
   };
+
+  export type LogWithHexStringBlockNumber = Omit<Log, "blockNumber"> & {
+    blockNumber: string;
+  };
 }
 
 abstract class ReliableProvider {
@@ -37,6 +41,8 @@ abstract class ReliableProvider {
   }
 
   public abstract stop(): void;
+
+  getLatestBlock?(): Promise<void>;
 
   public addBlockToQueue(block: BlockManager.Block) {
     this.queue.push(block);
@@ -88,20 +94,41 @@ abstract class ReliableProvider {
       const fromBlock = hexlify(from);
       const toBlock = hexlify(to);
       // cannot use provider.getLogs as it does not support multiplesAddress
-      const logs: Log[] = await this.options.provider.send("eth_getLogs", [
-        addressesAndTopics.map((addressAndTopics) => ({
-          address: addressAndTopics.address,
-          fromBlock,
-          toBlock,
-          topics: addressAndTopics.topics.length
-            ? addressAndTopics.topics
-            : undefined,
-        })),
-      ]);
+      const logs: ReliableProvider.LogWithHexStringBlockNumber[] =
+        await this.options.provider.send("eth_getLogs", [
+          {
+            fromBlock,
+            toBlock,
+            address: addressesAndTopics.map((addr) => addr.address),
+          },
+        ]);
 
-      return { error: undefined, ok: logs };
+      return {
+        error: undefined,
+        ok: logs.map((log) => {
+          return {
+            blockNumber: parseInt(log.blockNumber, 16),
+            blockHash: log.blockHash,
+            transactionIndex: log.transactionIndex,
+
+            removed: log.removed,
+
+            address: log.address,
+            data: log.data,
+
+            topics: log.topics,
+
+            transactionHash: log.transactionHash,
+            logIndex: log.logIndex,
+          };
+        }),
+      };
     } catch (e) {
-      return { error: "FailedFetchingLog", ok: undefined };
+      if (e instanceof Error) {
+        return { error: e.message, ok: undefined };
+      } else {
+        return { error: "FailedFetchingLog", ok: undefined };
+      }
     }
   }
 }

@@ -16,6 +16,9 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { MgvReader } from "../../src/types/typechain/MgvReader";
 import { Deferred } from "../../src/util";
+import { enableLogging } from "../../src/util/logger";
+
+enableLogging();
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -627,6 +630,8 @@ describe("Market integration tests suite", () => {
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
+    console.log("market created");
+
     let latestAsks: Market.Offer[] = [];
     let latestBids: Market.Offer[] = [];
 
@@ -638,12 +643,17 @@ describe("Market integration tests suite", () => {
     };
     market.subscribe(cb);
 
-    await helpers
+    const tx1 = await helpers
       .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "1.2" })
       .then((tx) => tx.wait());
-    await helpers
+
+    console.log(`offer 1 created at block ${tx1.blockNumber}`);
+
+    const tx2 = await helpers
       .newOffer(mgv, market.quote, market.base, { wants: "1.3", gives: "1.1" })
       .then((tx) => tx.wait());
+
+    console.log(`offer 2 created at block ${tx2.blockNumber}`);
 
     const offer1 = {
       id: 1,

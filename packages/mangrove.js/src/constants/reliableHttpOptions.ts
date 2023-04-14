@@ -1,6 +1,6 @@
 export const reliableHttpProviderOptionsByNetworkName = {
   local: {
-    estimatedBlockTimeMs: 30000,
+    estimatedBlockTimeMs: 200,
   },
   matic: {
     estimatedBlockTimeMs: 2000,

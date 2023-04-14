@@ -36,7 +36,7 @@ namespace BlockManager {
     | ({ error: CommonAncestorOrBlockError } & { commonAncestor: undefined })
     | ({ error?: ReInitializeBlockManagerError } & { commonAncestor: Block });
 
-  type ErrorLog = "FailedFetchingLog";
+  type ErrorLog = "FailedFetchingLog" | string;
 
   export type ErrorOrLogs = Result<Log[], ErrorLog>;
 
@@ -134,7 +134,7 @@ const getStringBlock = (
 class BlockManager {
   private blocksByNumber: Record<number, BlockManager.Block> = {}; // blocks cache
 
-  private lastBlock: BlockManager.Block; // latest block in cache
+  public lastBlock: BlockManager.Block; // latest block in cache
 
   private subscribersByAddress: Record<string, LogSubscriber<any>> = {};
   private subscribedAddresses: BlockManager.AddressAndTopics[] = [];
@@ -149,7 +149,7 @@ class BlockManager {
    * Initialize the BlockManager cache with block
    */
   public async initialize(block: BlockManager.Block) {
-    logger.debug(`initialize() ${getStringBlock(block)}`);
+    logger.debug(`[BlockManager] initialize() ${getStringBlock(block)}`);
     this.lastBlock = block;
 
     this.blocksByNumber = {};
@@ -160,24 +160,20 @@ class BlockManager {
       this.subscribedAddresses.map((addrAndTopics) => addrAndTopics.address)
     );
 
-    await this.handleSubscribersInitialize();
-  }
-
-  public getLastBlock(): BlockManager.Block {
-    return this.lastBlock;
+    await this.handleSubscribersInitialize(this.lastBlock);
   }
 
   /* subscribeToLogs enable a subscription for all logs emitted for the contract at address
    * only one subscription can exist by address. Calling a second time this function with the same
    * address will result in cancelling the previous subscription.
    * */
-  public subscribeToLogs(
+  public async subscribeToLogs(
     addressAndTopics: BlockManager.AddressAndTopics,
     subscriber: LogSubscriber<any>
   ) {
     const checksumAddress = getAddress(addressAndTopics.address);
 
-    logger.debug(`subscribeToLogs() ${checksumAddress}`);
+    logger.debug(`[BlockManager] subscribeToLogs() ${checksumAddress}`);
     this.subscribersByAddress[checksumAddress] = subscriber;
 
     this.subscribedAddresses.push({
@@ -185,6 +181,8 @@ class BlockManager {
       topics: addressAndTopics.topics,
     });
     this.waitingToBeInitializedSet.add(checksumAddress);
+
+    await this.handleSubscribersInitialize(this.lastBlock);
   }
 
   private setLastBlock(block: BlockManager.Block) {
@@ -199,7 +197,7 @@ class BlockManager {
       this.countsBlocksCached--;
     }
 
-    logger.debug(`setLastBlock() ${getStringBlock(block)}`);
+    logger.debug(`[BlockManager] setLastBlock() ${getStringBlock(block)}`);
   }
 
   /**
@@ -293,6 +291,7 @@ class BlockManager {
     let { error, ok: commonAncestor } = await this.findCommonAncestor();
 
     if (error) {
+      logger.debug(`[BlockManager] handleReorg(): failure ${error}`);
       if (error === "NoCommonAncestorFoundInCache") {
         /* we didn't find matching ancestor between our cache and rpc. re-initialize with newBlock */
         await this.initialize(newBlock);
@@ -303,7 +302,9 @@ class BlockManager {
     }
 
     logger.debug(
-      `handleReorg(): commonAncestor ${getStringBlock(commonAncestor)}`
+      `[BlockManager] handleReorg(): commonAncestor ${getStringBlock(
+        commonAncestor
+      )}`
     );
 
     /* remove all blocks that has been reorged from cache */
@@ -341,7 +342,7 @@ class BlockManager {
     commonAncestor?: BlockManager.Block
   ): Promise<BlockManager.ErrorOrLogsWithCommonAncestor> {
     logger.debug(
-      `queryLogs(): fromBlock ${getStringBlock(
+      `[BlockManager] queryLogs(): fromBlock ${getStringBlock(
         fromBlock
       )}, toBlock ${getStringBlock(toBlock)}`
     );
@@ -349,16 +350,23 @@ class BlockManager {
       return { error: "MaxRetryReach", logs: undefined };
     }
 
-    const { error, ok: logs } = await this.options.getLogs(
+    const { error, ok } = await this.options.getLogs(
       fromBlock.number + 1,
       toBlock.number,
       this.subscribedAddresses
     );
 
+    const logs = ok;
+
     /* if getLogs fail retry this.options.maxRetryGetLogs  */
     if (error) {
       /* the rpc might be a bit late, wait retryDelayGetLogsMs to let it catch up */
       await sleep(this.options.retryDelayGetLogsMs);
+      logger.debug(
+        `[BlockManager] queryLogs(): failure ${error} fromBlock ${getStringBlock(
+          fromBlock
+        )}, toBlock ${getStringBlock(toBlock)}`
+      );
       return this.queryLogs(fromBlock, toBlock, rec + 1);
     }
 
@@ -368,8 +376,7 @@ class BlockManager {
     }
 
     for (const log of logs) {
-      const block = this.blocksByNumber[log.blockNumber];
-
+      const block = this.blocksByNumber[log.blockNumber]; // TODO: verify that block exists
       /* check if queried log comes from a known block in our cache */
       if (block.hash !== log.blockHash) {
         /* queried log comes from a block we don't know we detected a reorg */
@@ -393,7 +400,9 @@ class BlockManager {
    * This function can initialize subscriber with a block which have hash !== this.lastBlock.hash,
    * it's ok because later we are calling verifySubscribers to check if it's the case.
    */
-  private async handleSubscribersInitialize(): Promise<string[]> {
+  private async handleSubscribersInitialize(
+    block: BlockManager.BlockWithoutParentHash
+  ): Promise<string[]> {
     if (
       this.waitingToBeInitializedSet.size === 0 // if there is nothing to do bail out
     ) {
@@ -404,7 +413,7 @@ class BlockManager {
     this.waitingToBeInitializedSet = new Set();
 
     const promises = toInitialize.map((address) =>
-      this.subscribersByAddress[address].initialize(this.lastBlock)
+      this.subscribersByAddress[address].initialize(block)
     );
 
     const results = await Promise.all(promises);
@@ -419,7 +428,9 @@ class BlockManager {
         subscriber.initializedAt = res.ok;
         subscriber.lastSeenEventBlock = res.ok;
         logger.debug(
-          `subscriberInitialize() ${address} ${getStringBlock(res.ok)}`
+          `[BlockManager] subscriberInitialize() ${address} ${getStringBlock(
+            res.ok
+          )}`
         );
       }
     }
@@ -442,7 +453,7 @@ class BlockManager {
       const subscriber = this.subscribersByAddress[checksumAddress];
       await subscriber.handleLog(log); // await log one by one to insure consitent state between listener
       logger.debug(
-        `handleLog() ${log.address} (${log.blockHash}, ${log.blockNumber})`
+        `[BlockManager] handleLog() ${log.address} (${log.blockHash}, ${log.blockNumber})`
       );
     }
   }
@@ -461,7 +472,7 @@ class BlockManager {
          **/
         this.waitingToBeInitializedSet.add(address);
         logger.debug(
-          `addToInitializeList() ${address} ${getStringBlock(
+          `[BlockManager] addToInitializeList() ${address} ${getStringBlock(
             subscriber.initializedAt
           )} ${getStringBlock(block)}`
         );
@@ -470,7 +481,9 @@ class BlockManager {
         subscriber.lastSeenEventBlock.number > block.number
       ) {
         subscriber.rollback(block);
-        logger.debug(`rollback() ${address} ${getStringBlock(block)}`);
+        logger.debug(
+          `[BlockManager] rollback() ${address} ${getStringBlock(block)}`
+        );
       }
     }
   }
@@ -491,7 +504,7 @@ class BlockManager {
            **/
           this.waitingToBeInitializedSet.add(address);
           logger.debug(
-            `verifySubscriber() detected wrong subscriber ${address} ${getStringBlock(
+            `[BlockManager] verifySubscriber() detected wrong subscriber ${address} ${getStringBlock(
               subscriber.initializedAt
             )} !== ${getStringBlock(cachedBlock)}`
           );
@@ -510,19 +523,21 @@ class BlockManager {
     if (cachedBlock && cachedBlock.hash === newBlock.hash) {
       /* newBlock is already stored in cache bail out*/
       logger.debug(
-        `handleBlock() block already in cache, ignoring... (${getStringBlock(
+        `[BlockManager] handleBlock() block already in cache, ignoring... (${getStringBlock(
           newBlock
         )})`
       );
       return { error: undefined, logs: [], rollback: undefined };
     }
 
-    const subscribersInitialized = await this.handleSubscribersInitialize();
+    const subscribersInitialized = await this.handleSubscribersInitialize(
+      newBlock
+    ); // should probably pass new block here
 
     if (newBlock.parentHash !== this.lastBlock.hash) {
       /* newBlock is not successor of this.lastBlock a reorg has been detected */
       logger.debug(
-        `handleBlock() (last: ${getStringBlock(
+        `[BlockManager] handleBlock() reorg (last: ${getStringBlock(
           this.lastBlock
         )}) (new: ${getStringBlock(newBlock)}) `
       );
@@ -562,11 +577,13 @@ class BlockManager {
       await this.applyLogs(logs);
       this.verifySubscribers(subscribersInitialized);
 
-      await this.handleSubscribersInitialize();
+      await this.handleSubscribersInitialize(newBlock);
 
       return { error: undefined, logs, rollback: rollbackToBlock };
     } else {
-      logger.debug(`handleBlock() normal (${getStringBlock(newBlock)})`);
+      logger.debug(
+        `[BlockManager] handleBlock() normal (${getStringBlock(newBlock)})`
+      );
       const {
         error: queryLogsError,
         logs,
@@ -590,7 +607,7 @@ class BlockManager {
       await this.applyLogs(logs);
       this.verifySubscribers(subscribersInitialized);
 
-      await this.handleSubscribersInitialize();
+      await this.handleSubscribersInitialize(newBlock);
 
       return { error: undefined, logs, rollback: commonAncestor };
     }

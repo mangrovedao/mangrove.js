@@ -7,7 +7,6 @@ import {
 } from "../../types/typechain/Mangrove";
 import { typechain } from "../../types";
 import { Result } from "../types";
-
 namespace ReaderMultiWrapper {
   export type OfferListResult = [
     BigNumber,
@@ -47,14 +46,14 @@ class ReaderMultiWrapper {
 
     try {
       const result = await this.multicallContract.callStatic.blockAndAggregate(
-        calls
+        calls,
+        overrides
       );
 
-      const decodedResult: ReaderMultiWrapper.OfferListResult =
-        this.readerContract.interface.decodeFunctionResult(
-          "offerList",
-          result.returnData[0].returnData
-        )[0];
+      const decodedResult = this.readerContract.interface.decodeFunctionResult(
+        "offerList",
+        result.returnData[0].returnData
+      ) as ReaderMultiWrapper.OfferListResult;
 
       return {
         error: undefined,

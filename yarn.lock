@@ -1515,6 +1515,7 @@ __metadata:
     eslint: ^8.31.0
     eslint-config-prettier: ^8.8.0
     ethers: ^5.7.2
+    just-clone: ^6.2.0
     lint-staged: ^13.2.0
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
@@ -4973,6 +4974,13 @@ fsevents@~2.3.2:
     graceful-fs:
       optional: true
   checksum: 6447d6224f0d31623eef9b51185af03ac328a7553efcee30fa423d98a9e276ca08db87d71e17f2310b0263fd3ffa6c2a90a6308367f661dc21580f9469897c9e
+  languageName: node
+  linkType: hard
+
+"just-clone@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "just-clone@npm:6.2.0"
+  checksum: 2c3353e3524aba8adae499973d9b8663eed3a647c73fd60149ac8a10031353e82ff1941820b56c96d12263424f50e564c7dd1fd330cf6de630455909810e13a6
   languageName: node
   linkType: hard
 

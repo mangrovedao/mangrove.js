@@ -1,5 +1,6 @@
 import { Log } from "@ethersproject/providers";
 import { Mutex } from "async-mutex";
+import logger from "../util/logger";
 
 import BlockManager from "./blockManager";
 import LogSubscriber from "./logSubscriber";
@@ -31,7 +32,6 @@ abstract class StateLogSubsriber<
   /* copy function from object type T to new type T */
   abstract copy(data: T): T;
 
-  /* initialize the state at blockNumber `blockNumber` */
   abstract stateInitialize(
     block: BlockManager.BlockWithoutParentHash
   ): Promise<LogSubscriber.ErrorOrState<T>>;
@@ -48,6 +48,7 @@ abstract class StateLogSubsriber<
   public async initialize(
     block: BlockManager.BlockWithoutParentHash
   ): Promise<LogSubscriber.InitialzeErrorOrBlock> {
+    logger.debug("[StateLogSubsriber] initialize() ");
     this.stateByBlockNumber = {};
 
     this.initializedAt = undefined;
@@ -55,18 +56,23 @@ abstract class StateLogSubsriber<
     const { error, ok } = await this.stateInitialize(block);
 
     if (error) {
+      logger.debug(`[StateLogSubsriber] initialize() failed ${error}`);
       return { error, ok: undefined };
     }
 
     const { state } = ok;
 
     this.stateByBlockNumber[block.number] = state;
+    this.lastSeenEventBlock = block;
+
+    logger.debug("[StateLogSubsriber] initialize done");
 
     return { error: undefined, ok: block };
   }
 
   /** create a new state with the applied `log` and return it, no copy should be made.
-   * as it's already handle by `handleLog`
+   * as it's already handle by `handleLog`, this.lastSeenEventBlock is equal
+   * to current (log.blockNumber, log.blockHash)
    */
   abstract stateHandleLog(state: T, log: Log, event?: ParsedEvent): T;
 
@@ -74,7 +80,7 @@ abstract class StateLogSubsriber<
    * than our cache. Then let implementation `stateHandleLog` modify the state.
    */
   public async handleLog(log: Log, event?: ParsedEvent): Promise<void> {
-    await this.cacheLock.runExclusive(() => {
+    return this.cacheLock.runExclusive(() => {
       let currentState = this.stateByBlockNumber[log.blockNumber];
       if (!currentState) {
         this.stateByBlockNumber[log.blockNumber] = this.copy(
@@ -83,15 +89,16 @@ abstract class StateLogSubsriber<
         currentState = this.stateByBlockNumber[log.blockNumber];
       }
 
+      this.lastSeenEventBlock = {
+        number: log.blockNumber,
+        hash: log.blockHash,
+      };
+
       this.stateByBlockNumber[log.blockNumber] = this.stateHandleLog(
         currentState,
         log,
         event
       );
-      this.lastSeenEventBlock = {
-        number: log.blockNumber,
-        hash: log.blockHash,
-      };
     });
   }
 
