@@ -11,7 +11,7 @@ import { Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { BigNumber, utils } from "ethers";
+import { BigNumber, ethers, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { MgvReader } from "../../src/types/typechain/MgvReader";
@@ -896,7 +896,7 @@ describe("Market integration tests suite", () => {
     const buyPromises = await market.buy({
       offerId: notBest,
       total: 1,
-      price: Big(2).pow(256).minus(1),
+      price: Big(ethers.constants.MaxUint256.toString()),
     });
     const result = await buyPromises.result;
 

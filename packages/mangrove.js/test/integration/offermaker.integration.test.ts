@@ -1,7 +1,7 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
 
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 import assert from "assert";
 import { Mangrove, OfferLogic, LiquidityProvider, OfferMaker } from "../../src";
@@ -104,7 +104,7 @@ describe("OfferMaker", () => {
 
         assert.strictEqual(
           mgv.toUnits(allowanceForLogic, 6).toString(),
-          BigNumber.from(2).pow(256).sub(1).toString(),
+          ethers.constants.MaxUint256.toString(),
           "allowance should be 2^256-1"
         );
       });
@@ -145,7 +145,7 @@ describe("OfferMaker", () => {
 
         assert.strictEqual(
           mgv.toUnits(allowanceForEOA, 6).toString(),
-          BigNumber.from(2).pow(256).sub(1).toString(),
+          ethers.constants.MaxUint256.toString(),
           "allowance should be 2^256-1"
         );
       });

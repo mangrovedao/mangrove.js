@@ -667,7 +667,7 @@ class Mangrove {
   ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
     params.from ??= 0;
-    params.maxLen ??= ethers.BigNumber.from(2).pow(256).sub(1);
+    params.maxLen ??= ethers.constants.MaxUint256;
     params.configs ??= true;
     params.tokenInfos ??= true;
     // read open markets and their configs off mgvReader

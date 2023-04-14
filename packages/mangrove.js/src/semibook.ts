@@ -309,7 +309,7 @@ class Semibook implements Iterable<Market.Offer> {
       "boundary" in params
         ? params.boundary
         : buying
-        ? Big(2).pow(256).minus(1)
+        ? Big(ethers.constants.MaxUint256.toString())
         : 0;
     const initialWants = Big(buying ? params.given : boundary);
     const initialGives = Big(buying ? boundary : params.given);

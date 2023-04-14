@@ -52,8 +52,6 @@ export type KandelParameterOverrides = {
 
 /** @title Management of a single Kandel instance. */
 class KandelInstance {
-  maxUint256 = ethers.BigNumber.from(2).pow(256).sub(1);
-
   kandel: typechain.GeometricKandel;
   address: string;
   precision: number;
@@ -687,10 +685,10 @@ class KandelInstance {
     return {
       baseAmount: baseAmount
         ? this.market.base.toUnits(baseAmount)
-        : this.maxUint256,
+        : ethers.constants.MaxUint256,
       quoteAmount: quoteAmount
         ? this.market.quote.toUnits(quoteAmount)
-        : this.maxUint256,
+        : ethers.constants.MaxUint256,
     };
   }
 
@@ -729,7 +727,7 @@ class KandelInstance {
       params.recipientAddress ?? (await this.market.mgv.signer.getAddress());
     const freeWei = params.withdrawFunds
       ? UnitCalculations.toUnits(params.withdrawFunds, 18)
-      : this.maxUint256;
+      : ethers.constants.MaxUint256;
 
     const { txs, lastChunk } = await this.retractOfferChunks(
       { retractParams: params, skipLast: true },
