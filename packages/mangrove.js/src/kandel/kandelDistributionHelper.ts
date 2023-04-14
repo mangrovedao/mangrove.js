@@ -127,35 +127,77 @@ class KandelDistributionHelper {
     );
   }
 
+  /** Calculates distribution of bids and asks with constant quote and a matching base given the price distribution.
+   * @param ratio The ratio used when calculating the price distribution.
+   * @param prices The price distribution.
+   * @param constantQuote The constant quote for the distribution.
+   * @param firstAskIndex The index of the first ask in the distribution.
+   * @returns The distribution of bids and asks and their base and quote.
+   */
+  public calculateDistributionConstantQuote(
+    ratio: Big,
+    prices: Big[],
+    constantQuote: Big,
+    firstAskIndex: number
+  ): KandelDistribution {
+    const quote = this.roundQuote(constantQuote);
+    const offers = prices.map((p, index) => ({
+      index,
+      base: this.baseFromQuoteAndPrice(quote, p),
+      quote: quote,
+      offerType: this.getBA(index, firstAskIndex),
+    }));
+    return new KandelDistribution(
+      ratio,
+      offers.length,
+      offers,
+      this.baseDecimals,
+      this.quoteDecimals
+    );
+  }
+
   /** Calculates distribution of bids and asks and their base and quote amounts to match the price distribution.
    * @param ratio The ratio used when calculating the price distribution.
    * @param prices The price distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
-   * @param initialAskGives The initial amount of base to give for all asks.
-   * @param initialBidGives The initial amount of quote to give for all bids. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
+   * @param initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOffer from KandelConfiguration for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
+   * @param initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOffer from KandelConfiguration for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote.
    */
   public calculateDistributionFromPrices(
     ratio: Big,
     prices: Big[],
     firstAskIndex: number,
-    initialAskGives: Big,
+    initialAskGives?: Big,
     initialBidGives?: Big
   ) {
-    const distribution = initialBidGives
-      ? this.calculateDistributionConstantGives(
-          ratio,
-          prices,
-          initialAskGives,
-          initialBidGives,
-          firstAskIndex
-        )
-      : this.calculateDistributionConstantBase(
-          ratio,
-          prices,
-          initialAskGives,
-          firstAskIndex
-        );
+    if (!initialBidGives && !initialAskGives)
+      throw Error(
+        "Either initialAskGives or initialBidGives must be provided."
+      );
+
+    const distribution =
+      initialBidGives && initialAskGives
+        ? this.calculateDistributionConstantGives(
+            ratio,
+            prices,
+            initialAskGives,
+            initialBidGives,
+            firstAskIndex
+          )
+        : initialAskGives
+        ? this.calculateDistributionConstantBase(
+            ratio,
+            prices,
+            initialAskGives,
+            firstAskIndex
+          )
+        : this.calculateDistributionConstantQuote(
+            ratio,
+            prices,
+            initialBidGives,
+            firstAskIndex
+          );
     return distribution;
   }
 

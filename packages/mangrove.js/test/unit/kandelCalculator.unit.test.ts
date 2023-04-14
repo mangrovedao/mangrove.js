@@ -5,7 +5,7 @@ import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper"
 import KandelDistributionGenerator from "../../src/kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
-describe("KandelDistributionGenerator unit tests suite", () => {
+describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
   let sut: KandelDistributionGenerator;
   beforeEach(() => {
     sut = new KandelDistributionGenerator(
@@ -48,6 +48,40 @@ describe("KandelDistributionGenerator unit tests suite", () => {
         assert.equal(
           1,
           [...new Set(newDistribution.offers.map((x) => x.base))].length
+        );
+      });
+
+      it("can set new constant quote", () => {
+        // Arrange
+        const distribution = sut.calculateDistribution({
+          priceParams: { minPrice: Big(1000), ratio: Big(2), pricePoints: 7 },
+          midPrice: Big(5000),
+          initialBidGives: Big(1000),
+        });
+
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
+
+        // Act
+        const newDistribution = sut.recalculateDistributionFromAvailable({
+          distribution,
+          availableQuote: offeredVolume.requiredQuote.mul(2),
+        });
+
+        // Assert
+        assert.deepStrictEqual(
+          distribution.getPricesForDistribution(),
+          newDistribution.getPricesForDistribution()
+        );
+        const newOfferedVolume =
+          newDistribution.getOfferedVolumeForDistribution();
+
+        assert.equal(
+          offeredVolume.requiredQuote.mul(2).toNumber(),
+          newOfferedVolume.requiredQuote.toNumber()
+        );
+        assert.equal(
+          1,
+          [...new Set(newDistribution.offers.map((x) => x.quote))].length
         );
       });
 
@@ -111,16 +145,17 @@ describe("KandelDistributionGenerator unit tests suite", () => {
   describe(
     KandelDistributionGenerator.prototype.calculateDistribution.name,
     () => {
-      it("can calculate distribution with constant base", () => {
-        // Arrange
-        const ratio = new Big(2);
-        const minPrice = Big(1000);
-        const pricePoints = 5;
+      const ratio = new Big(2);
+      const minPrice = Big(1000);
+      const pricePoints = 5;
+      const priceParams = { minPrice, ratio, pricePoints };
+      const midPrice = Big(7000);
 
-        // Act
+      it("can calculate distribution with constant base", () => {
+        // Arrange/Act
         const distribution = sut.calculateDistribution({
-          priceParams: { minPrice, ratio, pricePoints },
-          midPrice: Big(7000),
+          priceParams,
+          midPrice,
           initialAskGives: Big(1),
         });
         const offeredVolume = distribution.getOfferedVolumeForDistribution();
@@ -139,16 +174,49 @@ describe("KandelDistributionGenerator unit tests suite", () => {
         });
       });
 
-      it("can calculate distribution with constant outbound", () => {
-        // Arrange
-        const ratio = new Big(2);
-        const minPrice = Big(1000);
-        const pricePoints = 5;
-
-        // Act
+      it("can calculate distribution with constant quote", () => {
+        // Arrange/Act
         const distribution = sut.calculateDistribution({
-          priceParams: { minPrice, ratio, pricePoints },
-          midPrice: Big(7000),
+          priceParams,
+          midPrice,
+          initialBidGives: Big(1000),
+        });
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
+
+        // Assert
+        assert.equal(offeredVolume.requiredBase.toNumber(), 1 / 8 + 1 / 16);
+        assert.equal(offeredVolume.requiredQuote.toNumber(), 3000);
+        assert.equal(distribution.pricePoints, pricePoints);
+        distribution.offers.forEach((d, i) => {
+          assert.equal(d.quote.toNumber(), 1000, `wrong quote at ${i}`);
+          assert.equal(
+            d.base.toNumber(),
+            d.quote.div(minPrice.mul(ratio.pow(i)).toNumber()),
+            `wrong base at ${i}`
+          );
+        });
+      });
+
+      it("throws on missing initials", () => {
+        // Act/assert
+        assert.throws(
+          () =>
+            sut.calculateDistribution({
+              priceParams,
+              midPrice,
+            }),
+          {
+            message:
+              "Either initialAskGives or initialBidGives must be provided.",
+          }
+        );
+      });
+
+      it("can calculate distribution with constant outbound", () => {
+        // Arrange/Act
+        const distribution = sut.calculateDistribution({
+          priceParams,
+          midPrice,
           initialAskGives: Big(1),
           initialBidGives: Big(1000),
         });

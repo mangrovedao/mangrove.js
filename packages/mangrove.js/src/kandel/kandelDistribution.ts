@@ -81,14 +81,16 @@ class KandelDistribution {
    * @returns The amount of base or quote to give for each offer.
    */
   public calculateConstantGivesPerOffer(
-    availableBase: Big,
+    availableBase?: Big,
     availableQuote?: Big
   ) {
     const bids = this.offers.filter((x) => x.offerType == "bids").length;
     const asks = this.offers.filter((x) => x.offerType == "asks").length;
 
     return {
-      askGives: this.calculateOfferGives("asks", asks, availableBase),
+      askGives: availableBase
+        ? this.calculateOfferGives("asks", asks, availableBase)
+        : undefined,
       bidGives: availableQuote
         ? this.calculateOfferGives("bids", bids, availableQuote)
         : undefined,
