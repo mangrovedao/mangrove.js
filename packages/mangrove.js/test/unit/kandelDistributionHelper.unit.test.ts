@@ -227,6 +227,59 @@ describe("KandelDistributionHelper unit tests suite", () => {
           );
         });
       });
+    });
+  });
+
+  describe(
+    KandelDistributionHelper.prototype.calculateInitialGives.name,
+    () => {
+      it("returns minimum on empty list", () => {
+        // Arrange
+        const sut = new KandelDistributionHelper(0, 0);
+
+        // Act
+        const { askGives, bidGives } = sut.calculateInitialGives(
+          [],
+          Big(1),
+          Big(2)
+        );
+
+        // Assert
+        assert.equal(askGives.toNumber(), 1);
+        assert.equal(bidGives.toNumber(), 2);
+      });
+
+      it("returns minimum if no prices affect it", () => {
+        // Arrange
+        const sut = new KandelDistributionHelper(0, 0);
+
+        // Act
+        const { askGives, bidGives } = sut.calculateInitialGives(
+          [Big(1000)],
+          Big(0.1),
+          Big(100)
+        );
+
+        // Assert
+        assert.equal(askGives.toNumber(), 0.1);
+        assert.equal(bidGives.toNumber(), 100);
+      });
+
+      it("returns higher than minimum if dual at some price would be below its minimum", () => {
+        // Arrange
+        const sut = new KandelDistributionHelper(0, 0);
+
+        // Act
+        const { askGives, bidGives } = sut.calculateInitialGives(
+          [Big(2000), Big(1000), Big(500), Big(4000)],
+          Big(1),
+          Big(1000)
+        );
+
+        // Assert
+        assert.equal(askGives.toNumber(), 2);
+        assert.equal(bidGives.toNumber(), 4000);
+      });
     }
   );
 

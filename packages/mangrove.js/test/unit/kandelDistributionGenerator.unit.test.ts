@@ -243,4 +243,87 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
       });
     }
   );
+
+  describe(
+    KandelDistributionGenerator.prototype.calculateMinimumDistribution.name,
+    () => {
+      const ratio = new Big(2);
+      const minPrice = Big(1000);
+      const pricePoints = 5;
+      const priceParams = { minPrice, ratio, pricePoints };
+      const midPrice = Big(7000);
+      it("throws if both constant", () => {
+        // Act/sddrty
+        assert.throws(
+          () =>
+            sut.calculateMinimumDistribution({
+              constantBase: true,
+              constantQuote: true,
+              minimumBasePerOffer: 1,
+              minimumQuotePerOffer: 1,
+              priceParams,
+              midPrice,
+            }),
+          { message: "Both base and quote cannot be constant" }
+        );
+      });
+      it("can have constant base", () => {
+        // Arrange/Act
+        const distribution = sut.calculateMinimumDistribution({
+          constantBase: true,
+          minimumBasePerOffer: 1,
+          minimumQuotePerOffer: 1000,
+          priceParams,
+          midPrice,
+        });
+
+        // Assert
+        assert.equal(distribution.offers[0].base.toNumber(), 1);
+        assert.equal(
+          1,
+          [...new Set(distribution.offers.map((x) => x.base))].length
+        );
+      });
+
+      it("can have constant quote", () => {
+        // Arrange/Act
+        const distribution = sut.calculateMinimumDistribution({
+          constantQuote: true,
+          minimumBasePerOffer: 1,
+          minimumQuotePerOffer: 1000,
+          priceParams,
+          midPrice,
+        });
+
+        // Assert
+        assert.equal(distribution.offers[0].quote.toNumber(), 16000);
+        assert.equal(
+          1,
+          [...new Set(distribution.offers.map((x) => x.quote))].length
+        );
+      });
+
+      it("can have constant gives", () => {
+        // Arrange/Act
+        const distribution = sut.calculateMinimumDistribution({
+          minimumBasePerOffer: 1,
+          minimumQuotePerOffer: 1000,
+          priceParams,
+          midPrice,
+        });
+
+        // Assert there should only be exactly two different gives - one for ask and one for bids.
+        assert.equal(
+          2,
+          [
+            ...new Set(
+              distribution.offers.map((x) =>
+                x.offerType == "bids" ? x.quote : x.base
+              )
+            ),
+          ].length
+        );
+      });
+    }
+  );
 });

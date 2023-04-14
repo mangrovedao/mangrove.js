@@ -201,6 +201,49 @@ class KandelDistributionHelper {
     return distribution;
   }
 
+  /** Calculates the minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
+   * @param prices The price distribution.
+   * @param minimumBasePerOffer The minimum base to give for each offer.
+   * @param minimumQuotePerOffer The minimum quote to give for each offer.
+   * @returns The minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
+   */
+  calculateInitialGives(
+    prices: Big[],
+    minimumBasePerOffer: Big,
+    minimumQuotePerOffer: Big
+  ) {
+    if (prices.length == 0)
+      return { askGives: minimumBasePerOffer, bidGives: minimumQuotePerOffer };
+
+    let minPrice = prices[0];
+    let maxPrice = prices[0];
+    prices.forEach((p) => {
+      if (p.lt(minPrice)) {
+        minPrice = p;
+      }
+      if (p.gt(maxPrice)) {
+        maxPrice = p;
+      }
+    });
+
+    const minimumBaseFromQuote = this.baseFromQuoteAndPrice(
+      minimumQuotePerOffer,
+      minPrice
+    );
+    const minimumQuoteFromBase = this.quoteFromBaseAndPrice(
+      minimumBasePerOffer,
+      maxPrice
+    );
+    const askGives = minimumBaseFromQuote.gt(minimumBasePerOffer)
+      ? minimumBaseFromQuote
+      : minimumBasePerOffer;
+    const bidGives = minimumQuoteFromBase.gt(minimumQuotePerOffer)
+      ? minimumQuoteFromBase
+      : minimumQuotePerOffer;
+
+    return { askGives, bidGives };
+  }
+
   /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
    * @param explicitOffers The explicit offers to use.
    * @param explicitOffers[].index The index of the offer.

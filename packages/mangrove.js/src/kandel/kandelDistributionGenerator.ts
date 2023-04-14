@@ -20,6 +20,48 @@ class KandelDistributionGenerator {
     this.priceCalculation = priceCalculation;
   }
 
+  /** Calculates a minimal recommended volume distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
+   * @param params The parameters for the geometric distribution.
+   * @param params.priceParams The parameters for the geometric price distribution.
+   * @param params.midPrice The mid-price used to determine when to switch from bids to asks.
+   * @param params.constantBase Whether the base amount should be constant for all offers.
+   * @param params.constantQuote Whether the quote amount should be constant for all offers.
+   * @param params.minimumBasePerOffer The minimum amount of base to give for each offer. Should be at least minimumBasePerOffer from KandelConfiguration for the market.
+   * @param params.minimumQuotePerOffer The minimum amount of quote to give for each offer. Should be at least minimumQuotePerOffer from KandelConfiguration for the market.
+   * @returns The distribution of bids and asks and their base and quote amounts.
+   * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
+   */
+  public calculateMinimumDistribution(params: {
+    priceParams: PriceDistributionParams;
+    midPrice: Bigish;
+    constantBase?: boolean;
+    constantQuote?: boolean;
+    minimumBasePerOffer: Bigish;
+    minimumQuotePerOffer: Bigish;
+  }) {
+    if (params.constantBase && params.constantQuote) {
+      throw new Error("Both base and quote cannot be constant");
+    }
+
+    const pricesAndRatio = this.priceCalculation.calculatePrices(
+      params.priceParams
+    );
+
+    const { askGives, bidGives } =
+      this.distributionHelper.calculateInitialGives(
+        pricesAndRatio.prices,
+        Big(params.minimumBasePerOffer),
+        Big(params.minimumQuotePerOffer)
+      );
+
+    return this.calculateDistribution({
+      priceParams: params.priceParams,
+      midPrice: params.midPrice,
+      initialAskGives: params.constantQuote ? undefined : askGives,
+      initialBidGives: params.constantBase ? undefined : bidGives,
+    });
+  }
+
   /** Calculates distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
    * @param params The parameters for the geometric distribution.
    * @param params.priceParams The parameters for the geometric price distribution.
