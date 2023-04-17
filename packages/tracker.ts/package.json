@@ -1,0 +1,42 @@
+{
+  "name": "@mangrovedao/tracker.js",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "author": "Louis-Amas <amaslouis@protonmail.com>",
+  "license": "MIT",
+  "typings": "dist/index.d.ts",
+  "outDir": "./",
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^18.15.11",
+    "@types/ws": "^8.5.4",
+    "@typescript-eslint/eslint-plugin": "^5.58.0",
+    "@typescript-eslint/parser": "^5.58.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.38.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "lint-staged": "^13.2.1",
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
+    "prettier": "^2.8.7",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
+  },
+  "lint-staged": {
+    "*.{js,ts,css,md,json,mjs}": "prettier --write"
+  },
+  "scripts": {
+    "precommit": "lint-staged",
+    "build": "tsc --build",
+    "lint": "tsc --noEmit && eslint \"**/*.ts\" --quiet --fix",
+    "serve": "ts-node ./src",
+    "start": "node ./dist",
+    "test:tracker": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/unit-tests.json --exit"
+  },
+  "dependencies": {
+    "@mangrovedao/commonlib.js": "workspace:*",
+    "async-mutex": "^0.4.0",
+    "ethers": "^5.7.2",
+    "ws": "^8.13.0"
+  }
+}

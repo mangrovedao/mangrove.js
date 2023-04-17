@@ -27,7 +27,7 @@ const firstBlock: BlockManager.Block = {
 
 describe("ReliableWebSocketProvider", () => {
   const host = "127.0.0.1";
-  const port = 9999;
+  const port = 9997;
   const wsUrl = `ws://${host}:${port}`;
 
   let websocketServer: WebSocketServer;

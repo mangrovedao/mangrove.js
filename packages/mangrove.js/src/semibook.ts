@@ -3,9 +3,12 @@ import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
 import clone from "just-clone";
 import { Mangrove, Market } from ".";
-import BlockManager from "./tracker/blockManager";
-import LogSubscriber from "./tracker/logSubscriber";
-import StateLogSubsriber from "./tracker/stateLogSubscriber";
+
+import {
+  BlockManager,
+  LogSubscriber,
+  StateLogSubscriber,
+} from "@mangrovedao/tracker.js";
 import { Bigish } from "./types";
 import logger from "./util/logger";
 import Trade from "./util/trade";
@@ -124,7 +127,7 @@ namespace Semibook {
  */
 // TODO: Document invariants
 class Semibook
-  extends StateLogSubsriber<Semibook.State, Market.BookSubscriptionEvent>
+  extends StateLogSubscriber<Semibook.State, Market.BookSubscriptionEvent>
   implements Iterable<Market.Offer>
 {
   static readonly DEFAULT_MAX_OFFERS = 50;
@@ -479,7 +482,7 @@ class Semibook
   // If cache is insufficient, fetch more offers in batches until `stopCondition` is met.
   // All fetched offers are inserted in the cache if there is room.
   async #foldLeftUntil<T>(
-    stateAndBlock: StateLogSubsriber.StateAndBlock<Semibook.State>,
+    stateAndBlock: StateLogSubscriber.StateAndBlock<Semibook.State>,
     accumulator: T, // NB: Must work with cloning by `Object.assign`
     stopCondition: (acc: T) => boolean,
     op: (offer: Market.Offer, acc: T) => T

@@ -29,13 +29,15 @@ let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
 import UnitCalculations from "./util/unitCalculations";
-import BlockManager from "./tracker/blockManager";
+import {
+  BlockManager,
+  ReliableProvider,
+  ReliableHttpProvider,
+  ReliableWebsocketProvider,
+} from "@mangrovedao/tracker.js";
 import { blockManagerOptionsByNetworkName } from "./constants/blockManagerOptions";
-import ReliableProvider from "./tracker/providers/reliableProvider";
-import ReliableWebsocketProvider from "./tracker/providers/reliableWebsocketProvider";
 import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
-import ReliableHttpProvider from "./tracker/providers/reliableHttpProvider";
 import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
 import ReaderMultiWrapper from "./util/multi/readerMultiWrapper";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
@@ -337,8 +339,8 @@ class Mangrove {
     if (!this.reliableProvider) {
       return;
     }
-    logger.debug(`Initialize reliable provider`);
 
+    logger.debug(`Initialize reliable provider`);
     const block = await this.provider.getBlock("latest");
 
     await this.reliableProvider.initialize({
@@ -348,6 +350,7 @@ class Mangrove {
     });
 
     await this.mangroveEventSubscriber.enableSubscriptions();
+    logger.debug(`Initialized reliable provider done`);
   }
   /* Instance */
   /************** */

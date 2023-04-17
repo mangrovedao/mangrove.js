@@ -1,0 +1,8 @@
+{
+  "require": ["ts-node/register"],
+  "recursive": true,
+  "spec": ["test/tracker/*.test.ts", "test/tracker/*/*.test.ts"],
+  "timeout": 60000,
+  "reporter": "mocha-multi-reporters",
+  "reporterOptions": "configFile=test/mocha/config/unit-tests-multi-reporters.json"
+}

@@ -1,0 +1,19 @@
+.DS_Store
+node_modules/
+dist/
+docs/
+scripts/out.md
+.nyc_output/
+coverage/
+cache/
+src/types/typechain/*
+!src/types/typechain/README
+
+# foundry broadcasts to anvil
+!/broadcast
+/broadcast/*
+/broadcast/*/31337/
+
+# deploy output by deploy script
+deploy_output.txt
+mangroveJsNodeState.dump

@@ -261,9 +261,11 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      const { error, logs, rollback } = await blockManager.handleBlock(
+      const { error, ok } = await blockManager.handleBlock(
         blockChain1[2].block
       );
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.equal(rollback, undefined);
@@ -291,15 +293,13 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
 
       mockRpc.blockByNumber = blockChain2;
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[2].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[2].block));
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
@@ -324,18 +324,14 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[3].block
-      ));
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
+      ({ error, ok } = await blockManager.handleBlock(blockChain1[3].block));
 
       mockRpc.blockByNumber = blockChain2;
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[2].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[2].block));
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
@@ -360,18 +356,14 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[3].block
-      ));
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
+      ({ error, ok } = await blockManager.handleBlock(blockChain1[3].block));
 
       mockRpc.blockByNumber = blockChain2;
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[3].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[3].block));
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
@@ -401,9 +393,9 @@ describe("Block Manager", () => {
 
       /* start with blockChain2 but send blockChain1 block*/
       mockRpc.blockByNumber = blockChain2;
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
@@ -428,9 +420,9 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[1].block
-      );
+      let { error, ok } = await blockManager.handleBlock(blockChain1[1].block);
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, undefined);
@@ -453,9 +445,11 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      const { error, logs, rollback } = await blockManager.handleBlock(
+      const { error, ok } = await blockManager.handleBlock(
         blockChain1[2].block
       );
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.equal(rollback, undefined);
@@ -482,15 +476,13 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
 
       mockRpc.blockByNumber = blockChain2;
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[2].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[2].block));
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
@@ -515,21 +507,17 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
 
       mockRpc.blockByNumber = blockChain2;
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[2].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[2].block));
 
       assert.equal(error, "FailedGetBlock");
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[3].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[3].block));
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
@@ -560,13 +548,15 @@ describe("Block Manager", () => {
 
       mockRpc.blockByNumber = blockChain2;
 
-      const { error, logs, rollback } = await blockManager.handleBlock(
+      const { error, ok } = await blockManager.handleBlock(
         blockChain2[2].block
       );
 
+      const { logs, rollback } = ok!;
+
       assert.equal(error, undefined);
       assert.equal(rollback, blockChain2[2].block);
-      assert.equal(logs, undefined);
+      assert.deepEqual(logs, []);
     });
 
     it("1 block back 1 block long bigger than cache", async () => {
@@ -584,23 +574,19 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[3].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain1[3].block));
 
       mockRpc.blockByNumber = blockChain2;
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[1].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[1].block));
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
-      assert.equal(logs, undefined);
+      assert.deepEqual(logs, []);
     });
   });
 
@@ -621,16 +607,16 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(
+      await blockManager.initialize(blockChain1[1].block);
+
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );
-
-      await blockManager.initialize(blockChain1[1].block);
 
       assert.equal(
         subscriber1.getLatestState().state,
@@ -658,16 +644,16 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(
+      await blockManager.initialize(blockChain1[1].block);
+
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );
-
-      await blockManager.initialize(blockChain1[1].block);
 
       await blockManager.handleBlock(blockChain1[2].block);
 
@@ -701,16 +687,16 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(
+      await blockManager.initialize(blockChain1[1].block);
+
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );
-
-      await blockManager.initialize(blockChain1[1].block);
 
       await blockManager.handleBlock(blockChain1[2].block);
 
@@ -752,11 +738,11 @@ describe("Block Manager", () => {
 
       await blockManager.initialize(blockChain1[1].block);
 
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );
@@ -793,31 +779,27 @@ describe("Block Manager", () => {
       const subscriber1 = new MockSubscriber(addressSubscriber1, blockChain1);
       const subscriber2 = new MockSubscriber(addressSubscriber2, blockChain1);
 
-      blockManager.subscribeToLogs(
+      await blockManager.initialize(blockChain1[1].block);
+
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );
 
-      await blockManager.initialize(blockChain1[1].block);
-
-      let { error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[2].block
-      );
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain1[3].block
-      ));
+      let { error, ok } = await blockManager.handleBlock(blockChain1[2].block);
+      ({ error, ok } = await blockManager.handleBlock(blockChain1[3].block));
 
       subscriber1.blockByNumber = blockChain2;
       subscriber2.blockByNumber = blockChain2;
       mockRpc.blockByNumber = blockChain2;
 
-      ({ error, logs, rollback } = await blockManager.handleBlock(
-        blockChain2[3].block
-      ));
+      ({ error, ok } = await blockManager.handleBlock(blockChain2[3].block));
+
+      const { logs, rollback } = ok!;
 
       assert.equal(error, undefined);
       assert.deepEqual(rollback, blockChain2[1].block);
@@ -850,11 +832,11 @@ describe("Block Manager", () => {
 
       await blockManager.handleBlock(blockChain1[2].block);
 
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );
@@ -895,11 +877,11 @@ describe("Block Manager", () => {
 
       await blockManager.handleBlock(blockChain1[2].block);
 
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );
@@ -942,11 +924,11 @@ describe("Block Manager", () => {
 
       await blockManager.handleBlock(blockChain1[2].block);
 
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber1.getAddressAndTopics(),
         subscriber1
       );
-      blockManager.subscribeToLogs(
+      await blockManager.subscribeToLogs(
         subscriber2.getAddressAndTopics(),
         subscriber2
       );

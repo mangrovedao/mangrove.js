@@ -1,6 +1,6 @@
 import { JsonRpcProvider, Log } from "@ethersproject/providers";
-import { hexlify } from "ethers/lib/utils";
 import BlockManager from "../blockManager";
+import { hexlify } from "ethers/lib/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace ReliableProvider {
@@ -91,8 +91,8 @@ abstract class ReliableProvider {
       if (addressesAndTopics.length === 0) {
         return { error: undefined, ok: [] };
       }
-      const fromBlock = hexlify(from);
-      const toBlock = hexlify(to);
+      const fromBlock = hexlify(from.valueOf());
+      const toBlock = hexlify(to.valueOf());
       // cannot use provider.getLogs as it does not support multiplesAddress
       const logs: ReliableProvider.LogWithHexStringBlockNumber[] =
         await this.options.provider.send("eth_getLogs", [

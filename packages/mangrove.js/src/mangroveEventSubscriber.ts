@@ -2,8 +2,7 @@ import { Log, Provider } from "@ethersproject/providers";
 import { Contract } from "ethers";
 import Market from "./market";
 import Semibook from "./semibook";
-import BlockManager from "./tracker/blockManager";
-import LogSubscriber from "./tracker/logSubscriber";
+import { BlockManager, LogSubscriber } from "@mangrovedao/tracker.js";
 import logger from "./util/logger";
 
 const BookSubscriptionEventsSet = new Set([
@@ -15,10 +14,7 @@ const BookSubscriptionEventsSet = new Set([
 ]);
 
 class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent> {
-  private bookEventSubscribers: Record<
-    string,
-    LogSubscriber<Market.BookSubscriptionEvent>
-  >;
+  private bookEventSubscribers: Record<string, Semibook>;
 
   constructor(
     private provider: Provider,
@@ -48,7 +44,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     logger.debug(
       `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
     );
-    await semibook.initialize(this.blockManager.lastBlock); // TODO: (!!!WARNING!!!) verifySubscriber needs to be forwarded somehow
+    await semibook.initialize(this.blockManager.getLastBlock()); // TODO: (!!!WARNING!!!) verifySubscriber needs to be forwarded somehow
     logger.debug(
       `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
     );

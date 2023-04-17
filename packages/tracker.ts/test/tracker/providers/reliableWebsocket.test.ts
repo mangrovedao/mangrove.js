@@ -22,7 +22,7 @@ describe("Reliable Websocket", () => {
     wsUrl,
     pingIntervalMs,
     pingTimeoutMs,
-    msgHandler: (ws: WebSocket, msg: string) => {},
+    msgHandler: (msg: string) => {},
     initMessages: [],
   };
 
@@ -52,7 +52,7 @@ describe("Reliable Websocket", () => {
   it("ReliableWebSocket simple send msg", async () => {
     const wsClient = new ReliableWebSocket({
       ...options,
-      msgHandler: (ws: WebSocket, msg: string) => {
+      msgHandler: (msg: string) => {
         assert.equal(msg, "test1");
       },
     });
@@ -66,7 +66,7 @@ describe("Reliable Websocket", () => {
     let i = 0;
     const wsClient = new ReliableWebSocket({
       ...options,
-      msgHandler: (ws: WebSocket, msg: string) => {
+      msgHandler: (msg: string) => {
         if (msg === "test1") {
           ++i;
         }

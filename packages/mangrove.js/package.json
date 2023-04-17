@@ -65,6 +65,7 @@
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/commonlib.js": "workspace:*",
     "@mangrovedao/mangrove-core": "1.4.6-2",
+    "@mangrovedao/tracker.js": "workspace:*",
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
     "esbuild-plugin-resolve": "^1.0.3",

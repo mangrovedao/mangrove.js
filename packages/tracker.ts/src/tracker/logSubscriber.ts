@@ -26,8 +26,8 @@ namespace LogSubscriber {
  * through BlockManager.
  */
 abstract class LogSubscriber<ParsedEvent> {
-  initializedAt?: BlockManager.BlockWithoutParentHash; // block which the subscriber initialized at.
-  lastSeenEventBlock?: BlockManager.BlockWithoutParentHash; // last log block number handled
+  public initializedAt?: BlockManager.BlockWithoutParentHash; // block which the subscriber initialized at.
+  public lastSeenEventBlock?: BlockManager.BlockWithoutParentHash; // last log block number handled
 
   /**
    * initialize subscriber at block `block`.

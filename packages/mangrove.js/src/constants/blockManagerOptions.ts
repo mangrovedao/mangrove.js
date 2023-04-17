@@ -1,4 +1,4 @@
-import BlockManager from "../tracker/blockManager";
+import { BlockManager } from "@mangrovedao/tracker.js";
 
 export const blockManagerOptionsByNetworkName: Record<
   string,

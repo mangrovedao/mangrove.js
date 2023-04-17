@@ -1,3 +1,5 @@
+import { Result } from "../../util/types";
+
 export namespace JsonRPC {
   export type Msg<T> = {
     jsonrpc: string;
@@ -32,18 +34,20 @@ export namespace JsonRPC {
     result: BlockHeader;
   };
 
-  export type ErrorOrDecoded<E, T> =
-    | ({ error: E } & { result: undefined })
-    | ({ error: undefined } & { result: T });
+  export type DecodedOrError<T> = Result<T, Error>;
 
-  export const decodeJSONAndCast = <E, T>(
+  export const decodeJSONAndCast = <T>(
     msg: string
-  ): JsonRPC.ErrorOrDecoded<E, T> => {
+  ): JsonRPC.DecodedOrError<T> => {
     try {
       const decoded: T = JSON.parse(msg);
-      return { error: undefined, result: decoded };
+      return { error: undefined, ok: decoded };
     } catch (e) {
-      return { error: e, result: undefined };
+      if (e instanceof Error) {
+        return { error: e, ok: undefined };
+      }
+
+      return { error: new Error("Error"), ok: undefined };
     }
   };
 }

@@ -39,17 +39,17 @@ class ReliableWebsocketProvider extends ReliableProvider {
     this.reliableWebSocket.stop();
   }
 
-  private handleMessage(_: WebSocket, msg: string) {
-    const decodedMsg = JsonRPC.decodeJSONAndCast<Error, JsonRPC.Msg<any>>(msg);
+  private handleMessage(msg: string) {
+    const decodedMsg = JsonRPC.decodeJSONAndCast<JsonRPC.Msg<any>>(msg);
     if (decodedMsg.error) {
       return;
     }
 
-    if (decodedMsg.result.method !== "eth_subscription" || !decodedMsg.result) {
+    if (decodedMsg.ok.method !== "eth_subscription" || !decodedMsg.ok) {
       return;
     }
 
-    const blockHeader: JsonRPC.BlockHeader = decodedMsg.result.params.result;
+    const blockHeader: JsonRPC.BlockHeader = decodedMsg.ok.params.result;
 
     const block: BlockManager.Block = {
       parentHash: blockHeader.parentHash,

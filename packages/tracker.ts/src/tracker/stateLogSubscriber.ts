@@ -36,11 +36,19 @@ abstract class StateLogSubsriber<
     block: BlockManager.BlockWithoutParentHash
   ): Promise<LogSubscriber.ErrorOrState<T>>;
 
+  protected checkIfLastSeenEventBlockExists() {
+    if (!this.lastSeenEventBlock) {
+      throw new Error("Last Seen event block is undefined");
+    }
+  }
+
   /* return latest state */
   public getLatestState(): StateLogSubsriber.StateAndBlock<T> {
+    this.checkIfLastSeenEventBlockExists();
+
     return {
-      block: this.lastSeenEventBlock,
-      state: this.stateByBlockNumber[this.lastSeenEventBlock.number],
+      block: this.lastSeenEventBlock!,
+      state: this.stateByBlockNumber[this.lastSeenEventBlock!.number],
     };
   }
 
@@ -81,10 +89,11 @@ abstract class StateLogSubsriber<
    */
   public async handleLog(log: Log, event?: ParsedEvent): Promise<void> {
     return this.cacheLock.runExclusive(() => {
+      this.checkIfLastSeenEventBlockExists();
       let currentState = this.stateByBlockNumber[log.blockNumber];
       if (!currentState) {
         this.stateByBlockNumber[log.blockNumber] = this.copy(
-          this.stateByBlockNumber[this.lastSeenEventBlock.number]
+          this.stateByBlockNumber[this.lastSeenEventBlock!.number]
         );
         currentState = this.stateByBlockNumber[log.blockNumber];
       }
