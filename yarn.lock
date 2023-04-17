@@ -1362,7 +1362,7 @@ __metadata:
     "@types/shelljs": ^0.8.11
     "@typescript-eslint/eslint-plugin": ^5.50.0
     "@typescript-eslint/parser": ^5.48.1
-    alchemy-sdk: ^2.4.2
+    alchemy-sdk: ^2.8.0
     axios: ^0.27.2
     big.js: ^6.2.1
     chai: ^4.3.7
@@ -1524,7 +1524,7 @@ __metadata:
     prettier: ^2.4.1
     rimraf: ^3.0.2
     shx: ^0.3.4
-    transparent-proxy: ^1.9.1
+    transparent-proxy: ^1.12.1
     ts-essentials: ^9.3.1
     ts-mockito: ^2.0.0
     ts-node: ^10.9.1
@@ -2163,9 +2163,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"alchemy-sdk@npm:^2.4.2":
-  version: 2.4.3
-  resolution: "alchemy-sdk@npm:2.4.3"
+"alchemy-sdk@npm:^2.8.0":
+  version: 2.8.0
+  resolution: "alchemy-sdk@npm:2.8.0"
   dependencies:
     "@ethersproject/abi": ^5.7.0
     "@ethersproject/abstract-provider": ^5.7.0
@@ -2181,7 +2181,7 @@ __metadata:
     axios: ^0.26.1
     sturdy-websocket: ^0.2.1
     websocket: ^1.0.34
-  checksum: e78a1fb18152bb6690075f90f687572d693edf8d34bda07d18cf8b676491ad06f12afd5a71bb9cf266702bc91fdb62780ab9110868bf9d0a6941e300d87f5d0d
+  checksum: 862c2467369c0873e1a5af30cd48c89189c15a9e0462560b1969a4961f35a354cf9308d9cf45a32c76256c2a98d8d8c15db1488dd94bcc6fc87a454e5aacbe32
   languageName: node
   linkType: hard
 
@@ -7265,10 +7265,10 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"transparent-proxy@npm:^1.9.1":
-  version: 1.9.1
-  resolution: "transparent-proxy@npm:1.9.1"
-  checksum: b820f94084a29e5e899ff438ec8ea46934130f5791d4af6d39f09aed563133aad4744b8729c43d4219b8c2339d160a1deb97ac00768763c1f9aa86c4291b1206
+"transparent-proxy@npm:^1.12.1":
+  version: 1.12.1
+  resolution: "transparent-proxy@npm:1.12.1"
+  checksum: 03acc0640fdce09eec8dfbb1b7831979cf27c9f69f1f19e28f8386491df6c7448072b9a2c9e55598e543450b0e78ea2eea6f5011d6263914b71cc711047a303c
   languageName: node
   linkType: hard
 
