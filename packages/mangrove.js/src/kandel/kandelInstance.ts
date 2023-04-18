@@ -415,9 +415,9 @@ class KandelInstance {
    * @returns The status of the Kandel instance.
    * @throws If no offers are live. At least one live offer is required to determine the status.
    * @remarks The expected prices is determined by extrapolating from a live offer closest to the mid price.
-   * @remarks Offers are expected to be live bids below the mid price and asks above.
-   * @remarks This may not hold if an offer deep in the book has been sniped in which case a dual offer will exist on the wrong side of mid price but quickly be taken due to a good price (Kandel still earns on the spread).
-   * @remarks Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
+   * Offers are expected to be live bids below the mid price and asks above.
+   * This may not hold if an offer deep in the book has been sniped in which case a dual offer will exist on the wrong side of mid price but quickly be taken due to a good price (Kandel still earns on the spread).
+   * Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
    */
   public async getOfferStatusFromOffers(params: {
     midPrice: Bigish;
@@ -719,7 +719,7 @@ class KandelInstance {
    * @param overrides The ethers overrides to use when calling the retractAndWithdraw, and retractOffers functions.
    * @returns The transaction(s) used to retract the offers.
    * @remarks This function or retractOffers should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
-   * @remarks If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
+   * If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
    */
   public async retractAndWithdraw(
     params: {
@@ -772,7 +772,7 @@ class KandelInstance {
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
    * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
-   * @remarks If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
+   * If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
    */
   public async retractOffers(
     params: {

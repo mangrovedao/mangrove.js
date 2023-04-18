@@ -178,7 +178,7 @@ class LiquidityProvider {
 
   /**
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
-   *  return {price,wants,gives}
+   *  return `{price,wants,gives}`
    */
   static normalizeOfferParams(
     p: { ba: Market.BA } & LiquidityProvider.OfferParams
