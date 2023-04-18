@@ -54,21 +54,21 @@ abstract class StateLogSubsriber<
 
   /* initialize subscriber by calling stateInitialize */
   public async initialize(
-    block: BlockManager.BlockWithoutParentHash
+    wantedBlock: BlockManager.BlockWithoutParentHash
   ): Promise<LogSubscriber.InitialzeErrorOrBlock> {
     logger.debug("[StateLogSubsriber] initialize() ");
     this.stateByBlockNumber = {};
 
     this.initializedAt = undefined;
     this.lastSeenEventBlock = undefined;
-    const { error, ok } = await this.stateInitialize(block);
+    const { error, ok } = await this.stateInitialize(wantedBlock);
 
     if (error) {
       logger.debug(`[StateLogSubsriber] initialize() failed ${error}`);
       return { error, ok: undefined };
     }
 
-    const { state } = ok;
+    const { block, state } = ok;
 
     this.stateByBlockNumber[block.number] = state;
     this.lastSeenEventBlock = block;

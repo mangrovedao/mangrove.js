@@ -117,6 +117,8 @@ namespace BlockManager {
       addressAndTopics: AddressAndTopics[]
     ) => Promise<ErrorOrLogs>;
   };
+
+  export type HandleBlockPostHookFunction = () => Promise<void>;
 }
 
 /* transform a block object to a string */
@@ -147,6 +149,9 @@ class BlockManager {
 
   private countsBlocksCached: number = 0;
 
+  private postHandleBlockFunctions: BlockManager.HandleBlockPostHookFunction[] =
+    [];
+
   constructor(private options: BlockManager.CreateOptions) {}
 
   private checkLastBlockExist() {
@@ -158,6 +163,17 @@ class BlockManager {
   public getLastBlock(): BlockManager.Block {
     this.checkLastBlockExist();
     return this.lastBlock!;
+  }
+
+  public addHandleBlockPostHook(fn: BlockManager.HandleBlockPostHookFunction) {
+    this.postHandleBlockFunctions.push(fn);
+  }
+
+  private async handleBlockPostHooks() {
+    await Promise.allSettled(
+      this.postHandleBlockFunctions.map((post) => post())
+    );
+    this.postHandleBlockFunctions = [];
   }
 
   /**
@@ -451,17 +467,14 @@ class BlockManager {
 
   /**
    * Call initialize on all subscribers in waitingToBeInitializedSet.
-   *
-   * This function can initialize subscriber with a block which have hash !== this.lastBlock.hash,
-   * it's ok because later we are calling verifySubscribers to check if it's the case.
    */
   private async handleSubscribersInitialize(
     block: BlockManager.BlockWithoutParentHash
-  ): Promise<string[]> {
+  ): Promise<void> {
     if (
       this.waitingToBeInitializedSet.size === 0 // if there is nothing to do bail out
     ) {
-      return [];
+      return;
     }
 
     const toInitialize = Array.from(this.waitingToBeInitializedSet);
@@ -479,6 +492,15 @@ class BlockManager {
         /* initialize call failed retry later by adding it back to the set */
         this.waitingToBeInitializedSet.add(address);
       } else {
+        if (res.ok.hash !== block.hash) {
+          /* detected reorg during initialization re init later*/
+          this.waitingToBeInitializedSet.add(address);
+          logger.debug(
+            "[BlockManager] detected reorg when initialize subscriber"
+          );
+          continue;
+        }
+
         const subscriber = this.subscribersByAddress[address];
         subscriber.initializedAt = res.ok;
         subscriber.lastSeenEventBlock = res.ok;
@@ -489,8 +511,6 @@ class BlockManager {
         );
       }
     }
-
-    return toInitialize;
   }
 
   /**
@@ -544,31 +564,6 @@ class BlockManager {
   }
 
   /**
-   * Verify that subscriber has been initialized with a block that we know in cache
-   */
-  private verifySubscribers(initializedSubscribers: string[]) {
-    for (const address of initializedSubscribers) {
-      const subscriber = this.subscribersByAddress[address];
-      if (subscriber.initializedAt) {
-        const cachedBlock =
-          this.blocksByNumber[subscriber.initializedAt.number];
-
-        if (cachedBlock.hash !== subscriber.initializedAt.hash) {
-          /* subscriber initializedAt block is different from block in cache
-           *  a reorg happened during initialiation. Retry initialiation later.
-           **/
-          this.waitingToBeInitializedSet.add(address);
-          logger.debug(
-            `[BlockManager] verifySubscriber() detected wrong subscriber ${address} ${getStringBlock(
-              subscriber.initializedAt
-            )} !== ${getStringBlock(cachedBlock)}`
-          );
-        }
-      }
-    }
-  }
-
-  /**
    * Add new block in BlockManager cache, detect reorganization, and ensure that cache is consistent
    */
   async handleBlock(
@@ -587,9 +582,7 @@ class BlockManager {
       return { error: undefined, ok: { logs: [], rollback: undefined } };
     }
 
-    const subscribersInitialized = await this.handleSubscribersInitialize(
-      newBlock
-    ); // should probably pass new block here
+    await this.handleSubscribersInitialize(newBlock); // should probably pass new block here
 
     if (newBlock.parentHash !== this.lastBlock!.hash) {
       /* newBlock is not successor of this.lastBlock a reorg has been detected */
@@ -647,10 +640,11 @@ class BlockManager {
 
       this.rollbackSubscribers(rollbackToBlock);
       await this.applyLogs(okQueryLogs.logs);
-      this.verifySubscribers(subscribersInitialized);
 
+      /* do it again as subscriber may have failed to initialize in case of reorg */
       await this.handleSubscribersInitialize(newBlock);
 
+      await this.handleBlockPostHooks();
       return {
         error: undefined,
         ok: {
@@ -685,10 +679,11 @@ class BlockManager {
         this.rollbackSubscribers(okQueryLogs.commonAncestor);
       }
       await this.applyLogs(okQueryLogs.logs);
-      this.verifySubscribers(subscribersInitialized);
 
+      /* do it again as subscriber may have failed to initialize in case of reorg */
       await this.handleSubscribersInitialize(newBlock);
 
+      await this.handleBlockPostHooks();
       return {
         error: undefined,
         ok: {

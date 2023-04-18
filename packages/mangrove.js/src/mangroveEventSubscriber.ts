@@ -35,7 +35,10 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     );
   }
 
-  public async subscribeToSemibook(semibook: Semibook) {
+  public async subscribeToSemibook(
+    semibook: Semibook,
+    rec: number = 0
+  ): Promise<void> {
     const identifier =
       semibook.ba === "asks"
         ? `${semibook.market.base.address}_${semibook.market.quote.address}`.toLowerCase()
@@ -44,7 +47,32 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     logger.debug(
       `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
     );
-    await semibook.initialize(this.blockManager.getLastBlock()); // TODO: (!!!WARNING!!!) verifySubscriber needs to be forwarded somehow
+    const block = this.blockManager.getLastBlock();
+
+    const { error, ok } = await semibook.initialize(block);
+    if (error) {
+      throw new Error(error);
+    }
+
+    if (ok.hash !== block.hash) {
+      /* detected reorg during initialization */
+      return new Promise((resolve, reject) => {
+        /* retry when next block is handled */
+        this.blockManager.addHandleBlockPostHook(async () => {
+          try {
+            await this.subscribeToSemibook(semibook, rec + 1);
+            return resolve();
+          } catch (e) {
+            if (rec === 5) {
+              return reject(e);
+            } else {
+              return this.subscribeToSemibook(semibook, rec + 1);
+            }
+          }
+        });
+      });
+    }
+
     logger.debug(
       `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
     );
