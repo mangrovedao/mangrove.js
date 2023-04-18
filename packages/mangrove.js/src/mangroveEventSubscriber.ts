@@ -14,7 +14,7 @@ const BookSubscriptionEventsSet = new Set([
 ]);
 
 class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent> {
-  private bookEventSubscribers: Record<string, Semibook>;
+  private bookEventSubscribers: Record<string, Record<string, Semibook>>;
 
   constructor(
     private provider: Provider,
@@ -35,14 +35,38 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     );
   }
 
-  public async subscribeToSemibook(
-    semibook: Semibook,
-    rec: number = 0
-  ): Promise<void> {
-    const identifier =
-      semibook.ba === "asks"
-        ? `${semibook.market.base.address}_${semibook.market.quote.address}`.toLowerCase()
-        : `${semibook.market.quote.address}_${semibook.market.base.address}`.toLowerCase();
+  public computeBookIdentifier(market: Market, ba: Market.BA): string {
+    return ba === "asks"
+      ? `${market.base.address}_${market.quote.address}`.toLowerCase()
+      : `${market.quote.address}_${market.base.address}`.toLowerCase();
+  }
+
+  public getSemiBook(
+    market: Market,
+    ba: Market.BA,
+    options: Semibook.Options
+  ): Semibook | undefined {
+    const identifier = this.computeBookIdentifier(market, ba);
+
+    const books = this.bookEventSubscribers[identifier];
+
+    if (!books) {
+      return;
+    }
+
+    const semibook =
+      books[
+        `${options.maxOffers}_${options.chunkSize}_${options.desiredPrice}_${options.desiredVolume}`
+      ];
+    if (!semibook) {
+      return;
+    }
+
+    return semibook;
+  }
+
+  public async subscribeToSemibook(semibook: Semibook, rec = 0): Promise<void> {
+    const identifier = this.computeBookIdentifier(semibook.market, semibook.ba);
 
     logger.debug(
       `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
@@ -51,10 +75,16 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
 
     const { error, ok } = await semibook.initialize(block);
     if (error) {
+      logger.debug(
+        `[MangroveEventSubscriber] subscribeToSemibook error ${error}`
+      );
       throw new Error(error);
     }
 
     if (ok.hash !== block.hash) {
+      logger.debug(
+        `[MangroveEventSubscriber] found reorg ${ok.hash}, ${block.hash}`
+      );
       /* detected reorg during initialization */
       return new Promise((resolve, reject) => {
         /* retry when next block is handled */
@@ -77,7 +107,12 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
       `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
     );
 
-    this.bookEventSubscribers[identifier] = semibook;
+    if (!this.bookEventSubscribers[identifier]) {
+      this.bookEventSubscribers[identifier] = {};
+    }
+
+    this.bookEventSubscribers[identifier][semibook.optionsIdentifier] =
+      semibook;
   }
 
   /**
@@ -115,23 +150,29 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
       return; // ignore events
     }
 
-    const sub = this.bookEventSubscribers[identifier];
-    if (!sub) {
+    const subs = this.bookEventSubscribers[identifier];
+    if (!subs) {
       return;
     }
-    return sub.handleLog(log, event);
+
+    for (const sub of Object.values(subs)) {
+      await sub.handleLog(log, event);
+    }
+    return;
   }
 
   /**
    * rollback subscriber to block `block`
    */
   public rollback(block: BlockManager.Block): void {
-    for (const sub of Object.values(this.bookEventSubscribers)) {
-      if (
-        sub.lastSeenEventBlock &&
-        block.number < sub.lastSeenEventBlock.number
-      ) {
-        sub.rollback(block);
+    for (const subs of Object.values(this.bookEventSubscribers)) {
+      for (const sub of Object.values(subs)) {
+        if (
+          sub.lastSeenEventBlock &&
+          block.number < sub.lastSeenEventBlock.number
+        ) {
+          sub.rollback(block);
+        }
       }
     }
   }

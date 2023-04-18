@@ -10,13 +10,15 @@ import {
   StateLogSubscriber,
 } from "@mangrovedao/tracker.js";
 import { Bigish } from "./types";
-import logger from "./util/logger";
+import logger, { enableLogging } from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
+
+enableLogging();
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Semibook {
@@ -143,24 +145,36 @@ class Semibook
   #eventListener: Semibook.EventListener;
 
   tradeManagement: Trade = new Trade();
+
+  public optionsIdentifier: string;
+
   static async connect(
     market: Market,
     ba: Market.BA,
     eventListener: Semibook.EventListener,
     options: Semibook.Options
   ): Promise<Semibook> {
-    canConstructSemibook = true;
-    const semibook = new Semibook(market, ba, eventListener, options);
-    canConstructSemibook = false;
-
     if (market.mgv.mangroveEventSubscriber) {
-      logger.debug(
-        `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`
+      let semibook = market.mgv.mangroveEventSubscriber.getSemiBook(
+        market,
+        ba,
+        options
       );
-      await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
+
+      if (!semibook) {
+        canConstructSemibook = true;
+        semibook = new Semibook(market, ba, eventListener, options);
+        logger.debug(
+          `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`
+        );
+        await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
+        canConstructSemibook = false;
+      }
+      return semibook;
     }
 
-    return semibook;
+    // canConstructSemibook = false;
+    return new Semibook(market, ba, eventListener, options);
   }
 
   /** Stop listening to events from mangrove */
@@ -580,6 +594,7 @@ class Semibook
     options: Semibook.Options
   ) {
     super();
+    this.optionsIdentifier = `${options.maxOffers}_${options.chunkSize}_${options.desiredPrice}_${options.desiredVolume}`;
     if (!canConstructSemibook) {
       throw Error(
         "Mangrove Semibook must be initialized async with Semibook.connect (constructors cannot be async)"

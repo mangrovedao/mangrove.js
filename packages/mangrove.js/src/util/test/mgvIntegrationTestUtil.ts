@@ -6,7 +6,6 @@ import * as typechain from "../../types/typechain";
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Deferred } from "../../util";
 import { PromiseOrValue } from "../../types/typechain/common";
-import { sleep } from "@mangrovedao/commonlib.js";
 
 export type Account = {
   name: string;
@@ -341,6 +340,21 @@ export async function waitForBooksForLastTx(market?: Market) {
         market.unsubscribe(asksCB);
         market.unsubscribe(bidsCB);
       });
+  }
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function waitForBlock(market: Market, blockNumber: number) {
+  let block = await market.mgv.reliableProvider.blockManager.getBlock(
+    blockNumber
+  );
+
+  while (!block || block.number !== blockNumber) {
+    await sleep(200);
+    block = await market.mgv.reliableProvider.blockManager.getBlock(
+      blockNumber
+    );
   }
 }
 

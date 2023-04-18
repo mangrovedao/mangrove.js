@@ -4,6 +4,7 @@ import { getAddress } from "ethers/lib/utils";
 import logger, { enableLogging } from "../util/logger";
 import LogSubscriber from "./logSubscriber";
 import { Result } from "../util/types";
+import { Mutex } from "async-mutex";
 
 enableLogging();
 
@@ -138,6 +139,8 @@ const getStringBlock = (
  * The BlockManager class is a reliable way of handling chain reorganization.
  */
 class BlockManager {
+  private mutex: Mutex = new Mutex();
+
   private blocksByNumber: Record<number, BlockManager.Block> = {}; // blocks cache
 
   private lastBlock: BlockManager.Block | undefined = undefined; // latest block in cache
@@ -163,6 +166,14 @@ class BlockManager {
   public getLastBlock(): BlockManager.Block {
     this.checkLastBlockExist();
     return this.lastBlock!;
+  }
+
+  public async getBlock(
+    blockNumber: number
+  ): Promise<BlockManager.Block | undefined> {
+    return this.mutex.runExclusive(() => {
+      return this.blocksByNumber[blockNumber];
+    });
   }
 
   public addHandleBlockPostHook(fn: BlockManager.HandleBlockPostHookFunction) {
@@ -570,128 +581,129 @@ class BlockManager {
     newBlock: BlockManager.Block
   ): Promise<BlockManager.HandleBlockResult> {
     this.checkLastBlockExist();
-
-    const cachedBlock = this.blocksByNumber[newBlock.number];
-    if (cachedBlock && cachedBlock.hash === newBlock.hash) {
-      /* newBlock is already stored in cache bail out*/
-      logger.debug(
-        `[BlockManager] handleBlock() block already in cache, ignoring... (${getStringBlock(
-          newBlock
-        )})`
-      );
-      return { error: undefined, ok: { logs: [], rollback: undefined } };
-    }
-
-    await this.handleSubscribersInitialize(newBlock); // should probably pass new block here
-
-    if (newBlock.parentHash !== this.lastBlock!.hash) {
-      /* newBlock is not successor of this.lastBlock a reorg has been detected */
-      logger.debug(
-        `[BlockManager] handleBlock() reorg (last: ${getStringBlock(
-          this.lastBlock!
-        )}) (new: ${getStringBlock(newBlock)}) `
-      );
-
-      const { error: reorgError, ok: reorgAncestor } = await this.handleReorg(
-        newBlock
-      );
-
-      if (reorgError) {
-        if (reorgError.reInitialize) {
-          return {
-            error: undefined,
-            ok: {
-              logs: [],
-              rollback: reorgError.reInitialize,
-            },
-          };
-        }
-        return { error: reorgError.error, ok: undefined };
+    return await this.mutex.runExclusive(async () => {
+      const cachedBlock = this.blocksByNumber[newBlock.number];
+      if (cachedBlock && cachedBlock.hash === newBlock.hash) {
+        /* newBlock is already stored in cache bail out*/
+        logger.debug(
+          `[BlockManager] handleBlock() block already in cache, ignoring... (${getStringBlock(
+            newBlock
+          )})`
+        );
+        return { error: undefined, ok: { logs: [], rollback: undefined } };
       }
 
-      const { error: queryLogsError, ok: okQueryLogs } = await this.queryLogs(
-        reorgAncestor,
-        newBlock,
-        0,
-        reorgAncestor!
-      );
+      await this.handleSubscribersInitialize(newBlock); // should probably pass new block here
 
-      if (queryLogsError) {
-        if (queryLogsError.error === "ReInitializeBlockManager") {
+      if (newBlock.parentHash !== this.lastBlock!.hash) {
+        /* newBlock is not successor of this.lastBlock a reorg has been detected */
+        logger.debug(
+          `[BlockManager] handleBlock() reorg (last: ${getStringBlock(
+            this.lastBlock!
+          )}) (new: ${getStringBlock(newBlock)}) `
+        );
+
+        const { error: reorgError, ok: reorgAncestor } = await this.handleReorg(
+          newBlock
+        );
+
+        if (reorgError) {
+          if (reorgError.reInitialize) {
+            return {
+              error: undefined,
+              ok: {
+                logs: [],
+                rollback: reorgError.reInitialize,
+              },
+            };
+          }
+          return { error: reorgError.error, ok: undefined };
+        }
+
+        const { error: queryLogsError, ok: okQueryLogs } = await this.queryLogs(
+          reorgAncestor,
+          newBlock,
+          0,
+          reorgAncestor!
+        );
+
+        if (queryLogsError) {
+          if (queryLogsError.error === "ReInitializeBlockManager") {
+            return {
+              error: undefined,
+              ok: {
+                logs: [],
+                rollback: queryLogsError.reInitialize,
+              },
+            };
+          }
           return {
-            error: undefined,
-            ok: {
-              logs: [],
-              rollback: queryLogsError.reInitialize,
-            },
+            error: queryLogsError.error,
+            ok: undefined,
           };
         }
+
+        const queryLogsAncestor = okQueryLogs.commonAncestor;
+
+        const rollbackToBlock = queryLogsAncestor
+          ? queryLogsAncestor
+          : reorgAncestor;
+
+        this.rollbackSubscribers(rollbackToBlock);
+        await this.applyLogs(okQueryLogs.logs);
+
+        /* do it again as subscriber may have failed to initialize in case of reorg */
+        await this.handleSubscribersInitialize(newBlock);
+
+        await this.handleBlockPostHooks();
         return {
-          error: queryLogsError.error,
-          ok: undefined,
+          error: undefined,
+          ok: {
+            logs: okQueryLogs.logs,
+            rollback: rollbackToBlock,
+          },
+        };
+      } else {
+        logger.debug(
+          `[BlockManager] handleBlock() normal (${getStringBlock(newBlock)})`
+        );
+        const { error: queryLogsError, ok: okQueryLogs } = await this.queryLogs(
+          this.lastBlock!,
+          newBlock,
+          0
+        );
+
+        if (queryLogsError) {
+          if (queryLogsError.error === "ReInitializeBlockManager") {
+            return {
+              error: undefined,
+              ok: {
+                logs: [],
+                rollback: queryLogsError.reInitialize,
+              },
+            };
+          }
+          return { error: queryLogsError.error, ok: undefined };
+        }
+
+        if (okQueryLogs.commonAncestor) {
+          this.rollbackSubscribers(okQueryLogs.commonAncestor);
+        }
+        await this.applyLogs(okQueryLogs.logs);
+
+        /* do it again as subscriber may have failed to initialize in case of reorg */
+        await this.handleSubscribersInitialize(newBlock);
+
+        await this.handleBlockPostHooks();
+        return {
+          error: undefined,
+          ok: {
+            logs: okQueryLogs.logs,
+            rollback: okQueryLogs.commonAncestor,
+          },
         };
       }
-
-      const queryLogsAncestor = okQueryLogs.commonAncestor;
-
-      const rollbackToBlock = queryLogsAncestor
-        ? queryLogsAncestor
-        : reorgAncestor;
-
-      this.rollbackSubscribers(rollbackToBlock);
-      await this.applyLogs(okQueryLogs.logs);
-
-      /* do it again as subscriber may have failed to initialize in case of reorg */
-      await this.handleSubscribersInitialize(newBlock);
-
-      await this.handleBlockPostHooks();
-      return {
-        error: undefined,
-        ok: {
-          logs: okQueryLogs.logs,
-          rollback: rollbackToBlock,
-        },
-      };
-    } else {
-      logger.debug(
-        `[BlockManager] handleBlock() normal (${getStringBlock(newBlock)})`
-      );
-      const { error: queryLogsError, ok: okQueryLogs } = await this.queryLogs(
-        this.lastBlock!,
-        newBlock,
-        0
-      );
-
-      if (queryLogsError) {
-        if (queryLogsError.error === "ReInitializeBlockManager") {
-          return {
-            error: undefined,
-            ok: {
-              logs: [],
-              rollback: queryLogsError.reInitialize,
-            },
-          };
-        }
-        return { error: queryLogsError.error, ok: undefined };
-      }
-
-      if (okQueryLogs.commonAncestor) {
-        this.rollbackSubscribers(okQueryLogs.commonAncestor);
-      }
-      await this.applyLogs(okQueryLogs.logs);
-
-      /* do it again as subscriber may have failed to initialize in case of reorg */
-      await this.handleSubscribersInitialize(newBlock);
-
-      await this.handleBlockPostHooks();
-      return {
-        error: undefined,
-        ok: {
-          logs: okQueryLogs.logs,
-          rollback: okQueryLogs.commonAncestor,
-        },
-      };
-    }
+    });
   }
 }
 
