@@ -49,7 +49,6 @@ describe("Failing offer integration tests", () => {
     cleaner = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Cleaner);
     cleanerMangrove = await Mangrove.connect({
       signer: cleaner.signer,
-      providerUrl: this.server.url,
     });
 
     accounts = [deployer, maker, cleaner];
