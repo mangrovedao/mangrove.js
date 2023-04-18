@@ -21,7 +21,6 @@
     "test": "yarn run test:unit && yarn run test:integration",
     "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/integration-tests.json --exit",
     "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/unit-tests.json --exit",
-    "test:tracker": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/tracker-tests.json --exit",
     "test:coverage": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/coverage-tests.json --exit ",
     "typechain": "ts-node --transpileOnly src/util/runTypechain.ts",
     "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts",
