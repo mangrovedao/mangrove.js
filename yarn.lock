@@ -5283,10 +5283,8 @@ __metadata:
   resolution: "mangrove-monorepo@workspace:."
   dependencies:
     "@mangrovedao/mangrove-core": 1.4.6-2
-    "@types/ws": ^8.5.4
     husky: ^7.0.2
     pinst: ^3.0.0
-    ws: ^8.13.0
   languageName: unknown
   linkType: soft
 

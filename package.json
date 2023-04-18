@@ -16,13 +16,11 @@
         "test": "yarn workspaces foreach --topological-dev run test"
     },
     "devDependencies": {
-        "@types/ws": "^8.5.4",
         "husky": "^7.0.2"
     },
     "dependencies": {
         "@mangrovedao/mangrove-core": "1.4.6-2",
-        "pinst": "^3.0.0",
-        "ws": "^8.13.0"
+        "pinst": "^3.0.0"
     },
     "packageManager": "yarn@3.1.0"
 }
