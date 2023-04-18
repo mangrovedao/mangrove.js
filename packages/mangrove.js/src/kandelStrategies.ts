@@ -6,6 +6,7 @@ import Market from "./market";
 import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandel/kandelPriceCalculation";
+import KandelConfiguration from "./kandel/kandelConfiguration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -21,6 +22,9 @@ class KandelStrategies {
   /** The Mangrove to interact with. */
   public mgv: Mangrove;
 
+  /** The recommended configuration values to use for Kandel. */
+  public configuration: KandelConfiguration;
+
   /** Constructor
    * @param mgv The Mangrove to interact with.
    */
@@ -28,6 +32,7 @@ class KandelStrategies {
     this.mgv = mgv;
     this.seeder = new KandelSeeder(mgv);
     this.farm = new KandelFarm(mgv);
+    this.configuration = new KandelConfiguration();
   }
 
   /** Creates a KandelInstance object to interact with a Kandel strategy on Mangrove.

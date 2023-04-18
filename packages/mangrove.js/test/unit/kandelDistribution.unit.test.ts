@@ -11,9 +11,9 @@ describe("KandelDistribution unit tests suite", () => {
   describe(
     KandelDistribution.prototype.calculateConstantGivesPerOffer.name,
     () => {
-      it("can calculate constant outbound", () => {
-        // Arrange
-        const sut = new KandelDistribution(
+      let sut: KandelDistribution;
+      beforeEach(() => {
+        sut = new KandelDistribution(
           Big(1),
           5,
           [
@@ -26,7 +26,9 @@ describe("KandelDistribution unit tests suite", () => {
           4,
           6
         );
+      });
 
+      it("can calculate constant outbound", () => {
         // Act
         const { askGives, bidGives } = sut.calculateConstantGivesPerOffer(
           Big(3),
@@ -36,6 +38,15 @@ describe("KandelDistribution unit tests suite", () => {
         // Assert
         assert.equal(askGives.toNumber(), 1);
         assert.equal(bidGives?.toNumber(), 1000);
+      });
+
+      it("can work without any available", () => {
+        // Act
+        const { askGives, bidGives } = sut.calculateConstantGivesPerOffer();
+
+        // Assert
+        assert.equal(askGives, undefined);
+        assert.equal(bidGives, undefined);
       });
     }
   );

@@ -13,6 +13,7 @@ import {
 import KandelInstance from "./kandelInstance";
 import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
+import KandelConfiguration from "./kandelConfiguration";
 
 /** The parameters for sowing the Kandel instance.
  * @param onAave Whether to create an AaveKandel which supplies liquidity on Aave to earn yield, or a standard Kandel.
@@ -32,6 +33,7 @@ export type KandelSeed = {
 /** Seeder for creating Kandel instances on-chain. */
 class KandelSeeder {
   mgv: Mangrove;
+  configuration: KandelConfiguration = new KandelConfiguration();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
   aaveKandelSeeder: typechain.AaveKandelSeeder;
@@ -181,6 +183,30 @@ class KandelSeeder {
       gasprice,
       gasreq,
     });
+  }
+
+  /** Determines the minimum recommended volume for an offer of the given type to avoid density issues.
+   * @param params The parameters.
+   * @param params.market The market the Kandel is deployed to.
+   * @param params.offerType The type of offer.
+   * @param params.onAave Whether the Kandel is an AaveKandel.
+   * @returns The minimum recommended volume.
+   */
+  public async getMinimumVolume(params: {
+    market: Market;
+    offerType: Market.BA;
+    onAave: boolean;
+  }) {
+    const config = this.configuration.getConfig(params.market);
+    const gasreq = await this.getDefaultGasreq(params.onAave);
+
+    return (
+      await params.market.getSemibook(params.offerType).getMinimumVolume(gasreq)
+    ).mul(
+      params.offerType == "asks"
+        ? config.minimumBasePerOfferFactor
+        : config.minimumQuotePerOfferFactor
+    );
   }
 }
 

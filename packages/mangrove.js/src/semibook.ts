@@ -309,7 +309,7 @@ class Semibook implements Iterable<Market.Offer> {
       "boundary" in params
         ? params.boundary
         : buying
-        ? Big(2).pow(256).minus(1)
+        ? Big(ethers.constants.MaxUint256.toString())
         : 0;
     const initialWants = Big(buying ? params.given : boundary);
     const initialGives = Big(buying ? boundary : params.given);
@@ -917,6 +917,15 @@ class Semibook implements Iterable<Market.Offer> {
       best: Semibook.rawIdToId(local.best),
       last: Semibook.rawIdToId(local.last),
     };
+  }
+
+  /** Determines the minimum volume required to stay above density limit for the given gasreq.
+   * @param gasreq The gas requirement for the offer.
+   * @returns The minimum volume required to stay above density limit.
+   */
+  public async getMinimumVolume(gasreq: number) {
+    const config = await this.getConfig();
+    return config.density.mul(gasreq + config.offer_gasbase);
   }
 
   static rawIdToId(rawId: BigNumber): number | undefined {
