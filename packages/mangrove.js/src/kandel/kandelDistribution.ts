@@ -161,8 +161,8 @@ class KandelDistribution {
 
   /** Verifies the distribution is valid.
    * @remarks Throws if the distribution is invalid.
-   * @remarks The verification checks that indices are ascending and bids come before asks.
-   * @remarks The price distribution is not verified.
+   * The verification checks that indices are ascending and bids come before asks.
+   * The price distribution is not verified.
    */
   public verifyDistribution() {
     if (this.offers.length == 0) {

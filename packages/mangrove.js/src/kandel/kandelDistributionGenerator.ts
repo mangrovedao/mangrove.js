@@ -100,7 +100,7 @@ class KandelDistributionGenerator {
    * @param params.availableQuote The available quote to consume. If not provided, then the base for asks is also used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote amounts.
    * @remarks The required volume can be slightly less than available due to rounding due to token decimals.
-   * @remarks Note that the resulting offered base volume for each offer should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market - and similar for quote.
+   * Note that the resulting offered base volume for each offer should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market - and similar for quote.
    */
   public recalculateDistributionFromAvailable(params: {
     distribution: KandelDistribution;
