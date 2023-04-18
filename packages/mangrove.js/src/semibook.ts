@@ -919,6 +919,15 @@ class Semibook implements Iterable<Market.Offer> {
     };
   }
 
+  /** Determines the minimum volume required to stay above density limit for the given gasreq.
+   * @param gasreq The gas requirement for the offer.
+   * @returns The minimum volume required to stay above density limit.
+   */
+  public async getMinimumVolume(gasreq: number) {
+    const config = await this.getConfig();
+    return config.density.mul(gasreq + config.offer_gasbase);
+  }
+
   static rawIdToId(rawId: BigNumber): number | undefined {
     const id = rawId.toNumber();
     return id === 0 ? undefined : id;

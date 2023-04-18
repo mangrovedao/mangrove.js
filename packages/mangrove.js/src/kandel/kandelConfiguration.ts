@@ -16,15 +16,15 @@ export type NetworkConfiguration = {
 
 /** Configuration for a specific market.
  * @param aaveEnabled Whether AaveKandel should be allowed to be used.
- * @param minimumBasePerOffer The minimum amount of base token that should be offered per offer to stay above density requirements.
- * @param minimumQuotePerOffer The minimum amount of quote token that should be offered per offer to stay above density requirements.
+ * @param minimumBasePerOfferFactor Additional factor for the minimum amount of base token that should be offered per offer to stay above density requirements.
+ * @param minimumQuotePerOfferFactor Additional factor for the minimum amount of quote token that should be offered per offer to stay above density requirements.
  * @param spread The default spread used when transporting funds from an offer to its dual.
  * @param ratio The default ratio of the geometric progression of prices.
  */
 export type MarketConfiguration = {
   aaveEnabled: boolean;
-  minimumBasePerOffer: Big;
-  minimumQuotePerOffer: Big;
+  minimumBasePerOfferFactor: Big;
+  minimumQuotePerOfferFactor: Big;
   spread: number;
   ratio: Big;
 };
@@ -71,11 +71,11 @@ class KandelConfiguration {
         config.aaveEnabled !== undefined && config.aaveEnabled !== null
           ? Boolean(config.aaveEnabled)
           : undefined,
-      minimumBasePerOffer: config.minimumBasePerOffer
-        ? new Big(config.minimumBasePerOffer)
+      minimumBasePerOfferFactor: config.minimumBasePerOfferFactor
+        ? new Big(config.minimumBasePerOfferFactor)
         : undefined,
-      minimumQuotePerOffer: config.minimumQuotePerOffer
-        ? new Big(config.minimumQuotePerOffer)
+      minimumQuotePerOfferFactor: config.minimumQuotePerOfferFactor
+        ? new Big(config.minimumQuotePerOfferFactor)
         : undefined,
       spread: config.spread ? Number(config.spread) : undefined,
       ratio: config.ratio ? new Big(config.ratio) : undefined,
@@ -110,12 +110,12 @@ class KandelConfiguration {
         config.aaveEnabled !== undefined && config.aaveEnabled !== null
           ? config.aaveEnabled
           : thrower(`aaveEnabled is not configured`),
-      minimumBasePerOffer:
-        config.minimumBasePerOffer ??
-        thrower(`minimumBasePerOffer is not configured`),
-      minimumQuotePerOffer:
-        config.minimumQuotePerOffer ??
-        thrower(`minimumQuotePerOffer is not configured`),
+      minimumBasePerOfferFactor:
+        config.minimumBasePerOfferFactor ??
+        thrower(`minimumBasePerOfferFactor is not configured`),
+      minimumQuotePerOfferFactor:
+        config.minimumQuotePerOfferFactor ??
+        thrower(`minimumQuotePerOfferFactor is not configured`),
       spread: config.spread ?? thrower(`spread is not configured`),
       ratio: config.ratio ?? thrower(`ratio is not configured`),
     };

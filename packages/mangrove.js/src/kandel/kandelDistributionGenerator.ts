@@ -26,8 +26,8 @@ class KandelDistributionGenerator {
    * @param params.midPrice The mid-price used to determine when to switch from bids to asks.
    * @param params.constantBase Whether the base amount should be constant for all offers.
    * @param params.constantQuote Whether the quote amount should be constant for all offers.
-   * @param params.minimumBasePerOffer The minimum amount of base to give for each offer. Should be at least minimumBasePerOffer from KandelConfiguration for the market.
-   * @param params.minimumQuotePerOffer The minimum amount of quote to give for each offer. Should be at least minimumQuotePerOffer from KandelConfiguration for the market.
+   * @param params.minimumBasePerOffer The minimum amount of base to give for each offer. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
+   * @param params.minimumQuotePerOffer The minimum amount of quote to give for each offer. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
    * @returns The distribution of bids and asks and their base and quote amounts.
    * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
    */
@@ -66,8 +66,8 @@ class KandelDistributionGenerator {
    * @param params The parameters for the geometric distribution.
    * @param params.priceParams The parameters for the geometric price distribution.
    * @param params.midPrice The mid-price used to determine when to switch from bids to asks.
-   * @param params.initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOffer from KandelConfiguration for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
-   * @param params.initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOffer from KandelConfiguration for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
+   * @param params.initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
+   * @param params.initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote amounts.
    * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
    */
@@ -100,7 +100,7 @@ class KandelDistributionGenerator {
    * @param params.availableQuote The available quote to consume. If not provided, then the base for asks is also used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote amounts.
    * @remarks The required volume can be slightly less than available due to rounding due to token decimals.
-   * @remarks Note that the resulting offered volume for each offer should be at least minimumBasePerOffer and minimumQuotePerOffer from KandelConfiguration for the market.
+   * @remarks Note that the resulting offered base volume for each offer should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market - and similar for quote.
    */
   public recalculateDistributionFromAvailable(params: {
     distribution: KandelDistribution;

@@ -20,28 +20,28 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
           markets: {
             TokenA: {
               TokenB: {
-                minimumBasePerOffer: 2,
-                minimumQuotePerOffer: "3",
+                minimumBasePerOfferFactor: 2,
+                minimumQuotePerOfferFactor: "3",
                 ratio: 1.001,
                 aaveEnabled: true,
               },
               FailingConfig0: {
                 aaveEnabled: null,
-                minimumBasePerOffer: 1,
-                minimumQuotePerOffer: 1,
+                minimumBasePerOfferFactor: 1,
+                minimumQuotePerOfferFactor: 1,
                 spread: null,
                 ratio: null,
               },
               FailingConfig1: {},
-              FailingConfig2: { minimumBasePerOffer: 1 },
+              FailingConfig2: { minimumBasePerOfferFactor: 1 },
               FailingConfig3: {
-                minimumBasePerOffer: 1,
-                minimumQuotePerOffer: 1,
+                minimumBasePerOfferFactor: 1,
+                minimumQuotePerOfferFactor: 1,
                 spread: null,
               },
               FailingConfig4: {
-                minimumBasePerOffer: 1,
-                minimumQuotePerOffer: 1,
+                minimumBasePerOfferFactor: 1,
+                minimumQuotePerOfferFactor: 1,
                 ratio: null,
               },
             },
@@ -110,14 +110,14 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       assert.equal(config.aaveEnabled, true);
       assert.equal(config.maxOffersInRetractChunk, 50);
       assert.equal(config.gaspriceFactor, 10);
-      assert.equal(config.minimumBasePerOffer.toNumber(), 2);
-      assert.equal(config.minimumQuotePerOffer.toNumber(), 3);
+      assert.equal(config.minimumBasePerOfferFactor.toNumber(), 2);
+      assert.equal(config.minimumQuotePerOfferFactor.toNumber(), 3);
     });
 
     [
       "aaveEnabled is not configured for pair TokenA/FailingConfig0 on network configTest.",
-      "minimumBasePerOffer is not configured for pair TokenA/FailingConfig1 on network configTest.",
-      "minimumQuotePerOffer is not configured for pair TokenA/FailingConfig2 on network configTest.",
+      "minimumBasePerOfferFactor is not configured for pair TokenA/FailingConfig1 on network configTest.",
+      "minimumQuotePerOfferFactor is not configured for pair TokenA/FailingConfig2 on network configTest.",
       "spread is not configured for pair TokenA/FailingConfig3 on network configTest.",
       "ratio is not configured for pair TokenA/FailingConfig4 on network configTest.",
     ].forEach((message, index) => {
@@ -180,7 +180,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "FailingConfig0"
       );
       assert.equal(config.spread, null);
-      assert.equal(config.minimumBasePerOffer, 1);
+      assert.equal(config.minimumBasePerOfferFactor, 1);
     });
   });
 });

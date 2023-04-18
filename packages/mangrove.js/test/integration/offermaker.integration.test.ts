@@ -1,10 +1,10 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
 
-import { BigNumber, ethers } from "ethers";
-
 import assert from "assert";
-import { Mangrove, OfferLogic, LiquidityProvider, OfferMaker } from "../../src";
+import { ethers } from "ethers";
+
+import { Mangrove, LiquidityProvider, OfferMaker } from "../../src";
 import { approxEq } from "../util/helpers";
 
 import { Big } from "big.js";

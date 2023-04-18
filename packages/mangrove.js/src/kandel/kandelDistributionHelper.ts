@@ -160,8 +160,8 @@ class KandelDistributionHelper {
    * @param ratio The ratio used when calculating the price distribution.
    * @param prices The price distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
-   * @param initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOffer from KandelConfiguration for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
-   * @param initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOffer from KandelConfiguration for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
+   * @param initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
+   * @param initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote.
    */
   public calculateDistributionFromPrices(

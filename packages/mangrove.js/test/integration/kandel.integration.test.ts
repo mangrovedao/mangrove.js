@@ -3,6 +3,7 @@ import { assert } from "chai";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import {
+  bidsAsks,
   waitForTransaction,
   waitForTransactions,
 } from "../../src/util/test/mgvIntegrationTestUtil";
@@ -175,6 +176,40 @@ describe("Kandel integration tests suite", function () {
           })
         ).toNumber()
       );
+    });
+
+    [true, false].forEach((onAave) => {
+      bidsAsks.forEach((offerType) => {
+        it(`minimumVolume uses config and calculates correct value offerType=${offerType} onAave=${onAave}`, async () => {
+          // Arrange
+          const offerGasreq = await seeder.getDefaultGasreq(onAave);
+          const readerMinVolume = await mgv.readerContract.minVolume(
+            market.base.address,
+            market.quote.address,
+            offerGasreq
+          );
+          const factor =
+            offerType == "asks"
+              ? seeder.configuration.getConfig(market).minimumBasePerOfferFactor
+              : seeder.configuration.getConfig(market)
+                  .minimumQuotePerOfferFactor;
+          const expectedVolume = factor.mul(
+            (offerType == "asks" ? market.base : market.quote).fromUnits(
+              readerMinVolume
+            )
+          );
+
+          // Act
+          const minVolume = await seeder.getMinimumVolume({
+            market,
+            offerType,
+            onAave,
+          });
+
+          // Assert
+          assert.equal(minVolume.toNumber(), expectedVolume.toNumber());
+        });
+      });
     });
   });
 

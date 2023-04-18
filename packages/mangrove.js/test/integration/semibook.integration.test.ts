@@ -1,12 +1,13 @@
 // Integration tests for Semibook.ts
 import { describe, beforeEach, afterEach, it } from "mocha";
 import { expect } from "chai";
+import assert from "assert";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 import { newOffer, toWei } from "../util/helpers";
 
-import { Mangrove } from "../../src";
+import { Mangrove, OfferMaker, Semibook } from "../../src";
 
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
@@ -923,6 +924,34 @@ describe("Semibook integration tests suite", function () {
           expect(semibook.size()).to.equal(3);
         });
       });
+    });
+  });
+
+  describe(Semibook.prototype.getMinimumVolume.name, () => {
+    it("gets minimum volume", async () => {
+      // Arrange
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const semibook = market.getSemibook("asks");
+
+      // Should be same as what reader calculates
+      const makerAddress = await OfferMaker.deploy(mgv, 30000);
+      const logic = mgv.offerLogic(makerAddress);
+      const offerGasreq = await logic.offerGasreq();
+
+      const readerMinVolume = await mgv.readerContract.minVolume(
+        market.base.address,
+        market.quote.address,
+        offerGasreq
+      );
+
+      // Act
+      const minVolume = await semibook.getMinimumVolume(offerGasreq);
+
+      // Assert
+      assert.equal(
+        readerMinVolume.toString(),
+        market.base.toUnits(minVolume).toString()
+      );
     });
   });
 

@@ -19,7 +19,7 @@ import KandelConfiguration from "./kandelConfiguration";
 /**
  * @notice Parameters for a Kandel instance.
  * @param gasprice The gas price used when provisioning offers.
- * @param gasreq The gas required to execute a trade. The default gasreq is taken into account for the default minimumBasePerOffer and minimumQuotePerOffer in KandelConfiguration. A higher gasreq will require higher gives per offer to avoid density errors.
+ * @param gasreq The gas required to execute a trade.
  * @param ratio The ratio of the geometric progression of prices.
  * @param compoundRateBase The rate at which the base token is compounded.
  * @param compoundRateQuote The rate at which the quote token is compounded.

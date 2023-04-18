@@ -13,24 +13,33 @@
       "aaveEnabled": true,
       "markets": {
         "WETH": {
-          "USDC": { "minimumBasePerOffer": 1, "minimumQuotePerOffer": 1 }
+          "USDC": {
+            "minimumBasePerOfferFactor": 10,
+            "minimumQuotePerOfferFactor": 10
+          }
         },
         "USDC": {
           "USDT": {
-            "minimumBasePerOffer": 1,
-            "minimumQuotePerOffer": 1,
+            "minimumBasePerOfferFactor": 10,
+            "minimumQuotePerOfferFactor": 10,
             "ratio": 1.001
           }
         },
         "WMATIC": {
-          "WETH": { "minimumBasePerOffer": 1, "minimumQuotePerOffer": 1 }
+          "WETH": {
+            "minimumBasePerOfferFactor": 10,
+            "minimumQuotePerOfferFactor": 10
+          }
         }
       }
     },
     "local": {
       "markets": {
         "TokenA": {
-          "TokenB": { "minimumBasePerOffer": 1, "minimumQuotePerOffer": 1 }
+          "TokenB": {
+            "minimumBasePerOfferFactor": 10,
+            "minimumQuotePerOfferFactor": 10
+          }
         }
       }
     }
