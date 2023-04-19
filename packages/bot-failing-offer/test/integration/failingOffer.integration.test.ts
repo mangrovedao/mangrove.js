@@ -25,6 +25,7 @@ let deployerMangrove: Mangrove;
 let makerMangrove: Mangrove;
 let cleanerMangrove: Mangrove;
 let mgvAdmin: Mangrove;
+
 let makerMarket: Market;
 let cleanerMarket: Market;
 
@@ -139,13 +140,14 @@ describe("Failing offer integration tests", () => {
 
   afterEach(async function () {
     mgvTestUtil.stopPollOfTransactionTracking();
-    makerMangrove.disconnect();
+
     cleanerMarket.disconnect();
-    cleanerMangrove.disconnect();
-    makerMangrove.disconnect();
     makerMarket.disconnect();
-    mgvAdmin.disconnect();
+
     deployerMangrove.disconnect();
+    makerMangrove.disconnect();
+    mgvAdmin.disconnect();
+    cleanerMangrove.disconnect();
 
     const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
     mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);

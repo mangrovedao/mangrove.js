@@ -80,6 +80,8 @@ class ReliableHttpProvider extends ReliableProvider {
   stop(): void {
     logger.debug("[ReliableHttpProvider] stop");
     this.shouldStop = true;
+    clearTimeout(this.timeoutId);
+    this.timeoutId = undefined;
   }
 }
 
