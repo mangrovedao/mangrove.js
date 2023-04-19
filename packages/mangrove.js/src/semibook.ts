@@ -154,27 +154,22 @@ class Semibook
     eventListener: Semibook.EventListener,
     options: Semibook.Options
   ): Promise<Semibook> {
-    if (market.mgv.mangroveEventSubscriber) {
-      let semibook = market.mgv.mangroveEventSubscriber.getSemiBook(
-        market,
-        ba,
-        options
+    let semibook = market.mgv.mangroveEventSubscriber!.getSemiBook(
+      market,
+      ba,
+      options
+    );
+
+    if (!semibook) {
+      canConstructSemibook = true;
+      semibook = new Semibook(market, ba, eventListener, options);
+      logger.debug(
+        `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`
       );
-
-      if (!semibook) {
-        canConstructSemibook = true;
-        semibook = new Semibook(market, ba, eventListener, options);
-        logger.debug(
-          `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`
-        );
-        await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
-        canConstructSemibook = false;
-      }
-      return semibook;
+      await market.mgv.mangroveEventSubscriber!.subscribeToSemibook(semibook);
+      canConstructSemibook = false;
     }
-
-    // canConstructSemibook = false;
-    return new Semibook(market, ba, eventListener, options);
+    return semibook;
   }
 
   /** Stop listening to events from mangrove */
