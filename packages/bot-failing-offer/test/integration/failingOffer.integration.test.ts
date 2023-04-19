@@ -114,12 +114,13 @@ describe("Failing offer integration tests", () => {
 
     // Act
     const tx = await failingOffer.postFailingOffer();
-
     await mgvTestUtil.waitForBlock(makerMarket, tx!.event.blockNumber);
     // Assert
     assert.equal(1, makerMarket.getSemibook("asks").size());
 
     await cleanerMarket.quote.approveMangrove(10000000); // approve mangrove to use x amount for quote token
+
+    await mgvTestUtil.waitForBlock(cleanerMarket, tx!.event.blockNumber);
     const offer = [...cleanerMarket.getBook().asks][0];
     const buyPromises = await cleanerMarket.buy(
       {
@@ -129,7 +130,7 @@ describe("Failing offer integration tests", () => {
       { gasLimit: 6500000 }
     );
     const result = await buyPromises.result;
-    await mgvTestUtil.waitForBlock(makerMarket, result.txReceipt.blockNumber);
+    await mgvTestUtil.waitForBlock(cleanerMarket, result.txReceipt.blockNumber);
 
     // Assert
     assert.equal(0, cleanerMarket.getSemibook("asks").size());
