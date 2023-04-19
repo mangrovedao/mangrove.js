@@ -136,9 +136,14 @@ describe("Failing offer integration tests", () => {
     // Assert
     assert.equal(0, cleanerMarket.getSemibook("asks").size());
     assert.equal(result !== undefined && result.summary.bounty.gt(0), true);
+
+    console.log("done");
   });
 
   afterEach(async function () {
+    const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
+    mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);
+
     mgvTestUtil.stopPollOfTransactionTracking();
 
     cleanerMarket.disconnect();
@@ -148,8 +153,5 @@ describe("Failing offer integration tests", () => {
     makerMangrove.disconnect();
     mgvAdmin.disconnect();
     cleanerMangrove.disconnect();
-
-    const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
-    mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);
   });
 });
