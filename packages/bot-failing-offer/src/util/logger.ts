@@ -36,8 +36,7 @@ const consoleLogFormat = format.printf(
   }
 );
 
-// const logLevel = config.get<string>("logLevel");
-const logLevel = "debug";
+const logLevel = config.get<string>("logLevel");
 export const logger: CommonLogger = createLogger(consoleLogFormat, logLevel);
 
 export default logger;
