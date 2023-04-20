@@ -10,15 +10,13 @@ import {
   StateLogSubscriber,
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish } from "./types";
-import logger, { enableLogging } from "./util/logger";
+import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
-
-enableLogging();
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Semibook {
