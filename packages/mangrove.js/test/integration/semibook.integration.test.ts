@@ -18,7 +18,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
   return `<Big>${this.toString()}`; // previously just Big.prototype.toString;
 };
 
-describe.only("Semibook integration tests suite", function () {
+describe("Semibook integration tests suite", function () {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
 
