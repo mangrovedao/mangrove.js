@@ -1,4 +1,4 @@
-import { Listener, Log } from "@ethersproject/providers";
+import { Log } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
 import clone from "just-clone";
@@ -139,7 +139,6 @@ class Semibook
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
   #offer_gasbase: number;
 
-  #blockEventCallback: Listener;
   #eventListener: Semibook.EventListener;
 
   tradeManagement: Trade = new Trade();
@@ -171,11 +170,6 @@ class Semibook
       canConstructSemibook = false;
     }
     return semibook;
-  }
-
-  /** Stop listening to events from mangrove */
-  disconnect(): void {
-    this.market.mgv.provider.off("block", this.#blockEventCallback);
   }
 
   public copy(state: Semibook.State): Semibook.State {

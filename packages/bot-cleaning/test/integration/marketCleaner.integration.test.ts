@@ -74,7 +74,6 @@ describe("MarketCleaner integration tests", () => {
 
   afterEach(async function () {
     mgvTestUtil.stopPollOfTransactionTracking();
-    market.disconnect();
     mgv.disconnect();
     mgvConfig.disconnect();
     mgvAdmin.disconnect();

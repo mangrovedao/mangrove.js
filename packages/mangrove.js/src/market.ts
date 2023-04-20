@@ -266,12 +266,6 @@ class Market {
     return market;
   }
 
-  /* Stop listening to events from mangrove */
-  disconnect(): void {
-    this.#asksSemibook.disconnect();
-    this.#bidsSemibook.disconnect();
-  }
-
   /**
    * Initialize a new `params.base`:`params.quote` market.
    *

@@ -1,7 +1,7 @@
 /**
  * Integration tests of FaillingOffer.ts.
  */
-import { afterEach, before, beforeEach, describe, it } from "mocha";
+import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { Mangrove, Market, mgvTestUtil } from "@mangrovedao/mangrove.js";
 
@@ -145,9 +145,6 @@ describe("Failing offer integration tests", () => {
     mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);
 
     mgvTestUtil.stopPollOfTransactionTracking();
-
-    cleanerMarket.disconnect();
-    makerMarket.disconnect();
 
     deployerMangrove.disconnect();
     makerMangrove.disconnect();
