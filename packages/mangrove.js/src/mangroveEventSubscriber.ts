@@ -123,7 +123,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
    */
   public async initialize(
     wantedBlock: BlockManager.BlockWithoutParentHash
-  ): Promise<LogSubscriber.InitialzeErrorOrBlock> {
+  ): Promise<LogSubscriber.InitializeErrorOrBlock> {
     this.initializedAt = undefined;
     this.lastSeenEventBlock = undefined;
 
