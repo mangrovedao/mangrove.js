@@ -70,6 +70,11 @@ class KandelSeeder {
   public async sow(seed: KandelSeed, overrides: ethers.Overrides = {}) {
     const gasprice = await this.getBufferedGasprice(seed);
 
+    if (seed.liquiditySharing && !seed.onAave) {
+      throw Error(
+        "Liquidity sharing is only supported for AaveKandel instances."
+      );
+    }
     const rawSeed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
       base: seed.market.base.address,
       quote: seed.market.quote.address,
@@ -190,22 +195,28 @@ class KandelSeeder {
    * @param params.market The market the Kandel is deployed to.
    * @param params.offerType The type of offer.
    * @param params.onAave Whether the Kandel is an AaveKandel.
+   * @param params.factor The factor to multiply the minimum volume by. Defaults to minimumBasePerOfferFactory / minimumQuotePerOfferFactor from KandelConfiguration.
+   * @param params.gasreq The gasreq to use. Defaults to the default gasreq for the Kandel type.
    * @returns The minimum recommended volume.
    */
   public async getMinimumVolume(params: {
     market: Market;
     offerType: Market.BA;
     onAave: boolean;
+    factor?: number;
+    gasreq?: number;
   }) {
     const config = this.configuration.getConfig(params.market);
-    const gasreq = await this.getDefaultGasreq(params.onAave);
+    const gasreq =
+      params.gasreq ?? (await this.getDefaultGasreq(params.onAave));
 
     return (
       await params.market.getSemibook(params.offerType).getMinimumVolume(gasreq)
     ).mul(
-      params.offerType == "asks"
-        ? config.minimumBasePerOfferFactor
-        : config.minimumQuotePerOfferFactor
+      params.factor ??
+        (params.offerType == "asks"
+          ? config.minimumBasePerOfferFactor
+          : config.minimumQuotePerOfferFactor)
     );
   }
 }

@@ -1,6 +1,6 @@
 // Load the RPC_URL and PRIVATE_KEY from .env file into process.env
 // This script assumes RPC_URL points to your access point and PRIVATE_KEY contains private key from which one wishes to post offers
-var parsed = require("dotenv").config();
+require("dotenv").config();
 // Import the Mangrove API
 const { Mangrove, ethers } = require("@mangrovedao/mangrove.js");
 

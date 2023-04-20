@@ -91,6 +91,13 @@ describe("Kandel integration tests suite", function () {
             seed,
             distribution
           );
+          if (!onAave && liquiditySharing) {
+            assert.isRejected(
+              seeder.sow(seed),
+              "Liquidity sharing is only supported for AaveKandel instances"
+            );
+            return;
+          }
           const { kandelPromise } = await seeder.sow(seed);
           const kandel = await kandelPromise;
 
@@ -1246,6 +1253,67 @@ describe("Kandel integration tests suite", function () {
             quoteBalance.add(1000).toNumber(),
             (await kandel.market.quote.balanceOf(recipient)).toNumber()
           );
+        });
+
+        it("calculateMinimumDistribution can be deployed with a factor of 1", async () => {
+          // Arrange
+          const distribution = kandel.generator.calculateMinimumDistribution({
+            priceParams: {
+              minPrice: 900,
+              ratio: 1.08,
+              maxPrice: 1100,
+            },
+            midPrice: 1000,
+            minimumBasePerOffer: await kandelStrategies.seeder.getMinimumVolume(
+              { market: kandel.market, offerType: "asks", onAave, factor: 1 }
+            ),
+            minimumQuotePerOffer:
+              await kandelStrategies.seeder.getMinimumVolume({
+                market: kandel.market,
+                offerType: "bids",
+                onAave,
+                factor: 1,
+              }),
+          });
+
+          // Act/assert
+          await waitForTransactions(kandel.populate({ distribution }));
+        });
+
+        [{ factor: 0.5 }, { gasreq: 1 }].forEach(({ factor, gasreq }) => {
+          it(`calculateMinimumDistribution cannot be deployed with factor=${factor} or gasreq=${gasreq}`, async () => {
+            // Arrange
+            const distribution = kandel.generator.calculateMinimumDistribution({
+              priceParams: {
+                minPrice: 900,
+                ratio: 1.08,
+                maxPrice: 1100,
+              },
+              midPrice: 1000,
+              minimumBasePerOffer:
+                await kandelStrategies.seeder.getMinimumVolume({
+                  market: kandel.market,
+                  offerType: "asks",
+                  onAave,
+                  factor,
+                  gasreq,
+                }),
+              minimumQuotePerOffer:
+                await kandelStrategies.seeder.getMinimumVolume({
+                  market: kandel.market,
+                  offerType: "bids",
+                  onAave,
+                  factor,
+                  gasreq,
+                }),
+            });
+
+            // Act/assert
+            assert.isRejected(
+              kandel.populate({ distribution }),
+              "mgv/writeOffer/density/tooLow"
+            );
+          });
         });
 
         [true, false].forEach((fullApprove) =>
