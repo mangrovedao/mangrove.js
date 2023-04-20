@@ -121,7 +121,7 @@ describe("Failing offer integration tests", () => {
 
     await cleanerMarket.quote.approveMangrove(10000000); // approve mangrove to use x amount for quote token
 
-    await mgvTestUtil.waitForBlock(cleanerMarket, tx!.event.blockNumber);
+    await mgvTestUtil.waitForBlock(cleanerMarket.mgv, tx!.event.blockNumber);
     const offer = [...cleanerMarket.getBook().asks][0];
     const buyPromises = await cleanerMarket.buy(
       {
