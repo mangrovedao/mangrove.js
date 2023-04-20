@@ -345,16 +345,12 @@ export async function waitForBooksForLastTx(market?: Market) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function waitForBlock(market: Market, blockNumber: number) {
-  let block = await market.mgv.reliableProvider.blockManager.getBlock(
-    blockNumber
-  );
+export async function waitForBlock(mgv: Mangrove, blockNumber: number) {
+  let block = await mgv.reliableProvider.blockManager.getBlock(blockNumber);
 
   while (!block || block.number !== blockNumber) {
     await sleep(200);
-    block = await market.mgv.reliableProvider.blockManager.getBlock(
-      blockNumber
-    );
+    block = await mgv.reliableProvider.blockManager.getBlock(blockNumber);
   }
 }
 
@@ -460,7 +456,7 @@ export const postNewOffer = async ({
   gasreq = 5e4,
   shouldFail = false,
   shouldRevert = false,
-}: NewOffer): Promise<void> => {
+}: NewOffer) => {
   const { inboundToken, outboundToken } = getTokens(market, ba);
 
   // we start by making sure that Mangrove is approved (for infinite fund withdrawal)
@@ -486,7 +482,7 @@ export const postNewOffer = async ({
     maker.connectedContracts.testMaker.shouldRevert(shouldRevert)
   );
 
-  await waitForTransaction(
+  return await waitForTransaction(
     maker.connectedContracts.testMaker[
       "newOffer(address,address,uint256,uint256,uint256,uint256)"
     ](outboundToken.address, inboundToken.address, wants, gives, gasreq, 1)
@@ -497,8 +493,8 @@ export const postNewRevertingOffer = async (
   market: Market,
   ba: Market.BA,
   maker: Account
-): Promise<void> => {
-  await postNewOffer({
+) => {
+  return await postNewOffer({
     market,
     ba,
     maker,
@@ -512,16 +508,16 @@ export const postNewSucceedingOffer = async (
   market: Market,
   ba: Market.BA,
   maker: Account
-): Promise<void> => {
-  await postNewOffer({ market, ba, maker });
+) => {
+  return await postNewOffer({ market, ba, maker });
 };
 
 export const postNewFailingOffer = async (
   market: Market,
   ba: Market.BA,
   maker: Account
-): Promise<void> => {
-  await postNewOffer({ market, ba, maker, shouldFail: true });
+) => {
+  return await postNewOffer({ market, ba, maker, shouldFail: true });
 };
 
 export const setMgvGasPrice = async (

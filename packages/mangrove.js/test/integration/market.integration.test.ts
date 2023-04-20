@@ -16,6 +16,7 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { MgvReader } from "../../src/types/typechain/MgvReader";
 import { Deferred } from "../../src/util";
+import { TransactionReceipt } from "@ethersproject/providers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -336,9 +337,9 @@ describe("Market integration tests suite", () => {
       await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1200", }));
       // some asks
       await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1400", gives: "1", }));
-      await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1600", gives: "1", }));
+      const tx = await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1600", gives: "1", }));
 
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
       // Act/assert
       assert.equal(await market.getPivotId("bids", 900), 1, "bid offer id 1 has price 1000 which is higher than 900");
@@ -714,7 +715,6 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
-      // NOTE: As we are using mgvTestUtil.waitForBooksForLastTx we need to
       // disregard a few SetGasbase-events
       if (evt.type !== "SetGasbase") queue.put(evt);
     };
@@ -724,10 +724,11 @@ describe("Market integration tests suite", () => {
     const maker = await mgvTestUtil.getAccount(
       mgvTestUtil.AccountName.Deployer
     );
-    await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
+    const tx = await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+
     const events = [await queue.get()];
     expect(events).to.have.lengthOf(1);
 
@@ -848,7 +849,7 @@ describe("Market integration tests suite", () => {
       wants: 100,
       gives: 1000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
@@ -856,7 +857,7 @@ describe("Market integration tests suite", () => {
       gives: 2000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
     // estimated gas limit is too low, so we set it explicitly
     const sellPromises = await market.sell(
@@ -885,7 +886,7 @@ describe("Market integration tests suite", () => {
       wants: 1,
       gives: 1000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -894,7 +895,7 @@ describe("Market integration tests suite", () => {
     });
 
     // get not-best offer
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const asks = [...market.getBook().asks];
     const notBest = asks[1].id;
 
@@ -929,7 +930,7 @@ describe("Market integration tests suite", () => {
       wants: 100,
       gives: 1000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
@@ -938,7 +939,7 @@ describe("Market integration tests suite", () => {
     });
 
     // get not-best offer
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const bids = [...market.getBook().bids];
     const notBest = bids[1].id;
 
@@ -983,7 +984,7 @@ describe("Market integration tests suite", () => {
       wants: 1,
       gives: 2000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -991,7 +992,7 @@ describe("Market integration tests suite", () => {
       gives: 3000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const asks = [...market.getBook().asks];
 
     // use wants/gives from offer to verify unit conversion
@@ -1044,7 +1045,7 @@ describe("Market integration tests suite", () => {
       wants: 100,
       gives: 2000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
@@ -1052,7 +1053,7 @@ describe("Market integration tests suite", () => {
       gives: 3000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const bids = [...market.getBook().bids];
 
     // use wants/gives from offer to verify unit conversion
@@ -1100,7 +1101,7 @@ describe("Market integration tests suite", () => {
         gives: 1000000,
         shouldFail: true,
       });
-      await mgvTestUtil.postNewOffer({
+      const tx = await mgvTestUtil.postNewOffer({
         market,
         ba: "asks",
         maker,
@@ -1109,7 +1110,7 @@ describe("Market integration tests suite", () => {
         shouldFail: true,
       });
 
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
       const asks = [...market.getBook().asks];
 
       const snipePromises = await market.snipe({
@@ -1149,7 +1150,7 @@ describe("Market integration tests suite", () => {
       expect(result.summary.feePaid.toNumber()).to.be.equal(0);
 
       // Verify book gets updated to reflect offers have failed and are removed
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
       const asksAfter = [...market.getBook().asks];
 
       expect(asksAfter).to.have.lengthOf(0);
@@ -1163,7 +1164,7 @@ describe("Market integration tests suite", () => {
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -1171,7 +1172,7 @@ describe("Market integration tests suite", () => {
       gives: 1000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const ask = [...market.getBook().asks][0];
 
     // Act
@@ -1223,7 +1224,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
     // Note: shouldFail is for the entire maker and not per order
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -1232,7 +1233,7 @@ describe("Market integration tests suite", () => {
       shouldFail: true,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const asks = [...market.getBook().asks];
 
     const raw = await market.getRawSnipeParams({
@@ -1471,13 +1472,14 @@ describe("Market integration tests suite", () => {
       { id: 1, wants: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
     ];
 
+    let lastTx: TransactionReceipt | undefined = undefined;
     for (const ask of asks) {
-      await waitForTransaction(
+      lastTx = await waitForTransaction(
         helpers.newOffer(mgv, market.base, market.quote, ask)
       );
     }
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, lastTx!.blockNumber);
     const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate.add(askGasReq).toNumber()
