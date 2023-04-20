@@ -923,7 +923,7 @@ class Semibook
     let chunk: Market.Offer[];
     const result: Market.Offer[] = [];
     do {
-      const res = await this.market.mgv.readerWrappedContract.offerList(
+      const res = await this.market.mgv.reader.offerList(
         outbound_tkn.address,
         inbound_tkn.address,
         this.#idToRawId(fromId),

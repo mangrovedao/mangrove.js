@@ -1,13 +1,15 @@
 import { BigNumber, BigNumberish, CallOverrides } from "ethers";
 import { BlockManager } from "@mangrovedao/reliable-event-subscriber";
-import { Multicall2 } from "../../types/typechain";
+import { Multicall2 } from "./types/typechain/Multicall2";
 import {
   OfferDetailUnpackedStructOutput,
   OfferUnpackedStructOutput,
-} from "../../types/typechain/Mangrove";
-import { typechain } from "../../types";
-import { Result } from "../types";
-namespace ReaderMultiWrapper {
+} from "./types/typechain/Mangrove";
+import { typechain } from "./types";
+import { Result } from "./util/types";
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+namespace Reader {
   export type OfferListResult = [
     BigNumber,
     BigNumber[],
@@ -21,7 +23,7 @@ namespace ReaderMultiWrapper {
   }>;
 }
 
-class ReaderMultiWrapper {
+class Reader {
   constructor(
     private readerContract: typechain.MgvReader,
     private multicallContract: typechain.Multicall2
@@ -33,7 +35,7 @@ class ReaderMultiWrapper {
     fromId: BigNumberish,
     maxOffers: BigNumberish,
     overrides?: CallOverrides
-  ): Promise<ReaderMultiWrapper.OfferListWrappedResult> {
+  ): Promise<Reader.OfferListWrappedResult> {
     const calls: Multicall2.CallStruct[] = [
       {
         target: this.readerContract.address,
@@ -53,7 +55,7 @@ class ReaderMultiWrapper {
       const decodedResult = this.readerContract.interface.decodeFunctionResult(
         "offerList",
         result.returnData[0].returnData
-      ) as ReaderMultiWrapper.OfferListResult;
+      ) as Reader.OfferListResult;
 
       return {
         error: undefined,
@@ -74,4 +76,4 @@ class ReaderMultiWrapper {
   }
 }
 
-export default ReaderMultiWrapper;
+export default Reader;
