@@ -2,7 +2,10 @@ import { Log, Provider } from "@ethersproject/providers";
 import { Contract } from "ethers";
 import Market from "./market";
 import Semibook from "./semibook";
-import { BlockManager, LogSubscriber } from "@mangrovedao/tracker.js";
+import {
+  BlockManager,
+  LogSubscriber,
+} from "@mangrovedao/reliable-event-subscriber";
 import logger from "./util/logger";
 
 const BookSubscriptionEventsSet = new Set([

@@ -8,7 +8,7 @@ import {
   BlockManager,
   LogSubscriber,
   StateLogSubscriber,
-} from "@mangrovedao/tracker.js";
+} from "@mangrovedao/reliable-event-subscriber";
 import { Bigish } from "./types";
 import logger, { enableLogging } from "./util/logger";
 import Trade from "./util/trade";
@@ -154,7 +154,10 @@ class Semibook
     eventListener: Semibook.EventListener,
     options: Semibook.Options
   ): Promise<Semibook> {
-    let semibook = market.mgv.mangroveEventSubscriber!.getSemiBook(
+    if (!market.mgv.mangroveEventSubscriber) {
+      throw new Error("Missing mangroveEventSubscriber");
+    }
+    let semibook = market.mgv.mangroveEventSubscriber.getSemiBook(
       market,
       ba,
       options
@@ -166,7 +169,7 @@ class Semibook
       logger.debug(
         `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`
       );
-      await market.mgv.mangroveEventSubscriber!.subscribeToSemibook(semibook);
+      await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
       canConstructSemibook = false;
     }
     return semibook;

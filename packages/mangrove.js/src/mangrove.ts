@@ -34,7 +34,7 @@ import {
   ReliableProvider,
   ReliableHttpProvider,
   ReliableWebsocketProvider,
-} from "@mangrovedao/tracker.js";
+} from "@mangrovedao/reliable-event-subscriber";
 import { blockManagerOptionsByNetworkName } from "./constants/blockManagerOptions";
 import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";

@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish, CallOverrides } from "ethers";
-import { BlockManager } from "@mangrovedao/tracker.js";
+import { BlockManager } from "@mangrovedao/reliable-event-subscriber";
 import { Multicall2 } from "../../types/typechain";
 import {
   OfferDetailUnpackedStructOutput,
