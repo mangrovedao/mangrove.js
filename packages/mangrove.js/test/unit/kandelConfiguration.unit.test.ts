@@ -74,9 +74,9 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         const markets = sut.getConfiguredMarketsForNetwork("maticmum");
         // Assert
         assert.deepStrictEqual(markets, [
+          { base: "WETH", quote: "DAI" },
           { base: "WETH", quote: "USDC" },
-          { base: "USDC", quote: "USDT" },
-          { base: "WMATIC", quote: "WETH" },
+          { base: "DAI", quote: "USDC" },
         ]);
       });
 

@@ -13,23 +13,38 @@
       "aaveEnabled": true,
       "markets": {
         "WETH": {
+          "DAI": {
+            "minimumBasePerOfferFactor": 5,
+            "minimumQuotePerOfferFactor": 5
+          },
           "USDC": {
-            "minimumBasePerOfferFactor": 10,
-            "minimumQuotePerOfferFactor": 10
-          }
-        },
-        "USDC": {
-          "USDT": {
             "minimumBasePerOfferFactor": 10,
             "minimumQuotePerOfferFactor": 10,
             "ratio": 1.001
           }
         },
-        "WMATIC": {
-          "WETH": {
+        "DAI": {
+          "USDC": {
             "minimumBasePerOfferFactor": 10,
             "minimumQuotePerOfferFactor": 10
           }
+        }
+      }
+    },
+    "matic": {
+      "maxOffersInPopulateChunk": 80,
+      "maxOffersInRetractChunk": 80,
+      "minimumBasePerOfferFactor": 10,
+      "minimumQuotePerOfferFactor": 10,
+      "markets": {
+        "WETH": {
+          "USDC": {}
+        },
+        "USDC": {
+          "USDT": {}
+        },
+        "WMATIC": {
+          "WETH": {}
         }
       }
     },
