@@ -98,9 +98,11 @@ describe("Semibook integration tests suite", function () {
 
     it("returns `undefined` if price is better than best offer", async function () {
       // Put one offer on asks
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
@@ -114,9 +116,11 @@ describe("Semibook integration tests suite", function () {
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
       );
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
@@ -132,9 +136,11 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
       );
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
       );
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
@@ -269,9 +275,10 @@ describe("Semibook integration tests suite", function () {
       const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
       const bestInCache = market.getSemibook("asks").getBestInCache();
       expect(bestInCache).to.be.eq(1);
     });
@@ -640,7 +647,7 @@ describe("Semibook integration tests suite", function () {
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
 
-        mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
