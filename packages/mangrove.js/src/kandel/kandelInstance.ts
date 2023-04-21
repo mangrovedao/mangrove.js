@@ -21,8 +21,6 @@ import KandelConfiguration from "./kandelConfiguration";
  * @param gasprice The gas price used when provisioning offers.
  * @param gasreq The gas required to execute a trade.
  * @param ratio The ratio of the geometric progression of prices.
- * @param compoundRateBase The rate at which the base token is compounded.
- * @param compoundRateQuote The rate at which the quote token is compounded.
  * @param spread The spread used when transporting funds from an offer to its dual.
  * @param pricePoints The number of price points.
  */
@@ -30,8 +28,6 @@ export type KandelParameters = {
   gasprice: number;
   gasreq: number;
   ratio: Big;
-  compoundRateBase: Big;
-  compoundRateQuote: Big;
   spread: number;
   pricePoints: number;
 };
@@ -45,8 +41,6 @@ export type KandelParameterOverrides = {
   gasprice?: number;
   gasreq?: number;
   ratio?: Bigish;
-  compoundRateBase?: Bigish;
-  compoundRateQuote?: Bigish;
   spread?: number;
   pricePoints?: number;
 };
@@ -190,14 +184,6 @@ class KandelInstance {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
       ratio: UnitCalculations.fromUnits(params.ratio, this.precision),
-      compoundRateBase: UnitCalculations.fromUnits(
-        params.compoundRateBase,
-        this.precision
-      ),
-      compoundRateQuote: UnitCalculations.fromUnits(
-        params.compoundRateQuote,
-        this.precision
-      ),
       spread: params.spread,
       pricePoints: params.pricePoints,
     };
@@ -212,14 +198,8 @@ class KandelInstance {
       gasprice: parameters.gasprice,
       gasreq: parameters.gasreq,
       ratio: UnitCalculations.toUnits(parameters.ratio, this.precision),
-      compoundRateBase: UnitCalculations.toUnits(
-        parameters.compoundRateBase,
-        this.precision
-      ),
-      compoundRateQuote: UnitCalculations.toUnits(
-        parameters.compoundRateQuote,
-        this.precision
-      ),
+      compoundRateBase: UnitCalculations.toUnits(1, this.precision),
+      compoundRateQuote: UnitCalculations.toUnits(1, this.precision),
       spread: parameters.spread,
       pricePoints: parameters.pricePoints,
     };
@@ -249,12 +229,6 @@ class KandelInstance {
         );
       }
       current.ratio = Big(parameters.ratio ?? distributionRatio);
-    }
-    if (parameters.compoundRateBase) {
-      current.compoundRateBase = Big(parameters.compoundRateBase);
-    }
-    if (parameters.compoundRateQuote) {
-      current.compoundRateQuote = Big(parameters.compoundRateQuote);
     }
     if (parameters.gasprice) {
       current.gasprice = parameters.gasprice;
@@ -669,26 +643,6 @@ class KandelInstance {
     }
 
     return txs;
-  }
-
-  /** Sets the compound rates for the Kandel instance.
-   * @param params The compound rates.
-   * @param params.compoundRateBase The compound rate for the base token. As a percentage of the spread that is to be compounded for base.
-   * @param params.compoundRateQuote The compound rate for the quote token. As a percentage of the spread that is to be compounded for quote.
-   * @param overrides The ethers overrides to use when calling the setCompoundRates function.
-   */
-  public async setCompoundRates(
-    params: {
-      compoundRateBase: Bigish;
-      compoundRateQuote: Bigish;
-    },
-    overrides: ethers.Overrides = {}
-  ) {
-    return await this.kandel.setCompoundRates(
-      UnitCalculations.toUnits(params.compoundRateBase, this.precision),
-      UnitCalculations.toUnits(params.compoundRateQuote, this.precision),
-      overrides
-    );
   }
 
   /** Determines the internal amounts to withdraw - defaults to everything (type(uint).max) if value not provided.

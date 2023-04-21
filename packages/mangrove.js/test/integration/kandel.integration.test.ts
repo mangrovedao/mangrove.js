@@ -104,12 +104,18 @@ describe("Kandel integration tests suite", function () {
           // Assert
           const params = await kandel.getParameters();
           assert.equal(
-            params.compoundRateBase.toNumber(),
+            UnitCalculations.fromUnits(
+              (await kandel.kandel.params()).compoundRateBase,
+              kandel.precision
+            ).toNumber(),
             1,
             "compound rate should be set during seed"
           );
           assert.equal(
-            params.compoundRateQuote.toNumber(),
+            UnitCalculations.fromUnits(
+              (await kandel.kandel.params()).compoundRateQuote,
+              kandel.precision
+            ).toNumber(),
             1,
             "compound rate should be set during seed"
           );
@@ -374,7 +380,6 @@ describe("Kandel integration tests suite", function () {
         kandel.populate({
           distribution,
           parameters: {
-            compoundRateBase: Big(0.5),
             spread: 1,
           },
           depositBaseAmount: params.deposit ? requiredBase : Big(0),
@@ -396,23 +401,6 @@ describe("Kandel integration tests suite", function () {
     describe("router-agnostic", async function () {
       beforeEach(async function () {
         kandel = await createKandel(false);
-      });
-
-      it("setCompoundRates sets rates", async function () {
-        // Act
-        await waitForTransaction(
-          kandel.setCompoundRates({
-            compoundRateBase: Big(0.5),
-            compoundRateQuote: Big(0.7),
-          })
-        );
-
-        // Assert
-        const { compoundRateBase, compoundRateQuote } =
-          await kandel.getParameters();
-
-        assert(compoundRateBase.toString(), "0.5");
-        assert(compoundRateQuote.toString(), "0.7");
       });
 
       it("getPivots returns pivots for current market", async function () {
@@ -480,7 +468,6 @@ describe("Kandel integration tests suite", function () {
             await kandel.populate({
               distribution,
               parameters: {
-                compoundRateBase: Big(0.5),
                 spread: 1,
               },
               depositBaseAmount: requiredBase,
@@ -496,14 +483,20 @@ describe("Kandel integration tests suite", function () {
           const params = await kandel.getParameters();
 
           assert.equal(
-            params.compoundRateQuote.toNumber(),
+            UnitCalculations.fromUnits(
+              (await kandel.kandel.params()).compoundRateQuote,
+              kandel.precision
+            ).toNumber(),
             1,
             "compoundRateQuote should have been left unchanged"
           );
           assert.equal(
-            params.compoundRateBase.toNumber(),
-            0.5,
-            "compoundRateBase should have been updated"
+            UnitCalculations.fromUnits(
+              (await kandel.kandel.params()).compoundRateBase,
+              kandel.precision
+            ).toNumber(),
+            1,
+            "compoundRateBase should have been left unchanged"
           );
           assert.equal(
             params.pricePoints,
@@ -1007,8 +1000,6 @@ describe("Kandel integration tests suite", function () {
           kandel.populate({
             distribution,
             parameters: {
-              compoundRateBase: 0.5,
-              compoundRateQuote: 0.75,
               ratio,
               spread: 1,
               pricePoints: distribution.pricePoints,
@@ -1018,10 +1009,6 @@ describe("Kandel integration tests suite", function () {
           })
         );
 
-        await kandel.setCompoundRates({
-          compoundRateBase: 1,
-          compoundRateQuote: 1,
-        });
         await kandel.offerLogic.fundOnMangrove(1);
 
         await waitForTransactions(
