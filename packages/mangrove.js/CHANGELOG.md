@@ -1,3 +1,7 @@
+# 1.2.4-5 (april 2023)
+
+- updated Kandel configuration for mumbai
+
 # 1.2.4-4 (april 2023)
 
 - added recommended configuration retrieval for the Kandel strategy
