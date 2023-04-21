@@ -1,3 +1,7 @@
+# 1.2.4-6 (april 2023)
+
+- removed ability to control compounding for Kandel - always full compounding.
+
 # 1.2.4-5 (april 2023)
 
 - updated Kandel configuration for mumbai
