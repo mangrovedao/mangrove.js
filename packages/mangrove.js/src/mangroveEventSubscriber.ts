@@ -76,18 +76,9 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     );
     const block = this.blockManager.getLastBlock();
 
-    const { error, ok } = await semibook.initialize(block);
+    const error = await semibook.initialize(block);
     if (error) {
-      logger.debug(
-        `[MangroveEventSubscriber] subscribeToSemibook error ${error}`
-      );
-      throw new Error(error);
-    }
-
-    if (ok.hash !== block.hash) {
-      logger.debug(
-        `[MangroveEventSubscriber] found reorg ${ok.hash}, ${block.hash}`
-      );
+      logger.debug(`[MangroveEventSubscriber] found error initialization`);
       /* detected reorg during initialization */
       return new Promise((resolve, reject) => {
         /* retry when next block is handled */
@@ -135,9 +126,8 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
       };
 
       this.lastSeenEventBlock = block;
-      return { error: undefined, ok: this.initializedAt };
     } catch {
-      return { error: "FailedInitialize", ok: undefined };
+      return "FailedInitialize";
     }
   }
 

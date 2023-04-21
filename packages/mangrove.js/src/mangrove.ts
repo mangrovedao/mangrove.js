@@ -39,7 +39,6 @@ import { blockManagerOptionsByNetworkName } from "./constants/blockManagerOption
 import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
 import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
-import Reader from "./reader";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -108,7 +107,6 @@ class Mangrove {
   address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
-  reader: Reader;
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
@@ -292,8 +290,6 @@ class Mangrove {
       readerAddress,
       this.signer
     );
-
-    this.reader = new Reader(this.readerContract, this.multicallContract);
 
     const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
     this.cleanerContract = typechain.MgvCleaner__factory.connect(

@@ -14,6 +14,10 @@ import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
+import {
+  OfferDetailUnpackedStructOutput,
+  OfferUnpackedStructOutput,
+} from "./types/typechain/Mangrove";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -107,10 +111,7 @@ namespace Semibook {
   };
 
   export type FetchOfferListResult = Result<
-    {
-      block: BlockManager.BlockWithoutParentHash;
-      offers: Market.Offer[];
-    },
+    Market.Offer[],
     LogSubscriber.Error
   >;
 }
@@ -192,12 +193,12 @@ class Semibook
       throw new Error(result.error); // this is done to not break legacy code
     }
 
-    return result.ok.offers;
+    return result.ok;
   }
 
   /** Returns struct containing offer details in the current offer list */
   async offerInfo(offerId: number): Promise<Market.Offer> {
-    const { state } = this.getLatestState();
+    const state = this.getLatestState();
     const cachedOffer = state.offerCache.get(offerId);
     if (cachedOffer !== undefined) {
       return cachedOffer;
@@ -269,19 +270,19 @@ class Semibook
 
   /** Returns the number of offers in the cache. */
   size(): number {
-    const { state } = this.getLatestState();
+    const state = this.getLatestState();
     return state.offerCache.size;
   }
 
   /** Returns the id of the best offer in the cache */
   getBestInCache(): number | undefined {
-    const { state } = this.getLatestState();
+    const state = this.getLatestState();
     return state.bestInCache;
   }
 
   /** Returns an iterator over the offers in the cache. */
   [Symbol.iterator](): Semibook.CacheIterator {
-    const { state } = this.getLatestState();
+    const state = this.getLatestState();
 
     return new CacheIterator(state.offerCache, state.bestInCache);
   }
@@ -301,9 +302,11 @@ class Semibook
     // We ignore the gasreq comparison because we may not
     // know the gasreq (could be picked by offer contract)
     const priceAsBig = Big(price);
-    const stateAndBlock = this.getLatestState();
+    const state = this.getLatestState();
     const result = await this.#foldLeftUntil(
-      stateAndBlock,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.lastSeenEventBlock!,
+      state,
       {
         pivotFound: false,
         pivotId: undefined as number,
@@ -388,9 +391,11 @@ class Semibook
       totalGave: Big(0),
     };
 
-    const stateAndBlock = this.getLatestState();
+    const state = this.getLatestState();
     const res = await this.#foldLeftUntil(
-      stateAndBlock,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.lastSeenEventBlock!,
+      state,
       initialAccumulator,
       (acc) => {
         return !(!acc.stop && (fillWants ? acc.wants.gt(0) : acc.gives.gt(0)));
@@ -459,9 +464,11 @@ class Semibook
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const countOfferForMaxGasPredicate = (_o: Market.Offer) => true;
 
-    const stateAndBlock = this.getLatestState();
+    const state = this.getLatestState();
     const result = await this.#foldLeftUntil(
-      stateAndBlock,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.lastSeenEventBlock!,
+      state,
       { maxGasReq: undefined as number },
       () => {
         return false;
@@ -486,7 +493,8 @@ class Semibook
   // If cache is insufficient, fetch more offers in batches until `stopCondition` is met.
   // All fetched offers are inserted in the cache if there is room.
   async #foldLeftUntil<T>(
-    stateAndBlock: StateLogSubscriber.StateAndBlock<Semibook.State>,
+    block: BlockManager.BlockWithoutParentHash,
+    state: Semibook.State,
     accumulator: T, // NB: Must work with cloning by `Object.assign`
     stopCondition: (acc: T) => boolean,
     op: (offer: Market.Offer, acc: T) => T
@@ -503,8 +511,6 @@ class Semibook
     if (stopCondition(accumulator)) {
       return accumulator;
     }
-
-    const { block, state } = stateAndBlock;
 
     // Are we certain to be at the end of the book?
     const isCacheCertainlyComplete =
@@ -614,7 +620,7 @@ class Semibook
       return { error: result.error, ok: undefined };
     }
 
-    const { offers } = result.ok;
+    const offers = result.ok;
 
     if (offers.length > 0) {
       const state: Semibook.State = {
@@ -629,10 +635,7 @@ class Semibook
 
       return {
         error: undefined,
-        ok: {
-          block,
-          state,
-        },
+        ok: state,
       };
     }
 
@@ -644,10 +647,7 @@ class Semibook
 
     return {
       error: undefined,
-      ok: {
-        block,
-        state,
-      },
+      ok: state,
     };
   }
 
@@ -923,61 +923,50 @@ class Semibook
     let chunk: Market.Offer[];
     const result: Market.Offer[] = [];
     do {
-      const res = await this.market.mgv.reader.offerList(
-        outbound_tkn.address,
-        inbound_tkn.address,
-        this.#idToRawId(fromId),
-        chunkSize,
-        { blockTag: block.number }
-      );
+      try {
+        const res: [
+          BigNumber,
+          BigNumber[],
+          OfferUnpackedStructOutput[],
+          OfferDetailUnpackedStructOutput[]
+        ] = await this.market.mgv.readerContract.offerList(
+          outbound_tkn.address,
+          inbound_tkn.address,
+          this.#idToRawId(fromId),
+          chunkSize,
+          { blockTag: block.number }
+        );
+        const [_nextId, offerIds, offers, details] = res;
 
-      if (res.error) {
+        chunk = offerIds.map((offerId, index) => {
+          const offer = offers[index];
+          const detail = details[index];
+          return {
+            next: Semibook.rawIdToId(offer.next),
+            offer_gasbase: detail.offer_gasbase.toNumber(),
+            ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
+              this.market,
+              this.ba,
+              {
+                id: offerId,
+                ...offer,
+                ...detail,
+              }
+            ),
+          };
+        });
+
+        result.push(...chunk);
+
+        fromId = Semibook.rawIdToId(_nextId);
+      } catch (e) {
         return { error: "FailedInitialize", ok: undefined };
       }
-
-      if (Mangrove.devNode.isDevNode()) {
-        /**
-         * I think that there is a bug in anvil resulting in multicallv2 returning blockHash as zero address
-         * https://github.com/foundry-rs/foundry/pull/2502
-         */
-        res.ok.block.hash = block.hash;
-      }
-
-      if (res.ok.block.hash !== block.hash) {
-        return { error: "CouldNotInitializeReorged", ok: undefined };
-      }
-
-      const [_nextId, offerIds, offers, details] = res.ok.result;
-
-      chunk = offerIds.map((offerId, index) => {
-        const offer = offers[index];
-        const detail = details[index];
-        return {
-          next: Semibook.rawIdToId(offer.next),
-          offer_gasbase: detail.offer_gasbase.toNumber(),
-          ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
-            this.market,
-            this.ba,
-            {
-              id: offerId,
-              ...offer,
-              ...detail,
-            }
-          ),
-        };
-      });
-
-      result.push(...chunk);
-
-      fromId = Semibook.rawIdToId(_nextId);
     } while (!processChunk(chunk, result) && fromId !== undefined);
 
     return {
       error: undefined,
-      ok: {
-        block,
-        offers: result,
-      },
+      ok: result,
     };
   }
 
