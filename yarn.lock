@@ -1127,7 +1127,7 @@ __metadata:
     ethers: ^5.7.2
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1176,7 +1176,7 @@ __metadata:
     ethers: ^5.7.2
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1225,7 +1225,7 @@ __metadata:
     ethers: ^5.7.2
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1274,7 +1274,7 @@ __metadata:
     ethers: ^5.7.2
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1324,7 +1324,7 @@ __metadata:
     ethers: ^5.7.2
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1375,7 +1375,7 @@ __metadata:
     ethers: ^5.7.2
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1425,7 +1425,7 @@ __metadata:
     ethers: ^5.7.2
     fast-safe-stringify: ^2.1.1
     finalhandler: ^1.2.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     npm-run-all: ^4.1.5
@@ -1460,7 +1460,7 @@ __metadata:
     eslint-config-prettier: ^8.8.0
     fast-safe-stringify: ^2.1.1
     json-truncate: ^3.0.0
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     logform: ^2.5.1
     loglevel: ^1.8.1
     mocha: ^10.2.0
@@ -1515,7 +1515,7 @@ __metadata:
     eslint: ^8.31.0
     eslint-config-prettier: ^8.8.0
     ethers: ^5.7.2
-    lint-staged: ^13.2.0
+    lint-staged: ^13.2.1
     mocha: ^10.2.0
     mocha-multi-reporters: ^1.5.1
     node-cleanup: ^2.1.2
@@ -4984,9 +4984,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^13.2.0":
-  version: 13.2.0
-  resolution: "lint-staged@npm:13.2.0"
+"lint-staged@npm:^13.2.1":
+  version: 13.2.1
+  resolution: "lint-staged@npm:13.2.1"
   dependencies:
     chalk: 5.2.0
     cli-truncate: ^3.1.0
@@ -5003,7 +5003,7 @@ fsevents@~2.3.2:
     yaml: ^2.2.1
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: dcaa8fbbde567eb8ac27230a18b3a22f30c278c524c0e27cf7d4110d662d5d33ed68a585a2e1b05075ef1c262e853f557a5ae046188b723603246d63e6b9f07b
+  checksum: 5788d3fe38e69b7f7b7f700284d4e10738978a0916bc77d3f6253c43a030fc4f01f89c09da349fb658f929f3393d8b1e3eaabaac5b604416ebc33476640b51ce
   languageName: node
   linkType: hard
 
