@@ -22,4 +22,13 @@ export const blockManagerOptionsByNetworkName: Record<
     blockFinality: 100,
     batchSize: 25,
   },
+  maticmum: {
+    maxBlockCached: 300,
+    maxRetryGetBlock: 10,
+    retryDelayGetBlockMs: 500,
+    maxRetryGetLogs: 10,
+    retryDelayGetLogsMs: 500,
+    blockFinality: 100,
+    batchSize: 25,
+  },
 };

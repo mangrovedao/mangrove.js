@@ -189,6 +189,18 @@ class Mangrove {
     if (!options.blockManagerOptions) {
       options.blockManagerOptions =
         blockManagerOptionsByNetworkName[network.name];
+
+      if (!options.blockManagerOptions) {
+        options.blockManagerOptions = {
+          maxBlockCached: 300,
+          maxRetryGetBlock: 10,
+          retryDelayGetBlockMs: 500,
+          maxRetryGetLogs: 10,
+          retryDelayGetLogsMs: 500,
+          blockFinality: 100,
+          batchSize: 200,
+        };
+      }
     }
 
     if (!options.blockManagerOptions) {
@@ -197,26 +209,33 @@ class Mangrove {
 
     if (!options.reliableWebsocketProviderOptions) {
       const _default = reliableWebSocketOptionsByNetworkName[network.name];
-      if (!_default) {
-        throw new Error("Missing reliableWebSocketOptions");
+      if (_default) {
+        options.reliableWebsocketProviderOptions = {
+          wsUrl: options.providerUrl,
+          pingIntervalMs: _default.pingIntervalMs,
+          pingTimeoutMs: _default.pingTimeoutMs,
+        };
+      } else {
+        options.reliableWebsocketProviderOptions = {
+          wsUrl: options.providerUrl,
+          pingIntervalMs: 10000,
+          pingTimeoutMs: 5000,
+        };
       }
-
-      options.reliableWebsocketProviderOptions = {
-        wsUrl: options.providerUrl,
-        pingIntervalMs: _default.pingIntervalMs,
-        pingTimeoutMs: _default.pingTimeoutMs,
-      };
     }
 
     if (!options.reliableHttpProviderOptions) {
       const _default = reliableHttpProviderOptionsByNetworkName[network.name];
-      if (!_default) {
-        throw new Error("Missing reliableHttpOptions");
-      }
 
-      options.reliableHttpProviderOptions = {
-        estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
-      };
+      if (_default) {
+        options.reliableHttpProviderOptions = {
+          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
+        };
+      } else {
+        options.reliableHttpProviderOptions = {
+          estimatedBlockTimeMs: 2000,
+        };
+      }
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({
