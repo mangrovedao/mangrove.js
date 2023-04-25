@@ -318,6 +318,27 @@ export async function waitForTransactions(
 }
 
 /**
+ * Use this to await transactions or return immediately if promise returns undefined. In addition to convenience,
+ * it allows us to track when events for the last tx have been generated.
+ * NB: Only works when this is awaited before sending more tx's.
+ */
+export async function waitForOptionalTransaction(
+  txPromise: PromiseOrValue<ContractTransaction | undefined>
+): Promise<TransactionReceipt | undefined> {
+  awaitedPollId = undefined;
+  lastTxReceipt = undefined;
+  const tx = await txPromise;
+  if (tx === undefined) return undefined;
+  lastTxReceipt = await tx.wait();
+  if (isTrackingPolls) {
+    eventsForLastTxHaveBeenGeneratedDeferred = new Deferred();
+    eventsForLastTxHaveBeenGeneratedPromise =
+      eventsForLastTxHaveBeenGeneratedDeferred.promise;
+  }
+  return lastTxReceipt;
+}
+
+/**
  * Use this to await transactions. In addition to convenience,
  * it allows us to track when events for the last tx have been generated.
  * NB: Only works when this is awaited before sending more tx's.
@@ -325,14 +346,9 @@ export async function waitForTransactions(
 export async function waitForTransaction(
   txPromise: PromiseOrValue<ContractTransaction>
 ): Promise<TransactionReceipt> {
-  awaitedPollId = undefined;
-  lastTxReceipt = undefined;
-  const tx = await txPromise;
-  lastTxReceipt = await tx.wait();
-  if (isTrackingPolls) {
-    eventsForLastTxHaveBeenGeneratedDeferred = new Deferred();
-    eventsForLastTxHaveBeenGeneratedPromise =
-      eventsForLastTxHaveBeenGeneratedDeferred.promise;
+  const lastTxReceipt = await waitForOptionalTransaction(txPromise);
+  if (lastTxReceipt === undefined) {
+    throw Error("Receipt not returned from Tx.");
   }
   return lastTxReceipt;
 }
