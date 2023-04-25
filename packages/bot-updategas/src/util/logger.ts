@@ -18,6 +18,10 @@ const consoleLogFormat = format.printf(
 );
 
 const logLevel = config.get<string>("logLevel");
-export const logger: CommonLogger = createLogger(consoleLogFormat, logLevel);
+export const logger: CommonLogger = createLogger(
+  consoleLogFormat,
+  logLevel,
+  process.env["ENABLE_LOG_COLOR"]
+);
 
 export default logger;

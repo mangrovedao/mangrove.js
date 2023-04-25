@@ -23,7 +23,8 @@ const levels = {
 
 export const createLogger = (
   consoleFormatLogger: Format,
-  logLevel: string
+  logLevel: string,
+  enableColor?: string
 ): CommonLogger => {
   /* Expose winston-style interface to the logger */
   // generate fresh logger
@@ -52,13 +53,23 @@ export const createLogger = (
     var rawMethod = originalFactory(methodName, logLevel, loggerName);
 
     // create formatter with logform
-    const thisFormat = format.combine(
-      colorizer,
-      format.splat(),
-      format.timestamp(),
-      format.errors({ stack: true }),
-      consoleFormatLogger
-    );
+    let thisFormat: Format;
+    if (enableColor) {
+      thisFormat = format.combine(
+        colorizer,
+        format.splat(),
+        format.timestamp(),
+        format.errors({ stack: true }),
+        consoleFormatLogger
+      );
+    } else {
+      thisFormat = format.combine(
+        format.splat(),
+        format.timestamp(),
+        format.errors({ stack: true }),
+        consoleFormatLogger
+      );
+    }
 
     // generate actual logging method
     return function (message, metadata) {
