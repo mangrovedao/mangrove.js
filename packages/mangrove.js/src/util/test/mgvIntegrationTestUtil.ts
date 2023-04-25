@@ -323,9 +323,9 @@ export async function waitForTransactions(
  * it allows us to track when events for the last tx have been generated.
  * NB: Only works when this is awaited before sending more tx's.
  */
-export async function waitForTransaction(
-  txPromise: Promise<ContractTransaction> | ContractTransaction
-): Promise<TransactionReceipt> {
+export async function waitForOptionalTransaction(
+  txPromise: PromiseOrValue<ContractTransaction | undefined>
+): Promise<TransactionReceipt | undefined> {
   awaitedPollId = undefined;
   lastTxReceipt = undefined;
   const tx = await txPromise;

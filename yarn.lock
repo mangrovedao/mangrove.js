@@ -1121,6 +1121,56 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mangrovedao/bot-arbitrage@workspace:packages/bot-arbitrage":
+  version: 0.0.0-use.local
+  resolution: "@mangrovedao/bot-arbitrage@workspace:packages/bot-arbitrage"
+  dependencies:
+    "@espendk/json-file-reporter": ^1.4.2
+    "@ethersproject/experimental": ^5.7.0
+    "@ethersproject/hardware-wallets": ^5.7.0
+    "@mangrovedao/bot-utils": "workspace:*"
+    "@mangrovedao/commonlib.js": "workspace:*"
+    "@mangrovedao/mangrove.js": "workspace:*"
+    "@types/big.js": ^6.1.6
+    "@types/chai": ^4.3.4
+    "@types/chai-as-promised": ^7.1.5
+    "@types/config": ^3.3.0
+    "@types/dotenv-flow": ^3.2.0
+    "@types/finalhandler": ^1.2.0
+    "@types/mocha": ^9.0.0
+    "@types/node": ^18.0.0
+    "@types/serve-static": ^1.15.0
+    "@types/shelljs": ^0.8.11
+    "@typescript-eslint/eslint-plugin": ^5.50.0
+    "@typescript-eslint/parser": ^5.48.1
+    big.js: ^6.2.1
+    chai: ^4.3.7
+    chai-as-promised: ^7.1.1
+    config: ^3.3.8
+    cross-env: ^7.0.3
+    dotenv-flow: ^3.2.0
+    eslint: ^8.31.0
+    eslint-config-prettier: ^8.5.0
+    ethers: ^5.7.2
+    fast-safe-stringify: ^2.1.1
+    finalhandler: ^1.2.0
+    lint-staged: ^13.0.3
+    mkdirp: ^2.1.4
+    mocha: ^10.0.0
+    mocha-multi-reporters: ^1.5.1
+    npm-run-all: ^4.1.5
+    nyc: ^15.1.0
+    prettier: 2.7.1
+    prettier-eslint: ^15.0.1
+    rimraf: ^3.0.2
+    serve-static: ^1.15.0
+    shelljs: ^0.8.5
+    toad-scheduler: ^1.6.1
+    ts-node: ^10.9.1
+    typescript: ^4.7.0
+  languageName: unknown
+  linkType: soft
+
 "@mangrovedao/bot-cleaning@workspace:packages/bot-cleaning":
   version: 0.0.0-use.local
   resolution: "@mangrovedao/bot-cleaning@workspace:packages/bot-cleaning"
@@ -1796,6 +1846,13 @@ __metadata:
   version: 10.0.1
   resolution: "@types/mocha@npm:10.0.1"
   checksum: 224ea9fce7b1734ccdb9aa99a622d902a538ce1847bca7fd22c5fb38adcf3ed536f50f48f587085db988a4bb3c2eb68f4b98e1cd6a38bc5547bd3bbbedc54495
+  languageName: node
+  linkType: hard
+
+"@types/mocha@npm:^9.0.0":
+  version: 9.1.1
+  resolution: "@types/mocha@npm:9.1.1"
+  checksum: 516077c0acd9806dc78317f88aaac0df5aaf0bdc2f63dfdadeabdf0b0137953b6ca65472e6ff7c30bc93ce4e0ae76eae70e8d46764b9a8eae4877a928b6ef49a
   languageName: node
   linkType: hard
 
@@ -2867,7 +2924,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"config@npm:^3.3.9":
+"config@npm:^3.3.8, config@npm:^3.3.9":
   version: 3.3.9
   resolution: "config@npm:3.3.9"
   dependencies:
@@ -3458,7 +3515,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:^8.8.0":
+"eslint-config-prettier@npm:^8.5.0, eslint-config-prettier@npm:^8.8.0":
   version: 8.8.0
   resolution: "eslint-config-prettier@npm:8.8.0"
   peerDependencies:
@@ -5005,7 +5062,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^13.2.0":
+"lint-staged@npm:^13.0.3, lint-staged@npm:^13.2.0":
   version: 13.2.1
   resolution: "lint-staged@npm:13.2.1"
   dependencies:
@@ -5498,6 +5555,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mkdirp@npm:^2.1.4":
+  version: 2.1.6
+  resolution: "mkdirp@npm:2.1.6"
+  bin:
+    mkdirp: dist/cjs/src/bin.js
+  checksum: 8a1d09ffac585e55f41c54f445051f5bc33a7de99b952bb04c576cafdf1a67bb4bae8cb93736f7da6838771fbf75bc630430a3a59e1252047d2278690bd150ee
+  languageName: node
+  linkType: hard
+
 "mocha-multi-reporters@npm:^1.5.1":
   version: 1.5.1
   resolution: "mocha-multi-reporters@npm:1.5.1"
@@ -5510,7 +5576,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mocha@npm:^10.2.0":
+"mocha@npm:^10.0.0, mocha@npm:^10.2.0":
   version: 10.2.0
   resolution: "mocha@npm:10.2.0"
   dependencies:
