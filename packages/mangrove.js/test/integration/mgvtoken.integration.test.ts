@@ -32,7 +32,7 @@ describe("MGV Token integration tests suite", () => {
     mgv.disconnect();
   });
 
-  it("reads allowance amd sets", async function () {
+  it("reads allowance and sets", async function () {
     const usdc = mgv.token("USDC");
     const allowance1 = await usdc.allowance();
     assert.equal(allowance1.toNumber(), 0, "allowance should start at 0");
