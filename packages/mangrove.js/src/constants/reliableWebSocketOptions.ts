@@ -7,4 +7,8 @@ export const reliableWebSocketOptionsByNetworkName = {
     pingIntervalMs: 5000,
     pingTimeoutMs: 1000,
   },
+  maticmum: {
+    pingIntervalMs: 5000,
+    pingTimeoutMs: 1000,
+  },
 };
