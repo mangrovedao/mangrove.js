@@ -727,7 +727,7 @@ describe("Market integration tests suite", () => {
     const tx = await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
-    mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
     const events = [await queue.get()];
     expect(events).to.have.lengthOf(1);
