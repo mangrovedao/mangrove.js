@@ -39,11 +39,7 @@ const consoleLogFormat = format.printf(
 export function logger(config: IConfig): CommonLogger {
   const logLevel = config.get<string>("logLevel");
 
-  return createLogger(
-    consoleLogFormat,
-    logLevel,
-    process.env["ENABLE_LOG_COLOR"]
-  );
+  return createLogger(consoleLogFormat, logLevel, process.env["NO_COLOR"]);
 }
 
 export default logger;

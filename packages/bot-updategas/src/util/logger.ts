@@ -21,7 +21,7 @@ const logLevel = config.get<string>("logLevel");
 export const logger: CommonLogger = createLogger(
   consoleLogFormat,
   logLevel,
-  process.env["ENABLE_LOG_COLOR"]
+  process.env["NO_COLOR"]
 );
 
 export default logger;
