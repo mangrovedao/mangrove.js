@@ -424,15 +424,29 @@ describe("Kandel integration tests suite", function () {
 
         // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
         // prettier-ignore
-        {
-          // some bids with id 1 and 2
-          await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1050", }));
-          await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1100", }));
-          // some asks with id 1 and 2
-          await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1300", gives: "1", }));
-          await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1400", gives: "1", }));
-        }
-        await mgvTestUtil.waitForBooksForLastTx(market);
+        // some bids with id 1 and 2
+        await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1050", }));
+        await waitForTransaction(
+          helpers.newOffer(mgv, market.quote, market.base, {
+            wants: "1",
+            gives: "1100",
+          })
+        );
+        // some asks with id 1 and 2
+        await waitForTransaction(
+          helpers.newOffer(mgv, market.base, market.quote, {
+            wants: "1300",
+            gives: "1",
+          })
+        );
+        const tx = await waitForTransaction(
+          helpers.newOffer(mgv, market.base, market.quote, {
+            wants: "1400",
+            gives: "1",
+          })
+        );
+
+        await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
         const pivots = await kandel.getPivots(distribution);
         assert.sameOrderedMembers(pivots, [1, 2, undefined, undefined, 1, 2]);
@@ -477,7 +491,10 @@ describe("Kandel integration tests suite", function () {
           );
 
           // Assert
-          await mgvTestUtil.waitForBooksForLastTx(market);
+          await mgvTestUtil.waitForBlock(
+            market.mgv,
+            receipts[receipts.length - 1].blockNumber
+          );
 
           // assert parameters are updated
           const params = await kandel.getParameters();
@@ -624,10 +641,15 @@ describe("Kandel integration tests suite", function () {
         });
 
         // Act
-        await waitForTransactions(kandel.populate({ distribution }));
+        const receipts = await waitForTransactions(
+          kandel.populate({ distribution })
+        );
 
         // Assert
-        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
         const statuses = await kandel.getOfferStatuses(1000);
         assert.equal(
           statuses.statuses[0].bids.price.toNumber(),
@@ -886,7 +908,7 @@ describe("Kandel integration tests suite", function () {
       it("getOfferStatuses retrieves status", async function () {
         // Arrange
         await populateKandel({ approve: false, deposit: false });
-        await waitForTransactions(
+        const receipts = await waitForTransactions(
           kandel.retractOffers(
             { startIndex: 0, endIndex: 1 },
             { gasLimit: 1000000 }
@@ -894,7 +916,10 @@ describe("Kandel integration tests suite", function () {
         );
 
         // Act
-        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
         const statuses = await kandel.getOfferStatuses(Big(1170));
 
         // Assert
@@ -912,7 +937,7 @@ describe("Kandel integration tests suite", function () {
       it("getOfferStatuses retrieves status", async function () {
         // Arrange
         await populateKandel({ approve: false, deposit: false });
-        await waitForTransactions(
+        const receipts = await waitForTransactions(
           kandel.retractOffers(
             { startIndex: 0, endIndex: 1 },
             { gasLimit: 1000000 }
@@ -920,7 +945,10 @@ describe("Kandel integration tests suite", function () {
         );
 
         // Act
-        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
         const statuses = await kandel.getOfferStatuses(Big(1170));
 
         // Assert
@@ -938,13 +966,16 @@ describe("Kandel integration tests suite", function () {
       it("createDistributionWithOffers can be used to heal an offer", async function () {
         // Arrange
         await populateKandel({ approve: false, deposit: false });
-        await waitForTransactions(
+        let receipts = await waitForTransactions(
           kandel.retractOffers(
             { startIndex: 0, endIndex: 1 },
             { gasLimit: 1000000 }
           )
         );
-        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
         const statuses = await kandel.getOfferStatuses(Big(1170));
         assert.equal(statuses.statuses[0].bids.live, false);
         assert.equal(statuses.statuses[0].expectedLiveBid, true);
@@ -962,12 +993,15 @@ describe("Kandel integration tests suite", function () {
               },
             ],
           });
-        await waitForTransactions(
+        receipts = await waitForTransactions(
           kandel.populateChunk({ distribution: singleOfferDistribution })
         );
 
         // Assert
-        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
         const statusesPost = await kandel.getOfferStatuses(Big(1170));
         assert.equal(statusesPost.statuses[0].bids.live, true);
         assert.equal(
@@ -1011,7 +1045,7 @@ describe("Kandel integration tests suite", function () {
 
         await kandel.offerLogic.fundOnMangrove(1);
 
-        await waitForTransactions(
+        const receipts = await waitForTransactions(
           kandel.retractOffers(
             { startIndex: 0, endIndex: 1 },
             { gasLimit: 1000000 }
@@ -1019,7 +1053,10 @@ describe("Kandel integration tests suite", function () {
         );
 
         // Act
-        await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
         const statuses = await kandel.getOfferStatuses(1170);
         assert.equal(6, statuses.statuses.length);
 
@@ -1069,7 +1106,7 @@ describe("Kandel integration tests suite", function () {
             await populateKandel({ approve: true, deposit: true });
 
             // Act
-            await waitForTransactions(
+            const receipts = await waitForTransactions(
               await kandel.retractOffers({
                 startIndex: 4,
                 endIndex: 6,
@@ -1078,7 +1115,10 @@ describe("Kandel integration tests suite", function () {
             );
 
             // Assert
-            await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+            await mgvTestUtil.waitForBlock(
+              kandel.market.mgv,
+              receipts[receipts.length - 1].blockNumber
+            );
             const deadOffers = (await kandel.getOffers()).filter(
               (x) => !kandel.market.isLiveOffer(x.offer)
             ).length;
@@ -1194,7 +1234,7 @@ describe("Kandel integration tests suite", function () {
           const withdrawnFunds = Big(0.001);
 
           // Act
-          await waitForTransactions(
+          const receipts = await waitForTransactions(
             await kandel.retractAndWithdraw({
               startIndex: 1,
               endIndex: 3,
@@ -1206,7 +1246,10 @@ describe("Kandel integration tests suite", function () {
           );
 
           // Assert
-          await mgvTestUtil.waitForBooksForLastTx(kandel.market);
+          await mgvTestUtil.waitForBlock(
+            kandel.market.mgv,
+            receipts[receipts.length - 1].blockNumber
+          );
           assert.equal(
             (await kandel.getBalance("asks")).toNumber(),
             kandelBaseBalance.sub(1).toNumber()

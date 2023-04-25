@@ -14,6 +14,7 @@ describe("Can connect to Mangrove on local chain", () => {
       Mangrove.connect({
         provider: this.server.url,
         privateKey: this.accounts.tester.key,
+        providerUrl: this.server.url,
       })
     ).to.eventually.be.fulfilled;
   });

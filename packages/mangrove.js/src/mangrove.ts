@@ -29,6 +29,17 @@ let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
 import UnitCalculations from "./util/unitCalculations";
+import {
+  BlockManager,
+  ReliableProvider,
+  ReliableHttpProvider,
+  ReliableWebsocketProvider,
+} from "@mangrovedao/reliable-event-subscriber";
+import { blockManagerOptionsByNetworkName } from "./constants/blockManagerOptions";
+import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
+import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
+import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
+import MangroveEventSubscriber from "./mangroveEventSubscriber";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
@@ -80,6 +91,12 @@ namespace Mangrove {
     asksConfig: LocalConfig;
     bidsConfig: LocalConfig;
   };
+
+  export type CreateOptions = eth.CreateSignerOptions & {
+    blockManagerOptions?: BlockManager.Options;
+    reliableWebsocketProviderOptions?: ReliableWebsocketProvider.Options;
+    reliableHttpProviderOptions?: ReliableHttpProvider.Options;
+  };
 }
 
 class Mangrove {
@@ -93,6 +110,10 @@ class Mangrove {
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
+  reliableProvider?: ReliableProvider;
+  mangroveEventSubscriber?: MangroveEventSubscriber;
+
+  static devNode: DevNode;
   static typechain = typechain;
   static addresses = addresses;
 
@@ -119,29 +140,97 @@ class Mangrove {
    */
 
   static async connect(
-    options?: eth.CreateSignerOptions | string
+    options?: Mangrove.CreateOptions | string
   ): Promise<Mangrove> {
     if (typeof options === "undefined") {
       options = "http://localhost:8545";
     }
     if (typeof options === "string") {
-      options = { provider: options };
+      options = {
+        provider: options,
+        providerUrl: options,
+      };
+    }
+    if (typeof options.provider === "string") {
+      options.providerUrl = options.provider;
+    }
+    if (options.provider instanceof JsonRpcProvider && !options.providerUrl) {
+      options.providerUrl = options.provider.connection.url; // this is a hack I don't want to spend much time here. Let's discus in PR review
+      /*
+       * the problem is that Provider interface does not provide a way of getting url, as I
+       * implemented our own provider for events, providerUrl becomes mandatory. Should I replace
+       * all Mangrove.connect call with the according new interface ?
+       * Btw, can't we handle the provider ourself ? does the user really needs to specifiy it's own subscriber ?
+       * */
+    }
+
+    if (options.signer instanceof ethers.Wallet && !options.providerUrl) {
+      if (options.signer.provider instanceof JsonRpcProvider) {
+        options.providerUrl = options.signer.provider.connection.url;
+      }
+    }
+
+    if (!options.providerUrl) {
+      throw new Error(
+        "Missing providerUrl and could not extract it from signer and provider"
+      );
     }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
+
     if ("send" in signer.provider) {
-      const devNode = new DevNode(signer.provider);
-      if (await devNode.isDevNode()) {
-        await Mangrove.initAndListenToDevNode(devNode);
+      Mangrove.devNode = new DevNode(signer.provider);
+      if (await Mangrove.devNode.isDevNode()) {
+        await Mangrove.initAndListenToDevNode(Mangrove.devNode);
       }
+    }
+
+    if (!options.blockManagerOptions) {
+      options.blockManagerOptions =
+        blockManagerOptionsByNetworkName[network.name];
+    }
+
+    if (!options.blockManagerOptions) {
+      throw new Error("Missing block manager option");
+    }
+
+    if (!options.reliableWebsocketProviderOptions) {
+      const _default = reliableWebSocketOptionsByNetworkName[network.name];
+      if (!_default) {
+        throw new Error("Missing reliableWebSocketOptions");
+      }
+
+      options.reliableWebsocketProviderOptions = {
+        wsUrl: options.providerUrl,
+        pingIntervalMs: _default.pingIntervalMs,
+        pingTimeoutMs: _default.pingTimeoutMs,
+      };
+    }
+
+    if (!options.reliableHttpProviderOptions) {
+      const _default = reliableHttpProviderOptionsByNetworkName[network.name];
+      if (!_default) {
+        throw new Error("Missing reliableHttpOptions");
+      }
+
+      options.reliableHttpProviderOptions = {
+        estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
+      };
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
       network: network,
       readOnly,
+      providerUrl: options.providerUrl,
+      blockManagerOptions: options.blockManagerOptions,
+      reliableWebSocketProvider: options.reliableWebsocketProviderOptions,
+      reliableHttpProvider: options.reliableHttpProviderOptions,
     });
+
+    await mgv.initializeProvider();
+
     canConstructMangrove = false;
 
     logger.debug("Initialize Mangrove", {
@@ -158,6 +247,9 @@ class Mangrove {
 
   disconnect(): void {
     this.provider.removeAllListeners();
+    if (this.reliableProvider) {
+      this.reliableProvider.stop();
+    }
 
     logger.debug("Disconnect from Mangrove", {
       contextInfo: "mangrove.base",
@@ -169,6 +261,10 @@ class Mangrove {
     signer: Signer;
     network: eth.ProviderNetwork;
     readOnly: boolean;
+    providerUrl?: string;
+    blockManagerOptions: BlockManager.Options;
+    reliableWebSocketProvider: ReliableWebsocketProvider.Options;
+    reliableHttpProvider: ReliableHttpProvider.Options;
   }) {
     if (!canConstructMangrove) {
       throw Error(
@@ -194,6 +290,7 @@ class Mangrove {
       readerAddress,
       this.signer
     );
+
     const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
     this.cleanerContract = typechain.MgvCleaner__factory.connect(
       cleanerAddress,
@@ -208,6 +305,55 @@ class Mangrove {
       orderAddress,
       this.signer
     );
+
+    if (!params.providerUrl) {
+      return;
+    }
+
+    if (params.providerUrl.startsWith("ws")) {
+      this.reliableProvider = new ReliableWebsocketProvider(
+        {
+          ...params.blockManagerOptions,
+          provider: new WebSocketProvider(params.providerUrl),
+        },
+        params.reliableWebSocketProvider
+      );
+    } else {
+      this.reliableProvider = new ReliableHttpProvider(
+        {
+          ...params.blockManagerOptions,
+          provider: new JsonRpcProvider(params.providerUrl),
+        },
+        params.reliableHttpProvider
+      );
+    }
+
+    this.mangroveEventSubscriber = new MangroveEventSubscriber(
+      this.provider,
+      this.contract,
+      this.reliableProvider.blockManager
+    );
+  }
+
+  /**
+   * Initialize reliable provider
+   */
+  private async initializeProvider(): Promise<void> {
+    if (!this.reliableProvider) {
+      return;
+    }
+
+    logger.debug(`Initialize reliable provider`);
+    const block = await this.provider.getBlock("latest");
+
+    await this.reliableProvider.initialize({
+      parentHash: block.parentHash,
+      hash: block.hash,
+      number: block.number,
+    });
+
+    await this.mangroveEventSubscriber.enableSubscriptions();
+    logger.debug(`Initialized reliable provider done`);
   }
   /* Instance */
   /************** */
@@ -229,6 +375,9 @@ class Mangrove {
         bookOptions: params.bookOptions,
       },
     });
+    if (this.reliableProvider && this.reliableProvider.getLatestBlock) {
+      await this.reliableProvider.getLatestBlock(); // trigger a quick update to get latest block on market initialization
+    }
     return await Market.connect({ ...params, mgv: this });
   }
 
