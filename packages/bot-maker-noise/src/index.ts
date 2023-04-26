@@ -6,7 +6,7 @@
 import config from "./util/config";
 import { logger } from "./util/logger";
 
-import Mangrove from "@mangrovedao/mangrove.js";
+import Mangrove, { enableLogging } from "@mangrovedao/mangrove.js";
 
 import { Wallet } from "@ethersproject/wallet";
 
@@ -22,6 +22,8 @@ import {
 } from "@mangrovedao/bot-utils";
 
 type TokenPair = { token1: string; token2: string };
+
+enableLogging();
 
 const setup = new Setup(config);
 const balanceUtils = new BalanceUtils(config);

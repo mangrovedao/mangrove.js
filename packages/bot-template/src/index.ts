@@ -10,7 +10,9 @@ import { logger } from "./util/logger";
 import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
-import Mangrove from "@mangrovedao/mangrove.js";
+import Mangrove, { enableLogging } from "@mangrovedao/mangrove.js";
+
+enableLogging();
 
 const setup = new Setup(config);
 
