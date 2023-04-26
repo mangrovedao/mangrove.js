@@ -1,5 +1,6 @@
 {
   "logLevel": "LOG_LEVEL",
+  "noColor": "NO_COLOR",
   "tokens": {
     "__name": "TOKENS",
     "__format": "json"
