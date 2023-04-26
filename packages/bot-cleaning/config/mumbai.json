@@ -1,5 +1,6 @@
 {
   "logLevel": "info",
+  "noColor": "true",
   "markets": [
     ["WETH", "DAI"],
     ["WETH", "USDC"],

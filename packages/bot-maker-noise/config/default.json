@@ -1,5 +1,6 @@
 {
   "logLevel": "info",
+  "noColor": "true",
   "makerTargetProvision": "0.5",
   "tokens": [
     {

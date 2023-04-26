@@ -1,5 +1,6 @@
 {
   "logLevel": "debug",
+  "noColor": "true",
   "markets": [["WETH", "DAI"]],
   "runEveryXMinutes": 0.5
 }
