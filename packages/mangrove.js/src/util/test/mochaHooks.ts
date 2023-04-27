@@ -4,12 +4,14 @@ import { Mangrove } from "../../";
 import node from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
+import DevNode from "../devNode";
 
 const serverParams = {
   host: "127.0.0.1",
   port: 8545, // use 8545 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
   pipe: false,
   script: "MangroveJsDeploy",
+  deploy: false,
   setMulticallCodeIfAbsent: false, // mangrove.js is supposed to work against servers that only have ToyENS deployed but not Multicall, so we don't deploy Multicall in tests. However mangrove.js needs ToyENS so we let the node ensure it's there.
 };
 
@@ -24,6 +26,15 @@ export const mochaHooks = {
       currentProxyPort = serverParams.port + 1;
     }
     this.server = await node(serverParams).connect();
+
+    for (let i = 0; i < 10; i++) {
+      try {
+        await this.server.deploy();
+        break;
+      } catch (e) {
+        console.log("Failed to deploy, retrying...");
+      }
+    }
     this.accounts = {
       deployer: this.server.accounts[0],
       maker: this.server.accounts[1],
@@ -32,6 +43,16 @@ export const mochaHooks = {
     };
 
     const provider = new ethers.providers.JsonRpcProvider(this.server.url);
+    const devNode = new DevNode(provider);
+    for (let i = 0; i < 10; i++) {
+      try {
+        await devNode.setToyENSCodeIfAbsent();
+        await devNode.setMulticallCodeIfAbsent();
+        break;
+      } catch (e) {
+        console.log("Failed to setCode on anvil, retrying...");
+      }
+    }
 
     const mgv = await Mangrove.connect({
       provider,
