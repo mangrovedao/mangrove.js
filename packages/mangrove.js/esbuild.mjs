@@ -25,10 +25,6 @@ const shimOnResolvePlugin = {
     build.onResolve({ filter: /^\.\/util\/readJsonWallet$/ }, (args) => {
       return { path: getPath(args.resolveDir, "shims/readJsonWallet.ts") };
     });
-
-    build.onResolve({ filter: /^\.\/util\/test\/TestMaker$/ }, (args) => {
-      return { path: getPath(args.resolveDir, "shims/TestMaker.ts") };
-    });
   },
 };
 
