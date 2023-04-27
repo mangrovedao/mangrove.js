@@ -67,7 +67,6 @@
     "@mangrovedao/reliable-event-subscriber": "1.0.6",
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
-    "esbuild-plugin-resolve": "^1.0.3",
     "ethers": "^5.7.2",
     "just-clone": "^6.2.0",
     "node-cleanup": "^2.1.2",
