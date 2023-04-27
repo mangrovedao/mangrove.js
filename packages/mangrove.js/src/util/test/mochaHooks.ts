@@ -112,6 +112,18 @@ export const mochaHooks = {
       };
     }
 
+    const provider = new ethers.providers.JsonRpcProvider(this.server.url);
+    const result = await provider.send("txpool_inspect", []);
+    if (!Object.keys(result).length) {
+      throw new Error("Missing txpool data");
+    }
+    if (
+      Object.keys(result.pending).length ||
+      Object.keys(result.queued).length
+    ) {
+      console.log(result);
+      throw new Error("txpool not empty");
+    }
     await this.proxies.closeCurrentProxy();
 
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)
