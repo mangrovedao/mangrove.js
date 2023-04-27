@@ -1558,13 +1558,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@npm:^1.4.2":
-  version: 1.4.3
-  resolution: "@mangrovedao/mangrove-core@npm:1.4.3"
-  checksum: afab209469a81a9ef81200ca5ec786608e7ddd3da10248020be41650bd2e24e0f5def466cf4628820c1e8529f53a3d8ec33612d052e5b3074edcfc44be157b25
-  languageName: node
-  linkType: hard
-
 "@mangrovedao/mangrove.js@workspace:*, @mangrovedao/mangrove.js@workspace:packages/mangrove.js":
   version: 0.0.0-use.local
   resolution: "@mangrovedao/mangrove.js@workspace:packages/mangrove.js"
@@ -5412,7 +5405,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "mangrove-arbitrage@workspace:packages/bot-arbitrage/mangrove-arbitrage"
   dependencies:
-    "@mangrovedao/mangrove-core": ^1.4.2
+    "@mangrovedao/mangrove-core": 1.4.6-2
     "@uniswap/swap-router-contracts": ^1.3.0
     "@uniswap/v3-core": ^1.0.1
     "@uniswap/v3-periphery": ^1.4.3

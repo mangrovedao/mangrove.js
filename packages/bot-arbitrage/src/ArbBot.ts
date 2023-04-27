@@ -81,7 +81,7 @@ export class ArbBot {
       arbAddress,
       this.mgv.signer
     );
-    await arbContract.activateTokens(tokens);
+    return await arbContract.activateTokens(tokens);
   }
 
   private getNativeTokenNameAndDecimals(chainId?: number) {
@@ -165,7 +165,7 @@ export class ArbBot {
         costInHoldingToken: costInHoldingToken.toString(),
       };
     } catch (e) {
-      console.log(e);
+      logger.debug(e);
       return { isProfitable: false, costInHoldingToken: 0 };
     }
   }
