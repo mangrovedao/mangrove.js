@@ -33,12 +33,12 @@ function createAsyncMarketCleaner(
     "cleaning bot task",
     async () => {
       const blockNumber = await mgv.provider.getBlockNumber().catch((e) => {
-        logger.debug("Error on getting blockNumber via ethers", { data: e });
+        logger.error("Error on getting blockNumber via ethers", { data: e });
         return -1;
       });
       const contextInfo = `block#=${blockNumber}`;
 
-      logger.trace("Scheduled bot task running...", { contextInfo });
+      logger.debug("Scheduled bot task running...", { contextInfo });
       await setup.exitIfMangroveIsKilled(mgv, contextInfo, server, scheduler);
 
       const cleaningPromises = [];
