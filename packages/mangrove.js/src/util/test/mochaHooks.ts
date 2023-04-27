@@ -94,19 +94,25 @@ export const mochaHooks = {
   async beforeEach() {
     // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
     if (!this.proxies) {
-      this.proxies = {};
+      this.proxies = {
+        closeCurrentProxy: async () => {
+          // Tear down existing proxy - waiting for all outstanding connections to close.
+          // Note: anvil could still be processing something when this completes in case its async,
+          // Consider probing anvil for completion.
+          const currentProxy = this.proxies[currentProxyPort];
+          if (currentProxy) {
+            currentProxy.cancelAll = true;
+            const closedDeferred = new Deferred();
+            currentProxy.proxyServer.close(() => {
+              closedDeferred.resolve();
+            });
+            await closedDeferred.promise;
+          }
+        },
+      };
     }
 
-    // Tear down existing proxy - waiting for all outstanding connections to close.
-    const currentProxy = this.proxies[currentProxyPort];
-    if (currentProxy) {
-      currentProxy.cancelAll = true;
-      const closedDeferred = new Deferred();
-      currentProxy.proxyServer.close(() => {
-        closedDeferred.resolve();
-      });
-      await closedDeferred.promise;
-    }
+    await this.proxies.closeCurrentProxy();
 
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)
     const newProxy = {
@@ -155,6 +161,8 @@ export const mochaHooks = {
   },
 
   async afterAll() {
+    await this.proxies.closeCurrentProxy();
+
     if (this.server.process) {
       this.server.process.kill();
     }
