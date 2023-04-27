@@ -9,10 +9,12 @@ import { logger } from "./util/logger";
 
 import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
-import Mangrove from "@mangrovedao/mangrove.js";
+import Mangrove, { enableLogging } from "@mangrovedao/mangrove.js";
 
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
+
+enableLogging();
 
 const scheduler = new ToadScheduler();
 const setup = new Setup(config);

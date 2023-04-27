@@ -1,7 +1,9 @@
 import { createConsoleLogger, logdataLimiter } from "@mangrovedao/commonlib.js";
+import { enableLogging as reliableEventSubscriberEnableLogging } from "@mangrovedao/reliable-event-subscriber";
 
 let loggingEnabled = false;
 export function enableLogging(): void {
+  reliableEventSubscriberEnableLogging();
   loggingEnabled = true;
 }
 export function disableLogging(): void {
