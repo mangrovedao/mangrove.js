@@ -1539,7 +1539,6 @@ __metadata:
     cross-env: ^7.0.3
     dir-compare: ^4.0.0
     esbuild: ^0.16.16
-    esbuild-plugin-resolve: ^1.0.3
     eslint: ^8.31.0
     eslint-config-prettier: ^8.8.0
     ethers: ^5.7.2
@@ -3343,13 +3342,6 @@ __metadata:
     d: ^1.0.1
     ext: ^1.1.2
   checksum: cd49722c2a70f011eb02143ef1c8c70658d2660dead6641e160b94619f408b9cf66425515787ffe338affdf0285ad54f4eae30ea5bd510e33f8659ec53bcaa70
-  languageName: node
-  linkType: hard
-
-"esbuild-plugin-resolve@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "esbuild-plugin-resolve@npm:1.0.3"
-  checksum: 0f2f7b666a40ad6029fd6056c110cfb038a2dea308cd42be24730ba86d8e518fdc3550b7fc6c4444c228c734db556920654862d5f295fda6a258824fb5e7ea47
   languageName: node
   linkType: hard
 
