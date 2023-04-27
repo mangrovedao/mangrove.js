@@ -1,5 +1,6 @@
 import { describe, beforeEach, afterEach, it } from "mocha";
-import { assert } from "chai";
+//import { assert } from "chai";
+import assert from "assert";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import {
@@ -405,7 +406,7 @@ describe("Kandel integration tests suite", function () {
         await mgvTestUtil.waitForBooksForLastTx(market);
 
         const pivots = await kandel.getPivots(distribution);
-        assert.sameOrderedMembers(pivots, [1, 2, undefined, undefined, 1, 2]);
+        assert.deepStrictEqual(pivots, [1, 2, undefined, undefined, 1, 2]);
       });
 
       [true, false].forEach((inChunks) => {
@@ -606,7 +607,7 @@ describe("Kandel integration tests suite", function () {
         await populateKandel({ approve: true, deposit: true });
 
         // Act/Assert
-        assert.isRejected(
+        assert.rejects(
           kandel.populate({
             parameters: { ratio: 2 },
             distribution:
@@ -624,7 +625,7 @@ describe("Kandel integration tests suite", function () {
         await populateKandel({ approve: true, deposit: true });
 
         // Act/Assert
-        assert.isRejected(
+        assert.rejects(
           kandel.populate({
             parameters: { pricePoints: 2 },
             distribution:
@@ -1249,7 +1250,7 @@ describe("Kandel integration tests suite", function () {
               );
 
               if (!fullApprove) {
-                assert.isRejected(
+                assert.rejects(
                   kandel.deposit({ baseAmount, quoteAmount }),
                   "finite approval should not allow further deposits"
                 );
