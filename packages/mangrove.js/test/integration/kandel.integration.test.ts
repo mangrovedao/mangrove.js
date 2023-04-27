@@ -93,7 +93,7 @@ describe("Kandel integration tests suite", function () {
             distribution
           );
           if (!onAave && liquiditySharing) {
-            assert.isRejected(
+            assert.rejects(
               seeder.sow(seed),
               "Liquidity sharing is only supported for AaveKandel instances"
             );
@@ -1340,7 +1340,7 @@ describe("Kandel integration tests suite", function () {
             });
 
             // Act/assert
-            assert.isRejected(
+            assert.rejects(
               kandel.populate({ distribution }),
               "mgv/writeOffer/density/tooLow"
             );

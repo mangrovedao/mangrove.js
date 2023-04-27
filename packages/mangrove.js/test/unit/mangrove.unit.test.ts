@@ -16,13 +16,27 @@ const defaultServerParams = {
 };
 
 describe("Mangrove functionality", () => {
+  async function retryDeploy(server: any) {
+    // deploy ToyENS and Mangrove contracts
+    for (let i = 0; i < 10; i++) {
+      try {
+        await server.deploy();
+        break;
+      } catch (e) {
+        console.log("Failed to deploy, retrying...");
+      }
+    }
+  }
+
   describe("watch local addresses", async function () {
     it("can start watching after ToyENS has been created", async function () {
       // start server
       const server = await node({
         ...defaultServerParams,
         port: 8544, // use port number below the one used in mochaHooks.ts
+        deploy: false,
       }).connect();
+      await retryDeploy(server);
 
       const mgv = await Mangrove.connect({
         provider: server.url,
@@ -67,8 +81,7 @@ describe("Mangrove functionality", () => {
         });
       });
 
-      // deploy ToyENS and Mangrove contracts
-      await server.deploy();
+      await retryDeploy(server);
 
       // make sure that deployment is detected
       await prom;
