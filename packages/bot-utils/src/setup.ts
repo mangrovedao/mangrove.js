@@ -98,7 +98,10 @@ export class Setup {
     const provider = getDefaultProvider(process.env["RPC_NODE_URL"]);
     const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
     const nonceManager = new NonceManager(signer);
-    const mgv = await Mangrove.connect({ signer: nonceManager });
+    const mgv = await Mangrove.connect({
+      signer: nonceManager,
+      providerUrl: process.env["RPC_NODE_URL"],
+    });
 
     this.logger.info("Connected to Mangrove", {
       contextInfo: "init",

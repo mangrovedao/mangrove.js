@@ -1,5 +1,6 @@
 {
   "logLevel": "LOG_LEVEL",
+  "noColor": "NO_COLOR",
   "makerTargetProvision": "MAKER_TARGET_PROVISION",
   "tokens": {
     "__name": "TOKENS",

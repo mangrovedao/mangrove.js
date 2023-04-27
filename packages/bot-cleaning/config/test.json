@@ -1,5 +1,6 @@
 {
   "logLevel": "error",
+  "noColor": "true",
   "markets": [["WETH", "DAI"]],
   "MangroveJs": {
     "logLevel": "info"

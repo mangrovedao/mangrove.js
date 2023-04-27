@@ -13,6 +13,7 @@ import {
 import KandelInstance from "./kandelInstance";
 import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
+import KandelConfiguration from "./kandelConfiguration";
 
 /** The parameters for sowing the Kandel instance.
  * @param onAave Whether to create an AaveKandel which supplies liquidity on Aave to earn yield, or a standard Kandel.
@@ -32,6 +33,7 @@ export type KandelSeed = {
 /** Seeder for creating Kandel instances on-chain. */
 class KandelSeeder {
   mgv: Mangrove;
+  configuration: KandelConfiguration = new KandelConfiguration();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
   aaveKandelSeeder: typechain.AaveKandelSeeder;
@@ -68,6 +70,11 @@ class KandelSeeder {
   public async sow(seed: KandelSeed, overrides: ethers.Overrides = {}) {
     const gasprice = await this.getBufferedGasprice(seed);
 
+    if (seed.liquiditySharing && !seed.onAave) {
+      throw Error(
+        "Liquidity sharing is only supported for AaveKandel instances."
+      );
+    }
     const rawSeed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
       base: seed.market.base.address,
       quote: seed.market.quote.address,
@@ -181,6 +188,36 @@ class KandelSeeder {
       gasprice,
       gasreq,
     });
+  }
+
+  /** Determines the minimum recommended volume for an offer of the given type to avoid density issues.
+   * @param params The parameters.
+   * @param params.market The market the Kandel is deployed to.
+   * @param params.offerType The type of offer.
+   * @param params.onAave Whether the Kandel is an AaveKandel.
+   * @param params.factor The factor to multiply the minimum volume by. Defaults to minimumBasePerOfferFactory / minimumQuotePerOfferFactor from KandelConfiguration.
+   * @param params.gasreq The gasreq to use. Defaults to the default gasreq for the Kandel type.
+   * @returns The minimum recommended volume.
+   */
+  public async getMinimumVolume(params: {
+    market: Market;
+    offerType: Market.BA;
+    onAave: boolean;
+    factor?: number;
+    gasreq?: number;
+  }) {
+    const config = this.configuration.getConfig(params.market);
+    const gasreq =
+      params.gasreq ?? (await this.getDefaultGasreq(params.onAave));
+
+    return (
+      await params.market.getSemibook(params.offerType).getMinimumVolume(gasreq)
+    ).mul(
+      params.factor ??
+        (params.offerType == "asks"
+          ? config.minimumBasePerOfferFactor
+          : config.minimumQuotePerOfferFactor)
+    );
   }
 }
 

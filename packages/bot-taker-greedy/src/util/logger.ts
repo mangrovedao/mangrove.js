@@ -37,6 +37,11 @@ const consoleLogFormat = format.printf(
 );
 
 const logLevel = config.get<string>("logLevel");
-export const logger: CommonLogger = createLogger(consoleLogFormat, logLevel);
+const noColor = config.get<string | undefined>("noColor");
+export const logger: CommonLogger = createLogger(
+  consoleLogFormat,
+  logLevel,
+  noColor
+);
 
 export default logger;

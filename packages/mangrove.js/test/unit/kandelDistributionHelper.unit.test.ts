@@ -135,17 +135,22 @@ describe("KandelDistributionHelper unit tests suite", () => {
     }
   );
 
-  describe(
+  [
     KandelDistributionHelper.prototype.calculateDistributionConstantBase.name,
-    () => {
-      it("can calculate distribution with fixed base volume which follows geometric distribution", () => {
+    KandelDistributionHelper.prototype.calculateDistributionConstantQuote.name,
+  ].forEach((methodName) => {
+    const ratio = new Big(1.08);
+    const firstBase = Big(2);
+    const firstQuote = Big(3000);
+    const pricePoints = 10;
+    const firstAskIndex = 5;
+    const constantBase =
+      methodName ===
+      KandelDistributionHelper.prototype.calculateDistributionConstantBase.name;
+    describe(methodName, () => {
+      it(`can calculate distribution with fixed base/quote constantBase=${constantBase} volume which follows geometric distribution`, () => {
         // Arrange
-        const ratio = new Big(1.08);
-        const firstBase = Big(2);
-        const firstQuote = Big(3000);
-        const pricePoints = 10;
         const sut = new KandelDistributionHelper(12, 12);
-        const firstAskIndex = 5;
         const pricesAndRatio = new KandelPriceCalculation().calculatePrices({
           minPrice: firstQuote.div(firstBase),
           ratio,
@@ -153,31 +158,39 @@ describe("KandelDistributionHelper unit tests suite", () => {
         });
 
         // Act
-        const distribution = sut.calculateDistributionConstantBase(
-          pricesAndRatio.ratio,
-          pricesAndRatio.prices,
-          firstBase,
-          firstAskIndex
-        );
+        const distribution = constantBase
+          ? sut.calculateDistributionConstantBase(
+              pricesAndRatio.ratio,
+              pricesAndRatio.prices,
+              firstBase,
+              firstAskIndex
+            )
+          : sut.calculateDistributionConstantQuote(
+              pricesAndRatio.ratio,
+              pricesAndRatio.prices,
+              firstQuote,
+              firstAskIndex
+            );
 
         // Assert
         let price = firstQuote.div(firstBase);
         distribution.offers.forEach((e, i) => {
           assert.equal(e.offerType, i < firstAskIndex ? "bids" : "asks");
           assert.equal(
-            e.quote.div(e.base).toNumber(),
-            price.toNumber(),
+            e.quote.div(e.base).toPrecision(6),
+            price.toPrecision(6),
             `Price is not as expected at ${i}`
           );
+          if (constantBase) {
+            assert.equal(firstBase.toNumber(), e.base.toNumber());
+          } else {
+            assert.equal(firstQuote.toNumber(), e.quote.toNumber());
+          }
           price = price.mul(ratio);
         });
       });
-      it("rounds off base and gives according to decimals", () => {
+      it(`rounds off base and gives according to decimals for fixed base/quote constantBase=${constantBase}`, () => {
         // Arrange
-        const ratio = new Big(1.08);
-        const firstBase = Big(2);
-        const firstQuote = Big(3000);
-        const pricePoints = 10;
         const sut = new KandelDistributionHelper(4, 6);
         const pricesAndRatio = new KandelPriceCalculation().calculatePrices({
           minPrice: firstQuote.div(firstBase),
@@ -186,12 +199,19 @@ describe("KandelDistributionHelper unit tests suite", () => {
         });
 
         // Act
-        const distribution = sut.calculateDistributionConstantBase(
-          pricesAndRatio.ratio,
-          pricesAndRatio.prices,
-          firstBase,
-          5
-        );
+        const distribution = constantBase
+          ? sut.calculateDistributionConstantBase(
+              pricesAndRatio.ratio,
+              pricesAndRatio.prices,
+              firstBase,
+              firstAskIndex
+            )
+          : sut.calculateDistributionConstantQuote(
+              pricesAndRatio.ratio,
+              pricesAndRatio.prices,
+              firstQuote,
+              firstAskIndex
+            );
 
         // Assert
         distribution.offers.forEach((e) => {
@@ -206,6 +226,59 @@ describe("KandelDistributionHelper unit tests suite", () => {
             "quote should be rounded"
           );
         });
+      });
+    });
+  });
+
+  describe(
+    KandelDistributionHelper.prototype.calculateInitialGives.name,
+    () => {
+      it("returns minimum on empty list", () => {
+        // Arrange
+        const sut = new KandelDistributionHelper(0, 0);
+
+        // Act
+        const { askGives, bidGives } = sut.calculateInitialGives(
+          [],
+          Big(1),
+          Big(2)
+        );
+
+        // Assert
+        assert.equal(askGives.toNumber(), 1);
+        assert.equal(bidGives.toNumber(), 2);
+      });
+
+      it("returns minimum if no prices affect it", () => {
+        // Arrange
+        const sut = new KandelDistributionHelper(0, 0);
+
+        // Act
+        const { askGives, bidGives } = sut.calculateInitialGives(
+          [Big(1000)],
+          Big(0.1),
+          Big(100)
+        );
+
+        // Assert
+        assert.equal(askGives.toNumber(), 0.1);
+        assert.equal(bidGives.toNumber(), 100);
+      });
+
+      it("returns higher than minimum if dual at some price would be below its minimum", () => {
+        // Arrange
+        const sut = new KandelDistributionHelper(0, 0);
+
+        // Act
+        const { askGives, bidGives } = sut.calculateInitialGives(
+          [Big(2000), Big(1000), Big(500), Big(4000)],
+          Big(1),
+          Big(1000)
+        );
+
+        // Assert
+        assert.equal(askGives.toNumber(), 2);
+        assert.equal(bidGives.toNumber(), 4000);
       });
     }
   );
