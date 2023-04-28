@@ -10,7 +10,7 @@ export function disableLogging(): void {
   loggingEnabled = false;
 }
 
-const logLevel = "debug";
+const logLevel = process.env["LOG_LEVEL"] ? process.env["LOG_LEVEL"] : "debug";
 export const logger = createConsoleLogger(() => loggingEnabled, logLevel);
 
 export default logger;
