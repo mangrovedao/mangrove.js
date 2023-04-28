@@ -1,6 +1,5 @@
 {
   "logLevel": "debug",
-  "noColor": "true",
   "acceptableGasGapToOracle": 0.5,
   "constantOracleGasPrice": 6,
   "network": "MATIC_MUMBAI",

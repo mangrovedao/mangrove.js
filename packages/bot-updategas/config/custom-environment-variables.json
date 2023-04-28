@@ -1,6 +1,5 @@
 {
   "logLevel": "LOG_LEVEL",
-  "noColor": "NO_COLOR",
   "acceptableGasGapToOracle": {
     "__name": "ACCEPTABLE_GAS_GAP_TO_ORACLE",
     "__format": "number"
