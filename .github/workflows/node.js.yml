@@ -251,6 +251,162 @@ jobs:
         FOUNDRY_OUT: "~/.foundry/build-out"
       run: yarn run test:coverage
 
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
+    - name: Mangrove.js Tests
+      env:
+        FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
+        FOUNDRY_OUT: "~/.foundry/build-out"
+      run: yarn run test:coverage
+
     - name: Mangrove.js Test Report
       uses: dorny/test-reporter@v1
       if: ${{ env.mangrove_js_built && (success() || failure()) }}
