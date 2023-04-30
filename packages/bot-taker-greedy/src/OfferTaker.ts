@@ -158,7 +158,7 @@ export class OfferTaker {
       const json = await fetchJson(this.#cryptoCompareUrl);
       if (json[this.#market.quote.name] !== undefined) {
         const externalPrice = new Big(json[this.#market.quote.name]);
-        logger.info("Received external price", {
+        logger.debug("Received external price", {
           contextInfo: "taker",
           base: this.#market.base.name,
           quote: this.#market.quote.name,

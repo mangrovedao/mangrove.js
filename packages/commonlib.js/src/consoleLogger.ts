@@ -29,5 +29,5 @@ export function createConsoleLogger(
     })
   );
 
-  return createLogger(consoleLogFormat, logLevel);
+  return createLogger(consoleLogFormat, logLevel, process.env["NO_COLOR"]);
 }
