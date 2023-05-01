@@ -1003,6 +1003,7 @@ jobs:
 
     env:
       working-directory: packages/bot-arbitrage
+      POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
 
     defaults:
       run:

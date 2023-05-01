@@ -49,7 +49,6 @@ export const mochaHooks = {
   async beforeAll() {
     dotenv.config();
     let forkUrl = process.env.POLYGON_NODE_URL;
-    console.log(forkUrl);
     const serverParams = {
       host: "127.0.0.1",
       port: 8545, // use 8545 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
