@@ -9,7 +9,9 @@ import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
 import KandelStatus, { OffersWithPrices } from "./kandelStatus";
-import KandelDistributionHelper from "./kandelDistributionHelper";
+import KandelDistributionHelper, {
+  OffersWithGives,
+} from "./kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandelPriceCalculation";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
@@ -411,19 +413,10 @@ class KandelInstance {
   /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
-   * @param params.explicitOffers[].index The index of the offer.
-   * @param params.explicitOffers[].offerType The type of the offer.
-   * @param params.explicitOffers[].price The price of the offer.
-   * @param params.explicitOffers[].gives The amount of base or quote that the offer gives.
    * @returns The new distribution.
    */
   public async createDistributionWithOffers(params: {
-    explicitOffers: {
-      index: number;
-      offerType: Market.BA;
-      price: Bigish;
-      gives: Bigish;
-    }[];
+    explicitOffers: OffersWithGives;
   }) {
     const parameters = await this.getParameters();
     return this.generator.createDistributionWithOffers({

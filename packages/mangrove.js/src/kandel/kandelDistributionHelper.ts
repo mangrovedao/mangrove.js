@@ -1,6 +1,20 @@
 import Big from "big.js";
 import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
+import { Bigish } from "../types";
+
+/** Offers with their price, Kandel index, and gives amount.
+ * @param offerType Whether the offer is a bid or an ask.
+ * @param price The price of the offer.
+ * @param index The index of the price point in Kandel.
+ * @param gives The amount of base or quote that the offer gives.
+ */
+export type OffersWithGives = {
+  offerType: Market.BA;
+  price: Bigish;
+  index: number;
+  gives: Bigish;
+}[];
 
 /** @title Helper for handling Kandel offer distributions. */
 class KandelDistributionHelper {
@@ -246,20 +260,11 @@ class KandelDistributionHelper {
 
   /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
    * @param explicitOffers The explicit offers to use.
-   * @param explicitOffers[].index The index of the offer.
-   * @param explicitOffers[].offerType The type of the offer.
-   * @param explicitOffers[].price The price of the offer.
-   * @param explicitOffers[].gives The amount of base or quote that the offer gives.
    * @param distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
    * @returns The new distribution.
    */
   public createDistributionWithOffers(
-    explicitOffers: {
-      index: number;
-      offerType: Market.BA;
-      price: Big;
-      gives: Big;
-    }[],
+    explicitOffers: OffersWithGives,
     distribution:
       | {
           ratio: Big;
@@ -271,9 +276,13 @@ class KandelDistributionHelper {
       index,
       offerType,
       base:
-        offerType == "asks" ? gives : this.baseFromQuoteAndPrice(gives, price),
+        offerType == "asks"
+          ? Big(gives)
+          : this.baseFromQuoteAndPrice(Big(gives), Big(price)),
       quote:
-        offerType == "bids" ? gives : this.quoteFromBaseAndPrice(gives, price),
+        offerType == "bids"
+          ? Big(gives)
+          : this.quoteFromBaseAndPrice(Big(gives), Big(price)),
     }));
 
     return new KandelDistribution(
