@@ -1014,6 +1014,62 @@ describe("Kandel integration tests suite", function () {
         );
       });
 
+      it("calculateDistributionWithUniformlyChangedVolume creates new distribution with decreased volumes for all live offers", async function () {
+        // Arrange
+        await populateKandel({ approve: false, deposit: false });
+        // Retract one offer
+        const receipts = await waitForTransactions(
+          kandel.retractOffers(
+            { startIndex: 0, endIndex: 1 },
+            { gasLimit: 1000000 }
+          )
+        );
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
+
+        // Create a distribution for the live offers
+        const indexerOffers = (await kandel.getOffers()).map(
+          ({ offer, offerId, index, offerType }) => ({
+            offerType,
+            offerId,
+            index,
+            live: kandel.market.isLiveOffer(offer),
+            price: offer.price,
+            gives: offer.gives,
+          })
+        );
+
+        const liveOffers = indexerOffers.filter((o) => o.live);
+        const existingDistribution = await kandel.createDistributionWithOffers({
+          explicitOffers: liveOffers,
+        });
+        const offeredVolume =
+          existingDistribution.getOfferedVolumeForDistribution();
+
+        // Act
+        const result =
+          await kandel.calculateDistributionWithUniformlyChangedVolume({
+            liveOffers,
+            baseDelta: offeredVolume.requiredBase.neg(),
+            quoteDelta: offeredVolume.requiredQuote.neg(),
+          });
+
+        // Assert
+        const oldPrices = existingDistribution
+          .getPricesForDistribution()
+          .map((x) => x.round(4).toNumber());
+        const newPrices = result.distribution
+          .getPricesForDistribution()
+          .map((x) => x.round(4).toNumber());
+        assert.deepStrictEqual(newPrices, oldPrices);
+        assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
+        assert.ok(
+          result.totalQuoteChange.neg().lt(offeredVolume.requiredQuote)
+        );
+      });
+
       it("can go through life-cycle with numbers as Bigish", async function () {
         // Arrange
         const ratio = 1.08;

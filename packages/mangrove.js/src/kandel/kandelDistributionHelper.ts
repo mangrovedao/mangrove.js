@@ -215,6 +215,169 @@ class KandelDistributionHelper {
     return distribution;
   }
 
+  /** Creates a new distribution with uniformly changed volume.
+   * @param params The parameters for the change.
+   * @param params.distribution The distribution to change.
+   * @param params.baseDelta The change in base volume.
+   * @param params.quoteDelta The change in quote volume.
+   * @param params.minimumBasePerOffer The minimum base per offer. Only applies for decrease in base volume.
+   * @param params.minimumQuotePerOffer The minimum quote per offer. Only applies for decrease in quote volume.
+   * @returns The new distribution.
+   * @remarks The decrease has to respect minimums, and thus may decrease some offers more than others.
+   */
+  uniformlyChangeVolume(params: {
+    distribution: KandelDistribution;
+    baseDelta?: Big;
+    quoteDelta?: Big;
+    minimumBasePerOffer: Big;
+    minimumQuotePerOffer: Big;
+  }) {
+    const prices = params.distribution.getPricesForDistribution();
+
+    const offerWithPrices = params.distribution.offers.map((offer, i) => ({
+      offer,
+      price: prices[i],
+    }));
+    const asks = offerWithPrices.filter((o) => o.offer.offerType == "asks");
+    const bases = asks.map((o) => o.offer.base);
+    const bids = offerWithPrices.filter((o) => o.offer.offerType == "bids");
+    const quotes = bids.map((o) => o.offer.quote);
+
+    const { newValues: newBases, totalChange: totalBaseChange } =
+      this.changeValues(
+        params.baseDelta,
+        bases,
+        params.minimumBasePerOffer,
+        this.roundBase.bind(this)
+      );
+
+    const { newValues: newQuotes, totalChange: totalQuoteChange } =
+      this.changeValues(
+        params.quoteDelta,
+        quotes,
+        params.minimumQuotePerOffer,
+        this.roundQuote.bind(this)
+      );
+
+    const distribution = new KandelDistribution(
+      params.distribution.ratio,
+      params.distribution.pricePoints,
+      bids
+        .map((o, i) => ({
+          index: o.offer.index,
+          base: this.baseFromQuoteAndPrice(newQuotes[i], o.price),
+          quote: newQuotes[i],
+          offerType: o.offer.offerType,
+        }))
+        .concat(
+          asks.map((o, i) => ({
+            index: o.offer.index,
+            base: newBases[i],
+            quote: this.quoteFromBaseAndPrice(newBases[i], o.price),
+            offerType: o.offer.offerType,
+          }))
+        ),
+      params.distribution.baseDecimals,
+      params.distribution.quoteDecimals
+    );
+    return { distribution, totalBaseChange, totalQuoteChange };
+  }
+
+  /** Uniformly changes values by a total amount without decreasing below a minimum for each value. A value already below minimum will not be changed.
+   * @param values The values to change.
+   * @param totalDelta The total amount to change.
+   * @param minimumValue The minimum value for each value.
+   * @param round The function to round the values.
+   * @returns The new values and the total change.
+   */
+  changeValues(
+    delta: Big | undefined,
+    values: Big[],
+    minimumValue: Big,
+    round: (value: Big) => Big
+  ) {
+    if (delta) {
+      if (delta.gt(0)) {
+        return this.uniformlyIncrease(values, delta, round);
+      } else {
+        const { newValues, totalChange } = this.uniformlyDecrease(
+          values,
+          delta.neg(),
+          minimumValue,
+          round
+        );
+        return { newValues, totalChange: totalChange.neg() };
+      }
+    }
+    return { newValues: values, totalChange: Big(0) };
+  }
+
+  /** Uniformly increases values by a total amount.
+   * @param values The values to increase.
+   * @param totalDelta The total amount to increase.
+   * @param round The function to round the values.
+   * @returns The new values and the total change.
+   */
+  uniformlyIncrease(
+    values: Big[],
+    totalDelta: Big,
+    round: (value: Big) => Big
+  ) {
+    let elementsToChange = values.length;
+    let totalChange = Big(0);
+    const newValues = Array(values.length);
+
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i];
+      const actualChange = round(totalDelta.div(elementsToChange));
+      newValues[i] = value.add(actualChange);
+      totalChange = totalChange.add(actualChange);
+      totalDelta = totalDelta.sub(actualChange);
+      elementsToChange--;
+    }
+
+    return { newValues, totalChange };
+  }
+
+  /** Uniformly decreases values by a total amount without decreasing below a minimum for each value. A value already below minimum will not be changed.
+   * @param values The values to decrease.
+   * @param totalDelta The total amount to decrease.
+   * @param minimumValue The minimum value for each value.
+   * @param round The function to round each value.
+   * @returns The new values and the total change.
+   */
+  uniformlyDecrease(
+    values: Big[],
+    totalDelta: Big,
+    minimumValue: Big,
+    round: (value: Big) => Big
+  ) {
+    const sortedValues = values
+      .map((value, index) => ({ value, index }))
+      .sort((a, b) => a.value.cmp(b.value));
+    let totalChange = Big(0);
+    let elementsToChange = sortedValues.length;
+    for (let i = 0; i < sortedValues.length; i++) {
+      const value = sortedValues[i].value;
+      const avgChange = round(totalDelta.div(elementsToChange));
+
+      const maxChange = value.gt(minimumValue)
+        ? value.sub(minimumValue)
+        : Big(0);
+      const actualChange = maxChange.lt(avgChange) ? maxChange : avgChange;
+      sortedValues[i].value = value.sub(actualChange);
+      totalChange = totalChange.add(actualChange);
+      totalDelta = totalDelta.sub(actualChange);
+      elementsToChange--;
+    }
+
+    const newValues = sortedValues
+      .sort((a, b) => a.index - b.index)
+      .map((v) => v.value);
+
+    return { newValues, totalChange };
+  }
+
   /** Calculates the minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
    * @param prices The price distribution.
    * @param minimumBasePerOffer The minimum base to give for each offer.

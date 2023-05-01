@@ -124,6 +124,42 @@ class KandelDistributionGenerator {
     );
   }
 
+  /** Creates a new distribution with uniformly changed volume.
+   * @param params The parameters for the change.
+   * @param params.distribution The distribution to change.
+   * @param params.baseDelta The change in base volume.
+   * @param params.quoteDelta The change in quote volume.
+   * @param params.minimumBasePerOffer The minimum amount of base to give for each offer. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
+   * @param params.minimumQuotePerOffer The minimum amount of quote to give for each offer. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
+   * @returns The new distribution.
+   * @remarks The decrease has to respect minimums, and thus may decrease some offers more than others.
+   */
+  public uniformlyChangeVolume(params: {
+    distribution: KandelDistribution;
+    baseDelta?: Bigish;
+    quoteDelta?: Bigish;
+    minimumBasePerOffer: Bigish;
+    minimumQuotePerOffer: Bigish;
+  }) {
+    const prices = params.distribution.getPricesForDistribution();
+
+    // Minimums are increased based on prices of current distribution
+    const { askGives, bidGives } =
+      this.distributionHelper.calculateMinimumInitialGives(
+        prices,
+        Big(params.minimumBasePerOffer),
+        Big(params.minimumQuotePerOffer)
+      );
+
+    return this.distributionHelper.uniformlyChangeVolume({
+      distribution: params.distribution,
+      baseDelta: params.baseDelta ? Big(params.baseDelta) : undefined,
+      quoteDelta: params.quoteDelta ? Big(params.quoteDelta) : undefined,
+      minimumBasePerOffer: askGives,
+      minimumQuotePerOffer: bidGives,
+    });
+  }
+
   /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.

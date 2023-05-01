@@ -4,8 +4,24 @@ import { describe, it } from "mocha";
 import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
+import { KandelDistribution } from "../../src";
 
 describe("KandelDistributionHelper unit tests suite", () => {
+  function assertIsRounded(distribution: KandelDistribution) {
+    distribution.offers.forEach((e) => {
+      assert.equal(
+        e.base.round(distribution.baseDecimals).toString(),
+        e.base.toString(),
+        "base should be rounded"
+      );
+      assert.equal(
+        e.quote.round(distribution.quoteDecimals).toString(),
+        e.quote.toString(),
+        "quote should be rounded"
+      );
+    });
+  }
+
   describe(
     KandelDistributionHelper.prototype.calculateDistributionConstantGives.name,
     () => {
@@ -114,18 +130,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Assert
         assert.equal(distribution.ratio.toNumber(), ratio);
-        distribution.offers.forEach((e) => {
-          assert.equal(
-            e.base.round(4).toString(),
-            e.base.toString(),
-            "base should be rounded"
-          );
-          assert.equal(
-            e.quote.round(6).toString(),
-            e.quote.toString(),
-            "quote should be rounded"
-          );
-        });
+        assertIsRounded(distribution);
 
         const { requiredBase, requiredQuote } =
           distribution.getOfferedVolumeForDistribution();
@@ -279,6 +284,244 @@ describe("KandelDistributionHelper unit tests suite", () => {
         // Assert
         assert.equal(askGives.toNumber(), 2);
         assert.equal(bidGives.toNumber(), 4000);
+      });
+    }
+  );
+
+  describe(KandelDistributionHelper.prototype.uniformlyDecrease.name, () => {
+    it("can decrease uniformly if all sufficiently above limit", () => {
+      // Arrange
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      const result = sut.uniformlyDecrease(
+        [Big(3), Big(2), Big(5), Big(2)],
+        Big(4),
+        Big(1),
+        (v) => v
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        result.newValues.map((x) => x.toNumber()),
+        [2, 1, 4, 1]
+      );
+      assert.equal(result.totalChange.toNumber(), 4);
+    });
+
+    it("can decrease total amount if available, but respect limits", () => {
+      // Arrange
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      const result = sut.uniformlyDecrease(
+        [Big(3), Big(2), Big(5), Big(2)],
+        Big(6),
+        Big(1),
+        (v) => v
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        result.newValues.map((x) => x.toNumber()),
+        [1, 1, 3, 1]
+      );
+      assert.equal(result.totalChange.toNumber(), 6);
+    });
+
+    it("can decrease but not total amount if limits prevent", () => {
+      // Arrange
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      const result = sut.uniformlyDecrease(
+        [Big(3), Big(2), Big(5), Big(2)],
+        Big(9),
+        Big(1),
+        (v) => v
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        result.newValues.map((x) => x.toNumber()),
+        [1, 1, 1, 1]
+      );
+      assert.equal(result.totalChange.toNumber(), 8);
+    });
+
+    it("can round result", () => {
+      // Arrange
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      const result = sut.uniformlyDecrease(
+        [Big(2), Big(2), Big(2)],
+        Big(1),
+        Big(1),
+        (v) => v.round(4, Big.roundHalfUp)
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        result.newValues.map((x) => x.toString()),
+        ["1.6667", "1.6666", "1.6667"]
+      );
+      assert.equal(result.totalChange.toNumber(), 1);
+    });
+
+    it("does not go beyond limit due to rounding up", () => {
+      // Arrange
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      const result = sut.uniformlyDecrease(
+        [Big(2.6), Big(2.6)],
+        Big(3.1),
+        Big(1),
+        (v) => v.round(0, Big.roundHalfUp)
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        result.newValues.map((x) => x.toString()),
+        ["1", "1"]
+      );
+      assert.equal(result.totalChange.toNumber(), 3.2);
+    });
+  });
+
+  describe(KandelDistributionHelper.prototype.uniformlyIncrease.name, () => {
+    it("can increase uniformly", () => {
+      // Arrange
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      const result = sut.uniformlyIncrease(
+        [Big(3), Big(2), Big(5), Big(2)],
+        Big(4),
+        (v) => v
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        result.newValues.map((x) => x.toNumber()),
+        [4, 3, 6, 3]
+      );
+      assert.equal(result.totalChange.toNumber(), 4);
+    });
+
+    it("can round result", () => {
+      // Arrange
+      const sut = new KandelDistributionHelper(0, 0);
+
+      // Act
+      const result = sut.uniformlyIncrease(
+        [Big(2), Big(2), Big(2)],
+        Big(1),
+        (v) => v.round(4, Big.roundHalfUp)
+      );
+
+      // Assert
+      assert.deepStrictEqual(
+        result.newValues.map((x) => x.toString()),
+        ["2.3333", "2.3334", "2.3333"]
+      );
+      assert.equal(result.totalChange.toNumber(), 1);
+    });
+  });
+
+  describe(
+    KandelDistributionHelper.prototype.uniformlyChangeVolume.name,
+    () => {
+      let distribution: KandelDistribution;
+      let prices: number[];
+      let sut: KandelDistributionHelper;
+      beforeEach(() => {
+        sut = new KandelDistributionHelper(4, 6);
+        prices = [1000, 2000, 4000, 8000, 16000, 32000];
+        distribution = sut.calculateDistributionConstantGives(
+          Big(2),
+          prices.map((x) => Big(x)),
+          Big(10),
+          Big(10000),
+          3
+        );
+      });
+
+      it("can decrease uniformly, respects limits, prices, and rounding", () => {
+        // Arrange
+        const baseDelta = Big(-2);
+        const quoteDelta = Big(-3000);
+
+        // Act
+        const result = sut.uniformlyChangeVolume({
+          distribution,
+          baseDelta,
+          quoteDelta,
+          minimumBasePerOffer: Big(1),
+          minimumQuotePerOffer: Big(9000),
+        });
+
+        // Assert
+        const newPrices = result.distribution.getPricesForDistribution();
+        assert.deepStrictEqual(
+          newPrices.map((x) => x.toNumber()),
+          prices,
+          "prices should be left unchanged"
+        );
+
+        const oldVolume = distribution.getOfferedVolumeForDistribution();
+        const newVolume = result.distribution.getOfferedVolumeForDistribution();
+        assert.equal(
+          newVolume.requiredBase.toNumber(),
+          oldVolume.requiredBase.add(baseDelta).toNumber()
+        );
+        assert.equal(
+          newVolume.requiredQuote.toNumber(),
+          oldVolume.requiredQuote.add(quoteDelta).toNumber()
+        );
+
+        assertIsRounded(result.distribution);
+        assert.equal(result.totalBaseChange.toNumber(), baseDelta.toNumber());
+        assert.equal(result.totalQuoteChange.toNumber(), quoteDelta.toNumber());
+
+        result.distribution.offers.forEach((o) => {
+          assert.ok(o.base.gte(Big(1)), "base should be above minimum");
+          assert.ok(o.quote.gte(Big(9000)), "quote should be above minimum");
+        });
+      });
+
+      [
+        { baseDelta: Big(-2) },
+        { quoteDelta: Big(-3000) },
+        { baseDelta: Big(2), quoteDelta: Big(3000) },
+        { baseDelta: Big(2), quoteDelta: Big(-3000) },
+      ].forEach(({ baseDelta, quoteDelta }) => {
+        it(`can increase and decrease also a single one baseDelta=${baseDelta} quoteDelta=${quoteDelta}`, () => {
+          // Arrange
+          const oldVolume = distribution.getOfferedVolumeForDistribution();
+
+          // Act
+          const result = sut.uniformlyChangeVolume({
+            distribution,
+            baseDelta,
+            quoteDelta,
+            minimumBasePerOffer: Big(1),
+            minimumQuotePerOffer: Big(9000),
+          });
+
+          // Assert
+          const newVolume =
+            result.distribution.getOfferedVolumeForDistribution();
+          assert.equal(
+            newVolume.requiredBase.toNumber(),
+            oldVolume.requiredBase.add(baseDelta ?? Big(0)).toNumber()
+          );
+          assert.equal(
+            newVolume.requiredQuote.toNumber(),
+            oldVolume.requiredQuote.add(quoteDelta ?? Big(0)).toNumber()
+          );
+        });
       });
     }
   );

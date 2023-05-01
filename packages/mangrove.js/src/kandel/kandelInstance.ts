@@ -444,6 +444,44 @@ class KandelInstance {
       gasreq: (await this.getParameters()).gasreq,
     });
   }
+
+  /** Calculates a new distribution based on the provided live offers and deltas.
+   * @param params The parameters for the new distribution.
+   * @param params.liveOffers The live offers to use.
+   * @param params.baseDelta The delta to apply to the base token volume. If not provided, then the base token volume is unchanged.
+   * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The new distribution
+   * @remarks The base and quote deltas are applied uniformly to all offers, except during decrease where offers are kept above their minimum volume.
+   */
+  public async calculateDistributionWithUniformlyChangedVolume(params: {
+    liveOffers: OffersWithGives;
+    baseDelta?: Bigish;
+    quoteDelta?: Bigish;
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    const distribution = await this.createDistributionWithOffers({
+      explicitOffers: params.liveOffers,
+    });
+
+    const minimumBasePerOffer = params.minimumBasePerOffer
+      ? Big(params.minimumBasePerOffer)
+      : await this.getMinimumVolume("asks");
+    const minimumQuotePerOffer = params.minimumQuotePerOffer
+      ? Big(params.minimumQuotePerOffer)
+      : await this.getMinimumVolume("bids");
+
+    return this.generator.uniformlyChangeVolume({
+      distribution,
+      baseDelta: params.baseDelta,
+      quoteDelta: params.quoteDelta,
+      minimumBasePerOffer,
+      minimumQuotePerOffer,
+    });
+  }
+
   /** Approves the Kandel instance for transferring from signer to itself.
    * @param baseArgs The arguments for approving the base token. If not provided, then infinite approval is used.
    * @param quoteArgs The arguments for approving the quote token. If not provided, then infinite approval is used.
