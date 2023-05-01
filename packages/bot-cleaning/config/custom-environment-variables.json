@@ -1,6 +1,5 @@
 {
   "logLevel": "LOG_LEVEL",
-  "noColor": "NO_COLOR",
   "markets": {
     "__name": "MARKETS",
     "__format": "json"
