@@ -385,7 +385,7 @@ const connect = async (params: connectParams) => {
       amount?: number;
       internalAmount?: ethers.BigNumber;
     }) => {
-      deal({ ...dealParams, url: params.url, provider: params.provider });
+      await deal({ ...dealParams, url: params.url, provider: params.provider });
     },
   };
 };
