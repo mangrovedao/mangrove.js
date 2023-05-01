@@ -8,6 +8,9 @@
   "fee": 3000,
   "runEveryXMinutes": 10,
   "holdingToken": "DAI",
-  "exchangeFee": [{ "token": "USDC", "fee": 100 }],
-  "exchange": "Mangrove"
+  "exchangeFee": [
+    { "token": "USDC", "fee": 100 },
+    { "token": "DAI", "fee": 3000 }
+  ],
+  "exchange": "Uniswap"
 }

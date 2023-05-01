@@ -9,6 +9,7 @@ import assert from "assert";
 import { logger } from "../../src/util/logger";
 import { ArbBot } from "../../src/ArbBot";
 import { getPoolContract } from "../../src/uniswap/libs/uniswapUtils";
+import { activateTokens } from "../../src/util/ArbBotUtils";
 
 let mgv: Mangrove;
 let mgvAdmin: Mangrove;
@@ -26,13 +27,19 @@ describe("ArbBot integration tests", () => {
 
     const arb = mgv.getAddress("MgvArbitrage");
     const weth = mgv.token("WETH");
+    const dai = mgv.token("DAI");
     await this.server.deal({
       token: weth.address,
       account: this.accounts.maker.address,
       amount: 100,
     });
 
-    const dai = mgv.token("DAI");
+    await this.server.deal({
+      token: dai.address,
+      account: this.accounts.maker.address,
+      amount: 100000,
+    });
+
     await this.server.deal({ token: dai.address, account: arb, amount: 10000 });
     logger.debug(
       `--label ${this.accounts.maker.address}:maker --label ${this.accounts.deployer.address}:deployer --label ${arb}:arbContract --label ${weth.address}:weth --label ${dai.address}:dai --label ${mgv.address}:mangrove`
@@ -49,7 +56,7 @@ describe("ArbBot integration tests", () => {
   });
 
   describe("test arb bot", () => {
-    it(`should find arb and do arb`, async function () {
+    it(`should find arb and do arb, ask`, async function () {
       let market = await mgv.market({ base: "WETH", quote: "DAI" });
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
 
@@ -64,20 +71,70 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvAdmin, poolContract);
-      let txActivate = await arbBot.activateTokens([
-        market.base.address,
-        market.quote.address,
-      ]);
+      let txActivate = await activateTokens(
+        [market.base.address, market.quote.address],
+        mgvAdmin
+      );
       await mgvTestUtil.waitForTransaction(txActivate);
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
       let txs = await arbBot.run(["WETH", "DAI"], {
         fee: 3000,
         holdingToken: "DAI",
+        exchangeConfig: {
+          exchange: "Uniswap",
+          fee: 100,
+        },
       });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
       let recipt = await mgvTestUtil.waitForTransaction(txs.askTransaction);
+      await mgvTestUtil.waitForBlock(mgv, recipt.blockNumber);
+      assert.ok(!(await market.isLive("asks", offer.id)));
+      assert.deepStrictEqual(
+        baseBeforeBalance,
+        baseAfterBalance,
+        "Should have the same amount of base"
+      );
+      assert.ok(
+        quoteBeforeBalance < quoteAfterBalance,
+        "Should have gained quote"
+      );
+    });
+
+    it(`should find arb and do arb, bid`, async function () {
+      let market = await mgv.market({ base: "WETH", quote: "DAI" });
+      const mgvArbAddress = mgv.getAddress("MgvArbitrage");
+
+      let lp = await mgv.liquidityProvider(market);
+      let provision = await lp.computeBidProvision();
+      let offer = await lp.newBid({ wants: 1, gives: 10000, fund: provision });
+      await lp.approveBids();
+      const poolContract = await getPoolContract({
+        in: market.quote.address,
+        out: market.base.address,
+        fee: 3000,
+        provider: mgv.provider,
+      });
+      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      let txActivate = await activateTokens(
+        [market.base.address, market.quote.address],
+        mgvAdmin
+      );
+      await mgvTestUtil.waitForTransaction(txActivate);
+      let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
+      let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
+      let txs = await arbBot.run(["WETH", "DAI"], {
+        fee: 3000,
+        holdingToken: "DAI",
+        exchangeConfig: {
+          exchange: "Uniswap",
+          fee: 3000,
+        },
+      });
+      let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
+      let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
+      let recipt = await mgvTestUtil.waitForTransaction(txs.bidTransaction);
       await mgvTestUtil.waitForBlock(mgv, recipt.blockNumber);
       assert.ok(!(await market.isLive("asks", offer.id)));
       assert.deepStrictEqual(
@@ -104,13 +161,21 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvAdmin, poolContract);
-      await arbBot.activateTokens([market.base.address, market.quote.address]);
+      let txActivate = await activateTokens(
+        [market.base.address, market.quote.address],
+        mgvAdmin
+      );
+      await mgvTestUtil.waitForTransaction(txActivate);
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
       let txs = await arbBot.run(["WETH", "DAI"], {
         fee: 3000,
         holdingToken: "DAI",
+        exchangeConfig: {
+          exchange: "Uniswap",
+          fee: 100,
+        },
       });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseAfterBalance = await market.base.balanceOf(mgvArbAddress);
@@ -163,11 +228,11 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvAdmin, poolContract);
-      await arbBot.activateTokens([
-        market.base.address,
-        market.quote.address,
-        mgv.token("DAI").address,
-      ]);
+      let txActivate = await activateTokens(
+        [market.base.address, market.quote.address, mgv.token("DAI").address],
+        mgvAdmin
+      );
+      await mgvTestUtil.waitForTransaction(txActivate);
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
@@ -212,11 +277,11 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvAdmin, poolContract);
-      await arbBot.activateTokens([
-        market.base.address,
-        market.quote.address,
-        mgv.token("DAI").address,
-      ]);
+      let txActivate = await activateTokens(
+        [market.base.address, market.quote.address, mgv.token("DAI").address],
+        mgvAdmin
+      );
+      await mgvTestUtil.waitForTransaction(txActivate);
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);

@@ -1,5 +1,6 @@
 import { Mangrove, ethers } from "@mangrovedao/mangrove.js";
 import { node } from "@mangrovedao/mangrove.js/dist/nodejs/util/node";
+import * as deploy from "./../deployMgvAndMgvArbitrage";
 import { mochaHooks as mgvMochahooks } from "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks";
 import * as eth from "@mangrovedao/mangrove.js/dist/nodejs/eth";
 import DevNode from "@mangrovedao/mangrove.js/dist/nodejs/util/devNode";
@@ -34,49 +35,15 @@ export const mochaHooks = {
   },
 
   async deployMgvArbitrage(provider: ethers.providers.Provider, hookInfo: any) {
-    const forgeScriptCmd = `forge script \
-      --rpc-url ${hookInfo.server.url} \
-      --froms ${mnemonic.address(0)} \
-      --private-key ${mnemonic.key(0)} \
-      --broadcast -vvv \
-      MgvArbitrageDeployer`;
-    console.log("Running forge script:");
-    // this dumps the private-key but it is a test mnemonic
-    console.log(forgeScriptCmd);
-
-    const network = await eth.getProviderNetwork(provider);
-    const env = {
-      ...process.env,
-      MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
-      MANGROVE: Mangrove.getAddress("Mangrove", network.name),
-      ArbToken: Mangrove.getAddress("DAI", network.name),
-    };
-    const scriptPromise = new Promise((ok, ko) => {
-      childProcess.exec(
-        forgeScriptCmd,
-        {
-          encoding: "utf8",
-          env: env,
-          cwd: CORE_DIR,
-        },
-        (error, stdout, stderr) => {
-          if (error) {
-            console.error("forge cmd stdout:");
-            console.error(stdout);
-          }
-          if (stderr.length > 0) {
-            console.error("forge cmd stderr:");
-            console.error(stderr);
-          }
-          if (error) {
-            throw error;
-          } else {
-            ok(void 0);
-          }
-        }
-      );
+    await deploy.deployMgvArbitrage({
+      provider,
+      url: hookInfo.server.url,
+      from: mnemonic.address(0),
+      privateKey: mnemonic.key(0),
+      coreDir: CORE_DIR,
+      setToyENSCodeIfAbsent: false,
+      setMulticallCodeIfAbsent: false,
     });
-    await scriptPromise;
   },
   async beforeAll() {
     dotenv.config();

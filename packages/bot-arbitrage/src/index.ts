@@ -11,6 +11,7 @@ import { Wallet } from "ethers";
 import { BaseProvider } from "@ethersproject/providers";
 import { getPoolContract } from "./uniswap/libs/uniswapUtils";
 import { SWAP_ROUTER_ADDRESS } from "./uniswap/libs/uniswapUtils";
+import { activateTokens } from "./util/ArbBotUtils";
 
 dotenvFlow.config();
 
@@ -78,11 +79,11 @@ export async function botFunction(
       quote: quote,
       bookOptions: { maxOffers: 20 },
     });
-    let lp = await mgv.liquidityProvider(market);
-    await lp.approveAsks();
-    await lp.approveBids();
-    market.base.approve(SWAP_ROUTER_ADDRESS);
-    market.quote.approve(SWAP_ROUTER_ADDRESS);
+    await activateTokens(
+      marketConfig.map((v) => mgv.getAddress(v)),
+      mgv
+    );
+
     arbBotMap.add({ base: market.base.name, quote: market.quote.name, fee });
   }
 

@@ -72,18 +72,6 @@ export class ArbBot {
     }
   }
 
-  public async activateTokens(tokens: string[]) {
-    const arbAddress = Mangrove.getAddress(
-      "MgvArbitrage",
-      (await this.mgv.provider.getNetwork()).name
-    );
-    const arbContract = MgvArbitrage__factory.connect(
-      arbAddress,
-      this.mgv.signer
-    );
-    return await arbContract.activateTokens(tokens);
-  }
-
   private getNativeTokenNameAndDecimals(chainId?: number) {
     // const provider = this.mgv.provider;
     // const network = await provider.getNetwork();

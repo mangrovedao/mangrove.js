@@ -6,7 +6,7 @@ import { ExchangeFee } from "./Configs";
 export type ArbConfig = {
   fee: number;
   holdingToken: string;
-  exchangeConfig?: UniswapExchange | MangroveExchange;
+  exchangeConfig: UniswapExchange | MangroveExchange;
 };
 
 type UniswapExchange = {
