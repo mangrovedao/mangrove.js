@@ -6,7 +6,7 @@ import config from "./util/config";
 import logger from "./util/logger";
 
 class GasHelper {
-  priceUtils = new PriceUtils(config);
+  priceUtils = new PriceUtils(logger);
   /**
    * Either returns a constant gas price, if set, or queries a dedicated
    * external source for gas prices.

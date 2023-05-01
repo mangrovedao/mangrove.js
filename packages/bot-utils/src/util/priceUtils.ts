@@ -9,8 +9,8 @@ import { Network, Alchemy } from "alchemy-sdk";
 
 export class PriceUtils {
   logger: CommonLogger;
-  constructor(config: IConfig) {
-    this.logger = log.logger(config);
+  constructor(_logger: CommonLogger) {
+    this.logger = _logger;
   }
 
   public choosePrice(ba: Market.BA, referencePrice: Big, lambda: Big): Big {

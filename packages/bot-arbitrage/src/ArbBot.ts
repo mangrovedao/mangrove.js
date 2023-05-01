@@ -5,7 +5,6 @@ import { MgvArbitrage__factory } from "./types/typechain";
 import { logger } from "./util/logger";
 import { ArbConfig } from "./util/configUtils";
 import { PriceUtils } from "@mangrovedao/bot-utils/build/util/priceUtils";
-import config from "./util/config";
 import { BigNumber, BigNumberish } from "ethers";
 import Big from "big.js";
 dotenvFlow.config();
@@ -13,7 +12,7 @@ dotenvFlow.config();
 export class ArbBot {
   mgv: Mangrove;
   poolContract: ethers.Contract;
-  priceUtils = new PriceUtils(config);
+  priceUtils = new PriceUtils(logger);
 
   constructor(_mgv: Mangrove, _poolContract: ethers.Contract) {
     this.mgv = _mgv;

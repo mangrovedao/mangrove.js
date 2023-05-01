@@ -16,7 +16,7 @@ export class FailingOffer {
   #bidProbability: number;
   #offerTimeRng: () => number;
   #maxQuantity: number;
-  priceUtils = new PriceUtils(config);
+  priceUtils = new PriceUtils(logger);
   postOfferUtils = new PostOfferUtils(config);
   /**
    * Constructs the bot.

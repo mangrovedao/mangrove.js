@@ -13,10 +13,8 @@ export type offerData = {
 };
 
 export class PostOfferUtils {
-  #config: IConfig;
   logger: CommonLogger;
   constructor(config: IConfig) {
-    this.#config = config;
     this.logger = log.logger(config);
   }
   public async postFailing(offerData: offerData) {
