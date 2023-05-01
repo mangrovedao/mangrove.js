@@ -1,10 +1,9 @@
 {
   "logLevel": "error",
-  "markets": [["WETH", "DAI"]],
+  "markets": [["WETH", "DAI", 3000]],
   "MangroveJs": {
     "logLevel": "info"
   },
-  "fee": 3000,
   "holdingToken": "DAI",
   "exchangeFee": [
     { "token": "USDC", "fee": 100 },

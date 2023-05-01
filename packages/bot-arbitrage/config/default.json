@@ -1,11 +1,10 @@
 {
   "logLevel": "info",
   "markets": [
-    ["WETH", "DAI"],
-    ["WETH", "USDC"],
-    ["DAI", "USDC"]
+    ["WETH", "DAI", 3000],
+    ["WETH", "USDC", 3000],
+    ["DAI", "USDC", 100]
   ],
-  "fee": 3000,
   "runEveryXMinutes": 10,
   "holdingToken": "DAI",
   "exchangeFee": [

@@ -4,9 +4,13 @@ import { configUtils as botConfigUtils } from "@mangrovedao/bot-utils";
 import { ExchangeFee } from "./Configs";
 
 export type ArbConfig = {
-  fee: number;
   holdingToken: string;
   exchangeConfig: UniswapExchange | MangroveExchange;
+};
+
+export type ArbBotConfig = {
+  markets: [string, string, number][];
+  runEveryXMinutes: number;
 };
 
 type UniswapExchange = {
@@ -27,7 +31,6 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
 
   public buildArbConfig(): ArbConfig {
     return {
-      fee: this.getFeeConfig(),
       holdingToken: this.getHoldingTokenConfig(),
       exchangeConfig: this.getCorrectExchangeConfig(),
     };
@@ -47,19 +50,6 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
       : undefined;
   }
 
-  public getFeeConfig(): number {
-    if (!this.#config.has("fee")) {
-      throw new Error("No fee have been configured");
-    }
-    const feeConfig = this.#config.get<number>("fee");
-    if (!Number.isInteger(feeConfig)) {
-      throw new ErrorWithData(
-        "Fee configuration is malformed, should be an Integer",
-        feeConfig
-      );
-    }
-    return feeConfig;
-  }
   public getExchangeConfig(): string {
     if (!this.#config.has("exchange")) {
       throw new Error("No exchange have been configured");
@@ -104,5 +94,55 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
       );
     }
     return feeConfig.fee;
+  }
+
+  public getAndValidateArbConfig(): ArbBotConfig {
+    let runEveryXMinutes = -1;
+    let markets: [string, string, number][] = [];
+    const configErrors: string[] = [];
+
+    if (this.#config.has("runEveryXMinutes")) {
+      runEveryXMinutes = this.#config.get<number>("runEveryXMinutes");
+      if (typeof runEveryXMinutes !== "number") {
+        configErrors.push(
+          `'runEveryXMinutes' must be a number - given type: ${typeof runEveryXMinutes}`
+        );
+      }
+    } else {
+      configErrors.push("'runEveryXMinutes' missing");
+    }
+
+    if (!this.#config.has("markets")) {
+      configErrors.push("'markets' missing");
+    } else {
+      markets = this.#config.get<Array<[string, string, number]>>("markets");
+      if (!Array.isArray(markets)) {
+        configErrors.push("'markets' must be an array of pairsm with fee");
+      } else {
+        for (const market of markets) {
+          if (
+            !Array.isArray(market) ||
+            market.length != 3 ||
+            typeof market[0] !== "string" ||
+            typeof market[1] !== "string" ||
+            typeof market[2] !== "number" ||
+            !Number.isInteger(market[2])
+          ) {
+            configErrors.push(
+              "'markets' elements must be arrays of 2 strings and 1 integer (Fee)"
+            );
+            break;
+          }
+        }
+      }
+    }
+
+    if (configErrors.length > 0) {
+      throw new Error(
+        `Found the following config errors: [${configErrors.join(", ")}]`
+      );
+    }
+
+    return { markets, runEveryXMinutes };
   }
 }

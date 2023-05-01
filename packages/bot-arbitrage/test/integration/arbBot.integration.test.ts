@@ -78,8 +78,7 @@ describe("ArbBot integration tests", () => {
       await mgvTestUtil.waitForTransaction(txActivate);
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
-      let txs = await arbBot.run(["WETH", "DAI"], {
-        fee: 3000,
+      let txs = await arbBot.run(["WETH", "DAI", 3000], {
         holdingToken: "DAI",
         exchangeConfig: {
           exchange: "Uniswap",
@@ -124,8 +123,7 @@ describe("ArbBot integration tests", () => {
       await mgvTestUtil.waitForTransaction(txActivate);
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
-      let txs = await arbBot.run(["WETH", "DAI"], {
-        fee: 3000,
+      let txs = await arbBot.run(["WETH", "DAI", 3000], {
         holdingToken: "DAI",
         exchangeConfig: {
           exchange: "Uniswap",
@@ -169,8 +167,7 @@ describe("ArbBot integration tests", () => {
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
-      let txs = await arbBot.run(["WETH", "DAI"], {
-        fee: 3000,
+      let txs = await arbBot.run(["WETH", "DAI", 3000], {
         holdingToken: "DAI",
         exchangeConfig: {
           exchange: "Uniswap",
@@ -237,8 +234,7 @@ describe("ArbBot integration tests", () => {
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
       let holdingTokenBeforeBalance = await dai.balanceOf(mgvArbAddress);
-      let txs = await arbBot.run(["WETH", "USDC"], {
-        fee: 3000,
+      let txs = await arbBot.run(["WETH", "USDC", 3000], {
         holdingToken: "DAI",
         exchangeConfig: { exchange: "Mangrove" },
       });
@@ -288,8 +284,7 @@ describe("ArbBot integration tests", () => {
       let holdingTokenBeforeBalance = await mgv
         .token("DAI")
         .balanceOf(mgvArbAddress);
-      let transactions = await arbBot.run(["WETH", "USDC"], {
-        fee: 3000,
+      let transactions = await arbBot.run(["WETH", "USDC", 3000], {
         holdingToken: "DAI",
         exchangeConfig: { exchange: "Uniswap", fee: 100 },
       });

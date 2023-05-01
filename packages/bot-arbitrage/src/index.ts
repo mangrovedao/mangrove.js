@@ -48,7 +48,7 @@ function createAsyncArbTaker(
         });
         arbPromises.push(
           new ArbBot(mgv, poolContract).run(
-            [arbBotValues.base, arbBotValues.quote],
+            [arbBotValues.base, arbBotValues.quote, arbBotValues.fee],
             configUtil.buildArbConfig()
           )
         );
@@ -67,8 +67,7 @@ export async function botFunction(
   signer: Wallet,
   provider: BaseProvider
 ) {
-  const botConfig = configUtil.getAndValidateConfig();
-  const fee = configUtil.getFeeConfig();
+  const botConfig = configUtil.getAndValidateArbConfig();
 
   const marketConfigs = botConfig.markets;
   const arbBotMap = new Set<MarketPairAndFee>();
@@ -80,11 +79,15 @@ export async function botFunction(
       bookOptions: { maxOffers: 20 },
     });
     await activateTokens(
-      marketConfig.map((v) => mgv.getAddress(v)),
+      [mgv.getAddress(marketConfig[0]), mgv.getAddress(marketConfig[1])],
       mgv
     );
 
-    arbBotMap.add({ base: market.base.name, quote: market.quote.name, fee });
+    arbBotMap.add({
+      base: market.base.name,
+      quote: market.quote.name,
+      fee: marketConfig[2],
+    });
   }
 
   // create and schedule task

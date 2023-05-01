@@ -20,14 +20,14 @@ export class ArbBot {
   }
 
   public async run(
-    marketConfig: [string, string],
+    marketConfig: [string, string, number],
     config: ArbConfig
   ): Promise<{
     askTransaction: ethers.ContractTransaction;
     bidTransaction: ethers.ContractTransaction;
   }> {
     try {
-      const [base, quote] = marketConfig;
+      const [base, quote, fee] = marketConfig;
       const market = await this.mgv.market({
         base: base,
         quote: quote,
@@ -53,6 +53,7 @@ export class ArbBot {
           market,
           "asks",
           config,
+          fee,
           gasprice,
           holdsTokenPrice
         ),
@@ -60,6 +61,7 @@ export class ArbBot {
           market,
           "bids",
           config,
+          fee,
           gasprice,
           holdsTokenPrice
         ),
@@ -84,6 +86,7 @@ export class ArbBot {
     market: Market,
     BA: Market.BA,
     config: ArbConfig,
+    fee: number,
     gasprice: BigNumber,
     holdsTokenPrice: Big
   ): Promise<ethers.ContractTransaction> {
@@ -99,6 +102,7 @@ export class ArbBot {
         bestOffer,
         givesToken,
         config,
+        fee,
         gasprice,
         holdsTokenPrice
       );
@@ -109,7 +113,8 @@ export class ArbBot {
           bestOffer,
           givesToken,
           result.costInHoldingToken,
-          config
+          config,
+          fee
         )) as ethers.ContractTransaction;
       }
     }
@@ -121,6 +126,7 @@ export class ArbBot {
     bestOffer: Market.Offer,
     givesToken: MgvToken,
     config: ArbConfig,
+    fee: number,
     gasprice: BigNumber,
     holdsTokenPrice: Big
   ): Promise<{
@@ -133,7 +139,8 @@ export class ArbBot {
         wantsToken,
         bestOffer,
         givesToken,
-        config
+        config,
+        fee
       );
       const costInNative = gasprice.mul(gasused);
       const costInHoldingToken = holdsTokenPrice
@@ -145,7 +152,8 @@ export class ArbBot {
         bestOffer,
         givesToken,
         costInHoldingToken.toString(),
-        config
+        config,
+        fee
       );
       return {
         isProfitable: true,
@@ -162,7 +170,8 @@ export class ArbBot {
     wantsToken: MgvToken,
     bestOffer: Market.Offer,
     givesToken: MgvToken,
-    config: ArbConfig
+    config: ArbConfig,
+    fee: number
   ) {
     const gasused = await this.doArbitrage(
       bestId,
@@ -171,6 +180,7 @@ export class ArbBot {
       givesToken,
       0,
       config,
+      fee,
       true
     );
     return gasused as BigNumber;
@@ -182,7 +192,8 @@ export class ArbBot {
     bestOffer: Market.Offer,
     givesToken: MgvToken,
     minGain: BigNumberish,
-    config: ArbConfig
+    config: ArbConfig,
+    fee: number
   ) {
     await this.doArbitrage(
       bestId,
@@ -191,6 +202,7 @@ export class ArbBot {
       givesToken,
       minGain,
       config,
+      fee,
       false,
       true
     );
@@ -203,6 +215,7 @@ export class ArbBot {
     givesToken: MgvToken,
     minGain: BigNumberish,
     config: ArbConfig,
+    fee: number,
     estimateGas = false,
     staticCall = false
   ) {
@@ -235,7 +248,7 @@ export class ArbBot {
           bestOffer.wants,
           givesToken.decimals
         ).toString(),
-        fee: config.fee,
+        fee: fee,
         minGain: minGain,
       });
     } else if (config.exchangeConfig) {
@@ -258,7 +271,7 @@ export class ArbBot {
               bestOffer.wants,
               givesToken.decimals
             ).toString(),
-            fee: config.fee,
+            fee: fee,
             minGain: minGain,
           },
           givesToken.mgv.token(config.holdingToken).address,
@@ -283,7 +296,7 @@ export class ArbBot {
               bestOffer.wants,
               givesToken.decimals
             ).toString(),
-            fee: config.fee,
+            fee: fee,
             minGain: minGain,
           },
           givesToken.mgv.token(config.holdingToken).address
