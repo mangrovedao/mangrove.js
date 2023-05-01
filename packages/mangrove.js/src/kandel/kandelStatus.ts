@@ -2,6 +2,7 @@ import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
 import KandelPriceCalculation from "./kandelPriceCalculation";
+import { Bigish } from "../types";
 
 /** Offers with their price, liveness, and Kandel index.
  * @param offerType Whether the offer is a bid or an ask.
@@ -12,7 +13,7 @@ import KandelPriceCalculation from "./kandelPriceCalculation";
  */
 export type OffersWithPrices = {
   offerType: Market.BA;
-  price: Big;
+  price: Bigish;
   index: number;
   offerId: number;
   live: boolean;
@@ -133,7 +134,7 @@ class KandelStatus {
       liveOffers[
         this.getIndexOfPriceClosestToMid(
           midPrice,
-          liveOffers.map((x) => x.price)
+          liveOffers.map((x) => Big(x.price))
         )
       ];
 
@@ -141,7 +142,7 @@ class KandelStatus {
     // due to rounding and due to slight drift of prices during order execution.
     const expectedPrices = this.priceCalculation.getPricesFromPrice(
       offer.index,
-      offer.price,
+      Big(offer.price),
       ratio,
       pricePoints
     ).prices;
@@ -163,7 +164,7 @@ class KandelStatus {
     offers
       .filter((x) => x.index < pricePoints)
       .forEach(({ offerType, index, live, offerId, price }) => {
-        statuses[index][offerType] = { live, offerId, price };
+        statuses[index][offerType] = { live, offerId, price: Big(price) };
       });
 
     // Offers are allowed to be dead if their dual offer is live

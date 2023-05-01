@@ -9,12 +9,15 @@ import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
 import KandelStatus, { OffersWithPrices } from "./kandelStatus";
-import KandelDistributionHelper from "./kandelDistributionHelper";
+import KandelDistributionHelper, {
+  OffersWithGives,
+} from "./kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandelPriceCalculation";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import OfferLogic from "../offerLogic";
 import KandelConfiguration from "./kandelConfiguration";
+import KandelSeeder from "./kandelSeeder";
 
 /**
  * @notice Parameters for a Kandel instance.
@@ -54,6 +57,7 @@ class KandelInstance {
   generator: KandelDistributionGenerator;
   status: KandelStatus;
   configuration: KandelConfiguration;
+  seeder: KandelSeeder;
 
   /** Expose logic relevant for all offer logic implementations, including Kandel.  */
   offerLogic: OfferLogic;
@@ -109,6 +113,7 @@ class KandelInstance {
       generator,
       offerLogic,
       configuration: new KandelConfiguration(),
+      seeder: new KandelSeeder(market.mgv),
     });
   }
 
@@ -122,6 +127,7 @@ class KandelInstance {
     generator: KandelDistributionGenerator;
     offerLogic: OfferLogic;
     configuration: KandelConfiguration;
+    seeder: KandelSeeder;
   }) {
     this.address = params.address;
     this.kandel = params.kandel;
@@ -131,6 +137,7 @@ class KandelInstance {
     this.generator = params.generator;
     this.offerLogic = params.offerLogic;
     this.configuration = params.configuration;
+    this.seeder = params.seeder;
   }
 
   /** Gets the base of the market Kandel is making  */
@@ -411,19 +418,10 @@ class KandelInstance {
   /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
-   * @param params.explicitOffers[].index The index of the offer.
-   * @param params.explicitOffers[].offerType The type of the offer.
-   * @param params.explicitOffers[].price The price of the offer.
-   * @param params.explicitOffers[].gives The amount of base or quote that the offer gives.
    * @returns The new distribution.
    */
   public async createDistributionWithOffers(params: {
-    explicitOffers: {
-      index: number;
-      offerType: Market.BA;
-      price: Bigish;
-      gives: Bigish;
-    }[];
+    explicitOffers: OffersWithGives;
   }) {
     const parameters = await this.getParameters();
     return this.generator.createDistributionWithOffers({
@@ -432,6 +430,55 @@ class KandelInstance {
         ratio: parameters.ratio,
         pricePoints: parameters.pricePoints,
       },
+    });
+  }
+
+  /** Retrieves the minimum volume for a given offer type.
+   * @param offerType The offer type to get the minimum volume for.
+   * @returns The minimum volume for the given offer type.
+   */
+  public async getMinimumVolume(offerType: Market.BA) {
+    return this.seeder.getMinimumVolumeForGasreq({
+      market: this.market,
+      offerType,
+      gasreq: (await this.getParameters()).gasreq,
+    });
+  }
+
+  /** Calculates a new distribution based on the provided live offers and deltas.
+   * @param params The parameters for the new distribution.
+   * @param params.liveOffers The live offers to use.
+   * @param params.baseDelta The delta to apply to the base token volume. If not provided, then the base token volume is unchanged.
+   * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The new distribution
+   * @remarks The base and quote deltas are applied uniformly to all offers, except during decrease where offers are kept above their minimum volume.
+   */
+  public async calculateDistributionWithUniformlyChangedVolume(params: {
+    liveOffers: OffersWithGives;
+    baseDelta?: Bigish;
+    quoteDelta?: Bigish;
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    const distribution = await this.createDistributionWithOffers({
+      explicitOffers: params.liveOffers,
+    });
+
+    const minimumBasePerOffer = params.minimumBasePerOffer
+      ? Big(params.minimumBasePerOffer)
+      : await this.getMinimumVolume("asks");
+    const minimumQuotePerOffer = params.minimumQuotePerOffer
+      ? Big(params.minimumQuotePerOffer)
+      : await this.getMinimumVolume("bids");
+
+    return this.generator.uniformlyChangeVolume({
+      distribution,
+      baseDelta: params.baseDelta,
+      quoteDelta: params.quoteDelta,
+      minimumBasePerOffer,
+      minimumQuotePerOffer,
     });
   }
 
