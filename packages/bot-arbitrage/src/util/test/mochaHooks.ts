@@ -6,6 +6,7 @@ import * as eth from "@mangrovedao/mangrove.js/dist/nodejs/eth";
 import DevNode from "@mangrovedao/mangrove.js/dist/nodejs/util/devNode";
 import * as childProcess from "child_process";
 import * as dotenv from "dotenv";
+import { logger } from "ethers";
 
 const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
@@ -47,13 +48,15 @@ export const mochaHooks = {
   },
   async beforeAll() {
     dotenv.config();
+    let forkUrl = process.env.POLYGON_NODE_URL;
+    logger.debug(forkUrl);
     const serverParams = {
       host: "127.0.0.1",
       port: 8545, // use 8545 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
       pipe: false,
       deploy: false,
       setMulticallCodeIfAbsent: false, // mangrove.js is supposed to work against servers that only have ToyENS deployed but not Multicall, so we don't deploy Multicall in tests. However mangrove.js needs ToyENS so we let the node ensure it's there.
-      forkUrl: process.env.POLYGON_NODE_URL,
+      forkUrl,
       forkBlockNumber: 39764951,
       stateCache: true,
     };
