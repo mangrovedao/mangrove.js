@@ -221,7 +221,7 @@ class KandelDistributionHelper {
    * @param minimumQuotePerOffer The minimum quote to give for each offer.
    * @returns The minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
    */
-  calculateInitialGives(
+  calculateMinimumInitialGives(
     prices: Big[],
     minimumBasePerOffer: Big,
     minimumQuotePerOffer: Big

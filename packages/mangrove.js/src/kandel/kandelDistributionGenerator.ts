@@ -50,7 +50,7 @@ class KandelDistributionGenerator {
     );
 
     const { askGives, bidGives } =
-      this.distributionHelper.calculateInitialGives(
+      this.distributionHelper.calculateMinimumInitialGives(
         pricesAndRatio.prices,
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer)

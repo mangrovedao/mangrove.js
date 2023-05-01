@@ -1085,6 +1085,23 @@ describe("Kandel integration tests suite", function () {
           assert.equal(await kandel.getReserveId(), kandel.address);
         });
 
+        bidsAsks.forEach((offerType) => {
+          it(`getMinimumVolume agrees with seeder on ${offerType}`, async function () {
+            // Arrange
+            const minVolumeFromSeeder =
+              await kandelStrategies.seeder.getMinimumVolume({
+                market: kandel.market,
+                offerType,
+                onAave,
+              });
+            // Act
+            const minBids = await kandel.getMinimumVolume(offerType);
+
+            // Assert
+            assert.equal(minBids.toNumber(), minVolumeFromSeeder.toNumber());
+          });
+        });
+
         [true, false].forEach((inChunks) => {
           it(`retractOffers can withdraw all offers inChunks=${inChunks}`, async () => {
             // Arrange
@@ -1313,6 +1330,12 @@ describe("Kandel integration tests suite", function () {
         [{ factor: 0.5 }, { gasreq: 1 }].forEach(({ factor, gasreq }) => {
           it(`calculateMinimumDistribution cannot be deployed with factor=${factor} or gasreq=${gasreq}`, async () => {
             // Arrange
+            const minParams = {
+              market: kandel.market,
+              factor,
+              gasreq,
+              onAave,
+            };
             const distribution = kandel.generator.calculateMinimumDistribution({
               priceParams: {
                 minPrice: 900,
@@ -1320,22 +1343,24 @@ describe("Kandel integration tests suite", function () {
                 maxPrice: 1100,
               },
               midPrice: 1000,
-              minimumBasePerOffer:
-                await kandelStrategies.seeder.getMinimumVolume({
-                  market: kandel.market,
-                  offerType: "asks",
-                  onAave,
-                  factor,
-                  gasreq,
-                }),
-              minimumQuotePerOffer:
-                await kandelStrategies.seeder.getMinimumVolume({
-                  market: kandel.market,
-                  offerType: "bids",
-                  onAave,
-                  factor,
-                  gasreq,
-                }),
+              minimumBasePerOffer: gasreq
+                ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
+                    ...minParams,
+                    offerType: "asks",
+                  })
+                : await kandelStrategies.seeder.getMinimumVolume({
+                    ...minParams,
+                    offerType: "asks",
+                  }),
+              minimumQuotePerOffer: gasreq
+                ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
+                    ...minParams,
+                    offerType: "bids",
+                  })
+                : await kandelStrategies.seeder.getMinimumVolume({
+                    ...minParams,
+                    offerType: "bids",
+                  }),
             });
 
             // Act/assert

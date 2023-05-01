@@ -231,14 +231,14 @@ describe("KandelDistributionHelper unit tests suite", () => {
   });
 
   describe(
-    KandelDistributionHelper.prototype.calculateInitialGives.name,
+    KandelDistributionHelper.prototype.calculateMinimumInitialGives.name,
     () => {
       it("returns minimum on empty list", () => {
         // Arrange
         const sut = new KandelDistributionHelper(0, 0);
 
         // Act
-        const { askGives, bidGives } = sut.calculateInitialGives(
+        const { askGives, bidGives } = sut.calculateMinimumInitialGives(
           [],
           Big(1),
           Big(2)
@@ -254,7 +254,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const sut = new KandelDistributionHelper(0, 0);
 
         // Act
-        const { askGives, bidGives } = sut.calculateInitialGives(
+        const { askGives, bidGives } = sut.calculateMinimumInitialGives(
           [Big(1000)],
           Big(0.1),
           Big(100)
@@ -270,7 +270,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const sut = new KandelDistributionHelper(0, 0);
 
         // Act
-        const { askGives, bidGives } = sut.calculateInitialGives(
+        const { askGives, bidGives } = sut.calculateMinimumInitialGives(
           [Big(2000), Big(1000), Big(500), Big(4000)],
           Big(1),
           Big(1000)

@@ -17,6 +17,7 @@ import KandelPriceCalculation from "./kandelPriceCalculation";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import OfferLogic from "../offerLogic";
 import KandelConfiguration from "./kandelConfiguration";
+import KandelSeeder from "./kandelSeeder";
 
 /**
  * @notice Parameters for a Kandel instance.
@@ -56,6 +57,7 @@ class KandelInstance {
   generator: KandelDistributionGenerator;
   status: KandelStatus;
   configuration: KandelConfiguration;
+  seeder: KandelSeeder;
 
   /** Expose logic relevant for all offer logic implementations, including Kandel.  */
   offerLogic: OfferLogic;
@@ -111,6 +113,7 @@ class KandelInstance {
       generator,
       offerLogic,
       configuration: new KandelConfiguration(),
+      seeder: new KandelSeeder(market.mgv),
     });
   }
 
@@ -124,6 +127,7 @@ class KandelInstance {
     generator: KandelDistributionGenerator;
     offerLogic: OfferLogic;
     configuration: KandelConfiguration;
+    seeder: KandelSeeder;
   }) {
     this.address = params.address;
     this.kandel = params.kandel;
@@ -133,6 +137,7 @@ class KandelInstance {
     this.generator = params.generator;
     this.offerLogic = params.offerLogic;
     this.configuration = params.configuration;
+    this.seeder = params.seeder;
   }
 
   /** Gets the base of the market Kandel is making  */
@@ -428,6 +433,17 @@ class KandelInstance {
     });
   }
 
+  /** Retrieves the minimum volume for a given offer type.
+   * @param offerType The offer type to get the minimum volume for.
+   * @returns The minimum volume for the given offer type.
+   */
+  public async getMinimumVolume(offerType: Market.BA) {
+    return this.seeder.getMinimumVolumeForGasreq({
+      market: this.market,
+      offerType,
+      gasreq: (await this.getParameters()).gasreq,
+    });
+  }
   /** Approves the Kandel instance for transferring from signer to itself.
    * @param baseArgs The arguments for approving the base token. If not provided, then infinite approval is used.
    * @param quoteArgs The arguments for approving the quote token. If not provided, then infinite approval is used.
