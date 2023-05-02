@@ -370,9 +370,9 @@ describe("Kandel integration tests suite", function () {
       const { requiredBase, requiredQuote } =
         distribution.getOfferedVolumeForDistribution();
       if (params.approve) {
-        const approvalTxs = await kandel.approve();
-        await approvalTxs[0].wait();
-        await approvalTxs[1].wait();
+        const approvalTxs = await kandel.approveIfHigher();
+        await approvalTxs[0]?.wait();
+        await approvalTxs[1]?.wait();
       }
 
       // Act
@@ -473,9 +473,9 @@ describe("Kandel integration tests suite", function () {
           const { requiredBase, requiredQuote } =
             distribution.getOfferedVolumeForDistribution();
 
-          const approvalTxs = await kandel.approve();
-          await approvalTxs[0].wait();
-          await approvalTxs[1].wait();
+          const approvalTxs = await kandel.approveIfHigher();
+          await approvalTxs[0]?.wait();
+          await approvalTxs[1]?.wait();
 
           // Act
           const receipts = await waitForTransactions(
@@ -1081,9 +1081,9 @@ describe("Kandel integration tests suite", function () {
           initialAskGives,
         });
 
-        const approvalTxs = await kandel.approve();
-        await approvalTxs[0].wait();
-        await approvalTxs[1].wait();
+        const approvalTxs = await kandel.approveIfHigher();
+        await approvalTxs[0]?.wait();
+        await approvalTxs[1]?.wait();
 
         // Act
         await waitForTransactions(
@@ -1427,6 +1427,28 @@ describe("Kandel integration tests suite", function () {
           });
         });
 
+        it("approve does not approve if already approved", async function () {
+          // Arrange
+          const approveArgsBase = 3;
+          const approveArgsQuote = 4;
+          const approvalTxs = await kandel.approveIfHigher(
+            approveArgsBase,
+            approveArgsQuote
+          );
+          await approvalTxs[0]?.wait();
+          await approvalTxs[1]?.wait();
+
+          // Act
+          const approvalTxs2 = await kandel.approveIfHigher(
+            approveArgsBase,
+            approveArgsQuote
+          );
+
+          // Assert
+          assert.isUndefined(approvalTxs2[0]);
+          assert.isUndefined(approvalTxs2[1]);
+        });
+
         [true, false].forEach((fullApprove) =>
           [
             [1, undefined],
@@ -1442,12 +1464,12 @@ describe("Kandel integration tests suite", function () {
               const approveArgsQuote = fullApprove ? undefined : quoteAmount;
 
               // Act
-              const approvalTxs = await kandel.approve(
+              const approvalTxs = await kandel.approveIfHigher(
                 approveArgsBase,
                 approveArgsQuote
               );
-              await approvalTxs[0].wait();
-              await approvalTxs[1].wait();
+              await approvalTxs[0]?.wait();
+              await approvalTxs[1]?.wait();
               await waitForTransaction(
                 kandel.deposit({ baseAmount, quoteAmount })
               );
