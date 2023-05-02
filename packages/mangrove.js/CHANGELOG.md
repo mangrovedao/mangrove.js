@@ -1,6 +1,9 @@
 # next
 
 - offerLogics support for `setRouter` function
+- offerLogics `approve` function is now approving a spender to spend tokens on the underlying contract's behalf
+- offerLogics `allowance` returns the allowance of a spender to spend tokens on the underlying contract's behalf
+- liquidityProvider `approveAsks` and `approveBids` is removed (no asumption on whether one should approve router or contract should be made on the sole presence/absence of a router). Use instead `market.base.approve(await logic.router())` or `market.base.approve(logic.address)`;
 - mgvtokens support for `transferFrom` function
 
 # 1.2.4-7 (may 2023)

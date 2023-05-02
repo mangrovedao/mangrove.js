@@ -482,25 +482,6 @@ class LiquidityProvider {
     );
   }
 
-  #approveToken(
-    tokenName: string,
-    arg: ApproveArgs = {}
-  ): Promise<ethers.ContractTransaction> {
-    if (this.logic) {
-      return this.logic.approveToken(tokenName, arg);
-    } else {
-      // LP is an EOA
-      return this.mgv.approveMangrove(tokenName, arg);
-    }
-  }
-
-  approveAsks(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.base.name, arg);
-  }
-  approveBids(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.quote.name, arg);
-  }
-
   async getMissingProvision(
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}

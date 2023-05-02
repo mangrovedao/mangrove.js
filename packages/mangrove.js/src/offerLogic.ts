@@ -4,7 +4,6 @@ import { typechain } from "./types";
 
 import { Mangrove } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
-import { ApproveArgs } from "./mgvtoken";
 
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
@@ -64,41 +63,42 @@ class OfferLogic {
     return await this.contract.setRouter(routerAddress);
   }
 
-  /**
-   * @note Approves the logic to spend `token`s on signer's behalf.
-   * This has to be done for each token the signer's wishes to ask or bid for.
-   * @param arg optional `arg.amount` can be used if one wishes to approve a finite amount
+  /** @note tells contract to approve signer (or `optSpender`) for `tokenName` transfer
+   * @param tokenName the name of the token whose allowance is to be changed
+   * @param args contains optional arguments. If no `optAmount` is specified, max allowance is set.
    */
-  async approveToken(
+  public async approve(
     tokenName: string,
-    arg: ApproveArgs = {}
-  ): Promise<ethers.ContractTransaction> {
-    const router: typechain.AbstractRouter | undefined = await this.router();
-    const token = this.mgv.token(tokenName);
-    if (router) {
-      // LP's logic is using a router to manage its liquidity
-      return token.approve(router.address, arg);
-    } else {
-      // LP's logic is doing the routing itself
-      return token.approve(this.address, arg);
+    args: {
+      optSpender?: string;
+      optAmount?: Bigish;
+      optOverrides?: ethers.Overrides;
     }
+  ): Promise<ethers.ContractTransaction> {
+    const token = this.mgv.token(tokenName);
+    const amount = args.optAmount
+      ? token.toUnits(args.optAmount)
+      : ethers.constants.MaxUint256;
+    const spender = args.optSpender
+      ? args.optSpender
+      : await this.mgv.signer.getAddress();
+    return await this.contract.approve(
+      token.address,
+      spender,
+      amount,
+      args.optOverrides
+    );
   }
 
-  /**@note returns logic's allowance to trade `tokenName` on signer's behalf */
-  async allowance(tokenName: string): Promise<Big> {
-    const router: typechain.AbstractRouter | undefined = await this.router();
+  /** @note returns `optSpender`'s allowance to spend `tokenName` on behalf of the contract. If `optSpender` is undefined, signer's allowance is returned
+   * @param tokenName the name of the token whose allowance is to queried
+   */
+  public async allowance(tokenName: string, optSpender?: string): Promise<Big> {
     const token = this.mgv.token(tokenName);
-    if (router) {
-      return token.allowance({
-        owner: await this.mgv.signer.getAddress(),
-        spender: router.address,
-      });
-    } else {
-      return token.allowance({
-        owner: await this.mgv.signer.getAddress(),
-        spender: this.address,
-      });
-    }
+    return token.allowance({
+      owner: this.address,
+      spender: optSpender ? optSpender : await this.mgv.signer.getAddress(),
+    });
   }
 
   /** Returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
