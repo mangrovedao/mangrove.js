@@ -482,7 +482,7 @@ class KandelInstance {
     });
   }
 
-  /** Approves the Kandel instance for transferring from signer to itself.
+  /** Approves the Kandel instance for transferring from signer to itself if allowance is not already high enough.
    * @param baseArgs The arguments for approving the base token. If not provided, then infinite approval is used.
    * @param quoteArgs The arguments for approving the quote token. If not provided, then infinite approval is used.
    */
@@ -491,8 +491,8 @@ class KandelInstance {
     quoteArgs: ApproveArgs = {}
   ) {
     return [
-      await this.market.base.approve(this.address, baseArgs),
-      await this.market.quote.approve(this.address, quoteArgs),
+      await this.market.base.approveIfHigher(this.address, baseArgs),
+      await this.market.quote.approveIfHigher(this.address, quoteArgs),
     ];
   }
 

@@ -371,8 +371,8 @@ describe("Kandel integration tests suite", function () {
         distribution.getOfferedVolumeForDistribution();
       if (params.approve) {
         const approvalTxs = await kandel.approve();
-        await approvalTxs[0].wait();
-        await approvalTxs[1].wait();
+        await approvalTxs[0]?.wait();
+        await approvalTxs[1]?.wait();
       }
 
       // Act
@@ -474,8 +474,8 @@ describe("Kandel integration tests suite", function () {
             distribution.getOfferedVolumeForDistribution();
 
           const approvalTxs = await kandel.approve();
-          await approvalTxs[0].wait();
-          await approvalTxs[1].wait();
+          await approvalTxs[0]?.wait();
+          await approvalTxs[1]?.wait();
 
           // Act
           const receipts = await waitForTransactions(
@@ -1082,8 +1082,8 @@ describe("Kandel integration tests suite", function () {
         });
 
         const approvalTxs = await kandel.approve();
-        await approvalTxs[0].wait();
-        await approvalTxs[1].wait();
+        await approvalTxs[0]?.wait();
+        await approvalTxs[1]?.wait();
 
         // Act
         await waitForTransactions(
@@ -1427,6 +1427,28 @@ describe("Kandel integration tests suite", function () {
           });
         });
 
+        it("approve does not approve if already approved", async function () {
+          // Arrange
+          const approveArgsBase = 3;
+          const approveArgsQuote = 4;
+          const approvalTxs = await kandel.approve(
+            approveArgsBase,
+            approveArgsQuote
+          );
+          await approvalTxs[0]?.wait();
+          await approvalTxs[1]?.wait();
+
+          // Act
+          const approvalTxs2 = await kandel.approve(
+            approveArgsBase,
+            approveArgsQuote
+          );
+
+          // Assert
+          assert.isUndefined(approvalTxs2[0]);
+          assert.isUndefined(approvalTxs2[1]);
+        });
+
         [true, false].forEach((fullApprove) =>
           [
             [1, undefined],
@@ -1446,8 +1468,8 @@ describe("Kandel integration tests suite", function () {
                 approveArgsBase,
                 approveArgsQuote
               );
-              await approvalTxs[0].wait();
-              await approvalTxs[1].wait();
+              await approvalTxs[0]?.wait();
+              await approvalTxs[1]?.wait();
               await waitForTransaction(
                 kandel.deposit({ baseAmount, quoteAmount })
               );
