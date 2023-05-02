@@ -82,10 +82,10 @@ const { kandelPromise } = await kandelStrategies.seeder.sow(seed);
 const kandelInstance = await kandelPromise;
 
 // Approve Kandel instance to use our funds
-const approvalTxs = await kandelInstance.approve();
+const approvalTxs = await kandelInstance.approveIfHigher();
 
 // Wait for approval transactions (one for base, one for quote) to be mined
-const approvalReceipts = await Promise.all(approvalTxs.map((x) => x.wait()));
+const approvalReceipts = await Promise.all(approvalTxs.map((x) => x?.wait()));
 
 // Populate the Kandel instance according to our desired distribution (can be multiple transactions if there are many price points)
 // This is with the default spread for the market.

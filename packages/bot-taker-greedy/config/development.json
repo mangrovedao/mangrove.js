@@ -1,6 +1,5 @@
 {
   "logLevel": "debug",
-  "noColor": "true",
   "markets": [
     {
       "baseToken": "WETH",

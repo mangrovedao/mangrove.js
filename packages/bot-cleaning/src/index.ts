@@ -8,7 +8,7 @@ import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { configUtils } from "@mangrovedao/bot-utils";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
-import Mangrove from "@mangrovedao/mangrove.js";
+import Mangrove, { enableLogging } from "@mangrovedao/mangrove.js";
 import http from "http";
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
 import { MarketCleaner } from "./MarketCleaner";
@@ -16,6 +16,8 @@ import config from "./util/config";
 import { logger } from "./util/logger";
 
 type MarketPair = { base: string; quote: string };
+
+enableLogging();
 
 const scheduler = new ToadScheduler();
 const setup = new Setup(config);
@@ -31,12 +33,12 @@ function createAsyncMarketCleaner(
     "cleaning bot task",
     async () => {
       const blockNumber = await mgv.provider.getBlockNumber().catch((e) => {
-        logger.debug("Error on getting blockNumber via ethers", { data: e });
+        logger.error("Error on getting blockNumber via ethers", { data: e });
         return -1;
       });
       const contextInfo = `block#=${blockNumber}`;
 
-      logger.trace("Scheduled bot task running...", { contextInfo });
+      logger.debug("Scheduled bot task running...", { contextInfo });
       await setup.exitIfMangroveIsKilled(mgv, contextInfo, server, scheduler);
 
       const cleaningPromises = [];

@@ -40,6 +40,7 @@ import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
 import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
+
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<

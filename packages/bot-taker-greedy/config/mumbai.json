@@ -1,6 +1,5 @@
 {
   "logLevel": "info",
-  "noColor": "true",
   "tokens": [
     {
       "name": "WETH",
