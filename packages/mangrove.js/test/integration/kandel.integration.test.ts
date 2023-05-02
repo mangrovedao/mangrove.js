@@ -370,9 +370,9 @@ describe("Kandel integration tests suite", function () {
       const { requiredBase, requiredQuote } =
         distribution.getOfferedVolumeForDistribution();
       if (params.approve) {
-        const approvalTxs = await kandel.approve();
-        await approvalTxs[0].wait();
-        await approvalTxs[1].wait();
+        const approvalTxs = await kandel.approveIfHigher();
+        await approvalTxs[0]?.wait();
+        await approvalTxs[1]?.wait();
       }
 
       // Act
@@ -473,9 +473,9 @@ describe("Kandel integration tests suite", function () {
           const { requiredBase, requiredQuote } =
             distribution.getOfferedVolumeForDistribution();
 
-          const approvalTxs = await kandel.approve();
-          await approvalTxs[0].wait();
-          await approvalTxs[1].wait();
+          const approvalTxs = await kandel.approveIfHigher();
+          await approvalTxs[0]?.wait();
+          await approvalTxs[1]?.wait();
 
           // Act
           const receipts = await waitForTransactions(
@@ -1014,6 +1014,62 @@ describe("Kandel integration tests suite", function () {
         );
       });
 
+      it("calculateDistributionWithUniformlyChangedVolume creates new distribution with decreased volumes for all live offers", async function () {
+        // Arrange
+        await populateKandel({ approve: false, deposit: false });
+        // Retract one offer
+        const receipts = await waitForTransactions(
+          kandel.retractOffers(
+            { startIndex: 0, endIndex: 1 },
+            { gasLimit: 1000000 }
+          )
+        );
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
+
+        // Create a distribution for the live offers
+        const indexerOffers = (await kandel.getOffers()).map(
+          ({ offer, offerId, index, offerType }) => ({
+            offerType,
+            offerId,
+            index,
+            live: kandel.market.isLiveOffer(offer),
+            price: offer.price,
+            gives: offer.gives,
+          })
+        );
+
+        const liveOffers = indexerOffers.filter((o) => o.live);
+        const existingDistribution = await kandel.createDistributionWithOffers({
+          explicitOffers: liveOffers,
+        });
+        const offeredVolume =
+          existingDistribution.getOfferedVolumeForDistribution();
+
+        // Act
+        const result =
+          await kandel.calculateDistributionWithUniformlyChangedVolume({
+            liveOffers,
+            baseDelta: offeredVolume.requiredBase.neg(),
+            quoteDelta: offeredVolume.requiredQuote.neg(),
+          });
+
+        // Assert
+        const oldPrices = existingDistribution
+          .getPricesForDistribution()
+          .map((x) => x.round(4).toNumber());
+        const newPrices = result.distribution
+          .getPricesForDistribution()
+          .map((x) => x.round(4).toNumber());
+        assert.deepStrictEqual(newPrices, oldPrices);
+        assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
+        assert.ok(
+          result.totalQuoteChange.neg().lt(offeredVolume.requiredQuote)
+        );
+      });
+
       it("can go through life-cycle with numbers as Bigish", async function () {
         // Arrange
         const ratio = 1.08;
@@ -1025,9 +1081,9 @@ describe("Kandel integration tests suite", function () {
           initialAskGives,
         });
 
-        const approvalTxs = await kandel.approve();
-        await approvalTxs[0].wait();
-        await approvalTxs[1].wait();
+        const approvalTxs = await kandel.approveIfHigher();
+        await approvalTxs[0]?.wait();
+        await approvalTxs[1]?.wait();
 
         // Act
         await waitForTransactions(
@@ -1083,6 +1139,23 @@ describe("Kandel integration tests suite", function () {
           );
           assert.equal(await kandel.offerLogic.hasRouter(), onAave);
           assert.equal(await kandel.getReserveId(), kandel.address);
+        });
+
+        bidsAsks.forEach((offerType) => {
+          it(`getMinimumVolume agrees with seeder on ${offerType}`, async function () {
+            // Arrange
+            const minVolumeFromSeeder =
+              await kandelStrategies.seeder.getMinimumVolume({
+                market: kandel.market,
+                offerType,
+                onAave,
+              });
+            // Act
+            const minBids = await kandel.getMinimumVolume(offerType);
+
+            // Assert
+            assert.equal(minBids.toNumber(), minVolumeFromSeeder.toNumber());
+          });
         });
 
         [true, false].forEach((inChunks) => {
@@ -1313,6 +1386,12 @@ describe("Kandel integration tests suite", function () {
         [{ factor: 0.5 }, { gasreq: 1 }].forEach(({ factor, gasreq }) => {
           it(`calculateMinimumDistribution cannot be deployed with factor=${factor} or gasreq=${gasreq}`, async () => {
             // Arrange
+            const minParams = {
+              market: kandel.market,
+              factor,
+              gasreq,
+              onAave,
+            };
             const distribution = kandel.generator.calculateMinimumDistribution({
               priceParams: {
                 minPrice: 900,
@@ -1320,22 +1399,24 @@ describe("Kandel integration tests suite", function () {
                 maxPrice: 1100,
               },
               midPrice: 1000,
-              minimumBasePerOffer:
-                await kandelStrategies.seeder.getMinimumVolume({
-                  market: kandel.market,
-                  offerType: "asks",
-                  onAave,
-                  factor,
-                  gasreq,
-                }),
-              minimumQuotePerOffer:
-                await kandelStrategies.seeder.getMinimumVolume({
-                  market: kandel.market,
-                  offerType: "bids",
-                  onAave,
-                  factor,
-                  gasreq,
-                }),
+              minimumBasePerOffer: gasreq
+                ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
+                    ...minParams,
+                    offerType: "asks",
+                  })
+                : await kandelStrategies.seeder.getMinimumVolume({
+                    ...minParams,
+                    offerType: "asks",
+                  }),
+              minimumQuotePerOffer: gasreq
+                ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
+                    ...minParams,
+                    offerType: "bids",
+                  })
+                : await kandelStrategies.seeder.getMinimumVolume({
+                    ...minParams,
+                    offerType: "bids",
+                  }),
             });
 
             // Act/assert
@@ -1344,6 +1425,28 @@ describe("Kandel integration tests suite", function () {
               "mgv/writeOffer/density/tooLow"
             );
           });
+        });
+
+        it("approve does not approve if already approved", async function () {
+          // Arrange
+          const approveArgsBase = 3;
+          const approveArgsQuote = 4;
+          const approvalTxs = await kandel.approveIfHigher(
+            approveArgsBase,
+            approveArgsQuote
+          );
+          await approvalTxs[0]?.wait();
+          await approvalTxs[1]?.wait();
+
+          // Act
+          const approvalTxs2 = await kandel.approveIfHigher(
+            approveArgsBase,
+            approveArgsQuote
+          );
+
+          // Assert
+          assert.isUndefined(approvalTxs2[0]);
+          assert.isUndefined(approvalTxs2[1]);
         });
 
         [true, false].forEach((fullApprove) =>
@@ -1361,12 +1464,12 @@ describe("Kandel integration tests suite", function () {
               const approveArgsQuote = fullApprove ? undefined : quoteAmount;
 
               // Act
-              const approvalTxs = await kandel.approve(
+              const approvalTxs = await kandel.approveIfHigher(
                 approveArgsBase,
                 approveArgsQuote
               );
-              await approvalTxs[0].wait();
-              await approvalTxs[1].wait();
+              await approvalTxs[0]?.wait();
+              await approvalTxs[1]?.wait();
               await waitForTransaction(
                 kandel.deposit({ baseAmount, quoteAmount })
               );

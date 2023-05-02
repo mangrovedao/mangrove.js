@@ -2,7 +2,9 @@ import Big from "big.js";
 import Market from "../market";
 import { Bigish } from "../types";
 import KandelDistribution from "./kandelDistribution";
-import KandelDistributionHelper from "./kandelDistributionHelper";
+import KandelDistributionHelper, {
+  OffersWithGives,
+} from "./kandelDistributionHelper";
 import KandelPriceCalculation, {
   PriceDistributionParams,
 } from "./kandelPriceCalculation";
@@ -48,7 +50,7 @@ class KandelDistributionGenerator {
     );
 
     const { askGives, bidGives } =
-      this.distributionHelper.calculateInitialGives(
+      this.distributionHelper.calculateMinimumInitialGives(
         pricesAndRatio.prices,
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer)
@@ -122,23 +124,50 @@ class KandelDistributionGenerator {
     );
   }
 
+  /** Creates a new distribution with uniformly changed volume.
+   * @param params The parameters for the change.
+   * @param params.distribution The distribution to change.
+   * @param params.baseDelta The change in base volume.
+   * @param params.quoteDelta The change in quote volume.
+   * @param params.minimumBasePerOffer The minimum amount of base to give for each offer. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
+   * @param params.minimumQuotePerOffer The minimum amount of quote to give for each offer. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
+   * @returns The new distribution.
+   * @remarks The decrease has to respect minimums, and thus may decrease some offers more than others.
+   */
+  public uniformlyChangeVolume(params: {
+    distribution: KandelDistribution;
+    baseDelta?: Bigish;
+    quoteDelta?: Bigish;
+    minimumBasePerOffer: Bigish;
+    minimumQuotePerOffer: Bigish;
+  }) {
+    const prices = params.distribution.getPricesForDistribution();
+
+    // Minimums are increased based on prices of current distribution
+    const { askGives, bidGives } =
+      this.distributionHelper.calculateMinimumInitialGives(
+        prices,
+        Big(params.minimumBasePerOffer),
+        Big(params.minimumQuotePerOffer)
+      );
+
+    return this.distributionHelper.uniformlyChangeVolume({
+      distribution: params.distribution,
+      baseDelta: params.baseDelta ? Big(params.baseDelta) : undefined,
+      quoteDelta: params.quoteDelta ? Big(params.quoteDelta) : undefined,
+      minimumBasePerOffer: askGives,
+      minimumQuotePerOffer: bidGives,
+    });
+  }
+
   /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
-   * @param params.explicitOffers[].index The index of the offer.
-   * @param params.explicitOffers[].offerType The type of the offer.
-   * @param params.explicitOffers[].price The price of the offer.
-   * @param params.explicitOffers[].gives The amount of base or quote that the offer gives.
    * @param params.distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
    * @returns The new distribution.
    */
   public createDistributionWithOffers(params: {
-    explicitOffers: {
-      index: number;
-      offerType: Market.BA;
-      price: Bigish;
-      gives: Bigish;
-    }[];
+    explicitOffers: OffersWithGives;
     distribution:
       | {
           ratio: Bigish;
@@ -154,12 +183,7 @@ class KandelDistributionGenerator {
             pricePoints: params.distribution.pricePoints,
           };
     return this.distributionHelper.createDistributionWithOffers(
-      params.explicitOffers.map(({ index, offerType, price, gives }) => ({
-        index,
-        offerType,
-        price: Big(price),
-        gives: Big(gives),
-      })),
+      params.explicitOffers,
       distribution
     );
   }

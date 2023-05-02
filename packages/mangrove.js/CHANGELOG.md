@@ -3,6 +3,12 @@
 - offerLogics support for `setRouter` function
 - mgvtokens support for `transferFrom` function
 
+# 1.2.4-7 (may 2023)
+
+- added approveIfHigher, approve, increaseApprove for more fine-grained approval control
+- added functions for increasing and decreasing volumes of Kandel distributions
+- use @mangrovedao/reliable-event-subscriber for keeping semibook up to date and resilient to block reorgs
+
 # 1.2.4-6 (april 2023)
 
 - removed ability to control compounding for Kandel - always full compounding.
