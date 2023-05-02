@@ -486,7 +486,7 @@ class KandelInstance {
    * @param baseArgs The arguments for approving the base token. If not provided, then infinite approval is used.
    * @param quoteArgs The arguments for approving the quote token. If not provided, then infinite approval is used.
    */
-  public async approve(
+  public async approveIfHigher(
     baseArgs: ApproveArgs = {},
     quoteArgs: ApproveArgs = {}
   ) {

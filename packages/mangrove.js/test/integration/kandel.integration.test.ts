@@ -370,7 +370,7 @@ describe("Kandel integration tests suite", function () {
       const { requiredBase, requiredQuote } =
         distribution.getOfferedVolumeForDistribution();
       if (params.approve) {
-        const approvalTxs = await kandel.approve();
+        const approvalTxs = await kandel.approveIfHigher();
         await approvalTxs[0]?.wait();
         await approvalTxs[1]?.wait();
       }
@@ -473,7 +473,7 @@ describe("Kandel integration tests suite", function () {
           const { requiredBase, requiredQuote } =
             distribution.getOfferedVolumeForDistribution();
 
-          const approvalTxs = await kandel.approve();
+          const approvalTxs = await kandel.approveIfHigher();
           await approvalTxs[0]?.wait();
           await approvalTxs[1]?.wait();
 
@@ -1081,7 +1081,7 @@ describe("Kandel integration tests suite", function () {
           initialAskGives,
         });
 
-        const approvalTxs = await kandel.approve();
+        const approvalTxs = await kandel.approveIfHigher();
         await approvalTxs[0]?.wait();
         await approvalTxs[1]?.wait();
 
@@ -1431,7 +1431,7 @@ describe("Kandel integration tests suite", function () {
           // Arrange
           const approveArgsBase = 3;
           const approveArgsQuote = 4;
-          const approvalTxs = await kandel.approve(
+          const approvalTxs = await kandel.approveIfHigher(
             approveArgsBase,
             approveArgsQuote
           );
@@ -1439,7 +1439,7 @@ describe("Kandel integration tests suite", function () {
           await approvalTxs[1]?.wait();
 
           // Act
-          const approvalTxs2 = await kandel.approve(
+          const approvalTxs2 = await kandel.approveIfHigher(
             approveArgsBase,
             approveArgsQuote
           );
@@ -1464,7 +1464,7 @@ describe("Kandel integration tests suite", function () {
               const approveArgsQuote = fullApprove ? undefined : quoteAmount;
 
               // Act
-              const approvalTxs = await kandel.approve(
+              const approvalTxs = await kandel.approveIfHigher(
                 approveArgsBase,
                 approveArgsQuote
               );
