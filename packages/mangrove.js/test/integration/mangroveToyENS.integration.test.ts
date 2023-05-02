@@ -18,6 +18,7 @@ const defaultServerParams = {
 describe("Mangrove functionality", () => {
   async function retryDeploy(server: any) {
     // deploy ToyENS and Mangrove contracts
+    // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
       try {
         await server.deploy();

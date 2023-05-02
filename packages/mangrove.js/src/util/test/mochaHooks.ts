@@ -27,6 +27,7 @@ export const mochaHooks = {
     }
     this.server = await node(serverParams).connect();
 
+    // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
       try {
         await this.server.deploy();
@@ -44,6 +45,7 @@ export const mochaHooks = {
 
     const provider = new ethers.providers.JsonRpcProvider(this.server.url);
     const devNode = new DevNode(provider);
+    // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
       try {
         await devNode.setToyENSCodeIfAbsent();

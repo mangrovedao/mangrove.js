@@ -1,5 +1,4 @@
 import { describe, beforeEach, afterEach, it } from "mocha";
-//import { assert } from "chai";
 import assert from "assert";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
@@ -1446,8 +1445,8 @@ describe("Kandel integration tests suite", function () {
           );
 
           // Assert
-          assert.isUndefined(approvalTxs2[0]);
-          assert.isUndefined(approvalTxs2[1]);
+          assert.equal(approvalTxs2[0], undefined);
+          assert.equal(approvalTxs2[1], undefined);
         });
 
         [true, false].forEach((fullApprove) =>
