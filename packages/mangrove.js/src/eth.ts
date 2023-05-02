@@ -22,7 +22,7 @@ export interface CreateSignerOptions {
   provider?: Provider | string;
 
   // URL
-  providerUrl?: string;
+  providerWsUrl?: string;
   // optional in addition to provider object: gets signer number `signerIndex` of the provider
   signerIndex?: number;
   // raw privkey without 0x prefix
