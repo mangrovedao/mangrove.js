@@ -5,44 +5,36 @@ on:
 jobs:
   publish-mangrove-js:
     runs-on: ubuntu-latest
-    env:
-      working-directory: packages/mangrove.js
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}
     permissions:
       checks: write
 
     steps:
-    # == Git checkout ==
     - name: Checkout
       uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-    - name: Yarn setup (caching yarn dependencies)
+
+    - name: Node Install
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-        
-    - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
+        registry-url: 'https://npm.pkg.github.com'
 
-    - name: mangrove.js - Build
-      run: yarn run build-this-package
-
-    - name: mangrove.js - Publish
-      run: npm publish --access public
+    - name: create .npmrc
       working-directory: packages/mangrove.js
+      run: |
+        echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > .npmrc
+        echo "registry=https://registry.npmjs.org/" >> .npmrc
+        echo "always-auth=true" >> .npmrc
+        cp .npmrc /tmp/.npmrc
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
+    - name: Setup yarn
+      run: npm install -g yarn@2.4.3
 
+    - run: yarn --version
+    - run: yarn install --immutable
+    - run: yarn build
+
+    - name: mangrove.js - Publish
+      working-directory: packages/mangrove.js
+      run: cat /tmp/.npmrc &&  npm publish --tag next
