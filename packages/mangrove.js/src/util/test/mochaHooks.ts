@@ -125,8 +125,19 @@ export const mochaHooks = {
       Object.keys(result.queued).length
     ) {
       console.log(JSON.stringify(result));
-      throw new Error("txpool not empty");
+      throw new Error("txpool_content not empty");
     }
+
+    const result2 = await provider.send("txpool_inspect", []);
+
+    if (
+      Object.keys(result2.pending).length ||
+      Object.keys(result2.queued).length
+    ) {
+      console.log(JSON.stringify(result2));
+      throw new Error("txpool_inspect not empty");
+    }
+
     await this.proxies.closeCurrentProxy();
 
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)

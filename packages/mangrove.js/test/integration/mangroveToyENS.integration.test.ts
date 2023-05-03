@@ -56,8 +56,11 @@ describe("Mangrove functionality", () => {
 
       // watch for new entry
       const ADDR1 = "0x0000000000000000000000000000000000000001";
+      const watchPromise = watcher.watchFor(
+        (k, v) => k === "Mangrove" && v == ADDR1
+      );
       ens["set(string,address)"]("Mangrove", ADDR1);
-      await watcher.watchFor((k, v) => k === "Mangrove" && v == ADDR1);
+      await watchPromise;
       mgv.disconnect();
       server.process.kill();
     });
