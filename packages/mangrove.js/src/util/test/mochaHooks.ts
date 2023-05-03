@@ -124,7 +124,7 @@ export const mochaHooks = {
       Object.keys(result.pending).length ||
       Object.keys(result.queued).length
     ) {
-      console.log(result);
+      console.log(JSON.stringify(result));
       throw new Error("txpool not empty");
     }
     await this.proxies.closeCurrentProxy();
