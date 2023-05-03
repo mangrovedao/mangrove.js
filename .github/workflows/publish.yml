@@ -3,7 +3,7 @@ on:
   release:
     types: [released]
 jobs:
-  publish_mangrove.js:
+  publish-mangrove-js:
     runs-on: ubuntu-latest
     env:
       working-directory: packages/mangrove.js
