@@ -95,12 +95,14 @@ export class Setup {
     if (!process.env["PRIVATE_KEY"]) {
       throw new Error("No private key provided in PRIVATE_KEY");
     }
-    const provider = getDefaultProvider(process.env["RPC_NODE_URL"]);
+
+    const providerUrl = process.env["RPC_NODE_URL"];
+    const provider = getDefaultProvider(providerUrl);
     const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
     const nonceManager = new NonceManager(signer);
     const mgv = await Mangrove.connect({
       signer: nonceManager,
-      providerUrl: process.env["RPC_NODE_URL"],
+      providerWsUrl: providerUrl.startsWith("ws") ? providerUrl : undefined,
     });
 
     this.logger.info("Connected to Mangrove", {
