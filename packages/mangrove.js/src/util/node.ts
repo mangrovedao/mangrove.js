@@ -56,7 +56,7 @@ const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
           console.error(stderr);
         }
         if (error) {
-          throw error;
+          ko(error);
         } else {
           ok(stdout);
         }

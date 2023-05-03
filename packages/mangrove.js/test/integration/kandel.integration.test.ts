@@ -1,5 +1,5 @@
 import { describe, beforeEach, afterEach, it } from "mocha";
-import { assert } from "chai";
+import assert from "assert";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import {
@@ -92,7 +92,7 @@ describe("Kandel integration tests suite", function () {
             distribution
           );
           if (!onAave && liquiditySharing) {
-            assert.isRejected(
+            assert.rejects(
               seeder.sow(seed),
               "Liquidity sharing is only supported for AaveKandel instances"
             );
@@ -449,7 +449,7 @@ describe("Kandel integration tests suite", function () {
         await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
         const pivots = await kandel.getPivots(distribution);
-        assert.sameOrderedMembers(pivots, [1, 2, undefined, undefined, 1, 2]);
+        assert.deepStrictEqual(pivots, [1, 2, undefined, undefined, 1, 2]);
       });
 
       [true, false].forEach((inChunks) => {
@@ -663,7 +663,7 @@ describe("Kandel integration tests suite", function () {
         await populateKandel({ approve: true, deposit: true });
 
         // Act/Assert
-        assert.isRejected(
+        assert.rejects(
           kandel.populate({
             parameters: { ratio: 2 },
             distribution:
@@ -681,7 +681,7 @@ describe("Kandel integration tests suite", function () {
         await populateKandel({ approve: true, deposit: true });
 
         // Act/Assert
-        assert.isRejected(
+        assert.rejects(
           kandel.populate({
             parameters: { pricePoints: 2 },
             distribution:
@@ -1420,7 +1420,7 @@ describe("Kandel integration tests suite", function () {
             });
 
             // Act/assert
-            assert.isRejected(
+            assert.rejects(
               kandel.populate({ distribution }),
               "mgv/writeOffer/density/tooLow"
             );
@@ -1445,8 +1445,8 @@ describe("Kandel integration tests suite", function () {
           );
 
           // Assert
-          assert.isUndefined(approvalTxs2[0]);
-          assert.isUndefined(approvalTxs2[1]);
+          assert.equal(approvalTxs2[0], undefined);
+          assert.equal(approvalTxs2[1], undefined);
         });
 
         [true, false].forEach((fullApprove) =>
@@ -1485,7 +1485,7 @@ describe("Kandel integration tests suite", function () {
               );
 
               if (!fullApprove) {
-                assert.isRejected(
+                assert.rejects(
                   kandel.deposit({ baseAmount, quoteAmount }),
                   "finite approval should not allow further deposits"
                 );
