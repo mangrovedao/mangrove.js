@@ -1,3 +1,7 @@
+# 1.2.4-8 (may 2023)
+
+- fixed issue with reliable-event-subscriber integration when using metamask
+
 # 1.2.4-7 (may 2023)
 
 - added approveIfHigher, approve, increaseApprove for more fine-grained approval control
