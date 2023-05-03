@@ -1,3 +1,7 @@
+# 1.2.4-9 (may 2023)
+
+- fixed issue with reliable-event-subscriber integration when using metamask through wagmi
+
 # 1.2.4-8 (may 2023)
 
 - fixed issue with reliable-event-subscriber integration when using metamask
