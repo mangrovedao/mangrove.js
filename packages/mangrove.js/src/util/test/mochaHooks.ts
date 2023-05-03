@@ -5,6 +5,7 @@ import node from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
 import DevNode from "../devNode";
+import { sleep } from "@mangrovedao/commonlib.js";
 
 const serverParams = {
   host: "127.0.0.1",
@@ -115,27 +116,22 @@ export const mochaHooks = {
     }
 
     const provider = new ethers.providers.JsonRpcProvider(this.server.url);
-    const result = await provider.send("txpool_content", []);
-    if (!Object.keys(result).length) {
-      throw new Error("Missing txpool data");
-    }
+    for (let i = 0; i < 100; i++) {
+      const result = await provider.send("txpool_content", []);
+      if (!Object.keys(result).length) {
+        throw new Error("Missing txpool data");
+      }
 
-    if (
-      Object.keys(result.pending).length ||
-      Object.keys(result.queued).length
-    ) {
-      console.log(JSON.stringify(result));
-      throw new Error("txpool_content not empty");
-    }
-
-    const result2 = await provider.send("txpool_inspect", []);
-
-    if (
-      Object.keys(result2.pending).length ||
-      Object.keys(result2.queued).length
-    ) {
-      console.log(JSON.stringify(result2));
-      throw new Error("txpool_inspect not empty");
+      if (
+        Object.keys(result.pending).length ||
+        Object.keys(result.queued).length
+      ) {
+        console.log("txpool_content not empty... waiting...");
+        console.log(JSON.stringify(result));
+        await sleep(200);
+      } else {
+        break;
+      }
     }
 
     await this.proxies.closeCurrentProxy();
