@@ -318,7 +318,7 @@ class Mangrove {
         params.reliableWebSocketOptions.options
       );
     } else {
-      if (!(this.provider instanceof JsonRpcProvider)) {
+      if (Object.getPrototypeOf(this.provider) !== JsonRpcProvider) {
         throw new Error("Provider is not JsonRpcProvider");
       }
       this.reliableProvider = new ReliableHttpProvider(
