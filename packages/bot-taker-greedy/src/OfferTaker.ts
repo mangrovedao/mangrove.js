@@ -219,21 +219,22 @@ export class OfferTaker {
       o.price[priceComparison](externalPrice)
     );
     if (offersWithBetterThanExternalPrice.length <= 0) {
-      const blockNumber = await this.#market.mgv.provider.getBlockNumber();
-      const block = await this.#market.mgv.provider.getBlock(blockNumber);
-
-      logger.debug("No offer better than external price", {
-        contextInfo: "taker",
-        base: this.#market.base.name,
-        quote: this.#market.quote.name,
-        ba,
-        data: {
-          bestFetchedPrice: offers[0]?.price,
-          externalPrice: externalPrice,
-          blockNumber: blockNumber,
-          blockHash: block.hash,
-        },
-      });
+      if (logger.getLevel() <= logger.levels.DEBUG) {
+        const blockNumber = await this.#market.mgv.provider.getBlockNumber();
+        const block = await this.#market.mgv.provider.getBlock(blockNumber);
+        logger.debug("No offer better than external price", {
+          contextInfo: "taker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba,
+          data: {
+            bestFetchedPrice: offers[0]?.price,
+            externalPrice: externalPrice,
+            blockNumber: blockNumber,
+            blockHash: block.hash,
+          },
+        });
+      }
       return;
     }
 
