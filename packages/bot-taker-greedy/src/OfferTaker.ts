@@ -206,7 +206,7 @@ export class OfferTaker {
   ): Promise<void> {
     const semibook = this.#market.getSemibook(ba);
 
-    // If there is not immediately better offer, then we do not have to query the list
+    // If there is no immediately better offer, then we do not have to query the list
     const offers = (await semibook.getPivotId(externalPrice))
       ? await semibook.requestOfferListPrefix({
           desiredPrice: externalPrice,
