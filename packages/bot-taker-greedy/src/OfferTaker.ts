@@ -205,10 +205,13 @@ export class OfferTaker {
     externalPrice: Big
   ): Promise<void> {
     const semibook = this.#market.getSemibook(ba);
-    // FIXME: Can we use the cache instead/more?
-    const offers = await semibook.requestOfferListPrefix({
-      desiredPrice: externalPrice,
-    });
+
+    // If there is not immediately better offer, then we do not have to query the list
+    const offers = (await semibook.getPivotId(externalPrice))
+      ? await semibook.requestOfferListPrefix({
+          desiredPrice: externalPrice,
+        })
+      : [];
     const [priceComparison, quoteSideOfOffers, buyOrSell]: [
       "lt" | "gt",
       "wants" | "gives",
