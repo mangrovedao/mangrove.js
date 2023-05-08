@@ -326,4 +326,50 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
       });
     }
   );
+
+  describe(
+    KandelDistributionGenerator.prototype.uniformlyChangeVolume.name,
+    () => {
+      it("respects minimums", () => {
+        // Arrange
+        const distribution = sut.calculateDistribution({
+          priceParams: { minPrice: Big(1000), ratio: Big(2), pricePoints: 7 },
+          midPrice: Big(5000),
+          initialAskGives: Big(10000),
+        });
+
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
+
+        // Act
+        const result = sut.uniformlyChangeVolume({
+          distribution,
+          baseDelta: offeredVolume.requiredBase.neg(),
+          quoteDelta: offeredVolume.requiredQuote.neg(),
+          minimumBasePerOffer: 1,
+          minimumQuotePerOffer: 1000,
+        });
+
+        // Assert
+        const oldPrices = distribution
+          .getPricesForDistribution()
+          .map((x) => x.toNumber());
+        const newPrices = result.distribution
+          .getPricesForDistribution()
+          .map((x) => x.toNumber());
+        assert.deepStrictEqual(newPrices, oldPrices);
+        assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
+        assert.ok(
+          result.totalQuoteChange.neg().lt(offeredVolume.requiredQuote)
+        );
+        result.distribution.offers.forEach((o) => {
+          // minimums c.f. calculateMinimumInitialGives
+          if (o.offerType == "bids") {
+            assert.equal(o.quote.toNumber(), 64000, "quote should at minimum");
+          } else {
+            assert.equal(o.base.toNumber(), 1, "base should at minimum");
+          }
+        });
+      });
+    }
+  );
 });

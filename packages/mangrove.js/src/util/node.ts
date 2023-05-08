@@ -62,7 +62,7 @@ export function execForgeCmd(
           console.error(stderr);
         }
         if (error) {
-          throw error;
+          ko(error);
         } else {
           ok(stdout);
         }

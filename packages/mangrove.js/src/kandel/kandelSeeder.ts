@@ -196,7 +196,6 @@ class KandelSeeder {
    * @param params.offerType The type of offer.
    * @param params.onAave Whether the Kandel is an AaveKandel.
    * @param params.factor The factor to multiply the minimum volume by. Defaults to minimumBasePerOfferFactory / minimumQuotePerOfferFactor from KandelConfiguration.
-   * @param params.gasreq The gasreq to use. Defaults to the default gasreq for the Kandel type.
    * @returns The minimum recommended volume.
    */
   public async getMinimumVolume(params: {
@@ -204,14 +203,31 @@ class KandelSeeder {
     offerType: Market.BA;
     onAave: boolean;
     factor?: number;
+  }) {
+    const gasreq = await this.getDefaultGasreq(params.onAave);
+    return await this.getMinimumVolumeForGasreq({ ...params, gasreq });
+  }
+
+  /** Determines the minimum recommended volume for an offer of the given type to avoid density issues.
+   * @param params The parameters.
+   * @param params.market The market the Kandel is deployed to.
+   * @param params.offerType The type of offer.
+   * @param params.factor The factor to multiply the minimum volume by. Defaults to minimumBasePerOfferFactory / minimumQuotePerOfferFactor from KandelConfiguration.
+   * @param params.gasreq The gasreq to use.
+   * @returns The minimum recommended volume.
+   */
+  public async getMinimumVolumeForGasreq(params: {
+    market: Market;
+    offerType: Market.BA;
+    factor?: number;
     gasreq?: number;
   }) {
     const config = this.configuration.getConfig(params.market);
-    const gasreq =
-      params.gasreq ?? (await this.getDefaultGasreq(params.onAave));
 
     return (
-      await params.market.getSemibook(params.offerType).getMinimumVolume(gasreq)
+      await params.market
+        .getSemibook(params.offerType)
+        .getMinimumVolume(params.gasreq)
     ).mul(
       params.factor ??
         (params.offerType == "asks"

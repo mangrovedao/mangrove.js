@@ -23,7 +23,6 @@ env:
                    ${{  (   github.event_name != 'pull_request_target'
                          && github.ref )
                       || format('refs/pull/{0}/merge', github.event.number) }}
-  NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN: ${{ github.ref_name == 'master' && github.event_name != 'pull_request_target' }}
 jobs:
   # ==== Job: Security guard ====
   # The security guard job only allows workflows triggered by external PR's to continue
@@ -163,15 +162,6 @@ jobs:
         name: commonlib-out.zip
         path: commonlib-out.zip
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: commonlib-js ====
 
   # ==== Job: Build and test mangrove.js ====
@@ -294,15 +284,6 @@ jobs:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: mangrove-js ====
 
   # ==== Job: Build and test bot-utils ====
@@ -396,16 +377,6 @@ jobs:
         path: packages/bot-utils/coverage-tests-report.json # Path to test results
         reporter: mocha-json                                # Format of test results
         fail-on-error: 'false'                              # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
-
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
 
      # save artifacts for later stages
     - name: Zip output
@@ -532,15 +503,6 @@ jobs:
         reporter: mocha-json                                   # Format of test results
         fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-cleaning ====        
 
   # ==== Job: Build and test bot-updategas ====
@@ -645,15 +607,6 @@ jobs:
         reporter: mocha-json                                    # Format of test results
         fail-on-error: 'false'                                  # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-updategas ====
           
   # ==== Job: Build and test bot-maker-noise ====
@@ -758,15 +711,6 @@ jobs:
         reporter: mocha-json                                      # Format of test results
         fail-on-error: 'false'                                    # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-maker-noise ====        
           
   # ==== Job: Build and test bot-taker-greedy ====
@@ -871,15 +815,6 @@ jobs:
         reporter: mocha-json                                       # Format of test results
         fail-on-error: 'false'                                     # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
     
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-taker-greedy ====        
 
   # ==== Job: Build and test bot-failing-offer ====
@@ -984,15 +919,6 @@ jobs:
         reporter: mocha-json                                         # Format of test results
         fail-on-error: 'false'                                       # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-failing-offer ====        
 
  # ==== Job: Build and test bot-arbitrage ====
@@ -1209,15 +1135,6 @@ jobs:
         reporter: mocha-json                                   # Format of test results
         fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-template ====
 
   # ==== final "check" job, using alls-green to have one single job to check for green workflow ====

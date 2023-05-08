@@ -4,12 +4,15 @@ import { Mangrove } from "../../";
 import node from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
+import DevNode from "../devNode";
+import { sleep } from "@mangrovedao/commonlib.js";
 
 const serverParams = {
   host: "127.0.0.1",
-  port: 8545, // use 8545 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
+  port: 8546, // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
   pipe: false,
   script: "MangroveJsDeploy",
+  deploy: false,
   setMulticallCodeIfAbsent: false, // mangrove.js is supposed to work against servers that only have ToyENS deployed but not Multicall, so we don't deploy Multicall in tests. However mangrove.js needs ToyENS so we let the node ensure it's there.
 };
 
@@ -17,7 +20,24 @@ let currentProxyPort = 8546;
 
 export const mochaHooks = {
   async beforeAllImpl(args: any, hook: any) {
+    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
+    if (process.env.MOCHA_WORKER_ID) {
+      // running in parallel mode - change port
+      serverParams.port =
+        serverParams.port + 1000 * Number(process.env.MOCHA_WORKER_ID);
+      currentProxyPort = serverParams.port + 1;
+    }
     hook.server = await node(args).connect();
+
+    // Workaround for https://github.com/foundry-rs/foundry/issues/2884
+    for (let i = 0; i < 10; i++) {
+      try {
+        await hook.server.deploy();
+        break;
+      } catch (e) {
+        console.log("Failed to deploy, retrying...");
+      }
+    }
     hook.accounts = {
       deployer: hook.server.accounts[0],
       maker: hook.server.accounts[1],
@@ -26,7 +46,17 @@ export const mochaHooks = {
       arbitrager: hook.server.accounts[4],
     };
 
-    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
+    const devNode = new DevNode(provider);
+    // Workaround for https://github.com/foundry-rs/foundry/issues/2884
+    for (let i = 0; i < 10; i++) {
+      try {
+        await devNode.setToyENSCodeIfAbsent();
+        await devNode.setMulticallCodeIfAbsent();
+        break;
+      } catch (e) {
+        console.log("Failed to setCode on anvil, retrying...");
+      }
+    }
 
     const mgv = await Mangrove.connect({
       provider,
@@ -68,19 +98,44 @@ export const mochaHooks = {
   async beforeEachImpl(hook: any) {
     // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
     if (!hook.proxies) {
-      hook.proxies = {};
+      hook.proxies = {
+        closeCurrentProxy: async () => {
+          // Tear down existing proxy - waiting for all outstanding connections to close.
+          // Note: anvil could still be processing something when this completes in case its async,
+          // Consider probing anvil for completion.
+          const currentProxy = hook.proxies[currentProxyPort];
+          if (currentProxy) {
+            currentProxy.cancelAll = true;
+            const closedDeferred = new Deferred();
+            currentProxy.proxyServer.close(() => {
+              closedDeferred.resolve();
+            });
+            await closedDeferred.promise;
+          }
+        },
+      };
     }
 
-    // Tear down existing proxy - waiting for all outstanding connections to close.
-    const currentProxy = hook.proxies[currentProxyPort];
-    if (currentProxy) {
-      currentProxy.cancelAll = true;
-      const closedDeferred = new Deferred();
-      currentProxy.proxyServer.close(() => {
-        closedDeferred.resolve();
-      });
-      await closedDeferred.promise;
+    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
+    for (let i = 0; i < 100; i++) {
+      const result = await provider.send("txpool_content", []);
+      if (!Object.keys(result).length) {
+        throw new Error("Missing txpool data");
+      }
+
+      if (
+        Object.keys(result.pending).length ||
+        Object.keys(result.queued).length
+      ) {
+        console.log("txpool_content not empty... waiting...");
+        console.log(JSON.stringify(result));
+        await sleep(200);
+      } else {
+        break;
+      }
     }
+
+    await hook.proxies.closeCurrentProxy();
 
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)
     const newProxy = {
@@ -129,6 +184,8 @@ export const mochaHooks = {
   },
 
   async afterAllImpl(hook: any) {
+    await hook.proxies.closeCurrentProxy();
+
     if (hook.server.process) {
       hook.server.process.kill();
     }

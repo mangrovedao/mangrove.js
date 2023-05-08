@@ -34,13 +34,12 @@ describe("Failing offer integration tests", () => {
     testProvider = ethers.getDefaultProvider(this.server.url);
     makerMangrove = await Mangrove.connect({
       privateKey: this.accounts.maker.key,
-      provider: this.server.url,
+      provider: testProvider,
     });
 
     mgvAdmin = await Mangrove.connect({
       privateKey: this.accounts.deployer.key,
       provider: makerMangrove.provider,
-      providerUrl: this.server.url,
     });
 
     mgvTestUtil.setConfig(makerMangrove, this.accounts, mgvAdmin);
