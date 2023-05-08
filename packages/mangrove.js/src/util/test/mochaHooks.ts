@@ -20,7 +20,6 @@ let currentProxyPort = 8546;
 
 export const mochaHooks = {
   async beforeAllImpl(args: any, hook: any) {
-    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
     if (process.env.MOCHA_WORKER_ID) {
       // running in parallel mode - change port
       serverParams.port =
@@ -28,6 +27,7 @@ export const mochaHooks = {
       currentProxyPort = serverParams.port + 1;
     }
     hook.server = await node(args).connect();
+    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
 
     // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
@@ -115,7 +115,7 @@ export const mochaHooks = {
       };
     }
 
-    const provider = new ethers.providers.JsonRpcProvider(this.server.url);
+    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
     for (let i = 0; i < 100; i++) {
       const result = await provider.send("txpool_content", []);
       if (!Object.keys(result).length) {
