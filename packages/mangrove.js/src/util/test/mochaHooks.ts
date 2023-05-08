@@ -45,7 +45,6 @@ export const mochaHooks = {
       tester: hook.server.accounts[3],
       arbitrager: hook.server.accounts[4],
     };
-
     const devNode = new DevNode(provider);
     // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
@@ -116,7 +115,7 @@ export const mochaHooks = {
       };
     }
 
-    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
+    const provider = new ethers.providers.JsonRpcProvider(this.server.url);
     for (let i = 0; i < 100; i++) {
       const result = await provider.send("txpool_content", []);
       if (!Object.keys(result).length) {
