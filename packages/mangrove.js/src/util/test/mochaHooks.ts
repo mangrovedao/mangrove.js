@@ -98,7 +98,6 @@ export const mochaHooks = {
     // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
     if (!hook.proxies) {
       hook.proxies = {
-    if (!this.proxies)
         closeCurrentProxy: async () => {
           // Tear down existing proxy - waiting for all outstanding connections to close.
           // Note: anvil could still be processing something when this completes in case its async,
