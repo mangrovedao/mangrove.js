@@ -16,7 +16,6 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
-import { ApproveArgs } from "./mgvtoken";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -68,9 +67,9 @@ class LiquidityProvider {
       this.logic = p.logic;
       this.contract = p.logic
         ? typechain.ILiquidityProvider__factory.connect(
-            p.logic.address,
-            p.logic.signerOrProvider
-          )
+          p.logic.address,
+          p.logic.signerOrProvider
+        )
         : undefined;
       this.market = p.market;
       this.eoa = p.eoa;
@@ -92,10 +91,10 @@ class LiquidityProvider {
     p:
       | Market
       | {
-          base: string;
-          quote: string;
-          bookOptions?: Market.BookOptions;
-        }
+        base: string;
+        quote: string;
+        bookOptions?: Market.BookOptions;
+      }
   ): Promise<LiquidityProvider> {
     if (p instanceof Market) {
       return new LiquidityProvider({
@@ -497,10 +496,10 @@ class LiquidityProvider {
       lockedProvision = this.mgv.fromUnits(
         this.logic
           ? await this.logic.contract.provisionOf(
-              outbound_tkn.address,
-              inbound_tkn.address,
-              opts.id
-            )
+            outbound_tkn.address,
+            inbound_tkn.address,
+            opts.id
+          )
           : 0,
         18
       );
