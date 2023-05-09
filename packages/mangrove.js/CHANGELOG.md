@@ -1,4 +1,6 @@
 # next
+ 
+# 1.2.4-11 (may 2023)
 
 - offerLogics support for `setRouter` function
 - offerLogics `approve` function is now approving a spender to spend tokens on the underlying contract's behalf
