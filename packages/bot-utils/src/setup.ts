@@ -6,7 +6,7 @@ import { ToadScheduler } from "toad-scheduler";
 import * as log from "./util/logger";
 import {
   StaticJsonRpcProvider,
-  JsonRpcProvider,
+  WebSocketProvider,
 } from "@ethersproject/providers";
 import { getDefaultProvider } from "ethers";
 import { BaseProvider } from "@ethersproject/providers";
@@ -101,12 +101,12 @@ export class Setup {
     }
 
     const providerUrl = process.env["RPC_NODE_URL"];
-    // In case of a http provider we do not want to query chain id, so we use the Static provider; otherwise, we use the default (which will be wss).
+    // In case of a http provider we do not want to query chain id, so we use the Static provider; otherwise, we use the default WebSocketProvider.
     const defaultProvider = getDefaultProvider(providerUrl);
     const provider =
-      defaultProvider instanceof JsonRpcProvider
-        ? new StaticJsonRpcProvider(providerUrl)
-        : defaultProvider;
+      defaultProvider instanceof WebSocketProvider
+        ? defaultProvider
+        : new StaticJsonRpcProvider(providerUrl);
     const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
     const nonceManager = new NonceManager(signer);
     const mgv = await Mangrove.connect({
