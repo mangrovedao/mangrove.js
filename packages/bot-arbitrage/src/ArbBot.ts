@@ -31,7 +31,6 @@ export class ArbBot {
       const market = await this.mgv.market({
         base: base,
         quote: quote,
-        bookOptions: { maxOffers: 20 },
       });
       const APIKEY = process.env["APIKEY"];
       if (!APIKEY) {
@@ -49,7 +48,7 @@ export class ArbBot {
         .price();
 
       return {
-        askTransaction: await this.checkPrice(
+        askTransaction: await this.doArbIfProfitable(
           market,
           "asks",
           config,
@@ -57,7 +56,7 @@ export class ArbBot {
           gasprice,
           holdsTokenPrice
         ),
-        bidTransaction: await this.checkPrice(
+        bidTransaction: await this.doArbIfProfitable(
           market,
           "bids",
           config,
@@ -82,7 +81,7 @@ export class ArbBot {
     return { name: "matic", decimals: 18 };
   }
 
-  private async checkPrice(
+  private async doArbIfProfitable(
     market: Market,
     BA: Market.BA,
     config: ArbConfig,
@@ -92,8 +91,8 @@ export class ArbBot {
   ): Promise<ethers.ContractTransaction> {
     const bestId = market.getSemibook(BA).getBestInCache();
     const bestOffer = bestId ? await market.offerInfo(BA, bestId) : undefined;
-    let wantsToken = BA == "asks" ? market.base : market.quote;
-    let givesToken = BA == "asks" ? market.quote : market.base;
+    const { inbound_tkn: givesToken, outbound_tkn: wantsToken } =
+      market.getOutboundInbound(BA);
 
     if (bestOffer && bestId) {
       const result = await this.isProfitable(
@@ -134,7 +133,7 @@ export class ArbBot {
     costInHoldingToken: BigNumberish;
   }> {
     try {
-      let gasused = await this.estimateArbGas(
+      const gasused = await this.estimateArbGas(
         bestId,
         wantsToken,
         bestOffer,
@@ -146,7 +145,7 @@ export class ArbBot {
       const costInHoldingToken = holdsTokenPrice
         .mul(costInNative.toString())
         .round();
-      const t = await this.staticArb(
+      await this.staticArb(
         bestId,
         wantsToken,
         bestOffer,

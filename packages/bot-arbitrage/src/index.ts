@@ -1,17 +1,16 @@
+import { BaseProvider } from "@ethersproject/providers";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 import { Mangrove } from "@mangrovedao/mangrove.js";
 import dotenvFlow from "dotenv-flow";
+import { Wallet } from "ethers";
+import http from "http";
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
 import { ArbBot } from "./ArbBot";
-import config from "./util/config";
-import { logger } from "./util/logger";
-import { ConfigUtils } from "./util/configUtils";
-import http from "http";
-import { Wallet } from "ethers";
-import { BaseProvider } from "@ethersproject/providers";
 import { getPoolContract } from "./uniswap/libs/uniswapUtils";
-import { SWAP_ROUTER_ADDRESS } from "./uniswap/libs/uniswapUtils";
 import { activateTokens } from "./util/ArbBotUtils";
+import config from "./util/config";
+import { ConfigUtils } from "./util/configUtils";
+import { logger } from "./util/logger";
 
 dotenvFlow.config();
 
@@ -73,19 +72,14 @@ export async function botFunction(
   const arbBotMap = new Set<MarketPairAndFee>();
   for (const marketConfig of marketConfigs) {
     const [base, quote] = marketConfig;
-    const market = await mgv.market({
-      base: base,
-      quote: quote,
-      bookOptions: { maxOffers: 20 },
-    });
     await activateTokens(
       [mgv.getAddress(marketConfig[0]), mgv.getAddress(marketConfig[1])],
       mgv
     );
 
     arbBotMap.add({
-      base: market.base.name,
-      quote: market.quote.name,
+      base,
+      quote,
       fee: marketConfig[2],
     });
   }
