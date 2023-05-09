@@ -46,7 +46,6 @@ describe("MarketCleaner integration tests", () => {
     mgvAdmin = await Mangrove.connect({
       privateKey: this.accounts.deployer.key,
       provider: mgvConfig.provider,
-      providerUrl: this.server.url,
     });
 
     mgvTestUtil.setConfig(mgvConfig, this.accounts, mgvAdmin);
@@ -59,7 +58,6 @@ describe("MarketCleaner integration tests", () => {
     mgv = await Mangrove.connect({
       //provider: this.test?.parent?.parent?.ctx.providerUrl,
       signer: cleaner.signer,
-      providerUrl: this.server.url,
     });
     market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 

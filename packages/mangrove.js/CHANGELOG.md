@@ -6,6 +6,18 @@
 - liquidityProvider `approveAsks` and `approveBids` is removed (no asumption on whether one should approve router or contract should be made on the sole presence/absence of a router). Use instead `market.base.approve(await logic.router())` or `market.base.approve(logic.address)`;
 - mgvtokens support for `transferFrom` function
 
+# 1.2.4-10 (may 2023)
+
+- temporarily remove check for rpc provider
+
+# 1.2.4-9 (may 2023)
+
+- fixed issue with reliable-event-subscriber integration when using metamask through wagmi
+
+# 1.2.4-8 (may 2023)
+
+- fixed issue with reliable-event-subscriber integration when using metamask
+
 # 1.2.4-7 (may 2023)
 
 - added approveIfHigher, approve, increaseApprove for more fine-grained approval control

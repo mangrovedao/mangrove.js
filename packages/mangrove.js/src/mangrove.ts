@@ -149,32 +149,7 @@ class Mangrove {
     if (typeof options === "string") {
       options = {
         provider: options,
-        providerUrl: options,
       };
-    }
-    if (typeof options.provider === "string") {
-      options.providerUrl = options.provider;
-    }
-    if (options.provider instanceof JsonRpcProvider && !options.providerUrl) {
-      options.providerUrl = options.provider.connection.url; // this is a hack I don't want to spend much time here. Let's discus in PR review
-      /*
-       * the problem is that Provider interface does not provide a way of getting url, as I
-       * implemented our own provider for events, providerUrl becomes mandatory. Should I replace
-       * all Mangrove.connect call with the according new interface ?
-       * Btw, can't we handle the provider ourself ? does the user really needs to specifiy it's own subscriber ?
-       * */
-    }
-
-    if (options.signer instanceof ethers.Wallet && !options.providerUrl) {
-      if (options.signer.provider instanceof JsonRpcProvider) {
-        options.providerUrl = options.signer.provider.connection.url;
-      }
-    }
-
-    if (!options.providerUrl) {
-      throw new Error(
-        "Missing providerUrl and could not extract it from signer and provider"
-      );
     }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
@@ -208,17 +183,17 @@ class Mangrove {
       throw new Error("Missing block manager option");
     }
 
-    if (!options.reliableWebsocketProviderOptions) {
+    if (!options.reliableWebsocketProviderOptions && options.providerWsUrl) {
       const _default = reliableWebSocketOptionsByNetworkName[network.name];
       if (_default) {
         options.reliableWebsocketProviderOptions = {
-          wsUrl: options.providerUrl,
+          wsUrl: options.providerWsUrl,
           pingIntervalMs: _default.pingIntervalMs,
           pingTimeoutMs: _default.pingTimeoutMs,
         };
       } else {
         options.reliableWebsocketProviderOptions = {
-          wsUrl: options.providerUrl,
+          wsUrl: options.providerWsUrl,
           pingIntervalMs: 10000,
           pingTimeoutMs: 5000,
         };
@@ -243,10 +218,14 @@ class Mangrove {
       signer: signer,
       network: network,
       readOnly,
-      providerUrl: options.providerUrl,
       blockManagerOptions: options.blockManagerOptions,
-      reliableWebSocketProvider: options.reliableWebsocketProviderOptions,
       reliableHttpProvider: options.reliableHttpProviderOptions,
+      reliableWebSocketOptions: options.providerWsUrl
+        ? {
+            options: options.reliableWebsocketProviderOptions,
+            wsUrl: options.providerWsUrl,
+          }
+        : undefined,
     });
 
     await mgv.initializeProvider();
@@ -281,10 +260,12 @@ class Mangrove {
     signer: Signer;
     network: eth.ProviderNetwork;
     readOnly: boolean;
-    providerUrl?: string;
     blockManagerOptions: BlockManager.Options;
-    reliableWebSocketProvider: ReliableWebsocketProvider.Options;
     reliableHttpProvider: ReliableHttpProvider.Options;
+    reliableWebSocketOptions?: {
+      options: ReliableWebsocketProvider.Options;
+      wsUrl: string;
+    };
   }) {
     if (!canConstructMangrove) {
       throw Error(
@@ -326,23 +307,21 @@ class Mangrove {
       this.signer
     );
 
-    if (!params.providerUrl) {
-      return;
-    }
-
-    if (params.providerUrl.startsWith("ws")) {
+    if (params.reliableWebSocketOptions) {
       this.reliableProvider = new ReliableWebsocketProvider(
         {
           ...params.blockManagerOptions,
-          provider: new WebSocketProvider(params.providerUrl),
+          provider: new WebSocketProvider(
+            params.reliableWebSocketOptions.wsUrl
+          ),
         },
-        params.reliableWebSocketProvider
+        params.reliableWebSocketOptions.options
       );
     } else {
       this.reliableProvider = new ReliableHttpProvider(
         {
           ...params.blockManagerOptions,
-          provider: new JsonRpcProvider(params.providerUrl),
+          provider: this.provider as JsonRpcProvider,
         },
         params.reliableHttpProvider
       );
