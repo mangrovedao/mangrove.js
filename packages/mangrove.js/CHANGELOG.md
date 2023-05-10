@@ -1,3 +1,5 @@
+# Next version
+
 # 1.2.4-12 (may 2023)
 
 - nothing
