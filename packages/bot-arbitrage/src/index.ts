@@ -1,6 +1,6 @@
 import { BaseProvider } from "@ethersproject/providers";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
-import { Mangrove } from "@mangrovedao/mangrove.js";
+import { Mangrove, Market } from "@mangrovedao/mangrove.js";
 import dotenvFlow from "dotenv-flow";
 import { Wallet } from "ethers";
 import http from "http";
@@ -45,8 +45,13 @@ function createAsyncArbTaker(
           fee: arbBotValues.fee,
           provider: mgv.provider,
         });
+        const market = await mgv.market({
+          base: arbBotValues.base,
+          quote: arbBotValues.quote,
+        });
         arbPromises.push(
           new ArbBot(mgv, poolContract).run(
+            market,
             [arbBotValues.base, arbBotValues.quote, arbBotValues.fee],
             configUtil.buildArbConfig()
           )
@@ -69,15 +74,16 @@ export async function botFunction(
   const botConfig = configUtil.getAndValidateArbConfig();
 
   const marketConfigs = botConfig.markets;
-  const arbBotMap = new Set<MarketPairAndFee>();
+  const arbBotMarketMap = new Set<MarketPairAndFee>();
   for (const marketConfig of marketConfigs) {
     const [base, quote] = marketConfig;
+
+    // check allowance and log
     await activateTokens(
       [mgv.getAddress(marketConfig[0]), mgv.getAddress(marketConfig[1])],
       mgv
     );
-
-    arbBotMap.add({
+    arbBotMarketMap.add({
       base,
       quote,
       fee: marketConfig[2],
@@ -88,8 +94,25 @@ export async function botFunction(
   logger.info(`Running bot every ${botConfig.runEveryXMinutes} minutes.`, {
     data: { runEveryXMinutes: botConfig.runEveryXMinutes },
   });
+  const arbBotMap: { arbBot: ArbBot; market: Market }[] = [];
+  for (const arbBotValues of arbBotMarketMap.values()) {
+    const poolContract = await getPoolContract({
+      in: mgv.token(arbBotValues.base).address,
+      out: mgv.token(arbBotValues.quote).address,
+      fee: arbBotValues.fee,
+      provider: mgv.provider,
+    });
+    const market = await mgv.market({
+      base: arbBotValues.base,
+      quote: arbBotValues.quote,
+    });
+    arbBotMap.push({
+      arbBot: new ArbBot(mgv, poolContract),
+      market: market,
+    });
+  }
 
-  const task = createAsyncArbTaker(mgv, arbBotMap, server, scheduler);
+  const task = createAsyncArbTaker(mgv, arbBotMarketMap, server, scheduler);
 
   const job = new SimpleIntervalJob(
     {

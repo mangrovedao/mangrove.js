@@ -20,6 +20,7 @@ export class ArbBot {
   }
 
   public async run(
+    market: Market,
     marketConfig: [string, string, number],
     config: ArbConfig
   ): Promise<{
@@ -28,10 +29,7 @@ export class ArbBot {
   }> {
     try {
       const [base, quote, fee] = marketConfig;
-      const market = await this.mgv.market({
-        base: base,
-        quote: quote,
-      });
+
       const APIKEY = process.env["APIKEY"];
       if (!APIKEY) {
         throw new Error("No API key for alchemy");
