@@ -1107,6 +1107,28 @@ describe("Kandel integration tests suite", function () {
           "Too low volume for the given number of offers. Would result in 0 gives."
         );
       });
+
+      it("getMinimumVolumeForIndex for ask and bid", async () => {
+        // Arrange
+        await populateKandel({ approve: false, deposit: false });
+
+        // Act
+        const minBase = await kandel.getMinimumVolumeForIndex({
+          offerType: "asks",
+          index: 0,
+          price: 1000,
+        });
+        const minQuote = await kandel.getMinimumVolumeForIndex({
+          offerType: "bids",
+          index: 0,
+          price: 1000,
+        });
+
+        // Assert
+        assert.equal(minBase.toNumber(), 0.0148);
+        assert.equal(minQuote.toNumber(), 14.8);
+      });
+
       it("calculateDistributionWithUniformlyChangedVolume creates new distribution with decreased volumes for all live offers", async function () {
         // Arrange
         await populateKandel({ approve: false, deposit: false });

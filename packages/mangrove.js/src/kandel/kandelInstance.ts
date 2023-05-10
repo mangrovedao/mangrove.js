@@ -445,6 +445,37 @@ class KandelInstance {
     });
   }
 
+  /** Retrieves the minimum volume for a given offer type at the given index.
+   * @param params The parameters for the minimum volume.
+   * @param params.offerType The offer type to get the minimum volume for.
+   * @param params.index The Kandel index.
+   * @param params.price The price at the index.
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The minimum volume for the given offer type.
+   */
+  public async getMinimumVolumeForIndex(params: {
+    offerType: Market.BA;
+    index: number;
+    price: Bigish;
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    const mins = await this.getMinimumOrOverrides(params);
+    const parameters = await this.getParameters();
+
+    return this.generator.getMinimumVolumeForIndex({
+      offerType: params.offerType,
+      index: params.index,
+      price: Big(params.price),
+      ratio: parameters.ratio,
+      pricePoints: parameters.pricePoints,
+      spread: parameters.spread,
+      minimumBasePerOffer: mins.minimumBasePerOffer,
+      minimumQuotePerOffer: mins.minimumQuotePerOffer,
+    });
+  }
+
   /** Retrieves the minimum volumes for base and quote, or the provided overrides.
    * @param params The parameters for the minimum volumes.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
