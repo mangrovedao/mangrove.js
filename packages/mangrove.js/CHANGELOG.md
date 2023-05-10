@@ -2,7 +2,7 @@
 
 # 1.2.4-12 (may 2023)
 
-- nothing
+- Fix broken commonlib.js dependency
 
 # 1.2.4-11 (may 2023)
 
