@@ -150,7 +150,6 @@ export const mochaHooks = {
       injectData: (data: any, session: any) => {
         // Make it fail quickly - and log to find tests which leave requests behind
         if (newProxy.cancelAll) {
-          console.log("mochaHooks: Got request after cancelled!");
           session.destroy();
           // The following can be used for debugging what is calling:
           // console.dir(data.toString());

@@ -55,6 +55,8 @@ describe("KandelStatus unit tests suite", () => {
         price: Big;
       };
     }[];
+    expectedMinPrice: Big;
+    expectedMaxPrice: Big;
     expectedBaseOffer: { offerType: Market.BA; index: number; offerId: number };
     expectedLiveOutOfRange: {
       offerType: Market.BA;
@@ -71,6 +73,14 @@ describe("KandelStatus unit tests suite", () => {
     assert.deepStrictEqual(
       params.expectedLiveOutOfRange,
       params.statuses.liveOutOfRange
+    );
+    assert.equal(
+      params.expectedMaxPrice.toNumber(),
+      params.statuses.maxPrice.toNumber()
+    );
+    assert.equal(
+      params.expectedMinPrice.toNumber(),
+      params.statuses.minPrice.toNumber()
     );
     params.expectedStatuses.forEach((x, i) => {
       const s = params.statuses.statuses[i];
@@ -186,6 +196,8 @@ describe("KandelStatus unit tests suite", () => {
           offerId: getOfferId("bids", 2),
         },
         expectedLiveOutOfRange: [],
+        expectedMinPrice: Big(1000),
+        expectedMaxPrice: Big(32000),
         expectedStatuses: prices.map((p, i) => {
           const bids = p.gte(midPrice)
             ? undefined
@@ -250,6 +262,8 @@ describe("KandelStatus unit tests suite", () => {
           index: 1,
           offerId: 42,
         },
+        expectedMinPrice: Big(1000),
+        expectedMaxPrice: Big(32000),
         expectedLiveOutOfRange: [],
         expectedStatuses: [
           {
@@ -420,6 +434,8 @@ describe("KandelStatus unit tests suite", () => {
 
       // Assert
       assertStatuses({
+        expectedMinPrice: Big(1000),
+        expectedMaxPrice: Big(2000),
         expectedBaseOffer: {
           offerType: "bids",
           index: 1,

@@ -15,7 +15,7 @@ import Big from "big.js";
 
 describe("PrettyPrint Unit test suite", () => {
   describe("consoleOffers", () => {
-    it("should use deafult filter", async function () {
+    it("should use default filter", async function () {
       const prettyPrint = new PrettyPrint();
       //Arrange
       const spyPrint = spy(prettyPrint);

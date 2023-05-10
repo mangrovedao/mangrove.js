@@ -36,7 +36,7 @@ describe("KandelDistribution unit tests suite", () => {
         );
 
         // Assert
-        assert.equal(askGives.toNumber(), 1);
+        assert.equal(askGives?.toNumber(), 1);
         assert.equal(bidGives?.toNumber(), 1000);
       });
 
@@ -47,6 +47,22 @@ describe("KandelDistribution unit tests suite", () => {
         // Assert
         assert.equal(askGives, undefined);
         assert.equal(bidGives, undefined);
+      });
+
+      it("throws if 0 available", () => {
+        // Act/assert
+        assert.throws(
+          () => sut.calculateConstantGivesPerOffer(Big(0)),
+          new Error(
+            "Too low volume for the given number of offers. Would result in 0 gives."
+          )
+        );
+        assert.throws(
+          () => sut.calculateConstantGivesPerOffer(undefined, Big(0)),
+          new Error(
+            "Too low volume for the given number of offers. Would result in 0 gives."
+          )
+        );
       });
     }
   );

@@ -65,14 +65,21 @@ class KandelDistribution {
     offerCount: number,
     totalVolume: Big
   ) {
-    return offerCount
-      ? totalVolume
-          .div(offerCount)
-          .round(
-            offerType == "asks" ? this.baseDecimals : this.quoteDecimals,
-            Big.roundDown
-          )
-      : Big(0);
+    if (offerCount) {
+      const gives = totalVolume
+        .div(offerCount)
+        .round(
+          offerType == "asks" ? this.baseDecimals : this.quoteDecimals,
+          Big.roundDown
+        );
+      if (gives.eq(0)) {
+        throw Error(
+          "Too low volume for the given number of offers. Would result in 0 gives."
+        );
+      }
+      return gives;
+    }
+    return Big(0);
   }
 
   /** Calculates the gives for bids and asks based on the available volume for the distribution.

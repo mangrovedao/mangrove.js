@@ -4,6 +4,7 @@ import { describe, it } from "mocha";
 import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
 import KandelDistributionGenerator from "../../src/kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
+import { Market } from "../../src";
 
 describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
   let sut: KandelDistributionGenerator;
@@ -368,6 +369,38 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           } else {
             assert.equal(o.base.toNumber(), 1, "base should at minimum");
           }
+        });
+      });
+    }
+  );
+
+  describe(
+    KandelDistributionGenerator.prototype.getMinimumVolumeForIndex.name,
+    () => {
+      [
+        ["bids", 0.1, 100, 400],
+        ["asks", 0.1, 100, 0.1],
+        ["bids", 0.01, 100, 100],
+        ["asks", 0.01, 100, 0.025],
+      ].forEach((p) => {
+        const [offerType, minimumBasePerOffer, minimumQuotePerOffer, expected] =
+          p;
+
+        it(`also can use dual to calculate minimum ${offerType} ${minimumBasePerOffer} ${minimumQuotePerOffer}`, () => {
+          // Arrange/Act
+          const min = sut.getMinimumVolumeForIndex({
+            offerType: offerType as Market.BA,
+            index: 2,
+            price: 4000,
+            spread: 1,
+            pricePoints: 10,
+            ratio: 2,
+            minimumBasePerOffer,
+            minimumQuotePerOffer,
+          });
+
+          // Assert
+          assert.equal(min.toNumber(), expected);
         });
       });
     }

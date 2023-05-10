@@ -187,6 +187,55 @@ class KandelDistributionGenerator {
       distribution
     );
   }
+
+  /** Retrieves the minimum volume for a given offer type at the given index.
+   * @param params The parameters for the minimum volume.
+   * @param params.offerType The offer type to get the minimum volume for.
+   * @param params.index The Kandel index.
+   * @param params.price The price at the index.
+   * @param params.ratio The ratio of the geometric progression of prices.
+   * @param params.spread The spread used when transporting funds from an offer to its dual.
+   * @param params.pricePoints The number of price points.
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The minimum volume for the given offer type and the index.
+   */
+  public getMinimumVolumeForIndex(params: {
+    offerType: Market.BA;
+    index: number;
+    price: Bigish;
+    ratio: Bigish;
+    spread: number;
+    pricePoints: number;
+    minimumBasePerOffer: Bigish;
+    minimumQuotePerOffer: Bigish;
+  }) {
+    const { prices } = this.priceCalculation.getPricesFromPrice(
+      params.index,
+      Big(params.price),
+      Big(params.ratio),
+      params.pricePoints
+    );
+
+    const dualIndex = this.distributionHelper.getDualIndex(
+      params.offerType,
+      params.index,
+      params.pricePoints,
+      params.spread
+    );
+
+    // Prices don't have to be sorted
+    const priceAndDualPrice = [prices[params.index], prices[dualIndex]];
+
+    const { askGives, bidGives } =
+      this.distributionHelper.calculateMinimumInitialGives(
+        priceAndDualPrice,
+        Big(params.minimumBasePerOffer),
+        Big(params.minimumQuotePerOffer)
+      );
+
+    return params.offerType == "asks" ? askGives : bidGives;
+  }
 }
 
 export default KandelDistributionGenerator;
