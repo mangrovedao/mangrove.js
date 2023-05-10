@@ -1014,6 +1014,99 @@ describe("Kandel integration tests suite", function () {
         );
       });
 
+      it("calculateUniformDistributionFromMinPrice can heal multiple offers", async function () {
+        // Arrange
+        const { distribution: originalDistribution } = await populateKandel({
+          approve: true,
+          deposit: true,
+        });
+        const receipts = await waitForTransactions(
+          kandel.retractOffers({
+            startIndex: 0,
+            endIndex: (await kandel.getParameters()).pricePoints - 1,
+          })
+        );
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
+
+        const midPrice = 1200;
+        const statuses = await kandel.getOfferStatuses(midPrice);
+
+        // Act
+        const distribution =
+          await kandel.calculateUniformDistributionFromMinPrice({
+            minPrice: statuses.minPrice,
+            midPrice,
+          });
+
+        // Assert
+        assert.equal(
+          distribution.ratio.toNumber(),
+          originalDistribution.ratio.toNumber()
+        );
+        assert.equal(
+          distribution.pricePoints,
+          originalDistribution.pricePoints
+        );
+        assert.deepEqual(
+          distribution
+            .getPricesForDistribution()
+            .map((x) => x.round(4).toNumber()),
+          originalDistribution
+            .getPricesForDistribution()
+            .map((x) => x.round(4).toNumber())
+        );
+        const volume = distribution.getOfferedVolumeForDistribution();
+        const originalVolume =
+          originalDistribution.getOfferedVolumeForDistribution();
+        assert.equal(
+          volume.requiredBase.round(4).toNumber(),
+          originalVolume.requiredBase.round(4).toNumber()
+        );
+        assert.equal(
+          volume.requiredQuote.round(4).toNumber(),
+          originalVolume.requiredQuote.round(4).toNumber()
+        );
+        assert.equal(
+          distribution.offers.filter((x) => x.offerType == "bids").length,
+          originalDistribution.offers.filter((x) => x.offerType == "bids")
+            .length
+        );
+        assert.equal(
+          distribution.offers.filter((x) => x.offerType == "asks").length,
+          originalDistribution.offers.filter((x) => x.offerType == "asks")
+            .length
+        );
+      });
+
+      it("calculateUniformDistributionFromMinPrice with 0 available throws", async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: false });
+        const receipts = await waitForTransactions(
+          kandel.retractOffers({
+            startIndex: 0,
+            endIndex: (await kandel.getParameters()).pricePoints - 1,
+          })
+        );
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
+
+        const midPrice = 1200;
+        const statuses = await kandel.getOfferStatuses(midPrice);
+
+        // Act
+        assert.rejects(
+          kandel.calculateUniformDistributionFromMinPrice({
+            minPrice: statuses.minPrice,
+            midPrice,
+          }),
+          "Too low volume for the given number of offers. Would result in 0 gives."
+        );
+      });
       it("calculateDistributionWithUniformlyChangedVolume creates new distribution with decreased volumes for all live offers", async function () {
         // Arrange
         await populateKandel({ approve: false, deposit: false });

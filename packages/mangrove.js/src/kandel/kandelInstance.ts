@@ -445,6 +445,30 @@ class KandelInstance {
     });
   }
 
+  /** Retrieves the minimum volumes for base and quote, or the provided overrides.
+   * @param params The parameters for the minimum volumes.
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The minimum volumes for base and quote, or the provided overrides.
+   */
+  private async getMinimumOrOverrides(params: {
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    return {
+      minimumBasePerOffer: params.minimumBasePerOffer
+        ? this.generator.distributionHelper.roundBase(
+            Big(params.minimumBasePerOffer)
+          )
+        : await this.getMinimumVolume("asks"),
+      minimumQuotePerOffer: params.minimumQuotePerOffer
+        ? this.generator.distributionHelper.roundQuote(
+            Big(params.minimumQuotePerOffer)
+          )
+        : await this.getMinimumVolume("bids"),
+    };
+  }
+
   /** Calculates a new distribution based on the provided live offers and deltas.
    * @param params The parameters for the new distribution.
    * @param params.liveOffers The live offers to use.
@@ -452,7 +476,7 @@ class KandelInstance {
    * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
-   * @returns The new distribution
+   * @returns The new distribution for the live offers, dead offers are not included.
    * @remarks The base and quote deltas are applied uniformly to all offers, except during decrease where offers are kept above their minimum volume.
    */
   public async calculateDistributionWithUniformlyChangedVolume(params: {
@@ -466,12 +490,8 @@ class KandelInstance {
       explicitOffers: params.liveOffers,
     });
 
-    const minimumBasePerOffer = params.minimumBasePerOffer
-      ? Big(params.minimumBasePerOffer)
-      : await this.getMinimumVolume("asks");
-    const minimumQuotePerOffer = params.minimumQuotePerOffer
-      ? Big(params.minimumQuotePerOffer)
-      : await this.getMinimumVolume("bids");
+    const { minimumBasePerOffer, minimumQuotePerOffer } =
+      await this.getMinimumOrOverrides(params);
 
     return this.generator.uniformlyChangeVolume({
       distribution,
@@ -479,6 +499,46 @@ class KandelInstance {
       quoteDelta: params.quoteDelta,
       minimumBasePerOffer,
       minimumQuotePerOffer,
+    });
+  }
+
+  /** Calculates a new uniform distribution based on the available base and quote balance and min price and mid price.
+   * @param params The parameters for the new distribution.
+   * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
+   * @param params.minPrice The minimum price to generate the distribution from; can be retrieved from the status from @see getOfferStatus or @see getOfferStatusFromOffers .
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The new distribution, which can be used to re-populate the Kandel instance with this exact distribution.
+   */
+  public async calculateUniformDistributionFromMinPrice(params: {
+    midPrice: Bigish;
+    minPrice: Bigish;
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    const parameters = await this.getParameters();
+
+    const { minimumBasePerOffer, minimumQuotePerOffer } =
+      await this.getMinimumOrOverrides(params);
+
+    const distribution = this.generator.calculateMinimumDistribution({
+      priceParams: {
+        minPrice: params.minPrice,
+        ratio: parameters.ratio,
+        pricePoints: parameters.pricePoints,
+      },
+      midPrice: params.midPrice,
+      minimumBasePerOffer,
+      minimumQuotePerOffer,
+    });
+
+    const availableBase = await this.getBalance("asks");
+    const availableQuote = await this.getBalance("bids");
+
+    return this.generator.recalculateDistributionFromAvailable({
+      distribution,
+      availableBase,
+      availableQuote,
     });
   }
 
