@@ -40,6 +40,8 @@ import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
 import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
+import { onEthersError } from "./util/ethersErrorHandler";
+import EventEmitter from "events";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -114,6 +116,8 @@ class Mangrove {
   reliableProvider?: ReliableProvider;
   mangroveEventSubscriber?: MangroveEventSubscriber;
 
+  public eventEmitter: EventEmitter;
+
   static devNode: DevNode;
   static typechain = typechain;
   static addresses = addresses;
@@ -173,7 +177,6 @@ class Mangrove {
           retryDelayGetBlockMs: 500,
           maxRetryGetLogs: 10,
           retryDelayGetLogsMs: 500,
-          blockFinality: 100,
           batchSize: 200,
         };
       }
@@ -190,26 +193,31 @@ class Mangrove {
           wsUrl: options.providerWsUrl,
           pingIntervalMs: _default.pingIntervalMs,
           pingTimeoutMs: _default.pingTimeoutMs,
+          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
         };
       } else {
         options.reliableWebsocketProviderOptions = {
           wsUrl: options.providerWsUrl,
           pingIntervalMs: 10000,
           pingTimeoutMs: 5000,
+          estimatedBlockTimeMs: 2000,
         };
       }
     }
 
+    const eventEmitter = new EventEmitter();
     if (!options.reliableHttpProviderOptions) {
       const _default = reliableHttpProviderOptionsByNetworkName[network.name];
 
       if (_default) {
         options.reliableHttpProviderOptions = {
           estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
+          onError: onEthersError(eventEmitter),
         };
       } else {
         options.reliableHttpProviderOptions = {
           estimatedBlockTimeMs: 2000,
+          onError: onEthersError(eventEmitter),
         };
       }
     }
@@ -220,6 +228,7 @@ class Mangrove {
       readOnly,
       blockManagerOptions: options.blockManagerOptions,
       reliableHttpProvider: options.reliableHttpProviderOptions,
+      eventEmitter,
       reliableWebSocketOptions: options.providerWsUrl
         ? {
             options: options.reliableWebsocketProviderOptions,
@@ -262,6 +271,7 @@ class Mangrove {
     readOnly: boolean;
     blockManagerOptions: BlockManager.Options;
     reliableHttpProvider: ReliableHttpProvider.Options;
+    eventEmitter: EventEmitter;
     reliableWebSocketOptions?: {
       options: ReliableWebsocketProvider.Options;
       wsUrl: string;
@@ -272,6 +282,7 @@ class Mangrove {
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)"
       );
     }
+    this.eventEmitter = params.eventEmitter;
     // must always pass a provider-equipped signer
     this.provider = params.signer.provider;
     this.signer = params.signer;
@@ -314,6 +325,7 @@ class Mangrove {
           provider: new WebSocketProvider(
             params.reliableWebSocketOptions.wsUrl
           ),
+          multiv2Address: this.multicallContract.address,
         },
         params.reliableWebSocketOptions.options
       );
@@ -322,6 +334,7 @@ class Mangrove {
         {
           ...params.blockManagerOptions,
           provider: this.provider as JsonRpcProvider,
+          multiv2Address: this.multicallContract.address,
         },
         params.reliableHttpProvider
       );

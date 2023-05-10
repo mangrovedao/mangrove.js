@@ -10,7 +10,6 @@ export const blockManagerOptionsByNetworkName: Record<
     retryDelayGetBlockMs: 500,
     maxRetryGetLogs: 10,
     retryDelayGetLogsMs: 500,
-    blockFinality: 1,
     batchSize: 25,
   },
   matic: {
@@ -19,7 +18,6 @@ export const blockManagerOptionsByNetworkName: Record<
     retryDelayGetBlockMs: 500,
     maxRetryGetLogs: 10,
     retryDelayGetLogsMs: 500,
-    blockFinality: 100,
     batchSize: 25,
   },
   maticmum: {
@@ -28,7 +26,6 @@ export const blockManagerOptionsByNetworkName: Record<
     retryDelayGetBlockMs: 500,
     maxRetryGetLogs: 10,
     retryDelayGetLogsMs: 500,
-    blockFinality: 100,
     batchSize: 25,
   },
 };
