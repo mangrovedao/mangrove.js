@@ -1,3 +1,11 @@
+# 1.2.4-11 (may 2023)
+
+- reliable-event-subscriber: update to v1.1.4 (reduce rpc usage, prevent rate limiting)
+- logging: Reduce noise during tests
+- KandelStatus: Add min and max price
+- KandelInstance: Add calculateUniformDistributionFromMinPrice to heal all dead offers
+- KandelInstance: Add getMinimumVolumeForIndex to heal a single offer
+
 # 1.2.4-10 (may 2023)
 
 - temporarily remove check for rpc provider
