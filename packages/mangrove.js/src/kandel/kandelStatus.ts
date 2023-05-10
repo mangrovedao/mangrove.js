@@ -52,6 +52,8 @@ export type OfferStatus = {
  * @param statuses The status of each offer.
  * @param liveOutOfRange Offers that are live but have an index above pricePoints. This does not happen if populate is not called when offers are live.
  * @param baseOffer The live offer that is selected near the mid price and used to calculate expected prices.
+ * @param minPrice The minimum price of the offers. This is the price of the offer at index 0 if it is live; otherwise, the expected price at index 0.
+ * @param maxPrice The maximum price of the offers. This is the price of the offer at index pricePoints - 1 if it is live; otherwise, the expected price at index pricePoints - 1.
  */
 export type Statuses = {
   statuses: OfferStatus[];
@@ -65,6 +67,8 @@ export type Statuses = {
     index: number;
     offerId: number;
   };
+  minPrice: Big;
+  maxPrice: Big;
 };
 
 /** @title Helper for getting status about a Kandel instance. */
@@ -110,7 +114,7 @@ class KandelStatus {
    * @param offers The offers to determine the status of.
    * @returns The status of the Kandel instance.
    * @throws If no offers are live. At least one live offer is required to determine the status.
-   * @remarks The expected prices is determined by extrapolating from a live offer closest to the mid price.
+   * @remarks The expected prices are determined by extrapolating from a live offer closest to the mid price.
    * @remarks Offers are expected to be live bids below the mid price and asks above.
    * @remarks This may not hold if an offer deep in the book has been sniped in which case a dual offer will exist on the wrong side of mid price but quickly be taken due to a good price (Kandel still earns on the spread).
    * @remarks Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
@@ -202,6 +206,13 @@ class KandelStatus {
         return { offerType, offerId, index };
       });
 
+    const getPrice = (index: number) =>
+      statuses[index].asks?.live
+        ? statuses[index].asks.price
+        : statuses[index].bids?.live
+        ? statuses[index].bids.price
+        : statuses[index].expectedPrice;
+
     return {
       statuses,
       liveOutOfRange,
@@ -210,6 +221,8 @@ class KandelStatus {
         index: offer.index,
         offerId: offer.offerId,
       },
+      minPrice: getPrice(0),
+      maxPrice: getPrice(statuses.length - 1),
     };
   }
 }
