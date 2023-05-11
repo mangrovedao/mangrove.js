@@ -5,9 +5,6 @@
   "description": "A simple Mangrove arbitrage bot that buys & sells on one orderbook when best bid > best ask",
   "license": "BSD-2-Clause",
   "main": "build/index.js",
-  "workspaces": [
-    "mangrove-arbitrage"
-  ],
   "keywords": [
     "Mangrove",
     "arbitrage",

@@ -1694,13 +1694,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts@npm:3.4.2-solc-0.7":
-  version: 3.4.2-solc-0.7
-  resolution: "@openzeppelin/contracts@npm:3.4.2-solc-0.7"
-  checksum: 1a6048f31ed560c34429a05e534102c51124ecaf113aca7ebeb7897cfaaf61007cdd7952374c282adaeb79b04ee86ee80b16eed28b62fc6d60e3ffcd7a696895
-  languageName: node
-  linkType: hard
-
 "@tootallnate/once@npm:2":
   version: 2.0.0
   resolution: "@tootallnate/once@npm:2.0.0"
@@ -2050,75 +2043,6 @@ __metadata:
     "@typescript-eslint/types": 5.59.0
     eslint-visitor-keys: ^3.3.0
   checksum: e21656de02e221a27a5fe9f7fd34a1ca28530e47675134425f84fd0d1f276695fe39e35120837a491b02255d49aa2fd871e2c858ecccc66c687db972d057bd1c
-  languageName: node
-  linkType: hard
-
-"@uniswap/lib@npm:^4.0.1-alpha":
-  version: 4.0.1-alpha
-  resolution: "@uniswap/lib@npm:4.0.1-alpha"
-  checksum: d7bbacccef40966af16c7e215ab085f575686d316b2802c9e1cfd03f7ad351970e547535670a28b2279c3cfcc4fb02888614c46f94efe2987af2309f3ec86127
-  languageName: node
-  linkType: hard
-
-"@uniswap/swap-router-contracts@npm:^1.3.0":
-  version: 1.3.0
-  resolution: "@uniswap/swap-router-contracts@npm:1.3.0"
-  dependencies:
-    "@openzeppelin/contracts": 3.4.2-solc-0.7
-    "@uniswap/v2-core": 1.0.1
-    "@uniswap/v3-core": 1.0.0
-    "@uniswap/v3-periphery": 1.4.1
-    dotenv: ^14.2.0
-    hardhat-watcher: ^2.1.1
-  checksum: 66f853a4f04742bdfb4eb3fd6035aa7e3238cafec99609fcfb87b640953a6575152687bd6d0d14fe35440b339b7e3cc70dde237fb70703b3f49684c630a2d648
-  languageName: node
-  linkType: hard
-
-"@uniswap/v2-core@npm:1.0.1":
-  version: 1.0.1
-  resolution: "@uniswap/v2-core@npm:1.0.1"
-  checksum: eaa118fe45eac2e80b7468547ce2cde12bd3c8157555d2e40e0462a788c9506c6295247b511382da85e44a89ad92aff7bb3433b23bfbd2eeea23942ecd46e979
-  languageName: node
-  linkType: hard
-
-"@uniswap/v3-core@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@uniswap/v3-core@npm:1.0.0"
-  checksum: 0e7654cfbf9885f1ca94446c3b220aeddb039af7892bc4ae94669512570ceefdf1ce6c2b0703396927d5a203d7c6c5ccaf8bd61426e52372aafb6ada64141055
-  languageName: node
-  linkType: hard
-
-"@uniswap/v3-core@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "@uniswap/v3-core@npm:1.0.1"
-  checksum: 4bfd8b218391a3d9efde44e0f984cfec3bc25889cd4d1386766828521006e71b210a3583ee32b52f3c81d384af9e8c39f471f2229e9af4d50da6801446ecb3e4
-  languageName: node
-  linkType: hard
-
-"@uniswap/v3-periphery@npm:1.4.1":
-  version: 1.4.1
-  resolution: "@uniswap/v3-periphery@npm:1.4.1"
-  dependencies:
-    "@openzeppelin/contracts": 3.4.2-solc-0.7
-    "@uniswap/lib": ^4.0.1-alpha
-    "@uniswap/v2-core": 1.0.1
-    "@uniswap/v3-core": 1.0.0
-    base64-sol: 1.0.1
-    hardhat-watcher: ^2.1.1
-  checksum: a171332f1f1b89cde24d9962bdfc9742d9e6b102ea16815fa6997e0c812aa93a120752a6f497a5d5ab709f5c91ec7f18c2957fa5a8b9af57db3ff202ac8b7dc7
-  languageName: node
-  linkType: hard
-
-"@uniswap/v3-periphery@npm:^1.4.3":
-  version: 1.4.3
-  resolution: "@uniswap/v3-periphery@npm:1.4.3"
-  dependencies:
-    "@openzeppelin/contracts": 3.4.2-solc-0.7
-    "@uniswap/lib": ^4.0.1-alpha
-    "@uniswap/v2-core": 1.0.1
-    "@uniswap/v3-core": 1.0.0
-    base64-sol: 1.0.1
-  checksum: 50636951fc0a7737cfeef988ab38f4ddf26f6165a19df95b84294929088cc8b05fdbc7910168610ce9daebcce5d7a408fa5a02228ef9dfb73c23c695acc8b741
   languageName: node
   linkType: hard
 
@@ -2492,13 +2416,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-sol@npm:1.0.1":
-  version: 1.0.1
-  resolution: "base64-sol@npm:1.0.1"
-  checksum: be0f9e8cf3c744256913223fbae8187773f530cc096e98a77f49ef0bd6cedeb294d15a784e439419f7cb99f07bf85b08999169feafafa1a9e29c3affc0bc6d0a
-  languageName: node
-  linkType: hard
-
 "bech32@npm:1.1.4":
   version: 1.1.4
   resolution: "bech32@npm:1.1.4"
@@ -2787,7 +2704,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:3.5.3, chokidar@npm:^3.5.3":
+"chokidar@npm:3.5.3":
   version: 3.5.3
   resolution: "chokidar@npm:3.5.3"
   dependencies:
@@ -3266,13 +3183,6 @@ __metadata:
   dependencies:
     dotenv: ^8.0.0
   checksum: 8e34ea8f5cb216acb0f9cc602752dceef6e1c0b52c39045d6b92fadbefcbfecaf0cc868d3e115c9764860293d62d0bb31d46cfa41d29cb9fc7039797e20de03e
-  languageName: node
-  linkType: hard
-
-"dotenv@npm:^14.2.0":
-  version: 14.3.2
-  resolution: "dotenv@npm:14.3.2"
-  checksum: 86c06758915d6facc35275f4a7fafc16705b6f3b44befaa8abca91367991efc8ff8db5437d3cc14778231d19fb97610fe82d60f8a53ba723cdb69fe4171439aa
   languageName: node
   linkType: hard
 
@@ -4355,17 +4265,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hardhat-watcher@npm:^2.1.1":
-  version: 2.5.0
-  resolution: "hardhat-watcher@npm:2.5.0"
-  dependencies:
-    chokidar: ^3.5.3
-  peerDependencies:
-    hardhat: ^2.0.0
-  checksum: e6c0d52865529653733b3fed6887b41a676fc5185eb835909b360e8cc24223a2fc4c398e3874b234fa918ec59be9de86d7fe92963022139c05cf07f027377cbb
-  languageName: node
-  linkType: hard
-
 "has-ansi@npm:^2.0.0":
   version: 2.0.0
   resolution: "has-ansi@npm:2.0.0"
@@ -5400,18 +5299,6 @@ __metadata:
   checksum: 2332eb9a8ec96f1ffeeea56ccefabcb4193693597b132cd110734d50f2928842e22b84cfa1508e921b8385cdfd06dda9ad68645fed62b50fff629a580f5fb72c
   languageName: node
   linkType: hard
-
-"mangrove-arbitrage@workspace:packages/bot-arbitrage/mangrove-arbitrage":
-  version: 0.0.0-use.local
-  resolution: "mangrove-arbitrage@workspace:packages/bot-arbitrage/mangrove-arbitrage"
-  dependencies:
-    "@mangrovedao/mangrove-core": 1.4.6-2
-    "@uniswap/swap-router-contracts": ^1.3.0
-    "@uniswap/v3-core": ^1.0.1
-    "@uniswap/v3-periphery": ^1.4.3
-    dotenv: ^16.0.3
-  languageName: unknown
-  linkType: soft
 
 "mangrove-monorepo@workspace:.":
   version: 0.0.0-use.local
