@@ -130,18 +130,14 @@ export class OfferTaker {
     //   },
     // });
 
-    const asksTradePromise =
-      this.#tradeOnSemibookIfPricesAreBetterThanExternalSignal(
-        "asks",
-        externalPrice
-      );
-    const bidsTradePromise =
-      this.#tradeOnSemibookIfPricesAreBetterThanExternalSignal(
-        "bids",
-        externalPrice
-      );
-    await asksTradePromise;
-    await bidsTradePromise;
+    await this.#tradeOnSemibookIfPricesAreBetterThanExternalSignal(
+      "asks",
+      externalPrice
+    );
+    await this.#tradeOnSemibookIfPricesAreBetterThanExternalSignal(
+      "bids",
+      externalPrice
+    );
   }
 
   async #getExternalPrice(): Promise<Big | undefined> {
