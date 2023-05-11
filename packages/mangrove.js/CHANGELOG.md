@@ -1,3 +1,9 @@
+# Next version
+
+# 1.2.4-12 (may 2023)
+
+- Fix broken commonlib.js dependency
+
 # 1.2.4-11 (may 2023)
 
 - reliable-event-subscriber: update to v1.1.4 (reduce rpc usage, prevent rate limiting)
