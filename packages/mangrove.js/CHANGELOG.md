@@ -1,5 +1,9 @@
 # Next version
 
+# 1.2.4-13 (may 2023)
+
+- Update reliable-event-subscriber to fix rpc bug with go-ethereum
+
 # 1.2.4-12 (may 2023)
 
 - Fix broken commonlib.js dependency
