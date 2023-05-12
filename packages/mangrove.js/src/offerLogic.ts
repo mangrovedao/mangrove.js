@@ -68,7 +68,7 @@ class OfferLogic {
       args && args.optSpender != undefined
         ? args.optSpender
         : await this.mgv.signer.getAddress();
-    return await this.contract.approve(
+    return this.contract.approve(
       token.address,
       spender,
       amount,
@@ -134,8 +134,8 @@ class OfferLogic {
   }
 
   /** Retrieves the provision available on Mangrove for the offer logic, in ethers */
-  public async getMangroveBalance() {
-    return await this.mgv.balanceOf(this.address);
+  public getMangroveBalance() {
+    return this.mgv.balanceOf(this.address);
   }
 
   /** Adds ethers for provisioning offers on Mangrove for the offer logic.
@@ -143,8 +143,8 @@ class OfferLogic {
    * @param overrides The ethers overrides to use when calling the fund function.
    * @returns The transaction used to fund the offer logic.
    */
-  public async fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
-    return await this.mgv.fundMangrove(funds, this.address, overrides);
+  public fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
+    return this.mgv.fundMangrove(funds, this.address, overrides);
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
