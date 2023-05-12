@@ -93,25 +93,28 @@ export class Setup {
       this.stopAndExit(ExitCode.UncaughtException, server, scheduler);
     });
 
-    if (!process.env["RPC_NODE_URL"]) {
-      throw new Error("No URL for a node has been provided in RPC_NODE_URL");
+    if (!process.env["RPC_WS_URL"]) {
+      throw new Error("No URL for a node has been provided in RPC_WS_URL");
+    }
+    if (!process.env["RPC_HTTP_URL"]) {
+      throw new Error("No URL for a node has been provided in RPC_HTTP_URL");
     }
     if (!process.env["PRIVATE_KEY"]) {
       throw new Error("No private key provided in PRIVATE_KEY");
     }
 
-    const providerUrl = process.env["RPC_NODE_URL"];
+    const providerHttpUrl = process.env["RPC_HTTP_URL"];
     // In case of a http provider we do not want to query chain id, so we use the Static provider; otherwise, we use the default WebSocketProvider.
-    const defaultProvider = getDefaultProvider(providerUrl);
+    const defaultProvider = getDefaultProvider(providerHttpUrl);
     const provider =
       defaultProvider instanceof WebSocketProvider
         ? defaultProvider
-        : new StaticJsonRpcProvider(providerUrl);
+        : new StaticJsonRpcProvider(providerHttpUrl);
     const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
     const nonceManager = new NonceManager(signer);
     const mgv = await Mangrove.connect({
       signer: nonceManager,
-      providerWsUrl: providerUrl.startsWith("ws") ? providerUrl : undefined,
+      providerWsUrl: process.env["RPC_WS_URL"],
     });
 
     this.logger.info("Connected to Mangrove", {
