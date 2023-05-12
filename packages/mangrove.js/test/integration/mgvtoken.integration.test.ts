@@ -53,6 +53,14 @@ describe("MGV Token integration tests suite", () => {
     );
   });
 
+  it("approve can be set to 0", async function () {
+    const usdc = mgv.token("USDC");
+    await waitForTransaction(await usdc.approve(mgv.address, 100));
+    await waitForTransaction(await usdc.approve(mgv.address, 0));
+    const allowance = await usdc.allowance();
+    assert.equal(allowance.toNumber(), 0, "allowance should be 0");
+  });
+
   it("approveIfHigher sets when higher but not when lower", async function () {
     const usdc = mgv.token("USDC");
 
