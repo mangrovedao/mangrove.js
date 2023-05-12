@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 import assert from "assert";
 import { ethers } from "ethers";
 
-import { Mangrove, LiquidityProvider, OfferMaker } from "../../src";
+import { Mangrove, LiquidityProvider, OfferMaker, OfferLogic } from "../../src";
 import { approxEq } from "../util/helpers";
 
 import { Big } from "big.js";
@@ -355,6 +355,19 @@ describe("OfferMaker", () => {
           updatePromise,
           "Updating on a closed market should fail."
         );
+      });
+
+      it("approves signer for base transfer", async () => {
+        const base = onchain_lp.market.base;
+        const logic = onchain_lp.logic as OfferLogic;
+
+        const tx = await logic.approve(base.name, { optAmount: 42 });
+        const resp = await tx.wait();
+        let allowance = await base.allowance({
+          owner: logic.address,
+          spender: await logic.mgv.signer.getAddress(),
+        });
+        assert.equal(allowance, 42, "Invalid allowance");
       });
     });
   });
