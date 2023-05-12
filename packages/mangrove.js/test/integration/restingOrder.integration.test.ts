@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 import { utils } from "ethers";
 
 import assert from "assert";
-import { Mangrove, LiquidityProvider, Market } from "../../src";
+import { Mangrove, LiquidityProvider, Market, OfferLogic } from "../../src";
+import { AbstractRouter } from "../../src/types/typechain";
 
 import { Big } from "big.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -16,6 +17,9 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 
 describe("RestingOrder", () => {
   let mgv: Mangrove;
+  let orderLogic: OfferLogic;
+  let orderLP: LiquidityProvider;
+  let router: AbstractRouter;
 
   afterEach(async () => {
     mgv.disconnect();
@@ -31,22 +35,21 @@ describe("RestingOrder", () => {
       (mgv.provider as any).pollingInterval = 10;
 
       // interpreting mangroveOrder as a maker contract
-      const logic = mgv.offerLogic(mgv.orderContract.address);
-      const lp = await LiquidityProvider.connect(logic, {
+      orderLogic = mgv.offerLogic(mgv.orderContract.address);
+      orderLP = await LiquidityProvider.connect(orderLogic, {
         base: "TokenA",
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
 
       //check that contract responds
-      const gasreq = await lp.logic?.contract.offerGasreq();
-      assert(gasreq?.gt(0), "Cannot talk to resting order contract");
+      const gasreq = await orderLogic.offerGasreq();
+      assert(gasreq == orderLP.gasreq, "Cannot talk to resting order contract");
+      assert(orderLP.computeAskProvision({ gasreq: gasreq }));
     });
   });
 
   describe("Resting order integration tests suite", () => {
-    let orderContractAsLP: LiquidityProvider;
-    let meAsLP: LiquidityProvider;
     /* Make sure tx has been mined so we can read the result off the chain */
     const w = async (r) => (await r).wait(1);
 
@@ -62,16 +65,17 @@ describe("RestingOrder", () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       mgv.provider.pollingInterval = 10;
-      const logic = mgv.offerLogic(mgv.orderContract.address);
+      orderLogic = mgv.offerLogic(mgv.orderContract.address);
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
 
-      orderContractAsLP = await LiquidityProvider.connect(logic, market);
+      orderLP = await LiquidityProvider.connect(orderLogic, market);
+      router = (await orderLogic.router()) as AbstractRouter;
 
-      await w(orderContractAsLP.logic.activate(["TokenA", "TokenB"]));
+      await w(orderLogic.activate(["TokenA", "TokenB"]));
 
       // minting As and Bs for test runner
       const me = await mgv.signer.getAddress();
@@ -84,7 +88,7 @@ describe("RestingOrder", () => {
 
       // `me` proposes asks on Mangrove so should approve base
       await w(mgv.token("TokenA").approveMangrove());
-      meAsLP = await mgv.liquidityProvider(market);
+      const meAsLP = await mgv.liquidityProvider(market);
 
       const provision = await meAsLP.computeAskProvision();
       // fills Asks semi book
@@ -106,17 +110,22 @@ describe("RestingOrder", () => {
     });
 
     it("simple resting order, with no forceRoutingToMangroveOrder", async () => {
-      const provision = await orderContractAsLP.computeBidProvision();
-      const router_address = await orderContractAsLP.logic?.contract.router();
-      // `me` buying base via orderContract so should approve it for quote
-      await w(mgv.token("TokenB").approve(router_address));
-      await w(mgv.token("TokenA").approve(router_address));
+      const provision = await orderLP.computeBidProvision();
 
-      const buyPromises = await orderContractAsLP.market.buy({
+      await w(mgv.token("TokenB").approve(router.address));
+      await w(mgv.token("TokenA").approve(router.address));
+
+      await orderLogic.contract.checkList([
+        mgv.getAddress("TokenB"),
+        mgv.getAddress("TokenA"),
+      ]);
+
+      const buyPromises = await orderLP.market.buy({
         wants: 20, // tokenA
         gives: 20, // tokenB
         restingOrder: { provision: provision },
       });
+
       const orderResult = await buyPromises.result;
       assert(
         // 5% fee configured in mochaHooks.js
@@ -124,7 +133,10 @@ describe("RestingOrder", () => {
         "Taker received an incorrect amount"
       );
       assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
-      assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        "Resting order was not posted"
+      );
       assert(
         orderResult.summary.partialFill,
         "Order should have been partially filled"
@@ -133,13 +145,12 @@ describe("RestingOrder", () => {
     });
 
     it("simple resting order, with forceRoutingToMangroveOrder:true", async () => {
-      const provision = await orderContractAsLP.computeBidProvision();
-      const router_address = await orderContractAsLP.logic?.contract.router();
-      // `me` buying base via orderContract so should approve it for quote
-      await w(mgv.token("TokenB").approve(router_address));
-      await w(mgv.token("TokenA").approve(router_address));
+      const provision = await orderLP.computeBidProvision();
 
-      const buyPromises = await orderContractAsLP.market.buy({
+      await w(mgv.token("TokenB").approve(router.address));
+      await w(mgv.token("TokenA").approve(router.address));
+
+      const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
         wants: 20, // tokenA
         gives: 20, // tokenB
@@ -152,7 +163,10 @@ describe("RestingOrder", () => {
         "Taker received an incorrect amount"
       );
       assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
-      assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        "Resting order was not posted"
+      );
       assert(
         orderResult.summary.partialFill,
         "Order should have been partially filled"
@@ -161,13 +175,12 @@ describe("RestingOrder", () => {
     });
 
     it("simple resting order, with forceRoutingToMangroveOrder:false", async () => {
-      const provision = await orderContractAsLP.computeBidProvision();
-      const router_address = await orderContractAsLP.logic?.contract.router();
-      // `me` buying base via orderContract so should approve it for quote
-      await w(mgv.token("TokenB").approve(router_address));
-      await w(mgv.token("TokenA").approve(router_address));
+      const provision = await orderLP.computeBidProvision();
 
-      const buyPromises = await orderContractAsLP.market.buy({
+      await w(mgv.token("TokenB").approve(router.address));
+      await w(mgv.token("TokenA").approve(router.address));
+
+      const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: false,
         wants: 20, // tokenA
         gives: 20, // tokenB
@@ -180,7 +193,10 @@ describe("RestingOrder", () => {
         "Taker received an incorrect amount"
       );
       assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
-      assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        "Resting order was not posted"
+      );
       assert(
         orderResult.summary.partialFill,
         "Order should have been partially filled"
@@ -189,12 +205,10 @@ describe("RestingOrder", () => {
     });
 
     it("no resting order params, with forceRoutingToMangroveOrder:true", async () => {
-      const router_address = await orderContractAsLP.logic?.contract.router();
-      // `me` buying base via orderContract so should approve it for quote
-      await w(mgv.token("TokenB").approve(router_address));
-      await w(mgv.token("TokenA").approve(router_address));
+      await w(mgv.token("TokenB").approve(router.address));
+      await w(mgv.token("TokenA").approve(router.address));
 
-      const buyPromises = await orderContractAsLP.market.buy({
+      const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
         wants: 5, // tokenA
         gives: 5, // tokenB
@@ -218,13 +232,12 @@ describe("RestingOrder", () => {
     });
 
     it("resting order with deadline", async () => {
-      const provision = await orderContractAsLP.computeBidProvision();
-      const market: Market = orderContractAsLP.market;
-      // `me` buying base so should approve orderContract for quote
-      const router_address = await orderContractAsLP.logic?.contract.router();
-      // `me` buying base via orderContract so should approve it for quote
-      await w(mgv.token("TokenB").approve(router_address));
-      await w(mgv.token("TokenA").approve(router_address));
+      const provision = await orderLP.computeBidProvision();
+
+      await w(mgv.token("TokenB").approve(router.address));
+      await w(mgv.token("TokenA").approve(router.address));
+
+      const market: Market = orderLP.market;
 
       const buyPromises = await market.buy({
         wants: 20, // tokenA
@@ -239,17 +252,30 @@ describe("RestingOrder", () => {
       });
       const orderResult = await buyPromises.result;
 
-      assert(orderResult.restingOrder.id > 0, "Resting order was not posted");
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        "Resting order was not posted"
+      );
       const ttl = await mgv.orderContract.expiring(
         mgv.token("TokenB").address,
         mgv.token("TokenA").address,
-        orderResult.restingOrder.id
+        orderResult.restingOrder ? orderResult.restingOrder.id : 0
       );
 
-      assert(orderResult.restingOrder.volume.eq(10));
-      assert(orderResult.restingOrder.price.eq(1));
-      assert(orderResult.restingOrder.wants.eq(10));
-      assert(orderResult.restingOrder.gives.eq(10));
+      assert(
+        orderResult.restingOrder
+          ? orderResult.restingOrder.volume.eq(10)
+          : false
+      );
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.price.eq(1) : false
+      );
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.wants.eq(10) : false
+      );
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.gives.eq(10) : false
+      );
 
       // taking resting offer
 
@@ -261,9 +287,9 @@ describe("RestingOrder", () => {
       // 5% fee configured in mochaHooks.js
       assert(result.summary.got.eq(5 * 0.95), "Sell order went wrong");
       assert(
-        await orderContractAsLP.market.isLive(
+        await orderLP.market.isLive(
           "bids",
-          orderResult.restingOrder.id
+          orderResult.restingOrder ? orderResult.restingOrder.id : 0
         ),
         "Residual should still be in the book"
       );
