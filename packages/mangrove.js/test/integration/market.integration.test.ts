@@ -16,7 +16,6 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { MgvReader } from "../../src/types/typechain/MgvReader";
 import { Deferred } from "../../src/util";
-import { TransactionReceipt } from "@ethersproject/providers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -60,7 +59,7 @@ describe("Market integration tests suite", () => {
     mgvAdmin.disconnect();
   });
 
-  describe("Readonly mode", async function () {
+  describe("Readonly mode", function () {
     let mgvro: Mangrove;
 
     beforeEach(async function () {
@@ -1468,14 +1467,11 @@ describe("Market integration tests suite", () => {
       { id: 1, wants: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
     ];
 
-    let lastTx: TransactionReceipt | undefined = undefined;
-    for (const ask of asks) {
-      lastTx = await waitForTransaction(
-        helpers.newOffer(mgv, market.base, market.quote, ask)
-      );
-    }
+    const lastTx = await waitForTransaction(
+      helpers.newOffer(mgv, market.base, market.quote, asks[0])
+    );
 
-    await mgvTestUtil.waitForBlock(market.mgv, lastTx!.blockNumber);
+    await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
     const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate.add(askGasReq).toNumber()
