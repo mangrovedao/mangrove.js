@@ -1108,6 +1108,97 @@ describe("Kandel integration tests suite", function () {
         );
       });
 
+      it("getRequiredProvision can get provision", async () => {
+        // Arrange
+        const { distribution } = await populateKandel({
+          approve: true,
+          deposit: false,
+        });
+        const expectedProvision = kandelStrategies.seeder.getRequiredProvision(
+          {
+            market: kandel.market,
+            gaspriceFactor: 10,
+            liquiditySharing: false,
+            onAave: false,
+          },
+          distribution
+        );
+
+        // Act
+        const requiredProvisionOfferCount = await kandel.getRequiredProvision({
+          offerCount: distribution.getOfferCount(),
+        });
+        const requiredProvisionDistribution = await kandel.getRequiredProvision(
+          {
+            distribution,
+          }
+        );
+
+        // Assert
+        assert.equal(
+          requiredProvisionOfferCount.toNumber(),
+          (await expectedProvision).toNumber()
+        );
+        assert.equal(
+          requiredProvisionDistribution.toNumber(),
+          (await expectedProvision).toNumber()
+        );
+      });
+
+      it("getRequiredProvision can get provision with overrides", async () => {
+        // Arrange
+        const { distribution } = await populateKandel({
+          approve: true,
+          deposit: false,
+        });
+        const gasprice = 10;
+        const gasreq = 42;
+        const expectedProvision = distribution.getRequiredProvision({
+          market: kandel.market,
+          gasprice,
+          gasreq,
+        });
+
+        // Act
+        const requiredProvisionOfferCount = await kandel.getRequiredProvision({
+          offerCount: distribution.getOfferCount(),
+          gasreq,
+          gasprice,
+        });
+        const requiredProvisionDistribution = await kandel.getRequiredProvision(
+          {
+            distribution,
+            gasreq,
+            gasprice,
+          }
+        );
+
+        // Assert
+        assert.equal(
+          requiredProvisionOfferCount.toNumber(),
+          (await expectedProvision).toNumber()
+        );
+        assert.equal(
+          requiredProvisionDistribution.toNumber(),
+          (await expectedProvision).toNumber()
+        );
+      });
+      it("can set gasprice", async () => {
+        // Act
+        await waitForTransaction(kandel.setGasprice(99));
+
+        // Assert
+        assert.equal((await kandel.getParameters()).gasprice, 99);
+      });
+
+      it("can set gasreq", async () => {
+        // Act
+        await waitForTransaction(kandel.setGasreq(99));
+
+        // Assert
+        assert.equal((await kandel.getParameters()).gasreq, 99);
+      });
+
       it("getMinimumVolumeForIndex for ask and bid", async () => {
         // Arrange
         await populateKandel({ approve: false, deposit: false });
