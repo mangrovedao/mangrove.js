@@ -151,7 +151,7 @@ const spawn = async (params: spawnParams) => {
 
   anvil.stdout.setEncoding("utf8");
   anvil.on("close", (code) => {
-    if (code !== null) {
+    if (code !== null && code != 0) {
       console.log(`anvil has closed with code ${code}`);
     }
   });

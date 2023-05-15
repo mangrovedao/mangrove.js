@@ -641,17 +641,13 @@ describe("Market integration tests suite", () => {
     };
     market.subscribe(cb);
 
-    const tx1 = await helpers
+    await helpers
       .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "1.2" })
       .then((tx) => tx.wait());
 
-    console.log(`offer 1 created at block ${tx1.blockNumber}`);
-
-    const tx2 = await helpers
+    await helpers
       .newOffer(mgv, market.quote, market.base, { wants: "1.3", gives: "1.1" })
       .then((tx) => tx.wait());
-
-    console.log(`offer 2 created at block ${tx2.blockNumber}`);
 
     const offer1 = {
       id: 1,

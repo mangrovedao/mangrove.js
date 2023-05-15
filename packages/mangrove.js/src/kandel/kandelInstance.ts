@@ -445,6 +445,61 @@ class KandelInstance {
     });
   }
 
+  /** Retrieves the minimum volume for a given offer type at the given index.
+   * @param params The parameters for the minimum volume.
+   * @param params.offerType The offer type to get the minimum volume for.
+   * @param params.index The Kandel index.
+   * @param params.price The price at the index.
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The minimum volume for the given offer type.
+   */
+  public async getMinimumVolumeForIndex(params: {
+    offerType: Market.BA;
+    index: number;
+    price: Bigish;
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    const mins = await this.getMinimumOrOverrides(params);
+    const parameters = await this.getParameters();
+
+    return this.generator.getMinimumVolumeForIndex({
+      offerType: params.offerType,
+      index: params.index,
+      price: Big(params.price),
+      ratio: parameters.ratio,
+      pricePoints: parameters.pricePoints,
+      spread: parameters.spread,
+      minimumBasePerOffer: mins.minimumBasePerOffer,
+      minimumQuotePerOffer: mins.minimumQuotePerOffer,
+    });
+  }
+
+  /** Retrieves the minimum volumes for base and quote, or the provided overrides.
+   * @param params The parameters for the minimum volumes.
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The minimum volumes for base and quote, or the provided overrides.
+   */
+  private async getMinimumOrOverrides(params: {
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    return {
+      minimumBasePerOffer: params.minimumBasePerOffer
+        ? this.generator.distributionHelper.roundBase(
+            Big(params.minimumBasePerOffer)
+          )
+        : await this.getMinimumVolume("asks"),
+      minimumQuotePerOffer: params.minimumQuotePerOffer
+        ? this.generator.distributionHelper.roundQuote(
+            Big(params.minimumQuotePerOffer)
+          )
+        : await this.getMinimumVolume("bids"),
+    };
+  }
+
   /** Calculates a new distribution based on the provided live offers and deltas.
    * @param params The parameters for the new distribution.
    * @param params.liveOffers The live offers to use.
@@ -452,7 +507,7 @@ class KandelInstance {
    * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
-   * @returns The new distribution
+   * @returns The new distribution for the live offers, dead offers are not included.
    * @remarks The base and quote deltas are applied uniformly to all offers, except during decrease where offers are kept above their minimum volume.
    */
   public async calculateDistributionWithUniformlyChangedVolume(params: {
@@ -466,12 +521,8 @@ class KandelInstance {
       explicitOffers: params.liveOffers,
     });
 
-    const minimumBasePerOffer = params.minimumBasePerOffer
-      ? Big(params.minimumBasePerOffer)
-      : await this.getMinimumVolume("asks");
-    const minimumQuotePerOffer = params.minimumQuotePerOffer
-      ? Big(params.minimumQuotePerOffer)
-      : await this.getMinimumVolume("bids");
+    const { minimumBasePerOffer, minimumQuotePerOffer } =
+      await this.getMinimumOrOverrides(params);
 
     return this.generator.uniformlyChangeVolume({
       distribution,
@@ -479,6 +530,46 @@ class KandelInstance {
       quoteDelta: params.quoteDelta,
       minimumBasePerOffer,
       minimumQuotePerOffer,
+    });
+  }
+
+  /** Calculates a new uniform distribution based on the available base and quote balance and min price and mid price.
+   * @param params The parameters for the new distribution.
+   * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
+   * @param params.minPrice The minimum price to generate the distribution from; can be retrieved from the status from @see getOfferStatus or @see getOfferStatusFromOffers .
+   * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
+   * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
+   * @returns The new distribution, which can be used to re-populate the Kandel instance with this exact distribution.
+   */
+  public async calculateUniformDistributionFromMinPrice(params: {
+    midPrice: Bigish;
+    minPrice: Bigish;
+    minimumBasePerOffer?: Bigish;
+    minimumQuotePerOffer?: Bigish;
+  }) {
+    const parameters = await this.getParameters();
+
+    const { minimumBasePerOffer, minimumQuotePerOffer } =
+      await this.getMinimumOrOverrides(params);
+
+    const distribution = this.generator.calculateMinimumDistribution({
+      priceParams: {
+        minPrice: params.minPrice,
+        ratio: parameters.ratio,
+        pricePoints: parameters.pricePoints,
+      },
+      midPrice: params.midPrice,
+      minimumBasePerOffer,
+      minimumQuotePerOffer,
+    });
+
+    const availableBase = await this.getBalance("asks");
+    const availableQuote = await this.getBalance("bids");
+
+    return this.generator.recalculateDistributionFromAvailable({
+      distribution,
+      availableBase,
+      availableQuote,
     });
   }
 
@@ -559,6 +650,41 @@ class KandelInstance {
     };
   }
 
+  /** Determines the required provision for the offers in the distribution or the supplied offer count.
+   * @param params The parameters used to calculate the provision.
+   * @param params.distribution The distribution to calculate the provision for. Optional if offerCount is provided.
+   * @param params.offerCount The number of offers to calculate the provision for. Optional if distribution is provided.
+   * @param params.gasreq The gas required to execute a trade. Default is retrieved from Kandel parameters.
+   * @param params.gasprice The gas price to calculate provision for. Default is retrieved from Kandel parameters.
+   * @returns The provision required for the number of offers.
+   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision. Existing locked provision or balance on Mangrove is not accounted for.
+   */
+  public async getRequiredProvision(params: {
+    distribution?: KandelDistribution;
+    offerCount?: number;
+    gasreq?: number;
+    gasprice?: number;
+  }) {
+    const provisionParams = {
+      gasreq: params.gasreq,
+      gasprice: params.gasprice,
+      market: this.market,
+    };
+    if (!provisionParams.gasreq || !provisionParams.gasprice) {
+      const parameters = await this.getParameters();
+      provisionParams.gasreq ??= parameters.gasreq;
+      provisionParams.gasprice ??= parameters.gasprice;
+    }
+
+    return (
+      (await params.distribution?.getRequiredProvision(provisionParams)) ??
+      (await this.generator.distributionHelper.getRequiredProvision({
+        offerCount: params.offerCount ?? 0,
+        ...provisionParams,
+      }))
+    );
+  }
+
   /** Populates the offers in the distribution for the Kandel instance and sets parameters.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
@@ -599,12 +725,11 @@ class KandelInstance {
     const rawParameters = this.getRawParameters(parameters);
     const funds =
       params.funds ??
-      (await distribution?.getRequiredProvision({
-        market: this.market,
+      (await this.getRequiredProvision({
+        distribution,
         gasreq: rawParameters.gasreq,
         gasprice: rawParameters.gasprice,
-      })) ??
-      0;
+      }));
 
     const { firstAskIndex, rawDistributions } =
       await this.getRawDistributionChunks({
@@ -873,6 +998,24 @@ class KandelInstance {
       recipientAddress,
       overrides
     );
+  }
+
+  /** Sets the gas price used when provisioning offers.
+   * @param gasprice The gas price to set.
+   * @param overrides The ethers overrides to use when calling the setGasprice function.
+   * @returns The transaction used to set the gas price.
+   */
+  public async setGasprice(gasprice: number, overrides: ethers.Overrides = {}) {
+    return await this.kandel.setGasprice(gasprice, overrides);
+  }
+
+  /** Sets the gas required to execute a trade.
+   * @param gasreq The gas requirement to set.
+   * @param overrides The ethers overrides to use when calling the setGasreq function.
+   * @returns The transaction used to set the gas requirement.
+   */
+  public async setGasreq(gasreq: number, overrides: ethers.Overrides = {}) {
+    return await this.kandel.setGasreq(gasreq, overrides);
   }
 }
 
