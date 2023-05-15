@@ -8,3 +8,4 @@ forge-std/=../../node_modules/@mangrovedao/mangrove-core/lib/forge-std/src/
 
 src=mangrove-arbitrage/src
 
+addresses=mangrove-arbitrage/addresses

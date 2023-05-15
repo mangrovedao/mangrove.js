@@ -5,11 +5,12 @@ import { node } from "@mangrovedao/mangrove.js/dist/nodejs/util/node";
 import { mochaHooks as mgvMochahooks } from "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks";
 import * as dotenv from "dotenv";
 import * as deploy from "./../deployMgvAndMgvArbitrage";
+import path from "path";
 
 const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
-const CORE_DIR = "";
+const CORE_DIR = path.parse(require.resolve("../../../mangrove-arbitrage")).dir;
 
 export const mochaHooks = {
   server: { url: "", snapshot: async () => {} },
@@ -33,12 +34,14 @@ export const mochaHooks = {
     await mgvMochahooks.afterAllImpl(this);
   },
 
-  async deployMgvArbitrage(provider: ethers.providers.Provider, hookInfo: any) {
+  async deployMgvArbitrage(
+    provider: ethers.providers.JsonRpcProvider,
+    hookInfo: any
+  ) {
     await deploy.deployMgvArbitrage({
       provider,
       url: hookInfo.server.url,
-      from: mnemonic.address(0),
-      privateKey: mnemonic.key(0),
+      mnemonic: mnemonic,
       coreDir: CORE_DIR,
       setToyENSCodeIfAbsent: false,
       setMulticallCodeIfAbsent: false,

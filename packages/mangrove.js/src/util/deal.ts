@@ -1,7 +1,9 @@
 import { ethers } from "ethers";
-import { execForgeCmd } from "./node";
+import { execForgeCmd, runScript } from "./forgeScript";
 import DevNode from "./devNode";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import path from "path";
+const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
 export async function deal(dealParams: {
   url: string;
@@ -11,12 +13,6 @@ export async function deal(dealParams: {
   amount?: number;
   internalAmount?: ethers.BigNumber;
 }) {
-  //  token:string,account:string,amount:string) {
-  const command = `forge script --rpc-url ${dealParams.url} -vv GetTokenDealSlot`;
-
-  console.log("Running forge script:");
-  console.log(command);
-
   // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
   const env = {
     ...process.env,
@@ -28,7 +24,16 @@ export async function deal(dealParams: {
   let slot: string;
   let decimals: number;
 
-  let ret: any = await execForgeCmd(command, env, false);
+  let ret: any = await runScript({
+    url: dealParams.url,
+    env: env,
+    provider: dealParams.provider,
+    script: "GetTokenDealSlot",
+    coreDir: CORE_DIR,
+    pipe: false,
+    stateCache: false,
+    stateCacheFile: "",
+  });
   for (const line of ret.split("\n")) {
     const slotMatch = line.match(/\s*slot:\s*(\S+)/);
     if (slotMatch) {

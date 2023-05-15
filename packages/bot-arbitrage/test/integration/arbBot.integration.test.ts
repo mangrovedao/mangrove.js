@@ -24,7 +24,7 @@ describe("ArbBot integration tests", () => {
       privateKey: this.accounts.deployer.key,
       provider: mgv.provider,
     });
-
+    logger.setLevel("debug");
     const arb = mgv.getAddress("MgvArbitrage");
     const weth = mgv.token("WETH");
     const dai = mgv.token("DAI");
