@@ -1051,7 +1051,9 @@ describe("Semibook integration tests suite", function () {
       }
 
       // wait for offer(s) to be recorded in OB
-      await mgvTestUtil.waitForBlock(mgv, lastTx!.blockNumber);
+      if (lastTx) {
+        await mgvTestUtil.waitForBlock(mgv, lastTx.blockNumber);
+      }
 
       const market = await mgv.market({ base: base, quote: quote });
       const actualAsksMaxGasReq = await market.getBook().asks.getMaxGasReq();

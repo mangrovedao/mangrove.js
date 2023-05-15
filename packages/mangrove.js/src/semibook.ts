@@ -261,7 +261,7 @@ class Semibook
       this.ba
     );
 
-    this.market.mgv.permit({
+    return this.market.mgv.permit({
       ...data,
       outbound_tkn: outbound_tkn.address,
       inbound_tkn: inbound_tkn.address,

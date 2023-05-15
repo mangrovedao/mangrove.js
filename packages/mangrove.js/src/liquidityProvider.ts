@@ -329,7 +329,7 @@ class LiquidityProvider {
       const txHash = (await txPromise).hash;
       const logTxHash = ethersLog.transactionHash;
       if (txHash === logTxHash && filter(cbArg)) {
-        promiseResolve(cb(cbArg, bookEvent, ethersLog));
+        promiseResolve(await cb(cbArg, bookEvent, ethersLog));
       }
     };
 

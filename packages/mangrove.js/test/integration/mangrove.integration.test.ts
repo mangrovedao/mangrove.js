@@ -44,7 +44,7 @@ describe("Mangrove integration tests suite", function () {
     mgvAdmin.disconnect();
   });
 
-  describe("getMarkets", async function () {
+  describe("getMarkets", function () {
     it("updates with mgvReader", async function () {
       await mgvAdmin.contract.deactivate(
         mgv.getAddress("TokenA"),
