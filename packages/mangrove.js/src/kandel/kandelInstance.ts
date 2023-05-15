@@ -650,6 +650,41 @@ class KandelInstance {
     };
   }
 
+  /** Determines the required provision for the offers in the distribution or the supplied offer count.
+   * @param params The parameters used to calculate the provision.
+   * @param params.distribution The distribution to calculate the provision for. Optional if offerCount is provided.
+   * @param params.offerCount The number of offers to calculate the provision for. Optional if distribution is provided.
+   * @param params.gasreq The gas required to execute a trade. Default is retrieved from Kandel parameters.
+   * @param params.gasprice The gas price to calculate provision for. Default is retrieved from Kandel parameters.
+   * @returns The provision required for the number of offers.
+   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision. Existing locked provision or balance on Mangrove is not accounted for.
+   */
+  public async getRequiredProvision(params: {
+    distribution?: KandelDistribution;
+    offerCount?: number;
+    gasreq?: number;
+    gasprice?: number;
+  }) {
+    const provisionParams = {
+      gasreq: params.gasreq,
+      gasprice: params.gasprice,
+      market: this.market,
+    };
+    if (!provisionParams.gasreq || !provisionParams.gasprice) {
+      const parameters = await this.getParameters();
+      provisionParams.gasreq ??= parameters.gasreq;
+      provisionParams.gasprice ??= parameters.gasprice;
+    }
+
+    return (
+      (await params.distribution?.getRequiredProvision(provisionParams)) ??
+      (await this.generator.distributionHelper.getRequiredProvision({
+        offerCount: params.offerCount ?? 0,
+        ...provisionParams,
+      }))
+    );
+  }
+
   /** Populates the offers in the distribution for the Kandel instance and sets parameters.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
@@ -690,12 +725,11 @@ class KandelInstance {
     const rawParameters = this.getRawParameters(parameters);
     const funds =
       params.funds ??
-      (await distribution?.getRequiredProvision({
-        market: this.market,
+      (await this.getRequiredProvision({
+        distribution,
         gasreq: rawParameters.gasreq,
         gasprice: rawParameters.gasprice,
-      })) ??
-      0;
+      }));
 
     const { firstAskIndex, rawDistributions } =
       await this.getRawDistributionChunks({
@@ -964,6 +998,24 @@ class KandelInstance {
       recipientAddress,
       overrides
     );
+  }
+
+  /** Sets the gas price used when provisioning offers.
+   * @param gasprice The gas price to set.
+   * @param overrides The ethers overrides to use when calling the setGasprice function.
+   * @returns The transaction used to set the gas price.
+   */
+  public async setGasprice(gasprice: number, overrides: ethers.Overrides = {}) {
+    return await this.kandel.setGasprice(gasprice, overrides);
+  }
+
+  /** Sets the gas required to execute a trade.
+   * @param gasreq The gas requirement to set.
+   * @param overrides The ethers overrides to use when calling the setGasreq function.
+   * @returns The transaction used to set the gas requirement.
+   */
+  public async setGasreq(gasreq: number, overrides: ethers.Overrides = {}) {
+    return await this.kandel.setGasreq(gasreq, overrides);
   }
 }
 
