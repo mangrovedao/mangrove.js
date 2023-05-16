@@ -1,4 +1,4 @@
-import assert = require("assert");
+import assert from "assert";
 import { Semibook, Market } from "../../src";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {

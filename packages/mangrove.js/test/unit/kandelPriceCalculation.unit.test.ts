@@ -1,7 +1,6 @@
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
-import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
 
 describe("KandelPriceCalculation unit tests suite", () => {

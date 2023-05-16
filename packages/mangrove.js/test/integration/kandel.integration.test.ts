@@ -60,7 +60,7 @@ describe("Kandel integration tests suite", function () {
     mgvAdmin.disconnect();
   });
 
-  describe("seeder", async function () {
+  describe("seeder", function () {
     let seeder: KandelSeeder;
     let distribution: KandelDistribution;
     let market: Market;
@@ -92,9 +92,11 @@ describe("Kandel integration tests suite", function () {
             distribution
           );
           if (!onAave && liquiditySharing) {
-            assert.rejects(
+            await assert.rejects(
               seeder.sow(seed),
-              "Liquidity sharing is only supported for AaveKandel instances"
+              new Error(
+                "Liquidity sharing is only supported for AaveKandel instances."
+              )
             );
             return;
           }
@@ -226,7 +228,7 @@ describe("Kandel integration tests suite", function () {
     });
   });
 
-  describe("farm", async function () {
+  describe("farm", function () {
     let farm: KandelFarm;
     let defaultOwner: string;
 
@@ -328,7 +330,7 @@ describe("Kandel integration tests suite", function () {
     });
   });
 
-  describe("instance", async function () {
+  describe("instance", function () {
     let kandel: KandelInstance;
     let kandelStrategies: KandelStrategies;
 
@@ -398,7 +400,7 @@ describe("Kandel integration tests suite", function () {
       };
     }
 
-    describe("router-agnostic", async function () {
+    describe("router-agnostic", function () {
       beforeEach(async function () {
         kandel = await createKandel(false);
       });
@@ -663,7 +665,7 @@ describe("Kandel integration tests suite", function () {
         await populateKandel({ approve: true, deposit: true });
 
         // Act/Assert
-        assert.rejects(
+        await assert.rejects(
           kandel.populate({
             parameters: { ratio: 2 },
             distribution:
@@ -672,7 +674,9 @@ describe("Kandel integration tests suite", function () {
                 { ratio: Big(1), pricePoints: 5 }
               ),
           }),
-          "ratio in parameter overrides does not match the ratio of the distribution."
+          new Error(
+            "ratio in parameter overrides does not match the ratio of the distribution."
+          )
         );
       });
 
@@ -681,7 +685,7 @@ describe("Kandel integration tests suite", function () {
         await populateKandel({ approve: true, deposit: true });
 
         // Act/Assert
-        assert.rejects(
+        await assert.rejects(
           kandel.populate({
             parameters: { pricePoints: 2 },
             distribution:
@@ -690,7 +694,9 @@ describe("Kandel integration tests suite", function () {
                 { ratio: Big(1), pricePoints: 5 }
               ),
           }),
-          "pricePoints in parameter overrides does not match the pricePoints of the distribution."
+          new Error(
+            "pricePoints in parameter overrides does not match the pricePoints of the distribution."
+          )
         );
       });
 
@@ -1099,12 +1105,14 @@ describe("Kandel integration tests suite", function () {
         const statuses = await kandel.getOfferStatuses(midPrice);
 
         // Act
-        assert.rejects(
+        await assert.rejects(
           kandel.calculateUniformDistributionFromMinPrice({
             minPrice: statuses.minPrice,
             midPrice,
           }),
-          "Too low volume for the given number of offers. Would result in 0 gives."
+          new Error(
+            "Too low volume for the given number of offers. Would result in 0 gives."
+          )
         );
       });
 
@@ -1332,7 +1340,7 @@ describe("Kandel integration tests suite", function () {
     });
 
     [true, false].forEach((onAave) =>
-      describe(`onAave=${onAave}`, async function () {
+      describe(`onAave=${onAave}`, function () {
         beforeEach(async function () {
           kandel = await createKandel(onAave);
         });
@@ -1589,7 +1597,10 @@ describe("Kandel integration tests suite", function () {
           await waitForTransactions(kandel.populate({ distribution }));
         });
 
-        [{ factor: 0.5 }, { gasreq: 1 }].forEach(({ factor, gasreq }) => {
+        [
+          { factor: 0.5, gasreq: undefined },
+          { factor: undefined, gasreq: -10000 },
+        ].forEach(({ factor, gasreq }) => {
           it(`calculateMinimumDistribution cannot be deployed with factor=${factor} or gasreq=${gasreq}`, async () => {
             // Arrange
             const minParams = {
@@ -1626,9 +1637,9 @@ describe("Kandel integration tests suite", function () {
             });
 
             // Act/assert
-            assert.rejects(
+            await assert.rejects(
               kandel.populate({ distribution }),
-              "mgv/writeOffer/density/tooLow"
+              /mgv\/writeOffer\/density\/tooLow/
             );
           });
         });
@@ -1690,14 +1701,14 @@ describe("Kandel integration tests suite", function () {
                 quoteAmount?.toString() ?? "0"
               );
 
-              if (!fullApprove) {
-                assert.rejects(
+              if (!fullApprove && (baseAmount || quoteAmount)) {
+                await assert.rejects(
                   kandel.deposit({ baseAmount, quoteAmount }),
                   "finite approval should not allow further deposits"
                 );
               } else {
                 // "infinite" approval should allow further deposits
-                kandel.deposit({ baseAmount, quoteAmount });
+                await kandel.deposit({ baseAmount, quoteAmount });
               }
             });
           })

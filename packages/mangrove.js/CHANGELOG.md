@@ -1,5 +1,10 @@
 # Next version
 
+- OfferLogic has an `approve` function to ask the underlying logic to approve signer (or an arbitrary address) to spend a specific token on its behalf.
+- Liquidity provider no longer provides `approveAsk`, `approveBids` which were making too much asumptions on router usage.
+- Adapts tutorial scripts accordingly.
+- bugfix: token approval could not be set to 0
+
 # 1.2.4-13 (may 2023)
 
 - Update reliable-event-subscriber to fix rpc bug with go-ethereum

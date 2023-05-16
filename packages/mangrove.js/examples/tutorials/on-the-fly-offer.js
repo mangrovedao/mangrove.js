@@ -21,9 +21,9 @@ market.consoleBids();
 // Create a simple liquidity provider on `market`, using `wallet` as a source of liquidity
 const directLP = await mgv.liquidityProvider(market);
 
-// Liquidity provider needs to approve Mangrove for transfer of base token (DAI) which
+// In order to post an ask, signer needs to approve Mangrove for transfer of base token (DAI) which
 // will be transferred from the wallet to Mangrove and then to the taker when the offer is taken.
-const tx = await directLP.approveAsks();
+const tx = await market.base.approve(mgv.address, { amount: 100.4 });
 await tx.wait();
 
 // Query mangrove to know the bounty for posting a new Ask on `market`

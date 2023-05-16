@@ -29,7 +29,7 @@ describe("Mangrove functionality", () => {
     }
   }
 
-  describe("watch local addresses", async function () {
+  describe("watch local addresses", function () {
     it("can start watching after ToyENS has been created", async function () {
       // start server
       const server = await node({
@@ -78,7 +78,7 @@ describe("Mangrove functionality", () => {
 
       // promise that will resolve when Mangrove is registered to ToyENS
       const prom = new Promise<void>((ok) => {
-        watchAllToyENSEntries(provider, (name) => {
+        void watchAllToyENSEntries(provider, (name) => {
           if (name === "Mangrove") {
             ok();
           }

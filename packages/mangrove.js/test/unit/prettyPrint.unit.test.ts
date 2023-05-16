@@ -1,15 +1,7 @@
 import { describe, it } from "mocha";
 import assert from "assert";
 import PrettyPrint from "../../src/util/prettyPrint";
-import {
-  anything,
-  capture,
-  instance,
-  mock,
-  spy,
-  verify,
-  when,
-} from "ts-mockito";
+import { capture, spy } from "ts-mockito";
 import { Market } from "../../src";
 import Big from "big.js";
 

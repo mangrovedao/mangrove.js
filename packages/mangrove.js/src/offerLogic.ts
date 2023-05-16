@@ -4,15 +4,6 @@ import { typechain } from "./types";
 
 import { Mangrove } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
-import { ApproveArgs } from "./mgvtoken";
-
-/* Note on big.js:
-ethers.js's BigNumber (actually BN.js) only handles integers
-big.js handles arbitrary precision decimals, which is what we want
-for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigNumber):
-  github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
-*/
-import Big from "big.js";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 /**
@@ -56,40 +47,33 @@ class OfferLogic {
   }
 
   /**
-   * @note Approves the logic to spend `token`s on signer's behalf.
+   * @note logic approves signer or `args.optSpender` to spend a certain token on its behalf
    * This has to be done for each token the signer's wishes to ask or bid for.
-   * @param arg optional `arg.amount` can be used if one wishes to approve a finite amount
+   * @param args optional `arg.amount` can be used if one wishes to approve a finite amount
    */
-  async approveToken(
+  async approve(
     tokenName: string,
-    arg: ApproveArgs = {}
+    args?: {
+      optSpender?: string;
+      optAmount?: Bigish;
+      optOverrides?: ethers.Overrides;
+    }
   ): Promise<ethers.ContractTransaction> {
-    const router: typechain.AbstractRouter | undefined = await this.router();
     const token = this.mgv.token(tokenName);
-    if (router) {
-      // LP's logic is using a router to manage its liquidity
-      return token.approve(router.address, arg);
-    } else {
-      // LP's logic is doing the routing itself
-      return token.approve(this.address, arg);
-    }
-  }
-
-  /**@note returns logic's allowance to trade `tokenName` on signer's behalf */
-  async allowance(tokenName: string): Promise<Big> {
-    const router: typechain.AbstractRouter | undefined = await this.router();
-    const token = this.mgv.token(tokenName);
-    if (router) {
-      return token.allowance({
-        owner: await this.mgv.signer.getAddress(),
-        spender: router.address,
-      });
-    } else {
-      return token.allowance({
-        owner: await this.mgv.signer.getAddress(),
-        spender: this.address,
-      });
-    }
+    const amount =
+      args && args.optAmount != undefined
+        ? token.toUnits(args.optAmount)
+        : ethers.constants.MaxUint256;
+    const spender =
+      args && args.optSpender != undefined
+        ? args.optSpender
+        : await this.mgv.signer.getAddress();
+    return this.contract.approve(
+      token.address,
+      spender,
+      amount,
+      args && args.optOverrides ? args.optOverrides : {}
+    );
   }
 
   /** Returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
@@ -150,8 +134,8 @@ class OfferLogic {
   }
 
   /** Retrieves the provision available on Mangrove for the offer logic, in ethers */
-  public async getMangroveBalance() {
-    return await this.mgv.balanceOf(this.address);
+  public getMangroveBalance() {
+    return this.mgv.balanceOf(this.address);
   }
 
   /** Adds ethers for provisioning offers on Mangrove for the offer logic.
@@ -159,8 +143,8 @@ class OfferLogic {
    * @param overrides The ethers overrides to use when calling the fund function.
    * @returns The transaction used to fund the offer logic.
    */
-  public async fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
-    return await this.mgv.fundMangrove(funds, this.address, overrides);
+  public fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
+    return this.mgv.fundMangrove(funds, this.address, overrides);
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */

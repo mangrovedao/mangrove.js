@@ -16,7 +16,6 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
-import { ApproveArgs } from "./mgvtoken";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -131,6 +130,40 @@ class LiquidityProvider {
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
     return this.getMissingProvision("asks", opts);
+  }
+
+  async getMissingProvision(
+    ba: Market.BA,
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
+  ): Promise<Big> {
+    const gasreq = opts && opts.gasreq != undefined ? opts.gasreq : this.gasreq;
+    const gasprice = opts && opts.gasprice != undefined ? opts.gasprice : 0;
+    // this computes the total provision required for a new offer on the market
+    const provision = await this.market.getOfferProvision(ba, gasreq, gasprice);
+    let lockedProvision = Big(0);
+    // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
+    if (opts.id) {
+      const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
+      lockedProvision = this.mgv.fromUnits(
+        this.logic
+          ? await this.logic.contract.provisionOf(
+              outbound_tkn.address,
+              inbound_tkn.address,
+              opts.id
+            )
+          : 0,
+        18
+      );
+    }
+    logger.debug(`Get missing provision`, {
+      contextInfo: "mangrove.maker",
+      data: { ba: ba, opts: opts },
+    });
+    if (provision.gt(lockedProvision)) {
+      return provision.sub(lockedProvision);
+    } else {
+      return Big(0);
+    }
   }
 
   /** Given a price, find the id of the immediately-better offer in the
@@ -329,7 +362,7 @@ class LiquidityProvider {
       const txHash = (await txPromise).hash;
       const logTxHash = ethersLog.transactionHash;
       if (txHash === logTxHash && filter(cbArg)) {
-        promiseResolve(cb(cbArg, bookEvent, ethersLog));
+        promiseResolve(await cb(cbArg, bookEvent, ethersLog));
       }
     };
 
@@ -480,59 +513,6 @@ class LiquidityProvider {
       txPromise,
       (cbArg) => cbArg.type === "OfferRetract"
     );
-  }
-
-  #approveToken(
-    tokenName: string,
-    arg: ApproveArgs = {}
-  ): Promise<ethers.ContractTransaction> {
-    if (this.logic) {
-      return this.logic.approveToken(tokenName, arg);
-    } else {
-      // LP is an EOA
-      return this.mgv.approveMangrove(tokenName, arg);
-    }
-  }
-
-  approveAsks(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.base.name, arg);
-  }
-  approveBids(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
-    return this.#approveToken(this.market.quote.name, arg);
-  }
-
-  async getMissingProvision(
-    ba: Market.BA,
-    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
-  ): Promise<Big> {
-    const gasreq = opts.gasreq ? opts.gasreq : this.gasreq;
-    const gasprice = opts.gasprice ? opts.gasprice : 0;
-    // this computes the total provision required for a new offer on the market
-    const provision = await this.market.getOfferProvision(ba, gasreq, gasprice);
-    let lockedProvision = Big(0);
-    // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
-    if (opts.id) {
-      const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-      lockedProvision = this.mgv.fromUnits(
-        this.logic
-          ? await this.logic.contract.provisionOf(
-              outbound_tkn.address,
-              inbound_tkn.address,
-              opts.id
-            )
-          : 0,
-        18
-      );
-    }
-    logger.debug(`Get missing provision`, {
-      contextInfo: "mangrove.maker",
-      data: { ba: ba, opts: opts },
-    });
-    if (provision.gt(lockedProvision)) {
-      return provision.sub(lockedProvision);
-    } else {
-      return Big(0);
-    }
   }
 }
 

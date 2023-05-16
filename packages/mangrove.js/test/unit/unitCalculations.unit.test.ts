@@ -6,7 +6,7 @@ import { describe, it } from "mocha";
 import UnitCalculations from "../../src/util/unitCalculations";
 
 describe("UnitCalculations unit tests suite", () => {
-  describe("fromUntis", () => {
+  describe("fromUnits", () => {
     it("returns Big number, amount is number and nameOrDecimal is number", async function () {
       //Act
       const result = UnitCalculations.fromUnits(123, 11);

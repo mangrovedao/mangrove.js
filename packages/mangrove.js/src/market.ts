@@ -203,9 +203,9 @@ namespace Market {
     cbArg: BookSubscriptionCbArgument,
     event?: BookSubscriptionEvent,
     ethersLog?: ethers.providers.Log
-  ) => T;
+  ) => T | Promise<T>;
   export type StorableMarketCallback = MarketCallback<any>;
-  export type MarketFilter = MarketCallback<boolean | Promise<boolean>>;
+  export type MarketFilter = MarketCallback<boolean>;
   export type SubscriptionParam =
     | { type: "multiple" }
     | {
@@ -315,13 +315,17 @@ class Market {
     const asksPromise = Semibook.connect(
       this,
       "asks",
-      (e) => this.#semibookEventCallback(e),
+      (e) => {
+        void this.#semibookEventCallback(e);
+      },
       getSemibookOpts("asks")
     );
     const bidsPromise = Semibook.connect(
       this,
       "bids",
-      (e) => this.#semibookEventCallback(e),
+      (e) => {
+        void this.#semibookEventCallback(e);
+      },
       getSemibookOpts("bids")
     );
     this.#asksSemibook = await asksPromise;

@@ -27,7 +27,7 @@ function convertToApproveArgs(arg: ApproveArgs): {
 } {
   let amount: Bigish;
   let overrides: ethers.Overrides;
-  if (arg["amount"]) {
+  if (arg["amount"] != undefined) {
     amount = arg["amount"];
   } else if (typeof arg != "object") {
     amount = arg;
@@ -40,9 +40,9 @@ function convertToApproveArgs(arg: ApproveArgs): {
     overrides = arg as ethers.Overrides;
   }
 
-  if (amount && overrides) {
+  if (amount != undefined && overrides) {
     return { amount, overrides };
-  } else if (amount) {
+  } else if (amount != undefined) {
     return { amount, overrides: {} };
   } else if (overrides) {
     return { overrides: overrides };
@@ -203,7 +203,9 @@ class MgvToken {
   }
 
   private getRawApproveAmount(amount?: Bigish): ethers.BigNumber {
-    return amount ? this.toUnits(amount) : ethers.constants.MaxUint256;
+    return amount != undefined
+      ? this.toUnits(amount)
+      : ethers.constants.MaxUint256;
   }
 
   /** Sets the allowance for the spender if it is not already enough.
