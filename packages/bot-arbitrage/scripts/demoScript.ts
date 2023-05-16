@@ -1,9 +1,3 @@
-import { Market, Mangrove } from "@mangrovedao/mangrove.js";
-import { deal } from "@mangrovedao/mangrove.js/src/util/deal";
-import ethers from "ethers";
-import * as deploy from "../build/util/deployMgvAndMgvArbitrage";
-import { activateTokens } from "../src/util/ArbBotUtils";
-
 const main = async () => {
   var parsed = require("dotenv").config();
 

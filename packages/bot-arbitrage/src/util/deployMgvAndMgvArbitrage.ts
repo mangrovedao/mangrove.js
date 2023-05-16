@@ -1,8 +1,7 @@
-import { Mangrove, ethers } from "@mangrovedao/mangrove.js";
+import { ethers } from "@mangrovedao/mangrove.js";
 import * as eth from "@mangrovedao/mangrove.js/dist/nodejs/eth";
 import DevNode from "@mangrovedao/mangrove.js/dist/nodejs/util/devNode";
-import { runScript } from "@mangrovedao/mangrove.js/src/util/forgeScript";
-import * as childProcess from "child_process";
+import { runScript } from "@mangrovedao/mangrove.js/dist/nodejs/util/forgeScript";
 
 export async function deployMgvArbitrage(params: {
   provider: ethers.providers.JsonRpcProvider;
