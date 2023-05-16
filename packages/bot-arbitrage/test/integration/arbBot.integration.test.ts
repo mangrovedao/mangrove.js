@@ -19,10 +19,26 @@ describe("ArbBot integration tests", () => {
     mgv = await Mangrove.connect({
       privateKey: this.accounts.maker.key,
       provider: this.server.url,
+      blockManagerOptions: {
+        maxBlockCached: 5,
+        maxRetryGetBlock: 10,
+        retryDelayGetBlockMs: 500,
+        maxRetryGetLogs: 10,
+        retryDelayGetLogsMs: 500,
+        batchSize: 5,
+      },
     });
     mgvAdmin = await Mangrove.connect({
       privateKey: this.accounts.deployer.key,
       provider: mgv.provider,
+      blockManagerOptions: {
+        maxBlockCached: 5,
+        maxRetryGetBlock: 10,
+        retryDelayGetBlockMs: 500,
+        maxRetryGetLogs: 10,
+        retryDelayGetLogsMs: 500,
+        batchSize: 5,
+      },
     });
     logger.setLevel("debug");
     const arb = mgv.getAddress("MgvArbitrage");
@@ -63,7 +79,12 @@ describe("ArbBot integration tests", () => {
       let lp = await mgv.liquidityProvider(market);
       let provision = await lp.computeAskProvision();
       let offer = await lp.newAsk({ wants: 1, gives: 1, fund: provision });
-      await lp.approveAsks();
+      await mgvTestUtil.waitForTransaction(
+        await market.base.approve(mgv.address, 1000)
+      );
+      await mgvTestUtil.waitForTransaction(
+        await market.quote.approve(mgv.address, 1000)
+      );
       const poolContract = await getPoolContract({
         in: market.base.address,
         out: market.quote.address,
@@ -108,7 +129,12 @@ describe("ArbBot integration tests", () => {
       let lp = await mgv.liquidityProvider(market);
       let provision = await lp.computeBidProvision();
       let offer = await lp.newBid({ wants: 1, gives: 10000, fund: provision });
-      await lp.approveBids();
+      await mgvTestUtil.waitForTransaction(
+        await market.base.approve(mgv.address, 100000)
+      );
+      await mgvTestUtil.waitForTransaction(
+        await market.quote.approve(mgv.address, 100000)
+      );
       const poolContract = await getPoolContract({
         in: market.quote.address,
         out: market.base.address,
@@ -151,7 +177,12 @@ describe("ArbBot integration tests", () => {
       let lp = await mgv.liquidityProvider(market);
       let provision = await lp.computeAskProvision();
       let offer = await lp.newAsk({ wants: 2000, gives: 1, fund: provision });
-      await lp.approveAsks();
+      await mgvTestUtil.waitForTransaction(
+        await market.base.approve(mgv.address, 1000)
+      );
+      await mgvTestUtil.waitForTransaction(
+        await market.quote.approve(mgv.address, 1000)
+      );
       const poolContract = await getPoolContract({
         in: market.base.address,
         out: market.quote.address,
@@ -194,6 +225,7 @@ describe("ArbBot integration tests", () => {
 
     it(`should be profitable, exchange on Mangrove first`, async function () {
       const usdc = mgv.token("USDC");
+      const weth = mgv.token("WETH");
       const dai = mgv.token("DAI");
       await this.server.deal({
         token: usdc.address,
@@ -211,14 +243,20 @@ describe("ArbBot integration tests", () => {
       let provisionDAI = await lpDAI.computeAskProvision();
       await lpDAI.newAsk({ wants: 10000, gives: 10000, fund: provisionDAI });
       await lpDAI.newBid({ wants: 10000, gives: 10000, fund: provisionDAI });
-      await lpDAI.approveAsks();
-      await lpDAI.approveBids();
+      await mgvTestUtil.waitForTransaction(
+        await usdc.approve(mgv.address, 10000)
+      );
+      await mgvTestUtil.waitForTransaction(
+        await dai.approve(mgv.address, 10000)
+      );
 
       let market = await mgv.market({ base: "WETH", quote: "USDC" });
       let lp = await mgv.liquidityProvider(market);
       let provision = await lp.computeAskProvision();
       let offer = await lp.newAsk({ wants: 1, gives: 1, fund: provision });
-      await lp.approveAsks();
+      await mgvTestUtil.waitForTransaction(
+        await weth.approve(mgv.address, 10000)
+      );
       const poolContract = await getPoolContract({
         in: market.base.address,
         out: market.quote.address,
@@ -266,7 +304,12 @@ describe("ArbBot integration tests", () => {
       let lp = await mgv.liquidityProvider(market);
       let provision = await lp.computeAskProvision();
       let offer = await lp.newAsk({ wants: 1, gives: 1, fund: provision });
-      await lp.approveAsks();
+      await mgvTestUtil.waitForTransaction(
+        await market.base.approve(mgv.address, 1000)
+      );
+      await mgvTestUtil.waitForTransaction(
+        await market.quote.approve(mgv.address, 1000)
+      );
       const poolContract = await getPoolContract({
         in: market.base.address,
         out: market.quote.address,
