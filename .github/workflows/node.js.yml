@@ -967,6 +967,12 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
+    - name: Copy node_modules to mangrove-arbitrage
+      working-directory: .
+      run: |
+        mkdir -p packages/bot-arbitrage/mangrove-arbitrage/node_modules
+        cp -R node_modules packages/bot-arbitrage/mangrove-arbitrage/node_modules
+
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
       
