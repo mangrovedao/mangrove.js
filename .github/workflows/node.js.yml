@@ -967,10 +967,6 @@ jobs:
     - run: yarn install --immutable
       working-directory: . # Yarn must run in root to ensure monorepo setup
 
-    - name: Install dependencies in submodule
-      working-directory: packages/bot-arbitrage/mangrove-arbitrage
-      run: yarn install --immutable
-
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
       
