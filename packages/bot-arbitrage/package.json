@@ -14,7 +14,7 @@
     "precommit": "lint-staged",
     "prepack": "yarn build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "build-this-package": "yarn submodule:init && forge build && yarn typechain && tsc && yarn run write-env-info-file",
+    "build-this-package": "forge build && yarn typechain && tsc && yarn run write-env-info-file",
     "heroku-build-this-package": "yarn run build-this-package",
     "build": "yarn install && yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run build-this-package",
     "clean-this-package": "rimraf build tsconfig.tsbuildinfo",
@@ -28,7 +28,7 @@
     "start": "node build/index.js",
     "startLocal": "node build/local.js",
     "write-env-info-file": "node ./scripts/writeEnvInfoFile.js",
-    "submodule:init": "cd mangrove-arbitrage && yarn install && cd ../.."
+    "submodule:init": "cd mangrove-arbitrage && yarn install --immutable && cd ../.."
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
