@@ -364,12 +364,17 @@ describe("OfferMaker", () => {
       it("approves signer for base transfer", async () => {
         const base = onchain_lp.market.base;
         const logic = onchain_lp.logic as OfferLogic;
+        const signer_address = await logic.mgv.signer.getAddress();
 
-        const tx = await logic.approve(base.name, { optAmount: 42 });
-        const resp = await tx.wait();
+        const tx = await logic.approve(base.name, {
+          optAmount: 42,
+          optOverrides: { gasLimit: 80000 },
+        });
+        await tx.wait();
+
         let allowance = await base.allowance({
           owner: logic.address,
-          spender: await logic.mgv.signer.getAddress(),
+          spender: signer_address,
         });
         assert.equal(allowance, 42, "Invalid allowance");
       });
