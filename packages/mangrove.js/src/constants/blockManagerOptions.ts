@@ -5,27 +5,27 @@ export const blockManagerOptionsByNetworkName: Record<
   BlockManager.Options
 > = {
   local: {
-    maxBlockCached: 300,
+    maxBlockCached: 50,
     maxRetryGetBlock: 10,
     retryDelayGetBlockMs: 500,
     maxRetryGetLogs: 10,
     retryDelayGetLogsMs: 500,
-    batchSize: 25,
+    batchSize: 200,
   },
   matic: {
-    maxBlockCached: 300,
+    maxBlockCached: 50,
     maxRetryGetBlock: 10,
     retryDelayGetBlockMs: 500,
     maxRetryGetLogs: 10,
     retryDelayGetLogsMs: 500,
-    batchSize: 25,
+    batchSize: 200,
   },
   maticmum: {
-    maxBlockCached: 300,
+    maxBlockCached: 50,
     maxRetryGetBlock: 10,
     retryDelayGetBlockMs: 500,
     maxRetryGetLogs: 10,
     retryDelayGetLogsMs: 500,
-    batchSize: 25,
+    batchSize: 200,
   },
 };

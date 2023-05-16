@@ -172,7 +172,7 @@ class Mangrove {
 
       if (!options.blockManagerOptions) {
         options.blockManagerOptions = {
-          maxBlockCached: 300,
+          maxBlockCached: 50,
           maxRetryGetBlock: 10,
           retryDelayGetBlockMs: 500,
           maxRetryGetLogs: 10,
