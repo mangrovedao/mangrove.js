@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 import assert from "assert";
 import { ethers } from "ethers";
 
-import { Mangrove, LiquidityProvider, OfferMaker } from "../../src";
+import { Mangrove, LiquidityProvider, OfferMaker, OfferLogic } from "../../src";
 import { approxEq } from "../util/helpers";
 
 import { Big } from "big.js";
@@ -84,8 +84,9 @@ describe("OfferMaker", () => {
 
     describe("Before setup", () => {
       it("checks allowance for onchain logic", async () => {
+        const logic = onchain_lp.logic as OfferLogic;
         let allowanceForLogic /*:Big*/ = await mgv.token("TokenB").allowance({
-          owner: onchain_lp.logic.address,
+          owner: logic.address,
           spender: mgv.address,
         });
 
@@ -96,9 +97,9 @@ describe("OfferMaker", () => {
         );
 
         // test default approve amount
-        await w(onchain_lp.logic?.activate(["TokenB"]));
+        await w(logic.activate(["TokenB"]));
         allowanceForLogic /*:Big*/ = await mgv.token("TokenB").allowance({
-          owner: onchain_lp.logic.address,
+          owner: logic.address,
           spender: mgv.address,
         });
 
@@ -151,21 +152,23 @@ describe("OfferMaker", () => {
       });
 
       it("checks provision for EOA provider", async () => {
-        let balance = await mgv.balanceOf(eoa_lp.eoa);
+        const eoa = eoa_lp.eoa as string;
+        let balance = await mgv.balanceOf(eoa);
         assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
 
-        await w(mgv.fundMangrove(2, eoa_lp.eoa));
+        await w(mgv.fundMangrove(2, eoa));
 
-        balance = await mgv.balanceOf(eoa_lp.eoa);
+        balance = await mgv.balanceOf(eoa);
         assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
       });
 
       it("checks provision for onchain logic", async () => {
-        let balance = await mgv.balanceOf(onchain_lp.logic.address);
+        const logic = onchain_lp.logic as OfferLogic;
+        let balance = await mgv.balanceOf(logic.address);
         assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
-        await w(mgv.fundMangrove(2, onchain_lp.logic.address));
+        await w(mgv.fundMangrove(2, logic.address));
 
-        balance = await mgv.balanceOf(onchain_lp.logic.address);
+        balance = await mgv.balanceOf(logic.address);
         assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
       });
     });
@@ -177,12 +180,13 @@ describe("OfferMaker", () => {
       });
 
       it("withdraws", async () => {
+        const logic = onchain_lp.logic as OfferLogic;
         const getBal = async () =>
           mgv.provider.getBalance(await mgv.signer.getAddress());
-        let tx = await mgv.fundMangrove(10, onchain_lp.logic.address);
+        let tx = await mgv.fundMangrove(10, logic.address);
         await tx.wait();
         const oldBal = await getBal();
-        tx = await onchain_lp.logic.withdrawFromMangrove(10);
+        tx = await logic.withdrawFromMangrove(10);
         const receipt = await tx.wait();
         const txcost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
         const diff = mgv.fromUnits(
@@ -355,6 +359,24 @@ describe("OfferMaker", () => {
           updatePromise,
           "Updating on a closed market should fail."
         );
+      });
+
+      it("approves signer for base transfer", async () => {
+        const base = onchain_lp.market.base;
+        const logic = onchain_lp.logic as OfferLogic;
+        const signer_address = await logic.mgv.signer.getAddress();
+
+        const tx = await logic.approve(base.name, {
+          optAmount: 42,
+          optOverrides: { gasLimit: 80000 },
+        });
+        await tx.wait();
+
+        let allowance = await base.allowance({
+          owner: logic.address,
+          spender: signer_address,
+        });
+        assert.equal(allowance, 42, "Invalid allowance");
       });
     });
   });
