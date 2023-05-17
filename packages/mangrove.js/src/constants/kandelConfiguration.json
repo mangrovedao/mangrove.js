@@ -19,14 +19,14 @@
           },
           "USDC": {
             "minimumBasePerOfferFactor": 10,
-            "minimumQuotePerOfferFactor": 10,
-            "ratio": 1.001
+            "minimumQuotePerOfferFactor": 10
           }
         },
         "DAI": {
           "USDC": {
             "minimumBasePerOfferFactor": 10,
-            "minimumQuotePerOfferFactor": 10
+            "minimumQuotePerOfferFactor": 10,
+            "ratio": 1.001
           }
         }
       }
@@ -41,7 +41,9 @@
           "USDC": {}
         },
         "USDC": {
-          "USDT": {}
+          "USDT": {
+            "ratio": 1.001
+          }
         },
         "WMATIC": {
           "WETH": {}

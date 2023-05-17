@@ -607,7 +607,7 @@ class KandelInstance {
     );
   }
 
-  /** Gets the most specific available recommended configuration for Kandel instances. */
+  /** Gets the most specific available default configuration for Kandel instances. */
   getMostSpecificConfig() {
     return this.configuration.getMostSpecificConfig(
       this.market.mgv.network.name,
