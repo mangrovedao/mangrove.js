@@ -14,7 +14,6 @@ import { Big } from "big.js";
 import { BigNumber, ethers, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
-import { MgvReader } from "../../src/types/typechain/MgvReader";
 import { Deferred } from "../../src/util";
 
 //pretty-print when using console.log
@@ -60,30 +59,33 @@ describe("Market integration tests suite", () => {
   });
 
   describe("Readonly mode", function () {
-    let mgvro: Mangrove;
+    let mgvReadonly: Mangrove;
 
     beforeEach(async function () {
-      mgvro = await Mangrove.connect({
+      mgvReadonly = await Mangrove.connect({
         provider: this.server.url,
         forceReadOnly: true,
       });
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      mgvro.provider.pollingInterval = 10;
+      mgvReadonly.provider.pollingInterval = 10;
     });
     afterEach(async () => {
-      mgvro.disconnect();
+      mgvReadonly.disconnect();
     });
 
     it("can read book updates in readonly mode", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const marketro = await mgvro.market({ base: "TokenA", quote: "TokenB" });
+      const marketReadonly = await mgvReadonly.market({
+        base: "TokenA",
+        quote: "TokenB",
+      });
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const pro1 = marketro.once((evt) => {
+      const pro1 = marketReadonly.once(() => {
         assert.strictEqual(
-          marketro.getBook().asks.size(),
+          marketReadonly.getBook().asks.size(),
           1,
           "book should have size 1 by now"
         );
@@ -293,7 +295,7 @@ describe("Market integration tests suite", () => {
       expect(result).to.be.equal(true);
     });
 
-    it("returns false, when gives is negativ", async function () {
+    it("returns false, when gives is negative", async function () {
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
       const mockedMarket = mockito.spy(market);
@@ -375,84 +377,36 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  describe("getOfferProvision", () => {
-    it("returns Big number", async function () {
-      // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
-      const mockedMgv: Mangrove = mockito.spy(mgv);
-      const mockedReader = mockito.mock<MgvReader>();
-      const ba = "asks";
-      const inBound = market.quote;
-      const outBound = market.base;
-      const gasreq = 2;
-      const gasprice = 2;
-      const fromUnits = new Big(1);
-      const prov = BigNumber.from("1000000000000000000");
-      mockito.when(mockedMarket.mgv).thenReturn(mgv);
-      mockito
-        .when(mockedMgv.readerContract)
-        .thenReturn(mockito.instance(mockedReader));
+  [undefined, 100].forEach((gasprice) => {
+    mgvTestUtil.bidsAsks.forEach((ba) => {
+      it(`getOfferProvision agrees with calculateOfferProvision for ${ba} with gasprice=${gasprice} `, async () => {
+        // Arrange
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const gasreq = 10000;
+        const config = await market.config();
+        const gasbase = (ba == "asks" ? config.asks : config.bids)
+          .offer_gasbase;
 
-      mockito
-        .when(
-          mockedReader["getProvision(address,address,uint256,uint256)"](
-            outBound.address,
-            inBound.address,
-            gasreq,
-            gasprice
-          )
-        )
-        .thenResolve(prov);
+        const mgvProvision = mgv.calculateOfferProvision(
+          gasprice ?? (await mgv.config()).gasprice,
+          gasreq,
+          gasbase
+        );
 
-      // Act
-      const result = await market.getOfferProvision(ba, gasreq, gasprice);
-      // Assert
-      mockito.verify(mockedMarket.getOutboundInbound(ba)).once();
-      expect(result.eq(fromUnits)).to.be.true;
-    });
-    it("return offer provision for bids", async function () {
-      // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
+        // Act
+        const offerProvision = await market.getOfferProvision(
+          ba,
+          gasreq,
+          gasprice
+        );
+        const baProvision = await (ba == "asks"
+          ? market.getAskProvision(gasreq, gasprice)
+          : market.getBidProvision(gasreq, gasprice));
 
-      const toBeReturned = new Big(23);
-      mockito
-        .when(
-          mockedMarket.getOfferProvision(
-            mockito.anything(),
-            mockito.anything(),
-            mockito.anything()
-          )
-        )
-        .thenResolve(toBeReturned);
-      // Act
-      const result = await market.getBidProvision(2, 2);
-      // Assert
-      mockito.verify(mockedMarket.getOfferProvision("bids", 2, 2)).once();
-      expect(result).to.be.equal(toBeReturned);
-    });
-
-    it("return offer provision for asks", async function () {
-      // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
-
-      const toBeReturned = new Big(23);
-      mockito
-        .when(
-          mockedMarket.getOfferProvision(
-            mockito.anything(),
-            mockito.anything(),
-            mockito.anything()
-          )
-        )
-        .thenResolve(toBeReturned);
-      // Act
-      const result = await market.getAskProvision(2, 2);
-      // Assert
-      mockito.verify(mockedMarket.getOfferProvision("asks", 2, 2)).once();
-      expect(result).to.be.equal(toBeReturned);
+        // Assert
+        assert.equal(offerProvision.toNumber(), mgvProvision.toNumber());
+        assert.equal(baProvision.toNumber(), mgvProvision.toNumber());
+      });
     });
   });
 
@@ -587,7 +541,7 @@ describe("Market integration tests suite", () => {
         .when(mockedMarket.estimateVolume(mockito.anything()))
         .thenResolve(volumeEstimate);
 
-      // Actƒ
+      // Act
       const result = await market.estimateVolumeToReceive(params);
       const paramsUsed = mockito.capture(mockedMarket.estimateVolume).last();
 

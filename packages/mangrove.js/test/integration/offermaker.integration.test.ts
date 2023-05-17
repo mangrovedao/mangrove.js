@@ -372,7 +372,7 @@ describe("OfferMaker", () => {
         });
         await tx.wait();
 
-        let allowance = await base.allowance({
+        const allowance = await base.allowance({
           owner: logic.address,
           spender: signer_address,
         });

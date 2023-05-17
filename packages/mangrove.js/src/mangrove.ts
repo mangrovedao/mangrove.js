@@ -562,6 +562,22 @@ class Mangrove {
   }
 
   /**
+   * Calculates the provision required for an offer based on the given parameters
+   * @param gasprice the gas price for the offer in gwei.
+   * @param gasreq the gas requirement for the offer
+   * @param gasbase the offer list's offer_gasbase.
+   * @returns the required provision, in ethers.
+   */
+  calculateOfferProvision(gasprice: number, gasreq: number, gasbase: number) {
+    return this.fromUnits(
+      this.toUnits(1, 9)
+        .mul(gasprice)
+        .mul(gasreq + gasbase),
+      18
+    );
+  }
+
+  /**
    * Return global Mangrove config
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -581,7 +597,7 @@ class Mangrove {
   }
 
   /** Permit data normalization
-   * Autofill/convert 'nonce' field of permit data if needd, convert deadline to
+   * Autofill/convert 'nonce' field of permit data if need, convert deadline to
    * num if needed.
    */
   async normalizePermitData(
