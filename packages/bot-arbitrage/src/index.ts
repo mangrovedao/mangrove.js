@@ -78,7 +78,6 @@ export async function botFunction(
   for (const marketConfig of marketConfigs) {
     const [base, quote] = marketConfig;
 
-    // check allowance and log
     await activateTokens(
       [mgv.getAddress(marketConfig[0]), mgv.getAddress(marketConfig[1])],
       mgv
@@ -106,6 +105,7 @@ export async function botFunction(
       base: arbBotValues.base,
       quote: arbBotValues.quote,
     });
+    logger.info(`Starting bot for ${arbBotValues.base}/${arbBotValues.quote}`);
     arbBotMap.push({
       arbBot: new ArbBot(mgv, poolContract),
       market: market,

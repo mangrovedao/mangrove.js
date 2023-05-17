@@ -87,10 +87,12 @@ export class ArbBot {
     gasprice: BigNumber,
     holdsTokenPrice: Big
   ): Promise<ethers.ContractTransaction> {
-    const bestId = market.getSemibook(BA).getBestInCache();
-    const bestOffer = bestId ? await market.offerInfo(BA, bestId) : undefined;
     const { inbound_tkn: givesToken, outbound_tkn: wantsToken } =
       market.getOutboundInbound(BA);
+    const bestId = (
+      await market.mgv.contract.best(wantsToken.address, givesToken.address)
+    )?.toNumber();
+    const bestOffer = bestId ? await market.offerInfo(BA, bestId) : undefined;
 
     if (bestOffer && bestId) {
       const result = await this.isProfitable(
@@ -226,48 +228,39 @@ export class ArbBot {
       arbAddress,
       this.mgv.signer
     );
+    const correctCall = staticCall
+      ? arbContract.callStatic
+      : estimateGas
+      ? arbContract.estimateGas
+      : arbContract;
 
+    const takerWants = UnitCalculations.toUnits(
+      bestOffer.gives,
+      wantsToken.decimals
+    ).toString();
+    const takerGives = UnitCalculations.toUnits(
+      bestOffer.wants,
+      givesToken.decimals
+    ).toString();
     if (holdsToken) {
-      return await (staticCall
-        ? arbContract.callStatic
-        : estimateGas
-        ? arbContract.estimateGas
-        : arbContract
-      ).doArbitrage({
+      return await correctCall.doArbitrage({
         offerId: bestId,
         takerWantsToken: wantsToken.address,
-        takerWants: UnitCalculations.toUnits(
-          bestOffer.gives,
-          wantsToken.decimals
-        ).toString(),
+        takerWants: takerWants,
         takerGivesToken: givesToken.address,
-        takerGives: UnitCalculations.toUnits(
-          bestOffer.wants,
-          givesToken.decimals
-        ).toString(),
+        takerGives: takerGives,
         fee: fee,
         minGain: minGain,
       });
     } else if (config.exchangeConfig) {
       if ("fee" in config.exchangeConfig) {
-        return await (staticCall
-          ? arbContract.callStatic
-          : estimateGas
-          ? arbContract.estimateGas
-          : arbContract
-        ).doArbitrageExchangeOnUniswap(
+        return await correctCall.doArbitrageExchangeOnUniswap(
           {
             offerId: bestId,
             takerWantsToken: wantsToken.address,
-            takerWants: UnitCalculations.toUnits(
-              bestOffer.gives,
-              wantsToken.decimals
-            ).toString(),
+            takerWants: takerWants,
             takerGivesToken: givesToken.address,
-            takerGives: UnitCalculations.toUnits(
-              bestOffer.wants,
-              givesToken.decimals
-            ).toString(),
+            takerGives: takerGives,
             fee: fee,
             minGain: minGain,
           },
@@ -275,24 +268,13 @@ export class ArbBot {
           config.exchangeConfig.fee
         );
       } else {
-        return await (staticCall
-          ? arbContract.callStatic
-          : estimateGas
-          ? arbContract.estimateGas
-          : arbContract
-        ).doArbitrageExchangeOnMgv(
+        return await correctCall.doArbitrageExchangeOnMgv(
           {
             offerId: bestId,
             takerWantsToken: wantsToken.address,
-            takerWants: UnitCalculations.toUnits(
-              bestOffer.gives,
-              wantsToken.decimals
-            ).toString(),
+            takerWants: takerWants,
             takerGivesToken: givesToken.address,
-            takerGives: UnitCalculations.toUnits(
-              bestOffer.wants,
-              givesToken.decimals
-            ).toString(),
+            takerGives: takerGives,
             fee: fee,
             minGain: minGain,
           },

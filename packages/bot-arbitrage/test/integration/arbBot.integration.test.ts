@@ -40,7 +40,7 @@ describe("ArbBot integration tests", () => {
         batchSize: 5,
       },
     });
-    logger.setLevel("debug");
+
     const arb = mgv.getAddress("MgvArbitrage");
     const weth = mgv.token("WETH");
     const dai = mgv.token("DAI");
