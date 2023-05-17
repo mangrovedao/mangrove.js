@@ -1,5 +1,8 @@
 # Next version
 
+# 1.2.4-14
+
+- Bump mangrove-core to 1.5.1-1
 - OfferLogic has an `approve` function to ask the underlying logic to approve signer (or an arbitrary address) to spend a specific token on its behalf.
 - Liquidity provider no longer provides `approveAsk`, `approveBids` which were making too much asumptions on router usage.
 - Adapts tutorial scripts accordingly.
