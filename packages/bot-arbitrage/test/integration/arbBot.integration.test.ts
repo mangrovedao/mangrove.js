@@ -100,10 +100,11 @@ describe("ArbBot integration tests", () => {
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
       let txs = await arbBot.run(market, ["WETH", "DAI", 3000], {
-        holdingToken: "DAI",
+        holdingTokens: ["DAI"],
+        tokenForExchange: "DAI",
         exchangeConfig: {
           exchange: "Uniswap",
-          fee: 100,
+          fee: (s) => 100,
         },
       });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
@@ -150,10 +151,11 @@ describe("ArbBot integration tests", () => {
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
       let txs = await arbBot.run(market, ["WETH", "DAI", 3000], {
-        holdingToken: "DAI",
+        holdingTokens: ["DAI"],
+        tokenForExchange: "DAI",
         exchangeConfig: {
           exchange: "Uniswap",
-          fee: 3000,
+          fee: (s) => 3000,
         },
       });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
@@ -199,10 +201,11 @@ describe("ArbBot integration tests", () => {
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
       let txs = await arbBot.run(market, ["WETH", "DAI", 3000], {
-        holdingToken: "DAI",
+        holdingTokens: ["DAI"],
+        tokenForExchange: "DAI",
         exchangeConfig: {
           exchange: "Uniswap",
-          fee: 100,
+          fee: (s) => 100,
         },
       });
       // try and get revert reason
@@ -274,7 +277,8 @@ describe("ArbBot integration tests", () => {
       let baseBeforeBalance = await market.base.balanceOf(mgvArbAddress);
       let holdingTokenBeforeBalance = await dai.balanceOf(mgvArbAddress);
       let txs = await arbBot.run(market, ["WETH", "USDC", 3000], {
-        holdingToken: "DAI",
+        holdingTokens: ["DAI"],
+        tokenForExchange: "DAI",
         exchangeConfig: { exchange: "Mangrove" },
       });
       let quoteAfterBalance = await market.quote.balanceOf(mgvArbAddress);
@@ -329,8 +333,9 @@ describe("ArbBot integration tests", () => {
         .token("DAI")
         .balanceOf(mgvArbAddress);
       let transactions = await arbBot.run(market, ["WETH", "USDC", 3000], {
-        holdingToken: "DAI",
-        exchangeConfig: { exchange: "Uniswap", fee: 100 },
+        holdingTokens: ["DAI"],
+        tokenForExchange: "DAI",
+        exchangeConfig: { exchange: "Uniswap", fee: (s) => 100 },
       });
       let receipts;
       if (transactions.askTransaction)

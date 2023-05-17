@@ -53,7 +53,7 @@ function createAsyncArbTaker(
           new ArbBot(mgv, poolContract).run(
             market,
             [arbBotValues.base, arbBotValues.quote, arbBotValues.fee],
-            configUtil.buildArbConfig()
+            configUtil.buildArbConfig(arbBotValues.base, arbBotValues.quote)
           )
         );
       }

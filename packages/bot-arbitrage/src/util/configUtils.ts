@@ -4,7 +4,8 @@ import { configUtils as botConfigUtils } from "@mangrovedao/bot-utils";
 import { ExchangeFee } from "./Configs";
 
 export type ArbConfig = {
-  holdingToken: string;
+  holdingTokens: string[];
+  tokenForExchange: string;
   exchangeConfig: UniswapExchange | MangroveExchange;
 };
 
@@ -15,7 +16,7 @@ export type ArbBotConfig = {
 
 type UniswapExchange = {
   exchange: "Uniswap";
-  fee: number;
+  fee: (s: string) => number;
 };
 
 type MangroveExchange = {
@@ -29,23 +30,39 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
     this.#config = config;
   }
 
-  public buildArbConfig(): ArbConfig {
+  public buildArbConfig(base: string, quote: string): ArbConfig {
+    const holdingTokens = this.getHoldingTokenConfig();
+    if (!holdingTokens.includes(base) || !holdingTokens.includes(quote)) {
+      throw new Error(
+        `Base or quote token not in holding tokens: ${base} ${quote}`
+      );
+    }
     return {
-      holdingToken: this.getHoldingTokenConfig(),
-      exchangeConfig: this.getCorrectExchangeConfig(),
+      holdingTokens: holdingTokens,
+      tokenForExchange: this.getTokenForExchange(),
+      exchangeConfig: this.getCorrectExchangeConfig(base, quote),
     };
   }
 
-  private getCorrectExchangeConfig():
-    | UniswapExchange
-    | MangroveExchange
-    | undefined {
+  public getTokenForExchange(): string {
+    if (!this.#config.has("tokenForExchange")) {
+      throw new Error("No tokenForExchange have been configured");
+    }
+    return this.#config.get<string>("tokenForExchange");
+  }
+
+  private getCorrectExchangeConfig(
+    base: string,
+    quote: string
+  ): UniswapExchange | MangroveExchange | undefined {
+    [];
+    const fees = this.getSpecificExchangeFee(base, quote);
     return this.getExchangeConfig() == "Mangrove"
       ? { exchange: "Mangrove" }
       : this.getExchangeConfig() == "Uniswap"
       ? {
           exchange: "Uniswap",
-          fee: this.getSpecificExchangeFee(this.getHoldingTokenConfig()),
+          fee: (token: string) => fees.find((fee) => fee.token == token).fee,
         }
       : undefined;
   }
@@ -57,18 +74,18 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
     return this.#config.get<string>("exchange");
   }
 
-  public getHoldingTokenConfig(): string {
-    if (!this.#config.has("holdingToken")) {
-      throw new Error("No holdingToken have been configured");
+  public getHoldingTokenConfig(): string[] {
+    if (!this.#config.has("holdingTokens")) {
+      throw new Error("No holdingTokens have been configured");
     }
-    return this.#config.get<string>("holdingToken");
-    // if ((typeof holdingToken) === "string") {
-    //   throw new ErrorWithData(
-    //     "HoldingToken configuration is malformed, should be a string",
-    //     holdingToken
-    //   );
-    // }
-    // return holdingToken;
+    const holdingTokens = this.#config.get<Array<string>>("holdingTokens");
+    if (!Array.isArray(holdingTokens)) {
+      throw new ErrorWithData(
+        "ExchangeFee configuration is malformed, should be an array of ExchangeFee's",
+        holdingTokens
+      );
+    }
+    return holdingTokens;
   }
 
   public getExchangeFeeConfig(): ExchangeFee[] {
@@ -85,15 +102,18 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
     return exchangeFees;
   }
 
-  private getSpecificExchangeFee(holdingToken: string): number {
+  private getSpecificExchangeFee(base: string, quote: string): ExchangeFee[] {
     const configs = this.getExchangeFeeConfig();
-    const feeConfig = configs.find((value) => value.token == holdingToken);
-    if (!feeConfig) {
-      throw new Error(
-        `Exchange fee config for: ${holdingToken}, does not exist`
-      );
+    const baseConfig = configs.find((value) => value.token == base);
+    if (!baseConfig) {
+      throw new Error(`Exchange fee config for: ${base}, does not exist`);
     }
-    return feeConfig.fee;
+
+    const quoteConfig = configs.find((value) => value.token == quote);
+    if (!quote) {
+      throw new Error(`Exchange fee config for: ${quote}, does not exist`);
+    }
+    return [baseConfig, quoteConfig];
   }
 
   public getAndValidateArbConfig(): ArbBotConfig {

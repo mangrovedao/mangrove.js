@@ -6,7 +6,8 @@
     ["DAI", "USDC", 100]
   ],
   "runEveryXMinutes": 10,
-  "holdingToken": "DAI",
+  "holdingToken": ["DAI"],
+  "tokenForExchange": "DAI",
   "exchangeFee": [
     { "token": "USDC", "fee": 100 },
     { "token": "DAI", "fee": 3000 }

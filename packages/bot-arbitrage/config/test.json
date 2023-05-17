@@ -4,7 +4,8 @@
   "MangroveJs": {
     "logLevel": "info"
   },
-  "holdingToken": "DAI",
+  "holdingToken": ["DAI"],
+  "tokenForExchange": "DAI",
   "exchangeFee": [
     { "token": "USDC", "fee": 100 },
     { "token": "DAI", "fee": 3000 }

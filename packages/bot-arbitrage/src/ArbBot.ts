@@ -42,7 +42,7 @@ export class ArbBot {
         this.mgv.network.id
       );
       const holdsTokenPrice = await this.priceUtils
-        .getExternalPriceFromInAndOut(nativeToken.name, config.holdingToken)
+        .getExternalPriceFromInAndOut(nativeToken.name, config.tokenForExchange)
         .price();
 
       return {
@@ -218,8 +218,8 @@ export class ArbBot {
     estimateGas = false,
     staticCall = false
   ) {
-    const holdsToken = config.holdingToken == givesToken.name;
-
+    const holdsToken = config.holdingTokens.includes(givesToken.name);
+    const mgv = givesToken.mgv;
     const arbAddress = Mangrove.getAddress(
       "MgvArbitrage",
       (await this.mgv.provider.getNetwork()).name
@@ -264,8 +264,8 @@ export class ArbBot {
             fee: fee,
             minGain: minGain,
           },
-          givesToken.mgv.token(config.holdingToken).address,
-          config.exchangeConfig.fee
+          mgv.token(config.tokenForExchange).address,
+          config.exchangeConfig.fee(givesToken.name)
         );
       } else {
         return await correctCall.doArbitrageExchangeOnMgv(
@@ -278,7 +278,7 @@ export class ArbBot {
             fee: fee,
             minGain: minGain,
           },
-          givesToken.mgv.token(config.holdingToken).address
+          mgv.token(config.tokenForExchange).address
         );
       }
     }
