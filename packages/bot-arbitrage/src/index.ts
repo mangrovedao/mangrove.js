@@ -77,11 +77,6 @@ export async function botFunction(
   const arbBotMarketMap = new Set<MarketPairAndFee>();
   for (const marketConfig of marketConfigs) {
     const [base, quote] = marketConfig;
-
-    await activateTokens(
-      [mgv.getAddress(marketConfig[0]), mgv.getAddress(marketConfig[1])],
-      mgv
-    );
     arbBotMarketMap.add({
       base,
       quote,

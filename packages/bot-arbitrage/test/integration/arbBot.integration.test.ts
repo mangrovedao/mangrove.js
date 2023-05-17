@@ -12,7 +12,8 @@ import { getPoolContract } from "../../src/uniswap/libs/uniswapUtils";
 import { activateTokens } from "../../src/util/ArbBotUtils";
 
 let mgv: Mangrove;
-let mgvAdmin: Mangrove;
+let mgvDeployer: Mangrove;
+let mgvArbitrager: Mangrove;
 
 describe("ArbBot integration tests", () => {
   beforeEach(async function () {
@@ -28,9 +29,22 @@ describe("ArbBot integration tests", () => {
         batchSize: 5,
       },
     });
-    mgvAdmin = await Mangrove.connect({
+    mgvDeployer = await Mangrove.connect({
       privateKey: this.accounts.deployer.key,
       provider: mgv.provider,
+      blockManagerOptions: {
+        maxBlockCached: 5,
+        maxRetryGetBlock: 10,
+        retryDelayGetBlockMs: 500,
+        maxRetryGetLogs: 10,
+        retryDelayGetLogsMs: 500,
+        batchSize: 5,
+      },
+    });
+
+    mgvArbitrager = await Mangrove.connect({
+      privateKey: this.accounts.arbitrager.key,
+      provider: this.server.url,
       blockManagerOptions: {
         maxBlockCached: 5,
         maxRetryGetBlock: 10,
@@ -61,14 +75,15 @@ describe("ArbBot integration tests", () => {
       `--label ${this.accounts.maker.address}:maker --label ${this.accounts.deployer.address}:deployer --label ${arb}:arbContract --label ${weth.address}:weth --label ${dai.address}:dai --label ${mgv.address}:mangrove`
     );
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
-    mgvTestUtil.initPollOfTransactionTracking(mgvAdmin.provider);
+    mgvTestUtil.setConfig(mgv, this.accounts, mgvDeployer);
+    mgvTestUtil.initPollOfTransactionTracking(mgvDeployer.provider);
   });
 
   afterEach(async function () {
     mgvTestUtil.stopPollOfTransactionTracking();
-    mgvAdmin.disconnect();
+    mgvDeployer.disconnect();
     mgv.disconnect();
+    mgvArbitrager.disconnect();
   });
 
   describe("test arb bot", () => {
@@ -91,10 +106,10 @@ describe("ArbBot integration tests", () => {
         fee: 3000,
         provider: mgv.provider,
       });
-      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      let arbBot = new ArbBot(mgvArbitrager, poolContract);
       let txActivate = await activateTokens(
         [market.base.address, market.quote.address],
-        mgvAdmin
+        mgvDeployer
       );
       await mgvTestUtil.waitForTransaction(txActivate);
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
@@ -142,10 +157,10 @@ describe("ArbBot integration tests", () => {
         fee: 3000,
         provider: mgv.provider,
       });
-      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      let arbBot = new ArbBot(mgvArbitrager, poolContract);
       let txActivate = await activateTokens(
         [market.base.address, market.quote.address],
-        mgvAdmin
+        mgvDeployer
       );
       await mgvTestUtil.waitForTransaction(txActivate);
       let quoteBeforeBalance = await market.quote.balanceOf(mgvArbAddress);
@@ -191,10 +206,10 @@ describe("ArbBot integration tests", () => {
         fee: 3000,
         provider: mgv.provider,
       });
-      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      let arbBot = new ArbBot(mgvArbitrager, poolContract);
       let txActivate = await activateTokens(
         [market.base.address, market.quote.address],
-        mgvAdmin
+        mgvDeployer
       );
       await mgvTestUtil.waitForTransaction(txActivate);
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
@@ -266,10 +281,10 @@ describe("ArbBot integration tests", () => {
         fee: 3000,
         provider: mgv.provider,
       });
-      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      let arbBot = new ArbBot(mgvArbitrager, poolContract);
       let txActivate = await activateTokens(
         [market.base.address, market.quote.address, mgv.token("DAI").address],
-        mgvAdmin
+        mgvDeployer
       );
       await mgvTestUtil.waitForTransaction(txActivate);
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");
@@ -320,10 +335,10 @@ describe("ArbBot integration tests", () => {
         fee: 3000,
         provider: mgv.provider,
       });
-      let arbBot = new ArbBot(mgvAdmin, poolContract);
+      let arbBot = new ArbBot(mgvArbitrager, poolContract);
       let txActivate = await activateTokens(
         [market.base.address, market.quote.address, mgv.token("DAI").address],
-        mgvAdmin
+        mgvDeployer
       );
       await mgvTestUtil.waitForTransaction(txActivate);
       const mgvArbAddress = mgv.getAddress("MgvArbitrage");

@@ -41,6 +41,7 @@ export const mochaHooks = {
     await deploy.deployMgvArbitrage({
       provider,
       url: hookInfo.server.url,
+      arbitrager: hookInfo.server.accounts[4].address,
       mnemonic: mnemonic,
       coreDir: CORE_DIR,
       setToyENSCodeIfAbsent: false,

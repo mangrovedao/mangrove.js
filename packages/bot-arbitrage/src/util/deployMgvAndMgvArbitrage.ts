@@ -6,6 +6,7 @@ import { runScript } from "@mangrovedao/mangrove.js/dist/nodejs/util/forgeScript
 export async function deployMgvArbitrage(params: {
   provider: ethers.providers.JsonRpcProvider;
   url: string;
+  arbitrager: string;
   mnemonic: eth.Mnemonic;
   coreDir: string;
   setToyENSCodeIfAbsent: boolean;
@@ -20,10 +21,16 @@ export async function deployMgvArbitrage(params: {
       await devNode.setToyENSCodeIfAbsent();
     }
   }
+  const env = {
+    ...process.env,
+    ARBITRAGER: params.arbitrager,
+  };
+
   await runScript({
     url: params.url,
     provider: params.provider,
-    script: "MgvArbitrageDeployer",
+    env,
+    script: "MgvArbitrageTestDeployer",
     mnemonic: params.mnemonic,
     coreDir: params.coreDir,
     pipe: false,
