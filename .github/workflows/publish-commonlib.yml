@@ -74,8 +74,6 @@ jobs:
         else
           tag="latest"
         fi
-        yarn set version berry 
-
         echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
 
         cat ~/.yarnrc.yml
