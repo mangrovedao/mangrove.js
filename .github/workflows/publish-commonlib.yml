@@ -60,7 +60,9 @@ jobs:
         fi
         echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
 
+        echo 'yarn install'
         yarn install --immutable
+        echo 'build-this-package'
         yarn build-this-package
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
