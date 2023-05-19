@@ -83,7 +83,7 @@ jobs:
 
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
-        yarn npm publish --access public --tag $tag
+        # yarn npm publish --access public --tag $tag
       working-directory: packages/commonlib.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
