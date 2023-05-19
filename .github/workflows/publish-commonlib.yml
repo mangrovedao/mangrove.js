@@ -49,7 +49,7 @@ jobs:
     - name: Bump version
       run: |
         echo $INPUT_REVISION
-        npm version --no-git-tag-version $INPUT_REVISION 2>/dev/null
+        npm version --no-git-tag-version $INPUT_REVISION 2>/dev/null || true
       working-directory: packages/commonlib.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
