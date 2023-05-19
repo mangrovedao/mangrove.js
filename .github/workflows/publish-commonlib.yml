@@ -42,7 +42,7 @@ jobs:
 
     - name: Yarn install
       run: |
-        yarn install --immutable
+        yarn install
 
     - name: Bump version
       run: |
