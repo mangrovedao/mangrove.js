@@ -40,6 +40,9 @@ jobs:
         gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.PASSPHRASE }}
 
+    - name: Yarn install
+      run: yarn install --immutable
+
     - name: Bump version
       run: |
         echo $INPUT_REVISION
