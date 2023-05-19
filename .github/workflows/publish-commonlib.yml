@@ -15,10 +15,10 @@ on:
 jobs:
   publish-commonlib.js:
     runs-on: ubuntu-latest
+    permissions: write-all
     defaults:
       run:
         working-directory: packages/commonlib.js
-    permissions: write-all
 
     steps:
     - name: Infos
