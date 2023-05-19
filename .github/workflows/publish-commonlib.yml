@@ -67,6 +67,7 @@ jobs:
         yarn build-this-package
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
+        YARN_ENABLE_IMMUTABLE_INSTALLS=false
         yarn npm publish --access public --tag $tag
       env:
         INPUT_REVISION: ${{ inputs.revision }}
