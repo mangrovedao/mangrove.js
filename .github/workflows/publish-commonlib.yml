@@ -40,7 +40,7 @@ jobs:
     #     gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
     #     passphrase: ${{ secrets.PASSPHRASE }}
 
-    - name: Build and test
+    - name: Install yarn
       run: |
         npm install -g yarn
         yarn set version berry 
@@ -48,7 +48,6 @@ jobs:
         yarn install --immutable
         yarn run build
         yarn run test:coverage
-      working-directory: packages/commonlib.js
 
     - name: Bump version
       run: |
