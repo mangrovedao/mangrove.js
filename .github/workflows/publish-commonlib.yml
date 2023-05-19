@@ -42,7 +42,6 @@ jobs:
 
     - name: Yarn install
       run: |
-        apt install libudev-dev
         yarn install --immutable
 
     - name: Bump version
