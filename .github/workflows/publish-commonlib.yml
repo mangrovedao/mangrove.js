@@ -40,6 +40,9 @@ jobs:
         gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.PASSPHRASE }}
 
+    - name: Yarn install
+      run: yarn install --immutable
+
     - name: Bump version
       run: |
         echo $INPUT_REVISION
@@ -57,9 +60,9 @@ jobs:
         fi
         echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
 
+        cp -rf node_modules packages/commonlib.js/
         cd packages/commonlib.js
-        echo 'yarn install'
-        yarn install --immutable
+        echo 'prepack'
         yarn prepack
         echo 'build-this-package'
         yarn build-this-package
