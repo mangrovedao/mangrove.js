@@ -32,7 +32,7 @@ jobs:
     - name: Node Install
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: v16.18.1
 
     - name: Import GPG key
       uses: crazy-max/ghaction-import-gpg@v5
