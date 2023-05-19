@@ -40,7 +40,7 @@ jobs:
         gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.PASSPHRASE }}
 
-    - name: Install yarn
+    - name: Install dependencies and build 
       run: |
         yarn --version 
         yarn install --immutable
