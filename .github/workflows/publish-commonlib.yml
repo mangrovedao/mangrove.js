@@ -42,7 +42,6 @@ jobs:
 
     - name: Install yarn
       run: |
-        npm install -g yarn
         yarn --version 
         yarn install --immutable
         yarn run build
