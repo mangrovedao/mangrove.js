@@ -1021,16 +1021,6 @@ jobs:
         path: packages/bot-arbitrage/coverage-tests-report.json  # Path to test results
         reporter: mocha-json                                         # Format of test results
         fail-on-error: 'false'                                       # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
-        
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-arbitrage ==== 
 
   # ==== Job: Build and test bot-template ====
