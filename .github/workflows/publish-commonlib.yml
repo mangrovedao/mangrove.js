@@ -22,7 +22,7 @@ jobs:
 
     steps:
     - name: Infos
-      run: 
+      run: |
         echo "revision: $INPUT_REVISION"
       env:
         INPUT_REVISION: ${{ inputs.revision }}
