@@ -50,11 +50,6 @@ jobs:
       run: |
         echo $INPUT_REVISION
         npm version --no-git-tag-version $INPUT_REVISION 2>/dev/null
-        PACKAGE_VERSION=$(cat package.json \
-        | grep version \
-        | head -1 \
-        | awk -F: '{ print $2 }' \
-        | sed 's/[",]//g' | cut -c2- )
       working-directory: packages/commonlib.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
