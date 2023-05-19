@@ -1,5 +1,5 @@
 {
-  "name": "@mangrovedao/commonlib.js",
+  "name": "louis-commonlib.js",
   "version": "1.0.0",
   "author": "Mangrove DAO",
   "description": "Common javascript and typescript library code employed in the Mangrove mono-repo.",
