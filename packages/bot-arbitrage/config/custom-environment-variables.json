@@ -9,15 +9,15 @@
     "__format": "number"
   },
   "holdingToken": {
-    "__name": "HOLDINGTOKENS",
+    "__name": "HOLDING_TOKENS",
     "__format": "json"
   },
   "tokenForExchange": {
-    "__name": "TOKENFOREXCHANGE",
+    "__name": "TOKEN_FOR_EXCHANGE",
     "__format": "string"
   },
   "exchangeFee": {
-    "__name": "EXCHANGEFEE",
+    "__name": "EXCHANGE_FEE",
     "__format": "json"
   },
   "exchange": {
