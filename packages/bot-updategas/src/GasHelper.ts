@@ -1,11 +1,12 @@
+import { PriceUtils } from "@mangrovedao/bot-utils/build/util/priceUtils";
 import Mangrove from "@mangrovedao/mangrove.js";
 import { typechain } from "@mangrovedao/mangrove.js/dist/nodejs/types";
-import get from "axios";
 import { MaxUpdateConstraint } from "./GasUpdater";
+import config from "./util/config";
 import logger from "./util/logger";
-import { Network, Alchemy } from "alchemy-sdk";
 
 class GasHelper {
+  priceUtils = new PriceUtils(logger);
   /**
    * Either returns a constant gas price, if set, or queries a dedicated
    * external source for gas prices.
@@ -24,26 +25,15 @@ class GasHelper {
       );
       return params.constantGasPrice;
     }
-    if (!process.env["APIKEY"]) {
+    const API_KEY = process.env["API_KEY"];
+    if (!API_KEY) {
       throw new Error("No API key for alchemy");
     }
 
-    const networkIndex = Object.entries(Network).find(
-      (item) => item[0] == params.network
-    );
-    if (!networkIndex) {
-      throw new Error(
-        `Given network: ${params.network}, is not in the alchemy networks`
-      );
-    }
-
     try {
-      const alchemy = new Alchemy({
-        apiKey: process.env["APIKEY"],
-        network: networkIndex[1],
-      });
-
-      return (await alchemy.core.getGasPrice()).toNumber();
+      return (
+        await this.priceUtils.getGasPrice(API_KEY, params.network)
+      ).toNumber();
     } catch (error) {
       logger.error("Getting gas price estimate from oracle failed", {
         mangrove: params.mangrove,

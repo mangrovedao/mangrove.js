@@ -1,5 +1,8 @@
 # Next version
 
+- Expose deal logic for any token on an Anvil chain
+- Expose forge script funcitionality, to run forge script
+
 # 1.2.4-14
 
 - Bump mangrove-core to 1.5.1-1

@@ -19,32 +19,32 @@ const serverParams = {
 let currentProxyPort = 8546;
 
 export const mochaHooks = {
-  async beforeAll() {
+  async beforeAllImpl(args: any, hook: any) {
     if (process.env.MOCHA_WORKER_ID) {
       // running in parallel mode - change port
       serverParams.port =
         serverParams.port + 1000 * Number(process.env.MOCHA_WORKER_ID);
       currentProxyPort = serverParams.port + 1;
     }
-    this.server = await node(serverParams).connect();
+    hook.server = await node(args).connect();
+    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
 
     // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
       try {
-        await this.server.deploy();
+        await hook.server.deploy();
         break;
       } catch (e) {
         console.log("Failed to deploy, retrying...");
       }
     }
-    this.accounts = {
-      deployer: this.server.accounts[0],
-      maker: this.server.accounts[1],
-      cleaner: this.server.accounts[2],
-      tester: this.server.accounts[3],
+    hook.accounts = {
+      deployer: hook.server.accounts[0],
+      maker: hook.server.accounts[1],
+      cleaner: hook.server.accounts[2],
+      tester: hook.server.accounts[3],
+      arbitrager: hook.server.accounts[4],
     };
-
-    const provider = new ethers.providers.JsonRpcProvider(this.server.url);
     const devNode = new DevNode(provider);
     // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
@@ -59,7 +59,7 @@ export const mochaHooks = {
 
     const mgv = await Mangrove.connect({
       provider,
-      privateKey: this.accounts.deployer.key,
+      privateKey: hook.accounts.deployer.key,
     });
 
     const tokenA = mgv.token("TokenA");
@@ -68,7 +68,7 @@ export const mochaHooks = {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     mgv.provider.pollingInterval = 10;
-    await mgv.fundMangrove(10, this.accounts.deployer.address);
+    await mgv.fundMangrove(10, hook.accounts.deployer.address);
     // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
 
     await mgv.contract
@@ -79,11 +79,11 @@ export const mochaHooks = {
       .then((tx) => tx.wait());
 
     await tokenA.contract.mint(
-      this.accounts.tester.address,
+      hook.accounts.tester.address,
       mgv.toUnits(10, 18)
     );
     await tokenB.contract.mint(
-      this.accounts.tester.address,
+      hook.accounts.tester.address,
       mgv.toUnits(10, 18)
     );
 
@@ -91,18 +91,18 @@ export const mochaHooks = {
     // making sure that last one is mined before snapshotting, anvil may snapshot too early otherwise
     await tx.wait();
     mgv.disconnect();
-    await this.server.snapshot();
+    await hook.server.snapshot();
   },
 
-  async beforeEach() {
+  async beforeEachImpl(hook: any) {
     // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
-    if (!this.proxies) {
-      this.proxies = {
+    if (!hook.proxies) {
+      hook.proxies = {
         closeCurrentProxy: async () => {
           // Tear down existing proxy - waiting for all outstanding connections to close.
           // Note: anvil could still be processing something when this completes in case its async,
           // Consider probing anvil for completion.
-          const currentProxy = this.proxies[currentProxyPort];
+          const currentProxy = hook.proxies[currentProxyPort];
           if (currentProxy) {
             currentProxy.cancelAll = true;
             const closedDeferred = new Deferred();
@@ -115,7 +115,7 @@ export const mochaHooks = {
       };
     }
 
-    const provider = new ethers.providers.JsonRpcProvider(this.server.url);
+    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
     for (let i = 0; i < 100; i++) {
       const result = await provider.send("txpool_content", []);
       if (!Object.keys(result).length) {
@@ -134,7 +134,7 @@ export const mochaHooks = {
       }
     }
 
-    await this.proxies.closeCurrentProxy();
+    await hook.proxies.closeCurrentProxy();
 
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)
     const newProxy = {
@@ -171,21 +171,33 @@ export const mochaHooks = {
       },
     });
     newProxy.proxyServer.listen(currentProxyPort, serverParams.host);
-    this.proxies[currentProxyPort] = newProxy;
+    hook.proxies[currentProxyPort] = newProxy;
     // Tests reference the anvil instance through the following address.
     // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request
-    this.server.url = `http://${serverParams.host}:${currentProxyPort}`;
+    hook.server.url = `http://${serverParams.host}:${currentProxyPort}`;
 
-    await this.server.revert();
+    await hook.server.revert();
     // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
-    await this.server.snapshot();
+    await hook.server.snapshot();
+  },
+
+  async afterAllImpl(hook: any) {
+    await hook.proxies.closeCurrentProxy();
+
+    if (hook.server.process) {
+      hook.server.process.kill();
+    }
+  },
+
+  async beforeAll() {
+    await mochaHooks.beforeAllImpl(serverParams, this);
+  },
+
+  async beforeEach() {
+    await mochaHooks.beforeEachImpl(this);
   },
 
   async afterAll() {
-    await this.proxies.closeCurrentProxy();
-
-    if (this.server.process) {
-      this.server.process.kill();
-    }
+    await mochaHooks.afterAllImpl(this);
   },
 };

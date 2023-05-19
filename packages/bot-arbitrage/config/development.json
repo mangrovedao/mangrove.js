@@ -1,0 +1,12 @@
+{
+  "logLevel": "debug",
+  "markets": [["WETH", "DAI", 3000]],
+  "runEveryXMinutes": 0.5,
+  "holdingToken": ["DAI"],
+  "tokenForExchange": "DAI",
+  "exchangeFee": [
+    { "token": "USDC", "fee": 100 },
+    { "token": "DAI", "fee": 3000 }
+  ],
+  "exchange": "Uniswap"
+}
