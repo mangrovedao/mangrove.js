@@ -16,14 +16,16 @@ jobs:
   publish-commonlib-js:
     runs-on: ubuntu-latest
     permissions: write-all
-    defaults:
-      run:
-        working-directory: ./packages/commonlib.js
+    # defaults:
+      # run:
+        # working-directory: ./packages/commonlib.js
 
     steps:
     - name: Infos
       run: |
         echo "revision: $INPUT_REVISION"
+        ls -l
+        tree .
       env:
         INPUT_REVISION: ${{ inputs.revision }}
 
