@@ -55,14 +55,6 @@ jobs:
         | head -1 \
         | awk -F: '{ print $2 }' \
         | sed 's/[",]//g' | cut -c2- )
-        cat << EOF > CHANGELOG-new.md
-        # Next version
-
-        # $PACKAGE_VERSION
-
-        EOF
-        tail --lines=+3 CHANGELOG.md >>CHANGELOG-new.md
-        mv CHANGELOG-new.md CHANGELOG.md
       working-directory: packages/commonlib.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
