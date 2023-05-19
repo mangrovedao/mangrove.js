@@ -34,11 +34,11 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    # - name: Import GPG key
-    #   uses: crazy-max/ghaction-import-gpg@v5
-    #   with:
-    #     gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-    #     passphrase: ${{ secrets.PASSPHRASE }}
+    - name: Import GPG key
+      uses: crazy-max/ghaction-import-gpg@v5
+      with:
+        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+        passphrase: ${{ secrets.PASSPHRASE }}
 
     - name: Install yarn
       run: |
@@ -80,7 +80,7 @@ jobs:
 
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
-        # yarn npm publish --access public --tag $tag
+        yarn npm publish --access public --tag $tag
       working-directory: packages/commonlib.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
