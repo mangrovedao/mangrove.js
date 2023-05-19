@@ -96,7 +96,7 @@ jobs:
         | sed 's/[",]//g' | cut -c2- )
         echo "version: $PACKAGE_VERSION"
         git switch -c "release/v$PACKAGE_VERSION"
-        git add package.json yarn.lock CHANGELOG.md
+        git add package.json 
         git commit -m "$PACKAGE_VERSION [$USER]"
         git tag -m "v$PACKAGE_VERSION" -s "v$PACKAGE_VERSION"
         git push --set-upstream origin release/v$PACKAGE_VERSION
