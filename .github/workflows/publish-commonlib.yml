@@ -59,6 +59,7 @@ jobs:
 
         cd packages/commonlib.js
         echo 'yarn install'
+        yarn install --immutable
         yarn prepack
         echo 'build-this-package'
         yarn build-this-package
