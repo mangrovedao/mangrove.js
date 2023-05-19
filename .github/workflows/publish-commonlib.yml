@@ -41,7 +41,9 @@ jobs:
         passphrase: ${{ secrets.PASSPHRASE }}
 
     - name: Yarn install
-      run: yarn install --immutable
+      run: |
+        apt install libudev-dev
+        yarn install --immutable
 
     - name: Bump version
       run: |
