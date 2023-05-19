@@ -26,8 +26,7 @@ async function main() {
 
   try {
     // Get directory for mangrove-arbitrage submodule abi
-    const coreDir = "mangrove-arbitrage";
-    const abiDir = `${coreDir}/out/MgvArbitrage.sol`;
+    const abiDir = `abi/MgvArbitrage.sol`;
 
     // copy all inputs to temp dir. later dirs will have precedence.
     shelljs.cp(`${abiDir}/*.json`, tempDir);
