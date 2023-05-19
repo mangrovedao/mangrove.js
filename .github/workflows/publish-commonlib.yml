@@ -60,14 +60,13 @@ jobs:
         fi
         echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
 
-        echo 'yarn install'
+        cd packages/commonlib.js
         yarn install --immutable
         echo 'build-this-package'
         yarn build-this-package
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
         yarn npm publish --access public --tag $tag
-      working-directory: packages/commonlib.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
