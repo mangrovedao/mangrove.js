@@ -1,7 +1,5 @@
 # Next version
 
-# 1.2.4-15
-
 - Expose deal logic for any token on an Anvil chain
 - Expose forge script funcitionality, to run forge script
 
