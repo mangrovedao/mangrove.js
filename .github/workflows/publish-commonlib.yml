@@ -61,6 +61,7 @@ jobs:
         echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
 
         cd packages/commonlib.js
+        yarn --version
         yarn install --immutable
         echo 'build-this-package'
         yarn build-this-package
