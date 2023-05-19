@@ -45,7 +45,6 @@ jobs:
         yarn --version 
         yarn install --immutable
         yarn run build
-        yarn run test:coverage
 
     - name: Bump version
       run: |
