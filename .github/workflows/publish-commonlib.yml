@@ -62,8 +62,6 @@ jobs:
 
         cp -rf node_modules packages/commonlib.js/
         cd packages/commonlib.js
-        echo 'prepack'
-        yarn prepack
         echo 'build-this-package'
         yarn build-this-package
         cat ~/.yarnrc.yml
