@@ -30,12 +30,12 @@ export class ArbBot {
     try {
       const [base, quote, fee] = marketConfig;
 
-      const APIKEY = process.env["APIKEY"];
-      if (!APIKEY) {
+      const API_KEY = process.env["API_KEY"];
+      if (!API_KEY) {
         throw new Error("No API key for alchemy");
       }
       const gasprice = await this.priceUtils.getGasPrice(
-        APIKEY,
+        API_KEY,
         this.mgv.network.name
       );
       const nativeToken = this.getNativeTokenNameAndDecimals(

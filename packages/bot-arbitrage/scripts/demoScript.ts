@@ -8,7 +8,7 @@ const main = async () => {
   let { activateTokens } = require("./build/util/ArbBotUtils");
 
   const provider = new ethers.providers.WebSocketProvider(
-    process.env.RPC_NODE_URL
+    process.env.LOCAL_NODE_URL
   );
 
   const wallet = new ethers.Wallet(process.env.MAKER_KEY, provider);

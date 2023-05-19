@@ -384,8 +384,6 @@ describe("ArbBot integration tests", () => {
       );
     });
 
-    // maybe expand to be able to snipe multiple offers
-
-    // Test configs
+    //TODO: Test configs
   });
 });

@@ -930,7 +930,7 @@ jobs:
     env:
       working-directory: packages/bot-arbitrage
       POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
-      APIKEY: ${{ secrets.ALCHEMY_API_KEY }}
+      API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
 
     defaults:
       run:

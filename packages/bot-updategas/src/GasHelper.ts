@@ -25,14 +25,14 @@ class GasHelper {
       );
       return params.constantGasPrice;
     }
-    const APIKEY = process.env["APIKEY"];
-    if (!APIKEY) {
+    const API_KEY = process.env["API_KEY"];
+    if (!API_KEY) {
       throw new Error("No API key for alchemy");
     }
 
     try {
       return (
-        await this.priceUtils.getGasPrice(APIKEY, params.network)
+        await this.priceUtils.getGasPrice(API_KEY, params.network)
       ).toNumber();
     } catch (error) {
       logger.error("Getting gas price estimate from oracle failed", {
