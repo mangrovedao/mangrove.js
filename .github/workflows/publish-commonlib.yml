@@ -72,6 +72,8 @@ jobs:
         yarn config get enableImmutableInstalls
         yarn config set -H enableImmutableInstalls false
         yarn config set enableImmutableInstalls false
+        echo $CI
+        unset CI
         yarn npm publish --access public --tag $tag
       env:
         INPUT_REVISION: ${{ inputs.revision }}
