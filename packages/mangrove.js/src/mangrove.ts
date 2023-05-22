@@ -577,6 +577,20 @@ class Mangrove {
     );
   }
 
+  /** Gets the missing provision based on the required provision and the locked provision.
+   * @param lockedProvision the provision already locked for an offer.
+   * @param totalRequiredProvision the provision required for an offer.
+   * @returns the additional required provision, in ethers.
+   */
+  getMissingProvision(lockedProvision: Bigish, totalRequiredProvision: Bigish) {
+    const total = Big(totalRequiredProvision);
+    if (total.gt(lockedProvision)) {
+      return total.sub(lockedProvision);
+    } else {
+      return Big(0);
+    }
+  }
+
   /**
    * Return global Mangrove config
    */

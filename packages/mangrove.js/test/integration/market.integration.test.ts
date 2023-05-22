@@ -410,6 +410,30 @@ describe("Market integration tests suite", () => {
     });
   });
 
+  describe("getMissingProvision", () => {
+    it("can miss some provision", async () => {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const provision = await market.getOfferProvision("bids", 30000);
+
+      // Act
+      const missingZero = await market.getMissingProvision(
+        "asks",
+        provision.mul(2),
+        30000
+      );
+      const missing = await market.getMissingProvision(
+        "asks",
+        provision.div(4),
+        30000
+      );
+
+      // Assert
+      assert.equal(missingZero.toNumber(), 0);
+      assert.equal(missing.toNumber(), provision.div(4).mul(3).toNumber());
+    });
+  });
+
   describe("offerInfo", () => {
     it("returns bids offer info", async function () {
       // Arrange
