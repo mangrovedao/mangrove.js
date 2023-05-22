@@ -7,7 +7,7 @@ import http from "http";
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
 import { ArbBot } from "./ArbBot";
 import { getPoolContract } from "./uniswap/libs/uniswapUtils";
-import { activateTokens } from "./util/ArbBotUtils";
+import { activateTokensWithMgv } from "./util/ArbBotUtils";
 import config from "./util/config";
 import { ConfigUtils } from "./util/configUtils";
 import { logger } from "./util/logger";
