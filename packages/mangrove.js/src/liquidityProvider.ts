@@ -113,57 +113,56 @@ class LiquidityProvider {
     }
   }
 
-  computeOfferProvision(
+  /** Gets the missing provision in ethers for an offer to be posted or updated with the given parameters, while taking already locked provision into account.
+   * @param ba bids or asks
+   * @param opts optional parameters for the calculation.
+   * @param opts.id the id of the offer to update. If undefined, then the offer is a new offer and nothing is locked.
+   * @param opts.gasreq gas required for the offer execution. If undefined, the liquidity provider's gasreq.
+   * @param opts.gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the additional required provision, in ethers.
+   */
+  async computeOfferProvision(
     ba: Market.BA,
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
-    return this.getMissingProvision(ba, opts);
+    const gasreq = opts.gasreq ? opts.gasreq : this.gasreq;
+    if (this.logic) {
+      return this.logic.getMissingProvision(this.market, ba, {
+        ...opts,
+        gasreq,
+      });
+    } else {
+      const offerInfo = opts.id
+        ? await this.market.getSemibook(ba).offerInfo(opts.id)
+        : undefined;
+      const lockedProvision = offerInfo
+        ? this.market.mgv.calculateOfferProvision(
+            offerInfo.gasprice,
+            offerInfo.gasreq,
+            offerInfo.offer_gasbase
+          )
+        : Big(0);
+      return this.market.getMissingProvision(
+        ba,
+        lockedProvision,
+        gasreq,
+        opts.gasprice
+      );
+    }
   }
 
+  /** Gets the missing provision in ethers for a bid using @see computeOfferProvision. */
   computeBidProvision(
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
-    return this.getMissingProvision("bids", opts);
+    return this.computeOfferProvision("bids", opts);
   }
 
+  /** Gets the missing provision in ethers for an ask using @see computeOfferProvision. */
   computeAskProvision(
     opts: { id?: number; gasreq?: number; gasprice?: number } = {}
   ): Promise<Big> {
-    return this.getMissingProvision("asks", opts);
-  }
-
-  async getMissingProvision(
-    ba: Market.BA,
-    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
-  ): Promise<Big> {
-    const gasreq = opts && opts.gasreq != undefined ? opts.gasreq : this.gasreq;
-    const gasprice = opts && opts.gasprice != undefined ? opts.gasprice : 0;
-    // this computes the total provision required for a new offer on the market
-    const provision = await this.market.getOfferProvision(ba, gasreq, gasprice);
-    let lockedProvision = Big(0);
-    // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
-    if (opts.id) {
-      const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
-      lockedProvision = this.mgv.fromUnits(
-        this.logic
-          ? await this.logic.contract.provisionOf(
-              outbound_tkn.address,
-              inbound_tkn.address,
-              opts.id
-            )
-          : 0,
-        18
-      );
-    }
-    logger.debug(`Get missing provision`, {
-      contextInfo: "mangrove.maker",
-      data: { ba: ba, opts: opts },
-    });
-    if (provision.gt(lockedProvision)) {
-      return provision.sub(lockedProvision);
-    } else {
-      return Big(0);
-    }
+    return this.computeOfferProvision("asks", opts);
   }
 
   /** Given a price, find the id of the immediately-better offer in the
