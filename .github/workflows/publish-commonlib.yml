@@ -21,8 +21,6 @@ jobs:
     - name: Infos
       run: |
         echo "revision: $INPUT_REVISION"
-        ls -l
-        tree .
       env:
         INPUT_REVISION: ${{ inputs.revision }}
 
@@ -39,10 +37,11 @@ jobs:
       with:
         gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.PASSPHRASE }}
-
+    
     - name: Yarn install
       run: |
         node --version
+        npm install -g yarn
         yarn --version
         yarn install --immutable
 
