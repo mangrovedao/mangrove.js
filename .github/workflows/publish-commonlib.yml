@@ -1,4 +1,4 @@
-name: Publish Package commonlib.js
+name: Publish Package mangrove.js
 on: 
   workflow_dispatch:
     inputs:
@@ -13,7 +13,7 @@ on:
         - major
         - patch
 jobs:
-  publish-commonlib-js:
+  publish-mangrove-js:
     runs-on: ubuntu-latest
     permissions: write-all
 
@@ -49,7 +49,7 @@ jobs:
       run: |
         echo $INPUT_REVISION
         npm version --no-git-tag-version $INPUT_REVISION 2>/dev/null || true
-      working-directory: packages/commonlib.js
+      working-directory: packages/mangrove.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
 
@@ -62,9 +62,9 @@ jobs:
         fi
         echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
 
-        cp -rf node_modules packages/commonlib.js/
+        cp -rf node_modules packages/mangrove.js/
         echo 'yarn'
-        cd packages/commonlib.js
+        cd packages/mangrove.js
         yarn --version
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
@@ -111,7 +111,7 @@ jobs:
         gh release create "v$PACKAGE_VERSION" --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
         gh pr create --title "v$PACKAGE_VERSION" --body "" # --label "release" # --reviewer "mangrovedao/all-devs"
         gh pr merge --squash --delete-branch --auto
-      working-directory: packages/commonlib.js
+      working-directory: packages/mangrove.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         USER: ${{ github.actor }}
