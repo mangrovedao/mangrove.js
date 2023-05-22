@@ -1,5 +1,6 @@
 {
   "logLevel": "error",
+  "providerType": "jsonrpc",
   "markets": [["WETH", "DAI", 3000]],
   "MangroveJs": {
     "logLevel": "info"

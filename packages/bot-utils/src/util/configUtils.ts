@@ -3,12 +3,22 @@ import { IConfig } from "config";
 import { BotConfig, TokenConfig } from "../setup";
 import * as log from "./logger";
 
+export type providerType = "jsonrpc" | "websocket";
 export class ConfigUtils {
   #config: IConfig;
   logger: CommonLogger;
   constructor(config: IConfig) {
     this.#config = config;
     this.logger = log.logger(config);
+  }
+
+  public getProviderType(): providerType {
+    if (!this.#config.has("providerType")) {
+      return "websocket";
+    }
+    return this.#config.get<string>("providerType") == "jsonrpc"
+      ? "jsonrpc"
+      : "websocket";
   }
 
   public getMarketConfigsOrThrow<MarketConfig>(): MarketConfig[] {

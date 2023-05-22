@@ -14,6 +14,7 @@ import { Wallet } from "@ethersproject/wallet";
 import { NonceManager } from "@ethersproject/experimental";
 import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
+import { ConfigUtils } from "./util/configUtils";
 
 export enum ExitCode {
   Normal = 0,
@@ -37,9 +38,11 @@ export type TokenConfig = {
 export class Setup {
   #config: IConfig;
   logger: CommonLogger;
+  configUtils: ConfigUtils;
   constructor(config: IConfig) {
     this.#config = config;
     this.logger = log.logger(config);
+    this.configUtils = new ConfigUtils(config);
   }
 
   public async exitIfMangroveIsKilled(
@@ -101,7 +104,8 @@ export class Setup {
     if (!providerHttpUrl) {
       throw new Error("No URL for a node has been provided in RPC_HTTP_URL");
     }
-    if (!process.env["PRIVATE_KEY"]) {
+    const privateKey = process.env["PRIVATE_KEY"];
+    if (!privateKey) {
       throw new Error("No private key provided in PRIVATE_KEY");
     }
 
@@ -111,11 +115,12 @@ export class Setup {
       defaultProvider instanceof WebSocketProvider
         ? defaultProvider
         : new StaticJsonRpcProvider(providerHttpUrl);
-    const signer = new Wallet(process.env["PRIVATE_KEY"], provider);
+    const signer = new Wallet(privateKey, provider);
     const nonceManager = new NonceManager(signer);
+    const providerType = this.configUtils.getProviderType();
     const mgv = await Mangrove.connect({
       signer: nonceManager,
-      // providerWsUrl: providerWsUrl,
+      providerWsUrl: providerType == "jsonrpc" ? undefined : providerWsUrl,
     });
 
     this.logger.info("Connected to Mangrove", {
