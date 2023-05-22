@@ -1,4 +1,4 @@
-name: Publish Package mangrove.js
+name: Publish Package commonlib.js
 on: 
   workflow_dispatch:
     inputs:
@@ -13,7 +13,7 @@ on:
         - major
         - patch
 jobs:
-  publish-mangrove-js:
+  publish-commonlib.js:
     runs-on: ubuntu-latest
     permissions: write-all
 
@@ -49,7 +49,7 @@ jobs:
       run: |
         echo $INPUT_REVISION
         npm version --no-git-tag-version $INPUT_REVISION 2>/dev/null || true
-      working-directory: packages/mangrove.js
+      working-directory: packages/commonlib.js
       env:
         INPUT_REVISION: ${{ inputs.revision }}
 
@@ -61,20 +61,12 @@ jobs:
           tag="latest"
         fi
         echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
+        cd packages/commonlib.js
 
-        cp -rf node_modules packages/mangrove.js/
         echo 'yarn'
-        cd packages/mangrove.js
         yarn --version
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
-        export YARN_ENABLE_IMMUTABLE_INSTALLS=false
-        yarn config get enableImmutableInstalls
-        yarn config set -H enableImmutableInstalls false
-        yarn config set enableImmutableInstalls false
-        echo $CI
-        unset CI
-        export CI
         yarn npm publish --access public --tag $tag
       env:
         INPUT_REVISION: ${{ inputs.revision }}
@@ -111,7 +103,7 @@ jobs:
         gh release create "v$PACKAGE_VERSION" --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
         gh pr create --title "v$PACKAGE_VERSION" --body "" # --label "release" # --reviewer "mangrovedao/all-devs"
         gh pr merge --squash --delete-branch --auto
-      working-directory: packages/mangrove.js
+      working-directory: packages/commonlib.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         USER: ${{ github.actor }}
