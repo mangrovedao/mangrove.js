@@ -45,7 +45,7 @@
     "fast-safe-stringify": "^2.1.1",
     "finalhandler": "^1.2.0",
     "nyc": "^15.1.0",
-    "random": "^3.0.6",
+    "random": "^4.1.0",
     "serve-static": "^1.15.0",
     "toad-scheduler": "^2.2.0"
   },
