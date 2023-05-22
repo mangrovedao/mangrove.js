@@ -103,7 +103,7 @@
     "prettier": "^2.4.1",
     "rimraf": "^5.0.1",
     "shx": "^0.3.4",
-    "transparent-proxy": "^1.12.1",
+    "transparent-proxy": "^1.13.1",
     "ts-essentials": "^9.3.1",
     "ts-mockito": "^2.0.0",
     "ts-node": "^10.9.1",
