@@ -80,7 +80,7 @@ jobs:
 
       env:
         INPUT_COMMIT_USER_NAME:  github-actions-bot
-        INPUT_COMMIT_USER_EMAIL: github-actions-bot@users.noreply.github.com
+        INPUT_COMMIT_USER_EMAIL: github-actions-bot@mangrove.exchange
 
     - name: git version
       run: |
@@ -97,11 +97,10 @@ jobs:
         git tag -m "v$PACKAGE_VERSION" -s "v$PACKAGE_VERSION"
         git push --set-upstream origin release/v$PACKAGE_VERSION
         git push --tags
-
         export RELEASE_NOTES=`sed -n "/^# $PACKAGE_VERSION/,/^#/p" CHANGELOG.md | grep -v "^#" | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;};/\n$/ba'`
         echo $RELEASE_NOTES
         gh release create "v$PACKAGE_VERSION" --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
-        gh pr create --title "v$PACKAGE_VERSION" --body "" # --label "release" # --reviewer "mangrovedao/all-devs"
+        gh pr create --title "v$PACKAGE_VERSION" --body "$RELEASE_NOTES" --label "release" --reviewer "mangrovedao/all-devs"
         gh pr merge --squash --delete-branch --auto
       working-directory: packages/mangrove.js
       env:
