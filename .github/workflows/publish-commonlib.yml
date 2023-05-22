@@ -69,9 +69,9 @@ jobs:
         yarn --version
         cat ~/.yarnrc.yml
         cat ~/.yarnrc.yml >> .yarnrc.yml
-        # export YARN_ENABLE_IMMUTABLE_INSTALLS=false
+        export YARN_ENABLE_IMMUTABLE_INSTALLS=false
         yarn config get enableImmutableInstalls
-        yarn config set -H enableImmutableInstalls false
+        # yarn config set -H enableImmutableInstalls false
         # yarn config set enableImmutableInstalls false
         yarn npm publish --access public --tag $tag
       env:
