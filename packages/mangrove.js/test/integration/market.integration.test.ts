@@ -402,10 +402,26 @@ describe("Market integration tests suite", () => {
         const baProvision = await (ba == "asks"
           ? market.getAskProvision(gasreq, gasprice)
           : market.getBidProvision(gasreq, gasprice));
+        const offersProvision = market.mgv.calculateOffersProvision([
+          {
+            gasprice: gasprice ?? (await mgv.config()).gasprice,
+            gasreq,
+            gasbase,
+          },
+          {
+            gasprice: gasprice ?? (await mgv.config()).gasprice,
+            gasreq,
+            gasbase,
+          },
+        ]);
 
         // Assert
         assert.equal(offerProvision.toNumber(), mgvProvision.toNumber());
         assert.equal(baProvision.toNumber(), mgvProvision.toNumber());
+        assert.equal(
+          offersProvision.toNumber(),
+          mgvProvision.mul(2).toNumber()
+        );
       });
     });
   });
