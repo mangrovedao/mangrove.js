@@ -1,6 +1,6 @@
 {
   "logLevel": "debug",
-  "providerType": "jsonrpc",
+  "providerType": "http",
   "markets": [["WETH", "DAI", 3000]],
   "runEveryXMinutes": 0.5,
   "holdingTokens": ["DAI"],

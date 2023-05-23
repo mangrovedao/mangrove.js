@@ -120,9 +120,13 @@ export class Setup {
     const providerType = this.configUtils.getProviderType();
     const mgv = await Mangrove.connect({
       signer: nonceManager,
-      providerWsUrl: providerType == "jsonrpc" ? undefined : providerWsUrl,
+      providerWsUrl: providerType == "http" ? undefined : providerWsUrl,
     });
-
+    if (providerType == "http") {
+      this.logger.warn(
+        `Using HTTP provider, this is not recommended for production`
+      );
+    }
     this.logger.info("Connected to Mangrove", {
       contextInfo: "init",
       data: {

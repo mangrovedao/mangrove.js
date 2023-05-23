@@ -1,6 +1,6 @@
 {
   "logLevel": "info",
-  "providerType": "jsonrpc",
+  "providerType": "http",
   "markets": [
     ["WETH", "DAI", 3000],
     ["WETH", "USDC", 3000],
