@@ -1,7 +1,7 @@
 /**
  * Integration tests of MarketCleaner.ts.
  */
-import { afterEach, before, beforeEach, describe, it } from "mocha";
+import { afterEach, beforeEach, describe, it } from "mocha";
 import * as chai from "chai";
 const { expect } = chai;
 import chaiAsPromised from "chai-as-promised";
@@ -25,25 +25,31 @@ let testProvider: Provider; // Only used to read state for assertions, not assoc
 let cleanerProvider: Provider; // Tied to the cleaner bot's mgvTestUtil.Account
 
 let mgv: Mangrove;
+let mgvAdmin: Mangrove;
+let mgvConfig: Mangrove;
+
 let market: Market;
 
 describe("MarketCleaner integration tests", () => {
-  before(async function () {
-    testProvider = ethers.getDefaultProvider(this.server.url);
-  });
-
   after(async function () {
     await mgvTestUtil.logAddresses();
   });
 
   beforeEach(async function () {
-    mgvTestUtil.setConfig(
-      await Mangrove.connect({
-        privateKey: this.accounts.deployer.key,
-        provider: this.server.url,
-      }),
-      this.accounts
-    );
+    testProvider = ethers.getDefaultProvider(this.server.url);
+
+    mgvConfig = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: this.server.url,
+    });
+
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: mgvConfig.provider,
+    });
+
+    mgvTestUtil.setConfig(mgvConfig, this.accounts, mgvAdmin);
+
     maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     cleaner = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Cleaner);
 
@@ -55,19 +61,20 @@ describe("MarketCleaner integration tests", () => {
     });
     market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    cleanerProvider = mgv._provider;
+    cleanerProvider = mgv.provider;
 
     // Turn up the Mangrove gasprice to increase the bounty
     await mgvTestUtil.setMgvGasPrice(50);
 
     balancesBefore = await mgvTestUtil.getBalances(accounts, testProvider);
-    mgvTestUtil.initPollOfTransactionTracking(mgv._provider);
+    mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
 
   afterEach(async function () {
     mgvTestUtil.stopPollOfTransactionTracking();
-    market.disconnect();
     mgv.disconnect();
+    mgvConfig.disconnect();
+    mgvAdmin.disconnect();
 
     const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
     mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);
@@ -76,8 +83,8 @@ describe("MarketCleaner integration tests", () => {
   mgvTestUtil.bidsAsks.forEach((ba) => {
     it(`should clean offer failing to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
-      await mgvTestUtil.postNewRevertingOffer(market, ba, maker);
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      const tx = await mgvTestUtil.postNewRevertingOffer(market, ba, maker);
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
       const marketCleaner = new MarketCleaner(market, cleanerProvider);
 
@@ -97,8 +104,8 @@ describe("MarketCleaner integration tests", () => {
 
     it(`should not clean offer succeeding to trade 0 wants on the '${ba}' offer list`, async function () {
       // Arrange
-      await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      const tx = await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
       const marketCleaner = new MarketCleaner(market, cleanerProvider);
 

@@ -35,7 +35,7 @@ export class ApproveMangroveUtils {
     const allowance = await token.allowance();
     if (allowance.lt(tokenConfig.targetAllowance)) {
       await token
-        .approveMangrove({ amount: tokenConfig.targetAllowance })
+        .approveMangrove(tokenConfig.targetAllowance)
         .then((tx) => tx.wait())
         .then((txReceipt) => {
           this.logger.info(

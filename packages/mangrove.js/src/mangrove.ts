@@ -1,15 +1,18 @@
-import { LiquidityProvider, Market, MgvToken, OfferLogic } from ".";
+import { LiquidityProvider, Market, MgvToken, OfferLogic, Semibook } from ".";
 import {
   addresses,
   defaultDisplayedDecimals,
   defaultDisplayedPriceDecimals,
   displayedDecimals as loadedDisplayedDecimals,
   displayedPriceDecimals as loadedDisplayedPriceDecimals,
+  cashness as loadedCashness,
 } from "./constants";
 import * as eth from "./eth";
-import { getAllToyENSEntries } from "./util/toyEnsEntries";
+import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
+import { TypedDataSigner } from "@ethersproject/abstract-signer";
+import { ApproveArgs } from "./mgvtoken";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -26,6 +29,20 @@ let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
 import UnitCalculations from "./util/unitCalculations";
+import {
+  BlockManager,
+  ReliableProvider,
+  ReliableHttpProvider,
+  ReliableWebsocketProvider,
+} from "@mangrovedao/reliable-event-subscriber";
+import { blockManagerOptionsByNetworkName } from "./constants/blockManagerOptions";
+import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
+import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
+import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
+import MangroveEventSubscriber from "./mangroveEventSubscriber";
+import { onEthersError } from "./util/ethersErrorHandler";
+import EventEmitter from "events";
+
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
@@ -50,23 +67,60 @@ namespace Mangrove {
     gasmax: number;
     dead: boolean;
   };
+
+  export type SimplePermitData = {
+    outbound_tkn: string;
+    inbound_tkn: string;
+    owner: string;
+    spender: string;
+    value: ethers.BigNumber;
+    nonce?: number | ethers.BigNumber;
+    deadline: number | Date;
+  };
+
+  export type PermitData = {
+    outbound_tkn: string;
+    inbound_tkn: string;
+    owner: string;
+    spender: string;
+    value: ethers.BigNumber;
+    nonce: ethers.BigNumber;
+    deadline: number;
+  };
+
+  export type OpenMarketInfo = {
+    base: { address: string; symbol: string; decimals: number };
+    quote: { address: string; symbol: string; decimals: number };
+    asksConfig: LocalConfig;
+    bidsConfig: LocalConfig;
+  };
+
+  export type CreateOptions = eth.CreateSignerOptions & {
+    blockManagerOptions?: BlockManager.Options;
+    reliableWebsocketProviderOptions?: ReliableWebsocketProvider.Options;
+    reliableHttpProviderOptions?: ReliableHttpProvider.Options;
+  };
 }
 
 class Mangrove {
-  _provider: Provider;
-  _signer: Signer;
-  _network: eth.ProviderNetwork;
+  provider: Provider;
+  signer: Signer;
+  network: eth.ProviderNetwork;
   _readOnly: boolean;
-  _address: string;
+  address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
   cleanerContract: typechain.MgvCleaner;
-  // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
-  // orderContract: typechain.MangroveOrder;
-  orderContract: typechain.MangroveOrderEnriched;
+  multicallContract: typechain.Multicall2;
+  orderContract: typechain.MangroveOrder;
+  reliableProvider?: ReliableProvider;
+  mangroveEventSubscriber?: MangroveEventSubscriber;
+
+  public eventEmitter: EventEmitter;
+
+  static devNode: DevNode;
   static typechain = typechain;
   static addresses = addresses;
-  unitCalculations = new UnitCalculations();
 
   /**
    * Creates an instance of the Mangrove Typescript object
@@ -78,7 +132,7 @@ class Mangrove {
    * const mgv = await require('mangrove.js').connect(options); // web browser
    * ```
    *
-   * if options is a string `s`, it is considered to be {provider:s}
+   * if options is a string `s`, it is considered to be `{provider:s}`
    * const mgv = await require('mangrove.js').connect('http://127.0.0.1:8545'); // HTTP provider
    *
    * Options:
@@ -91,23 +145,100 @@ class Mangrove {
    */
 
   static async connect(
-    options: eth.CreateSignerOptions | string = {}
+    options?: Mangrove.CreateOptions | string
   ): Promise<Mangrove> {
+    if (typeof options === "undefined") {
+      options = "http://localhost:8545";
+    }
     if (typeof options === "string") {
-      options = { provider: options };
+      options = {
+        provider: options,
+      };
     }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
-    if (network.name === "local" && !Mangrove.addresses[network.name]) {
-      await Mangrove.fetchAllAddresses(signer.provider);
+
+    if ("send" in signer.provider) {
+      Mangrove.devNode = new DevNode(signer.provider);
+      if (await Mangrove.devNode.isDevNode()) {
+        await Mangrove.initAndListenToDevNode(Mangrove.devNode);
+      }
+    }
+
+    if (!options.blockManagerOptions) {
+      options.blockManagerOptions =
+        blockManagerOptionsByNetworkName[network.name];
+
+      if (!options.blockManagerOptions) {
+        options.blockManagerOptions = {
+          maxBlockCached: 50,
+          maxRetryGetBlock: 10,
+          retryDelayGetBlockMs: 500,
+          maxRetryGetLogs: 10,
+          retryDelayGetLogsMs: 500,
+          batchSize: 200,
+        };
+      }
+    }
+
+    if (!options.blockManagerOptions) {
+      throw new Error("Missing block manager option");
+    }
+
+    if (!options.reliableWebsocketProviderOptions && options.providerWsUrl) {
+      const _default = reliableWebSocketOptionsByNetworkName[network.name];
+      if (_default) {
+        options.reliableWebsocketProviderOptions = {
+          wsUrl: options.providerWsUrl,
+          pingIntervalMs: _default.pingIntervalMs,
+          pingTimeoutMs: _default.pingTimeoutMs,
+          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
+        };
+      } else {
+        options.reliableWebsocketProviderOptions = {
+          wsUrl: options.providerWsUrl,
+          pingIntervalMs: 10000,
+          pingTimeoutMs: 5000,
+          estimatedBlockTimeMs: 2000,
+        };
+      }
+    }
+
+    const eventEmitter = new EventEmitter();
+    if (!options.reliableHttpProviderOptions) {
+      const _default = reliableHttpProviderOptionsByNetworkName[network.name];
+
+      if (_default) {
+        options.reliableHttpProviderOptions = {
+          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
+          onError: onEthersError(eventEmitter),
+        };
+      } else {
+        options.reliableHttpProviderOptions = {
+          estimatedBlockTimeMs: 2000,
+          onError: onEthersError(eventEmitter),
+        };
+      }
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
       network: network,
       readOnly,
+      blockManagerOptions: options.blockManagerOptions,
+      reliableHttpProvider: options.reliableHttpProviderOptions,
+      eventEmitter,
+      reliableWebSocketOptions: options.providerWsUrl
+        ? {
+            options: options.reliableWebsocketProviderOptions,
+            wsUrl: options.providerWsUrl,
+          }
+        : undefined,
     });
+
+    await mgv.initializeProvider();
+
     canConstructMangrove = false;
 
     logger.debug("Initialize Mangrove", {
@@ -123,59 +254,118 @@ class Mangrove {
   }
 
   disconnect(): void {
-    this._provider.removeAllListeners();
+    this.provider.removeAllListeners();
+    if (this.reliableProvider) {
+      this.reliableProvider.stop();
+    }
 
     logger.debug("Disconnect from Mangrove", {
       contextInfo: "mangrove.base",
     });
   }
   //TODO types in module namespace with same name as class
-  //TODO remove _prefix on public properties
 
   constructor(params: {
     signer: Signer;
     network: eth.ProviderNetwork;
     readOnly: boolean;
+    blockManagerOptions: BlockManager.Options;
+    reliableHttpProvider: ReliableHttpProvider.Options;
+    eventEmitter: EventEmitter;
+    reliableWebSocketOptions?: {
+      options: ReliableWebsocketProvider.Options;
+      wsUrl: string;
+    };
   }) {
     if (!canConstructMangrove) {
       throw Error(
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)"
       );
     }
+    this.eventEmitter = params.eventEmitter;
     // must always pass a provider-equipped signer
-    this._provider = params.signer.provider;
-    this._signer = params.signer;
-    this._network = params.network;
+    this.provider = params.signer.provider;
+    this.signer = params.signer;
+    this.network = params.network;
     this._readOnly = params.readOnly;
-    this._address = Mangrove.getAddress("Mangrove", this._network.name);
-    this.contract = typechain.Mangrove__factory.connect(
-      this._address,
-      this._signer
+    this.multicallContract = typechain.Multicall2__factory.connect(
+      Mangrove.getAddress("Multicall2", this.network.name),
+      this.signer
     );
-    const readerAddress = Mangrove.getAddress("MgvReader", this._network.name);
+    this.address = Mangrove.getAddress("Mangrove", this.network.name);
+    this.contract = typechain.Mangrove__factory.connect(
+      this.address,
+      this.signer
+    );
+    const readerAddress = Mangrove.getAddress("MgvReader", this.network.name);
     this.readerContract = typechain.MgvReader__factory.connect(
       readerAddress,
-      this._signer
+      this.signer
     );
-    const cleanerAddress = Mangrove.getAddress(
-      "MgvCleaner",
-      this._network.name
-    );
+
+    const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
     this.cleanerContract = typechain.MgvCleaner__factory.connect(
       cleanerAddress,
-      this._signer
+      this.signer
     );
-    // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
     const orderAddress = Mangrove.getAddress(
-      // "MangroveOrder",
-      "MangroveOrderEnriched",
-      this._network.name
+      "MangroveOrder",
+      this.network.name
     );
     // this.orderContract = typechain.MangroveOrder__factory.connect(
-    this.orderContract = typechain.MangroveOrderEnriched__factory.connect(
+    this.orderContract = typechain.MangroveOrder__factory.connect(
       orderAddress,
-      this._signer
+      this.signer
     );
+
+    if (params.reliableWebSocketOptions) {
+      this.reliableProvider = new ReliableWebsocketProvider(
+        {
+          ...params.blockManagerOptions,
+          provider: new WebSocketProvider(
+            params.reliableWebSocketOptions.wsUrl
+          ),
+          multiv2Address: this.multicallContract.address,
+        },
+        params.reliableWebSocketOptions.options
+      );
+    } else {
+      this.reliableProvider = new ReliableHttpProvider(
+        {
+          ...params.blockManagerOptions,
+          provider: this.provider as JsonRpcProvider,
+          multiv2Address: this.multicallContract.address,
+        },
+        params.reliableHttpProvider
+      );
+    }
+
+    this.mangroveEventSubscriber = new MangroveEventSubscriber(
+      this.provider,
+      this.contract,
+      this.reliableProvider.blockManager
+    );
+  }
+
+  /**
+   * Initialize reliable provider
+   */
+  private async initializeProvider(): Promise<void> {
+    if (!this.reliableProvider) {
+      return;
+    }
+
+    logger.debug(`Initialize reliable provider`);
+    const block = await this.provider.getBlock("latest");
+
+    await this.reliableProvider.initialize({
+      parentHash: block.parentHash,
+      hash: block.hash,
+      number: block.number,
+    });
+
+    await this.mangroveEventSubscriber.enableSubscriptions();
+    logger.debug(`Initialized reliable provider done`);
   }
   /* Instance */
   /************** */
@@ -197,20 +387,23 @@ class Mangrove {
         bookOptions: params.bookOptions,
       },
     });
+    if (this.reliableProvider && this.reliableProvider.getLatestBlock) {
+      await this.reliableProvider.getLatestBlock(); // trigger a quick update to get latest block on market initialization
+    }
     return await Market.connect({ ...params, mgv: this });
   }
 
   /** Get an OfferLogic object allowing one to monitor and set up an onchain offer logic*/
-  offerLogic(logic: string, multiMaker?: boolean): OfferLogic {
+  offerLogic(logic: string): OfferLogic {
     if (ethers.utils.isAddress(logic)) {
-      return new OfferLogic(this, logic, multiMaker ? multiMaker : false);
+      return new OfferLogic(this, logic);
     } else {
       // loading a multi maker predeployed logic
-      const address: string = Mangrove.getAddress(logic, this._network.name);
+      const address: string = Mangrove.getAddress(logic, this.network.name);
       if (address) {
-        return new OfferLogic(this, address, true);
+        return new OfferLogic(this, address);
       } else {
-        throw Error(`Cannot find ${logic} on network ${this._network.name}`);
+        throw Error(`Cannot find ${logic} on network ${this.network.name}`);
       }
     }
   }
@@ -225,18 +418,20 @@ class Mangrove {
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
-    const EOA = await this._signer.getAddress();
+    const EOA = await this.signer.getAddress();
     if (p instanceof Market) {
       return new LiquidityProvider({
         mgv: this,
         eoa: EOA,
         market: p,
+        gasreq: 0,
       });
     } else {
       return new LiquidityProvider({
         mgv: this,
         eoa: EOA,
         market: await this.market(p),
+        gasreq: 0,
       });
     }
   }
@@ -252,7 +447,7 @@ class Mangrove {
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getAddress(name: string): string {
-    return Mangrove.getAddress(name, this._network.name || "mainnet");
+    return Mangrove.getAddress(name, this.network.name || "mainnet");
   }
 
   /**
@@ -261,7 +456,36 @@ class Mangrove {
    * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.
    */
   setAddress(name: string, address: string): void {
-    Mangrove.setAddress(name, address, this._network.name || "mainnet");
+    Mangrove.setAddress(name, address, this.network.name || "mainnet");
+  }
+
+  /**
+   * Gets the name of an address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  getNameFromAddress(address: string): string {
+    const networkAddresses = Mangrove.addresses[this.network.name];
+
+    if (networkAddresses) {
+      address = ethers.utils.getAddress(address);
+
+      for (const [name, candidateAddress] of Object.entries(
+        networkAddresses
+      ) as any) {
+        if (candidateAddress == address) {
+          return name;
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Gets the token corresponding to the address if it is known; otherwise, null.
+   */
+  getTokenAndAddress(address: string) {
+    const name = this.getNameFromAddress(address);
+    return { address, token: name ? this.token(name) : null };
   }
 
   /** Convert public token amount to internal token representation.
@@ -269,14 +493,22 @@ class Mangrove {
    * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
    * it is the number of decimals.
    *
+   * For convenience, has a static and an instance version.
+   *
    *  @example
    *  ```
-   *  mgv.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
+   *  Mangrove.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
+  static toUnits(
+    amount: Bigish,
+    nameOrDecimals: string | number
+  ): ethers.BigNumber {
+    return UnitCalculations.toUnits(amount, nameOrDecimals);
+  }
   toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
-    return this.unitCalculations.toUnits(amount, nameOrDecimals);
+    return Mangrove.toUnits(amount, nameOrDecimals);
   }
 
   /** Convert internal token amount to public token representation.
@@ -294,7 +526,7 @@ class Mangrove {
     amount: number | string | ethers.BigNumber,
     nameOrDecimals: string | number
   ): Big {
-    return this.unitCalculations.fromUnits(amount, nameOrDecimals);
+    return UnitCalculations.fromUnits(amount, nameOrDecimals);
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
@@ -324,10 +556,9 @@ class Mangrove {
 
   approveMangrove(
     tokenName: string,
-    arg: { amount?: Bigish } = {},
-    overrides: ethers.Overrides = {}
+    arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.token(tokenName).approveMangrove(arg, overrides);
+    return this.token(tokenName).approveMangrove(arg);
   }
 
   /**
@@ -347,6 +578,109 @@ class Mangrove {
       gasmax: config.global.gasmax.toNumber(),
       dead: config.global.dead,
     };
+  }
+
+  /** Permit data normalization
+   * Autofill/convert 'nonce' field of permit data if needd, convert deadline to
+   * num if needed.
+   */
+  async normalizePermitData(
+    params: Mangrove.SimplePermitData
+  ): Promise<Mangrove.PermitData> {
+    const data = { ...params };
+
+    // Autofind nonce if needed
+    if (!("nonce" in data)) {
+      data.nonce = await this.contract.nonces(data.owner);
+    }
+
+    if (typeof data.nonce === "number") {
+      data.nonce = ethers.BigNumber.from(data.nonce);
+    }
+
+    // Convert deadline if needed
+    if (data.deadline instanceof Date) {
+      data.deadline = Math.floor(data.deadline.getTime() / 1000);
+    }
+
+    return data as Mangrove.PermitData;
+  }
+
+  /**
+   * Sign typed data for permit().
+   * To set the deadline to +days or +months, you can do
+   * let date = new Date();
+   * date.setDate(date.getDate() + days);
+   * date.setMonth(date.getMonth() + months);
+   * - Nonce is autoselected if needed and can be a number
+   * - Date can be a Date or a number
+   */
+  async simpleSignPermitData(params: Mangrove.SimplePermitData) {
+    const data = await this.normalizePermitData(params);
+    return this.signPermitData(data);
+  }
+
+  /** Permit data generator for normalized permit data input */
+  async signPermitData(data: Mangrove.PermitData) {
+    // Check that generated signer has a typed data signing prop
+    if (!("_signTypedData" in this.signer)) {
+      throw new Error("Cannot sign typed data with this signer.");
+    }
+
+    // Declare domain (match mangrove contract)
+    const domain = {
+      name: "Mangrove",
+      version: "1",
+      chainId: this.network.id,
+      verifyingContract: this.address,
+    };
+
+    // Declare type to sign (match mangrove contract)
+    const types = {
+      Permit: [
+        { name: "outbound_tkn", type: "address" },
+        { name: "inbound_tkn", type: "address" },
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    };
+
+    const signer = this.signer as unknown as TypedDataSigner;
+    return signer._signTypedData(domain, types, data);
+  }
+
+  /** Give permit to Mangrove.
+   * Permit params.spender to buy on behalf of owner on the outbound/inbound
+   * offer list up to value. Default deadline is now + 1 day. Default nonce is
+   * current owner nonce.
+   */
+  async permit(
+    params: Mangrove.SimplePermitData
+  ): Promise<ethers.ContractTransaction> {
+    if (!params.deadline) {
+      params.deadline = new Date();
+      params.deadline.setDate(params.deadline.getDate() + 1);
+    }
+
+    const data = await this.normalizePermitData(params);
+    const { v, r, s } = ethers.utils.splitSignature(
+      await this.signPermitData(data)
+    );
+
+    return this.contract.permit(
+      data.outbound_tkn,
+      data.inbound_tkn,
+      data.owner,
+      data.spender,
+      data.value,
+      data.deadline,
+      v,
+      r,
+      s
+    );
   }
 
   /* Static */
@@ -452,17 +786,207 @@ class Mangrove {
   }
 
   /**
-   * Returns all addresses registered at the local server's Toy ENS contract.
-   * Assumes provider is connected to a local server (typically for testing/experimentation).
+   * Setup dev node necessary contracts if needed, register dev Multicall2
+   * address, listen to future additions (a script external to mangrove.js may
+   * deploy contracts during execution).
    */
-  static async fetchAllAddresses(provider: ethers.providers.Provider) {
-    const network = await eth.getProviderNetwork(provider);
-    const contracts = await getAllToyENSEntries(provider);
-    for (const { name, address, decimals } of contracts) {
+  static async initAndListenToDevNode(devNode: DevNode) {
+    const network = await eth.getProviderNetwork(devNode.provider);
+    // set necessary code
+    await devNode.setToyENSCodeIfAbsent();
+    await devNode.setMulticallCodeIfAbsent();
+    // register Multicall2
+    Mangrove.setAddress("Multicall2", devNode.multicallAddress, network.name);
+    // get currently deployed contracts & listen for future ones
+    const setAddress = (name, address, decimals) => {
       Mangrove.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
         Mangrove.setDecimals(name, decimals);
       }
+    };
+    const contracts = await devNode.watchAllToyENSEntries(setAddress);
+    for (const { name, address, decimals } of contracts) {
+      setAddress(name, address, decimals);
+    }
+  }
+
+  /**
+   * Returns open markets data according to mangrove reader.
+   * @param from: start at market `from`. Default 0.
+   * @param maxLen: max number of markets returned. Default all.
+   * @param configs: fetch market's config information. Default true.
+   * @param tokenInfo: fetch token information (symbol, decimals)
+   * @note If an open market has a token with no/bad decimals/symbol function, this function will revert.
+   */
+  async openMarketsData(
+    params: {
+      from?: number;
+      maxLen?: number | ethers.BigNumber;
+      configs?: boolean;
+      tokenInfos?: boolean;
+    } = {}
+  ): Promise<Mangrove.OpenMarketInfo[]> {
+    // set default params
+    params.from ??= 0;
+    params.maxLen ??= ethers.constants.MaxUint256;
+    params.configs ??= true;
+    params.tokenInfos ??= true;
+    // read open markets and their configs off mgvReader
+    const raw = await this.readerContract["openMarkets(uint256,uint256,bool)"](
+      params.from,
+      params.maxLen,
+      params.configs
+    );
+
+    // structure data object as address => (symbol,decimals,address=>config)
+    const data: Record<
+      string,
+      { symbol?: string; decimals?: number; configs?: Record<string, any> }
+    > = {};
+    raw.markets.forEach(([tkn0, tkn1], i) => {
+      data[tkn0] ??= { configs: {} };
+      data[tkn1] ??= { configs: {} };
+
+      if (params.configs) {
+        data[tkn0].configs[tkn1] = raw.configs[i].config01;
+        data[tkn1].configs[tkn0] = raw.configs[i].config10;
+      }
+    });
+
+    const addrs = Object.keys(data);
+
+    //read decimals & symbol for each token using Multicall
+    const ierc20 = typechain.IERC20__factory.createInterface();
+
+    const tryDecode = (ary: any[], fnName: "decimals" | "symbol") => {
+      return ary.forEach((returnData, i) => {
+        // will raise exception if call reverted
+        const decoded = ierc20.decodeFunctionResult(
+          fnName as any,
+          returnData
+        )[0];
+        data[addrs[i]][fnName as any] = decoded;
+      });
+    };
+
+    /* Grab decimals for all contracts */
+    const decimalArgs = addrs.map((addr) => {
+      return { target: addr, callData: ierc20.encodeFunctionData("decimals") };
+    });
+    const symbolArgs = addrs.map((addr) => {
+      return { target: addr, callData: ierc20.encodeFunctionData("symbol") };
+    });
+    const { returnData } = await this.multicallContract.callStatic.aggregate([
+      ...decimalArgs,
+      ...symbolArgs,
+    ]);
+    tryDecode(returnData.slice(0, addrs.length), "decimals");
+    tryDecode(returnData.slice(addrs.length), "symbol");
+
+    // format return value
+    return raw.markets.map(([tkn0, tkn1]) => {
+      const { baseSymbol } = Mangrove.toBaseQuoteByCashness(
+        data[tkn0].symbol,
+        data[tkn1].symbol
+      );
+      const [base, quote] =
+        baseSymbol === data[tkn0].symbol ? [tkn0, tkn1] : [tkn1, tkn0];
+
+      return {
+        base: {
+          address: base,
+          symbol: data[base].symbol,
+          decimals: data[base].decimals,
+        },
+        quote: {
+          address: quote,
+          symbol: data[quote].symbol,
+          decimals: data[quote].decimals,
+        },
+        asksConfig: params.configs
+          ? Semibook.rawLocalConfigToLocalConfig(
+              data[base].configs[quote],
+              data[base].decimals
+            )
+          : undefined,
+        bidsConfig: params.configs
+          ? Semibook.rawLocalConfigToLocalConfig(
+              data[quote].configs[base],
+              data[quote].decimals
+            )
+          : undefined,
+      };
+    });
+  }
+
+  /**
+   * Returns open markets according to mangrove reader. Will internally update Mangrove token information.
+   *
+   * @param from: start at market `from` (default: 0)
+   * @param maxLen: max number of markets returned (default: all)
+   * @param noInit: do not initialize markets (default: false)
+   * @param bookOptions: bookOptions argument to pass to every new market (default: undefined)
+   */
+  async openMarkets(
+    params: {
+      from?: number;
+      maxLen?: number;
+      noInit?: boolean;
+      bookOptions?: Market.BookOptions;
+    } = {}
+  ): Promise<Market[]> {
+    const noInit = params.noInit ?? false;
+    delete params.noInit;
+    const bookOptions = params.bookOptions;
+    delete params.bookOptions;
+    const openMarketsData = await this.openMarketsData({
+      ...params,
+      tokenInfos: true,
+      configs: false,
+    });
+    // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
+    return Promise.all(
+      openMarketsData.map(({ base, quote }) => {
+        this.token(base.symbol, {
+          address: base.address,
+          decimals: base.decimals,
+        });
+        this.token(quote.symbol, {
+          address: quote.address,
+          decimals: quote.decimals,
+        });
+        return Market.connect({
+          mgv: this,
+          base: base.symbol,
+          quote: quote.symbol,
+          bookOptions: bookOptions,
+          noInit: noInit,
+        });
+      })
+    );
+  }
+
+  // relative cashness of a token will determine which is base & which is quote
+  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of symbol string
+  setCashness(symbol: string, cashness: number) {
+    loadedCashness[symbol] = cashness;
+  }
+
+  // cashness is "how similar to cash is a token". The cashier token is the quote.
+  // toBaseQuoteByCashness orders symbols according to relative cashness.
+  // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
+  // Ordering is lex order on cashness x (string order)
+  static toBaseQuoteByCashness(symbol0: string, symbol1: string) {
+    let cash0 = 0;
+    let cash1 = 0;
+    if (symbol0 in loadedCashness && symbol1 in loadedCashness) {
+      cash0 = loadedCashness[symbol0];
+      cash1 = loadedCashness[symbol1];
+    }
+    if (cash0 < cash1 || (cash0 === cash1 && symbol0 < symbol1)) {
+      return { baseSymbol: symbol0, quoteSymbol: symbol1 };
+    } else {
+      return { baseSymbol: symbol1, quoteSymbol: symbol0 };
     }
   }
 }

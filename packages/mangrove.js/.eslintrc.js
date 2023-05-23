@@ -1,6 +1,10 @@
 module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
+  parserOptions: {
+    tsconfigRootDir: __dirname,
+    project: ["./tsconfig.eslint.json"],
+  },
   plugins: ["@typescript-eslint"],
   extends: [
     "eslint:recommended",
@@ -10,6 +14,8 @@ module.exports = {
   rules: {
     "no-empty": ["error", { allowEmptyCatch: true }],
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-floating-promises": ["warn"],
+    "@typescript-eslint/no-misused-promises": ["warn"],
   },
   env: {
     browser: true,

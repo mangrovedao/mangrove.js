@@ -1,7 +1,7 @@
 /**
  * Integration tests of FaillingOffer.ts.
  */
-import { afterEach, before, beforeEach, describe, it } from "mocha";
+import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { Mangrove, Market, mgvTestUtil } from "@mangrovedao/mangrove.js";
 
@@ -24,34 +24,37 @@ let testProvider: Provider; // Only used to read state for assertions, not assoc
 let deployerMangrove: Mangrove;
 let makerMangrove: Mangrove;
 let cleanerMangrove: Mangrove;
+let mgvAdmin: Mangrove;
+
 let makerMarket: Market;
 let cleanerMarket: Market;
 
 describe("Failing offer integration tests", () => {
-  before(async function () {
-    testProvider = ethers.getDefaultProvider(this.server.url);
-  });
-
-  after(async function () {
-    await mgvTestUtil.logAddresses();
-  });
-
   beforeEach(async function () {
+    testProvider = ethers.getDefaultProvider(this.server.url);
     makerMangrove = await Mangrove.connect({
       privateKey: this.accounts.maker.key,
-      provider: this.server.url,
+      provider: testProvider,
     });
-    mgvTestUtil.setConfig(makerMangrove, this.accounts);
+
+    mgvAdmin = await Mangrove.connect({
+      privateKey: this.accounts.deployer.key,
+      provider: makerMangrove.provider,
+    });
+
+    mgvTestUtil.setConfig(makerMangrove, this.accounts, mgvAdmin);
 
     deployer = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Deployer);
     maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     cleaner = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Cleaner);
-    cleanerMangrove = await Mangrove.connect({ signer: cleaner.signer });
+    cleanerMangrove = await Mangrove.connect({
+      signer: cleaner.signer,
+    });
 
     accounts = [deployer, maker, cleaner];
     // @ts-ignore
-    makerMangrove._provider.pollingInterval = 10;
-    mgvTestUtil.initPollOfTransactionTracking(makerMangrove._provider);
+    makerMangrove.provider.pollingInterval = 10;
+    mgvTestUtil.initPollOfTransactionTracking(makerMangrove.provider);
 
     deployerMangrove = await Mangrove.connect({ signer: deployer.signer });
 
@@ -79,19 +82,6 @@ describe("Failing offer integration tests", () => {
     await mgvTestUtil.setMgvGasPrice(50);
 
     balancesBefore = await mgvTestUtil.getBalances(accounts, testProvider);
-  });
-
-  afterEach(async function () {
-    mgvTestUtil.stopPollOfTransactionTracking();
-    makerMangrove.disconnect();
-    cleanerMarket.disconnect();
-    cleanerMangrove.disconnect();
-    makerMangrove.disconnect();
-    makerMarket.disconnect();
-    deployerMangrove.disconnect();
-
-    const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
-    mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);
   });
 
   it(`offerFailingBot`, async function () {
@@ -123,26 +113,44 @@ describe("Failing offer integration tests", () => {
       .thenResolve(Big(0.002));
 
     // Act
-    await failingOffer.postFailingOffer();
-    await mgvTestUtil.waitForBooksForLastTx(makerMarket); // makes sure that the chached market is up to date before assertion
+    const tx = await failingOffer.postFailingOffer();
+    await mgvTestUtil.waitForBlock(makerMarket.mgv, tx!.event.blockNumber);
     // Assert
     assert.equal(1, makerMarket.getSemibook("asks").size());
 
-    await cleanerMarket.quote.approveMangrove({ amount: 10000000 }); // approve mangrove to use x amount for quote token
-    await mgvTestUtil.waitForBooksForLastTx(cleanerMarket); // makes sure that the cached market is up to date before getting ask offer
+    await cleanerMarket.quote.approveMangrove(10000000); // approve mangrove to use x amount for quote token
+
+    await mgvTestUtil.waitForBlock(cleanerMarket.mgv, tx!.event.blockNumber);
     const offer = [...cleanerMarket.getBook().asks][0];
-    const result = await cleanerMarket.buy(
+    const buyPromises = await cleanerMarket.buy(
       {
         wants: offer.gives,
         gives: offer.wants,
       },
       { gasLimit: 6500000 }
     );
-
-    await mgvTestUtil.waitForBooksForLastTx(cleanerMarket); // makes sure that the chached market is up to date before assertion
+    const result = await buyPromises.result;
+    await mgvTestUtil.waitForBlock(
+      cleanerMarket.mgv,
+      result.txReceipt.blockNumber
+    );
 
     // Assert
     assert.equal(0, cleanerMarket.getSemibook("asks").size());
     assert.equal(result !== undefined && result.summary.bounty.gt(0), true);
+
+    console.log("done");
+  });
+
+  afterEach(async function () {
+    const balancesAfter = await mgvTestUtil.getBalances(accounts, testProvider);
+    mgvTestUtil.logBalances(accounts, balancesBefore, balancesAfter);
+
+    mgvTestUtil.stopPollOfTransactionTracking();
+
+    deployerMangrove.disconnect();
+    makerMangrove.disconnect();
+    mgvAdmin.disconnect();
+    cleanerMangrove.disconnect();
   });
 });

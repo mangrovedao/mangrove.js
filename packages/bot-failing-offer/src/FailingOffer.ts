@@ -16,7 +16,7 @@ export class FailingOffer {
   #bidProbability: number;
   #offerTimeRng: () => number;
   #maxQuantity: number;
-  priceUtils = new PriceUtils(config);
+  priceUtils = new PriceUtils(logger);
   postOfferUtils = new PostOfferUtils(config);
   /**
    * Constructs the bot.
@@ -127,7 +127,7 @@ export class FailingOffer {
       offerDataDetailed
     );
 
-    await this.postOfferUtils
+    return await this.postOfferUtils
       .postFailing(offerDataDetailed)
       .then((txInfo) => {
         // FIXME We should include the offer ID. mangrove.js Maker.ts will have a function for posting offers that returns the ID, so we should use that once available
@@ -144,6 +144,7 @@ export class FailingOffer {
           ba: ba,
           data: { txInfo },
         });
+        return txInfo;
       })
       .catch((e) => {
         this.postOfferUtils.logOffer(

@@ -30,9 +30,9 @@ The JSON-RPC endpoint and private key that the bot should use must be specified 
 
 ```yaml
 # The URL for an Ethereum-compatible JSON-RPC endpoint
-ETHEREUM_NODE_URL=<URL>
+RPC_NODE_URL=<URL>
 # example:
-ETHEREUM_NODE_URL=https://eth-mainnet.alchemyapi.io/v2/abcd-12345679
+RPC_NODE_URL=https://eth-mainnet.alchemyapi.io/v2/abcd-12345679
 
 # The private key for transaction signing
 PRIVATE_KEY=<private key>

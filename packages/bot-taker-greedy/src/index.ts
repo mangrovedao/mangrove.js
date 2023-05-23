@@ -6,7 +6,7 @@
 import config from "./util/config";
 import { logger } from "./util/logger";
 
-import Mangrove from "@mangrovedao/mangrove.js";
+import Mangrove, { enableLogging } from "@mangrovedao/mangrove.js";
 
 import { Wallet } from "@ethersproject/wallet";
 
@@ -18,6 +18,8 @@ import { approveMangroveUtils, configUtils } from "@mangrovedao/bot-utils";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 import { BalanceUtils } from "@mangrovedao/bot-utils/build/util/balanceUtils";
 import { ToadScheduler } from "toad-scheduler";
+
+enableLogging();
 
 type TokenPair = { token1: string; token2: string };
 const offerTakerMap = new Map<TokenPair, OfferTaker>();
@@ -42,8 +44,6 @@ async function startTakersForMarkets(
     const market = await mgv.market({
       base: tokenPair.token1,
       quote: tokenPair.token2,
-      // FIXME: Re-enable the cache when OfferTaker can make use of it
-      bookOptions: { maxOffers: 0 },
     });
 
     const offerTaker = new OfferTaker(
@@ -68,7 +68,7 @@ async function botFunction(
 
   await balanceUtils.logTokenBalances(
     mgv,
-    await mgv._signer.getAddress(),
+    await mgv.signer.getAddress(),
     tokenConfigs,
     "init"
   );

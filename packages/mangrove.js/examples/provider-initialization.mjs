@@ -2,19 +2,19 @@
 
 import { Mangrove } from "@mangrovedao/mangrove.js";
 import { ethers } from "ethers";
-import Web3 from 'web3';
+import Web3 from "web3";
 
 // use Alchemy or Infura to connect to the mumbai testnet
 // (As of January 2022, only Alchemy provide a WebSocket connection)
 
-const HTTP_PROVIDER_URL = 'https://polygon-mumbai.infura.io/v3/_YOUR_API_KEY_';
-const WS_PROVIDER_URL = 'wss://polygon-mumbai.g.alchemy.com/v2/_YOUR_API_KEY_';
-const PRIVATE_KEY = 'Ox_YOUR_PRIVATE_KEY_';
+const HTTP_PROVIDER_URL = "https://polygon-mumbai.infura.io/v3/_YOUR_API_KEY_";
+const WS_PROVIDER_URL = "wss://polygon-mumbai.g.alchemy.com/v2/_YOUR_API_KEY_";
+const PRIVATE_KEY = "Ox_YOUR_PRIVATE_KEY_";
 
 const simple_provider_options = () => {
   return {
     provider: HTTP_PROVIDER_URL,
-    privateKey: PRIVATE_KEY
+    privateKey: PRIVATE_KEY,
   };
 };
 
@@ -30,7 +30,7 @@ const web3_custom_provider_options = () => {
 
   return {
     provider: web3_provider,
-    privateKey: PRIVATE_KEY
+    privateKey: PRIVATE_KEY,
   };
 };
 
@@ -47,16 +47,15 @@ const main = async () => {
     console.log("Allowance: ");
     console.log(allowance);
 
-    // Read orderbook
+    // Read order book
     console.log("Order book:");
     console.log(await market.book());
 
     mgv.disconnect();
-  } catch(err) {
+  } catch (err) {
     console.log(err);
     process.exit(1);
   }
 };
 
 main();
-

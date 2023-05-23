@@ -220,13 +220,13 @@ export class MarketCleaner {
       offer: offer,
       contextInfo: contextInfo,
     });
+    const snipePromises = await this.#market.snipe({
+      ba: ba,
+      targets: this.#createCollectParams(offer),
+      requireOffersToFail: true,
+    });
 
-    return this.#market
-      .snipe({
-        ba: ba,
-        targets: this.#createCollectParams(offer),
-        requireOffersToFail: true,
-      })
+    return snipePromises.result
       .then((result) => {
         logger.info("Successfully cleaned offer", {
           base: this.#market.base.name,

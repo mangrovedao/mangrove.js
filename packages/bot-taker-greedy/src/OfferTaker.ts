@@ -158,7 +158,7 @@ export class OfferTaker {
       const json = await fetchJson(this.#cryptoCompareUrl);
       if (json[this.#market.quote.name] !== undefined) {
         const externalPrice = new Big(json[this.#market.quote.name]);
-        logger.info("Received external price", {
+        logger.debug("Received external price", {
           contextInfo: "taker",
           base: this.#market.base.name,
           quote: this.#market.quote.name,
@@ -205,10 +205,13 @@ export class OfferTaker {
     externalPrice: Big
   ): Promise<void> {
     const semibook = this.#market.getSemibook(ba);
-    // FIXME: Can we use the cache instead/more?
-    const offers = await semibook.requestOfferListPrefix({
-      desiredPrice: externalPrice,
-    });
+
+    // If there is no immediately better offer, then we do not have to query the list
+    const offers = (await semibook.getPivotId(externalPrice))
+      ? await semibook.requestOfferListPrefix({
+          desiredPrice: externalPrice,
+        })
+      : [];
     const [priceComparison, quoteSideOfOffers, buyOrSell]: [
       "lt" | "gt",
       "wants" | "gives",
@@ -219,21 +222,22 @@ export class OfferTaker {
       o.price[priceComparison](externalPrice)
     );
     if (offersWithBetterThanExternalPrice.length <= 0) {
-      const blockNumber = await this.#market.mgv._provider.getBlockNumber();
-      const block = await this.#market.mgv._provider.getBlock(blockNumber);
-
-      logger.debug("No offer better than external price", {
-        contextInfo: "taker",
-        base: this.#market.base.name,
-        quote: this.#market.quote.name,
-        ba,
-        data: {
-          bestFetchedPrice: offers[0]?.price,
-          externalPrice: externalPrice,
-          blockNumber: blockNumber,
-          blockHash: block.hash,
-        },
-      });
+      if (logger.getLevel() <= logger.levels.DEBUG) {
+        const blockNumber = await this.#market.mgv.provider.getBlockNumber();
+        const block = await this.#market.mgv.provider.getBlock(blockNumber);
+        logger.debug("No offer better than external price", {
+          contextInfo: "taker",
+          base: this.#market.base.name,
+          quote: this.#market.quote.name,
+          ba,
+          data: {
+            bestFetchedPrice: offers[0]?.price,
+            externalPrice: externalPrice,
+            blockNumber: blockNumber,
+            blockHash: block.hash,
+          },
+        });
+      }
       return;
     }
 
@@ -254,10 +258,11 @@ export class OfferTaker {
       },
     });
     try {
-      const result = await this.#market[buyOrSell](
+      const buyOrSellPromise = await this.#market[buyOrSell](
         { total: total, price: externalPrice },
         {}
       );
+      const result = await buyOrSellPromise.result;
       logger.info(`Successfully completed ${buyOrSell} order`, {
         contextInfo: "taker",
         base: this.#market.base.name,

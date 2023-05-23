@@ -5,9 +5,10 @@ on:
   push:
     branches: 
       - master
+      - develop
       - 'run-ci/**'
   pull_request_target:
-    branches: [ master, test-pr ]
+    branches: [ master, develop, test-pr ]
     types: [opened, synchronize, reopened, labeled]
 
 concurrency: 
@@ -22,7 +23,6 @@ env:
                    ${{  (   github.event_name != 'pull_request_target'
                          && github.ref )
                       || format('refs/pull/{0}/merge', github.event.number) }}
-  NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN: ${{ github.ref_name == 'master' && github.event_name != 'pull_request_target' }}
 jobs:
   # ==== Job: Security guard ====
   # The security guard job only allows workflows triggered by external PR's to continue
@@ -36,7 +36,7 @@ jobs:
           !(   github.event_name != 'pull_request_target'
             || github.event.pull_request.head.repo.full_name == github.repository
             || contains(github.event.pull_request.labels.*.name, 'external PR') )
-      uses: peter-evans/create-or-update-comment@v2
+      uses: peter-evans/create-or-update-comment@v3
       with:
         issue-number: ${{ github.event.pull_request.number }}
         body: >
@@ -95,6 +95,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -159,15 +162,6 @@ jobs:
         name: commonlib-out.zip
         path: commonlib-out.zip
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: commonlib-js ====
 
   # ==== Job: Build and test mangrove.js ====
@@ -182,6 +176,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -287,108 +284,7 @@ jobs:
         name: mangrove-js-out.zip
         path: mangrove-js-out.zip
 
-    - name: Zip src (some of which is generated) for doc generation
-      uses: montudor/action-zip@v1
-      with: 
-        args: zip -qq -r mangrove-js-src.zip ${{env.working-directory}}/src
-
-    - name: Cache mangrove-js-src as artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: mangrove-js-src.zip
-        path: mangrove-js-src.zip
-
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: mangrove-js ====
-
-  # ==== Job: Build mangrove.js documentation ====
-  mangrove-js-doc:
-    needs: [security-guard, commonlib-js, mangrove-js]
-
-    runs-on: ubuntu-latest
-
-    env:
-      working-directory: packages/mangrove.js
-
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}
-
-    steps:
-
-    # == Git checkout ==
-    - name: Checkout
-      uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
-
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-
-    # == yarn setup ==
-    - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-        
-    - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
-        
-    # == download and unzip artefacts ==
-    - name: Download cached mangrove-js-src artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: mangrove-js-src.zip
-
-    - name: Unzip mangrove-js-src artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq -o mangrove-js-src.zip
-
-    - name: Download cached commonlib.js artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: commonlib-out.zip
-
-    - name: Unzip commonlib.js artifact
-      uses: montudor/action-zip@v1
-      with:
-        args: unzip -qq commonlib-out.zip
-
-    # == create and upload docs ==
-    - run: yarn run doc
-
-    - name: Archive documentation
-      uses: actions/upload-artifact@v3
-      with:
-        name: mangrove-js-documentation
-        path: ${{env.working-directory}}/docs/
-
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-  # ==== End job mangrove-js-doc ====
 
   # ==== Job: Build and test bot-utils ====
   bot-utils:
@@ -402,6 +298,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -479,16 +378,6 @@ jobs:
         reporter: mocha-json                                # Format of test results
         fail-on-error: 'false'                              # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-
      # save artifacts for later stages
     - name: Zip output
       uses: montudor/action-zip@v1
@@ -525,6 +414,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -611,15 +503,6 @@ jobs:
         reporter: mocha-json                                   # Format of test results
         fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-cleaning ====        
 
   # ==== Job: Build and test bot-updategas ====
@@ -634,6 +517,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -721,15 +607,6 @@ jobs:
         reporter: mocha-json                                    # Format of test results
         fail-on-error: 'false'                                  # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-updategas ====
           
   # ==== Job: Build and test bot-maker-noise ====
@@ -744,6 +621,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -831,15 +711,6 @@ jobs:
         reporter: mocha-json                                      # Format of test results
         fail-on-error: 'false'                                    # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-maker-noise ====        
           
   # ==== Job: Build and test bot-taker-greedy ====
@@ -854,6 +725,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -941,18 +815,9 @@ jobs:
         reporter: mocha-json                                       # Format of test results
         fail-on-error: 'false'                                     # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
     
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-taker-greedy ====        
 
- # ==== Job: Build and test bot-failing-offer ====
+  # ==== Job: Build and test bot-failing-offer ====
   bot-failing-offer:
     needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
 
@@ -964,6 +829,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -1051,16 +919,112 @@ jobs:
         reporter: mocha-json                                         # Format of test results
         fail-on-error: 'false'                                       # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
         
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-failing-offer ====        
+
+ # ==== Job: Build and test bot-arbitrage ====
+  bot-arbitrage:
+    needs: [security-guard, commonlib-js, mangrove-js, bot-utils]
+
+    runs-on: ubuntu-latest
+
+    env:
+      working-directory: packages/bot-arbitrage
+      POLYGON_NODE_URL: ${{ secrets.POLYGON_NODE_URL }}
+      API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+
+    defaults:
+      run:
+        working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+
+    # == Git checkout ==
+    - name: Checkout
+      uses: actions/checkout@v3
+      # Workaround for https://github.com/npm/cli/issues/2610
+      with:
+        persist-credentials: false
+        ref: ${{ env.GIT_REF_TO_TEST }}
+        submodules: recursive
+
+    - name: Reconfigure git to use HTTP authentication
+      # Workaround for https://github.com/npm/cli/issues/2610    
+      run: >
+        git config --global url."https://github.com/".insteadOf
+        ssh://git@github.com/
+
+    # == yarn setup ==
+    - name: Yarn setup (caching yarn dependencies)
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+
+    - run: yarn install --immutable
+      working-directory: . # Yarn must run in root to ensure monorepo setup
+
+    - name: Foundry Setup
+      uses: ./.github/actions/foundry-setup
+      
+    # == download and unzip artefacts ==
+    - name: Download cached mangrove-js artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: mangrove-js-out.zip
+
+    - name: Unzip mangrove-js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq mangrove-js-out.zip
+
+    - name: Download cached commonlib.js artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: commonlib-out.zip
+
+    - name: Unzip commonlib.js artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq commonlib-out.zip
+    
+    - name: Download cached bot-utils artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: bot-utils-out.zip
+
+    - name: Unzip bot-utils artifact
+      uses: montudor/action-zip@v1
+      with:
+        args: unzip -qq bot-utils-out.zip
+
+    # == build ==
+
+    - name: Arbitrage Bot - Build
+      run: yarn run build-this-package
+
+    - name: Save status of build
+      run: echo "bot_arbitrage_built=true" >> $GITHUB_ENV    
+
+    # == run and report tests == 
+    - name: Arbitrage Bot - Tests
+      run: yarn run test:coverage
+
+    - name: Arbitrage Bot - Test Report
+      uses: dorny/test-reporter@v1
+      if: ${{ env.bot_arbitrage_built && (success() || failure()) }}
+      with:
+        name: Arbitrage Bot - Tests                              # Name of the check run which will be created
+        path: packages/bot-arbitrage/coverage-tests-report.json  # Path to test results
+        reporter: mocha-json                                         # Format of test results
+        fail-on-error: 'false'                                       # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
+  # ==== End job: bot-arbitrage ==== 
 
   # ==== Job: Build and test bot-template ====
   bot-template:
@@ -1074,6 +1038,9 @@ jobs:
     defaults:
       run:
         working-directory: ${{env.working-directory}}
+
+    permissions:
+      checks: write
 
     strategy:
       matrix:
@@ -1161,15 +1128,6 @@ jobs:
         reporter: mocha-json                                   # Format of test results
         fail-on-error: 'false'                                 # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
-    - name: Report Failure to Slack
-      if: ${{ failure() && fromJSON(env.NOTIFY_SLACK_FOR_THIS_WORKFLOW_RUN) }}
-      uses: ravsamhq/notify-slack-action@v2
-      with:
-        status: ${{ job.status }}
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}> at {job}'
-        footer: '<{run_url}|View Run>'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
   # ==== End job: bot-template ====
 
   # ==== final "check" job, using alls-green to have one single job to check for green workflow ====
@@ -1183,7 +1141,6 @@ jobs:
     - file-guard
     - commonlib-js
     - mangrove-js
-    - mangrove-js-doc
     - bot-utils
     - bot-cleaning
     - bot-maker-noise
@@ -1191,6 +1148,7 @@ jobs:
     - bot-taker-greedy
     - bot-template
     - bot-updategas
+    - bot-arbitrage
 
     runs-on: ubuntu-latest
 

@@ -9,10 +9,12 @@ import { logger } from "./util/logger";
 
 import { BaseProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
-import Mangrove from "@mangrovedao/mangrove.js";
+import Mangrove, { enableLogging } from "@mangrovedao/mangrove.js";
 
 import { AsyncTask, SimpleIntervalJob, ToadScheduler } from "toad-scheduler";
 import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
+
+enableLogging();
 
 const scheduler = new ToadScheduler();
 const setup = new Setup(config);
@@ -36,7 +38,7 @@ async function botFunction(
   const task = new AsyncTask(
     "gas-updater bot task",
     async () => {
-      const blockNumber = await mgv._provider.getBlockNumber().catch((e) => {
+      const blockNumber = await mgv.provider.getBlockNumber().catch((e) => {
         logger.debug("Error on getting blockNumber via ethers", { data: e });
         return -1;
       });

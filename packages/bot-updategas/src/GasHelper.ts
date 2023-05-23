@@ -1,10 +1,12 @@
+import { PriceUtils } from "@mangrovedao/bot-utils/build/util/priceUtils";
 import Mangrove from "@mangrovedao/mangrove.js";
 import { typechain } from "@mangrovedao/mangrove.js/dist/nodejs/types";
-import get from "axios";
 import { MaxUpdateConstraint } from "./GasUpdater";
+import config from "./util/config";
 import logger from "./util/logger";
 
 class GasHelper {
+  priceUtils = new PriceUtils(logger);
   /**
    * Either returns a constant gas price, if set, or queries a dedicated
    * external source for gas prices.
@@ -13,9 +15,7 @@ class GasHelper {
    */
   async getGasPriceEstimateFromOracle(params: {
     constantGasPrice: number | undefined;
-    oracleURL: string;
-    oracleURL_Key: string;
-    oracleURL_subKey?: string;
+    network: string;
     mangrove: Mangrove;
   }): Promise<number | undefined> {
     if (params.constantGasPrice !== undefined) {
@@ -25,26 +25,21 @@ class GasHelper {
       );
       return params.constantGasPrice;
     }
+    const API_KEY = process.env["API_KEY"];
+    if (!API_KEY) {
+      throw new Error("No API key for alchemy");
+    }
 
     try {
-      const { data } = await this.getData(params.oracleURL);
-      logger.debug(`Received this data from oracle.`, { data: data });
-      const keyData = data[params.oracleURL_Key];
-      logger.debug(`Received this data from oracleKey.`, { data: keyData });
-      if (!params.oracleURL_subKey) {
-        return keyData;
-      }
-      if (params.oracleURL_subKey) return keyData[params.oracleURL_subKey];
+      return (
+        await this.priceUtils.getGasPrice(API_KEY, params.network)
+      ).toNumber();
     } catch (error) {
       logger.error("Getting gas price estimate from oracle failed", {
         mangrove: params.mangrove,
         data: error,
       });
     }
-  }
-
-  getData(oracleURL: string): Promise<{ data: any }> {
-    return get(oracleURL);
   }
 
   /**

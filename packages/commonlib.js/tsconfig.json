@@ -20,7 +20,8 @@
     "typeRoots": ["./types", "./node_modules/@types"],
     "composite": true,
     "rootDir": "src/",
-    "isolatedModules": true
+    "isolatedModules": true,
+    "types": ["node", "json-truncate"]
   },
   "include": ["src/**/*.ts"]
 }

@@ -1,0 +1,17 @@
+{
+  "logLevel": "info",
+  "providerType": "http",
+  "markets": [
+    ["WETH", "DAI", 3000],
+    ["WETH", "USDC", 3000],
+    ["DAI", "USDC", 100]
+  ],
+  "runEveryXMinutes": 10,
+  "holdingTokens": ["DAI"],
+  "tokenForExchange": "DAI",
+  "exchangeFee": [
+    { "token": "USDC", "fee": 100 },
+    { "token": "WETH", "fee": 3000 }
+  ],
+  "exchange": "Uniswap"
+}

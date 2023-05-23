@@ -36,5 +36,7 @@
   "WETH": 18,
   "aWETH": 18,
   "aDAI": 18,
-  "aUSDC": 6
+  "aUSDC": 6,
+  "PxUSDC": 6,
+  "PxMATIC": 18
 }

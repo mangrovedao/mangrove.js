@@ -1,5 +1,5 @@
 /**
- * A simple failing offer bot for Mangrove which post offers on the orderbook
+ * A simple failing offer bot for Mangrove which post offers on the order book
  * that will always fail.
  * @module
  */
@@ -20,9 +20,12 @@ import { ExitCode, Setup } from "@mangrovedao/bot-utils/build/setup";
 import { FailingOffer } from "./FailingOffer";
 import config from "./util/config";
 import logger from "./util/logger";
+import { enableLogging } from "@mangrovedao/mangrove.js";
 
 export type TokenPair = { token1: string; token2: string };
 const failingOfferMap = new Map<TokenPair, FailingOffer>();
+
+enableLogging();
 
 const setup = new Setup(config);
 const provisionUtil = new provisionMangroveUtils.ProvisionMangroveUtils(config);

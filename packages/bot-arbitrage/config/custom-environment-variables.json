@@ -1,0 +1,28 @@
+{
+  "logLevel": "LOG_LEVEL",
+  "providerType": "PROVIDER_TYPE",
+  "markets": {
+    "__name": "MARKETS",
+    "__format": "json"
+  },
+  "runEveryXMinutes": {
+    "__name": "RUN_EVERY_X_MINUTES",
+    "__format": "number"
+  },
+  "holdingToken": {
+    "__name": "HOLDING_TOKENS",
+    "__format": "json"
+  },
+  "tokenForExchange": {
+    "__name": "TOKEN_FOR_EXCHANGE",
+    "__format": "string"
+  },
+  "exchangeFee": {
+    "__name": "EXCHANGE_FEE",
+    "__format": "json"
+  },
+  "exchange": {
+    "__name": "EXCHANGE",
+    "__format": "string"
+  }
+}

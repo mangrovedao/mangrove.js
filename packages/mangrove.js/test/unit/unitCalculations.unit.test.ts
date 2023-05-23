@@ -6,46 +6,34 @@ import { describe, it } from "mocha";
 import UnitCalculations from "../../src/util/unitCalculations";
 
 describe("UnitCalculations unit tests suite", () => {
-  describe("fromUntis", () => {
+  describe("fromUnits", () => {
     it("returns Big number, amount is number and nameOrDecimal is number", async function () {
-      //Arrange
-      const unitCalculations = new UnitCalculations();
-
       //Act
-      const result = unitCalculations.fromUnits(123, 11);
+      const result = UnitCalculations.fromUnits(123, 11);
 
       //Assert
       equal(result.eq(Big(123).div(Big(10).pow(11))), true);
     });
 
     it("returns Big number, amount is string and nameOrDecimal is number", async function () {
-      //Arrange
-      const unitCalculations = new UnitCalculations();
-
       //Act
-      const result = unitCalculations.fromUnits("123", 11);
+      const result = UnitCalculations.fromUnits("123", 11);
 
       //Assert
       equal(result.eq(Big(123).div(Big(10).pow(11))), true);
     });
 
     it("returns Big number, amount is BigNumber and nameOrDecimal is number", async function () {
-      //Arrange
-      const unitCalculations = new UnitCalculations();
-
       //Act
-      const result = unitCalculations.fromUnits(BigNumber.from(123), 11);
+      const result = UnitCalculations.fromUnits(BigNumber.from(123), 11);
 
       //Assert
       equal(result.eq(Big(123).div(Big(10).pow(11))), true);
     });
 
     it("returns Big number, amount is number and nameOrDecimal is string", async function () {
-      //Arrange
-      const unitCalculations = new UnitCalculations();
-
       //Act
-      const result = unitCalculations.fromUnits(123, "DAI");
+      const result = UnitCalculations.fromUnits(123, "DAI");
 
       //Assert
       equal(result.eq(Big(123).div(Big(10).pow(18))), true);

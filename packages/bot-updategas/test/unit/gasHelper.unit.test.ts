@@ -24,84 +24,12 @@ describe("GasHelper unit test suite", () => {
       //Act
       const result = await gasHelper.getGasPriceEstimateFromOracle({
         constantGasPrice: constantGasPrice,
-        oracleURL: "",
-        oracleURL_Key: "",
+        network: "polygon-mumbai",
         mangrove: instance(mangrove),
       });
 
       //Assert
       assert.equal(result, constantGasPrice);
-    });
-
-    it("returns 20, when constantGasPrixe == undefined and key is 20 ", async function () {
-      //Arrange
-      const gasHelper = new GasHelper();
-      const spyGasHelper = spy(gasHelper);
-      const mangrove = mock(Mangrove);
-      const oracleURL = "url";
-      const oracleKey = "key";
-
-      when(spyGasHelper.getData(oracleURL)).thenResolve({ data: { key: 20 } });
-
-      //Act
-      const result = await gasHelper.getGasPriceEstimateFromOracle({
-        constantGasPrice: undefined,
-        oracleURL: oracleURL,
-        oracleURL_Key: oracleKey,
-        mangrove: instance(mangrove),
-      });
-
-      //Assert
-      assert.equal(result, 20);
-    });
-
-    it("returns 20, when constantGasPrixe == undefined and key:{ subKey: 20} ", async function () {
-      //Arrange
-      const gasHelper = new GasHelper();
-      const spyGasHelper = spy(gasHelper);
-      const mangrove = mock(Mangrove);
-      const oracleURL = "url";
-      const oracleKey = "key";
-      const oracleSubKey = "subKey";
-
-      when(spyGasHelper.getData(oracleURL)).thenResolve({
-        data: { key: { subKey: 20 } },
-      });
-
-      //Act
-      const result = await gasHelper.getGasPriceEstimateFromOracle({
-        constantGasPrice: undefined,
-        oracleURL: oracleURL,
-        oracleURL_Key: oracleKey,
-        oracleURL_subKey: oracleSubKey,
-        mangrove: instance(mangrove),
-      });
-
-      //Assert
-      assert.equal(result, 20);
-    });
-
-    it("returns undefined, when error", async function () {
-      //Arrange
-      const gasHelper = new GasHelper();
-      const spyGasHelper = spy(gasHelper);
-      const mangrove = mock(Mangrove);
-      const oracleURL = "url";
-      const oracleKey = "key";
-      const oracleSubKey = "subKey";
-
-      when(spyGasHelper.getData(oracleURL)).thenReject(new Error("error"));
-
-      //Act
-      const result = await gasHelper.getGasPriceEstimateFromOracle({
-        constantGasPrice: undefined,
-        oracleURL: oracleURL,
-        oracleURL_Key: oracleKey,
-        oracleURL_subKey: oracleSubKey,
-        mangrove: instance(mangrove),
-      });
-      //Assert
-      assert.equal(result, undefined);
     });
   });
 

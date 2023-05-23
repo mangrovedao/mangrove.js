@@ -9,9 +9,7 @@ import { logger } from "./util/logger";
  */
 type OracleEndpointConfiguration = {
   readonly _tag: "Endpoint";
-  readonly oracleEndpointURL: string;
-  readonly oracleEndpointKey: string;
-  readonly oracleEndpointSubKey: string;
+  readonly network: string;
 };
 
 /**
@@ -56,9 +54,7 @@ export class GasUpdater {
   #mangrove: Mangrove;
   #acceptableGasGapToOracle: number;
   #constantOracleGasPrice: number | undefined;
-  #oracleURL = "";
-  #oracleURL_Key = "";
-  #oracleURL_subKey = "";
+  #network = "";
   oracleContract: typechain.MgvOracle;
   gasHelper = new GasHelper();
   #maxUpdateConstraint?: MaxUpdateConstraint;
@@ -85,9 +81,7 @@ export class GasUpdater {
         this.#constantOracleGasPrice = oracleSourceConfiguration.OracleGasPrice;
         break;
       case "Endpoint":
-        this.#oracleURL = oracleSourceConfiguration.oracleEndpointURL;
-        this.#oracleURL_Key = oracleSourceConfiguration.oracleEndpointKey;
-        this.#oracleURL_subKey = oracleSourceConfiguration.oracleEndpointSubKey;
+        this.#network = oracleSourceConfiguration.network;
         break;
       default:
         throw new Error(
@@ -97,11 +91,11 @@ export class GasUpdater {
     // Using the mangrove.js address functionallity, since there is no reason to recreate the significant infastructure for only one Contract.
     const oracleAddress = Mangrove.getAddress(
       "MgvOracle",
-      mangrove._network.name
+      mangrove.network.name
     );
     this.oracleContract = typechain.MgvOracle__factory.connect(
       oracleAddress,
-      mangrove._signer
+      mangrove.signer
     );
   }
 
@@ -129,9 +123,7 @@ export class GasUpdater {
     const oracleGasPriceEstimate =
       await this.gasHelper.getGasPriceEstimateFromOracle({
         constantGasPrice: this.#constantOracleGasPrice,
-        oracleURL: this.#oracleURL,
-        oracleURL_Key: this.#oracleURL_Key,
-        oracleURL_subKey: this.#oracleURL_subKey,
+        network: this.#network,
         mangrove: this.#mangrove,
       });
 
@@ -177,12 +169,10 @@ export class GasUpdater {
         logger.debug(`Determined gas price update not needed.`);
       }
     } else {
-      const url = this.#oracleURL;
-      const key = this.#oracleURL_Key;
-      const subKey = this.#oracleURL_subKey;
+      const network = this.#network;
       logger.error(
         "Error getting gas price from oracle endpoint, skipping update. Oracle endpoint config:",
-        { data: { url, key, subKey } }
+        { data: { network: network } }
       );
     }
   }

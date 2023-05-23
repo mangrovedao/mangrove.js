@@ -1,0 +1,15 @@
+{
+  "logLevel": "error",
+  "providerType": "http",
+  "markets": [["WETH", "DAI", 3000]],
+  "MangroveJs": {
+    "logLevel": "info"
+  },
+  "holdingTokens": ["DAI"],
+  "tokenForExchange": "DAI",
+  "exchangeFee": [
+    { "token": "USDC", "fee": 100 },
+    { "token": "WETH", "fee": 3000 }
+  ],
+  "exchange": "Uniswap"
+}
