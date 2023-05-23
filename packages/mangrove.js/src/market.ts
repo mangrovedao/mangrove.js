@@ -237,10 +237,7 @@ class Market {
   mgv: Mangrove;
   base: MgvToken;
   quote: MgvToken;
-  #subscriptions: {
-    cb: Market.StorableMarketCallback;
-    params: Market.SubscriptionParam;
-  }[];
+  #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook;
   #bidsSemibook: Semibook;
   #initClosure?: () => Promise<void>;
@@ -280,7 +277,7 @@ class Market {
         "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)"
       );
     }
-    this.#subscriptions = [];
+    this.#subscriptions = new Map();
 
     this.mgv = params.mgv;
 
@@ -335,23 +332,12 @@ class Market {
     this.#bidsSemibook = await bidsPromise;
   }
 
-  private deleteSubscriptionAtIndex(index: number) {
-    if (index >= this.#subscriptions.length) {
-      return;
-    }
-    this.#subscriptions[index] =
-      this.#subscriptions[this.#subscriptions.length - 1];
-    this.#subscriptions.pop();
-  }
-
   async #semibookEventCallback({
     cbArg,
     event,
     ethersLog: ethersLog,
   }: Semibook.Event): Promise<void> {
-    for (const [index, sub] of this.#subscriptions.entries()) {
-      const params = sub.params;
-      const cb = sub.cb;
+    for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
         let isFilterSatisfied: boolean;
         if (!("filter" in params)) {
@@ -364,7 +350,7 @@ class Market {
               : await filterResult;
         }
         if (isFilterSatisfied) {
-          this.deleteSubscriptionAtIndex(index);
+          this.#subscriptions.delete(cb);
           Promise.resolve(cb(cbArg, event, ethersLog)).then(
             params.ok,
             params.ko
@@ -729,12 +715,7 @@ class Market {
    * @note Only one subscription may be active at a time.
    */
   subscribe(cb: Market.MarketCallback<void>): void {
-    this.#subscriptions.push({
-      cb,
-      params: {
-        type: "multiple",
-      },
-    });
+    this.#subscriptions.set(cb, { type: "multiple" });
   }
 
   /**
@@ -749,21 +730,13 @@ class Market {
       if (typeof filter !== "undefined") {
         params.filter = filter;
       }
-      this.#subscriptions.push({
-        cb,
-        params,
-      });
+      this.#subscriptions.set(cb as Market.StorableMarketCallback, params);
     });
   }
 
   /* Stop calling a user-provided function on book-related events. */
   unsubscribe(cb: Market.StorableMarketCallback): void {
-    const index = this.#subscriptions.findIndex((el) => el.cb === cb);
-    if (index === -1) {
-      return;
-    }
-
-    this.deleteSubscriptionAtIndex(index);
+    this.#subscriptions.delete(cb);
   }
 
   /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
