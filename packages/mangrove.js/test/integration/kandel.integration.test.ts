@@ -354,6 +354,7 @@ describe("Kandel integration tests suite", function () {
     async function populateKandel(params: {
       approve: boolean;
       deposit: boolean;
+      syncBooks?: boolean;
     }) {
       const ratio = new Big(1.08);
       const firstBase = Big(1);
@@ -377,8 +378,7 @@ describe("Kandel integration tests suite", function () {
         await approvalTxs[1]?.wait();
       }
 
-      // Act
-      await waitForTransactions(
+      const receipts = await waitForTransactions(
         kandel.populate({
           distribution,
           parameters: {
@@ -388,6 +388,13 @@ describe("Kandel integration tests suite", function () {
           depositQuoteAmount: params.deposit ? requiredQuote : Big(0),
         })
       );
+
+      if (params.syncBooks) {
+        await mgvTestUtil.waitForBlock(
+          kandel.market.mgv,
+          receipts[receipts.length - 1].blockNumber
+        );
+      }
 
       return {
         ratio,
@@ -1191,6 +1198,110 @@ describe("Kandel integration tests suite", function () {
           (await expectedProvision).toNumber()
         );
       });
+
+      it("getLockedProvisionFromOffers gets the locked provision", async () => {
+        // Arrange
+        const { distribution } = await populateKandel({
+          approve: true,
+          deposit: true,
+          syncBooks: true,
+        });
+        const requiredProvision = await kandel.getRequiredProvision({
+          distribution,
+        });
+
+        const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
+          gasreq: offer.gasreq,
+          gasprice: offer.gasprice,
+          gasbase: offer.offer_gasbase,
+        }));
+
+        // Act
+        const lockedProvisionFromOffers =
+          kandel.getLockedProvisionFromOffers(indexerOffers);
+        const lockedProvision = await kandel.getLockedProvision();
+
+        // Assert
+        assert.equal(
+          requiredProvision.toNumber() / 2,
+          lockedProvisionFromOffers.toNumber(),
+          "half the provision is locked since a bid and an ask exists for each price point, but not both."
+        );
+        assert.equal(
+          requiredProvision.toNumber() / 2,
+          lockedProvision.toNumber()
+        );
+      });
+
+      it("getMissingProvisionFromOffers gets the additional needed provision for a larger distribution", async () => {
+        // Arrange
+        const { distribution } = await populateKandel({
+          approve: true,
+          deposit: true,
+          syncBooks: true,
+        });
+        const requiredProvision = await kandel.getRequiredProvision({
+          distribution,
+        });
+
+        const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
+          gasreq: offer.gasreq,
+          gasprice: offer.gasprice,
+          gasbase: offer.offer_gasbase,
+        }));
+
+        // Act
+        const params = { offerCount: distribution.getOfferCount() * 3 };
+        const missingProvisionFromOffers =
+          await kandel.getMissingProvisionFromOffers(params, indexerOffers);
+        const missingProvision = await kandel.getMissingProvision(params);
+
+        // Assert
+        assert.equal(
+          requiredProvision.toNumber() * 2,
+          missingProvisionFromOffers.toNumber()
+        );
+        assert.equal(
+          requiredProvision.toNumber() * 2,
+          missingProvision.toNumber()
+        );
+      });
+
+      it("getMissingProvisionFromOffers gets the additional needed provision for a higher gasprice", async () => {
+        // Arrange
+        const { distribution } = await populateKandel({
+          approve: true,
+          deposit: true,
+          syncBooks: true,
+        });
+        const requiredProvision = await kandel.getRequiredProvision({
+          distribution,
+        });
+
+        const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
+          gasreq: offer.gasreq,
+          gasprice: offer.gasprice,
+          gasbase: offer.offer_gasbase,
+        }));
+        const oldGasprice = (await kandel.getParameters()).gasprice;
+
+        // Act
+        const params = { gasprice: oldGasprice * 4 };
+        const missingProvisionFromOffers =
+          await kandel.getMissingProvisionFromOffers(params, indexerOffers);
+        const missingProvision = await kandel.getMissingProvision(params);
+
+        // Assert
+        assert.equal(
+          requiredProvision.mul(3).toNumber(),
+          missingProvisionFromOffers.toNumber()
+        );
+        assert.equal(
+          requiredProvision.mul(3).toNumber(),
+          missingProvision.toNumber()
+        );
+      });
+
       it("can set gasprice", async () => {
         // Act
         await waitForTransaction(kandel.setGasprice(99));
