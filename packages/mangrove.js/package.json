@@ -64,7 +64,7 @@
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/commonlib.js": "workspace:*",
     "@mangrovedao/mangrove-core": "1.5.1-1",
-    "@mangrovedao/reliable-event-subscriber": "1.1.17",
+    "@mangrovedao/reliable-event-subscriber": "1.1.19",
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
     "ethers": "^5.7.2",
