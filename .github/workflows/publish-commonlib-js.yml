@@ -78,7 +78,7 @@ jobs:
         git config --global user.email ${INPUT_COMMIT_USER_EMAIL}
 
       env:
-        INPUT_COMMIT_USER_NAME:  github-actions-bot
+        INPUT_COMMIT_USER_NAME: github-actions-bot
         INPUT_COMMIT_USER_EMAIL: automation@mangrove.exchange
 
     - name: git version
