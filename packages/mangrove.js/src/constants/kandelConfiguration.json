@@ -18,15 +18,14 @@
             "minimumQuotePerOfferFactor": 5
           },
           "USDC": {
-            "minimumBasePerOfferFactor": 10,
-            "minimumQuotePerOfferFactor": 10
+            "minimumBasePerOfferFactor": 6,
+            "minimumQuotePerOfferFactor": 6
           }
         },
         "DAI": {
           "USDC": {
             "minimumBasePerOfferFactor": 10,
-            "minimumQuotePerOfferFactor": 10,
-            "ratio": 1.001
+            "minimumQuotePerOfferFactor": 10
           }
         }
       }
@@ -36,14 +35,16 @@
       "maxOffersInRetractChunk": 80,
       "minimumBasePerOfferFactor": 10,
       "minimumQuotePerOfferFactor": 10,
+      "aaveEnabled": true,
       "markets": {
         "WETH": {
-          "USDC": {}
+          "USDC": {
+            "minimumBasePerOfferFactor": 6,
+            "minimumQuotePerOfferFactor": 6
+          }
         },
         "USDC": {
-          "USDT": {
-            "ratio": 1.001
-          }
+          "USDT": {}
         },
         "WMATIC": {
           "WETH": {}
