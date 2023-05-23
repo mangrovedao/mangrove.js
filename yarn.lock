@@ -1533,7 +1533,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/commonlib.js@1.0.0, @mangrovedao/commonlib.js@workspace:*, @mangrovedao/commonlib.js@workspace:packages/commonlib.js":
+"@mangrovedao/commonlib.js@workspace:*, @mangrovedao/commonlib.js@workspace:packages/commonlib.js":
   version: 0.0.0-use.local
   resolution: "@mangrovedao/commonlib.js@workspace:packages/commonlib.js"
   dependencies:
@@ -1586,7 +1586,7 @@ __metadata:
     "@ethersproject/providers": ^5.7.2
     "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-core": 1.5.1-1
-    "@mangrovedao/reliable-event-subscriber": 1.1.9
+    "@mangrovedao/reliable-event-subscriber": 1.1.19
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5
@@ -1630,17 +1630,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/reliable-event-subscriber@npm:1.1.9":
-  version: 1.1.9
-  resolution: "@mangrovedao/reliable-event-subscriber@npm:1.1.9"
+"@mangrovedao/reliable-event-subscriber@npm:1.1.19":
+  version: 1.1.19
+  resolution: "@mangrovedao/reliable-event-subscriber@npm:1.1.19"
   dependencies:
-    "@mangrovedao/commonlib.js": 1.0.0
+    "@ethersproject/providers": ^5.7.2
     async-mutex: ^0.4.0
     dotenv: ^16.0.3
     ethers: ^5.7.2
     isomorphic-ws: ^5.0.0
     ws: ^8.13.0
-  checksum: 9b151711283f67a892a1ed0bf6ce0f097b5a72d58f732d5badcd3e67af4a6bf5e2b4d622d0d0f4fa733a1e5042ad43a0af9b0826e1e8b4b39506752ddc6135d1
+  checksum: 936f39d69bafc5d3e3e325f5f78cdaa4238171072933c7dc80c0c9d07d5cacd3f9fa2cc17493f1661211b2e7502a7b684c1d1bf52e3a7bfdef5b2efc2458c4cc
   languageName: node
   linkType: hard
 
