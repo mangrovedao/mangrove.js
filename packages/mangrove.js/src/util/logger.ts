@@ -25,7 +25,7 @@ const defaultLogger = {
   },
 };
 
-const logLevel = "debug"; // process.env["LOG_LEVEL"] ? process.env["LOG_LEVEL"] : "debug";
+const logLevel = process.env["LOG_LEVEL"] ? process.env["LOG_LEVEL"] : "debug";
 export const logger = createConsoleLogger(() => loggingEnabled, logLevel);
 
 export function enableLogging(): void {
