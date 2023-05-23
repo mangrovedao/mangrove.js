@@ -1,8 +1,12 @@
 import { ethers } from "@mangrovedao/mangrove.js";
 import * as eth from "@mangrovedao/mangrove.js/dist/nodejs/eth";
 import DevNode from "@mangrovedao/mangrove.js/dist/nodejs/util/devNode";
-import { node } from "@mangrovedao/mangrove.js/dist/nodejs/util/node";
-import { mochaHooks as mgvMochahooks } from "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks";
+import { node, nodeType } from "@mangrovedao/mangrove.js/dist/nodejs/util/node";
+import {
+  hookInfo,
+  mochaHooks as mgvMochahooks,
+  serverParamsType,
+} from "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks";
 import * as dotenv from "dotenv";
 import * as deploy from "./../deployMgvAndMgvArbitrage";
 import path from "path";
@@ -14,8 +18,11 @@ const CORE_DIR = path.parse(require.resolve("../../../mangrove-arbitrage")).dir;
 
 export const mochaHooks = {
   server: { url: "", snapshot: async () => {} },
-  async beforeAllImpl(args: any, hook: any) {
-    hook.node = node(args);
+  async beforeAllImpl(
+    args: serverParamsType,
+    hook: hookInfo & { node: nodeType }
+  ) {
+    hook.node = await node(args);
     hook.server = await hook.node.connect();
     hook.accounts = {
       deployer: hook.server.accounts[0],
@@ -51,7 +58,7 @@ export const mochaHooks = {
   async beforeAll() {
     dotenv.config();
     let forkUrl = process.env.POLYGON_NODE_URL;
-    const serverParams = {
+    const serverParams: serverParamsType = {
       host: "127.0.0.1",
       port: 8546, // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
       pipe: false,

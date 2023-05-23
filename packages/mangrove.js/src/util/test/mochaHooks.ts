@@ -16,17 +16,54 @@ const serverParams = {
   setMulticallCodeIfAbsent: false, // mangrove.js is supposed to work against servers that only have ToyENS deployed but not Multicall, so we don't deploy Multicall in tests. However mangrove.js needs ToyENS so we let the node ensure it's there.
 };
 
+type proxie = {
+  cancelAll: boolean;
+  proxyServer: ProxyServer;
+};
+
+export type serverParamsType = {
+  host?: string;
+  url?: string;
+  port?: number; // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
+  pipe?: boolean;
+  script?: string;
+  spawn?: boolean;
+  deploy?: boolean;
+  forkUrl?: string;
+  forkBlockNumber?: number;
+  setMulticallCodeIfAbsent?: boolean;
+  provider?: any;
+};
+
+type account = {
+  key: string;
+  address: string;
+};
+
+export type hookInfo = {
+  proxies: proxie[];
+  accounts: {
+    deployer: account;
+    maker: account;
+    cleaner: account;
+    tester: account;
+    arbitrager: account;
+  };
+  server: ProxyServer;
+  closeCurrentProxy: () => Promise<void>;
+};
+
 let currentProxyPort = 8546;
 
 export const mochaHooks = {
-  async beforeAllImpl(args: any, hook: any) {
+  async beforeAllImpl(args: serverParamsType, hook: hookInfo) {
     if (process.env.MOCHA_WORKER_ID) {
       // running in parallel mode - change port
       serverParams.port =
         serverParams.port + 1000 * Number(process.env.MOCHA_WORKER_ID);
       currentProxyPort = serverParams.port + 1;
     }
-    hook.server = await node(args).connect();
+    hook.server = await (await node(args)).connect();
     const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
 
     // Workaround for https://github.com/foundry-rs/foundry/issues/2884
@@ -94,24 +131,25 @@ export const mochaHooks = {
     await hook.server.snapshot();
   },
 
-  async beforeEachImpl(hook: any) {
-    // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
+  async beforeEachImpl(hook: hookInfo) {
     if (!hook.proxies) {
-      hook.proxies = {
-        closeCurrentProxy: async () => {
-          // Tear down existing proxy - waiting for all outstanding connections to close.
-          // Note: anvil could still be processing something when this completes in case its async,
-          // Consider probing anvil for completion.
-          const currentProxy = hook.proxies[currentProxyPort];
-          if (currentProxy) {
-            currentProxy.cancelAll = true;
-            const closedDeferred = new Deferred();
-            currentProxy.proxyServer.close(() => {
-              closedDeferred.resolve();
-            });
-            await closedDeferred.promise;
-          }
-        },
+      hook.proxies = [];
+    }
+    // Create a proxy for each test, and tear down that proxy at the beginning of the next test, before reverting to a prior snapshot
+    if (!hook.closeCurrentProxy) {
+      hook.closeCurrentProxy = async () => {
+        // Tear down existing proxy - waiting for all outstanding connections to close.
+        // Note: anvil could still be processing something when this completes in case its async,
+        // Consider probing anvil for completion.
+        const currentProxy = hook.proxies[currentProxyPort];
+        if (currentProxy) {
+          currentProxy.cancelAll = true;
+          const closedDeferred = new Deferred();
+          currentProxy.proxyServer.close(() => {
+            closedDeferred.resolve();
+          });
+          await closedDeferred.promise;
+        }
       };
     }
 
@@ -134,7 +172,7 @@ export const mochaHooks = {
       }
     }
 
-    await hook.proxies.closeCurrentProxy();
+    await hook.closeCurrentProxy();
 
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)
     const newProxy = {
@@ -181,8 +219,8 @@ export const mochaHooks = {
     await hook.server.snapshot();
   },
 
-  async afterAllImpl(hook: any) {
-    await hook.proxies.closeCurrentProxy();
+  async afterAllImpl(hook: hookInfo) {
+    await hook.closeCurrentProxy();
 
     if (hook.server.process) {
       hook.server.process.kill();
