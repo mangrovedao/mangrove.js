@@ -31,7 +31,7 @@ const shimOnResolvePlugin = {
 build({
   entryPoints: ["./src/index.ts"],
   bundle: true,
-  minify: true,
+  minify: false,
   outfile: BrowserBuildPath,
   platform: "browser",
   format: "iife",
