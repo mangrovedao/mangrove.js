@@ -29,6 +29,8 @@ const logLevel = "debug"; // process.env["LOG_LEVEL"] ? process.env["LOG_LEVEL"]
 export const logger = createConsoleLogger(() => loggingEnabled, logLevel);
 
 export function enableLogging(): void {
+  console.error("enableLogging");
+  console.log("enableLogging");
   reliableEventSubscriberEnableLogging(defaultLogger);
   loggingEnabled = true;
 }
