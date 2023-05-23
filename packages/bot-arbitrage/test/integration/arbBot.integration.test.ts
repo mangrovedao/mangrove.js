@@ -9,7 +9,7 @@ import assert from "assert";
 import { logger } from "../../src/util/logger";
 import { ArbBot } from "../../src/ArbBot";
 import { getPoolContract } from "../../src/uniswap/libs/uniswapUtils";
-import { activateTokens } from "../../src/util/ArbBotUtils";
+import { activateTokensWithMgv } from "../../src/util/ArbBotUtils";
 
 let mgv: Mangrove;
 let mgvDeployer: Mangrove;
@@ -107,7 +107,7 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvArbitrager, poolContract);
-      let txActivate = await activateTokens(
+      let txActivate = await activateTokensWithMgv(
         [market.base.address, market.quote.address],
         mgvDeployer
       );
@@ -158,7 +158,7 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvArbitrager, poolContract);
-      let txActivate = await activateTokens(
+      let txActivate = await activateTokensWithMgv(
         [market.base.address, market.quote.address],
         mgvDeployer
       );
@@ -207,7 +207,7 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvArbitrager, poolContract);
-      let txActivate = await activateTokens(
+      let txActivate = await activateTokensWithMgv(
         [market.base.address, market.quote.address],
         mgvDeployer
       );
@@ -282,7 +282,7 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvArbitrager, poolContract);
-      let txActivate = await activateTokens(
+      let txActivate = await activateTokensWithMgv(
         [market.base.address, market.quote.address, mgv.token("DAI").address],
         mgvDeployer
       );
@@ -336,7 +336,7 @@ describe("ArbBot integration tests", () => {
         provider: mgv.provider,
       });
       let arbBot = new ArbBot(mgvArbitrager, poolContract);
-      let txActivate = await activateTokens(
+      let txActivate = await activateTokensWithMgv(
         [market.base.address, market.quote.address, mgv.token("DAI").address],
         mgvDeployer
       );

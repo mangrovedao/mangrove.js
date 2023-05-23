@@ -4,17 +4,17 @@ A simple arbitrage bot for Mangrove, which monitors the configured markets and e
 
 ## Strategy
 
-The following strategyt is followed in order to execute an arbitrage opportunity:
+The following strategy is followed in order to execute an arbitrage opportunity:
 
 - Checks the current best offer (bid and ask) on Mangrove
 - Uses that price and volume to check price on Uniswap v3
 - If the there is an arbitrage opportunity, it tries to execute the trades.
-- If the trades has not been profitable, the transaction will revert.
-- The amount of gasSpent for the transaction is calculated and if the transaction is profitable, the transaction is executed.
+- If the trades were not profitable, the transaction will revert.
+- The amount of gasSpent for the transaction is calculated and taken into account if the transaction is profitable. It not, the transaction is executed.
 
 ### Options
 
-The bot can be configured to first trade the holding token into the tokens needed for the arbitrage opportunity on Uniswap v3 and then trade the tokens on Mangrove. This is done by setting the `exchange` option to `Uniswap`. If the `exchange` option is set to `Mangrove`, the bot will first trade the holding token into the tokens needed for the arbitrage opportunity on Mangrove and then trade the tokens on Uniswap v3.
+The bot can be configured to first trade the holding token into the token needed for the arbitrage opportunity on Uniswap v3 and then trade the token on Mangrove. This is done by setting the `exchange` option to `Uniswap`. If the `exchange` option is set to `Mangrove`, the bot will first trade the holding token into the token needed for the arbitrage opportunity on Mangrove and then trade the token on Uniswap v3.
 
 ## Installation
 
@@ -63,10 +63,11 @@ yarn start
 There are several things that can be configured in the bot.
 
 - The Log level
-- Markets to monitor. A market contains of [BASE, QOUTE, UniFee]. Where BASE and QOUTE are the tokens that are traded against each other and UniFee is the fee tier on Uniswap v3.
-- HoldingToken. The token that the bot should hold. It can then always trade this token into the necessary tokens for the arbitrage opportunity.
+- Markets to monitor. A market contains of [BASE, QUOTE, UniFee]. Where BASE and QUOTE are the tokens that are traded against each other and UniFee is the fee tier on Uniswap v3.
+- HoldingTokens. The tokens that the bot should hold. It can then always trade from one of these tokens into the necessary token for the arbitrage opportunity.
 - ExchangeFee. The fee that the bot should use when pre or post trading on Uniswap.
 - Exchange. Where to do the pre or post trading. Can be either Uniswap or Mangrove.
+- tokenForExchange. The token that the contract should use for pre or post trading.
 - runEveryXMinutes. How often the bot should run. Exmaple: 0.5 means every 30 seconds.
 
 ### Logging
@@ -90,7 +91,7 @@ The tests make use of the `deal` functionality, that uses a foundry cheat code, 
 
 ## Run the bot on local chain
 
-In order to test that the bot can actually run and take correct arbitrage opportunities, you can start up the an anvil chain that forks polygon. The script `demoScript.ts` can then be run. It will deploy a new Mangrove instance with correct configuration, then deploy the arbitrage contract and activate it. The script will then use the `deal` functionality to deal the maker and arbitrage admin some tokens, so that they can actually trade. It will then posts a bid and ask at, a good price, meaning the arb bot will take the opportunity. The script then show the current state of the market.
+In order to test that the bot can actually run and take correct arbitrage opportunities, you can start up the an anvil chain that forks polygon. The script `demoScript.ts` can then be run with `yarn demo`. It will deploy a new Mangrove instance with correct configuration, then deploy the arbitrage contract and activate it. The script will then use the `deal` functionality to deal the maker and arbitrage admin some tokens, so that they can actually trade. It will then posts a bid and ask at, a good price, meaning the arb bot will take the opportunity. The script then shows the current state of the market.
 
 You can then start the bot, where it is configured to run against the local chain, with the correct tokens and fees. The bot will then take the offers.
 

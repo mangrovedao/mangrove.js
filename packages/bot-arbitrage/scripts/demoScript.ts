@@ -1,31 +1,47 @@
+import { Mangrove, ethers } from "@mangrovedao/mangrove.js";
+import * as eth from "@mangrovedao/mangrove.js/dist/nodejs/eth";
+
+import { deal } from "@mangrovedao/mangrove.js/dist/nodejs/util/deal.js";
+import { deployMgvArbitrage } from "../src/util/deployMgvAndMgvArbitrage";
+import { activateTokensWithSigner } from "../src/util/ArbBotUtils";
+
+// run this from the bot-arbitrage folder
 const main = async () => {
   var parsed = require("dotenv").config();
-
-  const { Mangrove, ethers } = require("@mangrovedao/mangrove.js");
-
-  const { deal } = require("@mangrovedao/mangrove.js/dist/nodejs/util/deal.js");
-  let deploy = require("./build/util/deployMgvAndMgvArbitrage");
-  let { activateTokens } = require("./build/util/ArbBotUtils");
 
   const provider = new ethers.providers.WebSocketProvider(
     process.env.LOCAL_NODE_URL
   );
 
-  const wallet = new ethers.Wallet(process.env.MAKER_KEY, provider);
+  const LOCAL_MNEMONIC =
+    "test test test test test test test test test test test junk";
+  const mnemonic = new eth.Mnemonic(LOCAL_MNEMONIC);
 
-  await deploy.deployMgvArbitrage({
+  const wallet = new ethers.Wallet(mnemonic.key(1), provider);
+  let core_dir = process.cwd() + "/mangrove-arbitrage";
+
+  await deployMgvArbitrage({
     provider,
     url: provider.connection.url,
-    from: process.env.DEPLOYER_PUBLIC_KEY,
-    privateKey: process.env.DEPLOYER_PRIVATE_KEY,
-    coreDir: "",
+    arbitrager: mnemonic.address(4),
+    mnemonic: mnemonic,
+    coreDir: core_dir,
     setToyENSCodeIfAbsent: true,
     setMulticallCodeIfAbsent: true,
   });
 
+  const deployer = new ethers.Wallet(mnemonic.key(0), provider);
+
   const mgv = await Mangrove.connect({ signer: wallet });
 
   const market = await mgv.market({ base: "WETH", quote: "DAI" });
+
+  let txActivate = await activateTokensWithSigner(
+    [market.base.address, market.quote.address],
+    mgv.getAddress("MgvArbitrage"),
+    deployer
+  );
+  await txActivate.wait();
 
   market.consoleAsks();
   market.consoleBids();
@@ -55,7 +71,7 @@ const main = async () => {
     amount: 100000,
   });
   let tx;
-  tx = await directLP.approveAsks();
+  tx = await market.base.approve(mgv.address, 100000);
   await tx.wait();
 
   let provision;
@@ -66,7 +82,7 @@ const main = async () => {
     fund: provision,
   });
 
-  tx = await directLP.approveBids();
+  tx = await market.quote.approve(mgv.address, 100000);
   await tx.wait();
 
   provision = await directLP.computeBidProvision();
