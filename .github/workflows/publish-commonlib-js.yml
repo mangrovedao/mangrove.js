@@ -79,7 +79,7 @@ jobs:
 
       env:
         INPUT_COMMIT_USER_NAME:  github-actions-bot
-        INPUT_COMMIT_USER_EMAIL: github-actions-bot@mangrove.exchange
+        INPUT_COMMIT_USER_EMAIL: automation@mangrove.exchange
 
     - name: git version
       run: |
