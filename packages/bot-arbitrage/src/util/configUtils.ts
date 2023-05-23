@@ -31,16 +31,21 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
   }
 
   public buildArbConfig(base: string, quote: string): ArbConfig {
+    const tokenForExchange = this.getTokenForExchange();
     const holdingTokens = this.getHoldingTokenConfig();
-    if (!holdingTokens.includes(base) || !holdingTokens.includes(quote)) {
+    if (!holdingTokens.includes(tokenForExchange)) {
       throw new Error(
-        `Base or quote token not in holding tokens: ${base} ${quote}`
+        `The token for exchange not in holding tokens: ${tokenForExchange}`
       );
     }
     return {
       holdingTokens: holdingTokens,
-      tokenForExchange: this.getTokenForExchange(),
-      exchangeConfig: this.getCorrectExchangeConfig(base, quote),
+      tokenForExchange: tokenForExchange,
+      exchangeConfig: this.getCorrectExchangeConfig(
+        tokenForExchange,
+        base,
+        quote
+      ),
     };
   }
 
@@ -52,11 +57,12 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
   }
 
   private getCorrectExchangeConfig(
+    tokenForExchange: string,
     base: string,
     quote: string
   ): UniswapExchange | MangroveExchange | undefined {
     [];
-    const fees = this.getSpecificExchangeFee(base, quote);
+    const fees = this.getSpecificExchangeFee(tokenForExchange, base, quote);
     return this.getExchangeConfig() == "Mangrove"
       ? { exchange: "Mangrove" }
       : this.getExchangeConfig() == "Uniswap"
@@ -102,18 +108,38 @@ export class ConfigUtils extends botConfigUtils.ConfigUtils {
     return exchangeFees;
   }
 
-  private getSpecificExchangeFee(base: string, quote: string): ExchangeFee[] {
+  private getSpecificExchangeFee(
+    tokenForExchange: string,
+    base: string,
+    quote: string
+  ): ExchangeFee[] {
     const configs = this.getExchangeFeeConfig();
-    const baseConfig = configs.find((value) => value.token == base);
-    if (!baseConfig) {
-      throw new Error(`Exchange fee config for: ${base}, does not exist`);
-    }
+    const baseConfig = this.getSpecificExhangeFeeForToken(
+      tokenForExchange,
+      base,
+      configs
+    );
+    const quoteConfig = this.getSpecificExhangeFeeForToken(
+      tokenForExchange,
+      quote,
+      configs
+    );
 
-    const quoteConfig = configs.find((value) => value.token == quote);
-    if (!quote) {
-      throw new Error(`Exchange fee config for: ${quote}, does not exist`);
-    }
     return [baseConfig, quoteConfig];
+  }
+
+  private getSpecificExhangeFeeForToken(
+    tokenForExchange: string,
+    base: string,
+    configs: ExchangeFee[]
+  ) {
+    if (tokenForExchange != base) {
+      const baseConfig = configs.find((value) => value.token == base);
+      if (!baseConfig) {
+        throw new Error(`Exchange fee config for: ${base}, does not exist`);
+      }
+      return baseConfig;
+    }
   }
 
   public getAndValidateArbConfig(): ArbBotConfig {

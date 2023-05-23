@@ -1,5 +1,6 @@
 {
   "logLevel": "LOG_LEVEL",
+  "providerType": "PROVIDER_TYPE",
   "markets": {
     "__name": "MARKETS",
     "__format": "json"
