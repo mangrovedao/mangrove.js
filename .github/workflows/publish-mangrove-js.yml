@@ -59,13 +59,9 @@ jobs:
         else
           tag="latest"
         fi
-        echo "npmAuthToken: \"$NPM_TOKEN\"" >> ~/.yarnrc.yml
-        cd packages/mangrove.js
 
-        echo 'yarn'
-        yarn --version
-        cat ~/.yarnrc.yml
-        cat ~/.yarnrc.yml >> .yarnrc.yml
+        echo "npmAuthToken: \"$NPM_TOKEN\"" >> .yarnrc.yml
+        cd packages/mangrove.js
         yarn npm publish --access public --tag $tag
       env:
         INPUT_REVISION: ${{ inputs.revision }}
