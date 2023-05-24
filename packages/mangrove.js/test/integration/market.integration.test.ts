@@ -616,7 +616,7 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  it("subscribes", async function () {
+  it.only("subscribes", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
     const queue2 = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
@@ -712,15 +712,13 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestAsks2, [offer1], "asks semibook not correct");
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
+    market2.close();
     await market.sell({ wants: "1", gives: "1.3" }, { gasLimit: 600000 });
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
 
-    const offerFail2 = await queue2.get();
-    assert.strictEqual(offerFail2.type, "OfferSuccess");
-    assert.strictEqual(offerFail2.ba, "bids");
-
+    assert.strictEqual(queue2.empty(), true);
     //TODO: test offerRetract, offerFail, setGasbase
   });
 

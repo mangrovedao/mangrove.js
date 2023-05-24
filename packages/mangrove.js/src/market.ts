@@ -245,6 +245,9 @@ class Market {
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
+  private asksCb: Semibook.EventListener;
+  private bidsCb: Semibook.EventListener;
+
   static async connect(
     params: {
       mgv: Mangrove;
@@ -286,12 +289,8 @@ class Market {
   }
 
   public close() {
-    this.#asksSemibook.removeEventListener(
-      this.#semibookEventCallback.bind(this)
-    );
-    this.#bidsSemibook.removeEventListener(
-      this.#semibookEventCallback.bind(this)
-    );
+    this.#asksSemibook.removeEventListener(this.asksCb);
+    this.#bidsSemibook.removeEventListener(this.bidsCb);
   }
 
   initialize(): Promise<void> {
@@ -321,16 +320,18 @@ class Market {
           : undefined,
     });
 
+    this.asksCb = this.#semibookEventCallback.bind(this);
     const asksPromise = Semibook.connect(
       this,
       "asks",
-      this.#semibookEventCallback.bind(this),
+      this.asksCb,
       getSemibookOpts("asks")
     );
+    this.bidsCb = this.#semibookEventCallback.bind(this);
     const bidsPromise = Semibook.connect(
       this,
       "bids",
-      this.#semibookEventCallback.bind(this),
+      this.bidsCb,
       getSemibookOpts("bids")
     );
     this.#asksSemibook = await asksPromise;
