@@ -616,7 +616,7 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  it.only("subscribes", async function () {
+  it("subscribes", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
     const queue2 = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
