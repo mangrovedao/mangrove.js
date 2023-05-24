@@ -1290,6 +1290,18 @@ describe("Kandel integration tests suite", function () {
         const missingProvisionFromOffers =
           await kandel.getMissingProvisionFromOffers(params, indexerOffers);
         const missingProvision = await kandel.getMissingProvision(params);
+        // Should be able to deploy same distribution without additional provision
+        await waitForTransactions(
+          await kandel.populate({ distribution, funds: 0 })
+        );
+        // Increased gasprice requires the missing provision
+        await waitForTransactions(
+          await kandel.populate({
+            distribution,
+            parameters: params,
+            funds: missingProvision,
+          })
+        );
 
         // Assert
         assert.equal(

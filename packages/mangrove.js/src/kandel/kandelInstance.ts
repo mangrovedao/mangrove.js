@@ -685,16 +685,21 @@ class KandelInstance {
     );
   }
 
-  /** Calculates the provision locked by existing offers based on the given parameters
-   * @returns the locked provision, in ethers.
-   */
-  public async getLockedProvision() {
-    const existingOffers = (await this.getOffers()).map((x) => ({
+  /** Retrieves provision parameters for all offers for the Kandel instance by querying the market.  */
+  private async getOffersProvisionParams() {
+    return (await this.getOffers()).map((x) => ({
       gasprice: x.offer.gasprice,
       gasreq: x.offer.gasreq,
       gasbase: x.offer.offer_gasbase,
     }));
-    return this.market.mgv.calculateOffersProvision(existingOffers);
+  }
+
+  /** Calculates the provision locked by existing offers based on the given parameters
+   * @returns the locked provision, in ethers.
+   */
+  public async getLockedProvision() {
+    const existingOffers = await this.getOffersProvisionParams();
+    return this.getLockedProvisionFromOffers(existingOffers);
   }
 
   /** Calculates the provision locked for a set of offers based on the given parameters
@@ -710,7 +715,7 @@ class KandelInstance {
     return this.market.mgv.calculateOffersProvision(existingOffers);
   }
 
-  /** Gets the missing provision based on provision already available on Mangrove, potentially locked by existing offers. It assumes all locked provision will be made available via deprovision of due to offers being replaced.
+  /** Gets the missing provision based on provision already available on Mangrove, potentially locked by existing offers. It assumes all locked provision will be made available via deprovision or due to offers being replaced.
    * @param params The parameters.
    * @param params.gasreq An optional new gas required to execute a trade. Default is retrieved from Kandel parameters.
    * @param params.gasprice An optional new gas price to calculate provision for. Default is retrieved from Kandel parameters.
@@ -725,11 +730,7 @@ class KandelInstance {
     distribution?: KandelDistribution;
     offerCount?: number;
   }) {
-    const existingOffers = (await this.getOffers()).map((x) => ({
-      gasprice: x.offer.gasprice,
-      gasreq: x.offer.gasreq,
-      gasbase: x.offer.offer_gasbase,
-    }));
+    const existingOffers = await this.getOffersProvisionParams();
     return this.getMissingProvisionFromOffers(params, existingOffers);
   }
 
