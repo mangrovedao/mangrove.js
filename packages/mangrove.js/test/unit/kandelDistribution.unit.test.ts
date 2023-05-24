@@ -208,7 +208,7 @@ describe("KandelDistribution unit tests suite", () => {
       const firstBase = Big(3);
       const firstQuote = Big(5000);
       const pricePoints = 10;
-      const priceCalculation = new KandelPriceCalculation();
+      const priceCalculation = new KandelPriceCalculation(5);
       const pricesAndRatio = priceCalculation.calculatePrices({
         minPrice: firstQuote.div(firstBase),
         ratio,
