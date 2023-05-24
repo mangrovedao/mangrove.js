@@ -618,13 +618,18 @@ describe("Market integration tests suite", () => {
 
   it("subscribes", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
+    const queue2 = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market2 = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    console.log("market created");
+    console.log("markets created");
 
     let latestAsks: Market.Offer[] = [];
     let latestBids: Market.Offer[] = [];
+
+    let latestAsks2: Market.Offer[] = [];
+    let latestBids2: Market.Offer[] = [];
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
       queue.put(evt);
@@ -632,7 +637,16 @@ describe("Market integration tests suite", () => {
       latestAsks = [...asks];
       latestBids = [...bids];
     };
+
+    const cb2 = (evt: Market.BookSubscriptionCbArgument) => {
+      queue2.put(evt);
+      const { asks, bids } = market2.getBook();
+      latestAsks2 = [...asks];
+      latestBids2 = [...bids];
+    };
     market.subscribe(cb);
+
+    market2.subscribe(cb2);
 
     await helpers
       .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "1.2" })
@@ -671,8 +685,8 @@ describe("Market integration tests suite", () => {
     };
 
     // Events may be received in different order
-    const events = [await queue.get(), await queue.get()];
-    expect(events).to.have.deep.members([
+
+    const expectedEvents = [
       {
         type: "OfferWrite",
         ba: "asks",
@@ -685,15 +699,26 @@ describe("Market integration tests suite", () => {
         offerId: 1,
         offer: offer2,
       },
-    ]);
+    ];
+    const events = [await queue.get(), await queue.get()];
+    expect(events).to.have.deep.members(expectedEvents);
+
+    const events2 = [await queue2.get(), await queue2.get()];
+    expect(events2).to.have.deep.members(expectedEvents);
 
     assert.deepStrictEqual(latestAsks, [offer1], "asks semibook not correct");
     assert.deepStrictEqual(latestBids, [offer2], "bids semibook not correct");
 
+    assert.deepStrictEqual(latestAsks2, [offer1], "asks semibook not correct");
+    assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
+
+    market2.close();
     await market.sell({ wants: "1", gives: "1.3" }, { gasLimit: 600000 });
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
+
+    assert.strictEqual(queue2.empty(), true);
     //TODO: test offerRetract, offerFail, setGasbase
   });
 

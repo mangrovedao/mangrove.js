@@ -140,7 +140,7 @@ class Semibook
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
   #offer_gasbase: number;
 
-  #eventListener: Semibook.EventListener;
+  #eventListeners: Map<Semibook.EventListener, boolean> = new Map();
 
   tradeManagement: Trade = new Trade();
 
@@ -169,12 +169,22 @@ class Semibook
       );
       await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
       canConstructSemibook = false;
+    } else {
+      semibook.addEventListener(eventListener);
     }
     return semibook;
   }
 
   public copy(state: Semibook.State): Semibook.State {
     return clone(state);
+  }
+
+  public addEventListener(listener: Semibook.EventListener) {
+    this.#eventListeners.set(listener, true);
+  }
+
+  public removeEventListener(listener: Semibook.EventListener) {
+    this.#eventListeners.delete(listener);
   }
 
   async requestOfferListPrefix(
@@ -601,7 +611,7 @@ class Semibook
     this.market = market;
     this.ba = ba;
 
-    this.#eventListener = eventListener;
+    this.#eventListeners.set(eventListener, true);
   }
 
   public async stateInitialize(
@@ -710,85 +720,94 @@ class Semibook
           }
         }
 
-        this.#eventListener({
-          cbArg: {
-            type: event.name,
-            offer: expectOfferInsertionInCache ? offer : undefined,
-            offerId: id,
-            ba: this.ba,
-          },
-          event,
-          ethersLog: log,
-        });
+        Array.from(this.#eventListeners.keys()).forEach((listener) =>
+          listener({
+            cbArg: {
+              type: event.name,
+              offer: expectOfferInsertionInCache ? offer : undefined,
+              offerId: id,
+              ba: this.ba,
+            },
+            event,
+            ethersLog: log,
+          })
+        );
         break;
       }
 
       case "OfferFail": {
         const id = Semibook.rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(state, id);
-        this.#eventListener({
-          cbArg: {
-            type: event.name,
-            ba: this.ba,
-            taker: event.args.taker,
-            offer: removedOffer,
-            offerId: id,
-            takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-            takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-            mgvData: ethers.utils.parseBytes32String(event.args.mgvData),
-          },
-          event,
-          ethersLog: log,
-        });
+        Array.from(this.#eventListeners.keys()).forEach((listener) =>
+          listener({
+            cbArg: {
+              type: event.name,
+              ba: this.ba,
+              taker: event.args.taker,
+              offer: removedOffer,
+              offerId: id,
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+              mgvData: ethers.utils.parseBytes32String(event.args.mgvData),
+            },
+            event,
+            ethersLog: log,
+          })
+        );
         break;
       }
 
       case "OfferSuccess": {
         const id = Semibook.rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(state, id);
-        this.#eventListener({
-          cbArg: {
-            type: event.name,
-            ba: this.ba,
-            taker: event.args.taker,
-            offer: removedOffer,
-            offerId: id,
-            takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-            takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-          },
-          event,
-          ethersLog: log,
-        });
+        Array.from(this.#eventListeners.keys()).forEach((listener) =>
+          listener({
+            cbArg: {
+              type: event.name,
+              ba: this.ba,
+              taker: event.args.taker,
+              offer: removedOffer,
+              offerId: id,
+              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+            },
+            event,
+            ethersLog: log,
+          })
+        );
         break;
       }
 
       case "OfferRetract": {
         const id = Semibook.rawIdToId(event.args.id);
         removedOffer = this.#removeOffer(state, id);
-        this.#eventListener({
-          cbArg: {
-            type: event.name,
-            ba: this.ba,
-            offerId: id,
-            offer: removedOffer,
-          },
-          event,
-          ethersLog: log,
-        });
+        Array.from(this.#eventListeners.keys()).forEach((listener) =>
+          listener({
+            cbArg: {
+              type: event.name,
+              ba: this.ba,
+              offerId: id,
+              offer: removedOffer,
+            },
+            event,
+            ethersLog: log,
+          })
+        );
         break;
       }
 
       case "SetGasbase":
         this.#offer_gasbase = event.args.offer_gasbase.toNumber();
-        this.#eventListener({
-          cbArg: {
-            type: event.name,
-            ba: this.ba,
-          },
-          event,
-          ethersLog: log,
-        });
-
+        Array.from(this.#eventListeners.keys()).forEach((listener) =>
+          listener({
+            cbArg: {
+              type: event.name,
+              ba: this.ba,
+            },
+            event,
+            ethersLog: log,
+          })
+        );
         break;
       default:
         throw Error(`Unknown event ${event}`);
