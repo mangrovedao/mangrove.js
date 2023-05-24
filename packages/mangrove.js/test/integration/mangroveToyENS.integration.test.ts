@@ -32,11 +32,13 @@ describe("Mangrove functionality", () => {
   describe("watch local addresses", function () {
     it("can start watching after ToyENS has been created", async function () {
       // start server
-      const server = await node({
-        ...defaultServerParams,
-        port: 8544, // use port number below the one used in mochaHooks.ts
-        deploy: false,
-      }).connect();
+      const server = await (
+        await node({
+          ...defaultServerParams,
+          port: 8544, // use port number below the one used in mochaHooks.ts
+          deploy: false,
+        })
+      ).connect();
       await retryDeploy(server);
 
       const mgv = await Mangrove.connect({
@@ -68,11 +70,13 @@ describe("Mangrove functionality", () => {
     // can't make this test go through mangrove since Mangrove can't connect without an existing Mangrove instance -- so we're just testing watchAllToyENSEntries watch functionality here
     it("can start watching before ToyENS has been created", async function () {
       // start server but deploy nothing
-      const server = await node({
-        ...defaultServerParams,
-        port: 8543, // use port number below the one used in mochaHooks.ts
-        deploy: false,
-      }).connect();
+      const server = await (
+        await node({
+          ...defaultServerParams,
+          port: 8543, // use port number below the one used in mochaHooks.ts
+          deploy: false,
+        })
+      ).connect();
 
       const provider = new ethers.providers.JsonRpcProvider(server.url);
 

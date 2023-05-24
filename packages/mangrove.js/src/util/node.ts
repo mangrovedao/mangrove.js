@@ -7,12 +7,10 @@
   of deploying contracts in a file (see DUMPFILE below), then delete that file
   every time you want to invalidate the cache.
 */
-const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
 import { ethers } from "ethers";
 import * as eth from "../eth";
-import { default as nodeCleanup } from "node-cleanup";
 import DevNode from "./devNode";
 import { deal } from "./deal";
 
@@ -27,6 +25,7 @@ const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { runScript } from "./forgeScript";
+import { spawn, spawnParams } from "./spawn";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
@@ -36,9 +35,79 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
   key: mnemonic.key(i),
 }));
 
+/* Run a deployment, populate Mangrove addresses */
+type deployParams = {
+  provider?: any;
+  stateCache?: boolean;
+  targetContract?: string;
+  script?: string;
+  url?: string;
+  pipe?: boolean;
+  setMulticallCodeIfAbsent?: boolean;
+  setToyENSCodeIfAbsent?: boolean;
+};
+
+export type serverParamsType = {
+  host?: string;
+  port?: number; // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
+  spawn?: boolean;
+  deploy?: boolean;
+  forkUrl?: string;
+  forkBlockNumber?: number;
+} & deployParams;
+
+export type computeArgvType = {
+  [x: string]: unknown;
+  host: string;
+  url?: string;
+  port: string | number;
+  spawn: boolean;
+  "state-cache": boolean;
+  stateCache: boolean;
+  deploy: boolean;
+  script: string;
+  "fork-url": string;
+  forkUrl: string;
+  "fork-block-number": number;
+  forkBlockNumber: number;
+  "chain-id": number;
+  chainId: number;
+  pipe: boolean;
+  "set-multicall-code-if-absent": boolean;
+  setMulticallCodeIfAbsent: boolean;
+  "set-toy-ens-code-if-absent": boolean;
+  setToyEnsCodeIfAbsent: boolean;
+  _: (string | number)[];
+  $0: string;
+  provider?: JsonRpcProvider;
+};
+
+export type nodeType = {
+  connect(): Promise<{
+    url: string;
+    accounts: {
+      address: string;
+      key: string;
+    }[];
+    params: computeArgvType | serverParamsType;
+    deploy: () => Promise<void>;
+    snapshot: () => Promise<string>;
+    revert: (snapshotId?: string) => Promise<void>;
+    deal: (dealParams: {
+      token: string;
+      account: string;
+      amount?: number;
+      internalAmount?: ethers.BigNumber;
+    }) => Promise<void>;
+    process: any;
+    spawnEndedPromise: any;
+  }>;
+  watchAllToyENSEntries(): Promise<DevNode.fetchedContract[]>;
+};
+
 const stateCacheFile = path.resolve(`./${DUMPFILE}`);
 
-export const builder = (yargs) => {
+export const builder = (yargs: yargs.Argv<{}>) => {
   return yargs
     .option("host", {
       describe: "The IP address the node will listen on",
@@ -102,7 +171,10 @@ export const builder = (yargs) => {
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
 
-const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
+const computeArgv = async (
+  params: serverParamsType,
+  ignoreCmdLineArgs = false
+): Promise<computeArgvType> => {
   // ignore command line if not main module, but still read from env vars
   // note: this changes yargs' default precedence, which is (high to low):
   // cmdline args -> env vars -> config(obj) -> defaults
@@ -115,104 +187,6 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
     .help().argv;
 };
 
-/* Spawn a test node */
-type spawnParams = {
-  chainId?: number;
-  forkUrl?: number;
-  forkBlockNumber?: number;
-  host: string;
-  port: number;
-  pipe: boolean;
-};
-
-const spawn = async (params: spawnParams) => {
-  const chainIdArgs = "chainId" in params ? ["--chain-id", params.chainId] : [];
-  const forkUrlArgs = "forkUrl" in params ? ["--fork-url", params.forkUrl] : [];
-  const blockNumberArgs =
-    "forkBlockNumber" in params
-      ? ["--fork-block-number", params.forkBlockNumber]
-      : [];
-  const anvil = childProcess.spawn(
-    "anvil",
-    [
-      "--host",
-      params.host,
-      "--port",
-      params.port,
-      "--order",
-      "fifo", // just mine as you receive
-      "--mnemonic",
-      LOCAL_MNEMONIC,
-    ]
-      .concat(chainIdArgs)
-      .concat(forkUrlArgs)
-      .concat(blockNumberArgs)
-  );
-
-  anvil.stdout.setEncoding("utf8");
-  anvil.on("close", (code) => {
-    if (code !== null && code != 0) {
-      console.log(`anvil has closed with code ${code}`);
-    }
-  });
-
-  anvil.stderr.on("data", (data) => {
-    console.error(`anvil: stderr: ${data}`);
-  });
-
-  nodeCleanup((exitCode, signal) => {
-    anvil.kill();
-  });
-
-  const spawnEndedPromise = new Promise<void>((ok) => {
-    anvil.on("close", ok);
-  });
-
-  // wait a while for anvil to be ready, then bail
-  const ready = new Promise<void>((ok, ko) => {
-    let ready = null;
-    setTimeout(() => {
-      if (ready === null) {
-        ready = false;
-        ko("timeout");
-      }
-    }, 3000);
-    anvil.stdout.on("data", (data) => {
-      if (params.pipe) {
-        console.log(data);
-      }
-      if (ready !== null) {
-        return;
-      }
-      for (const line of data.split("\n")) {
-        if (line.startsWith(`Listening on`)) {
-          ready = true;
-          ok();
-          break;
-        }
-      }
-    });
-  });
-
-  await ready;
-
-  return {
-    spawnEndedPromise,
-    process: anvil,
-  };
-};
-
-/* Run a deployment, populate Mangrove addresses */
-type deployParams = {
-  provider: JsonRpcProvider;
-  stateCache: boolean;
-  targetContract: string;
-  script: string;
-  url: string;
-  pipe: boolean;
-  setMulticallCodeIfAbsent: boolean;
-  setToyENSCodeIfAbsent: boolean;
-};
 const deploy = async (params: deployParams) => {
   // convenience: deploy ToyENS/Multicall if not in place yet and not forbidden by params
   const devNode = new DevNode(params.provider);
@@ -268,10 +242,10 @@ type connectParams = preConnectParams &
   ({ spawn: false } | spawnParams) &
   deployParams;
 
-const connect = async (params: connectParams) => {
+const connect = async (params: computeArgvType | serverParamsType) => {
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
-    spawnInfo = await spawn(params);
+    spawnInfo = await spawn(params, LOCAL_MNEMONIC);
   }
 
   const deployFn = () => {
@@ -327,8 +301,11 @@ const connect = async (params: connectParams) => {
 };
 
 /* Generate initial parameters with yargs, add data, then return node actions. */
-export const node = (argv: any, useYargs: boolean = true) => {
-  const params: any = useYargs ? computeArgv(argv) : argv;
+export const node = async (
+  argv: serverParamsType,
+  useYargs: boolean = true
+): Promise<nodeType> => {
+  const params = useYargs ? await computeArgv(argv) : argv;
 
   // if node is initialized with a URL, host/port
   if (typeof params.url === "undefined") {
@@ -355,42 +332,14 @@ export const node = (argv: any, useYargs: boolean = true) => {
 
 export default node;
 
-export const dealBuilder = (yargs) => {
-  return yargs
-    .option("host", {
-      describe: "The node hostname -- must be a dev node (anvil, hardhat, ...)",
-      type: "string",
-      default: DEFAULT_HOST,
-    })
-    .option("port", {
-      describe: "The node port -- must be a dev node (anvil, hardhat, ...)",
-      type: "string",
-      default: DEFAULT_PORT,
-    })
-    .option("token", {
-      describe: "Address of the token",
-      requiresArg: true,
-      type: "string",
-    })
-    .option("account", {
-      describe: "Address of the account to credit",
-      requiresArg: true,
-      type: "string",
-    })
-    .option("amount", {
-      describe: "Number of tokens in display units.",
-      requiresArg: true,
-      type: "number",
-    })
-    .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
-};
-
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
-    const { spawnEndedPromise } = await node({
-      pipe: true,
-    }).connect();
+    const { spawnEndedPromise } = await (
+      await node({
+        pipe: true,
+      })
+    ).connect();
     if (spawnEndedPromise) {
       console.log("Node ready.");
       await spawnEndedPromise;
