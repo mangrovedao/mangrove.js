@@ -1,4 +1,3 @@
-// Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
 
 import assert from "assert";
@@ -170,6 +169,42 @@ describe("OfferMaker", () => {
 
         balance = await mgv.balanceOf(logic.address);
         assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
+      });
+
+      [true, false].forEach((eoaLP) => {
+        it(`gets missing provision for ${
+          eoaLP ? "eoa" : "onchain"
+        } logic`, async () => {
+          // Arrange
+          const lp = eoaLP ? eoa_lp : onchain_lp;
+          const mgvGasprice = (await mgv.config()).gasprice;
+          const provision = await lp.computeAskProvision();
+          const { id } = await lp.newAsk({
+            wants: 10,
+            gives: 10,
+            fund: provision,
+          });
+
+          // Act
+          const missingProvisionDueToTripleGasprice =
+            await lp.computeAskProvision({ id, gasprice: mgvGasprice * 3 });
+
+          // Assert
+          const expectedInitialProvision = mgv.calculateOfferProvision(
+            mgvGasprice,
+            lp.gasreq,
+            (await lp.market.getSemibook("asks").getConfig()).offer_gasbase
+          );
+          assert.equal(
+            provision.toNumber(),
+            expectedInitialProvision.toNumber()
+          );
+          assert.equal(
+            missingProvisionDueToTripleGasprice.toNumber(),
+            provision.mul(2).toNumber(),
+            "Lacks covering for gasprice*3"
+          );
+        });
       });
     });
 
@@ -372,7 +407,7 @@ describe("OfferMaker", () => {
         });
         await tx.wait();
 
-        let allowance = await base.allowance({
+        const allowance = await base.allowance({
           owner: logic.address,
           spender: signer_address,
         });

@@ -1,5 +1,15 @@
 # Next version
 
+- Use array to handle market subscription
+
+# 1.2.6-2
+
+- Debugging version for UI
+
+# 1.2.6-1
+
+- Bump RES to v1.1.19
+
 # 1.2.6-0
 
 - Bump mangrove-core to 1.5.1

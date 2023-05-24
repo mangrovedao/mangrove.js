@@ -2,8 +2,9 @@ import * as ethers from "ethers";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { Mangrove } from ".";
+import { Mangrove, Market } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
+import Big from "big.js";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 /**
@@ -157,6 +158,61 @@ class OfferLogic {
       this.mgv.toUnits(amount, 18),
       await this.mgv.signer.getAddress(),
       overrides
+    );
+  }
+
+  /** Retrieves amount of provision locked for the offer on the offer logic which can be redeemed if the offer is retracted.
+   * @param market the market of the offer
+   * @param ba wether the offer is an ask or a bid.
+   * @param offerId the id of the offer.
+   * @returns the amount of provision locked for the offer on the offer logic.
+   * @remarks Provision is either locked on Mangrove or for, e.g., a forwarder, on the offer logic itself.
+   */
+  public async retrieveLockedProvisionForOffer(
+    market: Market,
+    ba: Market.BA,
+    offerId?: number
+  ) {
+    // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
+    if (!offerId) {
+      return Big(0);
+    }
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    return this.mgv.fromUnits(
+      await this.contract.provisionOf(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        offerId
+      ),
+      18
+    );
+  }
+
+  /** Gets the missing provision in ethers for an offer to be posted or updated on the offer logic with the given parameters, while taking already locked provision into account.
+   * @param ba bids or asks
+   * @param market the market for the offer.
+   * @param opts optional parameters for the calculation.
+   * @param opts.id the id of the offer to update. If undefined, then the offer is a new offer and nothing is locked.
+   * @param opts.gasreq gas required for the offer execution. If undefined, the offer logic's gasreq.
+   * @param opts.gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the additional required provision, in ethers.
+   */
+  async getMissingProvision(
+    market: Market,
+    ba: Market.BA,
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
+  ) {
+    const gasreq = opts.gasreq ? opts.gasreq : await this.offerGasreq();
+    const lockedProvision = await this.retrieveLockedProvisionForOffer(
+      market,
+      ba,
+      opts.id
+    );
+    return await market.getMissingProvision(
+      ba,
+      lockedProvision,
+      gasreq,
+      opts.gasprice
     );
   }
 }
