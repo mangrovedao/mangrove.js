@@ -66,6 +66,7 @@ jobs:
       env:
         INPUT_REVISION: ${{ inputs.revision }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
     - name: setup git
       run: |
         echo "INPUT_COMMIT_USER_NAME: ${INPUT_COMMIT_USER_NAME}";
@@ -99,5 +100,5 @@ jobs:
         gh pr merge --squash --delete-branch --auto
       working-directory: packages/mangrove.js
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         USER: ${{ github.actor }}

@@ -104,5 +104,5 @@ jobs:
         gh pr merge --squash --delete-branch --auto
       working-directory: packages/commonlib.js
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         USER: ${{ github.actor }}
