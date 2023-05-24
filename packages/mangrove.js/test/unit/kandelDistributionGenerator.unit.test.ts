@@ -11,7 +11,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
   beforeEach(() => {
     sut = new KandelDistributionGenerator(
       new KandelDistributionHelper(4, 6),
-      new KandelPriceCalculation()
+      new KandelPriceCalculation(5)
     );
   });
   describe(

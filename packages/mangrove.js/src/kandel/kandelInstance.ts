@@ -23,9 +23,9 @@ import KandelSeeder from "./kandelSeeder";
  * @notice Parameters for a Kandel instance.
  * @param gasprice The gas price used when provisioning offers.
  * @param gasreq The gas required to execute a trade.
- * @param ratio The ratio of the geometric progression of prices.
- * @param spread The spread used when transporting funds from an offer to its dual.
- * @param pricePoints The number of price points.
+ * @param ratio The ratio of the geometric progression of prices. Should be >1 and <=2 with KandelInstance.precision decimals.
+ * @param spread The spread used when transporting funds from an offer to its dual. Should be >1 and <=8 .
+ * @param pricePoints The number of price points. Should be >=2 and <=255.
  */
 export type KandelParameters = {
   gasprice: number;
@@ -95,7 +95,7 @@ class KandelInstance {
       params.signer
     );
 
-    const priceCalculation = new KandelPriceCalculation();
+    const priceCalculation = new KandelPriceCalculation(precision);
     const distributionHelper = new KandelDistributionHelper(
       market.base.decimals,
       market.quote.decimals

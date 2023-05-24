@@ -16,6 +16,15 @@ export type PriceDistributionParams = {
 
 /** @title Helper for calculating details about about a Kandel instance. */
 class KandelPriceCalculation {
+  private precision: number;
+
+  /** Constructor.
+   *  @param precision The precision used for Kandel instances.
+   */
+  public constructor(precision: number) {
+    this.precision = precision;
+  }
+
   /** Calculates prices to match the geometric price distribution given by parameters.
    * @param params Parameters for calculating a geometric price distribution. Exactly three must be provided.
    * @param params.minPrice The minimum price in the distribution.
@@ -51,12 +60,16 @@ class KandelPriceCalculation {
       }
     }
 
+    // We round down, so that we end up below maxPrice if desired pricePoints are given.
+    ratio = Big(ratio).round(this.precision, Big.roundDown);
+
     return {
-      ratio: Big(ratio),
+      ratio,
       prices: this.calculatePricesFromMinMaxRatio(
         Big(minPrice),
-        Big(maxPrice),
-        Big(ratio)
+        ratio,
+        pricePoints ? undefined : Big(maxPrice),
+        pricePoints
       ),
     };
   }
@@ -85,14 +98,16 @@ class KandelPriceCalculation {
 
   /** Calculates the resulting number of price points from a min price, max price, and a ratio.
    * @param minPrice The minimum price in the distribution.
-   * @param maxPrice The maximum price in the distribution.
-   * @param ratio The ratio between each price point.
+   * @param maxPrice The maximum price in the distribution. Optional, if not provided will be derived based on pricePoints.
+   * @param ratio The ratio between each price point. Should already be rounded to this.precision decimals.
+   * @param pricePoints The number of price points in the distribution. Optional, if not provided will be derived based on maxPrice.
    * @returns The prices in the distribution.
    */
   public calculatePricesFromMinMaxRatio(
     minPrice: Big,
-    maxPrice: Big,
-    ratio: Big
+    ratio: Big,
+    maxPrice?: Big,
+    pricePoints?: number
   ) {
     if (minPrice.lte(0)) {
       throw Error("minPrice must be positive");
@@ -100,9 +115,18 @@ class KandelPriceCalculation {
     if (ratio.lte(Big(1))) {
       throw Error("ratio must be larger than 1");
     }
+    if (ratio.gt(2)) {
+      throw Error("ratio must be less than or equal to 2");
+    }
+    if ((!pricePoints && !maxPrice) || (pricePoints && maxPrice)) {
+      throw Error("exactly one of pricePoints or maxPrice must be provided");
+    }
     const prices: Big[] = [];
     let price = minPrice;
-    while (price.lte(maxPrice)) {
+    while (
+      (maxPrice && price.lte(maxPrice)) ||
+      (pricePoints && prices.length < pricePoints)
+    ) {
       prices.push(price);
       if (prices.length > 255) {
         throw Error(

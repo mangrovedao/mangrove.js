@@ -108,7 +108,7 @@ describe("KandelStatus unit tests suite", () => {
   beforeEach(() => {
     sut = new KandelStatus(
       new KandelDistributionHelper(4, 6),
-      new KandelPriceCalculation()
+      new KandelPriceCalculation(5)
     );
   });
 

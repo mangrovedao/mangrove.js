@@ -140,7 +140,7 @@ class KandelDistribution {
   public getPricesForDistribution() {
     const prices: Big[] = Array(this.offers.length);
 
-    this.offers.forEach(async (o, i) => {
+    this.offers.forEach((o, i) => {
       prices[i] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
     });
     return prices;

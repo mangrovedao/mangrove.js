@@ -65,12 +65,15 @@ class KandelStrategies {
 
   /** Creates a generator for generating Kandel distributions for the given market.
    * @param market The market to calculate for.
+   * @param precision The precision used for Kandel instances. Must match the deployed Kandel contract's PRECISION() value.
    * @returns A new KandelDistributionGenerator.
    */
-  public generator(market: Market) {
+  public generator(market: Market, precision?: number) {
+    precision ??= 5; // TODO should be fetched from chain via seeder, but currently it requires at least 1 kandel instance.
+
     return new KandelDistributionGenerator(
       new KandelDistributionHelper(market.base.decimals, market.quote.decimals),
-      new KandelPriceCalculation()
+      new KandelPriceCalculation(precision)
     );
   }
 }

@@ -156,7 +156,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
       it(`can calculate distribution with fixed base/quote constantBase=${constantBase} volume which follows geometric distribution`, () => {
         // Arrange
         const sut = new KandelDistributionHelper(12, 12);
-        const pricesAndRatio = new KandelPriceCalculation().calculatePrices({
+        const pricesAndRatio = new KandelPriceCalculation(5).calculatePrices({
           minPrice: firstQuote.div(firstBase),
           ratio,
           pricePoints,
@@ -197,7 +197,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
       it(`rounds off base and gives according to decimals for fixed base/quote constantBase=${constantBase}`, () => {
         // Arrange
         const sut = new KandelDistributionHelper(4, 6);
-        const pricesAndRatio = new KandelPriceCalculation().calculatePrices({
+        const pricesAndRatio = new KandelPriceCalculation(5).calculatePrices({
           minPrice: firstQuote.div(firstBase),
           ratio,
           pricePoints,
