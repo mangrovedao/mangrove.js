@@ -1,11 +1,14 @@
 import { ethers } from "@mangrovedao/mangrove.js";
 import * as eth from "@mangrovedao/mangrove.js/dist/nodejs/eth";
 import DevNode from "@mangrovedao/mangrove.js/dist/nodejs/util/devNode";
-import { node, nodeType } from "@mangrovedao/mangrove.js/dist/nodejs/util/node";
+import {
+  node,
+  nodeType,
+  serverParamsType,
+} from "@mangrovedao/mangrove.js/dist/nodejs/util/node";
 import {
   hookInfo,
   mochaHooks as mgvMochahooks,
-  serverParamsType,
 } from "@mangrovedao/mangrove.js/dist/nodejs/util/test/mochaHooks";
 import * as dotenv from "dotenv";
 import * as deploy from "./../deployMgvAndMgvArbitrage";

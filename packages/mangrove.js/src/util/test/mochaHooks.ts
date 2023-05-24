@@ -1,7 +1,7 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
 import { Mangrove } from "../../";
-import node from "../../util/node";
+import node, { serverParamsType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
 import DevNode from "../devNode";
@@ -19,20 +19,6 @@ const serverParams = {
 type proxie = {
   cancelAll: boolean;
   proxyServer: ProxyServer;
-};
-
-export type serverParamsType = {
-  host?: string;
-  url?: string;
-  port?: number; // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
-  pipe?: boolean;
-  script?: string;
-  spawn?: boolean;
-  deploy?: boolean;
-  forkUrl?: string;
-  forkBlockNumber?: number;
-  setMulticallCodeIfAbsent?: boolean;
-  provider?: any;
 };
 
 type account = {

@@ -25,7 +25,6 @@ const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { runScript } from "./forgeScript";
-import { serverParamsType } from "./test/mochaHooks";
 import { spawn, spawnParams } from "./spawn";
 
 // default first three default anvil accounts,
@@ -35,6 +34,27 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
   address: mnemonic.address(i),
   key: mnemonic.key(i),
 }));
+
+/* Run a deployment, populate Mangrove addresses */
+type deployParams = {
+  provider?: any;
+  stateCache?: boolean;
+  targetContract?: string;
+  script?: string;
+  url?: string;
+  pipe?: boolean;
+  setMulticallCodeIfAbsent?: boolean;
+  setToyENSCodeIfAbsent?: boolean;
+};
+
+export type serverParamsType = {
+  host?: string;
+  port?: number; // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
+  spawn?: boolean;
+  deploy?: boolean;
+  forkUrl?: string;
+  forkBlockNumber?: number;
+} & deployParams;
 
 export type computeArgvType = {
   [x: string]: unknown;
@@ -159,7 +179,7 @@ const computeArgv = async (
   // note: this changes yargs' default precedence, which is (high to low):
   // cmdline args -> env vars -> config(obj) -> defaults
   const cmdLineArgv = ignoreCmdLineArgs ? [] : process.argv.slice(2);
-  return await builder(yargs(cmdLineArgv))
+  return builder(yargs(cmdLineArgv))
     .usage("Run a test Mangrove deployment on a local node")
     .version(false)
     .config(params)
@@ -167,17 +187,6 @@ const computeArgv = async (
     .help().argv;
 };
 
-/* Run a deployment, populate Mangrove addresses */
-type deployParams = {
-  provider?: JsonRpcProvider;
-  stateCache?: boolean;
-  targetContract?: string;
-  script?: string;
-  url?: string;
-  pipe?: boolean;
-  setMulticallCodeIfAbsent?: boolean;
-  setToyENSCodeIfAbsent?: boolean;
-};
 const deploy = async (params: deployParams) => {
   // convenience: deploy ToyENS/Multicall if not in place yet and not forbidden by params
   const devNode = new DevNode(params.provider);
