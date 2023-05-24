@@ -52,20 +52,21 @@ jobs:
       env:
         INPUT_REVISION: ${{ inputs.revision }}
 
-    # - name: Publish
-    #   run: |
-    #     if [ "$INPUT_REVISION" = "prerelease" ]; then
-    #       tag="next"
-    #     else
-    #       tag="latest"
-    #     fi
-    #
-    #     echo "npmAuthToken: \"$NPM_TOKEN\"" >> .yarnrc.yml
-    #     cd packages/mangrove.js
-    #     yarn npm publish --access public --tag $tag
-    #   env:
-    #     INPUT_REVISION: ${{ inputs.revision }}
-    #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - name: Publish
+      run: |
+        if [ "$INPUT_REVISION" = "prerelease" ]; then
+          tag="next"
+        else
+          tag="latest"
+        fi
+
+        echo "npmAuthToken: \"$NPM_TOKEN\"" >> .yarnrc.yml
+        cd packages/mangrove.js
+        yarn npm publish --access public --tag $tag
+      env:
+        INPUT_REVISION: ${{ inputs.revision }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
     - name: setup git
       run: |
         echo "INPUT_COMMIT_USER_NAME: ${INPUT_COMMIT_USER_NAME}";
@@ -89,12 +90,12 @@ jobs:
         git switch -c "release/v$PACKAGE_VERSION"
         git add package.json 
         git commit -S -m "$PACKAGE_VERSION [$USER]"
-        # git tag -m "v$PACKAGE_VERSION" -s "v$PACKAGE_VERSION"
+        git tag -m "v$PACKAGE_VERSION" -s "v$PACKAGE_VERSION"
         git push --set-upstream origin release/v$PACKAGE_VERSION
-        # git push --tags
+        git push --tags
         export RELEASE_NOTES=`sed -n "/^# $PACKAGE_VERSION/,/^#/p" CHANGELOG.md | grep -v "^#" | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;};/\n$/ba'`
         echo $RELEASE_NOTES
-        # gh release create "v$PACKAGE_VERSION" --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
+        gh release create "v$PACKAGE_VERSION" --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
         gh pr create --title "v$PACKAGE_VERSION" --body "$RELEASE_NOTES" --reviewer "mangrovedao/all-devs"
         gh pr merge --squash --delete-branch --auto
       working-directory: packages/mangrove.js
