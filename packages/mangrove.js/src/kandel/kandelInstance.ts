@@ -607,7 +607,7 @@ class KandelInstance {
     );
   }
 
-  /** Gets the most specific available recommended configuration for Kandel instances. */
+  /** Gets the most specific available default configuration for Kandel instances. */
   getMostSpecificConfig() {
     return this.configuration.getMostSpecificConfig(
       this.market.mgv.network.name,
@@ -685,13 +685,99 @@ class KandelInstance {
     );
   }
 
+  /** Retrieves provision parameters for all offers for the Kandel instance by querying the market.  */
+  private async getOffersProvisionParams() {
+    return (await this.getOffers()).map((x) => ({
+      gasprice: x.offer.gasprice,
+      gasreq: x.offer.gasreq,
+      gasbase: x.offer.offer_gasbase,
+    }));
+  }
+
+  /** Calculates the provision locked by existing offers based on the given parameters
+   * @returns the locked provision, in ethers.
+   */
+  public async getLockedProvision() {
+    const existingOffers = await this.getOffersProvisionParams();
+    return this.getLockedProvisionFromOffers(existingOffers);
+  }
+
+  /** Calculates the provision locked for a set of offers based on the given parameters
+   * @param existingOffers[] the offers to calculate provision for.
+   * @param existingOffers[].gasprice the gas price for the offer in gwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers[].gasreq the gas requirement for the offer.
+   * @param existingOffers[].gasbase the offer list's offer_gasbase.
+   * @returns the locked provision, in ethers.
+   */
+  public getLockedProvisionFromOffers(
+    existingOffers: { gasprice: number; gasreq: number; gasbase: number }[]
+  ) {
+    return this.market.mgv.calculateOffersProvision(existingOffers);
+  }
+
+  /** Gets the missing provision based on provision already available on Mangrove, potentially locked by existing offers. It assumes all locked provision will be made available via deprovision or due to offers being replaced.
+   * @param params The parameters.
+   * @param params.gasreq An optional new gas required to execute a trade. Default is retrieved from Kandel parameters.
+   * @param params.gasprice An optional new gas price to calculate provision for. Default is retrieved from Kandel parameters.
+   * @param params.distribution The distribution to calculate the provision for. Optional.
+   * @param params.offerCount The number of offers to calculate the provision for. Optional.
+   * @returns the additional required provision, in ethers.
+   * @remarks If neither params.distribution nor params.offerCount is provided, then the current number of price points is used.
+   */
+  public async getMissingProvision(params: {
+    gasreq?: number;
+    gasprice?: number;
+    distribution?: KandelDistribution;
+    offerCount?: number;
+  }) {
+    const existingOffers = await this.getOffersProvisionParams();
+    return this.getMissingProvisionFromOffers(params, existingOffers);
+  }
+
+  /** Gets the missing provision based on provision already available on Mangrove, potentially locked by existing offers, and the new distribution requiring provision. It assumes all the provision locked in the existingOffers will be made available via deprovision or due to offers being updated.
+   * @param params The parameters for the required provision.
+   * @param params.gasreq An optional new gas required to execute a trade. Default is retrieved from Kandel parameters.
+   * @param params.gasprice An optional new gas price to calculate provision for. Default is retrieved from Kandel parameters.
+   * @param params.distribution The distribution to calculate the provision for. Optional.
+   * @param params.offerCount The number of offers to calculate the provision for. Optional.
+   * @param existingOffers[] the offers with potential locked provision.
+   * @param existingOffers[].gasprice the gas price for the offer in gwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers[].gasreq the gas requirement for the offer.
+   * @param existingOffers[].gasbase the offer list's offer_gasbase.
+   * @returns the additional required provision, in ethers.
+   * @remarks If neither distribution nor offerCount is provided, then the current number of price points is used.
+   */
+  async getMissingProvisionFromOffers(
+    params: {
+      gasreq?: number;
+      gasprice?: number;
+      distribution?: KandelDistribution;
+      offerCount?: number;
+    },
+    existingOffers: { gasprice: number; gasreq: number; gasbase: number }[]
+  ) {
+    const lockedProvision = this.getLockedProvisionFromOffers(existingOffers);
+    const availableBalance = await this.offerLogic.getMangroveBalance();
+    if (!params.distribution && !params.offerCount) {
+      params = {
+        ...params,
+        offerCount: (await this.getParameters()).pricePoints,
+      };
+    }
+    const requiredProvision = await this.getRequiredProvision(params);
+    return this.market.mgv.getMissingProvision(
+      lockedProvision.add(availableBalance),
+      requiredProvision
+    );
+  }
+
   /** Populates the offers in the distribution for the Kandel instance and sets parameters.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
    * @param params.parameters The parameters to set leave out values to keep their current value.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
-   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to getRequiredProvision.
+   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.

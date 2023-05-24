@@ -433,11 +433,19 @@ class Market {
     return this.getSemibook(ba).getPivotId(price);
   }
 
+  /** Gets the amount of ethers necessary to provision an offer on the market.
+   * @param ba bids or asks
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the amount of ethers necessary to provision the offer.
+   */
   async getOfferProvision(
     ba: Market.BA,
     gasreq: number,
-    gasprice: number
+    gasprice?: number
   ): Promise<Big> {
+    // 0 makes calculation use mgv gasprice
+    gasprice ??= 0;
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     const prov = await this.mgv.readerContract[
       "getProvision(address,address,uint256,uint256)"
@@ -445,11 +453,46 @@ class Market {
     return this.mgv.fromUnits(prov, 18);
   }
 
-  getBidProvision(gasreq: number, gasprice: number): Promise<Big> {
+  /** Gets the amount of ethers necessary to provision a bid on the market.
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the amount of ethers necessary to provision the offer.
+   */
+  getBidProvision(gasreq: number, gasprice?: number): Promise<Big> {
     return this.getOfferProvision("bids", gasreq, gasprice);
   }
-  getAskProvision(gasreq: number, gasprice: number): Promise<Big> {
+
+  /** Gets the amount of ethers necessary to provision a bid on the market.
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the amount of ethers necessary to provision the offer.
+   */
+  getAskProvision(gasreq: number, gasprice?: number): Promise<Big> {
     return this.getOfferProvision("asks", gasreq, gasprice);
+  }
+
+  /** Gets the missing provision in ethers for an offer with the given parameters
+   * @param ba bids or asks
+   * @param lockedProvision the provision already locked with the offer
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the additional required provision, in ethers.
+   */
+  async getMissingProvision(
+    ba: Market.BA,
+    lockedProvision: Bigish,
+    gasreq: number,
+    gasprice?: number
+  ) {
+    const totalRequiredProvision = await this.getOfferProvision(
+      ba,
+      gasreq,
+      gasprice
+    );
+    return this.mgv.getMissingProvision(
+      lockedProvision,
+      totalRequiredProvision
+    );
   }
 
   bidInfo(offerId: number): Promise<Market.Offer> {

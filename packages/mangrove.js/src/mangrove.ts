@@ -561,6 +561,58 @@ class Mangrove {
     return this.token(tokenName).approveMangrove(arg);
   }
 
+  /** Calculates the provision required or locked for an offer based on the given parameters
+   * @param gasprice the gas price for the offer in gwei.
+   * @param gasreq the gas requirement for the offer
+   * @param gasbase the offer list's offer_gasbase.
+   * @returns the required provision, in ethers.
+   */
+  calculateOfferProvision(gasprice: number, gasreq: number, gasbase: number) {
+    return this.fromUnits(
+      this.toUnits(1, 9)
+        .mul(gasprice)
+        .mul(gasreq + gasbase),
+      18
+    );
+  }
+
+  /** Calculates the provision required or locked for offers based on the given parameters
+   * @param offers[] the offers to calculate provision for.
+   * @param offers[].gasprice the gas price for the offer in gwei.
+   * @param offers[].gasreq the gas requirement for the offer
+   * @param offers[].gasbase the offer list's offer_gasbase.
+   * @returns the required provision, in ethers.
+   */
+  public calculateOffersProvision(
+    offers: { gasprice: number; gasreq: number; gasbase: number }[]
+  ) {
+    return offers.reduce(
+      (acc, offer) =>
+        acc.add(
+          this.calculateOfferProvision(
+            offer.gasprice,
+            offer.gasreq,
+            offer.gasbase
+          )
+        ),
+      Big(0)
+    );
+  }
+
+  /** Gets the missing provision based on the required provision and the locked provision.
+   * @param lockedProvision the provision already locked for an offer.
+   * @param totalRequiredProvision the provision required for an offer.
+   * @returns the additional required provision, in ethers.
+   */
+  getMissingProvision(lockedProvision: Bigish, totalRequiredProvision: Bigish) {
+    const total = Big(totalRequiredProvision);
+    if (total.gt(lockedProvision)) {
+      return total.sub(lockedProvision);
+    } else {
+      return Big(0);
+    }
+  }
+
   /**
    * Return global Mangrove config
    */
@@ -581,7 +633,7 @@ class Mangrove {
   }
 
   /** Permit data normalization
-   * Autofill/convert 'nonce' field of permit data if needd, convert deadline to
+   * Autofill/convert 'nonce' field of permit data if need, convert deadline to
    * num if needed.
    */
   async normalizePermitData(

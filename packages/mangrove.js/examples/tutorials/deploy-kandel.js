@@ -21,8 +21,8 @@ const market = await mgv.market({ base: "WETH", quote: "USDC" });
 // Initialize KandelStrategies for strategy management
 const kandelStrategies = new KandelStrategies(mgv);
 
-// Retrieve recommended configuration for the selected market
-const recommendedConfig = kandelStrategies.configuration.getConfig(market);
+// Retrieve default configuration for the selected market
+const config = kandelStrategies.configuration.getConfig(market);
 
 // Create a distribution generator for the selected market
 const distributionGenerator = kandelStrategies.generator(market);
@@ -39,12 +39,12 @@ const minQuotePerOffer = await kandelStrategies.seeder.getMinimumVolume({
   onAave: false,
 });
 
-// Calculate a candidate distribution with the recommended minimum volumes given the price range
+// Calculate a candidate distribution with the recommended minimum volumes given the price range and the default ratio
 const minDistribution = distributionGenerator.calculateMinimumDistribution({
   priceParams: {
     minPrice: 900,
     maxPrice: 1100,
-    ratio: recommendedConfig.ratio,
+    ratio: config.ratio,
   },
   midPrice: 1000,
   minimumBasePerOffer: minBasePerOffer,
@@ -74,7 +74,7 @@ const seed = {
   onAave: false,
   market,
   liquiditySharing: false,
-  gaspriceFactor: recommendedConfig.gaspriceFactor,
+  gaspriceFactor: config.gaspriceFactor,
 };
 
 // Deploy a Kandel instance with the specified seed data (the offers are later populated based on the above distribution)
@@ -92,7 +92,7 @@ const approvalReceipts = await Promise.all(approvalTxs.map((x) => x?.wait()));
 const populateTxs = await kandelInstance.populate({
   distribution: finalDistribution,
   parameters: {
-    spread: recommendedConfig.spread,
+    spread: config.spread,
   },
   depositBaseAmount: offeredVolumes.requiredBase,
   depositQuoteAmount: offeredVolumes.requiredQuote,

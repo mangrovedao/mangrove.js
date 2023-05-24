@@ -22,7 +22,7 @@ class KandelStrategies {
   /** The Mangrove to interact with. */
   public mgv: Mangrove;
 
-  /** The recommended configuration values to use for Kandel. */
+  /** The default configuration values to use for Kandel. */
   public configuration: KandelConfiguration;
 
   /** Constructor
