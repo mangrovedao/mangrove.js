@@ -1584,14 +1584,13 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/commonlib.js": "workspace:*"
     "@mangrovedao/mangrove-core": 1.5.1-1
     "@mangrovedao/reliable-event-subscriber": 1.1.19
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5
     "@types/mocha": ^10.0.1
-    "@types/node": ^20.2.1
+    "@types/node": ^18.15.11
     "@types/shelljs": ^0.8.11
     "@types/yargs": ^17.0.12
     "@typescript-eslint/eslint-plugin": ^5.59.6
@@ -1607,6 +1606,7 @@ __metadata:
     eslint: ^8.31.0
     eslint-config-prettier: ^8.8.0
     ethers: ^5.7.2
+    json-truncate: ^3.0.0
     just-clone: ^6.2.0
     lint-staged: ^13.2.0
     mocha: ^10.2.0
@@ -1891,10 +1891,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^18.15.11":
+  version: 18.16.14
+  resolution: "@types/node@npm:18.16.14"
+  checksum: c11cb3c787236414efe58240ae71854971592554d82ff9d201876ce7cafd51c37aaa001c63602d002e8238614d7331bd6d48ac4c1c0caa826799980b6846fb08
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:^20.2.1":
-  version: 20.2.1
-  resolution: "@types/node@npm:20.2.1"
-  checksum: ed774afa6e9b4ad7868ed0182a8ca40ad0dd54815a70d3051b23fa850f3bca6bea4d0cb55e1fc769666786ac2cc4c1b37aeade313cb4c4634133f18ebcded496
+  version: 20.2.3
+  resolution: "@types/node@npm:20.2.3"
+  checksum: 576065e8fc1fa45798c8f59a6bf809169582d04abc2e25fab1a048ffc734975b9992ae31be0d960cf705a21fb37112f7fcde11aa322beddf7491e73d5a5a988c
   languageName: node
   linkType: hard
 

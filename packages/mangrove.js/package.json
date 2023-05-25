@@ -62,12 +62,12 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
-    "@mangrovedao/commonlib.js": "workspace:*",
     "@mangrovedao/mangrove-core": "1.5.1-1",
     "@mangrovedao/reliable-event-subscriber": "1.1.19",
     "async-mutex": "^0.4.0",
     "big.js": "^6.2.1",
     "ethers": "^5.7.2",
+    "json-truncate": "^3.0.0",
     "just-clone": "^6.2.0",
     "node-cleanup": "^2.1.2",
     "yargs": "^17.3.0"
@@ -82,7 +82,7 @@
     "@types/big.js": "^6.1.6",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^20.2.1",
+    "@types/node": "^18.15.11",
     "@types/shelljs": "^0.8.11",
     "@types/yargs": "^17.0.12",
     "@typescript-eslint/eslint-plugin": "^5.59.6",

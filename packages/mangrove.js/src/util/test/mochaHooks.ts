@@ -5,7 +5,7 @@ import node, { serverParamsType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
 import DevNode from "../devNode";
-import { sleep } from "@mangrovedao/commonlib.js";
+import { sleep } from "../promiseUtil";
 
 const serverParams = {
   host: "127.0.0.1",

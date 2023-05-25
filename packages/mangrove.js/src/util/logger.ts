@@ -1,4 +1,5 @@
-import { createConsoleLogger, logdataLimiter } from "@mangrovedao/commonlib.js";
+import { createConsoleLogger } from "./consoleLogger";
+import { logdataLimiter } from "./coreLogger";
 import { enableLogging as reliableEventSubscriberEnableLogging } from "@mangrovedao/reliable-event-subscriber";
 
 let loggingEnabled = false;

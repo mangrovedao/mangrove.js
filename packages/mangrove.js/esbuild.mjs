@@ -18,8 +18,12 @@ function getPath(absoluteResolvePath, shim) {
 const shimOnResolvePlugin = {
   name: "shimOnResolvePlugin",
   setup(build) {
-    build.onResolve({ filter: /^@mangrovedao\/commonlib.js$/ }, (args) => {
-      return { path: getPath(args.resolveDir, "shims/commonlib.ts") };
+    build.onResolve({ filter: /^\.\/coreLogger$/ }, (args) => {
+      return { path: getPath(args.resolveDir, "shims/coreLogger.ts") };
+    });
+
+    build.onResolve({ filter: /^\.\/consoleLogger$/ }, (args) => {
+      return { path: getPath(args.resolveDir, "shims/consoleLogger.ts") };
     });
 
     build.onResolve({ filter: /^\.\/util\/readJsonWallet$/ }, (args) => {
