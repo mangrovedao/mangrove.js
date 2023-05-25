@@ -28,13 +28,13 @@ describe("KandelDistributionHelper unit tests suite", () => {
       it("can calculate distribution with fixed base volume and fixed quote volume which follows geometric price distribution", () => {
         // Arrange
         const sut = new KandelDistributionHelper(4, 6);
-        const prices = [1000, 2000, 4000, 8000, 16000, 32000];
+        const prices = [1000, 2000, 4000, undefined, 8000, 16000, 32000];
         const firstAskIndex = 3;
 
         // Act
         const distribution = sut.calculateDistributionConstantGives(
           Big(2),
-          prices.map((x) => Big(x)),
+          prices.map((x) => (x ? Big(x) : undefined)),
           Big(1),
           Big(1000),
           firstAskIndex
@@ -43,7 +43,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         // Assert
         const calculatedPrices = distribution
           .getPricesForDistribution()
-          .map((x) => x.toNumber());
+          .map((x) => x?.toNumber());
         assert.deepStrictEqual(
           prices,
           calculatedPrices,
@@ -65,13 +65,13 @@ describe("KandelDistributionHelper unit tests suite", () => {
         it(`can calculate distribution with only ${offerType}`, () => {
           // Arrange
           const sut = new KandelDistributionHelper(4, 6);
-          const prices = [1000, 2000];
+          const prices = [1000, 2000, undefined];
           const firstAskIndex = offerType == "bids" ? 10 : 0;
 
           // Act
           const distribution = sut.calculateDistributionConstantGives(
             Big(2),
-            prices.map((x) => Big(x)),
+            prices.map((x) => (x ? Big(x) : undefined)),
             Big(1),
             Big(1000),
             firstAskIndex
@@ -85,7 +85,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
           );
           const calculatedPrices = distribution
             .getPricesForDistribution()
-            .map((x) => x.toNumber());
+            .map((x) => x?.toNumber());
           assert.deepStrictEqual(
             prices,
             calculatedPrices,
@@ -201,6 +201,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
           minPrice: firstQuote.div(firstBase),
           ratio,
           pricePoints,
+          midPrice: firstQuote.div(firstBase).mul(ratio),
         });
 
         // Act
@@ -260,7 +261,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Act
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
-          [Big(1000)],
+          [undefined, undefined, Big(1000)],
           Big(0.1),
           Big(100)
         );
@@ -438,10 +439,10 @@ describe("KandelDistributionHelper unit tests suite", () => {
       let sut: KandelDistributionHelper;
       beforeEach(() => {
         sut = new KandelDistributionHelper(4, 6);
-        prices = [1000, 2000, 4000, 8000, 16000, 32000];
+        prices = [1000, 2000, 4000, undefined, 8000, 16000, 32000];
         distribution = sut.calculateDistributionConstantGives(
           Big(2),
-          prices.map((x) => Big(x)),
+          prices.map((x) => (x ? Big(x) : undefined)),
           Big(10),
           Big(10000),
           3
@@ -465,7 +466,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         // Assert
         const newPrices = result.distribution.getPricesForDistribution();
         assert.deepStrictEqual(
-          newPrices.map((x) => x.toNumber()),
+          newPrices.map((x) => x?.toNumber()),
           prices,
           "prices should be left unchanged"
         );

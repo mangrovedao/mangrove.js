@@ -45,13 +45,9 @@ class KandelDistributionGenerator {
       throw new Error("Both base and quote cannot be constant");
     }
 
-    const pricesAndRatio = this.priceCalculation.calculatePrices(
-      params.priceParams
-    );
-
     const { askGives, bidGives } =
       this.distributionHelper.calculateMinimumInitialGives(
-        pricesAndRatio.prices,
+        this.priceCalculation.calculatePrices(params.priceParams).prices,
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer)
       );

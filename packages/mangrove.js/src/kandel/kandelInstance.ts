@@ -316,9 +316,10 @@ class KandelInstance {
     const prices = distribution.getPricesForDistribution();
     const pivots: number[] = Array(distribution.getOfferCount());
     for (let i = 0; i < pivots.length; i++) {
+      const offer = distribution.offers[i];
       pivots[i] = await this.market.getPivotId(
-        distribution.offers[i].offerType,
-        prices[i]
+        offer.offerType,
+        prices[offer.index]
       );
     }
     return pivots;
