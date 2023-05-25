@@ -644,6 +644,8 @@ class Market {
       ? maxMarketOrderGas
       : offer_gasbase.add(volume.div(density)).add(maxGasreqOffer);
 
+    console.log("estimate gas", estimation.toBigInt());
+
     if (estimation.lt(maxMarketOrderGas)) return estimation;
 
     return maxMarketOrderGas;
