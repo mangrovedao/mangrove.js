@@ -24,10 +24,5 @@
     "rootDir": "src/",
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/**/*.json"],
-  "references": [
-    {
-      "path": "../commonlib.js"
-    }
-  ]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/**/*.json"]
 }
