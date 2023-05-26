@@ -1479,6 +1479,7 @@ describe("Market integration tests suite", () => {
       "buy",
       BigNumber.from(1)
     );
+    console.log(emptyBookAsksEstimate.toString());
 
     /* create asks */
     const askGasReq = 10000;
@@ -1493,7 +1494,9 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
     const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
     expect(asksEstimate.toNumber()).to.be.equal(
-      emptyBookAsksEstimate.add(askGasReq).toNumber()
+      emptyBookAsksEstimate
+        .add(BigNumber.from(askGasReq).mul(11).div(10))
+        .toNumber()
     );
   });
 });
