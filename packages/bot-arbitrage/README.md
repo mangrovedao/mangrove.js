@@ -72,7 +72,7 @@ There are several things that can be configured in the bot.
 
 ### Logging
 
-The bot uses [@mangrovedao/commonlib.js] for logging. The log level can be set by setting the `LOG_LEVEL` environment variable. The log level can be one of the following: `debug`, `info`, `warn`, `error`, `fatal`.
+The bot uses [@mangrovedao/bot-utils] for logging. The log level can be set by setting the `LOG_LEVEL` environment variable. The log level can be one of the following: `debug`, `info`, `warn`, `error`, `fatal`.
 
 ## Tests
 

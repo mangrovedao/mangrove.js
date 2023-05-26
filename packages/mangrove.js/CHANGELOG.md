@@ -1,6 +1,7 @@
 # Next version
 
 - Use array to handle market subscription
+- commonlib.js dependency removed
 
 # 1.2.6-2
 

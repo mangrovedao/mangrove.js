@@ -1,5 +1,5 @@
 import inspect from "object-inspect";
-import { createLogger, format, CommonLogger } from "./logger";
+import { createLogger, format, CommonLogger } from "./coreLogger";
 import os from "os";
 
 const stringifyData = (data: any) => {

@@ -60,4 +60,4 @@ It is possible to override parts of the configuration with environment variables
 
 # Logging
 
-The bot logs to `console.log` using [@mangrovedao/commonlib.js].
+The bot logs to `console.log` using [@mangrovedao/bot-utils].

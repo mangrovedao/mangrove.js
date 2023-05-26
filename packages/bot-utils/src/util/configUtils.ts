@@ -1,7 +1,8 @@
-import { CommonLogger, ErrorWithData } from "@mangrovedao/commonlib.js";
+import { CommonLogger } from "../logging/coreLogger";
+import { ErrorWithData } from "../logging/errorWithData";
 import { IConfig } from "config";
 import { BotConfig, TokenConfig } from "../setup";
-import * as log from "./logger";
+import * as log from "../logging/logger";
 
 export type providerType = "http" | "websocket";
 export class ConfigUtils {
