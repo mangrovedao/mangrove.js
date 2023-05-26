@@ -60,7 +60,7 @@ export const spawn = async (params: spawnParams, mnemonic: string) => {
     setTimeout(() => {
       if (ready === null) {
         ready = false;
-        ko("timeout");
+        ko(Error("timeout"));
       }
     }, 3000);
     anvil.stdout.on("data", (data) => {

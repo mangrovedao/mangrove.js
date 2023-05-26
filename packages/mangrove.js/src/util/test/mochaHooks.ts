@@ -206,11 +206,8 @@ export const mochaHooks = {
   },
 
   async afterAllImpl(hook: hookInfo) {
-    await hook.closeCurrentProxy();
-
-    if (hook.server.process) {
-      hook.server.process.kill();
-    }
+    await hook?.closeCurrentProxy?.();
+    hook?.server?.process?.kill();
   },
 
   async beforeAll() {
