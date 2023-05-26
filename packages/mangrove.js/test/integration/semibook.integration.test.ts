@@ -976,6 +976,25 @@ describe("Semibook integration tests suite", function () {
         market.base.toUnits(minVolume).toString()
       );
     });
+
+    it("gets 1 unit if density is 0", async () => {
+      // Arrange
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      await waitForTransaction(
+        mgvAdmin.contract.setDensity(
+          market.base.address,
+          market.quote.address,
+          0
+        )
+      );
+      const semibook = market.getSemibook("asks");
+
+      // Act
+      const minVolume = await semibook.getMinimumVolume(0);
+
+      // Assert
+      assert.equal("1", market.base.toUnits(minVolume).toString());
+    });
   });
 
   describe("getMaxGasReq", () => {

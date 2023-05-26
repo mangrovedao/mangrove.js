@@ -1011,13 +1011,19 @@ class Semibook
     };
   }
 
-  /** Determines the minimum volume required to stay above density limit for the given gasreq.
+  /** Determines the minimum volume required to stay above density limit for the given gasreq (with a minimum of 1 unit of outbound, since 0 gives is not allowed).
    * @param gasreq The gas requirement for the offer.
    * @returns The minimum volume required to stay above density limit.
    */
   public async getMinimumVolume(gasreq: number) {
     const config = await this.getConfig();
-    return config.density.mul(gasreq + config.offer_gasbase);
+    const min = config.density.mul(gasreq + config.offer_gasbase);
+    return min.gt(0)
+      ? min
+      : UnitCalculations.fromUnits(
+          1,
+          this.market.getOutboundInbound(this.ba).outbound_tkn.decimals
+        );
   }
 
   static rawIdToId(rawId: BigNumber): number | undefined {
