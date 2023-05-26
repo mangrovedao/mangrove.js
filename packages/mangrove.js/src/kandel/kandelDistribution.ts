@@ -134,14 +134,14 @@ class KandelDistribution {
     return chunks;
   }
 
-  /** Gets the prices for the distribution for the given subset of offers.
+  /** Gets the prices for the distribution, with undefined for prices not represented by offers in the distribution.
    * @returns The prices in the distribution.
    */
   public getPricesForDistribution() {
-    const prices: Big[] = Array(this.offers.length);
+    const prices: Big[] = Array(this.pricePoints).fill(undefined);
 
-    this.offers.forEach((o, i) => {
-      prices[i] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
+    this.offers.forEach((o) => {
+      prices[o.index] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
     });
     return prices;
   }
@@ -192,13 +192,13 @@ class KandelDistribution {
     }
   }
 
-  /** Determines the required provision for the offers in the distribution.
+  /** Determines the required provision for the listed offers in the distribution (disregarding the number of price points).
    * @param params The parameters used to calculate the provision.
    * @param params.market The market to get provisions for bids and asks from.
    * @param params.gasreq The gas required to execute a trade.
    * @param params.gasprice The gas price to calculate provision for.
    * @returns The provision required for the number of offers.
-   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision.
+   * @remarks This takes into account that each of the offers represent a price point which can become both an ask and a bid which both require provision.
    */
   public async getRequiredProvision(params: {
     market: Market;

@@ -171,7 +171,7 @@ class KandelSeeder {
     );
   }
 
-  /** Determines the required provision for the distribution prior to sowing.
+  /** Determines the required provision for the distribution prior to sowing based on the number of price points.
    * @param seed The parameters for sowing the Kandel instance.
    * @param distribution The distribution to determine the provision for.
    * @returns The provision required for the distribution.
@@ -183,10 +183,11 @@ class KandelSeeder {
   ) {
     const gasreq = await this.getDefaultGasreq(seed.onAave);
     const gasprice = await this.getBufferedGasprice(seed);
-    return distribution.getRequiredProvision({
+    return distribution.helper.getRequiredProvision({
       market: seed.market,
       gasprice,
       gasreq,
+      offerCount: distribution.pricePoints,
     });
   }
 

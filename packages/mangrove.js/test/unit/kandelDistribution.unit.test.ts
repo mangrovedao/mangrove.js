@@ -237,5 +237,22 @@ describe("KandelDistribution unit tests suite", () => {
         price = price.mul(ratio);
       });
     });
+
+    it("returns undefined for dead offers", () => {
+      // Arrange
+      const sut = new KandelDistribution(
+        Big(1),
+        3,
+        [{ offerType: "bids", base: Big(1), quote: Big(2000), index: 1 }],
+        4,
+        6
+      );
+
+      // Act/Assert
+      assert.deepStrictEqual(
+        sut.getPricesForDistribution().map((x) => x?.toNumber()),
+        [undefined, 2000, undefined]
+      );
+    });
   });
 });

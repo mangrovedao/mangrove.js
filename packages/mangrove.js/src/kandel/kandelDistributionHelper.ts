@@ -1,3 +1,4 @@
+import { ethers } from "ethers";
 import Big from "big.js";
 import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
@@ -88,7 +89,9 @@ class KandelDistributionHelper {
     firstAskIndex: number
   ): KandelDistribution {
     const offers = prices.map((p, index) =>
-      this.getBA(index, firstAskIndex) == "bids"
+      !p
+        ? undefined
+        : this.getBA(index, firstAskIndex) == "bids"
         ? {
             index,
             base: this.baseFromQuoteAndPrice(bidGives, p),
@@ -106,7 +109,7 @@ class KandelDistributionHelper {
     return new KandelDistribution(
       ratio,
       offers.length,
-      offers,
+      offers.filter((o) => o),
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -126,16 +129,20 @@ class KandelDistributionHelper {
     firstAskIndex: number
   ): KandelDistribution {
     const base = this.roundBase(constantBase);
-    const offers = prices.map((p, index) => ({
-      index,
-      base: base,
-      quote: this.quoteFromBaseAndPrice(base, p),
-      offerType: this.getBA(index, firstAskIndex),
-    }));
+    const offers = prices.map((p, index) =>
+      !p
+        ? undefined
+        : {
+            index,
+            base: base,
+            quote: this.quoteFromBaseAndPrice(base, p),
+            offerType: this.getBA(index, firstAskIndex),
+          }
+    );
     return new KandelDistribution(
       ratio,
       offers.length,
-      offers,
+      offers.filter((o) => o),
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -155,16 +162,20 @@ class KandelDistributionHelper {
     firstAskIndex: number
   ): KandelDistribution {
     const quote = this.roundQuote(constantQuote);
-    const offers = prices.map((p, index) => ({
-      index,
-      base: this.baseFromQuoteAndPrice(quote, p),
-      quote: quote,
-      offerType: this.getBA(index, firstAskIndex),
-    }));
+    const offers = prices.map((p, index) =>
+      !p
+        ? undefined
+        : {
+            index,
+            base: this.baseFromQuoteAndPrice(quote, p),
+            quote: quote,
+            offerType: this.getBA(index, firstAskIndex),
+          }
+    );
     return new KandelDistribution(
       ratio,
       offers.length,
-      offers,
+      offers.filter((o) => o),
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -234,9 +245,9 @@ class KandelDistributionHelper {
   }) {
     const prices = params.distribution.getPricesForDistribution();
 
-    const offerWithPrices = params.distribution.offers.map((offer, i) => ({
+    const offerWithPrices = params.distribution.offers.map((offer) => ({
       offer,
-      price: prices[i],
+      price: prices[offer.index],
     }));
     const asks = offerWithPrices.filter((o) => o.offer.offerType == "asks");
     const bases = asks.map((o) => o.offer.base);
@@ -395,10 +406,10 @@ class KandelDistributionHelper {
     let minPrice = prices[0];
     let maxPrice = prices[0];
     prices.forEach((p) => {
-      if (p.lt(minPrice)) {
+      if (p?.lt(minPrice ?? Big(ethers.constants.MaxUint256.toString()))) {
         minPrice = p;
       }
-      if (p.gt(maxPrice)) {
+      if (p?.gt(maxPrice ?? 0)) {
         maxPrice = p;
       }
     });

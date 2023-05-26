@@ -469,13 +469,15 @@ describe("Kandel integration tests suite", function () {
           const firstBase = Big(1);
           const firstQuote = Big(1000);
           const pricePoints = 6;
+          const midPrice = Big(1200);
           const distribution = kandel.generator.calculateDistribution({
             priceParams: {
               minPrice: firstQuote.div(firstBase),
               ratio,
               pricePoints,
+              midPrice,
             },
-            midPrice: Big(1200),
+            midPrice,
             initialAskGives: firstBase,
           });
 
@@ -552,8 +554,8 @@ describe("Kandel integration tests suite", function () {
           );
           assert.equal(
             countOfferWrites,
-            6,
-            "there should be 1 offerWrite for each offer"
+            distribution.pricePoints - 1,
+            "there should be 1 offerWrite for each offer, and there is a hole"
           );
 
           const book = market.getBook();
@@ -585,7 +587,7 @@ describe("Kandel integration tests suite", function () {
             );
           }
           // assert bids
-          assert.equal(bids.length, 3, "3 bids should be populated");
+          assert.equal(bids.length, 2, "2 bids should be populated, 1 hole");
           for (let i = 0; i < bids.length; i++) {
             const offer = bids[bids.length - 1 - i];
             const d = distribution.offers[i];
@@ -1396,10 +1398,10 @@ describe("Kandel integration tests suite", function () {
         // Assert
         const oldPrices = existingDistribution
           .getPricesForDistribution()
-          .map((x) => x.round(4).toNumber());
+          .map((x) => x?.round(4).toNumber());
         const newPrices = result.distribution
           .getPricesForDistribution()
-          .map((x) => x.round(4).toNumber());
+          .map((x) => x?.round(4).toNumber());
         assert.deepStrictEqual(newPrices, oldPrices);
         assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
         assert.ok(

@@ -175,6 +175,34 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         });
       });
 
+      it("can calculate distribution with constant base with midPrice", () => {
+        // Arrange/Act
+        const distribution = sut.calculateDistribution({
+          priceParams: { ...priceParams, midPrice: Big(4000) },
+          midPrice: Big(4000),
+          initialAskGives: Big(1),
+        });
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
+
+        // Assert
+        assert.equal(offeredVolume.requiredBase.toNumber(), 2);
+        assert.equal(offeredVolume.requiredQuote.toNumber(), 3000);
+        assert.equal(distribution.pricePoints, pricePoints);
+        assert.equal(
+          distribution.getOfferCount(),
+          pricePoints - 1,
+          "A hole should be left for the midPrice"
+        );
+        distribution.offers.forEach((d) => {
+          assert.equal(d.base.toNumber(), 1, `wrong base at ${d.index}`);
+          assert.equal(
+            d.quote.toNumber(),
+            minPrice.mul(ratio.pow(d.index)).toNumber(),
+            `wrong quote at ${d.index}`
+          );
+        });
+      });
+
       it("can calculate distribution with constant quote", () => {
         // Arrange/Act
         const distribution = sut.calculateDistribution({
