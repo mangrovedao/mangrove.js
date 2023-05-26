@@ -8,7 +8,7 @@ import Trade from "./util/trade";
 
 let canConstructMarket = false;
 
-const MAX_MARKET_ORDER_GAS = 6500000;
+const MAX_MARKET_ORDER_GAS = 10000000;
 
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
@@ -640,9 +640,14 @@ class Market {
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
     const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
+    // boosting estimates of 10% to be on the safe side
     const estimation = density.isZero()
       ? maxMarketOrderGas
-      : offer_gasbase.add(volume.div(density)).add(maxGasreqOffer);
+      : offer_gasbase
+          .add(volume.div(density))
+          .add(maxGasreqOffer)
+          .mul(11)
+          .div(10);
 
     if (estimation.lt(maxMarketOrderGas)) return estimation;
 

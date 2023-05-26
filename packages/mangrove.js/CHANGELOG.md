@@ -1,6 +1,8 @@
 # Next version
 
 - Use array to handle market subscription
+- [bug fix] gas estimates for market orders is boosted to avoid `NotEnoughGasForMaker` type of tx failures.
+- max gas limit for market orders is set to 10,000,000
 - commonlib.js dependency removed
 
 # 1.2.6-2
