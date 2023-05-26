@@ -1479,7 +1479,6 @@ describe("Market integration tests suite", () => {
       "buy",
       BigNumber.from(1)
     );
-    console.log(emptyBookAsksEstimate.toString());
 
     /* create asks */
     const askGasReq = 10000;
