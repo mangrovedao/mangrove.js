@@ -875,6 +875,7 @@ jobs:
     needs:
     - security-guard
     - file-guard
+    - mangrove-js
     - bot-utils
     - bot-cleaning
     - bot-maker-noise
