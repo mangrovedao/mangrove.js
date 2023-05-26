@@ -16,7 +16,7 @@
         "test": "yarn workspaces foreach --topological-dev run test"
     },
     "devDependencies": {
-        "husky": "^7.0.2"
+        "husky": "^8.0.3"
     },
     "dependencies": {
         "@mangrovedao/mangrove-core": "1.5.1-1",
