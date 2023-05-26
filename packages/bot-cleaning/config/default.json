@@ -1,9 +1,0 @@
-{
-  "logLevel": "info",
-  "markets": [
-    ["WETH", "DAI"],
-    ["WETH", "USDC"],
-    ["DAI", "USDC"]
-  ],
-  "runEveryXMinutes": 10
-}

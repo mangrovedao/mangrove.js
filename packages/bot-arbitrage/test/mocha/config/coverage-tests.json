@@ -1,8 +1,0 @@
-{
-  "require": ["ts-node/register", "build/util/test/mochaHooks.js"],
-  "recursive": true,
-  "spec": ["test/unit/*unit.test.ts", "test/integration/*integration.test.ts"],
-  "timeout": 180000,
-  "reporter": "mocha-multi-reporters",
-  "reporterOptions": "configFile=test/mocha/config/coverage-tests-multi-reporters.json"
-}
