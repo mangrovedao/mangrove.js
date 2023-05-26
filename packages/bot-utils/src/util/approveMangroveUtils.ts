@@ -1,8 +1,8 @@
-import { CommonLogger } from "@mangrovedao/commonlib.js";
+import { CommonLogger } from "../logging/coreLogger";
 import Mangrove from "@mangrovedao/mangrove.js";
 import { IConfig } from "config";
 import { TokenConfig } from "../setup";
-import * as log from "./logger";
+import * as log from "../logging/logger";
 
 export class ApproveMangroveUtils {
   #config: IConfig;

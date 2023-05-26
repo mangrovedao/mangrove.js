@@ -1,10 +1,10 @@
-import * as log from "./logger";
+import * as log from "../logging/logger";
 
 import Mangrove, { MgvToken } from "@mangrovedao/mangrove.js";
 
 import { Provider } from "@ethersproject/providers";
 import { IConfig } from "config";
-import { CommonLogger } from "@mangrovedao/commonlib.js";
+import { CommonLogger } from "../logging/coreLogger";
 
 type TokenConfig = {
   name: string;

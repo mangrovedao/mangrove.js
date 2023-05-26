@@ -1,10 +1,8 @@
-import { CommonLogger } from "@mangrovedao/commonlib.js";
+import { CommonLogger } from "../logging/coreLogger";
 import { Market } from "@mangrovedao/mangrove.js";
 import Big from "big.js";
-import { IConfig } from "config";
 import { fetchJson } from "ethers/lib/utils";
 import random from "random";
-import * as log from "./logger";
 import { Network, Alchemy } from "alchemy-sdk";
 
 export class PriceUtils {

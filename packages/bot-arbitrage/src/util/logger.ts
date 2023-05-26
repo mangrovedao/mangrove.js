@@ -1,4 +1,4 @@
-import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib.js";
+import { createLogger, CommonLogger, format } from "@mangrovedao/bot-utils";
 import os from "os";
 import safeStringify from "fast-safe-stringify";
 import config from "./config";
