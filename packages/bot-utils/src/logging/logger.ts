@@ -1,4 +1,5 @@
-import { createLogger, CommonLogger, format } from "@mangrovedao/commonlib.js";
+import { createLogger, format, CommonLogger } from "./coreLogger";
+
 import os from "os";
 import safeStringify from "fast-safe-stringify";
 import { IConfig } from "config";

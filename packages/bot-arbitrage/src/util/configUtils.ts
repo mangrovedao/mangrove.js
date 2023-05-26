@@ -1,4 +1,4 @@
-import { CommonLogger, ErrorWithData } from "@mangrovedao/commonlib.js";
+import { ErrorWithData } from "@mangrovedao/bot-utils";
 import { IConfig } from "config";
 import { configUtils as botConfigUtils } from "@mangrovedao/bot-utils";
 import { ExchangeFee } from "./Configs";

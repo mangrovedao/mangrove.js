@@ -32,9 +32,6 @@
         "path": "./packages/bot-arbitrage",
       },
       {
-        "path": "./packages/commonlib.js",
-      },
-      {
         "path": "./packages/mangrove.js",
       }
     ]

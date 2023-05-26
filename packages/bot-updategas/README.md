@@ -62,7 +62,7 @@ Here's an example configuration file with instances of all possible configuratio
 }
 ```
 
-- `logLevel`: Sets the logging level - the bot employs @mangrovedao/commonlib.js, and it's default log-levels.
+- `logLevel`: Sets the logging level - the bot employs @mangrovedao/bot-utils, and it's default log-levels.
 - `acceptableGasGapToOracle`: If the difference between Mangrove's current gas price and the standard gas price reported by the oracle is above this threshold a gas price update will be sent to Mangrove's gas price oracle.
 - `constantOracleGasPrice`: A constant gas price to be returned by this bot. _This setting overrides a given `oracleURL`._
 - `oracleURL`: URL for an external oracle - expects a JSON REST endpoint a la <https://gasstation-mainnet.matic.network/>. _This setting is only used if `constantOracleGasPrice` is not given._
@@ -77,4 +77,4 @@ It is possible to override parts of the configuration with environment variables
 
 # Logging
 
-The bot logs to `console.log` using [@mangrovedao/commonlib.js].
+The bot logs to `console.log` using [@mangrovedao/bot-utils].

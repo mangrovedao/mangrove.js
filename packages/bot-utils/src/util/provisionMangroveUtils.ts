@@ -1,7 +1,7 @@
-import { CommonLogger } from "@mangrovedao/commonlib.js";
+import { CommonLogger } from "../logging/coreLogger";
 import Mangrove, { ethers } from "@mangrovedao/mangrove.js";
 import { IConfig } from "config";
-import * as log from "./logger";
+import * as log from "../logging/logger";
 
 export class ProvisionMangroveUtils {
   #config: IConfig;

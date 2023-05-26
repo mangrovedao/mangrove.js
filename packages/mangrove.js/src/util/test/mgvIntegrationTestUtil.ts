@@ -279,7 +279,7 @@ function didPollEventHandler(pollId: number): void {
     // setImmediate(() => setImmediate(() => eventsForLastTxHaveBeenGeneratedDeferred.resolve()));
     // TODO: This hack seems to work, but a more direct solution would be great
     // NB: We tried various uses of setImmediately, but couldn't get it to work.
-    setTimeout(() => eventsForLastTxHaveBeenGeneratedDeferred.resolve(), 1);
+    setTimeout(() => eventsForLastTxHaveBeenGeneratedDeferred?.resolve(), 1);
   }
 }
 

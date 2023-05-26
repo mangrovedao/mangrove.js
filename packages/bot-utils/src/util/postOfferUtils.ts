@@ -1,9 +1,9 @@
-import { CommonLogger } from "@mangrovedao/commonlib.js";
+import { CommonLogger } from "../logging/coreLogger";
 import { ethers, LiquidityProvider, Market } from "@mangrovedao/mangrove.js";
 import Big from "big.js";
 import { IConfig } from "config";
 import { BigNumberish } from "ethers";
-import * as log from "./logger";
+import * as log from "../logging/logger";
 
 export type offerData = {
   market: Market;
