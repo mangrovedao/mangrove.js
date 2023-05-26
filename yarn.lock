@@ -1478,7 +1478,7 @@ __metadata:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
-    "@mangrovedao/mangrove.js": ~1.2.6-6
+    "@mangrovedao/mangrove.js": 1.2.6-5
     "@types/big.js": ^6.1.6
     "@types/chai": ^4.3.4
     "@types/chai-as-promised": ^7.1.5
@@ -1519,6 +1519,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@mangrovedao/commonlib.js@npm:1.0.0":
+  version: 1.0.0
+  resolution: "@mangrovedao/commonlib.js@npm:1.0.0"
+  dependencies:
+    "@types/object-inspect": ^1.8.1
+    "@types/triple-beam": ^1.3.2
+    config: ^3.3.8
+    dotenv-flow: ^3.2.0
+    fast-safe-stringify: ^2.1.1
+    json-truncate: ^3.0.0
+    logform: ^2.4.2
+    loglevel: ^1.8.0
+    object-inspect: ^1.12.2
+    triple-beam: ^1.3.0
+  checksum: 31e53eca39a3abdaa3577a0672657e3df56f4687451bab99c6cca860c629d3f3fad42602590db4092a2871a7d870d5f03c89cc3b410777bc303738cb7bc6440f
+  languageName: node
+  linkType: hard
+
 "@mangrovedao/mangrove-core@npm:1.5.1-1":
   version: 1.5.1-1
   resolution: "@mangrovedao/mangrove-core@npm:1.5.1-1"
@@ -1526,7 +1544,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove.js@workspace:packages/mangrove.js, @mangrovedao/mangrove.js@~1.2.6-6":
+"@mangrovedao/mangrove.js@npm:1.2.6-5":
+  version: 1.2.6-5
+  resolution: "@mangrovedao/mangrove.js@npm:1.2.6-5"
+  dependencies:
+    "@ethersproject/experimental": ^5.7.0
+    "@mangrovedao/commonlib.js": 1.0.0
+    "@mangrovedao/mangrove-core": 1.5.1-1
+    "@mangrovedao/reliable-event-subscriber": 1.1.19
+    async-mutex: ^0.4.0
+    big.js: ^6.2.1
+    ethers: ^5.7.2
+    just-clone: ^6.2.0
+    node-cleanup: ^2.1.2
+    yargs: ^17.3.0
+  bin:
+    mgv: ./dist/nodejs/cli/mgv.js
+  checksum: 8156f46be564416ba02e9b7031635b91c28c2ad589d05e433b37c705a6d7206c15d75c89f920da46e45103285ee5234005871962e327b04cca3135a461d3e4d3
+  languageName: node
+  linkType: hard
+
+"@mangrovedao/mangrove.js@workspace:packages/mangrove.js":
   version: 0.0.0-use.local
   resolution: "@mangrovedao/mangrove.js@workspace:packages/mangrove.js"
   dependencies:
@@ -5256,7 +5294,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"logform@npm:^2.5.1":
+"logform@npm:^2.4.2, logform@npm:^2.5.1":
   version: 2.5.1
   resolution: "logform@npm:2.5.1"
   dependencies:
@@ -5280,7 +5318,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"loglevel@npm:^1.4.1":
+"loglevel@npm:^1.4.1, loglevel@npm:^1.8.0":
   version: 1.8.1
   resolution: "loglevel@npm:1.8.1"
   checksum: a1a62db40291aaeaef2f612334c49e531bff71cc1d01a2acab689ab80d59e092f852ab164a5aedc1a752fdc46b7b162cb097d8a9eb2cf0b299511106c29af61d
@@ -6025,7 +6063,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"object-inspect@npm:^1.12.3, object-inspect@npm:^1.9.0":
+"object-inspect@npm:^1.12.2, object-inspect@npm:^1.12.3, object-inspect@npm:^1.9.0":
   version: 1.12.3
   resolution: "object-inspect@npm:1.12.3"
   checksum: dabfd824d97a5f407e6d5d24810d888859f6be394d8b733a77442b277e0808860555176719c5905e765e3743a7cada6b8b0a3b85e5331c530fd418cc8ae991db

@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
-    "@mangrovedao/mangrove.js": "~1.2.6-6",
+    "@mangrovedao/mangrove.js": "1.2.6-5",
     "@types/big.js": "^6.1.6",
     "@types/finalhandler": "^1.2.0",
     "@types/serve-static": "^1.15.0",
