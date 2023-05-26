@@ -1,6 +1,6 @@
 [![CI](https://github.com/mangrovedao/mangrove-ts/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove-ts/actions/workflows/node.js.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove-ts/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove-ts)
 
-This repo contains the SDK for developing TypeScript (and JavaScript) apps using the Mangrove, as well as a number of bots that use this SDK. 
+This repo contains the SDK for developing TypeScript (and JavaScript) apps using the Mangrove. 
 
 The core contracts for Mangrove with example Solidity offer logics live in the [mangrove-core](https://github.com/mangrovedao/mangrove-core) repo. 
 
