@@ -16,7 +16,7 @@
         "husky": "^8.0.3"
     },
     "dependencies": {
-        "@mangrovedao/mangrove-core": "1.5.1-1",
+        "@mangrovedao/mangrove-core": "1.5.2",
         "pinst": "^3.0.0"
     },
     "packageManager": "yarn@3.1.0"
