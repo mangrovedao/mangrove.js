@@ -5,6 +5,7 @@ import { Market, MgvToken, Mangrove } from "../..";
 import * as typechain from "../../types/typechain";
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Deferred } from "../../util";
+import { PromiseOrValue } from "../../types/typechain/common";
 
 export type Account = {
   name: string;
@@ -40,7 +41,7 @@ let addresses: Addresses;
 
 let mgv: Mangrove;
 let mgvAdmin: Mangrove;
-let signers: any = {};
+const signers: any = {};
 
 // With the removal of hardhat, there is no "default chain" anymore
 // (it used to be implicit since we ran the ethereum local server in-process).
@@ -121,6 +122,7 @@ export enum AccountName {
   Deployer = "deployer", // Owner of deployed MGV and token contracts
   Cleaner = "cleaner", // Owner of cleaner EOA
   Maker = "maker", // Owner of maker
+  Arbitrager = "arbitrager",
 }
 
 export const getAccount = async (name: AccountName): Promise<Account> => {
@@ -243,112 +245,16 @@ let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
  */
 export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
 
-/**
- * Waits for last tx to be generated and optionally the market's books to be synced.
- * WARNING: If `market` is given, then `SetGasbase` events (with no actual change to gasbase)
- * are provoked to gage semibook-states. Handle accordingly in your test code.
- * @param market wait for books in this market to be in sync.
- */
-export async function waitForBooksForLastTx(market?: Market) {
-  // Wait for txs so we can get the right block number for them
-  await eventsForLastTxHaveBeenGenerated();
-  if (!isTrackingPolls) {
-    throw Error(
-      "call initPollOfTransactionTracking before trying to await waitForBooksForLastTx"
-    );
-  }
-  if (market) {
-    /*
-      Provoke and then listen specifically for SetGasbase events for each semibook.
-      As events are received in the order over they are produced over websockets, when
-      these SetGasbase-events are processed by the semibooks, we know that any
-      previously emitted events have also been processed
-    */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    let asksPromiseResolve: (value?: any) => void;
-    const askPromise = new Promise((resolve) => {
-      asksPromiseResolve = resolve;
-    });
+export async function waitForBlock(mgv: Mangrove, blockNumber: number) {
+  let block = await mgv.reliableProvider.blockManager.getBlock(blockNumber);
 
-    // set up semibook subscribers
-    const asksCB = (
-      cbArg: Market.BookSubscriptionCbArgument,
-      bookEvent: Market.BookSubscriptionEvent
-    ) => {
-      if (cbArg.ba === "asks" && bookEvent.name === "SetGasbase") {
-        asksPromiseResolve();
-      }
-    };
-
-    let bidsPromiseResolve: (value?: any) => void;
-    const bidsPromise = new Promise((resolve) => {
-      bidsPromiseResolve = resolve;
-    });
-
-    const bidsCB = (
-      cbArg: Market.BookSubscriptionCbArgument,
-      bookEvent: Market.BookSubscriptionEvent
-    ) => {
-      if (cbArg.ba === "bids" && bookEvent.name === "SetGasbase") {
-        bidsPromiseResolve();
-      }
-    };
-
-    market.subscribe(asksCB);
-    market.subscribe(bidsCB);
-
-    // we provoke both semibooks to process events by
-    // sending a setGasbase events to both books
-    const localConfig = await market.config();
-    const asksGasBase = localConfig.asks.offer_gasbase;
-    const bidsGasBase = localConfig.bids.offer_gasbase;
-
-    if (!mgvAdmin) {
-      throw Error("_mgvAdmin is null. Setup _mgvAdmin via setConfig!");
-    }
-
-    await waitForTransaction(
-      mgvAdmin.contract.setGasbase(
-        market.base.address,
-        market.quote.address,
-        asksGasBase
-      )
-    );
-
-    await waitForTransaction(
-      mgvAdmin.contract.setGasbase(
-        market.quote.address,
-        market.base.address,
-        bidsGasBase
-      )
-    );
-
-    // and now wait for both
-    await Promise.all([askPromise, bidsPromise])
-      .then(
-        () => {},
-        (reason) => {
-          throw new Error(
-            `Error in waiting for synthetic SetGasbase events in waitForBooksForLastTx: ${reason}`
-          );
-        }
-      )
-      .finally(() => {
-        market.unsubscribe(asksCB);
-        market.unsubscribe(bidsCB);
-      });
+  while (!block || block.number !== blockNumber) {
+    await sleep(200);
+    block = await mgv.reliableProvider.blockManager.getBlock(blockNumber);
   }
 }
-
-function eventsForLastTxHaveBeenGenerated() {
-  if (!eventsForLastTxHaveBeenGeneratedPromise) {
-    throw Error(
-      "call initPollOfTransactionTracking before trying to await eventsForLastTxHaveBeenGenerated"
-    );
-  }
-  return eventsForLastTxHaveBeenGeneratedPromise;
-}
-
 // Handler for ethers.js "poll" events:
 // "emitted during each poll cycle after `blockNumber` is updated (if changed) and
 // before any other events (if any) are emitted during the poll loop"
@@ -373,7 +279,7 @@ function didPollEventHandler(pollId: number): void {
     // setImmediate(() => setImmediate(() => eventsForLastTxHaveBeenGeneratedDeferred.resolve()));
     // TODO: This hack seems to work, but a more direct solution would be great
     // NB: We tried various uses of setImmediately, but couldn't get it to work.
-    setTimeout(() => eventsForLastTxHaveBeenGeneratedDeferred.resolve(), 1);
+    setTimeout(() => eventsForLastTxHaveBeenGeneratedDeferred?.resolve(), 1);
   }
 }
 
@@ -401,17 +307,49 @@ export const stopPollOfTransactionTracking = (): void => {
  * it allows us to track when events for the last tx have been generated.
  * NB: Only works when this is awaited before sending more tx's.
  */
-export async function waitForTransaction(
-  txPromise: Promise<ContractTransaction>
-): Promise<TransactionReceipt> {
+export async function waitForTransactions(
+  txPromises: PromiseOrValue<PromiseOrValue<ContractTransaction>[]>
+): Promise<TransactionReceipt[]> {
+  const txs = await txPromises;
+  const receipts: TransactionReceipt[] = Array(txs.length);
+  for (let i = 0; i < txs.length; i++) {
+    receipts[i] = await waitForTransaction(txs[i]);
+  }
+  return receipts;
+}
+
+/**
+ * Use this to await transactions or return immediately if promise returns undefined. In addition to convenience,
+ * it allows us to track when events for the last tx have been generated.
+ * NB: Only works when this is awaited before sending more tx's.
+ */
+export async function waitForOptionalTransaction(
+  txPromise: PromiseOrValue<ContractTransaction | undefined>
+): Promise<TransactionReceipt | undefined> {
   awaitedPollId = undefined;
   lastTxReceipt = undefined;
   const tx = await txPromise;
+  if (tx === undefined) return undefined;
   lastTxReceipt = await tx.wait();
   if (isTrackingPolls) {
     eventsForLastTxHaveBeenGeneratedDeferred = new Deferred();
     eventsForLastTxHaveBeenGeneratedPromise =
       eventsForLastTxHaveBeenGeneratedDeferred.promise;
+  }
+  return lastTxReceipt;
+}
+
+/**
+ * Use this to await transactions. In addition to convenience,
+ * it allows us to track when events for the last tx have been generated.
+ * NB: Only works when this is awaited before sending more tx's.
+ */
+export async function waitForTransaction(
+  txPromise: PromiseOrValue<ContractTransaction>
+): Promise<TransactionReceipt> {
+  const lastTxReceipt = await waitForOptionalTransaction(txPromise);
+  if (lastTxReceipt === undefined) {
+    throw Error("Receipt not returned from Tx.");
   }
   return lastTxReceipt;
 }
@@ -426,7 +364,7 @@ export const postNewOffer = async ({
   gasreq = 5e4,
   shouldFail = false,
   shouldRevert = false,
-}: NewOffer): Promise<void> => {
+}: NewOffer) => {
   const { inboundToken, outboundToken } = getTokens(market, ba);
 
   // we start by making sure that Mangrove is approved (for infinite fund withdrawal)
@@ -434,7 +372,8 @@ export const postNewOffer = async ({
   await waitForTransaction(
     maker.connectedContracts.testMaker.approveMgv(
       outboundToken.address,
-      ethers.constants.MaxUint256
+      ethers.constants.MaxUint256,
+      { gasLimit: 100_000 }
     )
   );
 
@@ -451,7 +390,7 @@ export const postNewOffer = async ({
     maker.connectedContracts.testMaker.shouldRevert(shouldRevert)
   );
 
-  await waitForTransaction(
+  return await waitForTransaction(
     maker.connectedContracts.testMaker[
       "newOffer(address,address,uint256,uint256,uint256,uint256)"
     ](outboundToken.address, inboundToken.address, wants, gives, gasreq, 1)
@@ -462,8 +401,8 @@ export const postNewRevertingOffer = async (
   market: Market,
   ba: Market.BA,
   maker: Account
-): Promise<void> => {
-  await postNewOffer({
+) => {
+  return await postNewOffer({
     market,
     ba,
     maker,
@@ -477,16 +416,16 @@ export const postNewSucceedingOffer = async (
   market: Market,
   ba: Market.BA,
   maker: Account
-): Promise<void> => {
-  await postNewOffer({ market, ba, maker });
+) => {
+  return await postNewOffer({ market, ba, maker });
 };
 
 export const postNewFailingOffer = async (
   market: Market,
   ba: Market.BA,
   maker: Account
-): Promise<void> => {
-  await postNewOffer({ market, ba, maker, shouldFail: true });
+) => {
+  return await postNewOffer({ market, ba, maker, shouldFail: true });
 };
 
 export const setMgvGasPrice = async (
@@ -527,42 +466,4 @@ export const mint = async (
   amount: number
 ): Promise<void> => {
   await rawMint(token, receiver.address, token.toUnits(amount));
-};
-
-export const approveMgv = async (
-  token: MgvToken,
-  owner: Account,
-  amount: number
-): Promise<void> => {
-  const addresses = await getAddresses();
-  await approve(token, owner, addresses.mangrove.address, amount);
-};
-
-export const approve = async (
-  token: MgvToken,
-  owner: Account,
-  spenderAddress: string,
-  amount: number
-): Promise<void> => {
-  switch (token.name) {
-    case "TokenA":
-      await waitForTransaction(
-        owner.connectedContracts.tokenA.approve(
-          spenderAddress,
-          token.toUnits(amount)
-        )
-      );
-
-      break;
-
-    case "TokenB":
-      await waitForTransaction(
-        owner.connectedContracts.tokenB.approve(
-          spenderAddress,
-          token.toUnits(amount)
-        )
-      );
-
-      break;
-  }
 };

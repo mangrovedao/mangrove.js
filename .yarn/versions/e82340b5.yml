@@ -1,0 +1,9 @@
+undecided:
+  - "@mangrovedao/bot-cleaning"
+  - "@mangrovedao/bot-failing-offer"
+  - "@mangrovedao/bot-maker-noise"
+  - "@mangrovedao/bot-taker-greedy"
+  - "@mangrovedao/bot-template"
+  - "@mangrovedao/bot-updategas"
+  - "@mangrovedao/bot-utils"
+  - "@mangrovedao/commonlib.js"

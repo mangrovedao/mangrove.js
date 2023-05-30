@@ -28,3 +28,5 @@ out.html
 # js tests state dumps
 **/mangroveJsTestServerState.dump
 merged.info
+packages/bot-arbitrage/src/types/typechain
+packages/bot-arbitrage/broadcast

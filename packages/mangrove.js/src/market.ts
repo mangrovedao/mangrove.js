@@ -8,7 +8,7 @@ import Trade from "./util/trade";
 
 let canConstructMarket = false;
 
-const MAX_MARKET_ORDER_GAS = 6500000;
+const MAX_MARKET_ORDER_GAS = 10000000;
 
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
@@ -59,6 +59,7 @@ namespace Market {
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[];
     restingOrder?: Market.OfferSlim;
   };
+
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
     | ({ name: "OfferFail" } & TCM.OfferFailEvent)
@@ -202,9 +203,9 @@ namespace Market {
     cbArg: BookSubscriptionCbArgument,
     event?: BookSubscriptionEvent,
     ethersLog?: ethers.providers.Log
-  ) => T;
+  ) => T | Promise<T>;
   export type StorableMarketCallback = MarketCallback<any>;
-  export type MarketFilter = MarketCallback<boolean | Promise<boolean>>;
+  export type MarketFilter = MarketCallback<boolean>;
   export type SubscriptionParam =
     | { type: "multiple" }
     | {
@@ -221,7 +222,6 @@ namespace Market {
     givenResidue: Big;
   };
 }
-
 // no unsubscribe yet
 /**
  * The Market class focuses on a Mangrove market.
@@ -245,6 +245,9 @@ class Market {
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
+  private asksCb: Semibook.EventListener;
+  private bidsCb: Semibook.EventListener;
+
   static async connect(
     params: {
       mgv: Mangrove;
@@ -266,12 +269,6 @@ class Market {
     return market;
   }
 
-  /* Stop listening to events from mangrove */
-  disconnect(): void {
-    this.#asksSemibook.disconnect();
-    this.#bidsSemibook.disconnect();
-  }
-
   /**
    * Initialize a new `params.base`:`params.quote` market.
    *
@@ -289,6 +286,11 @@ class Market {
 
     this.base = this.mgv.token(params.base);
     this.quote = this.mgv.token(params.quote);
+  }
+
+  public close() {
+    this.#asksSemibook.removeEventListener(this.asksCb);
+    this.#bidsSemibook.removeEventListener(this.bidsCb);
   }
 
   initialize(): Promise<void> {
@@ -318,16 +320,18 @@ class Market {
           : undefined,
     });
 
+    this.asksCb = this.#semibookEventCallback.bind(this);
     const asksPromise = Semibook.connect(
       this,
       "asks",
-      (e) => this.#semibookEventCallback(e),
+      this.asksCb,
       getSemibookOpts("asks")
     );
+    this.bidsCb = this.#semibookEventCallback.bind(this);
     const bidsPromise = Semibook.connect(
       this,
       "bids",
-      (e) => this.#semibookEventCallback(e),
+      this.bidsCb,
       getSemibookOpts("bids")
     );
     this.#asksSemibook = await asksPromise;
@@ -404,6 +408,13 @@ class Market {
 
   async isLive(ba: Market.BA, offerId: number): Promise<boolean> {
     const offer: Market.Offer = await this.getSemibook(ba).offerInfo(offerId);
+    return this.isLiveOffer(offer);
+  }
+
+  isLiveOffer(offer: Market.Offer): boolean {
+    if (!offer.gives.gt) {
+      console.log(offer);
+    }
     return offer.gives.gt(0);
   }
 
@@ -414,11 +425,19 @@ class Market {
     return this.getSemibook(ba).getPivotId(price);
   }
 
+  /** Gets the amount of ethers necessary to provision an offer on the market.
+   * @param ba bids or asks
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the amount of ethers necessary to provision the offer.
+   */
   async getOfferProvision(
     ba: Market.BA,
     gasreq: number,
-    gasprice: number
+    gasprice?: number
   ): Promise<Big> {
+    // 0 makes calculation use mgv gasprice
+    gasprice ??= 0;
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     const prov = await this.mgv.readerContract[
       "getProvision(address,address,uint256,uint256)"
@@ -426,11 +445,46 @@ class Market {
     return this.mgv.fromUnits(prov, 18);
   }
 
-  getBidProvision(gasreq: number, gasprice: number): Promise<Big> {
+  /** Gets the amount of ethers necessary to provision a bid on the market.
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the amount of ethers necessary to provision the offer.
+   */
+  getBidProvision(gasreq: number, gasprice?: number): Promise<Big> {
     return this.getOfferProvision("bids", gasreq, gasprice);
   }
-  getAskProvision(gasreq: number, gasprice: number): Promise<Big> {
+
+  /** Gets the amount of ethers necessary to provision a bid on the market.
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the amount of ethers necessary to provision the offer.
+   */
+  getAskProvision(gasreq: number, gasprice?: number): Promise<Big> {
     return this.getOfferProvision("asks", gasreq, gasprice);
+  }
+
+  /** Gets the missing provision in ethers for an offer with the given parameters
+   * @param ba bids or asks
+   * @param lockedProvision the provision already locked with the offer
+   * @param gasreq gas required for the offer execution.
+   * @param gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the additional required provision, in ethers.
+   */
+  async getMissingProvision(
+    ba: Market.BA,
+    lockedProvision: Bigish,
+    gasreq: number,
+    gasprice?: number
+  ) {
+    const totalRequiredProvision = await this.getOfferProvision(
+      ba,
+      gasreq,
+      gasprice
+    );
+    return this.mgv.getMissingProvision(
+      lockedProvision,
+      totalRequiredProvision
+    );
   }
 
   bidInfo(offerId: number): Promise<Market.Offer> {
@@ -586,9 +640,14 @@ class Market {
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
     const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
+    // boosting estimates of 10% to be on the safe side
     const estimation = density.isZero()
       ? maxMarketOrderGas
-      : offer_gasbase.add(volume.div(density)).add(maxGasreqOffer);
+      : offer_gasbase
+          .add(volume.div(density))
+          .add(maxGasreqOffer)
+          .mul(11)
+          .div(10);
 
     if (estimation.lt(maxMarketOrderGas)) return estimation;
 
@@ -640,7 +699,7 @@ class Market {
   /**
    * Return config local to a market.
    * Returned object is of the form
-   * {bids,asks} where bids and asks are of type `localConfig`
+   * `{bids,asks}` where bids and asks are of type `localConfig`
    * Notes:
    * Amounts are converted to plain numbers.
    * density is converted to public token units per gas used

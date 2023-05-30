@@ -27,7 +27,7 @@ function convertToApproveArgs(arg: ApproveArgs): {
 } {
   let amount: Bigish;
   let overrides: ethers.Overrides;
-  if (arg["amount"]) {
+  if (arg["amount"] != undefined) {
     amount = arg["amount"];
   } else if (typeof arg != "object") {
     amount = arg;
@@ -40,9 +40,9 @@ function convertToApproveArgs(arg: ApproveArgs): {
     overrides = arg as ethers.Overrides;
   }
 
-  if (amount && overrides) {
+  if (amount != undefined && overrides) {
     return { amount, overrides };
-  } else if (amount) {
+  } else if (amount != undefined) {
     return { amount, overrides: {} };
   } else if (overrides) {
     return { overrides: overrides };
@@ -148,14 +148,20 @@ class MgvToken {
   async allowance(
     params: { owner?: string; spender?: string } = {}
   ): Promise<Big> {
+    const rawAmount = await this.getRawAllowance(params);
+    return this.fromUnits(rawAmount);
+  }
+
+  private async getRawAllowance(
+    params: { owner?: string; spender?: string } = {}
+  ) {
     if (typeof params.owner === "undefined") {
       params.owner = await this.mgv.signer.getAddress();
     }
     if (typeof params.spender === "undefined") {
       params.spender = this.mgv.address;
     }
-    const amount = await this.contract.allowance(params.owner, params.spender);
-    return this.fromUnits(amount);
+    return await this.contract.allowance(params.owner, params.spender);
   }
 
   /**
@@ -178,25 +184,64 @@ class MgvToken {
   }
 
   /**
-   * Set approval for Mangrove on `amount`.
+   * Set approval for Mangrove to `amount`.
    */
   approveMangrove(arg: ApproveArgs = {}): Promise<ethers.ContractTransaction> {
     return this.approve(this.mgv.address, arg);
   }
 
   /**
-   * Set approval for `spender` on `amount`.
+   * Set approval for `spender` to `amount`.
    */
   approve(
     spender: string,
     arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
     const args = convertToApproveArgs(arg);
-    const _amount =
-      "amount" in args
-        ? this.toUnits(args.amount)
-        : ethers.constants.MaxUint256;
-    return this.contract.approve(spender, _amount, args.overrides);
+    const rawAmount = this.getRawApproveAmount(args.amount);
+    return this.contract.approve(spender, rawAmount, args.overrides);
+  }
+
+  private getRawApproveAmount(amount?: Bigish): ethers.BigNumber {
+    return amount != undefined
+      ? this.toUnits(amount)
+      : ethers.constants.MaxUint256;
+  }
+
+  /** Sets the allowance for the spender if it is not already enough.
+   * @param spender The spender to approve
+   * @param arg The approval arguments
+   */
+  async approveIfHigher(spender: string, arg: ApproveArgs = {}) {
+    const rawAllowance = await this.getRawAllowance({ spender });
+    const args = convertToApproveArgs(arg);
+    const rawAmount = this.getRawApproveAmount(args.amount);
+    if (rawAmount.gt(rawAllowance)) {
+      return this.approve(spender, arg);
+    }
+  }
+
+  /** Increases the allowance for the spender unless it is already max.
+   * @param spender The spender to approve
+   * @param arg The approval arguments
+   */
+  async increaseApproval(spender: string, arg: ApproveArgs = {}) {
+    const rawAllowance = await this.getRawAllowance({ spender });
+    if (rawAllowance.eq(ethers.constants.MaxUint256)) {
+      return;
+    }
+
+    const args = convertToApproveArgs(arg);
+    const rawAmount = this.getRawApproveAmount(args.amount);
+    if (rawAmount.eq(ethers.constants.MaxUint256)) {
+      return this.contract.approve(spender, rawAmount, args.overrides);
+    } else {
+      return this.contract.approve(
+        spender,
+        rawAllowance.add(rawAmount),
+        args.overrides
+      );
+    }
   }
 
   /**

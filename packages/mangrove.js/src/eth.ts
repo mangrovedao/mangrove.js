@@ -20,6 +20,9 @@ interface JsonWalletOptions {
 export interface CreateSignerOptions {
   // object or URL
   provider?: Provider | string;
+
+  // URL
+  providerWsUrl?: string;
   // optional in addition to provider object: gets signer number `signerIndex` of the provider
   signerIndex?: number;
   // raw privkey without 0x prefix

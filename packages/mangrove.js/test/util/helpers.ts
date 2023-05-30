@@ -6,6 +6,7 @@ export const sleep = (ms?: number): Promise<void> => {
 };
 
 export type AsyncQueue<T> = {
+  empty: () => boolean;
   put: (e: T) => void;
   get: () => Promise<T>;
 };
@@ -14,6 +15,9 @@ export const asyncQueue = <T>(): AsyncQueue<T> => {
   const promises = [],
     elements = [];
   return {
+    empty: () => {
+      return elements.length == 0;
+    },
     put: (elem) => {
       if (promises.length > 0) {
         promises.shift()(elem);

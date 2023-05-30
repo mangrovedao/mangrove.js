@@ -27,7 +27,7 @@ mgv.setAddress("myOffer", "0x<address>");
 const logic = mgv.offerLogic("myOffer");
 const maker = await logic.liquidityProvider(market);
 
-const tx = await maker.approveAsks();
+const tx = await logic.approve(market.base.name, { optAmount: 5000 });
 await tx.wait();
 
 await maker.newAsk(

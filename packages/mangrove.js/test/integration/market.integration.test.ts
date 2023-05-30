@@ -7,14 +7,13 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import assert from "assert";
-import { LiquidityProvider, Mangrove, Market, Semibook } from "../../src";
+import { Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { BigNumber, utils } from "ethers";
+import { BigNumber, ethers, utils } from "ethers";
 import * as mockito from "ts-mockito";
-import { Bigish } from "../../dist/nodejs/types";
-import { MgvReader } from "../../src/types/typechain/MgvReader";
+import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
 
 //pretty-print when using console.log
@@ -59,31 +58,34 @@ describe("Market integration tests suite", () => {
     mgvAdmin.disconnect();
   });
 
-  describe("Readonly mode", async function () {
-    let mgvro: Mangrove;
+  describe("Readonly mode", function () {
+    let mgvReadonly: Mangrove;
 
     beforeEach(async function () {
-      mgvro = await Mangrove.connect({
+      mgvReadonly = await Mangrove.connect({
         provider: this.server.url,
         forceReadOnly: true,
       });
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      mgvro.provider.pollingInterval = 10;
+      mgvReadonly.provider.pollingInterval = 10;
     });
     afterEach(async () => {
-      mgvro.disconnect();
+      mgvReadonly.disconnect();
     });
 
     it("can read book updates in readonly mode", async function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const marketro = await mgvro.market({ base: "TokenA", quote: "TokenB" });
+      const marketReadonly = await mgvReadonly.market({
+        base: "TokenA",
+        quote: "TokenB",
+      });
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const pro1 = marketro.once((evt) => {
+      const pro1 = marketReadonly.once(() => {
         assert.strictEqual(
-          marketro.getBook().asks.size(),
+          marketReadonly.getBook().asks.size(),
           1,
           "book should have size 1 by now"
         );
@@ -293,7 +295,7 @@ describe("Market integration tests suite", () => {
       expect(result).to.be.equal(true);
     });
 
-    it("returns false, when gives is negativ", async function () {
+    it("returns false, when gives is negative", async function () {
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
       const mockedMarket = mockito.spy(market);
@@ -326,6 +328,29 @@ describe("Market integration tests suite", () => {
   });
 
   describe("getPivotIdTest", () => {
+    // prettier-ignore
+    it("returns correct Pivot ids for bids and asks", async function () {
+      // Arrange
+      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+
+      // some bids
+      await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1000", }));
+      await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1200", }));
+      // some asks
+      await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1400", gives: "1", }));
+      const tx = await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1600", gives: "1", }));
+
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+
+      // Act/assert
+      assert.equal(await market.getPivotId("bids", 900), 1, "bid offer id 1 has price 1000 which is higher than 900");
+      assert.equal(await market.getPivotId("bids", 1100), 2, "bid offer id 2 has price 1200 and is higher than 1100");
+      assert.equal(await market.getPivotId("bids", 1300), undefined, "no bid offer has price above 1300");
+      assert.equal(await market.getPivotId("asks", 1300), undefined, "no ask offer has price below 1300");
+      assert.equal(await market.getPivotId("asks", 1500), 1, "ask offer id 1 has price 1400 which is below 1500");
+      assert.equal(await market.getPivotId("asks", 1700), 2, "ask offer id 2 has price 1600 which is below 1700");
+    });
+
     it("returns Pivot id for bids", async function () {
       // Arrange
       // let mgv:Mangrove | undefined =undefined;
@@ -337,7 +362,7 @@ describe("Market integration tests suite", () => {
 
       const ba = "asks";
       const price: Bigish = "234";
-      const pivotId: number = 231;
+      const pivotId = 231;
       mockito
         .when(mockedMarket.getSemibook(ba))
         .thenReturn(mockito.instance(semiBook));
@@ -352,84 +377,76 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  describe("getOfferProvision", () => {
-    it("returns Big number", async function () {
-      // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
-      const mockedMgv: Mangrove = mockito.spy(mgv);
-      const mockedReader = mockito.mock<MgvReader>();
-      const ba = "asks";
-      const inBound = market.quote;
-      const outBound = market.base;
-      const gasreq = 2;
-      const gasprice = 2;
-      const fromUnits = new Big(1);
-      const prov = BigNumber.from("1000000000000000000");
-      mockito.when(mockedMarket.mgv).thenReturn(mgv);
-      mockito
-        .when(mockedMgv.readerContract)
-        .thenReturn(mockito.instance(mockedReader));
+  [undefined, 100].forEach((gasprice) => {
+    mgvTestUtil.bidsAsks.forEach((ba) => {
+      it(`getOfferProvision agrees with calculateOfferProvision for ${ba} with gasprice=${gasprice} `, async () => {
+        // Arrange
+        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const gasreq = 10000;
+        const config = await market.config();
+        const gasbase = (ba == "asks" ? config.asks : config.bids)
+          .offer_gasbase;
 
-      mockito
-        .when(
-          mockedReader["getProvision(address,address,uint256,uint256)"](
-            outBound.address,
-            inBound.address,
+        const mgvProvision = mgv.calculateOfferProvision(
+          gasprice ?? (await mgv.config()).gasprice,
+          gasreq,
+          gasbase
+        );
+
+        // Act
+        const offerProvision = await market.getOfferProvision(
+          ba,
+          gasreq,
+          gasprice
+        );
+        const baProvision = await (ba == "asks"
+          ? market.getAskProvision(gasreq, gasprice)
+          : market.getBidProvision(gasreq, gasprice));
+        const offersProvision = market.mgv.calculateOffersProvision([
+          {
+            gasprice: gasprice ?? (await mgv.config()).gasprice,
             gasreq,
-            gasprice
-          )
-        )
-        .thenResolve(prov);
+            gasbase,
+          },
+          {
+            gasprice: gasprice ?? (await mgv.config()).gasprice,
+            gasreq,
+            gasbase,
+          },
+        ]);
 
-      // Act
-      const result = await market.getOfferProvision(ba, gasreq, gasprice);
-      // Assert
-      mockito.verify(mockedMarket.getOutboundInbound(ba)).once();
-      expect(result.eq(fromUnits)).to.be.true;
+        // Assert
+        assert.equal(offerProvision.toNumber(), mgvProvision.toNumber());
+        assert.equal(baProvision.toNumber(), mgvProvision.toNumber());
+        assert.equal(
+          offersProvision.toNumber(),
+          mgvProvision.mul(2).toNumber()
+        );
+      });
     });
-    it("return offer provision for bids", async function () {
+  });
+
+  describe("getMissingProvision", () => {
+    it("can miss some provision", async () => {
       // Arrange
       const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
+      const provision = await market.getOfferProvision("bids", 30000);
 
-      const toBeReturned = new Big(23);
-      mockito
-        .when(
-          mockedMarket.getOfferProvision(
-            mockito.anything(),
-            mockito.anything(),
-            mockito.anything()
-          )
-        )
-        .thenResolve(toBeReturned);
       // Act
-      const result = await market.getBidProvision(2, 2);
-      // Assert
-      mockito.verify(mockedMarket.getOfferProvision("bids", 2, 2)).once();
-      expect(result).to.be.equal(toBeReturned);
-    });
+      const missingZero = await market.getMissingProvision(
+        "asks",
+        provision.mul(2),
+        30000
+      );
+      const missing = await market.getMissingProvision(
+        "asks",
+        provision.div(4),
+        30000
+      );
 
-    it("return offer provision for asks", async function () {
-      // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
-
-      const toBeReturned = new Big(23);
-      mockito
-        .when(
-          mockedMarket.getOfferProvision(
-            mockito.anything(),
-            mockito.anything(),
-            mockito.anything()
-          )
-        )
-        .thenResolve(toBeReturned);
-      // Act
-      const result = await market.getAskProvision(2, 2);
       // Assert
-      mockito.verify(mockedMarket.getOfferProvision("asks", 2, 2)).once();
-      expect(result).to.be.equal(toBeReturned);
+      assert.equal(missingZero.toNumber(), 0);
+      assert.equal(missing.toNumber(), provision.div(4).mul(3).toNumber());
     });
   });
 
@@ -564,7 +581,7 @@ describe("Market integration tests suite", () => {
         .when(mockedMarket.estimateVolume(mockito.anything()))
         .thenResolve(volumeEstimate);
 
-      // Actƒ
+      // Act
       const result = await market.estimateVolumeToReceive(params);
       const paramsUsed = mockito.capture(mockedMarket.estimateVolume).last();
 
@@ -601,11 +618,18 @@ describe("Market integration tests suite", () => {
 
   it("subscribes", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
+    const queue2 = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market2 = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    console.log("markets created");
 
     let latestAsks: Market.Offer[] = [];
     let latestBids: Market.Offer[] = [];
+
+    let latestAsks2: Market.Offer[] = [];
+    let latestBids2: Market.Offer[] = [];
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
       queue.put(evt);
@@ -613,11 +637,21 @@ describe("Market integration tests suite", () => {
       latestAsks = [...asks];
       latestBids = [...bids];
     };
+
+    const cb2 = (evt: Market.BookSubscriptionCbArgument) => {
+      queue2.put(evt);
+      const { asks, bids } = market2.getBook();
+      latestAsks2 = [...asks];
+      latestBids2 = [...bids];
+    };
     market.subscribe(cb);
+
+    market2.subscribe(cb2);
 
     await helpers
       .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "1.2" })
       .then((tx) => tx.wait());
+
     await helpers
       .newOffer(mgv, market.quote, market.base, { wants: "1.3", gives: "1.1" })
       .then((tx) => tx.wait());
@@ -651,8 +685,8 @@ describe("Market integration tests suite", () => {
     };
 
     // Events may be received in different order
-    const events = [await queue.get(), await queue.get()];
-    expect(events).to.have.deep.members([
+
+    const expectedEvents = [
       {
         type: "OfferWrite",
         ba: "asks",
@@ -665,15 +699,26 @@ describe("Market integration tests suite", () => {
         offerId: 1,
         offer: offer2,
       },
-    ]);
+    ];
+    const events = [await queue.get(), await queue.get()];
+    expect(events).to.have.deep.members(expectedEvents);
+
+    const events2 = [await queue2.get(), await queue2.get()];
+    expect(events2).to.have.deep.members(expectedEvents);
 
     assert.deepStrictEqual(latestAsks, [offer1], "asks semibook not correct");
     assert.deepStrictEqual(latestBids, [offer2], "bids semibook not correct");
 
+    assert.deepStrictEqual(latestAsks2, [offer1], "asks semibook not correct");
+    assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
+
+    market2.close();
     await market.sell({ wants: "1", gives: "1.3" }, { gasLimit: 600000 });
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
+
+    assert.strictEqual(queue2.empty(), true);
     //TODO: test offerRetract, offerFail, setGasbase
   });
 
@@ -684,7 +729,6 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
-      // NOTE: As we are using mgvTestUtil.waitForBooksForLastTx we need to
       // disregard a few SetGasbase-events
       if (evt.type !== "SetGasbase") queue.put(evt);
     };
@@ -694,10 +738,11 @@ describe("Market integration tests suite", () => {
     const maker = await mgvTestUtil.getAccount(
       mgvTestUtil.AccountName.Deployer
     );
-    await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
+    const tx = await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+
     const events = [await queue.get()];
     expect(events).to.have.lengthOf(1);
 
@@ -818,7 +863,7 @@ describe("Market integration tests suite", () => {
       wants: 100,
       gives: 1000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
@@ -826,7 +871,7 @@ describe("Market integration tests suite", () => {
       gives: 2000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
     // estimated gas limit is too low, so we set it explicitly
     const sellPromises = await market.sell(
@@ -855,7 +900,7 @@ describe("Market integration tests suite", () => {
       wants: 1,
       gives: 1000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -864,7 +909,7 @@ describe("Market integration tests suite", () => {
     });
 
     // get not-best offer
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const asks = [...market.getBook().asks];
     const notBest = asks[1].id;
 
@@ -873,7 +918,7 @@ describe("Market integration tests suite", () => {
     const buyPromises = await market.buy({
       offerId: notBest,
       total: 1,
-      price: Big(2).pow(256).minus(1),
+      price: Big(ethers.constants.MaxUint256.toString()),
     });
     const result = await buyPromises.result;
 
@@ -899,7 +944,7 @@ describe("Market integration tests suite", () => {
       wants: 100,
       gives: 1000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
@@ -908,7 +953,7 @@ describe("Market integration tests suite", () => {
     });
 
     // get not-best offer
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const bids = [...market.getBook().bids];
     const notBest = bids[1].id;
 
@@ -953,7 +998,7 @@ describe("Market integration tests suite", () => {
       wants: 1,
       gives: 2000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -961,7 +1006,7 @@ describe("Market integration tests suite", () => {
       gives: 3000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const asks = [...market.getBook().asks];
 
     // use wants/gives from offer to verify unit conversion
@@ -1014,7 +1059,7 @@ describe("Market integration tests suite", () => {
       wants: 100,
       gives: 2000000,
     });
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
@@ -1022,7 +1067,7 @@ describe("Market integration tests suite", () => {
       gives: 3000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const bids = [...market.getBook().bids];
 
     // use wants/gives from offer to verify unit conversion
@@ -1070,7 +1115,7 @@ describe("Market integration tests suite", () => {
         gives: 1000000,
         shouldFail: true,
       });
-      await mgvTestUtil.postNewOffer({
+      const tx = await mgvTestUtil.postNewOffer({
         market,
         ba: "asks",
         maker,
@@ -1079,7 +1124,7 @@ describe("Market integration tests suite", () => {
         shouldFail: true,
       });
 
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
       const asks = [...market.getBook().asks];
 
       const snipePromises = await market.snipe({
@@ -1119,7 +1164,7 @@ describe("Market integration tests suite", () => {
       expect(result.summary.feePaid.toNumber()).to.be.equal(0);
 
       // Verify book gets updated to reflect offers have failed and are removed
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
       const asksAfter = [...market.getBook().asks];
 
       expect(asksAfter).to.have.lengthOf(0);
@@ -1133,7 +1178,7 @@ describe("Market integration tests suite", () => {
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -1141,7 +1186,7 @@ describe("Market integration tests suite", () => {
       gives: 1000000,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const ask = [...market.getBook().asks][0];
 
     // Act
@@ -1154,7 +1199,7 @@ describe("Market integration tests suite", () => {
     );
 
     // Actual snipe
-    var didThrow = false;
+    let didThrow = false;
     try {
       const snipePromises = await market.snipe(
         {
@@ -1193,7 +1238,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
     // Note: shouldFail is for the entire maker and not per order
-    await mgvTestUtil.postNewOffer({
+    const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
@@ -1202,7 +1247,7 @@ describe("Market integration tests suite", () => {
       shouldFail: true,
     });
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
     const asks = [...market.getBook().asks];
 
     const raw = await market.getRawSnipeParams({
@@ -1394,8 +1439,6 @@ describe("Market integration tests suite", () => {
     /* Start testing */
 
     const book = await market.requestBook({ maxOffers: 3 });
-    market.consoleAsks(["id", "maker"]);
-    market.consoleBids(["id", "maker"]);
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }) => {
@@ -1443,16 +1486,16 @@ describe("Market integration tests suite", () => {
       { id: 1, wants: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
     ];
 
-    for (const ask of asks) {
-      await waitForTransaction(
-        helpers.newOffer(mgv, market.base, market.quote, ask)
-      );
-    }
+    const lastTx = await waitForTransaction(
+      helpers.newOffer(mgv, market.base, market.quote, asks[0])
+    );
 
-    await mgvTestUtil.waitForBooksForLastTx(market);
+    await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
     const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
     expect(asksEstimate.toNumber()).to.be.equal(
-      emptyBookAsksEstimate.add(askGasReq).toNumber()
+      emptyBookAsksEstimate
+        .add(BigNumber.from(askGasReq).mul(11).div(10))
+        .toNumber()
     );
   });
 });

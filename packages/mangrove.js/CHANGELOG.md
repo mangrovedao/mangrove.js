@@ -1,7 +1,102 @@
+# Next version
+
+- Use array to handle market subscription
+- [bug fix] gas estimates for market orders is boosted to avoid `NotEnoughGasForMaker` type of tx failures.
+- max gas limit for market orders is set to 10,000,000
+- commonlib.js dependency removed
+
+# 1.2.6-2
+
+- Debugging version for UI
+
+# 1.2.6-1
+
+- Bump RES to v1.1.19
+
+# 1.2.6-0
+
+- Bump mangrove-core to 1.5.1
+- Expose deal logic for any token on an Anvil chain
+- Expose forge script funcitionality, to run forge script
+
 # 1.2.5 (March 2023)
 
 - Add back env vars temporarily
 - Safety release to supersede prerelease erroneously released
+
+# 1.2.4-14
+
+- Bump mangrove-core to 1.5.1-1
+- OfferLogic has an `approve` function to ask the underlying logic to approve signer (or an arbitrary address) to spend a specific token on its behalf.
+- Liquidity provider no longer provides `approveAsk`, `approveBids` which were making too much asumptions on router usage.
+- Adapts tutorial scripts accordingly.
+- bugfix: token approval could not be set to 0
+
+# 1.2.4-13 (may 2023)
+
+- Update reliable-event-subscriber to fix rpc bug with go-ethereum
+
+# 1.2.4-12 (may 2023)
+
+- Fix broken commonlib.js dependency
+
+# 1.2.4-11 (may 2023)
+
+- reliable-event-subscriber: update to v1.1.4 (reduce rpc usage, prevent rate limiting)
+- logging: Reduce noise during tests
+- KandelStatus: Add min and max price
+- KandelInstance: Add calculateUniformDistributionFromMinPrice to heal all dead offers
+- KandelInstance: Add getMinimumVolumeForIndex to heal a single offer
+
+# 1.2.4-10 (may 2023)
+
+- temporarily remove check for rpc provider
+
+# 1.2.4-9 (may 2023)
+
+- fixed issue with reliable-event-subscriber integration when using metamask through wagmi
+
+# 1.2.4-8 (may 2023)
+
+- fixed issue with reliable-event-subscriber integration when using metamask
+
+# 1.2.4-7 (may 2023)
+
+- added approveIfHigher, approve, increaseApprove for more fine-grained approval control
+- added functions for increasing and decreasing volumes of Kandel distributions
+- use @mangrovedao/reliable-event-subscriber for keeping semibook up to date and resilient to block reorgs
+
+# 1.2.4-6 (april 2023)
+
+- removed ability to control compounding for Kandel - always full compounding.
+
+# 1.2.4-5 (april 2023)
+
+- updated Kandel configuration for mumbai
+
+# 1.2.4-4 (april 2023)
+
+- added recommended configuration retrieval for the Kandel strategy
+
+# 1.2.4-3 (march 2023)
+
+- added calculation of provision, withdrawal, access to offer logic to kandel sdk
+- use next prerelease mangrove-core
+
+# 1.2.4-2 (March 2023)
+
+- Draft version of Kandel SDK
+- Use prerelease mangrove-core
+- adapt to abi changes in the new mangrove-core
+
+# 1.2.4-1 (March 2023)
+
+- Use no_env_vars profile
+
+# 1.2.3-0 (February 2023)
+
+- Use prerelease mangrove-core
+- adapt to abi changes in the new mangrove-core
 
 # 1.2.3 (February 2023)
 

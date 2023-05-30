@@ -1,51 +1,29 @@
 import * as ethers from "ethers";
-import Market from "./market";
-// syntactic sugar
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { LiquidityProvider, Mangrove } from ".";
+import { Mangrove, Market } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
-import { ApproveArgs } from "./mgvtoken";
-
-/* Note on big.js:
-ethers.js's BigNumber (actually BN.js) only handles integers
-big.js handles arbitrary precision decimals, which is what we want
-for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigNumber):
-  github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
-*/
 import Big from "big.js";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
-
 /**
- * The OfferLogic class connects to a Maker contract
+ * @title The OfferLogic class connects to a Maker contract implementing the IOfferLogic interface.
  */
-
 class OfferLogic {
   mgv: Mangrove;
-  contract: typechain.ILiquidityProvider;
+  contract: typechain.IOfferLogic;
   address: string;
+  signerOrProvider: SignerOrProvider;
 
   constructor(mgv: Mangrove, logic: string, signer?: SignerOrProvider) {
     this.mgv = mgv;
     this.address = logic;
-    this.contract = typechain.ILiquidityProvider__factory.connect(
+    this.signerOrProvider = signer ?? this.mgv.signer;
+    this.contract = typechain.IOfferLogic__factory.connect(
       logic,
-      signer ? signer : this.mgv.signer
+      this.signerOrProvider
     );
-  }
-
-  static async deploy(mgv: Mangrove): Promise<string> {
-    const contract = await new typechain[`OfferMaker__factory`](
-      mgv.signer
-    ).deploy(
-      mgv.address,
-      ethers.constants.AddressZero,
-      await mgv.signer.getAddress()
-    );
-    await contract.deployTransaction.wait();
-    return contract.address;
   }
 
   /**
@@ -57,58 +35,67 @@ class OfferLogic {
     if (router_address != ethers.constants.AddressZero) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
-        this.mgv.signer
+        this.signerOrProvider
       );
     }
   }
 
-  /**
-   * @note Approves the logic to spend `token`s on signer's behalf.
-   * This has to be done for each token the signer's wishes to ask or bid for.
-   * @param arg optional `arg.amount` can be used if one wishes to approve a finite amount
+  /** Determines whether the offer logic has a router
+   * @returns True if the offer logic has a router, false otherwise.
    */
-  async approveToken(
+  public async hasRouter() {
+    return (await this.contract.router()) != ethers.constants.AddressZero;
+  }
+
+  /**
+   * @note logic approves signer or `args.optSpender` to spend a certain token on its behalf
+   * This has to be done for each token the signer's wishes to ask or bid for.
+   * @param args optional `arg.amount` can be used if one wishes to approve a finite amount
+   */
+  async approve(
     tokenName: string,
-    arg: ApproveArgs = {}
+    args?: {
+      optSpender?: string;
+      optAmount?: Bigish;
+      optOverrides?: ethers.Overrides;
+    }
   ): Promise<ethers.ContractTransaction> {
-    const router: typechain.AbstractRouter | undefined = await this.router();
     const token = this.mgv.token(tokenName);
-    if (router) {
-      // LP's logic is using a router to manage its liquidity
-      return token.approve(router.address, arg);
-    } else {
-      // LP's logic is doing the routing itself
-      return token.approve(this.address, arg);
-    }
+    const amount =
+      args && args.optAmount != undefined
+        ? token.toUnits(args.optAmount)
+        : ethers.constants.MaxUint256;
+    const spender =
+      args && args.optSpender != undefined
+        ? args.optSpender
+        : await this.mgv.signer.getAddress();
+    return this.contract.approve(
+      token.address,
+      spender,
+      amount,
+      args && args.optOverrides ? args.optOverrides : {}
+    );
   }
 
-  /**@note returns logic's allowance to trade `tokenName` on signer's behalf */
-  async allowance(tokenName: string): Promise<Big> {
-    const router: typechain.AbstractRouter | undefined = await this.router();
-    const token = this.mgv.token(tokenName);
-    if (router) {
-      return token.allowance({
-        owner: await this.mgv.signer.getAddress(),
-        spender: router.address,
-      });
-    } else {
-      return token.allowance({
-        owner: await this.mgv.signer.getAddress(),
-        spender: this.address,
-      });
-    }
+  /** Returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
+   * @param signerOrProvider the new signer or provider to connect to the contract.
+   * @returns a new `OfferLogic` object with a different signer or provider.
+   */
+  connect(signerOrProvider: SignerOrProvider): OfferLogic {
+    return new OfferLogic(this.mgv, this.contract.address, signerOrProvider);
   }
 
-  // returns a new `OfferLogic` object with a different signer or provider connected to its ethers.js `contract`
-  connect(sOp: SignerOrProvider): OfferLogic {
-    return new OfferLogic(this.mgv, this.contract.address, sOp);
-  }
-
+  /** Retrieves the gasreq necessary for offers of this OfferLogic to execute a trade. */
   async offerGasreq(): Promise<number> {
-    const gr = await this.contract.offerGasreq();
-    return gr.toNumber();
+    const offerGasreq = await this.contract.offerGasreq();
+    return offerGasreq.toNumber();
   }
 
+  /** Sets the admin of the contract if the Contract implements the AccessControlled interface.
+   * @param newAdmin the new admin address.
+   * @param overrides The ethers overrides to use when calling the setAdmin function.
+   * @returns The transaction used to set the new admin.
+   */
   setAdmin(
     newAdmin: string,
     overrides: ethers.Overrides = {}
@@ -120,6 +107,9 @@ class OfferLogic {
     return accessControlled.setAdmin(newAdmin, overrides);
   }
 
+  /** Retrieves the current admin of the contract if the contract implements the AccessControlled interface
+   * @returns The address of the current admin.
+   */
   admin(): Promise<string> {
     const accessControlled = typechain.AccessControlled__factory.connect(
       this.address,
@@ -131,6 +121,8 @@ class OfferLogic {
   /**
    * @note (contract admin action) activates logic
    * @param tokenNames the names of the tokens one wishes the logic to trade
+   * @param overrides The ethers overrides to use when calling the activate function.
+   * @returns The transaction used to activate the OfferLogic.
    * */
   activate(
     tokenNames: string[],
@@ -142,21 +134,18 @@ class OfferLogic {
     return this.contract.activate(tokenAddresses, overrides);
   }
 
-  // todo look in the tx receipt for the `Debit(maker, amount)` log emitted by mangrove in order to returned a value to user
-  retractOffer(
-    outbound_tkn: string,
-    inbound_tkn: string,
-    id: number,
-    deprovision: boolean,
-    overrides: ethers.Overrides
-  ): Promise<TransactionResponse> {
-    return this.contract.retractOffer(
-      this.mgv.token(outbound_tkn).address,
-      this.mgv.token(inbound_tkn).address,
-      id,
-      deprovision,
-      overrides
-    );
+  /** Retrieves the provision available on Mangrove for the offer logic, in ethers */
+  public getMangroveBalance() {
+    return this.mgv.balanceOf(this.address);
+  }
+
+  /** Adds ethers for provisioning offers on Mangrove for the offer logic.
+   * @param funds The amount of funds to add in ethers.
+   * @param overrides The ethers overrides to use when calling the fund function.
+   * @returns The transaction used to fund the offer logic.
+   */
+  public fundOnMangrove(funds: Bigish, overrides: ethers.Overrides = {}) {
+    return this.mgv.fundMangrove(funds, this.address, overrides);
   }
 
   /** Withdraw from the OfferLogic's ether balance on Mangrove to the sender's account */
@@ -172,29 +161,59 @@ class OfferLogic {
     );
   }
 
-  /** Connects the logic to a Market in order to pass market orders. The function returns a LiquidityProvider object */
-  async liquidityProvider(
-    p:
-      | Market
-      | {
-          base: string;
-          quote: string;
-          bookOptions?: Market.BookOptions;
-        }
-  ): Promise<LiquidityProvider> {
-    if (p instanceof Market) {
-      return new LiquidityProvider({
-        mgv: this.mgv,
-        logic: this,
-        market: p,
-      });
-    } else {
-      return new LiquidityProvider({
-        mgv: this.mgv,
-        logic: this,
-        market: await this.mgv.market(p),
-      });
+  /** Retrieves amount of provision locked for the offer on the offer logic which can be redeemed if the offer is retracted.
+   * @param market the market of the offer
+   * @param ba wether the offer is an ask or a bid.
+   * @param offerId the id of the offer.
+   * @returns the amount of provision locked for the offer on the offer logic.
+   * @remarks Provision is either locked on Mangrove or for, e.g., a forwarder, on the offer logic itself.
+   */
+  public async retrieveLockedProvisionForOffer(
+    market: Market,
+    ba: Market.BA,
+    offerId?: number
+  ) {
+    // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
+    if (!offerId) {
+      return Big(0);
     }
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    return this.mgv.fromUnits(
+      await this.contract.provisionOf(
+        outbound_tkn.address,
+        inbound_tkn.address,
+        offerId
+      ),
+      18
+    );
+  }
+
+  /** Gets the missing provision in ethers for an offer to be posted or updated on the offer logic with the given parameters, while taking already locked provision into account.
+   * @param ba bids or asks
+   * @param market the market for the offer.
+   * @param opts optional parameters for the calculation.
+   * @param opts.id the id of the offer to update. If undefined, then the offer is a new offer and nothing is locked.
+   * @param opts.gasreq gas required for the offer execution. If undefined, the offer logic's gasreq.
+   * @param opts.gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
+   * @returns the additional required provision, in ethers.
+   */
+  async getMissingProvision(
+    market: Market,
+    ba: Market.BA,
+    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
+  ) {
+    const gasreq = opts.gasreq ? opts.gasreq : await this.offerGasreq();
+    const lockedProvision = await this.retrieveLockedProvisionForOffer(
+      market,
+      ba,
+      opts.id
+    );
+    return await market.getMissingProvision(
+      ba,
+      lockedProvision,
+      gasreq,
+      opts.gasprice
+    );
   }
 }
 

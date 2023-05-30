@@ -37,7 +37,7 @@ export class Watcher {
       set: (target, key, value) => {
         target[key] = value;
         for (const packed of this.watchers) {
-          Promise.resolve(packed.test(key, value)).then((result) => {
+          void Promise.resolve(packed.test(key, value)).then((result) => {
             if (result) {
               this.watchers.delete(packed);
               packed.ok();

@@ -7,13 +7,12 @@
   of deploying contracts in a file (see DUMPFILE below), then delete that file
   every time you want to invalidate the cache.
 */
-const childProcess = require("child_process");
 const path = require("path");
 const fs = require("fs");
 import { ethers } from "ethers";
 import * as eth from "../eth";
-import { default as nodeCleanup } from "node-cleanup";
 import DevNode from "./devNode";
+import { deal } from "./deal";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8545;
@@ -23,53 +22,10 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
-const execForgeCmd = (command: string, env: any, pipe?: any, handler?: any) => {
-  if (typeof pipe === "undefined") {
-    pipe = true;
-  }
-  // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
-  const full_env = {
-    ...process.env,
-    MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
-    POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
-    POLYGON_API_KEY: process.env.POLYGON_API_KEY ?? "",
-  };
-
-  // Warning: using exec & awaiting promise instead of using the simpler `execSync`
-  // due to the following issue: when too many transactions are broadcast by the script,
-  // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
-  // Using util.promisify on childProcess.exec recreates the issue.
-  // Must be investigated further if it pops up again.
-  const scriptPromise = new Promise((ok, ko) => {
-    childProcess.exec(
-      command,
-      {
-        encoding: "utf8",
-        env: full_env,
-        cwd: CORE_DIR,
-      },
-      (error, stdout, stderr) => {
-        if (pipe || error) {
-          console.error("forge cmd stdout:");
-          console.error(stdout);
-        }
-        if (stderr.length > 0) {
-          console.error("forge cmd stderr:");
-          console.error(stderr);
-        }
-        if (error) {
-          throw error;
-        } else {
-          ok(stdout);
-        }
-      }
-    );
-  });
-  return scriptPromise;
-};
-
 import yargs from "yargs";
-import { JsonRpcProvider, Provider } from "@ethersproject/providers";
+import { JsonRpcProvider } from "@ethersproject/providers";
+import { runScript } from "./forgeScript";
+import { spawn, spawnParams } from "./spawn";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
@@ -79,9 +35,79 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
   key: mnemonic.key(i),
 }));
 
+/* Run a deployment, populate Mangrove addresses */
+type deployParams = {
+  provider?: any;
+  stateCache?: boolean;
+  targetContract?: string;
+  script?: string;
+  url?: string;
+  pipe?: boolean;
+  setMulticallCodeIfAbsent?: boolean;
+  setToyENSCodeIfAbsent?: boolean;
+};
+
+export type serverParamsType = {
+  host?: string;
+  port?: number; // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
+  spawn?: boolean;
+  deploy?: boolean;
+  forkUrl?: string;
+  forkBlockNumber?: number;
+} & deployParams;
+
+export type computeArgvType = {
+  [x: string]: unknown;
+  host: string;
+  url?: string;
+  port: string | number;
+  spawn: boolean;
+  "state-cache": boolean;
+  stateCache: boolean;
+  deploy: boolean;
+  script: string;
+  "fork-url": string;
+  forkUrl: string;
+  "fork-block-number": number;
+  forkBlockNumber: number;
+  "chain-id": number;
+  chainId: number;
+  pipe: boolean;
+  "set-multicall-code-if-absent": boolean;
+  setMulticallCodeIfAbsent: boolean;
+  "set-toy-ens-code-if-absent": boolean;
+  setToyEnsCodeIfAbsent: boolean;
+  _: (string | number)[];
+  $0: string;
+  provider?: JsonRpcProvider;
+};
+
+export type nodeType = {
+  connect(): Promise<{
+    url: string;
+    accounts: {
+      address: string;
+      key: string;
+    }[];
+    params: computeArgvType | serverParamsType;
+    deploy: () => Promise<void>;
+    snapshot: () => Promise<string>;
+    revert: (snapshotId?: string) => Promise<void>;
+    deal: (dealParams: {
+      token: string;
+      account: string;
+      amount?: number;
+      internalAmount?: ethers.BigNumber;
+    }) => Promise<void>;
+    process: any;
+    spawnEndedPromise: any;
+  }>;
+  watchAllToyENSEntries(): Promise<DevNode.fetchedContract[]>;
+};
+
 const stateCacheFile = path.resolve(`./${DUMPFILE}`);
 
-export const builder = (yargs) => {
+export const builder = (yargs: yargs.Argv<{}>) => {
   return yargs
     .option("host", {
       describe: "The IP address the node will listen on",
@@ -118,6 +144,10 @@ export const builder = (yargs) => {
       describe: "Fork URL to be given to the newly deployed node",
       type: "string",
     })
+    .option("fork-block-number", {
+      describe: "Block number to fork from",
+      type: "number",
+    })
     .option("chain-id", {
       describe: "Chain id to use in node (default is anvil's default)",
       type: "number",
@@ -141,7 +171,10 @@ export const builder = (yargs) => {
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
 
-const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
+const computeArgv = async (
+  params: serverParamsType,
+  ignoreCmdLineArgs = false
+): Promise<computeArgvType> => {
   // ignore command line if not main module, but still read from env vars
   // note: this changes yargs' default precedence, which is (high to low):
   // cmdline args -> env vars -> config(obj) -> defaults
@@ -154,98 +187,6 @@ const computeArgv = (params: any, ignoreCmdLineArgs = false) => {
     .help().argv;
 };
 
-/* Spawn a test node */
-type spawnParams = {
-  chainId?: number;
-  forkUrl?: number;
-  host: string;
-  port: number;
-  pipe: boolean;
-};
-
-const spawn = async (params: spawnParams) => {
-  const chainIdArgs = "chainId" in params ? ["--chain-id", params.chainId] : [];
-  const forkUrlArgs = "forkUrl" in params ? ["--fork-url", params.forkUrl] : [];
-  const anvil = childProcess.spawn(
-    "anvil",
-    [
-      "--host",
-      params.host,
-      "--port",
-      params.port,
-      "--order",
-      "fifo", // just mine as you receive
-      "--mnemonic",
-      LOCAL_MNEMONIC,
-    ]
-      .concat(chainIdArgs)
-      .concat(forkUrlArgs)
-  );
-
-  anvil.stdout.setEncoding("utf8");
-  anvil.on("close", (code) => {
-    if (code !== null) {
-      console.log(`anvil has closed with code ${code}`);
-    }
-  });
-
-  anvil.stderr.on("data", (data) => {
-    console.error(`anvil: stderr: ${data}`);
-  });
-
-  nodeCleanup((exitCode, signal) => {
-    anvil.kill();
-  });
-
-  const spawnEndedPromise = new Promise<void>((ok) => {
-    anvil.on("close", ok);
-  });
-
-  // wait a while for anvil to be ready, then bail
-  const ready = new Promise<void>((ok, ko) => {
-    let ready = null;
-    setTimeout(() => {
-      if (ready === null) {
-        ready = false;
-        ko("timeout");
-      }
-    }, 3000);
-    anvil.stdout.on("data", (data) => {
-      if (params.pipe) {
-        console.log(data);
-      }
-      if (ready !== null) {
-        return;
-      }
-      for (const line of data.split("\n")) {
-        if (line.startsWith(`Listening on`)) {
-          ready = true;
-          ok();
-          break;
-        }
-      }
-    });
-  });
-
-  await ready;
-
-  return {
-    spawnEndedPromise,
-    process: anvil,
-  };
-};
-
-/* Run a deployment, populate Mangrove addresses */
-type deployParams = {
-  provider: JsonRpcProvider;
-  stateCache: boolean;
-  targetContract: string;
-  script: string;
-  url: string;
-  pipe: boolean;
-  setMulticallCodeIfAbsent: boolean;
-  setToyENSCodeIfAbsent: boolean;
-};
 const deploy = async (params: deployParams) => {
   // convenience: deploy ToyENS/Multicall if not in place yet and not forbidden by params
   const devNode = new DevNode(params.provider);
@@ -273,34 +214,17 @@ const deploy = async (params: deployParams) => {
     await params.provider.send("anvil_loadState", [state]);
     console.log("...done.");
   } else {
-    /* The --root parameter sets the project root dir, but, importantly, the script still runs in `cwd`. If the command below was executed with cwd=CORE_DIR, forge would not look for a .env file in directories above CORE_DIR, because CORE_DIR contains a foundry.toml file. By leaving cwd as-is, forge will look look in cwd and up until it meets a foundry.toml file or a .git directory.
-
-    The above means that a .env in the current .git directory will be picked up by forge.
-
-    For more pointers see https://github.com/foundry-rs/foundry/issues/3711
-    */
-    const forgeScriptCmd = `forge script \
-    --rpc-url ${params.url} \
-    --froms ${mnemonic.address(0)} \
-    --private-key ${mnemonic.key(0)} \
-    --broadcast -vvv \
-    --root ${CORE_DIR} \
-    ${
-      params.targetContract ? `--target-contract ${params.targetContract}` : ""
-    } \
-    ${params.script}`;
-
-    console.log("Running forge script:");
-    // this dumps the private-key but it is a test mnemonic
-    console.log(forgeScriptCmd);
-
-    await execForgeCmd(forgeScriptCmd, process.env, params.pipe);
-
-    if (params.stateCache) {
-      const stateData = await params.provider.send("anvil_dumpState", []);
-      fs.writeFileSync(stateCacheFile, stateData);
-      console.log(`Wrote state cache to ${stateCacheFile}`);
-    }
+    await runScript({
+      url: params.url,
+      pipe: params.pipe,
+      script: params.script,
+      provider: params.provider,
+      targetContract: params.targetContract,
+      coreDir: CORE_DIR,
+      mnemonic,
+      stateCache: params.stateCache,
+      stateCacheFile,
+    });
   }
 };
 
@@ -318,10 +242,10 @@ type connectParams = preConnectParams &
   ({ spawn: false } | spawnParams) &
   deployParams;
 
-const connect = async (params: connectParams) => {
+const connect = async (params: computeArgvType | serverParamsType) => {
   let spawnInfo = { process: null, spawnEndedPromise: null };
   if (params.spawn) {
-    spawnInfo = await spawn(params);
+    spawnInfo = await spawn(params, LOCAL_MNEMONIC);
   }
 
   const deployFn = () => {
@@ -371,67 +295,17 @@ const connect = async (params: connectParams) => {
       amount?: number;
       internalAmount?: ethers.BigNumber;
     }) => {
-      //  token:string,account:string,amount:string) {
-      const command = `forge script --rpc-url ${params.url} -vv GetTokenDealSlot`;
-
-      console.log("Running forge script:");
-      console.log(command);
-
-      // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
-      const env = {
-        ...process.env,
-        MUMBAI_NODE_URL: process.env.MUMBAI_NODE_URL ?? "",
-        POLYGON_NODE_URL: process.env.POLYGON_NODE_URL ?? "",
-        TOKEN: dealParams.token,
-        ACCOUNT: dealParams.account,
-      };
-
-      // parse script results to get storage slot and token decimals
-      let slot: string;
-      let decimals: number;
-
-      let ret: any = await execForgeCmd(command, env, false);
-      for (const line of ret.split("\n")) {
-        const slotMatch = line.match(/\s*slot:\s*(\S+)/);
-        if (slotMatch) {
-          slot = slotMatch[1];
-        }
-        const decimalsMatch = line.match(/\s*decimals:\s*(\S+)/);
-        if (decimalsMatch) {
-          decimals = parseInt(decimalsMatch[1], 10);
-        }
-      }
-
-      if ("internalAmount" in dealParams) {
-        if ("amount" in dealParams) {
-          throw new Error(
-            "Cannot specify both amount (display units) and internal amount (internal units). Please pick one."
-          );
-        }
-      } else if ("amount" in dealParams) {
-        dealParams.internalAmount = ethers.utils.parseUnits(
-          `${dealParams.amount}`,
-          decimals
-        );
-      } else {
-        throw new Error(
-          "Must specify one of dealParams.amount, dealParams.internalAmount."
-        );
-      }
-
-      const devNode = new DevNode(params.provider);
-      await devNode.setStorageAt(
-        dealParams.token,
-        slot,
-        ethers.utils.hexZeroPad(dealParams.internalAmount.toHexString(), 32)
-      );
+      await deal({ ...dealParams, url: params.url, provider: params.provider });
     },
   };
 };
 
 /* Generate initial parameters with yargs, add data, then return node actions. */
-export const node = (argv: any, useYargs: boolean = true) => {
-  const params: any = useYargs ? computeArgv(argv) : argv;
+export const node = async (
+  argv: serverParamsType,
+  useYargs: boolean = true
+): Promise<nodeType> => {
+  const params = useYargs ? await computeArgv(argv) : argv;
 
   // if node is initialized with a URL, host/port
   if (typeof params.url === "undefined") {
@@ -458,42 +332,14 @@ export const node = (argv: any, useYargs: boolean = true) => {
 
 export default node;
 
-export const dealBuilder = (yargs) => {
-  return yargs
-    .option("host", {
-      describe: "The node hostname -- must be a dev node (anvil, hardhat, ...)",
-      type: "string",
-      default: DEFAULT_HOST,
-    })
-    .option("port", {
-      describe: "The node port -- must be a dev node (anvil, hardhat, ...)",
-      type: "string",
-      default: DEFAULT_PORT,
-    })
-    .option("token", {
-      describe: "Address of the token",
-      requiresArg: true,
-      type: "string",
-    })
-    .option("account", {
-      describe: "Address of the account to credit",
-      requiresArg: true,
-      type: "string",
-    })
-    .option("amount", {
-      describe: "Number of tokens in display units.",
-      requiresArg: true,
-      type: "number",
-    })
-    .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
-};
-
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
-    const { spawnEndedPromise } = await node({
-      pipe: true,
-    }).connect();
+    const { spawnEndedPromise } = await (
+      await node({
+        pipe: true,
+      })
+    ).connect();
     if (spawnEndedPromise) {
       console.log("Node ready.");
       await spawnEndedPromise;

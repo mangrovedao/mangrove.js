@@ -1,15 +1,17 @@
 // Integration tests for Semibook.ts
 import { describe, beforeEach, afterEach, it } from "mocha";
 import { expect } from "chai";
+import assert from "assert";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 import { newOffer, toWei } from "../util/helpers";
 
-import { Mangrove } from "../../src";
+import { Mangrove, OfferMaker, Semibook } from "../../src";
 
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
+import { TransactionReceipt } from "@ethersproject/providers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -59,10 +61,10 @@ describe("Semibook integration tests suite", function () {
     it("loads offers and finds pivot when cache is empty and offer list is not", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
-      await mgvTestUtil.waitForBooksForLastTx();
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       // Load no offers in cache
       const market = await mgv.market({
@@ -80,11 +82,10 @@ describe("Semibook integration tests suite", function () {
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
       );
-      await mgvTestUtil.waitForBooksForLastTx();
-
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
       // Load 1 offer in cache
       const market = await mgv.market({
         base: "TokenA",
@@ -97,9 +98,11 @@ describe("Semibook integration tests suite", function () {
 
     it("returns `undefined` if price is better than best offer", async function () {
       // Put one offer on asks
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
@@ -113,9 +116,11 @@ describe("Semibook integration tests suite", function () {
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
       );
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
@@ -131,9 +136,11 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
       );
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
       );
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const semibook = market.getSemibook("asks");
@@ -145,10 +152,11 @@ describe("Semibook integration tests suite", function () {
     it("returns offer from cache, when offer is in cache", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
-      await mgvTestUtil.waitForBooksForLastTx();
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const asksSemibook = market.getSemibook("asks");
@@ -160,10 +168,10 @@ describe("Semibook integration tests suite", function () {
     it("returns offer from contract, when offer is not in cache", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
-      await mgvTestUtil.waitForBooksForLastTx();
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
@@ -252,22 +260,25 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
 
-      await mgvTestUtil.waitForBooksForLastTx(market);
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
       const bestInCache = market.getSemibook("asks").getBestInCache();
       expect(bestInCache).to.be.eq(1);
     });
     it("returns offer id 1, because market made after offer", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      await mgvTestUtil.waitForBooksForLastTx(market);
+
       const bestInCache = market.getSemibook("asks").getBestInCache();
       expect(bestInCache).to.be.eq(1);
     });
@@ -341,10 +352,11 @@ describe("Semibook integration tests suite", function () {
     it("returns offer from cache, when offer is in cache", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
-      await mgvTestUtil.waitForBooksForLastTx();
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       const asksSemibook = market.getSemibook("asks");
@@ -356,10 +368,11 @@ describe("Semibook integration tests suite", function () {
     it("returns offer from contract, when offer is not in cache", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
       );
-      await mgvTestUtil.waitForBooksForLastTx();
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
@@ -389,11 +402,11 @@ describe("Semibook integration tests suite", function () {
 
         it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
           // Put one offer on asks
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
 
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
           // Load no offers in cache
           const market = await mgv.market({
             base: "TokenA",
@@ -414,10 +427,11 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
+
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           // Load 1 offer in cache
           const market = await mgv.market({
@@ -439,11 +453,11 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
 
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
           // Load 1 offer in cache
           const market = await mgv.market({
             base: "TokenA",
@@ -463,11 +477,11 @@ describe("Semibook integration tests suite", function () {
 
     describe("estimateVolume({to: buy}) - calculation tests", () => {
       it("returns zero when given is zero", async function () {
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
-        await mgvTestUtil.waitForBooksForLastTx();
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
         expect(
@@ -479,10 +493,11 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -498,10 +513,11 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -514,10 +530,11 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -533,10 +550,11 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -551,11 +569,12 @@ describe("Semibook integration tests suite", function () {
 
     describe("estimateVolume({to: sell}) - calculation tests", () => {
       it("returns zero when given is zero", async function () {
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
 
-        await mgvTestUtil.waitForBooksForLastTx();
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
         expect(
@@ -567,10 +586,11 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -586,10 +606,11 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -602,10 +623,11 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -621,10 +643,11 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "4" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
         const semibook = market.getSemibook("asks");
@@ -657,10 +680,10 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
         );
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
@@ -678,10 +701,11 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
         );
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
@@ -705,10 +729,10 @@ describe("Semibook integration tests suite", function () {
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
         );
-        await waitForTransaction(
+        const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "4" })
         );
-        await mgvTestUtil.waitForBooksForLastTx();
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
@@ -746,10 +770,10 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
@@ -771,10 +795,10 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "2" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
@@ -802,10 +826,10 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "3" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "4" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
@@ -846,10 +870,10 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "1" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
@@ -871,10 +895,10 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "1" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
@@ -902,10 +926,10 @@ describe("Semibook integration tests suite", function () {
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "2", wants: "1" })
           );
-          await waitForTransaction(
+          const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", wants: "1" })
           );
-          await mgvTestUtil.waitForBooksForLastTx();
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
@@ -923,6 +947,53 @@ describe("Semibook integration tests suite", function () {
           expect(semibook.size()).to.equal(3);
         });
       });
+    });
+  });
+
+  describe(Semibook.prototype.getMinimumVolume.name, () => {
+    it("gets minimum volume", async () => {
+      // Arrange
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const semibook = market.getSemibook("asks");
+
+      // Should be same as what reader calculates
+      const makerAddress = await OfferMaker.deploy(mgv, 30000);
+      const logic = mgv.offerLogic(makerAddress);
+      const offerGasreq = await logic.offerGasreq();
+
+      const readerMinVolume = await mgv.readerContract.minVolume(
+        market.base.address,
+        market.quote.address,
+        offerGasreq
+      );
+
+      // Act
+      const minVolume = await semibook.getMinimumVolume(offerGasreq);
+
+      // Assert
+      assert.equal(
+        readerMinVolume.toString(),
+        market.base.toUnits(minVolume).toString()
+      );
+    });
+
+    it("gets 1 unit if density is 0", async () => {
+      // Arrange
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      await waitForTransaction(
+        mgvAdmin.contract.setDensity(
+          market.base.address,
+          market.quote.address,
+          0
+        )
+      );
+      const semibook = market.getSemibook("asks");
+
+      // Act
+      const minVolume = await semibook.getMinimumVolume(0);
+
+      // Assert
+      assert.equal("1", market.base.toUnits(minVolume).toString());
     });
   });
 
@@ -992,12 +1063,16 @@ describe("Semibook integration tests suite", function () {
       for (const ask of asks) {
         await waitForTransaction(newOffer(mgv, base, quote, ask));
       }
+
+      let lastTx: TransactionReceipt | undefined;
       for (const bid of bids) {
-        await waitForTransaction(newOffer(mgv, quote, base, bid));
+        lastTx = await waitForTransaction(newOffer(mgv, quote, base, bid));
       }
 
       // wait for offer(s) to be recorded in OB
-      await mgvTestUtil.waitForBooksForLastTx();
+      if (lastTx) {
+        await mgvTestUtil.waitForBlock(mgv, lastTx.blockNumber);
+      }
 
       const market = await mgv.market({ base: base, quote: quote });
       const actualAsksMaxGasReq = await market.getBook().asks.getMaxGasReq();

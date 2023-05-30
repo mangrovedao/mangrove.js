@@ -109,6 +109,14 @@ class TestMaker {
     return testMaker;
   }
 
+  async approveMgv(address: string) {
+    return waitForTransaction(
+      this.contract.approveMgv(address, ethers.constants.MaxUint256, {
+        gasLimit: 100_000,
+      })
+    );
+  }
+
   async newOffer(
     p: { ba: Market.BA } & TestMaker.OfferParams,
     overrides: ethers.Overrides = {}
@@ -128,16 +136,8 @@ class TestMaker {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     // ensure mangrove is approved
-    await waitForTransaction(
-      this.contract.approveMgv(
-        outbound_tkn.address,
-        ethers.constants.MaxUint256
-      )
-    );
-
-    await waitForTransaction(
-      this.contract.approveMgv(inbound_tkn.address, ethers.constants.MaxUint256)
-    );
+    await this.approveMgv(outbound_tkn.address);
+    await this.approveMgv(inbound_tkn.address);
 
     if (!(this.mgv.provider instanceof ethers.providers.JsonRpcProvider)) {
       throw new Error("TestMaker requires a JsonRpcProvider");
@@ -149,7 +149,7 @@ class TestMaker {
       this.contract.address
     );
     await (
-      await node({ url: url, spawn: false, deploy: false }).connect()
+      await (await node({ url: url, spawn: false, deploy: false })).connect()
     ).deal({
       token: outbound_tkn.address,
       account: this.contract.address,
@@ -221,7 +221,7 @@ class TestMaker {
       const txHash = (await txPromise).hash;
       const logTxHash = ethersLog.transactionHash;
       if (txHash === logTxHash && filter(cbArg)) {
-        promiseResolve(cb(cbArg, bookEvent, ethersLog));
+        promiseResolve(await cb(cbArg, bookEvent, ethersLog));
       }
     };
 

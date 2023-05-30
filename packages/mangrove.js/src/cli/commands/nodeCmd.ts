@@ -14,12 +14,14 @@ type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
 export { builder };
 
 export async function handler(argv: Arguments): Promise<void> {
-  const { spawnEndedPromise } = await node(
-    {
-      ...argv,
-      pipe: true,
-    },
-    false
+  const { spawnEndedPromise } = await (
+    await node(
+      {
+        ...argv,
+        pipe: true,
+      },
+      false
+    )
   ).connect();
   if (spawnEndedPromise) {
     console.log("Node ready.");

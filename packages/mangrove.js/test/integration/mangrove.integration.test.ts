@@ -44,7 +44,7 @@ describe("Mangrove integration tests suite", function () {
     mgvAdmin.disconnect();
   });
 
-  describe("getMarkets", async function () {
+  describe("getMarkets", function () {
     it("updates with mgvReader", async function () {
       await mgvAdmin.contract.deactivate(
         mgv.getAddress("TokenA"),
@@ -96,11 +96,13 @@ describe("Mangrove integration tests suite", function () {
       const tokenAData = {
         address: mgv.getAddress("TokenA"),
         decimals: 18,
+        name: "TokenA",
         symbol: "TokenA",
       };
       const tokenBData = {
         address: mgv.getAddress("TokenB"),
         decimals: 6,
+        name: "TokenB",
         symbol: "TokenB",
       };
       assert.deepEqual(marketData[0].base, tokenAData);

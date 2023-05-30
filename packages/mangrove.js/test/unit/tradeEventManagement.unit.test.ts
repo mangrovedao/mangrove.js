@@ -1,7 +1,7 @@
 // Unit tests for TradeEventManagement.ts
 import assert from "assert";
 import { Big } from "big.js";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
 import { describe, it } from "mocha";
 import { anything, instance, mock, spy, verify, when } from "ts-mockito";
 import { Market, MgvToken } from "../../src";

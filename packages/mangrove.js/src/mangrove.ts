@@ -29,6 +29,20 @@ let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
 import UnitCalculations from "./util/unitCalculations";
+import {
+  BlockManager,
+  ReliableProvider,
+  ReliableHttpProvider,
+  ReliableWebsocketProvider,
+} from "@mangrovedao/reliable-event-subscriber";
+import { blockManagerOptionsByNetworkName } from "./constants/blockManagerOptions";
+import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
+import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
+import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
+import MangroveEventSubscriber from "./mangroveEventSubscriber";
+import { onEthersError } from "./util/ethersErrorHandler";
+import EventEmitter from "events";
+
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
@@ -75,10 +89,16 @@ namespace Mangrove {
   };
 
   export type OpenMarketInfo = {
-    base: { address: string; symbol: string; decimals: number };
-    quote: { address: string; symbol: string; decimals: number };
+    base: { name: string; address: string; symbol: string; decimals: number };
+    quote: { name: string; address: string; symbol: string; decimals: number };
     asksConfig: LocalConfig;
     bidsConfig: LocalConfig;
+  };
+
+  export type CreateOptions = eth.CreateSignerOptions & {
+    blockManagerOptions?: BlockManager.Options;
+    reliableWebsocketProviderOptions?: ReliableWebsocketProvider.Options;
+    reliableHttpProviderOptions?: ReliableHttpProvider.Options;
   };
 }
 
@@ -92,9 +112,13 @@ class Mangrove {
   readerContract: typechain.MgvReader;
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
-  // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
-  // orderContract: typechain.MangroveOrder;
-  orderContract: typechain.MangroveOrderEnriched;
+  orderContract: typechain.MangroveOrder;
+  reliableProvider?: ReliableProvider;
+  mangroveEventSubscriber?: MangroveEventSubscriber;
+
+  public eventEmitter: EventEmitter;
+
+  static devNode: DevNode;
   static typechain = typechain;
   static addresses = addresses;
 
@@ -108,7 +132,7 @@ class Mangrove {
    * const mgv = await require('mangrove.js').connect(options); // web browser
    * ```
    *
-   * if options is a string `s`, it is considered to be {provider:s}
+   * if options is a string `s`, it is considered to be `{provider:s}`
    * const mgv = await require('mangrove.js').connect('http://127.0.0.1:8545'); // HTTP provider
    *
    * Options:
@@ -121,21 +145,80 @@ class Mangrove {
    */
 
   static async connect(
-    options?: eth.CreateSignerOptions | string
+    options?: Mangrove.CreateOptions | string
   ): Promise<Mangrove> {
     if (typeof options === "undefined") {
       options = "http://localhost:8545";
     }
     if (typeof options === "string") {
-      options = { provider: options };
+      options = {
+        provider: options,
+      };
     }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
     const network = await eth.getProviderNetwork(signer.provider);
+
     if ("send" in signer.provider) {
-      const devNode = new DevNode(signer.provider);
-      if (await devNode.isDevNode()) {
-        await Mangrove.initAndListenToDevNode(devNode);
+      Mangrove.devNode = new DevNode(signer.provider);
+      if (await Mangrove.devNode.isDevNode()) {
+        await Mangrove.initAndListenToDevNode(Mangrove.devNode);
+      }
+    }
+
+    if (!options.blockManagerOptions) {
+      options.blockManagerOptions =
+        blockManagerOptionsByNetworkName[network.name];
+
+      if (!options.blockManagerOptions) {
+        options.blockManagerOptions = {
+          maxBlockCached: 50,
+          maxRetryGetBlock: 10,
+          retryDelayGetBlockMs: 500,
+          maxRetryGetLogs: 10,
+          retryDelayGetLogsMs: 500,
+          batchSize: 200,
+        };
+      }
+    }
+
+    if (!options.blockManagerOptions) {
+      throw new Error("Missing block manager option");
+    }
+
+    if (!options.reliableWebsocketProviderOptions && options.providerWsUrl) {
+      const _default = reliableWebSocketOptionsByNetworkName[network.name];
+      if (_default) {
+        options.reliableWebsocketProviderOptions = {
+          wsUrl: options.providerWsUrl,
+          pingIntervalMs: _default.pingIntervalMs,
+          pingTimeoutMs: _default.pingTimeoutMs,
+          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
+        };
+      } else {
+        options.reliableWebsocketProviderOptions = {
+          wsUrl: options.providerWsUrl,
+          pingIntervalMs: 10000,
+          pingTimeoutMs: 5000,
+          estimatedBlockTimeMs: 2000,
+        };
+      }
+    }
+
+    const eventEmitter = new EventEmitter();
+    if (!options.reliableHttpProviderOptions) {
+      const _default = reliableHttpProviderOptionsByNetworkName[network.name];
+
+      if (_default) {
+        options.reliableHttpProviderOptions = {
+          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
+          onError: onEthersError(eventEmitter),
+        };
+      } else {
+        options.reliableHttpProviderOptions = {
+          estimatedBlockTimeMs: 2000,
+          onError: onEthersError(eventEmitter),
+        };
       }
     }
     canConstructMangrove = true;
@@ -143,7 +226,19 @@ class Mangrove {
       signer: signer,
       network: network,
       readOnly,
+      blockManagerOptions: options.blockManagerOptions,
+      reliableHttpProvider: options.reliableHttpProviderOptions,
+      eventEmitter,
+      reliableWebSocketOptions: options.providerWsUrl
+        ? {
+            options: options.reliableWebsocketProviderOptions,
+            wsUrl: options.providerWsUrl,
+          }
+        : undefined,
     });
+
+    await mgv.initializeProvider();
+
     canConstructMangrove = false;
 
     logger.debug("Initialize Mangrove", {
@@ -160,6 +255,9 @@ class Mangrove {
 
   disconnect(): void {
     this.provider.removeAllListeners();
+    if (this.reliableProvider) {
+      this.reliableProvider.stop();
+    }
 
     logger.debug("Disconnect from Mangrove", {
       contextInfo: "mangrove.base",
@@ -171,12 +269,20 @@ class Mangrove {
     signer: Signer;
     network: eth.ProviderNetwork;
     readOnly: boolean;
+    blockManagerOptions: BlockManager.Options;
+    reliableHttpProvider: ReliableHttpProvider.Options;
+    eventEmitter: EventEmitter;
+    reliableWebSocketOptions?: {
+      options: ReliableWebsocketProvider.Options;
+      wsUrl: string;
+    };
   }) {
     if (!canConstructMangrove) {
       throw Error(
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)"
       );
     }
+    this.eventEmitter = params.eventEmitter;
     // must always pass a provider-equipped signer
     this.provider = params.signer.provider;
     this.signer = params.signer;
@@ -196,22 +302,70 @@ class Mangrove {
       readerAddress,
       this.signer
     );
+
     const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
     this.cleanerContract = typechain.MgvCleaner__factory.connect(
       cleanerAddress,
       this.signer
     );
-    // NB: We currently use MangroveOrderEnriched instead of MangroveOrder, see https://github.com/mangrovedao/mangrove/issues/535
     const orderAddress = Mangrove.getAddress(
-      // "MangroveOrder",
-      "MangroveOrderEnriched",
+      "MangroveOrder",
       this.network.name
     );
     // this.orderContract = typechain.MangroveOrder__factory.connect(
-    this.orderContract = typechain.MangroveOrderEnriched__factory.connect(
+    this.orderContract = typechain.MangroveOrder__factory.connect(
       orderAddress,
       this.signer
     );
+
+    if (params.reliableWebSocketOptions) {
+      this.reliableProvider = new ReliableWebsocketProvider(
+        {
+          ...params.blockManagerOptions,
+          provider: new WebSocketProvider(
+            params.reliableWebSocketOptions.wsUrl
+          ),
+          multiv2Address: this.multicallContract.address,
+        },
+        params.reliableWebSocketOptions.options
+      );
+    } else {
+      this.reliableProvider = new ReliableHttpProvider(
+        {
+          ...params.blockManagerOptions,
+          provider: this.provider as JsonRpcProvider,
+          multiv2Address: this.multicallContract.address,
+        },
+        params.reliableHttpProvider
+      );
+    }
+
+    this.mangroveEventSubscriber = new MangroveEventSubscriber(
+      this.provider,
+      this.contract,
+      this.reliableProvider.blockManager
+    );
+  }
+
+  /**
+   * Initialize reliable provider
+   */
+  private async initializeProvider(): Promise<void> {
+    if (!this.reliableProvider) {
+      return;
+    }
+
+    logger.debug(`Initialize reliable provider`);
+    const block = await this.provider.getBlock("latest");
+
+    await this.reliableProvider.initialize({
+      parentHash: block.parentHash,
+      hash: block.hash,
+      number: block.number,
+    });
+
+    await this.mangroveEventSubscriber.enableSubscriptions();
+    logger.debug(`Initialized reliable provider done`);
   }
   /* Instance */
   /************** */
@@ -233,6 +387,9 @@ class Mangrove {
         bookOptions: params.bookOptions,
       },
     });
+    if (this.reliableProvider && this.reliableProvider.getLatestBlock) {
+      await this.reliableProvider.getLatestBlock(); // trigger a quick update to get latest block on market initialization
+    }
     return await Market.connect({ ...params, mgv: this });
   }
 
@@ -267,12 +424,14 @@ class Mangrove {
         mgv: this,
         eoa: EOA,
         market: p,
+        gasreq: 0,
       });
     } else {
       return new LiquidityProvider({
         mgv: this,
         eoa: EOA,
         market: await this.market(p),
+        gasreq: 0,
       });
     }
   }
@@ -301,7 +460,7 @@ class Mangrove {
   }
 
   /**
-   * Read a contract address on the current network.
+   * Gets the name of an address on the current network.
    *
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
@@ -320,6 +479,13 @@ class Mangrove {
       }
     }
     return null;
+  }
+
+  /** Gets the token corresponding to the address if it is known; otherwise, null.
+   */
+  getTokenAndAddress(address: string) {
+    const name = this.getNameFromAddress(address);
+    return { address, token: name ? this.token(name) : null };
   }
 
   /** Convert public token amount to internal token representation.
@@ -395,6 +561,58 @@ class Mangrove {
     return this.token(tokenName).approveMangrove(arg);
   }
 
+  /** Calculates the provision required or locked for an offer based on the given parameters
+   * @param gasprice the gas price for the offer in gwei.
+   * @param gasreq the gas requirement for the offer
+   * @param gasbase the offer list's offer_gasbase.
+   * @returns the required provision, in ethers.
+   */
+  calculateOfferProvision(gasprice: number, gasreq: number, gasbase: number) {
+    return this.fromUnits(
+      this.toUnits(1, 9)
+        .mul(gasprice)
+        .mul(gasreq + gasbase),
+      18
+    );
+  }
+
+  /** Calculates the provision required or locked for offers based on the given parameters
+   * @param offers[] the offers to calculate provision for.
+   * @param offers[].gasprice the gas price for the offer in gwei.
+   * @param offers[].gasreq the gas requirement for the offer
+   * @param offers[].gasbase the offer list's offer_gasbase.
+   * @returns the required provision, in ethers.
+   */
+  public calculateOffersProvision(
+    offers: { gasprice: number; gasreq: number; gasbase: number }[]
+  ) {
+    return offers.reduce(
+      (acc, offer) =>
+        acc.add(
+          this.calculateOfferProvision(
+            offer.gasprice,
+            offer.gasreq,
+            offer.gasbase
+          )
+        ),
+      Big(0)
+    );
+  }
+
+  /** Gets the missing provision based on the required provision and the locked provision.
+   * @param lockedProvision the provision already locked for an offer.
+   * @param totalRequiredProvision the provision required for an offer.
+   * @returns the additional required provision, in ethers.
+   */
+  getMissingProvision(lockedProvision: Bigish, totalRequiredProvision: Bigish) {
+    const total = Big(totalRequiredProvision);
+    if (total.gt(lockedProvision)) {
+      return total.sub(lockedProvision);
+    } else {
+      return Big(0);
+    }
+  }
+
   /**
    * Return global Mangrove config
    */
@@ -415,7 +633,7 @@ class Mangrove {
   }
 
   /** Permit data normalization
-   * Autofill/convert 'nonce' field of permit data if needd, convert deadline to
+   * Autofill/convert 'nonce' field of permit data if need, convert deadline to
    * num if needed.
    */
   async normalizePermitData(
@@ -423,7 +641,7 @@ class Mangrove {
   ): Promise<Mangrove.PermitData> {
     const data = { ...params };
 
-    // Autofind nonce if needed
+    // Auto find nonce if needed
     if (!("nonce" in data)) {
       data.nonce = await this.contract.nonces(data.owner);
     }
@@ -446,7 +664,7 @@ class Mangrove {
    * let date = new Date();
    * date.setDate(date.getDate() + days);
    * date.setMonth(date.getMonth() + months);
-   * - Nonce is autoselected if needed and can be a number
+   * - Nonce is auto-selected if needed and can be a number
    * - Date can be a Date or a number
    */
   async simpleSignPermitData(params: Mangrove.SimplePermitData) {
@@ -662,7 +880,7 @@ class Mangrove {
   ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
     params.from ??= 0;
-    params.maxLen ??= ethers.BigNumber.from(2).pow(256).sub(1);
+    params.maxLen ??= ethers.constants.MaxUint256;
     params.configs ??= true;
     params.tokenInfos ??= true;
     // read open markets and their configs off mgvReader
@@ -687,7 +905,7 @@ class Mangrove {
       }
     });
 
-    const addrs = Object.keys(data);
+    const addresses = Object.keys(data);
 
     //read decimals & symbol for each token using Multicall
     const ierc20 = typechain.IERC20__factory.createInterface();
@@ -699,40 +917,45 @@ class Mangrove {
           fnName as any,
           returnData
         )[0];
-        data[addrs[i]][fnName as any] = decoded;
+        data[addresses[i]][fnName as any] = decoded;
       });
     };
 
     /* Grab decimals for all contracts */
-    const decimalArgs = addrs.map((addr) => {
+    const decimalArgs = addresses.map((addr) => {
       return { target: addr, callData: ierc20.encodeFunctionData("decimals") };
     });
-    const symbolArgs = addrs.map((addr) => {
+    const symbolArgs = addresses.map((addr) => {
       return { target: addr, callData: ierc20.encodeFunctionData("symbol") };
     });
     const { returnData } = await this.multicallContract.callStatic.aggregate([
       ...decimalArgs,
       ...symbolArgs,
     ]);
-    tryDecode(returnData.slice(0, addrs.length), "decimals");
-    tryDecode(returnData.slice(addrs.length), "symbol");
+    tryDecode(returnData.slice(0, addresses.length), "decimals");
+    tryDecode(returnData.slice(addresses.length), "symbol");
 
     // format return value
     return raw.markets.map(([tkn0, tkn1]) => {
-      const { baseSymbol } = Mangrove.toBaseQuoteByCashness(
-        data[tkn0].symbol,
-        data[tkn1].symbol
+      // Use internal mgv name if defined; otherwise use the symbol.
+      const tkn0Name = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
+      const tkn1Name = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
+
+      const { baseName, quoteName } = Mangrove.toBaseQuoteByCashness(
+        tkn0Name,
+        tkn1Name
       );
-      const [base, quote] =
-        baseSymbol === data[tkn0].symbol ? [tkn0, tkn1] : [tkn1, tkn0];
+      const [base, quote] = baseName === tkn0Name ? [tkn0, tkn1] : [tkn1, tkn0];
 
       return {
         base: {
+          name: baseName,
           address: base,
           symbol: data[base].symbol,
           decimals: data[base].decimals,
         },
         quote: {
+          name: quoteName,
           address: quote,
           symbol: data[quote].symbol,
           decimals: data[quote].decimals,
@@ -781,18 +1004,18 @@ class Mangrove {
     // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
     return Promise.all(
       openMarketsData.map(({ base, quote }) => {
-        this.token(base.symbol, {
+        this.token(base.name, {
           address: base.address,
           decimals: base.decimals,
         });
-        this.token(quote.symbol, {
+        this.token(quote.name, {
           address: quote.address,
           decimals: quote.decimals,
         });
         return Market.connect({
           mgv: this,
-          base: base.symbol,
-          quote: quote.symbol,
+          base: base.name,
+          quote: quote.name,
           bookOptions: bookOptions,
           noInit: noInit,
         });
@@ -801,26 +1024,26 @@ class Mangrove {
   }
 
   // relative cashness of a token will determine which is base & which is quote
-  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of symbol string
-  setCashness(symbol: string, cashness: number) {
-    loadedCashness[symbol] = cashness;
+  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol)
+  setCashness(name: string, cashness: number) {
+    loadedCashness[name] = cashness;
   }
 
   // cashness is "how similar to cash is a token". The cashier token is the quote.
-  // toBaseQuoteByCashness orders symbols according to relative cashness.
+  // toBaseQuoteByCashness orders tokens according to relative cashness.
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
-  static toBaseQuoteByCashness(symbol0: string, symbol1: string) {
+  static toBaseQuoteByCashness(name0: string, name1: string) {
     let cash0 = 0;
     let cash1 = 0;
-    if (symbol0 in loadedCashness && symbol1 in loadedCashness) {
-      cash0 = loadedCashness[symbol0];
-      cash1 = loadedCashness[symbol1];
+    if (name0 in loadedCashness && name1 in loadedCashness) {
+      cash0 = loadedCashness[name0];
+      cash1 = loadedCashness[name1];
     }
-    if (cash0 < cash1 || (cash0 === cash1 && symbol0 < symbol1)) {
-      return { baseSymbol: symbol0, quoteSymbol: symbol1 };
+    if (cash0 < cash1 || (cash0 === cash1 && name0 < name1)) {
+      return { baseName: name0, quoteName: name1 };
     } else {
-      return { baseSymbol: symbol1, quoteSymbol: symbol0 };
+      return { baseName: name1, quoteName: name0 };
     }
   }
 }

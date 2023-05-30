@@ -1,9 +1,0 @@
-.DS_Store
-node_modules/
-dist/
-static/environmentInformation.json
-.env.local
-.env.*.local
-.nyc_output/
-coverage/
-tsconfig.tsbuildinfo

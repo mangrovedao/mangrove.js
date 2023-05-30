@@ -36,7 +36,7 @@ await market.quote.contract.mint(
 // comment this in, if you do not have a "dead" offer
 /*
 let directLP = await mgv.liquidityProvider(market);
-let tx = await directLP.approveAsks();
+let tx = await market.base.approveMangrove();
 await tx.wait();
 let provision = await directLP.computeAskProvision();
 let { id: offerId } = await directLP.newAsk({
