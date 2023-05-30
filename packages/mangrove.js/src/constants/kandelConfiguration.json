@@ -10,23 +10,32 @@
       "gasPriceFactor": 10,
       "maxOffersInPopulateChunk": 80,
       "maxOffersInRetractChunk": 80,
-      "aaveEnabled": true,
+      "minimumBasePerOfferFactor": 10,
+      "minimumQuotePerOfferFactor": 10,
       "markets": {
         "WETH": {
           "DAI": {
-            "minimumBasePerOfferFactor": 5,
-            "minimumQuotePerOfferFactor": 5
+            "aaveEnabled": true
           },
           "USDC": {
             "minimumBasePerOfferFactor": 6,
-            "minimumQuotePerOfferFactor": 6
+            "minimumQuotePerOfferFactor": 6,
+            "aaveEnabled": true
           }
         },
         "DAI": {
           "USDC": {
-            "minimumBasePerOfferFactor": 10,
-            "minimumQuotePerOfferFactor": 10
+            "aaveEnabled": true
           }
+        },
+        "WMATIC": {
+          "USDT": {
+            "minimumBasePerOfferFactor": 6,
+            "minimumQuotePerOfferFactor": 6
+          }
+        },
+        "WBTC": {
+          "USDT": {}
         }
       }
     },
