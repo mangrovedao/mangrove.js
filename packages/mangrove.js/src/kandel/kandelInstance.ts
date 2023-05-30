@@ -929,6 +929,7 @@ class KandelInstance {
    * @param params.withdrawQuoteAmount The amount of quote to withdraw. If not provided, then the entire quote balance on Kandel is withdrawn.
    * @param params.recipientAddress The address to withdraw the tokens to. If not provided, then the address of the signer is used.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then KandelConfiguration is used.
+   * @param params.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
    * @param overrides The ethers overrides to use when calling the retractAndWithdraw, and retractOffers functions.
    * @returns The transaction(s) used to retract the offers.
    * @remarks This function or retractOffers should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
@@ -943,6 +944,7 @@ class KandelInstance {
       withdrawQuoteAmount?: Bigish;
       recipientAddress?: string;
       maxOffersInChunk?: number;
+      firstAskIndex?: number;
     } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ethers.ContractTransaction[]> {
@@ -982,6 +984,7 @@ class KandelInstance {
    * @param params.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
    * @param params.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then KandelConfiguration is used.
+   * @param params.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
    * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
@@ -992,6 +995,7 @@ class KandelInstance {
       startIndex?: number;
       endIndex?: number;
       maxOffersInChunk?: number;
+      firstAskIndex?: number;
     } = {},
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ethers.ContractTransaction[]> {
@@ -1009,6 +1013,7 @@ class KandelInstance {
    * @param params.retractParams.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
    * @param params.retractParams.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
    * @param params.retractParams.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then KandelConfiguration is used.
+   * @param params.retractParams.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
    * @param params.skipLast Whether to skip the last chunk. This is used to allow the last chunk to be retracted while withdrawing funds.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
@@ -1019,6 +1024,7 @@ class KandelInstance {
         startIndex?: number;
         endIndex?: number;
         maxOffersInChunk?: number;
+        firstAskIndex?: number;
       };
       skipLast: boolean;
     },
@@ -1028,11 +1034,12 @@ class KandelInstance {
     const to =
       params.retractParams.endIndex ?? (await this.getParameters()).pricePoints;
 
-    const chunks = this.generator.distributionHelper.chunkIndices(
+    const chunks = this.generator.distributionHelper.chunkIndicesAroundMiddle(
       from,
       to,
       params.retractParams.maxOffersInChunk ??
-        this.getMostSpecificConfig().maxOffersInRetractChunk
+        this.getMostSpecificConfig().maxOffersInRetractChunk,
+      params.retractParams.firstAskIndex
     );
 
     // Retract in opposite order as populate
