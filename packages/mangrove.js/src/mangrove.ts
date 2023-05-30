@@ -89,8 +89,8 @@ namespace Mangrove {
   };
 
   export type OpenMarketInfo = {
-    base: { address: string; symbol: string; decimals: number };
-    quote: { address: string; symbol: string; decimals: number };
+    base: { name: string; address: string; symbol: string; decimals: number };
+    quote: { name: string; address: string; symbol: string; decimals: number };
     asksConfig: LocalConfig;
     bidsConfig: LocalConfig;
   };
@@ -641,7 +641,7 @@ class Mangrove {
   ): Promise<Mangrove.PermitData> {
     const data = { ...params };
 
-    // Autofind nonce if needed
+    // Auto find nonce if needed
     if (!("nonce" in data)) {
       data.nonce = await this.contract.nonces(data.owner);
     }
@@ -664,7 +664,7 @@ class Mangrove {
    * let date = new Date();
    * date.setDate(date.getDate() + days);
    * date.setMonth(date.getMonth() + months);
-   * - Nonce is autoselected if needed and can be a number
+   * - Nonce is auto-selected if needed and can be a number
    * - Date can be a Date or a number
    */
   async simpleSignPermitData(params: Mangrove.SimplePermitData) {
@@ -905,7 +905,7 @@ class Mangrove {
       }
     });
 
-    const addrs = Object.keys(data);
+    const addresses = Object.keys(data);
 
     //read decimals & symbol for each token using Multicall
     const ierc20 = typechain.IERC20__factory.createInterface();
@@ -917,40 +917,45 @@ class Mangrove {
           fnName as any,
           returnData
         )[0];
-        data[addrs[i]][fnName as any] = decoded;
+        data[addresses[i]][fnName as any] = decoded;
       });
     };
 
     /* Grab decimals for all contracts */
-    const decimalArgs = addrs.map((addr) => {
+    const decimalArgs = addresses.map((addr) => {
       return { target: addr, callData: ierc20.encodeFunctionData("decimals") };
     });
-    const symbolArgs = addrs.map((addr) => {
+    const symbolArgs = addresses.map((addr) => {
       return { target: addr, callData: ierc20.encodeFunctionData("symbol") };
     });
     const { returnData } = await this.multicallContract.callStatic.aggregate([
       ...decimalArgs,
       ...symbolArgs,
     ]);
-    tryDecode(returnData.slice(0, addrs.length), "decimals");
-    tryDecode(returnData.slice(addrs.length), "symbol");
+    tryDecode(returnData.slice(0, addresses.length), "decimals");
+    tryDecode(returnData.slice(addresses.length), "symbol");
 
     // format return value
     return raw.markets.map(([tkn0, tkn1]) => {
-      const { baseSymbol } = Mangrove.toBaseQuoteByCashness(
-        data[tkn0].symbol,
-        data[tkn1].symbol
+      // Use internal mgv name if defined; otherwise use the symbol.
+      const tkn0Name = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
+      const tkn1Name = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
+
+      const { baseName, quoteName } = Mangrove.toBaseQuoteByCashness(
+        tkn0Name,
+        tkn1Name
       );
-      const [base, quote] =
-        baseSymbol === data[tkn0].symbol ? [tkn0, tkn1] : [tkn1, tkn0];
+      const [base, quote] = baseName === tkn0Name ? [tkn0, tkn1] : [tkn1, tkn0];
 
       return {
         base: {
+          name: baseName,
           address: base,
           symbol: data[base].symbol,
           decimals: data[base].decimals,
         },
         quote: {
+          name: quoteName,
           address: quote,
           symbol: data[quote].symbol,
           decimals: data[quote].decimals,
@@ -999,18 +1004,18 @@ class Mangrove {
     // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
     return Promise.all(
       openMarketsData.map(({ base, quote }) => {
-        this.token(base.symbol, {
+        this.token(base.name, {
           address: base.address,
           decimals: base.decimals,
         });
-        this.token(quote.symbol, {
+        this.token(quote.name, {
           address: quote.address,
           decimals: quote.decimals,
         });
         return Market.connect({
           mgv: this,
-          base: base.symbol,
-          quote: quote.symbol,
+          base: base.name,
+          quote: quote.name,
           bookOptions: bookOptions,
           noInit: noInit,
         });
@@ -1019,26 +1024,26 @@ class Mangrove {
   }
 
   // relative cashness of a token will determine which is base & which is quote
-  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of symbol string
-  setCashness(symbol: string, cashness: number) {
-    loadedCashness[symbol] = cashness;
+  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol)
+  setCashness(name: string, cashness: number) {
+    loadedCashness[name] = cashness;
   }
 
   // cashness is "how similar to cash is a token". The cashier token is the quote.
-  // toBaseQuoteByCashness orders symbols according to relative cashness.
+  // toBaseQuoteByCashness orders tokens according to relative cashness.
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
-  static toBaseQuoteByCashness(symbol0: string, symbol1: string) {
+  static toBaseQuoteByCashness(name0: string, name1: string) {
     let cash0 = 0;
     let cash1 = 0;
-    if (symbol0 in loadedCashness && symbol1 in loadedCashness) {
-      cash0 = loadedCashness[symbol0];
-      cash1 = loadedCashness[symbol1];
+    if (name0 in loadedCashness && name1 in loadedCashness) {
+      cash0 = loadedCashness[name0];
+      cash1 = loadedCashness[name1];
     }
-    if (cash0 < cash1 || (cash0 === cash1 && symbol0 < symbol1)) {
-      return { baseSymbol: symbol0, quoteSymbol: symbol1 };
+    if (cash0 < cash1 || (cash0 === cash1 && name0 < name1)) {
+      return { baseName: name0, quoteName: name1 };
     } else {
-      return { baseSymbol: symbol1, quoteSymbol: symbol0 };
+      return { baseName: name1, quoteName: name0 };
     }
   }
 }
