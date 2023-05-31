@@ -24,6 +24,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 describe("Market integration tests suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
+  const rawMinGivesBase = BigNumber.from("90000000000000000");
 
   beforeEach(async function () {
     mgv = await Mangrove.connect({
@@ -63,15 +64,11 @@ describe("Market integration tests suite", () => {
 
     beforeEach(async function () {
       mgvReadonly = await Mangrove.connect({
-        provider: this.server.url,
+        provider: mgv.provider,
         forceReadOnly: true,
       });
-      //shorten polling for faster tests
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      mgvReadonly.provider.pollingInterval = 10;
     });
-    afterEach(async () => {
+    afterEach(() => {
       mgvReadonly.disconnect();
     });
 
@@ -770,7 +767,8 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
 
-    await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
+    const tx2 = await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
+    await mgvTestUtil.waitForBlock(mgv, tx2.blockNumber);
     const buyPromises_ = await market.buy({ wants: "1", gives: "1.5e12" });
     const result_ = await buyPromises_.result;
     expect(result_.tradeFailures).to.have.lengthOf(0);
@@ -793,14 +791,14 @@ describe("Market integration tests suite", () => {
       ba: "asks",
       maker,
       wants: 1,
-      gives: 1000000,
+      gives: rawMinGivesBase,
     });
     await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
       wants: 1,
-      gives: 2000000,
+      gives: rawMinGivesBase.mul(2),
     });
 
     const buyPromises = await market.buy(
@@ -827,14 +825,14 @@ describe("Market integration tests suite", () => {
       ba: "asks",
       maker,
       wants: 1,
-      gives: 1000000,
+      gives: rawMinGivesBase,
     });
     await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
       wants: 1,
-      gives: 2000000,
+      gives: rawMinGivesBase.mul(2),
     });
 
     const buyPromises = await market.buy(
@@ -898,14 +896,14 @@ describe("Market integration tests suite", () => {
       ba: "asks",
       maker,
       wants: 1,
-      gives: 1000000,
+      gives: rawMinGivesBase,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
       wants: 1,
-      gives: 2000000,
+      gives: rawMinGivesBase.mul(2),
     });
 
     // get not-best offer
@@ -925,7 +923,7 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
 
-    expect(result.successes[0].got.toNumber()).to.be.equal(1e-12);
+    expect(result.successes[0].got.toNumber()).to.be.equal(0.09);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
     expect(result.successes[0].offerId).to.be.equal(notBest);
   });
@@ -989,21 +987,21 @@ describe("Market integration tests suite", () => {
       ba: "asks",
       maker,
       wants: 1,
-      gives: 1000000,
+      gives: rawMinGivesBase,
     });
     await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
       wants: 1,
-      gives: 2000000,
+      gives: rawMinGivesBase.mul(2),
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
       wants: 1,
-      gives: 3000000,
+      gives: rawMinGivesBase.mul(3),
     });
 
     await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
@@ -1033,7 +1031,7 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(2);
 
     // 5% fee configured in mochaHooks.js
-    expect(result.summary.got.toNumber()).to.be.equal(0.95 * 3e-12);
+    expect(result.summary.got.toNumber()).to.be.equal(0.2565);
     expect(result.summary.gave.toNumber()).to.be.equal(2e-6);
     expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
   });
@@ -1112,7 +1110,7 @@ describe("Market integration tests suite", () => {
         ba: "asks",
         maker,
         wants: 1,
-        gives: 1000000,
+        gives: rawMinGivesBase,
         shouldFail: true,
       });
       const tx = await mgvTestUtil.postNewOffer({
@@ -1120,7 +1118,7 @@ describe("Market integration tests suite", () => {
         ba: "asks",
         maker,
         wants: 1,
-        gives: 2000000,
+        gives: rawMinGivesBase.mul(2),
         shouldFail: true,
       });
 
@@ -1183,7 +1181,7 @@ describe("Market integration tests suite", () => {
       ba: "asks",
       maker,
       wants: 1,
-      gives: 1000000,
+      gives: rawMinGivesBase,
     });
 
     await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
@@ -1243,7 +1241,7 @@ describe("Market integration tests suite", () => {
       ba: "asks",
       maker,
       wants: 1,
-      gives: 1000000,
+      gives: rawMinGivesBase,
       shouldFail: true,
     });
 

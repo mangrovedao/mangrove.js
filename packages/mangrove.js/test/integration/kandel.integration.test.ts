@@ -198,9 +198,11 @@ describe("Kandel integration tests suite", function () {
         it(`minimumVolume uses config and calculates correct value offerType=${offerType} onAave=${onAave}`, async () => {
           // Arrange
           const offerGasreq = await seeder.getDefaultGasreq(onAave);
+          const { outbound_tkn, inbound_tkn } =
+            market.getOutboundInbound(offerType);
           const readerMinVolume = await mgv.readerContract.minVolume(
-            market.base.address,
-            market.quote.address,
+            outbound_tkn.address,
+            inbound_tkn.address,
             offerGasreq
           );
           const factor =
@@ -209,9 +211,7 @@ describe("Kandel integration tests suite", function () {
               : seeder.configuration.getConfig(market)
                   .minimumQuotePerOfferFactor;
           const expectedVolume = factor.mul(
-            (offerType == "asks" ? market.base : market.quote).fromUnits(
-              readerMinVolume
-            )
+            outbound_tkn.fromUnits(readerMinVolume)
           );
 
           // Act
@@ -1349,8 +1349,8 @@ describe("Kandel integration tests suite", function () {
         });
 
         // Assert
-        assert.equal(minBase.toNumber(), 0.0148);
-        assert.equal(minQuote.toNumber(), 14.8);
+        assert.equal(minBase.toNumber(), 1.21874);
+        assert.equal(minQuote.toNumber(), 1218.74);
       });
 
       it("calculateDistributionWithUniformlyChangedVolume creates new distribution with decreased volumes for all live offers", async function () {
@@ -1724,7 +1724,7 @@ describe("Kandel integration tests suite", function () {
 
         [
           { factor: 0.5, gasreq: undefined },
-          { factor: undefined, gasreq: -10000 },
+          { factor: undefined, gasreq: -100000 },
         ].forEach(({ factor, gasreq }) => {
           it(`calculateMinimumDistribution cannot be deployed with factor=${factor} or gasreq=${gasreq}`, async () => {
             // Arrange

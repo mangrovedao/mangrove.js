@@ -94,11 +94,30 @@ export const mochaHooks = {
     await mgv.fundMangrove(10, hook.accounts.deployer.address);
     // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
 
+    const localConfig = await (
+      await mgv.market({ base: tokenA.name, quote: tokenB.name })
+    ).config();
     await mgv.contract
-      .activate(tokenA.address, tokenB.address, 500, 10, 20000)
+      .activate(
+        tokenA.address,
+        tokenB.address,
+        500,
+        tokenA.toUnits(localConfig.asks.density),
+        localConfig.asks.offer_gasbase
+      )
       .then((tx) => tx.wait());
+
+    // Density should be >0, otherwise the tests will fail
     await mgv.contract
-      .activate(tokenB.address, tokenA.address, 500, 10, 20000)
+      .activate(
+        tokenB.address,
+        tokenA.address,
+        500,
+        localConfig.bids.density.gt(0)
+          ? tokenB.toUnits(localConfig.bids.density)
+          : 1,
+        localConfig.bids.offer_gasbase
+      )
       .then((tx) => tx.wait());
 
     await tokenA.contract.mint(

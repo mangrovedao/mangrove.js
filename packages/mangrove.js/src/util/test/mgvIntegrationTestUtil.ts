@@ -360,7 +360,7 @@ export const postNewOffer = async ({
   ba,
   maker,
   wants = 1,
-  gives = 1000000,
+  gives = "90000000000000000",
   gasreq = 5e4,
   shouldFail = false,
   shouldRevert = false,
