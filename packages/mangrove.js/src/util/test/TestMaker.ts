@@ -38,7 +38,7 @@ import { node } from "../../util/node";
   > await tm.market.requestBook() // show the current book
   > const quote = tm.market.quote;
   > await quote.approveMangrove();
-  > await quote.contract.mint(await mgv.signer.getAddress(),quote.toUnits(10));
+  > await quote.contract.mintTo(await mgv.signer.getAddress(),quote.toUnits(10));
   > // will contain a revert
   > const {result,response} = await tm.market.buy({volume:2,price:1});
 */

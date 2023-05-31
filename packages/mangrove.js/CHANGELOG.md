@@ -1,5 +1,10 @@
 # Next version
 
+# 1.2.7
+
+- Bump mangrove-core to 1.5.4
+- Remove redundant addresses
+
 # 1.2.6
 
 - Bump mangrove-core to 1.5.3

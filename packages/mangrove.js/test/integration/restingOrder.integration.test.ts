@@ -80,10 +80,10 @@ describe("RestingOrder", () => {
       // minting As and Bs for test runner
       const me = await mgv.signer.getAddress();
       await w(
-        mgv.token("TokenA").contract.mint(me, utils.parseUnits("100", 18))
+        mgv.token("TokenA").contract.mintTo(me, utils.parseUnits("100", 18))
       );
       await w(
-        mgv.token("TokenB").contract.mint(me, utils.parseUnits("100", 18))
+        mgv.token("TokenB").contract.mintTo(me, utils.parseUnits("100", 18))
       );
 
       // `me` proposes asks on Mangrove so should approve base
