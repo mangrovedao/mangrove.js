@@ -19,7 +19,7 @@ market.consoleAsks();
 
 // comment this in, if you need to mint quote token
 /*
-await market.quote.contract.mint( 
+await market.quote.contract.mintTo( 
   process.env.ADMIN_ADDRESS,
   mgv.toUnits(10000, market.quote.decimals)
 );
@@ -27,7 +27,7 @@ await market.quote.contract.mint(
 
 // comment this in, if you need to mint base token
 /*
-await market.quote.contract.mint( 
+await market.quote.contract.mintTo( 
   process.env.ADMIN_ADDRESS,
   mgv.toUnits(10000, market.base.decimals)
 );

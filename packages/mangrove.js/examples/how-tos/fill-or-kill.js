@@ -15,7 +15,7 @@ const mgv = await Mangrove.connect({ signer: wallet });
 // Connect mgv to a DAI, USDC market
 const market = await mgv.market({ base: "DAI", quote: "USDC" });
 
-// await market.quote.contract.mint( // minting USDC if you are on testnet
+// await market.quote.contract.mintTo( // minting USDC if you are on testnet
 //   process.env.ADMIN_ADDRESS,
 //   mgv.toUnits(10000, market.quote.decimals)
 // );

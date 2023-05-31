@@ -523,6 +523,54 @@ class KandelDistributionHelper {
     return chunks;
   }
 
+  /** Splits a range of indices into chunks starting from the middle index according to the maximum number of offers in a single chunk.
+   * @param from The start of the range.
+   * @param to The end of the range.
+   * @param maxOffersInChunk The maximum number of offers in a single chunk.
+   * @param middle The middle to split around; typically the index of the first ask in the distribution; if not provided, the midpoint between from and to is used.
+   * @returns The chunks.
+   */
+  public chunkIndicesAroundMiddle(
+    from: number,
+    to: number,
+    maxOffersInChunk: number,
+    middle?: number
+  ) {
+    if (middle === undefined) {
+      middle = from + Math.floor((to - from) / 2);
+    }
+    const middleChunk = {
+      from: Math.max(from, middle - Math.floor(maxOffersInChunk / 2)),
+      to: Math.min(to, middle + Math.ceil(maxOffersInChunk / 2)),
+    };
+
+    // expand middleChunk if not full
+    const residual = maxOffersInChunk - (middleChunk.to - middleChunk.from);
+    middleChunk.from = Math.max(from, middleChunk.from - residual);
+    middleChunk.to = Math.min(to, middleChunk.to + residual);
+
+    const lowChunks = this.chunkIndices(
+      from,
+      middleChunk.from,
+      maxOffersInChunk
+    );
+    const highChunks = this.chunkIndices(middleChunk.to, to, maxOffersInChunk);
+
+    const chunks: { from: number; to: number }[] = [middleChunk];
+
+    lowChunks.reverse();
+    for (let i = 0; i < Math.max(lowChunks.length, highChunks.length); i++) {
+      if (i < lowChunks.length) {
+        chunks.push(lowChunks[i]);
+      }
+      if (i < highChunks.length) {
+        chunks.push(highChunks[i]);
+      }
+    }
+
+    return chunks;
+  }
+
   /** Determines the required provision for the offers in the distribution.
    * @param params The parameters used to calculate the provision.
    * @param params.market The market to get provisions for bids and asks from.

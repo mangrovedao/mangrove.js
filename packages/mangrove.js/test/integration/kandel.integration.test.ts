@@ -1506,6 +1506,7 @@ describe("Kandel integration tests suite", function () {
             await waitForTransactions(
               await kandel.retractOffers({
                 maxOffersInChunk: inChunks ? 2 : 80,
+                firstAskIndex: 3,
               })
             );
 
@@ -1523,6 +1524,7 @@ describe("Kandel integration tests suite", function () {
                 startIndex: 4,
                 endIndex: 6,
                 maxOffersInChunk: inChunks ? 1 : 80,
+                firstAskIndex: 3,
               })
             );
 
