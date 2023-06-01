@@ -388,7 +388,13 @@ class Semibook
     initialWants: Big,
     initialGives: Big,
     fillWants: boolean
-  ): Promise<{ wants: Big; gives: Big; totalGot: Big; totalGave: Big }> {
+  ): Promise<{
+    wants: Big;
+    gives: Big;
+    totalGot: Big;
+    totalGave: Big;
+    gas: BigNumber;
+  }> {
     // reproduce solidity behavior
     const previousBigRm = Big.RM;
     Big.RM = Big.roundDown;
@@ -399,8 +405,9 @@ class Semibook
       gives: initialGives,
       totalGot: Big(0),
       totalGave: Big(0),
+      offersConsidered: 0,
+      gasreq: BigNumber.from(0),
     };
-
     const state = this.getLatestState();
     const res = await this.#foldLeftUntil(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -414,10 +421,13 @@ class Semibook
         const takerWants = acc.wants;
         const takerGives = acc.gives;
 
+        acc.offersConsidered += 1;
+
         // bad price
         if (takerWants.mul(offer.wants).gt(takerGives.mul(offer.gives))) {
           acc.stop = true;
         } else {
+          acc.gasreq = acc.gasreq.add(offer.gasreq);
           if (
             (fillWants && takerWants.gt(offer.gives)) ||
             (!fillWants && takerGives.gt(offer.wants))
@@ -454,7 +464,16 @@ class Semibook
 
     Big.RM = previousBigRm;
 
-    return res;
+    const {
+      local: { offer_gasbase },
+    } = await this.getRawConfig();
+
+    // Assume up to offer_gasbase is used also for the bad price call
+    const gas = res.gasreq.add(
+      offer_gasbase.mul(Math.max(res.offersConsidered, 1))
+    );
+
+    return { ...res, gas };
   }
 
   /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
@@ -470,9 +489,15 @@ class Semibook
   }
 
   async getMaxGasReq(): Promise<number | undefined> {
+    // If a cache max size is set, then we look at those; otherwise, allow going to the chain to fetch data for the semibook.
+    const maxOffers = this.options.maxOffers ?? Semibook.DEFAULT_MAX_OFFERS;
+    let offerNum = 0;
     // TODO: The implementation of the following predicate is work-in-progress
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const countOfferForMaxGasPredicate = (_o: Market.Offer) => true;
+    const countOfferForMaxGasPredicate = (_o: Market.Offer) => {
+      offerNum++;
+      return true;
+    };
 
     const state = this.getLatestState();
     const result = await this.#foldLeftUntil(
@@ -481,7 +506,7 @@ class Semibook
       state,
       { maxGasReq: undefined as number },
       () => {
-        return false;
+        return offerNum >= maxOffers;
       },
       (cur, acc) => {
         if (countOfferForMaxGasPredicate(cur)) {
