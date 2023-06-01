@@ -2,5 +2,8 @@
   "DAI": 2,
   "MGV": 2,
   "USDC": 2,
-  "WETH": 4
+  "USDT": 2,
+  "WETH": 4,
+  "WBTC": 6,
+  "WMATIC": 2
 }

@@ -1,5 +1,9 @@
 # Next version
 
+# 1.2.8
+
+- Add token decimal configurations for WBTC, WMATIC, and USDT
+
 # 1.2.7
 
 - Bump mangrove-core to 1.5.4
