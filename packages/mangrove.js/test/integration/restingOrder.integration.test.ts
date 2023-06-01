@@ -4,11 +4,18 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 import { utils } from "ethers";
 
 import assert from "assert";
-import { Mangrove, LiquidityProvider, Market, OfferLogic } from "../../src";
+import {
+  Mangrove,
+  LiquidityProvider,
+  Market,
+  OfferLogic,
+  mgvTestUtil,
+} from "../../src";
 import { AbstractRouter } from "../../src/types/typechain";
 
 import { Big } from "big.js";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -107,6 +114,7 @@ describe("RestingOrder", () => {
         gives: 8,
         fund: provision,
       });
+      mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
     });
 
     it("simple resting order, with no forceRoutingToMangroveOrder", async () => {
@@ -119,6 +127,17 @@ describe("RestingOrder", () => {
         mgv.getAddress("TokenB"),
         mgv.getAddress("TokenA"),
       ]);
+
+      // Fill up bids to verify that pivot is used:
+      const meAsLP = await mgv.liquidityProvider(orderLP.market);
+      const meProvision = await meAsLP.computeBidProvision();
+      for (let i = 0; i < 15; i++) {
+        await meAsLP.newBid({
+          wants: 1 + i,
+          gives: 10,
+          fund: meProvision,
+        });
+      }
 
       const buyPromises = await orderLP.market.buy({
         wants: 20, // tokenA
@@ -251,7 +270,8 @@ describe("RestingOrder", () => {
         },
       });
       const orderResult = await buyPromises.result;
-
+      const tx = await waitForTransaction(buyPromises.response);
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
       assert(
         orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
         "Resting order was not posted"
@@ -284,6 +304,8 @@ describe("RestingOrder", () => {
 
       const sellPromises = await market.sell({ wants: 5, gives: 5 });
       const result = await sellPromises.result;
+      const tx2 = await waitForTransaction(sellPromises.response);
+      await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
       // 5% fee configured in mochaHooks.js
       assert(result.summary.got.eq(5 * 0.95), "Sell order went wrong");
       assert(
