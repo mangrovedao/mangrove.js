@@ -1,5 +1,9 @@
 # Next version
 
+# 1.2.9
+
+- Increase gas estimation for limit orders due to overhead of going through MangroveOrder contract.
+
 # 1.2.8
 
 - Add token decimal configurations for WBTC, WMATIC, and USDT
