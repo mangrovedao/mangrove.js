@@ -1349,8 +1349,8 @@ describe("Kandel integration tests suite", function () {
         });
 
         // Assert
-        assert.equal(minBase.toNumber(), 1.21874);
-        assert.equal(minQuote.toNumber(), 1218.74);
+        assert.equal(minBase.toNumber(), 1.22072);
+        assert.equal(minQuote.toNumber(), 1220.72);
       });
 
       it("calculateDistributionWithUniformlyChangedVolume creates new distribution with decreased volumes for all live offers", async function () {

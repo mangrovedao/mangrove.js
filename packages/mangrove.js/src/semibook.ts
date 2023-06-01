@@ -489,9 +489,15 @@ class Semibook
   }
 
   async getMaxGasReq(): Promise<number | undefined> {
+    // If a cache max size is set, then we look at those; otherwise, allow going to the chain to fetch data for the semibook.
+    const maxOffers = this.options.maxOffers ?? Semibook.DEFAULT_MAX_OFFERS;
+    let offerNum = 0;
     // TODO: The implementation of the following predicate is work-in-progress
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const countOfferForMaxGasPredicate = (_o: Market.Offer) => true;
+    const countOfferForMaxGasPredicate = (_o: Market.Offer) => {
+      offerNum++;
+      return true;
+    };
 
     const state = this.getLatestState();
     const result = await this.#foldLeftUntil(
@@ -500,7 +506,7 @@ class Semibook
       state,
       { maxGasReq: undefined as number },
       () => {
-        return false;
+        return offerNum >= maxOffers;
       },
       (cur, acc) => {
         if (countOfferForMaxGasPredicate(cur)) {

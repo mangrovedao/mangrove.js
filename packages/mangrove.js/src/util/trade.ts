@@ -312,12 +312,7 @@ class Trade {
 
     // user defined gasLimit overrides estimates
     if (!overrides.gasLimit) {
-      overrides.gasLimit = await market.simulateGas(
-        this.bsToBa(orderType),
-        gives,
-        wants,
-        fillWants
-      );
+      overrides.gasLimit = await market.estimateGas(orderType, wants);
     }
 
     logger.debug("Creating market order", {
@@ -425,10 +420,10 @@ class Trade {
     const pivotId =
       (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ?? 0;
 
-    // user defined gasLimit overrides estimates - for simulation we add an overhead of the MangroveOrder contract on top of the simulated market order.
+    // user defined gasLimit overrides estimates - for estimation we add an overhead of the MangroveOrder contract on top of the estimated market order.
     overrides_.gasLimit = overrides_.gasLimit
       ? overrides_.gasLimit
-      : (await market.simulateGas(ba, gives, wants, fillWants)).add(200000);
+      : (await market.estimateGas(orderType, wants)).add(200000);
 
     const response = market.mgv.orderContract.take(
       {
