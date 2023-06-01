@@ -446,14 +446,20 @@ const rawMint = async (
   switch (token.name) {
     case "TokenA":
       await waitForTransaction(
-        deployer.connectedContracts.tokenA.mint(receiverAddress, internalAmount)
+        deployer.connectedContracts.tokenA.mintTo(
+          receiverAddress,
+          internalAmount
+        )
       );
 
       break;
 
     case "TokenB":
       await waitForTransaction(
-        deployer.connectedContracts.tokenB.mint(receiverAddress, internalAmount)
+        deployer.connectedContracts.tokenB.mintTo(
+          receiverAddress,
+          internalAmount
+        )
       );
 
       break;

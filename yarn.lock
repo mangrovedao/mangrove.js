@@ -1135,10 +1135,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@npm:1.5.1-1":
-  version: 1.5.1-1
-  resolution: "@mangrovedao/mangrove-core@npm:1.5.1-1"
-  checksum: 803c2714ee623a71950155fbec46fb5e80926acc46e30de7c77995e414f7811845c3dcfe8bd93b34e4888dcf87ae0af7a28e8b6801a848cb7f5774e479efd18b
+"@mangrovedao/mangrove-core@npm:1.5.4":
+  version: 1.5.4
+  resolution: "@mangrovedao/mangrove-core@npm:1.5.4"
+  checksum: f3e44124d3cd05a96ecceffe777989adf5acc39a0f02e0b89ad7a33127361c85f5e00937cea609833d00b4ac9a86217b2ad3e23caa4ce75d01727d38ef593514
   languageName: node
   linkType: hard
 
@@ -1152,7 +1152,7 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/mangrove-core": 1.5.1-1
+    "@mangrovedao/mangrove-core": 1.5.4
     "@mangrovedao/reliable-event-subscriber": 1.1.19
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6
@@ -4570,7 +4570,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "mangrove-monorepo@workspace:."
   dependencies:
-    "@mangrovedao/mangrove-core": 1.5.1-1
+    "@mangrovedao/mangrove-core": 1.5.4
     husky: ^8.0.3
     pinst: ^3.0.0
   languageName: unknown

@@ -113,6 +113,18 @@ class KandelDistribution {
     );
   }
 
+  /** Gets the index of the first ask in the subset of offers in offers for the distribution. If there are no asks, then the length of offers is returned.
+   * @returns The index of the first ask in the subset of offers in offers for the distribution. If there are no asks, then the length of offers is returned.
+   */
+  public getOffersIndexOfFirstAskIndex() {
+    const firstAskIndex = this.getFirstAskIndex();
+    if (firstAskIndex == this.pricePoints) {
+      return this.offers.length;
+    } else {
+      return this.offers.findIndex((x) => x.index == firstAskIndex);
+    }
+  }
+
   /** Split a distribution and its pivots into chunks according to the maximum number of offers in a single chunk.
    * @param pivots The pivots for the distribution.
    * @param maxOffersInChunk The maximum number of offers in a single chunk.
@@ -123,9 +135,31 @@ class KandelDistribution {
       pivots: number[];
       distribution: OfferDistribution;
     }[] = [];
-    for (let i = 0; i < this.offers.length; i += maxOffersInChunk) {
-      const pivotsChunk = pivots.slice(i, i + maxOffersInChunk);
-      const distributionChunk = this.offers.slice(i, i + maxOffersInChunk);
+
+    const offerMiddle = this.getOffersIndexOfFirstAskIndex();
+    let pivotsChunk: number[] = [];
+    let distributionChunk: OfferDistribution = [];
+    for (let i = 0; i < this.offers.length; i++) {
+      const indexLow = offerMiddle - i - 1;
+      const indexHigh = offerMiddle + i;
+      if (indexLow >= 0 && indexLow < this.offers.length) {
+        pivotsChunk.unshift(pivots[indexLow]);
+        distributionChunk.unshift(this.offers[indexLow]);
+      }
+      if (indexHigh < this.offers.length) {
+        pivotsChunk.push(pivots[indexHigh]);
+        distributionChunk.push(this.offers[indexHigh]);
+      }
+      if (pivotsChunk.length >= maxOffersInChunk) {
+        chunks.push({
+          pivots: pivotsChunk,
+          distribution: distributionChunk,
+        });
+        pivotsChunk = [];
+        distributionChunk = [];
+      }
+    }
+    if (pivotsChunk.length) {
       chunks.push({
         pivots: pivotsChunk,
         distribution: distributionChunk,

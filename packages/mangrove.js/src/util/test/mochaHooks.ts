@@ -120,11 +120,11 @@ export const mochaHooks = {
       )
       .then((tx) => tx.wait());
 
-    await tokenA.contract.mint(
+    await tokenA.contract.mintTo(
       hook.accounts.tester.address,
       mgv.toUnits(10, 18)
     );
-    await tokenB.contract.mint(
+    await tokenB.contract.mintTo(
       hook.accounts.tester.address,
       mgv.toUnits(10, 18)
     );

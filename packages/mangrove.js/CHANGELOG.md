@@ -1,23 +1,24 @@
 # Next version
 
+# 1.2.8
+
+- Add token decimal configurations for WBTC, WMATIC, and USDT
+
+# 1.2.7
+
+- Bump mangrove-core to 1.5.4
+- Remove redundant addresses
+
+# 1.2.6
+
+- Bump mangrove-core to 1.5.3
 - Use array to handle market subscription
-- [bug fix] gas estimates for market orders is boosted to avoid `NotEnoughGasForMaker` type of tx failures.
-- max gas limit for market orders is set to 10,000,000
+- Fix: gas estimates for market orders is boosted to avoid `NotEnoughGasForMaker` type of tx failures.
+- Max gas limit for market orders is set to 10,000,000
 - commonlib.js dependency removed
-
-# 1.2.6-2
-
-- Debugging version for UI
-
-# 1.2.6-1
-
 - Bump RES to v1.1.19
-
-# 1.2.6-0
-
-- Bump mangrove-core to 1.5.1
 - Expose deal logic for any token on an Anvil chain
-- Expose forge script funcitionality, to run forge script
+- Expose forge script functionality, to run forge script
 
 # 1.2.5 (March 2023)
 

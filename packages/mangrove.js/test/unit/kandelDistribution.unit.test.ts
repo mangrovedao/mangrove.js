@@ -6,6 +6,7 @@ import KandelDistribution, {
 } from "../../src/kandel/kandelDistribution";
 import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
 import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
+import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 
 describe("KandelDistribution unit tests suite", () => {
   describe(
@@ -173,15 +174,15 @@ describe("KandelDistribution unit tests suite", () => {
   );
 
   describe(KandelDistribution.prototype.chunkDistribution.name, () => {
-    it("can chunk", () => {
+    it("can chunk an uneven set", () => {
       // Arrange
       const sut = new KandelDistribution(
         Big(1),
         3,
         [
-          { base: Big(1), quote: Big(2), index: 1, offerType: "bids" },
-          { base: Big(3), quote: Big(4), index: 2, offerType: "bids" },
-          { base: Big(5), quote: Big(9), index: 3, offerType: "bids" },
+          { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
+          { base: Big(3), quote: Big(4), index: 1, offerType: "bids" },
+          { base: Big(5), quote: Big(9), index: 2, offerType: "asks" },
         ],
         4,
         6
@@ -192,12 +193,90 @@ describe("KandelDistribution unit tests suite", () => {
 
       // Assert
       assert.equal(chunks.length, 2);
-      assert.deepStrictEqual(chunks[0].pivots, [1, 2]);
-      assert.deepStrictEqual(chunks[1].pivots, [3]);
+      assert.deepStrictEqual(chunks[0].pivots, [2, 3]);
+      assert.deepStrictEqual(chunks[1].pivots, [1]);
+
+      assert.equal(chunks[0].distribution[0].base.toNumber(), 3);
+      assert.equal(chunks[0].distribution[1].base.toNumber(), 5);
+      assert.equal(chunks[1].distribution[0].base.toNumber(), 1);
+    });
+
+    it("can chunk an even set", () => {
+      // Arrange
+      const sut = new KandelDistribution(
+        Big(1),
+        3,
+        [
+          { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
+          { base: Big(3), quote: Big(4), index: 1, offerType: "bids" },
+          { base: Big(5), quote: Big(6), index: 2, offerType: "asks" },
+          { base: Big(7), quote: Big(8), index: 3, offerType: "asks" },
+        ],
+        4,
+        6
+      );
+
+      // Act
+      const chunks = sut.chunkDistribution([1, 2, 3, 4], 2);
+
+      // Assert
+      assert.equal(chunks.length, 2);
+      assert.deepStrictEqual(chunks[0].pivots, [2, 3]);
+      assert.deepStrictEqual(chunks[1].pivots, [1, 4]);
+
+      assert.equal(chunks[0].distribution[0].base.toNumber(), 3);
+      assert.equal(chunks[0].distribution[1].base.toNumber(), 5);
+      assert.equal(chunks[1].distribution[0].base.toNumber(), 1);
+      assert.equal(chunks[1].distribution[1].base.toNumber(), 7);
+    });
+
+    it("can have one extra offer due to boundary", () => {
+      // Arrange
+      const sut = new KandelDistribution(
+        Big(1),
+        3,
+        [
+          { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
+          { base: Big(3), quote: Big(4), index: 1, offerType: "bids" },
+          { base: Big(5), quote: Big(6), index: 2, offerType: "asks" },
+          { base: Big(7), quote: Big(8), index: 3, offerType: "asks" },
+        ],
+        4,
+        6
+      );
+
+      // Act
+      const chunks = sut.chunkDistribution([1, 2, 3, 4], 3);
+
+      // Assert
+      assert.equal(chunks.length, 1);
+      assert.deepStrictEqual(chunks[0].pivots, [1, 2, 3, 4]);
 
       assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
       assert.equal(chunks[0].distribution[1].base.toNumber(), 3);
-      assert.equal(chunks[1].distribution[0].base.toNumber(), 5);
+      assert.equal(chunks[0].distribution[2].base.toNumber(), 5);
+      assert.equal(chunks[0].distribution[3].base.toNumber(), 7);
+    });
+
+    bidsAsks.forEach((offerType) => {
+      it(`works with all ${offerType}`, () => {
+        // Arrange
+        const sut = new KandelDistribution(
+          Big(1),
+          3,
+          [{ base: Big(1), quote: Big(2), index: 0, offerType: offerType }],
+          4,
+          6
+        );
+
+        // Act
+        const chunks = sut.chunkDistribution([1], 2);
+
+        // Assert
+        assert.equal(chunks.length, 1);
+        assert.deepStrictEqual(chunks[0].pivots, [1]);
+        assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
+      });
     });
   });
 
