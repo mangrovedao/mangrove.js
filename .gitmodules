@@ -1,3 +1,0 @@
-[submodule "packages/bot-arbitrage/mangrove-arbitrage"]
-	path = packages/bot-arbitrage/mangrove-arbitrage
-	url = https://github.com/mangrovedao/mangrove-arbitrage.git
