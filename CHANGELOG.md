@@ -1,5 +1,7 @@
 # Next version
 
+- Change mangrove-ts to a single package repo for mangrove.js.
+
 # 1.2.10
 
 - Increase gas estimation, to account for 64/63 reserved in posthook
