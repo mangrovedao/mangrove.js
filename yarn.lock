@@ -1142,9 +1142,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove.js@workspace:packages/mangrove.js":
+"@mangrovedao/mangrove.js@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@mangrovedao/mangrove.js@workspace:packages/mangrove.js"
+  resolution: "@mangrovedao/mangrove.js@workspace:."
   dependencies:
     "@espendk/json-file-reporter": ^1.4.2
     "@ethersproject/abi": ^5.7.0
@@ -1176,6 +1176,7 @@ __metadata:
     eslint: ^8.31.0
     eslint-config-prettier: ^8.8.0
     ethers: ^5.7.2
+    husky: ^8.0.3
     json-truncate: ^3.0.0
     just-clone: ^6.2.0
     lint-staged: ^13.2.0
@@ -4566,16 +4567,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mangrove-monorepo@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "mangrove-monorepo@workspace:."
-  dependencies:
-    "@mangrovedao/mangrove-core": 1.5.4
-    husky: ^8.0.3
-    pinst: ^3.0.0
-  languageName: unknown
-  linkType: soft
-
 "marked@npm:^4.3.0":
   version: 4.3.0
   resolution: "marked@npm:4.3.0"
@@ -5427,15 +5418,6 @@ __metadata:
   version: 3.0.0
   resolution: "pify@npm:3.0.0"
   checksum: 6cdcbc3567d5c412450c53261a3f10991665d660961e06605decf4544a61a97a54fefe70a68d5c37080ff9d6f4cf51444c90198d1ba9f9309a6c0d6e9f5c4fde
-  languageName: node
-  linkType: hard
-
-"pinst@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "pinst@npm:3.0.0"
-  bin:
-    pinst: bin.js
-  checksum: 4ae48a6a60f79c37071233af51b4d91bfc85cfa3c12b66ccda60cdb642b4d14a4ab0cb3587afc55b1f6192cea1772a5e4822026a0d0d3528296edef00cc2d61f
   languageName: node
   linkType: hard
 

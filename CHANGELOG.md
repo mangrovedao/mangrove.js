@@ -1,5 +1,16 @@
 # Next version
 
+- Change mangrove-ts to a single package repo for mangrove.js.
+
+# 1.2.10
+
+- Increase gas estimation, to account for 64/63 reserved in posthook
+- MgvToken add approveIfNotInfinite and allowanceInfinite
+
+# 1.2.9
+
+- Increase gas estimation for limit orders due to overhead of going through MangroveOrder contract.
+
 # 1.2.8
 
 - Add token decimal configurations for WBTC, WMATIC, and USDT

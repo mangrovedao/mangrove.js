@@ -646,8 +646,42 @@ class Market {
       : offer_gasbase
           .add(volume.div(density))
           .add(maxGasreqOffer)
+          .add(BigNumber.from(maxGasreqOffer).mul(64).div(63))
           .mul(11)
           .div(10);
+
+    if (estimation.lt(maxMarketOrderGas)) return estimation;
+
+    return maxMarketOrderGas;
+  }
+
+  /** Uses the @see semibook.simulateMarketOrder to simulate the gas required for a market order. An overhead of 50% is added to account for changes to the book and failing offers.
+   * @param ba: bids or asks
+   * @param gives: amount of inbound token to give to the makers
+   * @param wants: amount of outbound token to receive from the makers
+   * @param fillWants: whether to fill wants or gives
+   */
+  async simulateGas(
+    ba: Market.BA,
+    gives: BigNumber,
+    wants: BigNumber,
+    fillWants: boolean
+  ): Promise<BigNumber> {
+    const semibook = this.getSemibook(ba);
+    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
+
+    // Overestimate by 50% because market can have changed between estimation and execution and some offers may be failing.
+    const estimation = (
+      await semibook.simulateMarketOrder(
+        outbound_tkn.fromUnits(wants),
+        inbound_tkn.fromUnits(gives),
+        fillWants
+      )
+    ).gas
+      .mul(15)
+      .div(10);
+
+    const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
 
     if (estimation.lt(maxMarketOrderGas)) return estimation;
 
@@ -828,7 +862,7 @@ class Market {
     };
   }
 
-  /** Determine the price from gives or wants depending on whether you're working with bids or asks. */
+  /** Determine the price from dividing offer gives with wants depending on whether you're working with bids or asks. */
   static getPrice(ba: Market.BA, gives: Big, wants: Big): Big {
     const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
       ba,
