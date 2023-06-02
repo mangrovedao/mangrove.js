@@ -152,6 +152,18 @@ class MgvToken {
     return this.fromUnits(rawAmount);
   }
 
+  /**
+   * Returns whether allowance of `owner` given to `spender` is infinite.
+   * If `owner` is not specified, defaults to current signer.
+   * If `spender` is not specified, defaults to Mangrove instance.
+   */
+  async allowanceInfinite(params: { owner?: string; spender?: string } = {}) {
+    const rawAllowance = await this.getRawAllowance({
+      spender: params.spender,
+    });
+    return rawAllowance.eq(ethers.constants.MaxUint256);
+  }
+
   private async getRawAllowance(
     params: { owner?: string; spender?: string } = {}
   ) {
@@ -206,6 +218,18 @@ class MgvToken {
     return amount != undefined
       ? this.toUnits(amount)
       : ethers.constants.MaxUint256;
+  }
+
+  /** Sets the allowance for the spender if it is not infinite. Cannot be used to reduce from infinite.
+   * @param spender The spender to approve
+   * @param arg The approval arguments
+   */
+  async approveIfNotInfinite(spender: string, arg: ApproveArgs = {}) {
+    if (await this.allowanceInfinite({ spender })) {
+      return;
+    }
+
+    return this.approve(spender, arg);
   }
 
   /** Sets the allowance for the spender if it is not already enough.
