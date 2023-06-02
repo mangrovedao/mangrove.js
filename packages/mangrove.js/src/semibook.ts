@@ -406,7 +406,8 @@ class Semibook
       totalGot: Big(0),
       totalGave: Big(0),
       offersConsidered: 0,
-      gasreq: BigNumber.from(0),
+      totalGasreq: BigNumber.from(0),
+      lastGasreq: 0,
     };
     const state = this.getLatestState();
     const res = await this.#foldLeftUntil(
@@ -427,7 +428,8 @@ class Semibook
         if (takerWants.mul(offer.wants).gt(takerGives.mul(offer.gives))) {
           acc.stop = true;
         } else {
-          acc.gasreq = acc.gasreq.add(offer.gasreq);
+          acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
+          acc.lastGasreq = offer.gasreq;
           if (
             (fillWants && takerWants.gt(offer.gives)) ||
             (!fillWants && takerGives.gt(offer.wants))
@@ -468,10 +470,11 @@ class Semibook
       local: { offer_gasbase },
     } = await this.getRawConfig();
 
-    // Assume up to offer_gasbase is used also for the bad price call
-    const gas = res.gasreq.add(
-      offer_gasbase.mul(Math.max(res.offersConsidered, 1))
-    );
+    // Assume up to offer_gasbase is used also for the bad price call, and
+    // the last offer (which could be first, if taking little) needs up to gasreq*64/63 for makerPosthook
+    const gas = res.totalGasreq
+      .add(BigNumber.from(res.lastGasreq).div(63))
+      .add(offer_gasbase.mul(Math.max(res.offersConsidered, 1)));
 
     return { ...res, gas };
   }
