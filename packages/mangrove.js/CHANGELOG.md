@@ -1,5 +1,10 @@
 # Next version
 
+# 1.2.10
+
+- Increase gas estimation, to account for 64/63 reserved in posthook
+- MgvToken add approveIfNotInfinite and allowanceInfinite
+
 # 1.2.9
 
 - Increase gas estimation for limit orders due to overhead of going through MangroveOrder contract.
