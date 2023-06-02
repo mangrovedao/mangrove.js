@@ -1492,7 +1492,13 @@ describe("Market integration tests suite", () => {
     const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate
-        .add(BigNumber.from(askGasReq).mul(11).div(10))
+        .add(
+          BigNumber.from(askGasReq)
+            .add(BigNumber.from(askGasReq).mul(64).div(63))
+            .mul(11)
+            .div(10)
+        )
+        .add(1 /* due to precision */)
         .toNumber()
     );
   });

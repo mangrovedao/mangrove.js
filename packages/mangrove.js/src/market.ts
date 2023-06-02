@@ -646,6 +646,7 @@ class Market {
       : offer_gasbase
           .add(volume.div(density))
           .add(maxGasreqOffer)
+          .add(BigNumber.from(maxGasreqOffer).mul(64).div(63))
           .mul(11)
           .div(10);
 
