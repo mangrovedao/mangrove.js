@@ -27,7 +27,15 @@ class PrettyPrint {
 
   /** Pretty prints the current state of the offers */
   prettyPrint(offers: Iterable<Market.Offer>, filter: prettyPrintFilter): void {
-    console.table([...offers], filter);
+    const offersArray = Array.from(offers).map((obj) => {
+      return {
+        id: obj.id,
+        maker: obj.maker,
+        volume: obj.volume.toString(),
+        price: obj.price.toString(),
+      };
+    });
+    console.table(offersArray, filter);
   }
 }
 
