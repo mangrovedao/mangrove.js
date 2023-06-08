@@ -18,10 +18,10 @@ class OfferLogic {
 
   constructor(mgv: Mangrove, logic: string, signer?: SignerOrProvider) {
     this.mgv = mgv;
-    this.address = logic;
+    this.address = ethers.utils.getAddress(logic);
     this.signerOrProvider = signer ?? this.mgv.signer;
     this.contract = typechain.IOfferLogic__factory.connect(
-      logic,
+      this.address,
       this.signerOrProvider
     );
   }
