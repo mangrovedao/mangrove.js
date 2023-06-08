@@ -7,6 +7,8 @@ import logger from "./logger";
 import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
 
+const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
+
 type SnipeUnitParams = {
   ba: Market.BA;
   targets: {
@@ -310,7 +312,9 @@ class Trade {
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.estimateGas(bs, wants)).add(200000);
+        return (await market.estimateGas(bs, wants)).add(
+          MANGROVE_ORDER_GAS_OVERHEAD
+        );
       case "snipe":
         return undefined;
       case "marketOrder":
@@ -330,7 +334,7 @@ class Trade {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.simulateGas(ba, gives, wants, fillWants)).add(
-          200000
+          MANGROVE_ORDER_GAS_OVERHEAD
         );
       case "snipe":
         return undefined;
