@@ -643,16 +643,15 @@ class Trade {
       },
     });
 
-    // user defined gasLimit overrides estimates
+    // user defined gasLimit is a total max for gasreq of each offer; otherwise, each offer is allowed to use its specified gasreq,
+    // this is accomplished by supplying a number larger than 2^24-1 for the offer (in this case MaxUint256).
     const _targets = unitParams.targets.map<
       Market.RawSnipeParams["targets"][number]
     >((t) => [
       t.offerId,
       t.takerWants,
       t.takerGives,
-      t.gasLimit ??
-        overrides.gasLimit ??
-        market.estimateGas(this.baToBs(unitParams.ba), t.takerWants),
+      t.gasLimit ?? overrides.gasLimit ?? ethers.constants.MaxUint256,
     ]);
 
     return {
