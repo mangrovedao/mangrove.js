@@ -1135,9 +1135,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/MGV/mangrove-core::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A.":
+"@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/mangrove-core::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/MGV/mangrove-core::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A."
+  resolution: "@mangrovedao/mangrove-core@portal:/Users/jeankrivine/Documents/git/mangrove-core::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A."
   languageName: node
   linkType: soft
 

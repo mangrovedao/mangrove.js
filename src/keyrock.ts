@@ -27,7 +27,7 @@ class KeyrockModule {
     );
   }
 
-  toToken(tk: Tokenish): MgvToken {
+  #toToken(tk: Tokenish): MgvToken {
     if (typeof tk === "string") {
       return this.mgv.token(tk);
     } else {
@@ -38,7 +38,7 @@ class KeyrockModule {
   async status(
     token: Tokenish
   ): Promise<{ local: Big; onPool: Big; debt: Big }> {
-    const asset = this.toToken(token);
+    const asset = this.#toToken(token);
     const [rawLocal, rawOnPool, rawDebt] = await this.contract.tokenBalance(
       asset.address
     );
@@ -50,17 +50,19 @@ class KeyrockModule {
   }
 
   // deposits funds on the contract balance to the pool, on behalf of contract's reserveId
+  // if no amount is mentioned the whole contract's balance is deposited
   async supply(
-    token: Tokenish,
-    amount: Bigish,
+    p: {
+      token: Tokenish;
+      amount?: Bigish;
+    },
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    const asset = this.toToken(token);
-    return this.contract.supply(
-      asset.address,
-      asset.toUnits(amount),
-      overrides
-    );
+    const asset = this.#toToken(p.token);
+    const amount = p.amount
+      ? asset.toUnits(p.amount)
+      : await asset.contract.balanceOf(this.contract.address);
+    return this.contract.supply(asset.address, amount, overrides);
   }
 
   async repay(
@@ -70,7 +72,7 @@ class KeyrockModule {
     },
     overrides: ethers.Overrides = {}
   ): Promise<ethers.ContractTransaction> {
-    const asset = this.toToken(p.token);
+    const asset = this.#toToken(p.token);
     const amount = p.amount
       ? asset.toUnits(p.amount)
       : ethers.constants.MaxUint256; // max uint means repay the whole debt
@@ -84,13 +86,26 @@ class KeyrockModule {
       to?: string;
     },
     overrides: ethers.Overrides = {}
-  ) {
-    const asset = this.toToken(p.token);
+  ): Promise<ethers.ContractTransaction> {
+    const asset = this.#toToken(p.token);
     const amount = p.amount
       ? asset.toUnits(p.amount)
       : ethers.constants.MaxUint256; // max uint means withdraw the whole balance
-    const to = p.to ? p.to : await this.mgv.signer.getAddress();
+    const to = p.to ? p.to : this.contract.address;
     return this.contract.withdraw(asset.address, amount, to, overrides);
+  }
+
+  async lineOfCredit(token: Tokenish): Promise<Big> {
+    const asset = this.#toToken(token);
+    const {
+      maxRedeemableUnderlying: rawRedeem,
+      maxBorrowAfterRedeemInUnderlying: rawBorrow,
+    } = await this.contract.maxGettableUnderlying(
+      asset.address,
+      true,
+      this.contract.address
+    );
+    return asset.fromUnits(rawRedeem.add(rawBorrow));
   }
 }
 
