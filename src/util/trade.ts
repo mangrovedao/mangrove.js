@@ -118,6 +118,35 @@ class Trade {
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
+  getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
+    const { gives, wants, fillWants } =
+      bs === "buy"
+        ? this.getParamsForBuy(params, market.base, market.quote)
+        : this.getParamsForSell(params, market.base, market.quote);
+    const restingOrderParams =
+      "restingOrder" in params ? params.restingOrder : null;
+
+    const snipeOfferId = "offerId" in params ? params.offerId : null;
+
+    const orderType =
+      !!params.fillOrKill ||
+      !!restingOrderParams ||
+      !!params.forceRoutingToMangroveOrder
+        ? "restingOrder"
+        : snipeOfferId
+        ? "snipe"
+        : "marketOrder";
+
+    return {
+      gives,
+      wants,
+      fillWants,
+      restingOrderParams,
+      orderType,
+      snipeOfferId,
+    };
+  }
+
   /**
    * Market buy/sell order. Will attempt to buy/sell base token for quote tokens.
    * Params can be of the form:
@@ -149,37 +178,35 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const { wants, gives, fillWants } =
-      bs === "buy"
-        ? this.getParamsForBuy(params, market.base, market.quote)
-        : this.getParamsForSell(params, market.base, market.quote);
-    const restingOrderParams =
-      "restingOrder" in params ? params.restingOrder : null;
-    if (
-      !!params.fillOrKill ||
-      !!restingOrderParams ||
-      !!params.forceRoutingToMangroveOrder
-    ) {
-      return this.mangroveOrder(
-        {
-          wants: wants,
-          gives: gives,
-          orderType: bs,
-          fillWants: fillWants,
-          expiryDate: "expiryDate" in params ? params.expiryDate : 0,
-          restingParams: restingOrderParams,
-          market: market,
-          fillOrKill: params.fillOrKill ? params.fillOrKill : false,
-        },
-        overrides
-      );
-    } else {
-      if ("offerId" in params && params.offerId) {
+    const {
+      wants,
+      gives,
+      fillWants,
+      restingOrderParams,
+      orderType,
+      snipeOfferId,
+    } = this.getRawParams(bs, params, market);
+    switch (orderType) {
+      case "restingOrder":
+        return this.mangroveOrder(
+          {
+            wants: wants,
+            gives: gives,
+            orderType: bs,
+            fillWants: fillWants,
+            expiryDate: "expiryDate" in params ? params.expiryDate : 0,
+            restingParams: restingOrderParams,
+            market: market,
+            fillOrKill: params.fillOrKill ? params.fillOrKill : false,
+          },
+          overrides
+        );
+      case "snipe":
         return this.snipes(
           {
             targets: [
               {
-                offerId: params.offerId,
+                offerId: snipeOfferId,
                 takerGives: gives,
                 takerWants: wants,
                 gasLimit: null,
@@ -191,7 +218,8 @@ class Trade {
           market,
           overrides
         );
-      } else {
+
+      case "marketOrder":
         return this.marketOrder(
           {
             wants: wants,
@@ -202,7 +230,6 @@ class Trade {
           },
           overrides
         );
-      }
     }
   }
 
