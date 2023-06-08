@@ -74,6 +74,7 @@ namespace Market {
     slippage?: number;
     fillOrKill?: boolean;
     expiryDate?: number;
+    gasLowerBound?: ethers.ethers.BigNumberish;
   } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
     (
       | { volume: Bigish; price: Bigish }
