@@ -590,6 +590,16 @@ class Market {
     return this.trade.order("sell", params, this, overrides);
   }
 
+  /** Estimate amount of gas for buy. Can be passed as overrides.gasLimit or params.gasLowerBound of @see buy with same params. */
+  gasEstimateBuy(params: Market.TradeParams): Promise<BigNumber> {
+    return this.trade.estimateGas("buy", params, this);
+  }
+
+  /** Estimate amount of gas for sell. Can be passed as overrides.gasLimit or params.gasLowerBound of @see sell with same params. */
+  gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
+    return this.trade.estimateGas("sell", params, this);
+  }
+
   /**
    * Snipe specific offers.
    * Params are:
