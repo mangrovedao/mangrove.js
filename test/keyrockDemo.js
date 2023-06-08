@@ -60,12 +60,12 @@ tx = await keyrockerAdv.supply({ token: market.quote, amount: 20000 });
 await tx.wait();
 
 await keyrockerAdv.status(market.quote);
-await keyrockerAdv.lineOfCredit(market.quote);
+await keyrockerAdv.lineOfCredit(market.base);
 
 tx = await keyrockerAdv.withdraw({ token: market.quote });
 await tx.wait();
 await keyrockerAdv.status(market.quote);
-await keyrockerAdv.lineOfCredit(market.quote);
+await keyrockerAdv.lineOfCredit(market.base);
 
 tx = await keyrockerAdv.supply({ token: market.quote });
 await tx.wait();
