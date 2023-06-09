@@ -115,8 +115,5 @@
     "typedoc": "^0.24.7",
     "typescript": "^4.7.0"
   },
-  "packageManager": "yarn@3.5.0",
-  "resolutions": {
-    "@mangrovedao/mangrove-core": "portal:/Users/jeankrivine/Documents/git/mangrove-core"
-  }
+  "packageManager": "yarn@3.5.0"
 }
