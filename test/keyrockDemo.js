@@ -42,6 +42,8 @@ keyrocker = await LiquidityProvider.connect(
   mgv.offerLogic("0xdc5f50433056bfa89ad1676f569dcf1865c67fa3"),
   market
 );
+// adding extra functions to the sdk accessible via aaveAPI
+keyrockerAdv = new KeyrockModule(mgv, keyrocker.logic.address);
 
 // activating offer logic on the market
 tx = await keyrocker.logic.activate([market.base.name, market.quote.name]);
@@ -82,8 +84,8 @@ const { id: bid_id } = await keyrocker.newBid({
   fund: 1,
 });
 
-await market.askInfo(ask_id);
-await market.bidInfo(bid_id);
+await keyrocker.consoleAsks();
+await keyrocker.consoleBids();
 
 /// taker ops
 tx = await market.quote.approveMangrove();
@@ -108,8 +110,8 @@ orderFlow = async (n, v) => {
     );
   }
 };
-
-await orderFlow(100, 0.1);
+// will sell 7 ethers and accumulate negligible debt
+await orderFlow(70, 0.1);
 
 await keyrockerAdv.status(market.quote.name);
 await keyrockerAdv.status(market.base.name);
