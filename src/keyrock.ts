@@ -10,11 +10,9 @@ type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 type Tokenish = string | MgvToken;
 
 /**
- * The OfferLogic class connects to a OfferLogic contract.
- * It posts onchain offers.
+ * The KeyrockModule class connects to a Keyrocker contract.
+ * It allows to interact with AAVE specific functions
  */
-// OfferLogic.withdrawDeposit()
-// OfferLogic.deposit(n)
 class KeyrockModule {
   mgv: Mangrove;
   contract: typechain.Keyrocker;
