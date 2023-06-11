@@ -9,14 +9,15 @@ import * as dealCmd from "./commands/dealCmd";
 
 const ENV_VAR_PREFIX = "MGV";
 
-type StrictCM = yargs.CommandModule & { builder: (...args: any[]) => any };
+// type StrictCM = yargs.CommandModule & { builder: (...args: any[]) => any };
 
+// const check = (cmd: StrictCM) => cmd;
 yargs
-  .command(parrotCmd as StrictCM)
-  .command(printCmd as StrictCM)
-  .command(retractCmd as StrictCM)
-  .command(dealCmd as StrictCM) // note: node subcommand env vars are prefixed with MGV_NODE instead of MGV_
-  .command(nodeCmd as StrictCM) // note: node subcommand env vars are prefixed with MGV_NODE instead of MGV_
+  .command(parrotCmd)
+  .command(printCmd)
+  .command(retractCmd)
+  .command(dealCmd) // note: node subcommand env vars are prefixed with MGV_NODE instead of MGV_
+  .command(nodeCmd) // note: node subcommand env vars are prefixed with MGV_NODE instead of MGV_
   .strictCommands()
   .demandCommand(1, "You need at least one command before moving on")
   .env(ENV_VAR_PREFIX) // Environment variables prefixed with 'MGV_' are parsed as arguments, see .env([prefix])

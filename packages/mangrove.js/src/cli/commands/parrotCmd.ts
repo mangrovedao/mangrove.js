@@ -58,13 +58,18 @@ type RepoEnvironmentInfo = {
   contractAddresses: ContractAddresses;
 };
 type MangroveJsEnvironmentInfo = {
-  latestPackageVersion: string;
+  latestPackageVersion?: string;
   localPackageVersion: string;
   contractAddresses: ContractAddresses;
 };
+type LocalConfig = {
+  base: string;
+  quote: string;
+  config: Mangrove.LocalConfig;
+};
 type MangroveConfigurationInfo = {
-  globalConfig: Mangrove.GlobalConfig;
-  localConfigs: { base: string; quote: string; config: Mangrove.LocalConfig }[];
+  globalConfig?: Mangrove.GlobalConfig;
+  localConfigs: LocalConfig[];
 };
 type MangroveJsAppEnvironmentInfo = {
   url: string;
@@ -375,7 +380,7 @@ function addOrUpdate<K, V>(
   updateValue: (v: V) => V
 ): void {
   if (map.has(key)) {
-    updateValue(map.get(key));
+    updateValue(map.get(key) as V);
   } else {
     map.set(key, createValue());
   }
@@ -421,7 +426,7 @@ async function getRepoEnvironmentInfo(): Promise<
   const notes: Note[] = [];
   const warnings: Warning[] = [];
   const contractAddresses = new Map<string, Address>();
-  const fetchPromises = [];
+  const fetchPromises: Promise<any>[] = [];
   for (const contractName of CONTRACTS) {
     const gitHubUrlForDeploymentJsonFile = `https://raw.githubusercontent.com/mangrovedao/mangrove/master/packages/mangrove-solidity/deployments/mumbai/${contractName}.json`;
     const fetchPromise = fetchJson(gitHubUrlForDeploymentJsonFile)
@@ -457,7 +462,7 @@ async function getMangroveJsEnvironmentInfo(): Promise<
 > {
   const notes: Note[] = [];
   const warnings: Warning[] = [];
-  let latestPackageVersion = undefined;
+  let latestPackageVersion: string | undefined = undefined;
   const npmjsRegistryUrl =
     "https://registry.npmjs.org/@mangrovedao/mangrove.js";
   await fetchJson({
@@ -519,43 +524,44 @@ async function getMangroveConfigurationInfo(
   const notes: Note[] = [];
   const warnings: Warning[] = [];
 
-  const mgv: Mangrove = await Mangrove.connect(nodeUrl).catch((reason) => {
-    warnings.push({
-      components: [COMPONENT_MANGROVE_CONFIGURATION],
-      content: `Could not connect to Mangrove using mangrove.js, reason: ${reason}`,
-    });
-    return undefined;
-  });
+  const mgv: Mangrove | undefined = await Mangrove.connect(nodeUrl).catch(
+    (reason) => {
+      warnings.push({
+        components: [COMPONENT_MANGROVE_CONFIGURATION],
+        content: `Could not connect to Mangrove using mangrove.js, reason: ${reason}`,
+      });
+      return undefined;
+    }
+  );
   if (mgv === undefined) {
     return {
       notes,
       warnings,
-      info: { globalConfig: undefined, localConfigs: undefined },
+      info: { globalConfig: undefined, localConfigs: [] },
     };
   }
 
   const globalConfigPromise = mgv.config();
-  const localConfigPromises = [];
-  const localConfigs = [];
+  const localConfigPromises: Promise<void>[] = [];
+  const localConfigs: LocalConfig[] = [];
   // Go through all pairs of tokens
   for (let i = 0; i < tokens.length; ++i) {
     for (let j = i + 1; j < tokens.length; ++j) {
-      localConfigPromises.push(
-        mgv
-          .market({
+      const pvoid = mgv
+        .market({
+          base: tokens[i],
+          quote: tokens[j],
+          bookOptions: { maxOffers: 0 },
+        })
+        .then((market) => market.config())
+        .then((localConfig) => {
+          localConfigs.push({
             base: tokens[i],
             quote: tokens[j],
-            bookOptions: { maxOffers: 0 },
-          })
-          .then((market) => market.config())
-          .then((localConfig) => {
-            localConfigs.push({
-              base: tokens[i],
-              quote: tokens[j],
-              config: localConfig,
-            });
-          })
-      );
+            config: localConfig,
+          });
+        });
+      localConfigPromises.push(pvoid);
     }
   }
 

@@ -346,7 +346,7 @@ class Market {
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
         let isFilterSatisfied: boolean;
-        if (!("filter" in params)) {
+        if (typeof params.filter !== "undefined") {
           isFilterSatisfied = true;
         } else {
           const filterResult = params.filter(cbArg, event, ethersLog);

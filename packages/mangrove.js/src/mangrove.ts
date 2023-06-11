@@ -91,8 +91,8 @@ namespace Mangrove {
   export type OpenMarketInfo = {
     base: { name: string; address: string; symbol: string; decimals: number };
     quote: { name: string; address: string; symbol: string; decimals: number };
-    asksConfig: LocalConfig;
-    bidsConfig: LocalConfig;
+    asksConfig?: LocalConfig;
+    bidsConfig?: LocalConfig;
   };
 
   export type CreateOptions = eth.CreateSignerOptions & {
@@ -157,6 +157,9 @@ class Mangrove {
     }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
+    if (typeof signer.provider === "undefined") {
+      throw new Error("returned signer has no provider");
+    }
     const network = await eth.getProviderNetwork(signer.provider);
 
     if ("send" in signer.provider) {
@@ -438,7 +441,7 @@ class Mangrove {
 
   /* Return MgvToken instance tied. */
   token(name: string, options?: MgvToken.ConstructorOptions): MgvToken {
-    return new MgvToken(name, this, options);
+    return new MgvToken(name, this, options ?? {});
   }
 
   /**
@@ -478,7 +481,7 @@ class Mangrove {
         }
       }
     }
-    return null;
+    throw new Error(`Name for ${address} not found`);
   }
 
   /** Gets the token corresponding to the address if it is known; otherwise, null.
@@ -893,11 +896,11 @@ class Mangrove {
     // structure data object as address => (symbol,decimals,address=>config)
     const data: Record<
       string,
-      { symbol?: string; decimals?: number; configs?: Record<string, any> }
+      { symbol: string; decimals: number; configs: Record<string, any> }
     > = {};
     raw.markets.forEach(([tkn0, tkn1], i) => {
-      data[tkn0] ??= { configs: {} };
-      data[tkn1] ??= { configs: {} };
+      (data[tkn0] as any) ??= { configs: {} };
+      (data[tkn1] as any) ??= { configs: {} };
 
       if (params.configs) {
         data[tkn0].configs[tkn1] = raw.configs[i].config01;
@@ -910,6 +913,7 @@ class Mangrove {
     //read decimals & symbol for each token using Multicall
     const ierc20 = typechain.IERC20__factory.createInterface();
 
+    // will be invoked twice, once to fill data's 'decimals' and once to fill data's 'symbol'.
     const tryDecode = (ary: any[], fnName: "decimals" | "symbol") => {
       return ary.forEach((returnData, i) => {
         // will raise exception if call reverted

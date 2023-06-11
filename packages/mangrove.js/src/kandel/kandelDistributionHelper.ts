@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import Big from "big.js";
 import Market from "../market";
-import KandelDistribution from "./kandelDistribution";
+import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import { Bigish } from "../types";
 
 /** Offers with their price, Kandel index, and gives amount.
@@ -109,7 +109,7 @@ class KandelDistributionHelper {
     return new KandelDistribution(
       ratio,
       offers.length,
-      offers.filter((o) => o),
+      offers.filter((o) => o) as OfferDistribution,
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -142,7 +142,7 @@ class KandelDistributionHelper {
     return new KandelDistribution(
       ratio,
       offers.length,
-      offers.filter((o) => o),
+      offers.filter((o) => o) as OfferDistribution,
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -175,7 +175,7 @@ class KandelDistributionHelper {
     return new KandelDistribution(
       ratio,
       offers.length,
-      offers.filter((o) => o),
+      offers.filter((o) => o) as OfferDistribution,
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -220,7 +220,7 @@ class KandelDistributionHelper {
         : this.calculateDistributionConstantQuote(
             ratio,
             prices,
-            initialBidGives,
+            initialBidGives as Big,
             firstAskIndex
           );
     return distribution;
@@ -273,6 +273,7 @@ class KandelDistributionHelper {
     const distribution = new KandelDistribution(
       params.distribution.ratio,
       params.distribution.pricePoints,
+      // FIXME what should we do here when price is undefined?
       bids
         .map((o, i) => ({
           index: o.offer.index,

@@ -202,7 +202,7 @@ export async function _createSigner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let provider: any = options.provider;
 
-  let signer: Signer;
+  let signer: Signer | undefined;
 
   // Create an ethers provider, web3s can sign
   if (typeof provider === "string") {
@@ -234,7 +234,7 @@ export async function _createSigner(
     provider.getSigner &&
     !("forceReadOnly" in options && options.forceReadOnly)
   ) {
-    signer = provider.getSigner(options.signerIndex || 0);
+    signer = provider.getSigner(options.signerIndex || 0) as ethers.Signer;
     await signer.getAddress().catch(() => {
       logger.warn("Cannot use signer retrieved from provider.getSigner", {
         contextInfo: "eth.signer",
@@ -316,6 +316,10 @@ export async function _createSigner(
       "0x0000000000000000000000000000000000000001",
       provider
     );
+  }
+
+  if (typeof signer == "undefined") {
+    throw new Error("Could not define a signer");
   }
 
   return { readOnly, signer };

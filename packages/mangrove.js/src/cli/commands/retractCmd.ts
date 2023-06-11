@@ -75,7 +75,7 @@ async function retractAllFromOfferlist(
     `Retracting from '${ba}' list...        (offer count: ${offerList.length})`
   );
   const { inbound_tkn, outbound_tkn } = market.getOutboundInbound(ba);
-  const retractTxPromises = [];
+  const retractTxPromises: Promise<void>[] = [];
   for (const offer of offerList) {
     if (offer.maker == makerAddress) {
       const provision = await market.mgv.contract.callStatic.retractOffer(

@@ -151,7 +151,8 @@ class KandelConfiguration {
   ): { base: string; quote: string }[] {
     return Object.entries(
       this.rawConfiguration.networks[networkName]?.markets ?? []
-    ).flatMap(([base, quotes]) => {
+      // FIXME: better typing here
+    ).flatMap(([base, quotes]: [any, any]) => {
       return Object.keys(quotes).map((quote) => ({ base, quote }));
     });
   }
