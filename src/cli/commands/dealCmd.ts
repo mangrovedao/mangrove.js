@@ -11,9 +11,9 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8545;
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 
-type Arguments = yargs.Arguments<ReturnType<typeof dealBuilder>>;
+type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
 
-export const dealBuilder = (yargs) => {
+export const builder = (yargs) => {
   return yargs
     .option("host", {
       describe: "The node hostname -- must be a dev node (anvil, hardhat, ...)",
@@ -29,16 +29,19 @@ export const dealBuilder = (yargs) => {
       describe: "Address of the token",
       requiresArg: true,
       type: "string",
+      demandOption: true,
     })
     .option("account", {
       describe: "Address of the account to credit",
       requiresArg: true,
       type: "string",
+      demandOption: true,
     })
     .option("amount", {
       describe: "Number of tokens in display units.",
       requiresArg: true,
       type: "number",
+      demandOption: true,
     })
     .env("MGV_NODE"); // allow env vars like MGV_NODE_DEPLOY=false
 };
