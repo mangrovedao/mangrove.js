@@ -57,10 +57,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
       return;
     }
 
-    const semibook =
-      books[
-        `${options.maxOffers}_${options.chunkSize}_${options.desiredPrice}_${options.desiredVolume}`
-      ];
+    const semibook = books[Semibook.optionsIdentifier(options)];
     if (!semibook) {
       return;
     }
