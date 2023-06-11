@@ -72,7 +72,7 @@ jobs:
       with:
         filters: |
           addresses:
-            - 'packages/mangrove.js/src/constants/addresses.json'
+            - 'src/constants/addresses.json'
 
     - name: Fail if addresses changed unless PR has 'update address' label
       if: >
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      working-directory: packages/mangrove.js
+      working-directory: .
 
     defaults:
       run:
@@ -135,7 +135,7 @@ jobs:
 
     # == build == 
     - name: Mangrove.js build
-      run: yarn run build-this-package
+      run: yarn run build
       env:
         NODE_OPTIONS: "--max_old_space_size=8192"
 

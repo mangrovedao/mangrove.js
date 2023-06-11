@@ -408,31 +408,38 @@ class Trade {
       value: provision ? market.mgv.toUnits(provision, 18) : 0,
     };
 
-    // user defined gasLimit overrides estimates
+    const ba = this.bsToBa(orderType);
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const price = Market.getPrice(
+      ba,
+      inbound_tkn.fromUnits(gives),
+      outbound_tkn.fromUnits(wants)
+    );
+
+    // Find pivot in opposite semibook
+    const pivotId =
+      (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ?? 0;
+
+    // user defined gasLimit overrides estimates - for estimation we add an overhead of the MangroveOrder contract on top of the estimated market order.
     overrides_.gasLimit = overrides_.gasLimit
       ? overrides_.gasLimit
-      : await market.estimateGas(orderType, wants);
-
-    const [outboundTkn, inboundTkn] =
-      orderType === "buy"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
+      : (await market.estimateGas(orderType, wants)).add(200000);
 
     const response = market.mgv.orderContract.take(
       {
-        outbound_tkn: outboundTkn.address,
-        inbound_tkn: inboundTkn.address,
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
         fillOrKill: fillOrKill,
         fillWants: orderType === "buy",
         takerWants: wants,
         takerGives: gives,
         restingOrder: postRestingOrder,
-        pivotId: 0, // FIXME: replace this with an evaluation of the pivot at price induced by price takerWants/(takerGives - slippageAmount) or vice versa
+        pivotId,
         expiryDate: expiryDate,
       },
       overrides_
     );
-    const result = this.responseToMangroveOrdeResult(
+    const result = this.responseToMangroveOrderResult(
       response,
       orderType,
       fillWants,
@@ -444,7 +451,7 @@ class Trade {
     return { result, response };
   }
 
-  async responseToMangroveOrdeResult(
+  async responseToMangroveOrderResult(
     response: Promise<ethers.ContractTransaction>,
     orderType: Market.BS,
     fillWants: boolean,

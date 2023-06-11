@@ -1,5 +1,6 @@
 node_modules
 build
+dist/
 cache
 ignore
 modd.conf
@@ -16,6 +17,14 @@ out.html
 *.code-workspace
 .vscode
 
+docs/
+scripts/out.md
+.nyc_output/
+coverage/
+cache/
+src/types/typechain/*
+!src/types/typechain/README
+
 # Yarn
 .yarn/*
 !.yarn/patches
@@ -30,3 +39,13 @@ out.html
 merged.info
 packages/bot-arbitrage/src/types/typechain
 packages/bot-arbitrage/broadcast
+
+
+# foundry broadcasts to anvil
+!/broadcast
+/broadcast/*
+/broadcast/*/31337/
+
+# deploy output by deploy script
+deploy_output.txt
+mangroveJsNodeState.dump
