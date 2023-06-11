@@ -9,6 +9,7 @@ import * as dealCmd from "./commands/dealCmd";
 
 const ENV_VAR_PREFIX = "MGV";
 
+// Note: with strict null checks, this would not be necessary as a wrongly typed import would fail when checking yargs.command overloads
 type StrictCM = yargs.CommandModule & { builder: (...args: any[]) => any };
 
 yargs
