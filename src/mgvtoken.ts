@@ -16,39 +16,38 @@ namespace MgvToken {
 }
 
 // Used to ease the use of approve functions
-export type ApproveArgs =
-  | Bigish
-  | ethers.Overrides
-  | { amount: Bigish; overrides: ethers.Overrides };
+type AmountAndOverrides = { amount: Bigish; overrides: ethers.Overrides };
+export type ApproveArgs = Bigish | ethers.Overrides | AmountAndOverrides;
+
+function approveArgsIsBigish(args: ApproveArgs): args is Bigish {
+  return typeof args !== "object" || "sqrt" in (args as object);
+}
+
+function approveArgsIAmountAndOverrides(
+  args: ApproveArgs
+): args is AmountAndOverrides {
+  return typeof args === "object" && "amount" in (args as object);
+}
 
 function convertToApproveArgs(arg: ApproveArgs): {
   amount?: Bigish;
   overrides: ethers.Overrides;
 } {
-  let amount: Bigish;
-  let overrides: ethers.Overrides;
-  if (arg["amount"] != undefined) {
-    amount = arg["amount"];
-  } else if (typeof arg != "object") {
+  let amount: Bigish | undefined = undefined;
+  let overrides: ethers.Overrides | undefined = undefined;
+
+  if (approveArgsIsBigish(arg)) {
     amount = arg;
-  } else if (typeof arg === "object" && arg["sqrt"]) {
-    amount = arg as Big;
-  }
-  if (arg["overrides"]) {
-    overrides = arg["overrides"];
-  } else if (typeof arg === "object" && !arg["sqrt"]) {
-    overrides = arg as ethers.Overrides;
+  } else if (approveArgsIAmountAndOverrides(arg)) {
+    amount = arg.amount;
+    overrides = arg.overrides;
+  } else {
+    overrides = arg;
   }
 
-  if (amount != undefined && overrides) {
-    return { amount, overrides };
-  } else if (amount != undefined) {
-    return { amount, overrides: {} };
-  } else if (overrides) {
-    return { overrides: overrides };
-  } else {
-    return { overrides: {} };
-  }
+  overrides = overrides ?? {};
+
+  return amount === undefined ? { overrides } : { amount, overrides };
 }
 
 class MgvToken {
@@ -67,15 +66,18 @@ class MgvToken {
     this.mgv = mgv;
     this.name = name;
     if (options) {
-      if ("address" in options) {
+      if ("address" in options && options.address !== undefined) {
         this.mgv.setAddress(name, options.address);
       }
 
-      if ("decimals" in options) {
+      if ("decimals" in options && options.decimals !== undefined) {
         Mangrove.setDecimals(name, options.decimals);
       }
 
-      if ("displayedDecimals" in options) {
+      if (
+        "displayedDecimals" in options &&
+        options.displayedDecimals !== undefined
+      ) {
         Mangrove.setDisplayedDecimals(name, options.displayedDecimals);
       }
     }
