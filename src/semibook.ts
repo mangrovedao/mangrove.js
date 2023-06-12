@@ -62,7 +62,7 @@ namespace Semibook {
     | {
         /** The maximum number of offers to store in the cache.
          */
-        maxOffers: number;
+        maxOffers?: number;
       }
     | {
         /** The price that is expected to be used in calls to the market.
@@ -344,13 +344,13 @@ class Semibook
   /** Given a price, find the id of the immediately-better offer in the
    * semibook. If there is no offer with a better price, `undefined` is returned.
    */
-  async getPivotId(price: Bigish): Promise<number | undefined> {
+  async getPivotId(price: Bigish | undefined): Promise<number | undefined> {
     // We select as pivot the immediately-better offer.
     // The actual ordering in the offer list is lexicographic
     // price * gasreq (or price^{-1} * gasreq)
     // We ignore the gasreq comparison because we may not
     // know the gasreq (could be picked by offer contract)
-    const priceAsBig = Big(price);
+    const priceAsBig = price === undefined ? undefined : Big(price);
     const state = this.getLatestState();
     const result = await this.#foldLeftUntil<{
       pivotFound: boolean;
@@ -523,13 +523,19 @@ class Semibook
 
   /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
    */
-  isPriceBetter(price: Bigish, referencePrice: Bigish): boolean {
+  isPriceBetter(
+    price: Bigish | undefined,
+    referencePrice: Bigish | undefined
+  ): boolean {
     return this.tradeManagement.isPriceBetter(price, referencePrice, this.ba);
   }
 
   /** Returns `true` if `price` is worse than `referencePrice`; Otherwise, `false` is returned.
    */
-  isPriceWorse(price: Bigish, referencePrice: Bigish): boolean {
+  isPriceWorse(
+    price: Bigish | undefined,
+    referencePrice: Bigish | undefined
+  ): boolean {
     return this.tradeManagement.isPriceWorse(price, referencePrice, this.ba);
   }
 
@@ -1141,6 +1147,14 @@ class Semibook
     const result = Object.assign({}, options);
 
     if (
+      !("maxOffers" in options) &&
+      !("desiredVolume" in options) &&
+      !("desiredPrice" in options)
+    ) {
+      result["maxOffers"] = Semibook.DEFAULT_MAX_OFFERS;
+    }
+
+    if (
       "maxOffers" in options &&
       options.maxOffers !== undefined &&
       options.maxOffers < 0
@@ -1166,6 +1180,7 @@ class Semibook
 
   static getIsVolumeDesiredForAsks(opts: Market.BookOptions) {
     return (
+      "desiredVolume" in opts &&
       opts.desiredVolume !== undefined &&
       ((opts.desiredVolume.what === "base" &&
         opts.desiredVolume.to === "buy") ||
@@ -1175,6 +1190,7 @@ class Semibook
   }
   static getIsVolumeDesiredForBids(opts: Market.BookOptions) {
     return (
+      "desiredVolume" in opts &&
       opts.desiredVolume !== undefined &&
       ((opts.desiredVolume.what === "base" &&
         opts.desiredVolume.to === "sell") ||

@@ -52,7 +52,7 @@ namespace Market {
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
-    summary: Summary;
+    summary: Summary | undefined;
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];
@@ -131,27 +131,34 @@ namespace Market {
   /**
    * Options that control how the book cache behaves.
    */
-  export type BookOptions = {
-    /** The maximum number of offers to store in the cache.
-     *
-     * `maxOffers` and `desiredPrice` are mutually exclusive.
-     */
-    maxOffers?: number;
+  export type BookOptions = (
+    | {
+        /** The maximum number of offers to store in the cache.
+         *
+         * `maxOffers` and `desiredPrice` are mutually exclusive.
+         */
+        maxOffers?: number;
+      }
+    | {
+        /** The price that is expected to be used in calls to the market.
+         * The cache will initially contain all offers with this price or better.
+         * This can be useful in order to ensure a good pivot is readily available.
+         *
+         * `maxOffers` and `desiredPrice` are mutually exclusive.
+         */
+        desiredPrice: Bigish;
+      }
+    | {
+        /**
+         * The volume that is expected to be used in trades on the market.
+         */
+        desiredVolume: VolumeParams;
+      }
+  ) & {
     /** The number of offers to fetch in one call.
      *
      * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
     chunkSize?: number;
-    /** The price that is expected to be used in calls to the market.
-     * The cache will initially contain all offers with this price or better.
-     * This can be useful in order to ensure a good pivot is readily available.
-     *
-     * `maxOffers` and `desiredPrice` are mutually exclusive.
-     */
-    desiredPrice?: Bigish;
-    /**
-     * The volume that is expected to be used in trades on the market.
-     */
-    desiredVolume?: VolumeParams;
   };
 
   export type OfferSlim = {
@@ -163,7 +170,7 @@ namespace Market {
     wants: Big;
     gives: Big;
     volume: Big;
-    price: Big;
+    price: Big | undefined;
   };
 
   export type Offer = OfferSlim & {
@@ -305,20 +312,35 @@ class Market {
 
   async #initialize(opts: Market.BookOptions = bookOptsDefault): Promise<void> {
     const semibookDesiredVolume =
-      opts.desiredVolume === undefined
-        ? undefined
-        : { given: opts.desiredVolume.given, to: opts.desiredVolume.to };
+      "desiredVolume" in opts && opts.desiredVolume !== undefined
+        ? { given: opts.desiredVolume.given, to: opts.desiredVolume.to }
+        : undefined;
 
-    const getSemibookOpts: (ba: Market.BA) => Semibook.Options = (ba) => ({
-      maxOffers: opts.maxOffers,
-      chunkSize: opts.chunkSize,
-      desiredPrice: opts.desiredPrice,
-      desiredVolume:
+    const getSemibookOpts: (ba: Market.BA) => Semibook.Options = (ba) => {
+      if (
         (ba === "asks" && Semibook.getIsVolumeDesiredForAsks(opts)) ||
         (ba === "bids" && Semibook.getIsVolumeDesiredForBids(opts))
-          ? semibookDesiredVolume
-          : undefined,
-    });
+      ) {
+        return {
+          desiredVolume: semibookDesiredVolume,
+          chunkSize: opts.chunkSize,
+        };
+      } else if ("desiredPrice" in opts) {
+        return {
+          desiredPrice: opts.desiredPrice,
+          chunkSize: opts.chunkSize,
+        };
+      } else if ("maxOffers" in opts) {
+        return {
+          maxOffers: opts.maxOffers,
+          chunkSize: opts.chunkSize,
+        };
+      } else {
+        return {
+          chunkSize: opts.chunkSize,
+        };
+      }
+    };
 
     this.asksCb = this.#semibookEventCallback.bind(this);
     const asksPromise = Semibook.connect(
@@ -346,7 +368,7 @@ class Market {
     for (const [cb, params] of this.#subscriptions) {
       if (params.type === "once") {
         let isFilterSatisfied: boolean;
-        if (typeof params.filter !== "undefined") {
+        if (!("filter" in params) || params.filter === undefined) {
           isFilterSatisfied = true;
         } else {
           const filterResult = params.filter(cbArg, event, ethersLog);
@@ -421,7 +443,10 @@ class Market {
   /** Given a price, find the id of the immediately-better offer in the
    * book. If there is no offer with a better price, `undefined` is returned.
    */
-  async getPivotId(ba: Market.BA, price: Bigish): Promise<number | undefined> {
+  async getPivotId(
+    ba: Market.BA,
+    price: Bigish | undefined
+  ): Promise<number | undefined> {
     return this.getSemibook(ba).getPivotId(price);
   }
 
@@ -863,7 +888,7 @@ class Market {
   }
 
   /** Determine the price from dividing offer gives with wants depending on whether you're working with bids or asks. */
-  static getPrice(ba: Market.BA, gives: Big, wants: Big): Big {
+  static getPrice(ba: Market.BA, gives: Big, wants: Big): Big | undefined {
     const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
       ba,
       gives,
@@ -910,13 +935,19 @@ class Market {
       return 0;
     }
 
-    const absPriceDiffs = new Array<Big>(offers.length - 1);
+    const absPriceDiffs = new Array<Big | undefined>(offers.length - 1);
     offers.slice(1).reduce((prevPrice, o, i) => {
-      absPriceDiffs[i] = prevPrice.sub(o.price).abs();
+      absPriceDiffs[i] =
+        prevPrice === undefined || o.price === undefined
+          ? undefined
+          : prevPrice.sub(o.price).abs();
       return o.price;
     }, offers[0].price);
 
-    const minBig = (b1: Big, b2: Big): Big => {
+    const minBig = (
+      b1: Big | undefined,
+      b2: Big | undefined
+    ): Big | undefined => {
       if (b1 === undefined) {
         return b2;
       } else if (b2 === undefined) {
@@ -925,7 +956,7 @@ class Market {
       return b1.lt(b2) ? b1 : b2;
     };
     const minAbsPriceDiff = absPriceDiffs
-      .filter((d) => !d.eq(0))
+      .filter((d) => !(d === undefined || d.eq(0)))
       .reduce(minBig, undefined);
 
     return minAbsPriceDiff === undefined

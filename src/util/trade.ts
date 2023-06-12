@@ -41,7 +41,7 @@ class Trade {
     } else {
       wants = Big(params.wants);
       gives = Big(params.gives);
-      fillWants = "fillWants" in params ? params.fillWants : true;
+      fillWants = params.fillWants ?? true;
     }
 
     const slippage = this.validateSlippage(params.slippage);
@@ -75,7 +75,7 @@ class Trade {
     } else {
       wants = Big(params.wants);
       gives = Big(params.gives);
-      fillWants = "fillWants" in params ? params.fillWants : false;
+      fillWants = params.fillWants ?? false;
     }
 
     const slippage = this.validateSlippage(params.slippage);
@@ -108,12 +108,40 @@ class Trade {
     return Big(price)[priceComparison](Big(referencePrice));
   }
 
-  isPriceBetter(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
+  // undefined ~ infinite
+  isPriceBetter(
+    price: Bigish | undefined,
+    referencePrice: Bigish | undefined,
+    ba: Market.BA
+  ) {
+    if (price === undefined && referencePrice === undefined) {
+      return false;
+    }
+    if (price === undefined) {
+      return ba !== "asks";
+    }
+    if (referencePrice === undefined) {
+      return ba === "asks";
+    }
     const priceComparison = ba === "asks" ? "lt" : "gt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
-  isPriceWorse(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
+  // undefined ~ infinite
+  isPriceWorse(
+    price: Bigish | undefined,
+    referencePrice: Bigish | undefined,
+    ba: Market.BA
+  ) {
+    if (price === undefined && referencePrice === undefined) {
+      return false;
+    }
+    if (price === undefined) {
+      return ba === "asks";
+    }
+    if (referencePrice === undefined) {
+      return ba !== "asks";
+    }
     const priceComparison = ba === "asks" ? "gt" : "lt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
@@ -154,7 +182,7 @@ class Trade {
         ? this.getParamsForBuy(params, market.base, market.quote)
         : this.getParamsForSell(params, market.base, market.quote);
     const restingOrderParams =
-      "restingOrder" in params ? params.restingOrder : null;
+      "restingOrder" in params ? params.restingOrder : undefined;
     if (
       !!params.fillOrKill ||
       !!restingOrderParams ||
@@ -166,10 +194,10 @@ class Trade {
           gives: gives,
           orderType: bs,
           fillWants: fillWants,
-          expiryDate: "expiryDate" in params ? params.expiryDate : 0,
+          expiryDate: params.expiryDate ?? 0,
           restingParams: restingOrderParams,
           market: market,
-          fillOrKill: params.fillOrKill ? params.fillOrKill : false,
+          fillOrKill: params.fillOrKill ?? false,
         },
         overrides
       );
@@ -182,7 +210,7 @@ class Trade {
                 offerId: params.offerId,
                 takerGives: gives,
                 takerWants: wants,
-                gasLimit: null,
+                gasLimit: undefined,
               },
             ],
             fillWants: fillWants,
@@ -393,7 +421,7 @@ class Trade {
       fillWants: boolean;
       fillOrKill: boolean;
       expiryDate: number;
-      restingParams: Market.RestingOrderParams;
+      restingParams: Market.RestingOrderParams | undefined;
       market: Market;
     },
     overrides: ethers.Overrides
@@ -418,7 +446,10 @@ class Trade {
 
     // Find pivot in opposite semibook
     const pivotId =
-      (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ?? 0;
+      price === undefined
+        ? 0
+        : (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ??
+          0;
 
     // user defined gasLimit overrides estimates - for estimation we add an overhead of the MangroveOrder contract on top of the estimated market order.
     overrides_.gasLimit = overrides_.gasLimit
@@ -494,7 +525,7 @@ class Trade {
     return result;
   }
 
-  getRestingOrderParams(params: Market.RestingOrderParams): {
+  getRestingOrderParams(params: Market.RestingOrderParams | undefined): {
     provision: Bigish;
     postRestingOrder: boolean;
   } {
