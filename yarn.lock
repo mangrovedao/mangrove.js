@@ -1158,7 +1158,7 @@ __metadata:
     "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5
     "@types/mocha": ^10.0.1
-    "@types/node": ^18.15.11
+    "@types/node": ^20.3.0
     "@types/object-inspect": ^1.8.1
     "@types/shelljs": ^0.8.11
     "@types/triple-beam": ^1.3.2
@@ -1404,10 +1404,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.15.11":
-  version: 18.16.15
-  resolution: "@types/node@npm:18.16.15"
-  checksum: 65bc0fd036b0abf307c26e99ca0add3248ac26664ace65f2ae6b85a8bf22d6d6cb2448995f3550d72280b017aafee7cafc03e8a594102a4151bf927236411724
+"@types/node@npm:^20.3.0":
+  version: 20.3.0
+  resolution: "@types/node@npm:20.3.0"
+  checksum: 613e878174febc0104dae210088645cbb5096a19ae5fdf57fbc06fa6ef71755b839858c2b313fb8c1df8b7c6660e1b5f7a64db2126af9d47d1d9238e2bc0a86d
   languageName: node
   linkType: hard
 
