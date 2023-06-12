@@ -36,16 +36,20 @@ export type OfferStatus = {
   expectedLiveBid: boolean;
   expectedLiveAsk: boolean;
   expectedPrice: Big;
-  asks: {
-    live: boolean;
-    offerId: number;
-    price: Big;
-  };
-  bids: {
-    live: boolean;
-    offerId: number;
-    price: Big;
-  };
+  asks:
+    | undefined
+    | {
+        live: boolean;
+        offerId: number;
+        price: Big;
+      };
+  bids:
+    | undefined
+    | {
+        live: boolean;
+        offerId: number;
+        price: Big;
+      };
 };
 
 /** Statuses of offers at each price point.
@@ -149,7 +153,7 @@ class KandelStatus {
       Big(offer.price),
       ratio,
       pricePoints
-    ).prices;
+    );
 
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
     // then both offers can be expected live.
@@ -159,8 +163,12 @@ class KandelStatus {
         expectedLiveBid: p.lte(midPrice),
         expectedLiveAsk: p.gte(midPrice),
         expectedPrice: p,
-        asks: undefined as { live: boolean; offerId: number; price: Big },
-        bids: undefined as { live: boolean; offerId: number; price: Big },
+        asks: undefined as
+          | undefined
+          | { live: boolean; offerId: number; price: Big },
+        bids: undefined as
+          | undefined
+          | { live: boolean; offerId: number; price: Big },
       };
     });
 
@@ -208,9 +216,9 @@ class KandelStatus {
 
     const getPrice = (index: number) =>
       statuses[index].asks?.live
-        ? statuses[index].asks.price
+        ? (statuses[index].asks?.price as Big) // live ask has price
         : statuses[index].bids?.live
-        ? statuses[index].bids.price
+        ? (statuses[index].bids?.price as Big) // live bid has price
         : statuses[index].expectedPrice;
 
     return {

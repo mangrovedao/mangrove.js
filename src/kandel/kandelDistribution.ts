@@ -1,7 +1,6 @@
 import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
-import util from "util";
 
 /** Distribution of bids and asks and their base and quote amounts.
  * @param offerType Whether the offer is a bid or an ask.
@@ -172,7 +171,7 @@ class KandelDistribution {
   /** Gets the prices for the distribution, with undefined for prices not represented by offers in the distribution.
    * @returns The prices in the distribution.
    */
-  public getPricesForDistribution(): (Big | undefined)[] {
+  public getPricesForDistribution() {
     const prices: (Big | undefined)[] = Array(this.pricePoints).fill(undefined);
 
     this.offers.forEach((o) => {

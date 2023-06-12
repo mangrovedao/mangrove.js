@@ -43,7 +43,7 @@ class KandelPriceCalculation {
     if (minPrice && maxPrice && ratio && !pricePoints) {
       // we have all we need
     } else {
-      if (pricePoints < 2) {
+      if (!pricePoints || pricePoints < 2) {
         throw Error("There must be at least 2 price points");
       } else if (minPrice && maxPrice && !ratio && pricePoints) {
         ratio = Big(
@@ -93,11 +93,15 @@ class KandelPriceCalculation {
   ) {
     const priceOfIndex0 = priceAtIndex.div(ratio.pow(index));
 
-    return this.calculatePrices({
+    const prices = this.calculatePrices({
       minPrice: priceOfIndex0,
       ratio,
       pricePoints,
     });
+    if (prices.prices.some((x) => !x)) {
+      throw new Error("Unexpected undefined price");
+    }
+    return prices.prices as Big[];
   }
 
   /** Calculates the resulting number of price points from a min price, max price, and a ratio.
@@ -128,7 +132,7 @@ class KandelPriceCalculation {
       throw Error("exactly one of pricePoints or maxPrice must be provided");
     }
 
-    const prices: Big[] = [];
+    const prices: (Big | undefined)[] = [];
 
     const checkPricesLength = () => {
       if (prices.length > 255) {
@@ -175,7 +179,7 @@ class KandelPriceCalculation {
    * @param prices The prices in the distribution.
    * @returns The index of the first ask.
    */
-  public calculateFirstAskIndex(midPrice: Big, prices: Big[]) {
+  public calculateFirstAskIndex(midPrice: Big, prices: (Big | undefined)[]) {
     // First ask should be after mid price - leave hole at mid price
     const firstAskIndex = prices.findIndex((x) => x?.gt(midPrice));
 

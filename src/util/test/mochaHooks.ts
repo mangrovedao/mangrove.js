@@ -182,7 +182,7 @@ export const mochaHooks = {
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)
     const newProxy = {
       cancelAll: false,
-      proxyServer: null,
+      proxyServer: null as ProxyServer | null,
     };
     currentProxyPort++;
     newProxy.proxyServer = new ProxyServer({
@@ -213,7 +213,7 @@ export const mochaHooks = {
         return data;
       },
     });
-    newProxy.proxyServer.listen(currentProxyPort, serverParams.host);
+    newProxy.proxyServer?.listen(currentProxyPort, serverParams.host);
     hook.proxies[currentProxyPort] = newProxy;
     // Tests reference the anvil instance through the following address.
     // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request

@@ -83,7 +83,7 @@ class KandelDistributionHelper {
    */
   public calculateDistributionConstantGives(
     ratio: Big,
-    prices: Big[],
+    prices: (undefined | Big)[],
     askGives: Big,
     bidGives: Big,
     firstAskIndex: number
@@ -124,7 +124,7 @@ class KandelDistributionHelper {
    */
   public calculateDistributionConstantBase(
     ratio: Big,
-    prices: Big[],
+    prices: (undefined | Big)[],
     constantBase: Big,
     firstAskIndex: number
   ): KandelDistribution {
@@ -157,7 +157,7 @@ class KandelDistributionHelper {
    */
   public calculateDistributionConstantQuote(
     ratio: Big,
-    prices: Big[],
+    prices: (undefined | Big)[],
     constantQuote: Big,
     firstAskIndex: number
   ): KandelDistribution {
@@ -191,39 +191,42 @@ class KandelDistributionHelper {
    */
   public calculateDistributionFromPrices(
     ratio: Big,
-    prices: Big[],
+    prices: (Big | undefined)[],
     firstAskIndex: number,
     initialAskGives?: Big,
     initialBidGives?: Big
   ) {
-    if (!initialBidGives && !initialAskGives)
-      throw Error(
-        "Either initialAskGives or initialBidGives must be provided."
-      );
-
-    const distribution =
-      initialBidGives && initialAskGives
-        ? this.calculateDistributionConstantGives(
-            ratio,
-            prices,
-            initialAskGives,
-            initialBidGives,
-            firstAskIndex
-          )
-        : initialAskGives
-        ? this.calculateDistributionConstantBase(
-            ratio,
-            prices,
-            initialAskGives,
-            firstAskIndex
-          )
-        : this.calculateDistributionConstantQuote(
-            ratio,
-            prices,
-            initialBidGives as Big,
-            firstAskIndex
-          );
-    return distribution;
+    if (initialBidGives) {
+      if (initialAskGives) {
+        return this.calculateDistributionConstantGives(
+          ratio,
+          prices,
+          initialAskGives,
+          initialBidGives,
+          firstAskIndex
+        );
+      } else {
+        return this.calculateDistributionConstantQuote(
+          ratio,
+          prices,
+          initialBidGives,
+          firstAskIndex
+        );
+      }
+    } else {
+      if (initialAskGives) {
+        return this.calculateDistributionConstantBase(
+          ratio,
+          prices,
+          initialAskGives,
+          firstAskIndex
+        );
+      } else {
+        throw Error(
+          "Either initialAskGives or initialBidGives must be provided."
+        );
+      }
+    }
   }
 
   /** Creates a new distribution with uniformly changed volume.
@@ -245,10 +248,18 @@ class KandelDistributionHelper {
   }) {
     const prices = params.distribution.getPricesForDistribution();
 
-    const offerWithPrices = params.distribution.offers.map((offer) => ({
-      offer,
-      price: prices[offer.index],
-    }));
+    const offerWithPrices = params.distribution.offers.map((offer) => {
+      const price = prices[offer.index];
+      if (!price) {
+        throw Error(
+          "Price must be calculable for all offers in the distribution to uniformly change volume."
+        );
+      }
+      return {
+        offer,
+        price,
+      };
+    });
     const asks = offerWithPrices.filter((o) => o.offer.offerType == "asks");
     const bases = asks.map((o) => o.offer.base);
     const bids = offerWithPrices.filter((o) => o.offer.offerType == "bids");
@@ -273,7 +284,6 @@ class KandelDistributionHelper {
     const distribution = new KandelDistribution(
       params.distribution.ratio,
       params.distribution.pricePoints,
-      // FIXME what should we do here when price is undefined?
       bids
         .map((o, i) => ({
           index: o.offer.index,
@@ -397,7 +407,7 @@ class KandelDistributionHelper {
    * @returns The minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
    */
   calculateMinimumInitialGives(
-    prices: Big[],
+    prices: (Big | undefined)[],
     minimumBasePerOffer: Big,
     minimumQuotePerOffer: Big
   ) {
@@ -415,14 +425,12 @@ class KandelDistributionHelper {
       }
     });
 
-    const minimumBaseFromQuote = this.baseFromQuoteAndPrice(
-      minimumQuotePerOffer,
-      minPrice
-    );
-    const minimumQuoteFromBase = this.quoteFromBaseAndPrice(
-      minimumBasePerOffer,
-      maxPrice
-    );
+    const minimumBaseFromQuote = minPrice
+      ? this.baseFromQuoteAndPrice(minimumQuotePerOffer, minPrice)
+      : minimumBasePerOffer;
+    const minimumQuoteFromBase = maxPrice
+      ? this.quoteFromBaseAndPrice(minimumBasePerOffer, maxPrice)
+      : minimumQuotePerOffer;
     const askGives = minimumBaseFromQuote.gt(minimumBasePerOffer)
       ? minimumBaseFromQuote
       : minimumBasePerOffer;
