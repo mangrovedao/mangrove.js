@@ -1572,4 +1572,33 @@ describe("Market integration tests suite", () => {
         .toNumber()
     );
   });
+
+  mgvTestUtil.bidsAsks.forEach((ba) => {
+    it(`mgvIntegrationTestUtils can post offers for ${ba}`, async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+      await market.quote.approveMangrove(1000000000000000);
+      await market.base.approveMangrove(1000000000000000);
+      await mgvTestUtil.mint(market.quote, maker, 1000000000000000);
+      await mgvTestUtil.mint(market.base, maker, 1000000000000000);
+
+      const bs = market.trade.baToBs(ba);
+      const params: Market.TradeParams = {
+        wants: market.base.fromUnits(1),
+        gives: 1,
+      };
+
+      await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
+      let result = await (await market.trade.order(bs, params, market)).result;
+      assert.equal(result.successes.length, 1);
+
+      await mgvTestUtil.postNewFailingOffer(market, ba, maker),
+        (result = await (await market.trade.order(bs, params, market)).result);
+      assert.equal(result.tradeFailures.length, 1);
+
+      await mgvTestUtil.postNewRevertingOffer(market, ba, maker),
+        (result = await (await market.trade.order(bs, params, market)).result);
+      assert.equal(result.tradeFailures.length, 1);
+    });
+  });
 });
