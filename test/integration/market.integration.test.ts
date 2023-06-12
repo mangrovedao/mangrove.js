@@ -710,7 +710,7 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ wants: "1", gives: "1.3" }, { gasLimit: 600000 });
+    await market.sell({ wants: "1", gives: "1.3" });
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
@@ -1021,14 +1021,11 @@ describe("Market integration tests suite", () => {
 
     // make a sell of the not-best offer
     // a standard sell would give us 2e-13, but due to snipe we only get 1e-13.
-    const sellPromises = await market.sell(
-      {
-        offerId: notBest,
-        wants: "0.1",
-        gives: "0.0000000000001",
-      },
-      { gasLimit: 6500000 }
-    );
+    const sellPromises = await market.sell({
+      offerId: notBest,
+      wants: "0.1",
+      gives: "0.0000000000001",
+    });
     const result = await sellPromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -1079,13 +1076,11 @@ describe("Market integration tests suite", () => {
           offerId: asks[1].id,
           takerGives: asks[1].wants,
           takerWants: asks[1].gives,
-          gasLimit: 650000,
         },
         {
           offerId: asks[2].id,
           takerGives: asks[2].wants,
           takerWants: asks[2].gives,
-          gasLimit: 650000,
         },
       ],
     });
@@ -1140,13 +1135,11 @@ describe("Market integration tests suite", () => {
           offerId: bids[1].id,
           takerGives: bids[1].wants,
           takerWants: bids[1].gives,
-          gasLimit: 650000,
         },
         {
           offerId: bids[2].id,
           takerGives: bids[2].wants,
           takerWants: bids[2].gives,
-          gasLimit: 650000,
         },
       ],
     });
@@ -1196,13 +1189,11 @@ describe("Market integration tests suite", () => {
             offerId: asks[0].id,
             takerGives: asks[0].wants,
             takerWants: asks[0].gives,
-            gasLimit: 650000,
           },
           {
             offerId: asks[1].id,
             takerGives: asks[1].wants,
             takerWants: asks[1].gives,
-            gasLimit: 650000,
           },
         ],
         requireOffersToFail: requireOffersToFail,
@@ -1319,7 +1310,6 @@ describe("Market integration tests suite", () => {
           offerId: asks[0].id,
           takerGives: asks[0].wants,
           takerWants: asks[0].gives,
-          gasLimit: 650000,
         },
       ],
     });
@@ -1571,5 +1561,34 @@ describe("Market integration tests suite", () => {
         .add(1 /* due to precision */)
         .toNumber()
     );
+  });
+
+  mgvTestUtil.bidsAsks.forEach((ba) => {
+    it(`mgvIntegrationTestUtils can post offers for ${ba}`, async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+      await market.quote.approveMangrove(1000000000000000);
+      await market.base.approveMangrove(1000000000000000);
+      await mgvTestUtil.mint(market.quote, maker, 1000000000000000);
+      await mgvTestUtil.mint(market.base, maker, 1000000000000000);
+
+      const bs = market.trade.baToBs(ba);
+      const params: Market.TradeParams = {
+        wants: market.base.fromUnits(1),
+        gives: 1,
+      };
+
+      await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
+      let result = await (await market.trade.order(bs, params, market)).result;
+      assert.equal(result.successes.length, 1);
+
+      await mgvTestUtil.postNewFailingOffer(market, ba, maker),
+        (result = await (await market.trade.order(bs, params, market)).result);
+      assert.equal(result.tradeFailures.length, 1);
+
+      await mgvTestUtil.postNewRevertingOffer(market, ba, maker),
+        (result = await (await market.trade.order(bs, params, market)).result);
+      assert.equal(result.tradeFailures.length, 1);
+    });
   });
 });
