@@ -73,7 +73,7 @@ class LiquidityProvider {
           )
         : undefined;
       this.market = p.market;
-      this.eoa = p.eoa;
+      this.eoa = p.eoa ? ethers.utils.getAddress(p.eoa) : undefined;
       this.gasreq = p.gasreq;
     } else {
       throw Error(

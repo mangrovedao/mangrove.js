@@ -414,7 +414,7 @@ export const postNewRevertingOffer = async (
     ba,
     maker,
     wants: 1,
-    gives: 1000000,
+    gives: "90000000000000000",
     shouldRevert: true,
   });
 };

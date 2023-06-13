@@ -73,6 +73,7 @@ namespace Market {
     slippage?: number;
     fillOrKill?: boolean;
     expiryDate?: number;
+    gasLowerBound?: ethers.ethers.BigNumberish;
   } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
     (
       | { volume: Bigish; price: Bigish }
@@ -616,6 +617,16 @@ class Market {
     response: Promise<ethers.ContractTransaction>;
   }> {
     return this.trade.order("sell", params, this, overrides);
+  }
+
+  /** Estimate amount of gas for buy. Can be passed as overrides.gasLimit or params.gasLowerBound of @see buy with same params. */
+  gasEstimateBuy(params: Market.TradeParams): Promise<BigNumber> {
+    return this.trade.estimateGas("buy", params, this);
+  }
+
+  /** Estimate amount of gas for sell. Can be passed as overrides.gasLimit or params.gasLowerBound of @see sell with same params. */
+  gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
+    return this.trade.estimateGas("sell", params, this);
   }
 
   /**

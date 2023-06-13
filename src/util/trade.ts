@@ -1,11 +1,13 @@
 import Big from "big.js";
-import { ethers } from "ethers";
+import { BigNumber, ContractTransaction, ethers } from "ethers";
 import Market from "../market";
 import MgvToken from "../mgvtoken";
 import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
+
+const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
 
 type SnipeUnitParams = {
   ba: Market.BA;
@@ -16,6 +18,7 @@ type SnipeUnitParams = {
     gasLimit?: number;
   }[];
   fillWants?: boolean;
+  gasLowerBound?: ethers.BigNumberish;
 };
 
 class Trade {
@@ -146,6 +149,35 @@ class Trade {
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
+  getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
+    const { gives, wants, fillWants } =
+      bs === "buy"
+        ? this.getParamsForBuy(params, market.base, market.quote)
+        : this.getParamsForSell(params, market.base, market.quote);
+    const restingOrderParams =
+      "restingOrder" in params ? params.restingOrder : null;
+
+    const snipeOfferId = "offerId" in params ? params.offerId : null;
+
+    const orderType =
+      !!params.fillOrKill ||
+      !!restingOrderParams ||
+      !!params.forceRoutingToMangroveOrder
+        ? "restingOrder"
+        : snipeOfferId
+        ? "snipe"
+        : "marketOrder";
+
+    return {
+      gives,
+      wants,
+      fillWants,
+      restingOrderParams,
+      orderType,
+      snipeOfferId,
+    };
+  }
+
   /**
    * Market buy/sell order. Will attempt to buy/sell base token for quote tokens.
    * Params can be of the form:
@@ -177,37 +209,63 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const { wants, gives, fillWants } =
-      bs === "buy"
-        ? this.getParamsForBuy(params, market.base, market.quote)
-        : this.getParamsForSell(params, market.base, market.quote);
-    const restingOrderParams =
-      "restingOrder" in params ? params.restingOrder : undefined;
-    if (
-      !!params.fillOrKill ||
-      !!restingOrderParams ||
-      !!params.forceRoutingToMangroveOrder
-    ) {
-      return this.mangroveOrder(
-        {
-          wants: wants,
-          gives: gives,
-          orderType: bs,
-          fillWants: fillWants,
-          expiryDate: params.expiryDate ?? 0,
-          restingParams: restingOrderParams,
-          market: market,
-          fillOrKill: params.fillOrKill ?? false,
-        },
-        overrides
-      );
-    } else {
-      if ("offerId" in params && params.offerId) {
+    // const { wants, gives, fillWants } =
+    //   bs === "buy"
+    //     ? this.getParamsForBuy(params, market.base, market.quote)
+    //     : this.getParamsForSell(params, market.base, market.quote);
+    // const restingOrderParams =
+    //   "restingOrder" in params ? params.restingOrder : undefined;
+    // if (
+    //   !!params.fillOrKill ||
+    //   !!restingOrderParams ||
+    //   !!params.forceRoutingToMangroveOrder
+    // ) {
+    //   return this.mangroveOrder(
+    //     {
+    //       wants: wants,
+    //       gives: gives,
+    //       orderType: bs,
+    //       fillWants: fillWants,
+    //       expiryDate: params.expiryDate ?? 0,
+    //       restingParams: restingOrderParams,
+    //       market: market,
+    //       fillOrKill: params.fillOrKill ?? false,
+    //     },
+    //     overrides
+    //   );
+    // } else {
+    //   if ("offerId" in params && params.offerId) {
+    const {
+      wants,
+      gives,
+      fillWants,
+      restingOrderParams,
+      orderType,
+      snipeOfferId,
+    } = this.getRawParams(bs, params, market);
+    switch (orderType) {
+      case "restingOrder":
+        return this.mangroveOrder(
+          {
+            wants: wants,
+            gives: gives,
+            orderType: bs,
+            fillWants: fillWants,
+            expiryDate: params.expiryDate ?? 0,
+            restingParams: restingOrderParams ?? undefined,
+            market: market,
+            fillOrKill: params.fillOrKill ? params.fillOrKill : false,
+            gasLowerBound: params.gasLowerBound ?? 0,
+          },
+          overrides
+        );
+      case "snipe":
+        //
         return this.snipes(
           {
             targets: [
               {
-                offerId: params.offerId,
+                offerId: snipeOfferId as number,
                 takerGives: gives,
                 takerWants: wants,
                 gasLimit: undefined,
@@ -215,11 +273,13 @@ class Trade {
             ],
             fillWants: fillWants,
             ba: this.bsToBa(bs),
+            gasLowerBound: params.gasLowerBound ?? 0,
           },
           market,
           overrides
         );
-      } else {
+
+      case "marketOrder":
         return this.marketOrder(
           {
             wants: wants,
@@ -227,10 +287,12 @@ class Trade {
             orderType: bs,
             fillWants: fillWants,
             market,
+            gasLowerBound: params.gasLowerBound ?? 0,
           },
           overrides
         );
-      }
+      default:
+        throw new Error(`Unknown order type ${orderType}`);
     }
   }
 
@@ -301,6 +363,63 @@ class Trade {
     );
   }
 
+  async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
+    const { wants, orderType } = this.getRawParams(bs, params, market);
+
+    switch (orderType) {
+      case "restingOrder":
+        // add an overhead of the MangroveOrder contract on top of the estimated market order.
+        return (await market.estimateGas(bs, wants)).add(
+          MANGROVE_ORDER_GAS_OVERHEAD
+        );
+      case "snipe":
+        return undefined;
+      case "marketOrder":
+        return await market.estimateGas(bs, wants);
+      default:
+        throw new Error(`Unknown order type ${orderType}`);
+    }
+  }
+
+  async simulateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
+    const { gives, wants, fillWants, orderType } = this.getRawParams(
+      bs,
+      params,
+      market
+    );
+    const ba = this.bsToBa(bs);
+
+    switch (orderType) {
+      case "restingOrder":
+        // add an overhead of the MangroveOrder contract on top of the estimated market order.
+        return (await market.simulateGas(ba, gives, wants, fillWants)).add(
+          MANGROVE_ORDER_GAS_OVERHEAD
+        );
+      case "snipe":
+        return undefined;
+      case "marketOrder":
+        return await market.simulateGas(ba, gives, wants, fillWants);
+    }
+  }
+
+  async createTxWithOptionalGasEstimation<T extends any[]>(
+    createTx: (...args: T) => Promise<ContractTransaction>,
+    estimateTx: (...args: T) => Promise<BigNumber>,
+    gasLowerBound: ethers.BigNumberish,
+    overrides: ethers.Overrides,
+    args: T
+  ) {
+    // If not given an explicit gasLimit then we estimate it. Ethers does this automatically, but if we are given a lower bound,
+    // (for instance from our own estimateGas function) then we need to invoke estimation manually and compare.
+    if (!overrides.gasLimit && gasLowerBound) {
+      overrides.gasLimit = await estimateTx(...args);
+      if (overrides.gasLimit.lt(gasLowerBound)) {
+        overrides.gasLimit = gasLowerBound;
+      }
+    }
+    return await createTx(...args);
+  }
+
   /**
    * Low level Mangrove market order.
    * If `orderType` is `"buy"`, the base/quote market will be used,
@@ -321,12 +440,14 @@ class Trade {
       orderType,
       fillWants,
       market,
+      gasLowerBound,
     }: {
       wants: ethers.BigNumber;
       gives: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       market: Market;
+      gasLowerBound: ethers.BigNumberish;
     },
     overrides: ethers.Overrides
   ): Promise<{
@@ -337,11 +458,6 @@ class Trade {
       orderType === "buy"
         ? [market.base, market.quote]
         : [market.quote, market.base];
-
-    // user defined gasLimit overrides estimates
-    if (!overrides.gasLimit) {
-      overrides.gasLimit = await market.estimateGas(orderType, wants);
-    }
 
     logger.debug("Creating market order", {
       contextInfo: "market.marketOrder",
@@ -355,14 +471,22 @@ class Trade {
         gasLimit: overrides.gasLimit?.toString(),
       },
     });
-    const response = market.mgv.contract.marketOrder(
-      outboundTkn.address,
-      inboundTkn.address,
-      wants,
-      gives,
-      fillWants,
-      overrides
+
+    const response = this.createTxWithOptionalGasEstimation(
+      market.mgv.contract.marketOrder,
+      market.mgv.contract.estimateGas.marketOrder,
+      gasLowerBound,
+      overrides,
+      [
+        outboundTkn.address,
+        inboundTkn.address,
+        wants,
+        gives,
+        fillWants,
+        overrides,
+      ]
     );
+
     const result = this.responseToMarketOrderResult(
       response,
       orderType,
@@ -414,6 +538,7 @@ class Trade {
       expiryDate,
       restingParams,
       market,
+      gasLowerBound,
     }: {
       wants: ethers.BigNumber;
       gives: ethers.BigNumber;
@@ -423,6 +548,7 @@ class Trade {
       expiryDate: number;
       restingParams: Market.RestingOrderParams | undefined;
       market: Market;
+      gasLowerBound: ethers.BigNumberish;
     },
     overrides: ethers.Overrides
   ): Promise<{
@@ -451,24 +577,25 @@ class Trade {
         : (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ??
           0;
 
-    // user defined gasLimit overrides estimates - for estimation we add an overhead of the MangroveOrder contract on top of the estimated market order.
-    overrides_.gasLimit = overrides_.gasLimit
-      ? overrides_.gasLimit
-      : (await market.estimateGas(orderType, wants)).add(200000);
-
-    const response = market.mgv.orderContract.take(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        fillOrKill: fillOrKill,
-        fillWants: orderType === "buy",
-        takerWants: wants,
-        takerGives: gives,
-        restingOrder: postRestingOrder,
-        pivotId,
-        expiryDate: expiryDate,
-      },
-      overrides_
+    const response = this.createTxWithOptionalGasEstimation(
+      market.mgv.orderContract.take,
+      market.mgv.orderContract.estimateGas.take,
+      gasLowerBound,
+      overrides_,
+      [
+        {
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
+          fillOrKill: fillOrKill,
+          fillWants: orderType === "buy",
+          takerWants: wants,
+          takerGives: gives,
+          restingOrder: postRestingOrder,
+          pivotId,
+          expiryDate: expiryDate,
+        },
+        overrides_,
+      ]
     );
     const result = this.responseToMangroveOrderResult(
       response,
@@ -581,16 +708,15 @@ class Trade {
       },
     });
 
-    // user defined gasLimit overrides estimates
+    // user defined gasLimit is a total max for gasreq of each offer; otherwise, each offer is allowed to use its specified gasreq,
+    // this is accomplished by supplying a number larger than 2^24-1 for the offer (in this case MaxUint256).
     const _targets = unitParams.targets.map<
       Market.RawSnipeParams["targets"][number]
     >((t) => [
       t.offerId,
       t.takerWants,
       t.takerGives,
-      t.gasLimit ??
-        overrides.gasLimit ??
-        market.estimateGas(this.baToBs(unitParams.ba), t.takerWants),
+      t.gasLimit ?? overrides.gasLimit ?? ethers.constants.MaxUint256,
     ]);
 
     return {

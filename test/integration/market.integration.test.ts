@@ -710,7 +710,7 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ wants: "1", gives: "1.3" }, { gasLimit: 600000 });
+    await market.sell({ wants: "1", gives: "1.3" });
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
@@ -801,10 +801,7 @@ describe("Market integration tests suite", () => {
       gives: rawMinGivesBase.mul(2),
     });
 
-    const buyPromises = await market.buy(
-      { wants: 0.000000000002, gives: 10 },
-      { gasLimit: 6500000 }
-    );
+    const buyPromises = await market.buy({ wants: 0.000000000002, gives: 10 });
     const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
@@ -835,10 +832,11 @@ describe("Market integration tests suite", () => {
       gives: rawMinGivesBase.mul(2),
     });
 
-    const buyPromises = await market.buy(
-      { forceRoutingToMangroveOrder: false, wants: 0.000000000002, gives: 10 },
-      { gasLimit: 6500000 }
-    );
+    const buyPromises = await market.buy({
+      forceRoutingToMangroveOrder: false,
+      wants: 0.000000000002,
+      gives: 10,
+    });
     const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
@@ -871,17 +869,83 @@ describe("Market integration tests suite", () => {
 
     await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
-    // estimated gas limit is too low, so we set it explicitly
-    const sellPromises = await market.sell(
-      { volume: "0.0000000000000001", price: 0 },
-      { gasLimit: 6500000 }
-    );
+    const sellPromises = await market.sell({
+      volume: "0.0000000000000001",
+      price: 0,
+    });
     const result = await sellPromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
+  });
+
+  [true, false].forEach((forceRouting) => {
+    [undefined, 6500000].forEach((gasLimit) => {
+      [undefined, 42, 7000000].forEach((gasLowerBound) => {
+        it(`uses expected gasLimit and forceRoutingToMangroveOrder=${forceRouting} with gasLowerBound=${gasLowerBound} and gasLimit=${gasLimit}`, async function () {
+          // Arrange
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+          });
+
+          const tradeParams: Market.TradeParams = {
+            wants: 0.000000000002,
+            gives: 10,
+          };
+          tradeParams.forceRoutingToMangroveOrder = forceRouting;
+          tradeParams.gasLowerBound = gasLowerBound;
+          const overrides = { gasLimit };
+
+          if (forceRouting) {
+            const orderLogic = mgvAdmin.offerLogic(mgv.orderContract.address);
+            const router = await orderLogic.contract.router();
+            await market.quote.approve(router);
+            await market.base.approve(router);
+
+            await orderLogic.activate(["TokenA", "TokenB"]);
+          }
+
+          const maker = await mgvTestUtil.getAccount(
+            mgvTestUtil.AccountName.Maker
+          );
+          await mgvTestUtil.mint(market.base, maker, 100);
+          await mgvTestUtil.postNewOffer({
+            market,
+            ba: "asks",
+            maker,
+            wants: 1,
+            gives: rawMinGivesBase,
+          });
+
+          // Act
+          const promises = await market.buy(tradeParams, overrides);
+
+          // Assert
+          const response = await promises.response;
+
+          // Lower bound should be used if above ethers estimation (except if gasLimit is already set)
+          let expectedLimit = 0;
+          if (gasLimit) {
+            expectedLimit = gasLimit;
+          } else {
+            if (gasLowerBound && BigNumber.from(gasLowerBound).eq(7000000)) {
+              expectedLimit = 7000000;
+            } else {
+              // Use ethers estimation, if these values are too unstable, then refactor.
+              if (forceRouting) {
+                expectedLimit = 317708;
+              } else {
+                expectedLimit = 246887;
+              }
+            }
+          }
+          expect(response.gasLimit.toNumber()).to.be.equal(expectedLimit);
+        });
+      });
+    });
   });
 
   it("buying offerId snipes offer", async function () {
@@ -957,14 +1021,11 @@ describe("Market integration tests suite", () => {
 
     // make a sell of the not-best offer
     // a standard sell would give us 2e-13, but due to snipe we only get 1e-13.
-    const sellPromises = await market.sell(
-      {
-        offerId: notBest,
-        wants: "0.1",
-        gives: "0.0000000000001",
-      },
-      { gasLimit: 6500000 }
-    );
+    const sellPromises = await market.sell({
+      offerId: notBest,
+      wants: "0.1",
+      gives: "0.0000000000001",
+    });
     const result = await sellPromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -1015,13 +1076,11 @@ describe("Market integration tests suite", () => {
           offerId: asks[1].id,
           takerGives: asks[1].wants,
           takerWants: asks[1].gives,
-          gasLimit: 650000,
         },
         {
           offerId: asks[2].id,
           takerGives: asks[2].wants,
           takerWants: asks[2].gives,
-          gasLimit: 650000,
         },
       ],
     });
@@ -1076,13 +1135,11 @@ describe("Market integration tests suite", () => {
           offerId: bids[1].id,
           takerGives: bids[1].wants,
           takerWants: bids[1].gives,
-          gasLimit: 650000,
         },
         {
           offerId: bids[2].id,
           takerGives: bids[2].wants,
           takerWants: bids[2].gives,
-          gasLimit: 650000,
         },
       ],
     });
@@ -1132,13 +1189,11 @@ describe("Market integration tests suite", () => {
             offerId: asks[0].id,
             takerGives: asks[0].wants,
             takerWants: asks[0].gives,
-            gasLimit: 650000,
           },
           {
             offerId: asks[1].id,
             takerGives: asks[1].wants,
             takerWants: asks[1].gives,
-            gasLimit: 650000,
           },
         ],
         requireOffersToFail: requireOffersToFail,
@@ -1255,7 +1310,6 @@ describe("Market integration tests suite", () => {
           offerId: asks[0].id,
           takerGives: asks[0].wants,
           takerWants: asks[0].gives,
-          gasLimit: 650000,
         },
       ],
     });
@@ -1461,22 +1515,25 @@ describe("Market integration tests suite", () => {
 
   it("max gasreq returns a BigNumber, even if the book is empty", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-    const gasEstimate = await market.estimateGas("buy", BigNumber.from(1));
+    const gasEstimate = await market.gasEstimateSell({
+      volume: market.quote.fromUnits(1),
+      price: 0,
+    });
 
     // we need to use BigNumber.isBigNumber() function to test variable type
     expect(
       BigNumber.isBigNumber(gasEstimate),
-      `market.estimateGas() returned a value that is not a BigNumber. Value was: '${gasEstimate}'.`
+      `returned a value that is not a BigNumber. Value was: '${gasEstimate}'.`
     ).to.be.true;
   });
 
   it("max gasreq is added to gas estimates", async function () {
     const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
 
-    const emptyBookAsksEstimate = await market.estimateGas(
-      "buy",
-      BigNumber.from(1)
-    );
+    const emptyBookAsksEstimate = await market.gasEstimateBuy({
+      volume: market.base.fromUnits(1),
+      price: 0,
+    });
 
     /* create asks */
     const askGasReq = 10000;
@@ -1489,7 +1546,10 @@ describe("Market integration tests suite", () => {
     );
 
     await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
-    const asksEstimate = await market.estimateGas("buy", BigNumber.from(1));
+    const asksEstimate = await market.gasEstimateBuy({
+      volume: market.base.fromUnits(1),
+      price: 0,
+    });
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate
         .add(
@@ -1501,5 +1561,34 @@ describe("Market integration tests suite", () => {
         .add(1 /* due to precision */)
         .toNumber()
     );
+  });
+
+  mgvTestUtil.bidsAsks.forEach((ba) => {
+    it(`mgvIntegrationTestUtils can post offers for ${ba}`, async function () {
+      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+      await market.quote.approveMangrove(1000000000000000);
+      await market.base.approveMangrove(1000000000000000);
+      await mgvTestUtil.mint(market.quote, maker, 1000000000000000);
+      await mgvTestUtil.mint(market.base, maker, 1000000000000000);
+
+      const bs = market.trade.baToBs(ba);
+      const params: Market.TradeParams = {
+        wants: market.base.fromUnits(1),
+        gives: 1,
+      };
+
+      await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
+      let result = await (await market.trade.order(bs, params, market)).result;
+      assert.equal(result.successes.length, 1);
+
+      await mgvTestUtil.postNewFailingOffer(market, ba, maker),
+        (result = await (await market.trade.order(bs, params, market)).result);
+      assert.equal(result.tradeFailures.length, 1);
+
+      await mgvTestUtil.postNewRevertingOffer(market, ba, maker),
+        (result = await (await market.trade.order(bs, params, market)).result);
+      assert.equal(result.tradeFailures.length, 1);
+    });
   });
 });
