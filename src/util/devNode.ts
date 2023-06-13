@@ -90,7 +90,7 @@ namespace DevNode {
   export type fetchedContract = {
     name: string;
     address: string;
-    decimals: number;
+    decimals?: number;
   };
 
   export type provider = ethers.providers.JsonRpcProvider;
@@ -143,7 +143,7 @@ class DevNode {
     return version.split("/")[0];
   }
 
-  async info(): Promise<DevNode.info | undefined> {
+  async info() {
     const info = devNodeInfos[await this.clientType()];
     if (typeof info === "undefined") {
       throw new Error(`No info for this node ${await this.clientVersion()}`);

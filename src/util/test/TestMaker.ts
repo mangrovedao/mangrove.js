@@ -9,6 +9,7 @@ import { LiquidityProvider } from "../..";
 import * as typechain from "../../types/typechain";
 import { waitForTransaction } from "./mgvIntegrationTestUtil";
 import { node } from "../../util/node";
+import { Log } from "@ethersproject/providers";
 
 /** Usage example
   Terminal 1: 
@@ -140,7 +141,9 @@ class TestMaker {
       this.contract.address
     );
     await (
-      await (await node({ url: url, spawn: false, deploy: false })).connect()
+      await (
+        await node({ url: url, spawn: false, deploy: false, script: "" })
+      ).connect()
     ).deal({
       token: outbound_tkn.address,
       account: this.contract.address,
@@ -155,8 +158,8 @@ class TestMaker {
     const amount = payableOverrides.value ?? 0;
 
     const offerData = {
-      shouldRevert: p.shouldRevert ?? false,
-      executeData: p.executeData ?? "",
+      shouldRevert: p.shouldRevert as boolean,
+      executeData: p.executeData as string,
     };
 
     const pivot = (await this.market.getPivotId(p.ba, price)) ?? 0;
@@ -168,8 +171,8 @@ class TestMaker {
       this.market.quote.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      p.gasreq ?? 0,
-      p.gasprice ?? (await this.mgv.config()).gasprice,
+      p.gasreq as number,
+      p.gasprice as number,
       pivot,
       amount,
       offerData,
@@ -178,10 +181,10 @@ class TestMaker {
 
     return this.#constructPromise(
       this.market,
-      (_cbArg, _bookEvent, _ethersLog) => ({
-        id: _cbArg.offerId ?? 0,
+      (_cbArg, _bookEevnt, _ethersLog) => ({
+        id: _cbArg.offerId as number,
         pivot: pivot,
-        event: _ethersLog,
+        event: _ethersLog as Log,
       }),
       txPromise,
       (cbArg) => cbArg.type === "OfferWrite"

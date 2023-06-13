@@ -64,7 +64,7 @@ describe("Mangrove functionality", () => {
       ens["set(string,address)"]("Mangrove", ADDR1);
       await watchPromise;
       mgv.disconnect();
-      server.process.kill();
+      (server.process as any).kill();
     });
 
     // can't make this test go through mangrove since Mangrove can't connect without an existing Mangrove instance -- so we're just testing watchAllToyENSEntries watch functionality here
@@ -94,7 +94,7 @@ describe("Mangrove functionality", () => {
       // make sure that deployment is detected
       await prom;
       provider.removeAllListeners();
-      server.process.kill();
+      (server.process as any).kill();
     });
   });
 });

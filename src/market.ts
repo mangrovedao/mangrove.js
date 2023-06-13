@@ -22,7 +22,6 @@ export const bookOptsDefault: Market.BookOptions = {
   maxOffers: Semibook.DEFAULT_MAX_OFFERS,
 };
 
-import type { Awaited } from "ts-essentials";
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";

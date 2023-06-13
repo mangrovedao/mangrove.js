@@ -1,7 +1,13 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
 import { Mangrove, Semibook } from "../..";
-import { builder, node } from "../../util/node";
+import {
+  builder,
+  node,
+  nodeWithComputedArgv,
+  partialComputeArgvType,
+} from "../../util/node";
+import type { MarkOptional } from "ts-essentials";
 
 export const command = "node";
 export const aliases = [];
@@ -15,13 +21,10 @@ export { builder };
 
 export async function handler(argv: Arguments): Promise<void> {
   const { spawnEndedPromise } = await (
-    await node(
-      {
-        ...argv,
-        pipe: true,
-      },
-      false
-    )
+    await nodeWithComputedArgv({
+      ...(argv as unknown as partialComputeArgvType),
+      pipe: true,
+    })
   ).connect();
   if (spawnEndedPromise) {
     console.log("Node ready.");

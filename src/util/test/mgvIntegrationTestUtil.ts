@@ -52,7 +52,7 @@ const signers: any = {};
 export const setConfig = (
   _mgv: Mangrove,
   accounts: any,
-  _mgvAdmin?: Mangrove
+  _mgvAdmin: Mangrove
 ) => {
   mgv = _mgv;
   mgvAdmin = _mgvAdmin;

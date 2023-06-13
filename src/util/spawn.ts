@@ -1,4 +1,5 @@
-const childProcess = require("child_process");
+import * as childProcess from "child_process";
+// const childProcess = require("child_process");
 import { default as nodeCleanup } from "node-cleanup";
 
 /* Spawn a test node */
@@ -6,34 +7,38 @@ export type spawnParams = {
   chainId?: number;
   forkUrl?: string;
   forkBlockNumber?: number;
-  host?: string;
-  port?: number | string;
-  pipe?: boolean;
+  host: string;
+  port: number | string;
+  pipe: boolean;
 };
 
 export const spawn = async (params: spawnParams, mnemonic: string) => {
-  const chainIdArgs = "chainId" in params ? ["--chain-id", params.chainId] : [];
-  const forkUrlArgs = "forkUrl" in params ? ["--fork-url", params.forkUrl] : [];
-  const blockNumberArgs =
-    "forkBlockNumber" in params
-      ? ["--fork-block-number", params.forkBlockNumber]
+  const chainIdArgs =
+    params.chainId !== undefined
+      ? ["--chain-id", params.chainId.toString()]
       : [];
-  const anvil = childProcess.spawn(
-    "anvil",
-    [
-      "--host",
-      params.host,
-      "--port",
-      params.port,
-      "--order",
-      "fifo", // just mine as you receive
-      "--mnemonic",
-      mnemonic,
-    ]
-      .concat(chainIdArgs)
-      .concat(forkUrlArgs)
-      .concat(blockNumberArgs)
-  );
+  const forkUrlArgs =
+    params.forkUrl !== undefined
+      ? ["--fork-url", params.forkUrl.toString()]
+      : [];
+  const blockNumberArgs =
+    params.forkBlockNumber !== undefined
+      ? ["--fork-block-number", params.forkBlockNumber.toString()]
+      : [];
+  const args = [
+    "--host",
+    params.host,
+    "--port",
+    params.port.toString(),
+    "--order",
+    "fifo", // just mine as you receive
+    "--mnemonic",
+    mnemonic,
+  ]
+    .concat(chainIdArgs)
+    .concat(forkUrlArgs)
+    .concat(blockNumberArgs);
+  const anvil = childProcess.spawn("anvil", args);
 
   anvil.stdout.setEncoding("utf8");
   anvil.on("close", (code) => {
@@ -56,7 +61,7 @@ export const spawn = async (params: spawnParams, mnemonic: string) => {
 
   // wait a while for anvil to be ready, then bail
   const ready = new Promise<void>((ok, ko) => {
-    let ready = null;
+    let ready: null | boolean = null;
     setTimeout(() => {
       if (ready === null) {
         ready = false;

@@ -1,7 +1,7 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
 import { Mangrove } from "../../";
-import node, { serverParamsType } from "../../util/node";
+import node, { inputServerParamsType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
 import DevNode from "../devNode";
@@ -42,7 +42,7 @@ export type hookInfo = {
 let currentProxyPort = 8546;
 
 export const mochaHooks = {
-  async beforeAllImpl(args: serverParamsType, hook: hookInfo) {
+  async beforeAllImpl(args: inputServerParamsType, hook: hookInfo) {
     if (process.env.MOCHA_WORKER_ID) {
       // running in parallel mode - change port
       serverParams.port =
