@@ -1219,7 +1219,7 @@ class CacheIterator implements Semibook.CacheIterator {
     return this;
   }
 
-  next(): IteratorResult<any, Market.Offer> {
+  next(): IteratorResult<Market.Offer> {
     let value: Market.Offer | undefined;
     do {
       value =
