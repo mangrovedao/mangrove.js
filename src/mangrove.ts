@@ -276,7 +276,7 @@ class Mangrove {
     reliableHttpProvider: ReliableHttpProvider.Options;
     eventEmitter: EventEmitter;
     reliableWebSocketOptions?: {
-      options: ReliableWebsocketProvider.Options | undefined;
+      options: ReliableWebsocketProvider.Options;
       wsUrl: string;
     };
   }) {
