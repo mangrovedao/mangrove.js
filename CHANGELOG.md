@@ -1,5 +1,7 @@
 # Next version
 
+# 1.3.1
+
 # 1.3.0
 
 - Change mangrove-ts to a single package repo for mangrove.js.
