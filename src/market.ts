@@ -129,13 +129,16 @@ namespace Market {
   };
 
   /**
-   * Options that control how the book cache behaves.
+   * Options that specify what the cache fetches and retains.
+   *
+   * `maxOffers`, `desiredPrice`, and `desiredVolume` are mutually exclusive.
+   * If none of these are specfied, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
    */
-  export type BookOptions = (
+  export type CacheContentsOptions =
     | {
         /** The maximum number of offers to store in the cache.
          *
-         * `maxOffers` and `desiredPrice` are mutually exclusive.
+         * `maxOffers, `desiredPrice`, and `desiredVolume` are mutually exclusive.
          */
         maxOffers?: number;
       }
@@ -143,8 +146,6 @@ namespace Market {
         /** The price that is expected to be used in calls to the market.
          * The cache will initially contain all offers with this price or better.
          * This can be useful in order to ensure a good pivot is readily available.
-         *
-         * `maxOffers` and `desiredPrice` are mutually exclusive.
          */
         desiredPrice: Bigish;
       }
@@ -153,8 +154,12 @@ namespace Market {
          * The volume that is expected to be used in trades on the market.
          */
         desiredVolume: VolumeParams;
-      }
-  ) & {
+      };
+
+  /**
+   * Options that control how the book cache behaves.
+   */
+  export type BookOptions = CacheContentsOptions & {
     /** The number of offers to fetch in one call.
      *
      * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
