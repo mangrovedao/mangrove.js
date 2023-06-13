@@ -1,5 +1,7 @@
 # Next version
 
+- Add missing dependency on object-inspect
+
 # 1.3.1
 
 - Fix issue in test utils
