@@ -1,19 +1,9 @@
-import { logger } from "../logger";
 import * as ethers from "ethers";
 
 import Market from "../../market";
 // syntactic sugar
-import { Bigish } from "../../types";
 import Mangrove from "../../mangrove";
 
-/* Note on big.js:
-ethers.js's BigNumber (actually BN.js) only handles integers
-big.js handles arbitrary precision decimals, which is what we want
-for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigNumber):
-  github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
-*/
-import Big from "big.js";
-import { OfferLogic } from "../..";
 import PrettyPrint, { prettyPrintFilter } from "../prettyPrint";
 import { LiquidityProvider } from "../..";
 import * as typechain from "../../types/typechain";
@@ -42,6 +32,7 @@ import { node } from "../../util/node";
   > // will contain a revert
   > const {result,response} = await tm.market.buy({volume:2,price:1});
 */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 namespace TestMaker {
   export type OfferParams = LiquidityProvider.OfferParams & {
     shouldRevert?: boolean;
@@ -61,7 +52,7 @@ namespace TestMaker {
    use Mangrove.connect to make sure the network is reached during construction */
 let canConstructTestMaker = false;
 
-let PROVISION_AMOUNT_IN_ETHERS = 2;
+const PROVISION_AMOUNT_IN_ETHERS = 2;
 
 class TestMaker {
   mgv: Mangrove;
@@ -120,7 +111,7 @@ class TestMaker {
   async newOffer(
     p: { ba: Market.BA } & TestMaker.OfferParams,
     overrides: ethers.Overrides = {}
-  ): Promise<{ id: number; pivot: number; event: ethers.providers.Log }> {
+  ) {
     const defaults = {
       shouldRevert: false,
       executeData: "executeData",
@@ -164,8 +155,8 @@ class TestMaker {
     const amount = payableOverrides.value ?? 0;
 
     const offerData = {
-      shouldRevert: p.shouldRevert,
-      executeData: p.executeData,
+      shouldRevert: p.shouldRevert ?? false,
+      executeData: p.executeData ?? "",
     };
 
     const pivot = (await this.market.getPivotId(p.ba, price)) ?? 0;
@@ -177,8 +168,8 @@ class TestMaker {
       this.market.quote.address,
       inbound_tkn.toUnits(wants),
       outbound_tkn.toUnits(gives),
-      p.gasreq,
-      p.gasprice,
+      p.gasreq ?? 0,
+      p.gasprice ?? (await this.mgv.config()).gasprice,
       pivot,
       amount,
       offerData,
@@ -187,8 +178,8 @@ class TestMaker {
 
     return this.#constructPromise(
       this.market,
-      (_cbArg, _bookEevnt, _ethersLog) => ({
-        id: _cbArg.offerId,
+      (_cbArg, _bookEvent, _ethersLog) => ({
+        id: _cbArg.offerId ?? 0,
         pivot: pivot,
         event: _ethersLog,
       }),
@@ -231,18 +222,12 @@ class TestMaker {
   }
 
   /** Post a new ask */
-  newAsk(
-    p: TestMaker.OfferParams,
-    overrides: ethers.Overrides = {}
-  ): Promise<{ id: number; event: ethers.providers.Log }> {
+  newAsk(p: TestMaker.OfferParams, overrides: ethers.Overrides = {}) {
     return this.newOffer({ ba: "asks", ...p }, overrides);
   }
 
   /** Post a new bid */
-  newBid(
-    p: TestMaker.OfferParams,
-    overrides: ethers.Overrides = {}
-  ): Promise<{ id: number; event: ethers.providers.Log }> {
+  newBid(p: TestMaker.OfferParams, overrides: ethers.Overrides = {}) {
     return this.newOffer({ ba: "bids", ...p }, overrides);
   }
 

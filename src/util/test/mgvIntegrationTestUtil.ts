@@ -40,7 +40,7 @@ export type Addresses = {
 let addresses: Addresses;
 
 let mgv: Mangrove;
-let mgvAdmin: Mangrove;
+let mgvAdmin: Mangrove | undefined;
 const signers: any = {};
 
 // With the removal of hardhat, there is no "default chain" anymore
