@@ -2,6 +2,8 @@
 
 # 1.3.1
 
+- Fix issue in test utils
+
 # 1.3.0
 
 - Change mangrove-ts to a single package repo for mangrove.js.
