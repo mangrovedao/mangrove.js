@@ -21,7 +21,7 @@ class OfferLogic {
     this.address = ethers.utils.getAddress(logic);
     this.signerOrProvider = signer ?? this.mgv.signer;
     this.contract = typechain.IOfferLogic__factory.connect(
-      logic,
+      this.address,
       this.signerOrProvider
     );
   }

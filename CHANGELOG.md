@@ -1,6 +1,17 @@
 # Next version
 
+# 1.3.2
+
+- Add missing dependency on object-inspect
+
+# 1.3.1
+
+- Fix issue in test utils
+
+# 1.3.0
+
 - Change mangrove-ts to a single package repo for mangrove.js.
+- Make gas estimation explicit to allow usage of ethers estimation.
 
 # 1.2.10
 
