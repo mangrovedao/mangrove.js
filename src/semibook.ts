@@ -1240,12 +1240,12 @@ class CacheIterator implements Semibook.CacheIterator {
     );
     if (value === undefined) {
       return {
-        done: false,
+        done: true,
         value: undefined,
       };
     } else {
       return {
-        done: true,
+        done: false,
         value: value,
       };
     }
