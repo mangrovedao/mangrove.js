@@ -18,6 +18,7 @@ import {
   OfferDetailUnpackedStructOutput,
   OfferUnpackedStructOutput,
 } from "./types/typechain/Mangrove";
+import MangroveEventSubscriber from "./mangroveEventSubscriber";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -183,13 +184,6 @@ class Semibook
   tradeManagement: Trade = new Trade();
 
   public optionsIdentifier: string;
-  static optionsIdentifier(options: Semibook.Options) {
-    return `${"maxOffers" in options ? options.maxOffers : "undefined"}_${
-      "desiredPrice" in options ? options.desiredPrice : "undefined"
-    }_${"desiredVolume" in options ? options.desiredVolume : "undefined"}_${
-      options.chunkSize
-    }`;
-  }
 
   static async connect(
     market: Market,
@@ -200,7 +194,7 @@ class Semibook
     if (!market.mgv.mangroveEventSubscriber) {
       throw new Error("Missing mangroveEventSubscriber");
     }
-    let semibook = market.mgv.mangroveEventSubscriber.getSemiBook(
+    let semibook = market.mgv.mangroveEventSubscriber.getSemibook(
       market,
       ba,
       options
@@ -690,7 +684,7 @@ class Semibook
     options: Semibook.Options
   ) {
     super();
-    this.optionsIdentifier = Semibook.optionsIdentifier(options);
+    this.optionsIdentifier = MangroveEventSubscriber.optionsIdentifier(options);
     if (!canConstructSemibook) {
       throw Error(
         "Mangrove Semibook must be initialized async with Semibook.connect (constructors cannot be async)"

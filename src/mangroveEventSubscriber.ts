@@ -28,6 +28,14 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     this.bookEventSubscribers = {};
   }
 
+  static optionsIdentifier(options: Semibook.Options) {
+    return `${"maxOffers" in options ? options.maxOffers : "undefined"}_${
+      "desiredPrice" in options ? options.desiredPrice : "undefined"
+    }_${"desiredVolume" in options ? options.desiredVolume : "undefined"}_${
+      options.chunkSize
+    }`;
+  }
+
   public async enableSubscriptions() {
     await this.blockManager.subscribeToLogs(
       {
@@ -44,7 +52,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
       : `${market.quote.address}_${market.base.address}`.toLowerCase();
   }
 
-  public getSemiBook(
+  public getSemibook(
     market: Market,
     ba: Market.BA,
     options: Semibook.Options
@@ -57,7 +65,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
       return;
     }
 
-    const semibook = books[Semibook.optionsIdentifier(options)];
+    const semibook = books[MangroveEventSubscriber.optionsIdentifier(options)];
     if (!semibook) {
       return;
     }
