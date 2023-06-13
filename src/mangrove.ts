@@ -91,8 +91,8 @@ namespace Mangrove {
   export type OpenMarketInfo = {
     base: { name: string; address: string; symbol: string; decimals: number };
     quote: { name: string; address: string; symbol: string; decimals: number };
-    asksConfig: LocalConfig;
-    bidsConfig: LocalConfig;
+    asksConfig?: LocalConfig;
+    bidsConfig?: LocalConfig;
   };
 
   export type CreateOptions = eth.CreateSignerOptions & {
@@ -113,8 +113,8 @@ class Mangrove {
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
-  reliableProvider?: ReliableProvider;
-  mangroveEventSubscriber?: MangroveEventSubscriber;
+  reliableProvider: ReliableProvider;
+  mangroveEventSubscriber: MangroveEventSubscriber;
 
   public eventEmitter: EventEmitter;
 
@@ -157,6 +157,9 @@ class Mangrove {
     }
 
     const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
+    if (typeof signer.provider === "undefined") {
+      throw new Error("returned signer has no provider");
+    }
     const network = await eth.getProviderNetwork(signer.provider);
 
     if ("send" in signer.provider) {
@@ -231,7 +234,8 @@ class Mangrove {
       eventEmitter,
       reliableWebSocketOptions: options.providerWsUrl
         ? {
-            options: options.reliableWebsocketProviderOptions,
+            options:
+              options.reliableWebsocketProviderOptions as ReliableWebsocketProvider.Options,
             wsUrl: options.providerWsUrl,
           }
         : undefined,
@@ -283,8 +287,11 @@ class Mangrove {
       );
     }
     this.eventEmitter = params.eventEmitter;
-    // must always pass a provider-equipped signer
-    this.provider = params.signer.provider;
+    const provider = params.signer.provider;
+    if (!provider) {
+      throw Error("Signer must be provider-equipped");
+    }
+    this.provider = provider;
     this.signer = params.signer;
     this.network = params.network;
     this._readOnly = params.readOnly;
@@ -438,7 +445,7 @@ class Mangrove {
 
   /* Return MgvToken instance tied. */
   token(name: string, options?: MgvToken.ConstructorOptions): MgvToken {
-    return new MgvToken(name, this, options);
+    return new MgvToken(name, this, options ?? {});
   }
 
   /**
@@ -464,7 +471,7 @@ class Mangrove {
    *
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
-  getNameFromAddress(address: string): string {
+  getNameFromAddress(address: string): string | null {
     const networkAddresses = Mangrove.addresses[this.network.name];
 
     if (networkAddresses) {
@@ -893,11 +900,11 @@ class Mangrove {
     // structure data object as address => (symbol,decimals,address=>config)
     const data: Record<
       string,
-      { symbol?: string; decimals?: number; configs?: Record<string, any> }
+      { symbol: string; decimals: number; configs: Record<string, any> }
     > = {};
     raw.markets.forEach(([tkn0, tkn1], i) => {
-      data[tkn0] ??= { configs: {} };
-      data[tkn1] ??= { configs: {} };
+      (data[tkn0] as any) ??= { configs: {} };
+      (data[tkn1] as any) ??= { configs: {} };
 
       if (params.configs) {
         data[tkn0].configs[tkn1] = raw.configs[i].config01;
@@ -910,6 +917,7 @@ class Mangrove {
     //read decimals & symbol for each token using Multicall
     const ierc20 = typechain.IERC20__factory.createInterface();
 
+    // will be invoked twice, once to fill data's 'decimals' and once to fill data's 'symbol'.
     const tryDecode = (ary: any[], fnName: "decimals" | "symbol") => {
       return ary.forEach((returnData, i) => {
         // will raise exception if call reverted

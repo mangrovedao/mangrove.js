@@ -435,7 +435,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
     KandelDistributionHelper.prototype.uniformlyChangeVolume.name,
     () => {
       let distribution: KandelDistribution;
-      let prices: number[];
+      let prices: (number | undefined)[];
       let sut: KandelDistributionHelper;
       beforeEach(() => {
         sut = new KandelDistributionHelper(4, 6);

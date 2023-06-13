@@ -40,7 +40,7 @@ export type Addresses = {
 let addresses: Addresses;
 
 let mgv: Mangrove;
-let mgvAdmin: Mangrove;
+let mgvAdmin: Mangrove | undefined;
 const signers: any = {};
 
 // With the removal of hardhat, there is no "default chain" anymore
@@ -52,7 +52,7 @@ const signers: any = {};
 export const setConfig = (
   _mgv: Mangrove,
   accounts: any,
-  _mgvAdmin?: Mangrove
+  _mgvAdmin: Mangrove
 ) => {
   mgv = _mgv;
   mgvAdmin = _mgvAdmin;
@@ -165,7 +165,14 @@ export const logBalances = async (
   balancesBefore: Map<string, Balances>,
   balancesAfter: Map<string, Balances>
 ): Promise<void> => {
-  const accountBalancesTable = []; // [(name?, address?, ether|token|..., before, after, change)]
+  const accountBalancesTable: {
+    Name: string;
+    Address: string;
+    Currency: string;
+    Before: string;
+    After: string;
+    Change: string;
+  }[] = []; // [(name?, address?, ether|token|..., before, after, change)]
   for (const account of accounts) {
     const before = balancesBefore.get(account.name);
     const after = balancesAfter.get(account.name);

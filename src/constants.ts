@@ -20,7 +20,7 @@ for (const [network, networkAddresses] of Object.entries(addresses)) {
   }
 }
 
-let mgvCoreAddresses = [];
+let mgvCoreAddresses: any[] = [];
 
 if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
   if (mgvCore.addresses.deployed) {

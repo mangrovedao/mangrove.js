@@ -1,3 +1,4 @@
+import { Writable } from "ts-essentials";
 import Market from "../market";
 
 export type prettyPrintFilter = Array<
@@ -13,16 +14,17 @@ export type prettyPrintFilter = Array<
   | "volume"
   | "price"
 >;
-
+// type Writable<T> = -readonly T;
 class PrettyPrint {
   /** Pretty prints the current state of the asks of the market */
   consoleOffers(
     offers: Iterable<Market.Offer>,
     filter?: prettyPrintFilter
   ): void {
-    let column = [];
-    column = filter ? filter : ["id", "maker", "volume", "price"];
-    this.prettyPrint(offers, column);
+    const column = filter
+      ? filter
+      : (["id", "maker", "volume", "price"] as const);
+    this.prettyPrint(offers, column as Writable<typeof column>);
   }
 
   /** Pretty prints the current state of the offers */

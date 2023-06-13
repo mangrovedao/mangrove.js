@@ -48,16 +48,15 @@ export const builder = (yargs) => {
 
 export async function handler(argv: Arguments): Promise<void> {
   const { spawnEndedPromise, deal } = await (
-    await node(
-      {
-        spawn: false,
-        deploy: false,
-        host: argv.host,
-        port: argv.port,
-        pipe: true,
-      },
-      false
-    )
+    await node({
+      spawn: false,
+      deploy: false,
+      host: argv.host,
+      port: argv.port,
+      pipe: true,
+      // FIXME make script optional
+      script: "",
+    })
   ).connect();
   return deal(argv);
 }

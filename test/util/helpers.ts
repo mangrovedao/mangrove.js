@@ -12,22 +12,22 @@ export type AsyncQueue<T> = {
 };
 
 export const asyncQueue = <T>(): AsyncQueue<T> => {
-  const promises = [],
-    elements = [];
+  const promises: ((T) => void)[] = [];
+  const elements: T[] = [];
   return {
     empty: () => {
       return elements.length == 0;
     },
     put: (elem) => {
       if (promises.length > 0) {
-        promises.shift()(elem);
+        promises.shift()!(elem);
       } else {
         elements.push(elem);
       }
     },
     get: () => {
       if (elements.length > 0) {
-        return Promise.resolve(elements.shift());
+        return Promise.resolve(elements.shift() as T);
       } else {
         return new Promise((ok) => promises.push(ok));
       }

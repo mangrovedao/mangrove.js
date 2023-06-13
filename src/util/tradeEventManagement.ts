@@ -28,6 +28,13 @@ type RawOfferData = {
   gives: BigNumber;
 };
 
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
+export type OrderResultWithOptionalSummary = Optional<
+  Market.OrderResult,
+  "summary"
+>;
+
 class TradeEventManagement {
   rawOfferToOffer(
     market: Market,
@@ -42,8 +49,10 @@ class TradeEventManagement {
     const { baseVolume } = Market.getBaseQuoteVolumes(ba, gives, wants);
     const price = Market.getPrice(ba, gives, wants);
 
+    const id = this.#rawIdToId(raw.id);
+    if (id === undefined) throw new Error("Offer ID is 0");
     return {
-      id: this.#rawIdToId(raw.id),
+      id,
       prev: this.#rawIdToId(raw.prev),
       gasprice: raw.gasprice.toNumber(),
       maker: raw.maker,
@@ -85,7 +94,7 @@ class TradeEventManagement {
       ),
       bounty: UnitCalculations.fromUnits(event.args.penalty, 18),
       feePaid:
-        "feePaid" in event.args
+        "feePaid" in event.args && event.args.feePaid !== undefined
           ? UnitCalculations.fromUnits(event.args.feePaid, 18)
           : Big(0),
     };
@@ -140,7 +149,7 @@ class TradeEventManagement {
   createOfferWriteFromEvent(
     market: Market,
     evt: OfferWriteEvent
-  ): { ba: Market.BA; offer: Market.OfferSlim } {
+  ): { ba: Market.BA; offer: Market.OfferSlim } | undefined {
     // ba can be both since we get offer writes both from updated orders and from posting a resting order, where the outbound is what taker gives
     let ba: Market.BA = "asks";
     let { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
@@ -166,7 +175,7 @@ class TradeEventManagement {
         },
       });
 
-      return null;
+      return undefined;
     }
 
     return { ba, offer: this.rawOfferToOffer(market, ba, evt.args) };
@@ -200,9 +209,9 @@ class TradeEventManagement {
     ba: Market.BA,
     evt: NewOwnedOfferEvent,
     taker: string,
-    currentRestingOrder: Market.OfferSlim,
+    currentRestingOrder: Market.OfferSlim | undefined,
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[]
-  ): Market.OfferSlim {
+  ) {
     if (evt.args.owner === taker) {
       ba = ba === "bids" ? "asks" : "bids";
       currentRestingOrder =
@@ -230,10 +239,10 @@ class TradeEventManagement {
       takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean,
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     market: Market
   ) {
-    if (evt.args.taker && receipt.from !== evt.args.taker) return;
+    if (evt.args?.taker && receipt.from !== evt.args.taker) return;
 
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
@@ -298,10 +307,10 @@ class TradeEventManagement {
       takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean,
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     market: Market
   ) {
-    if (evt.args.taker && receipt.from !== evt.args.taker) return;
+    if (evt.args?.taker && receipt.from !== evt.args.taker) return;
 
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
@@ -338,18 +347,18 @@ class TradeEventManagement {
   ) {
     const parseLogs =
       receipt.to === contract.address
-        ? (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+        ? (events: ethers.Event[] /*, _logs: ethers.providers.Log[]*/) =>
             events.filter((x) => x.address === contract.address)
-        : (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+        : (_events: ethers.Event[], logs: ethers.providers.Log[]) =>
             logs
               .filter((x) => x.address === contract.address)
               .map((l) => contract.interface.parseLog(l));
 
-    return parseLogs(receipt.events, receipt.logs);
+    return parseLogs(receipt.events ?? [], receipt.logs);
   }
 
   processMangroveEvents(
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
@@ -371,9 +380,9 @@ class TradeEventManagement {
       );
     }
   }
-
+  s;
   processMangroveOrderEvents(
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
@@ -394,6 +403,12 @@ class TradeEventManagement {
         market
       );
     }
+  }
+
+  isOrderResult(
+    result: OrderResultWithOptionalSummary
+  ): result is Market.OrderResult {
+    return result.summary !== undefined;
   }
 }
 

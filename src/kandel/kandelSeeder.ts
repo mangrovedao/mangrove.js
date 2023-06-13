@@ -221,7 +221,7 @@ class KandelSeeder {
     market: Market;
     offerType: Market.BA;
     factor?: number;
-    gasreq?: number;
+    gasreq: number;
   }) {
     const config = this.configuration.getConfig(params.market);
 

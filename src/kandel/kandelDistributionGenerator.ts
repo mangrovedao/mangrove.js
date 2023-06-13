@@ -206,7 +206,7 @@ class KandelDistributionGenerator {
     minimumBasePerOffer: Bigish;
     minimumQuotePerOffer: Bigish;
   }) {
-    const { prices } = this.priceCalculation.getPricesFromPrice(
+    const prices = this.priceCalculation.getPricesFromPrice(
       params.index,
       Big(params.price),
       Big(params.ratio),
