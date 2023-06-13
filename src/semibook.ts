@@ -56,7 +56,7 @@ namespace Semibook {
    * Options that specify what the cache fetches and retains.
    *
    * `maxOffers`, `desiredPrice`, and `desiredVolume` are mutually exclusive.
-   * If none of these are specfied, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
+   * If none of these are specified, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
    */
   export type CacheContentsOptions =
     | {
@@ -133,7 +133,7 @@ namespace Semibook {
      * `undefined` is returned.
      *
      * @param predicate Function is a predicate, to test each element of the array.
-     *  The firs offer that satisifies the predicate is returned;
+     *  The firs offer that satisfies the predicate is returned;
      *  otherwise `undefined` is returned.
      */
     find(predicate: (offer: Market.Offer) => boolean): Market.Offer | undefined;
