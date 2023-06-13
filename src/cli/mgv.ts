@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import * as yargs from "yargs";
-import * as parrotCmd from "./commands/parrotCmd";
 import * as printCmd from "./commands/printCmd";
 import * as retractCmd from "./commands/retractCmd";
 import * as nodeCmd from "./commands/nodeCmd";
@@ -13,7 +12,6 @@ const ENV_VAR_PREFIX = "MGV";
 
 // const check = (cmd: StrictCM) => cmd;
 yargs
-  .command(parrotCmd)
   .command(printCmd)
   .command(retractCmd)
   .command(dealCmd) // note: node subcommand env vars are prefixed with MGV_NODE instead of MGV_
