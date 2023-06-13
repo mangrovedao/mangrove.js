@@ -11,8 +11,12 @@ describe("KandelStatus unit tests suite", () => {
     return offerType == "asks" ? (index + 1) * 100 : (index + 1) * 1000;
   }
   function assertEqual(
-    actual: { live: boolean; offerId: number; price: Big },
-    expected: { live: boolean; offerId: number; price: Big } | undefined,
+    actual:
+      | { live: boolean; offerId: number; price: Big | undefined }
+      | undefined,
+    expected:
+      | { live: boolean; offerId: number; price: Big | undefined }
+      | undefined,
     i: number
   ) {
     assert.equal(
@@ -22,18 +26,18 @@ describe("KandelStatus unit tests suite", () => {
     );
     if (expected) {
       assert.equal(
-        actual.live,
+        actual?.live,
         expected.live,
         `unexpected liveness at Index ${i}`
       );
       assert.equal(
-        actual.offerId,
+        actual?.offerId,
         expected.offerId,
         `unexpected offerId at Index ${i}`
       );
       assert.equal(
-        actual.price.toString(),
-        expected.price.toString(),
+        actual?.price?.toString(),
+        expected.price?.toString(),
         `unexpected price at Index ${i}`
       );
     }
@@ -47,12 +51,12 @@ describe("KandelStatus unit tests suite", () => {
       asks?: {
         live: boolean;
         offerId: number;
-        price: Big;
+        price: Big | undefined;
       };
       bids?: {
         live: boolean;
         offerId: number;
-        price: Big;
+        price: Big | undefined;
       };
     }[];
     expectedMinPrice: Big;
@@ -176,7 +180,7 @@ describe("KandelStatus unit tests suite", () => {
         pricePoints,
         1,
         prices.map((p, i) => {
-          const offerType = p.gte(midPrice) ? "asks" : "bids";
+          const offerType = p?.gte(midPrice) ? "asks" : "bids";
           return {
             offerType,
             index: i,
@@ -199,14 +203,14 @@ describe("KandelStatus unit tests suite", () => {
         expectedMinPrice: Big(1000),
         expectedMaxPrice: Big(32000),
         expectedStatuses: prices.map((p, i) => {
-          const bids = p.gte(midPrice)
+          const bids = p?.gte(midPrice)
             ? undefined
             : {
                 live: p != undefined,
                 offerId: getOfferId("bids", i),
                 price: p,
               };
-          const asks = p.lte(midPrice)
+          const asks = p?.lte(midPrice)
             ? undefined
             : {
                 live: p != undefined,
@@ -384,23 +388,23 @@ describe("KandelStatus unit tests suite", () => {
           // Assert
           for (let i = 0; i < pricePoints; i++) {
             if (unexpectedDeadBid.includes(i)) {
-              assert.equal(statuses.statuses[i].bids.live, false);
+              assert.equal(statuses.statuses[i].bids?.live, false);
               assert.equal(statuses.statuses[i].asks, undefined);
               assert.equal(statuses.statuses[i].expectedLiveBid, true);
               assert.equal(statuses.statuses[i].expectedLiveAsk, false);
             } else if (unexpectedDeadAsk.includes(i)) {
               assert.equal(statuses.statuses[i].bids, undefined);
-              assert.equal(statuses.statuses[i].asks.live, false);
+              assert.equal(statuses.statuses[i].asks?.live, false);
               assert.equal(statuses.statuses[i].expectedLiveBid, false);
               assert.equal(statuses.statuses[i].expectedLiveAsk, true);
             } else {
               if (statuses.statuses[i].expectedLiveBid) {
                 // since it is not unexpected, then it should be live
-                assert.equal(statuses.statuses[i].bids.live, true);
+                assert.equal(statuses.statuses[i].bids?.live, true);
               }
               if (statuses.statuses[i].expectedLiveAsk) {
                 // since it is not unexpected, then it should be live
-                assert.equal(statuses.statuses[i].asks.live, true);
+                assert.equal(statuses.statuses[i].asks?.live, true);
               }
             }
           }

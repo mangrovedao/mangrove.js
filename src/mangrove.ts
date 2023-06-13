@@ -471,7 +471,7 @@ class Mangrove {
    *
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
-  getNameFromAddress(address: string): string {
+  getNameFromAddress(address: string) {
     const networkAddresses = Mangrove.addresses[this.network.name];
 
     if (networkAddresses) {

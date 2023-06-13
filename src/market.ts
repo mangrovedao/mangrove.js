@@ -132,7 +132,7 @@ namespace Market {
    * Options that specify what the cache fetches and retains.
    *
    * `maxOffers`, `desiredPrice`, and `desiredVolume` are mutually exclusive.
-   * If none of these are specfied, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
+   * If none of these are specified, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
    */
   export type CacheContentsOptions =
     | {

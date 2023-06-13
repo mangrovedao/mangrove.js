@@ -309,7 +309,7 @@ describe("KandelDistribution unit tests suite", () => {
       let price = firstQuote.div(firstBase);
       sut.offers.forEach((e, i) => {
         assert.equal(
-          prices[i].toNumber(),
+          prices[i]?.toNumber(),
           price.toNumber(),
           `Price is not as expected at ${i}`
         );
