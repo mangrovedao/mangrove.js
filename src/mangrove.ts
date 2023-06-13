@@ -485,7 +485,7 @@ class Mangrove {
         }
       }
     }
-    throw new Error(`Name for ${address} not found`);
+    return null;
   }
 
   /** Gets the token corresponding to the address if it is known; otherwise, null.
