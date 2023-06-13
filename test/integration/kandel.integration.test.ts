@@ -458,7 +458,7 @@ describe("Kandel integration tests suite", function () {
         await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
         const pivots = await kandel.getPivots(distribution);
-        assert.deepStrictEqual(pivots, [1, 2, undefined, undefined, 1, 2]);
+        assert.deepStrictEqual(pivots, [1, 2, 0, 0, 1, 2]);
       });
 
       [true, false].forEach((inChunks) => {
