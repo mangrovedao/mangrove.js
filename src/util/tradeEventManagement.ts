@@ -28,6 +28,13 @@ type RawOfferData = {
   gives: BigNumber;
 };
 
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
+export type OrderResultWithOptionalSummary = Optional<
+  Market.OrderResult,
+  "summary"
+>;
+
 class TradeEventManagement {
   rawOfferToOffer(
     market: Market,
@@ -232,7 +239,7 @@ class TradeEventManagement {
       takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean,
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     market: Market
   ) {
     if (evt.args?.taker && receipt.from !== evt.args.taker) return;
@@ -300,7 +307,7 @@ class TradeEventManagement {
       takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean,
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     market: Market
   ) {
     if (evt.args?.taker && receipt.from !== evt.args.taker) return;
@@ -351,7 +358,7 @@ class TradeEventManagement {
   }
 
   processMangroveEvents(
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
@@ -373,9 +380,9 @@ class TradeEventManagement {
       );
     }
   }
-
+  s;
   processMangroveOrderEvents(
-    result: Market.OrderResult,
+    result: OrderResultWithOptionalSummary,
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
@@ -396,6 +403,12 @@ class TradeEventManagement {
         market
       );
     }
+  }
+
+  isOrderResult(
+    result: OrderResultWithOptionalSummary
+  ): result is Market.OrderResult {
+    return result.summary !== undefined;
   }
 }
 

@@ -52,7 +52,7 @@ namespace Market {
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
-    summary: Summary | undefined;
+    summary: Summary;
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];

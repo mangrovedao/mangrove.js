@@ -388,7 +388,7 @@ class Trade {
       contextInfo: "market.marketOrder",
       data: { receipt: receipt },
     });
-    const result: Market.OrderResult = this.initialResult(receipt);
+    const result = this.initialResult(receipt);
     this.tradeEventManagement.processMangroveEvents(
       result,
       receipt,
@@ -398,7 +398,7 @@ class Trade {
       gives,
       market
     );
-    if (!result.summary) {
+    if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("market order went wrong");
     }
     return result;
@@ -497,7 +497,7 @@ class Trade {
       data: { receipt: receipt },
     });
 
-    const result: Market.OrderResult = this.initialResult(receipt);
+    const result = this.initialResult(receipt);
 
     this.tradeEventManagement.processMangroveEvents(
       result,
@@ -518,10 +518,9 @@ class Trade {
       market
     );
 
-    if (!result.summary) {
+    if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("mangrove order went wrong");
     }
-    // if resting order was not posted, result.summary is still undefined.
     return result;
   }
 
@@ -539,7 +538,7 @@ class Trade {
     }
   }
 
-  initialResult(receipt: ethers.ContractReceipt): Market.OrderResult {
+  initialResult(receipt: ethers.ContractReceipt) {
     return {
       txReceipt: receipt,
       summary: undefined,
@@ -644,7 +643,7 @@ class Trade {
   ) {
     const receipt = await (await response).wait();
 
-    const result: Market.OrderResult = this.initialResult(receipt);
+    const result = this.initialResult(receipt);
 
     logger.debug("Snipes raw receipt", {
       contextInfo: "market.snipes",
@@ -661,7 +660,7 @@ class Trade {
       ethers.BigNumber.from(0),
       market
     );
-    if (!result.summary) {
+    if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("snipes went wrong");
     }
     return result;

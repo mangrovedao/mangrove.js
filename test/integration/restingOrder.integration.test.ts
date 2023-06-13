@@ -288,7 +288,7 @@ describe("RestingOrder", () => {
           : false
       );
       assert(
-        orderResult.restingOrder ? orderResult.restingOrder.price.eq(1) : false
+        orderResult.restingOrder ? orderResult.restingOrder.price?.eq(1) : false
       );
       assert(
         orderResult.restingOrder ? orderResult.restingOrder.wants.eq(10) : false
