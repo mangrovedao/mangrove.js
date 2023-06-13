@@ -234,7 +234,7 @@ class Mangrove {
       eventEmitter,
       reliableWebSocketOptions: options.providerWsUrl
         ? {
-            options: options.reliableWebsocketProviderOptions,
+            options: options.reliableWebsocketProviderOptions!,
             wsUrl: options.providerWsUrl,
           }
         : undefined,
