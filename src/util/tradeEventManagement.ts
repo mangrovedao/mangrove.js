@@ -202,9 +202,9 @@ class TradeEventManagement {
     ba: Market.BA,
     evt: NewOwnedOfferEvent,
     taker: string,
-    currentRestingOrder: Market.OfferSlim,
+    currentRestingOrder: Market.OfferSlim | undefined,
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[]
-  ): Market.OfferSlim {
+  ) {
     if (evt.args.owner === taker) {
       ba = ba === "bids" ? "asks" : "bids";
       currentRestingOrder =
@@ -340,9 +340,9 @@ class TradeEventManagement {
   ) {
     const parseLogs =
       receipt.to === contract.address
-        ? (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+        ? (events: ethers.Event[] /*, _logs: ethers.providers.Log[]*/) =>
             events.filter((x) => x.address === contract.address)
-        : (events: ethers.Event[], logs: ethers.providers.Log[]) =>
+        : (_events: ethers.Event[], logs: ethers.providers.Log[]) =>
             logs
               .filter((x) => x.address === contract.address)
               .map((l) => contract.interface.parseLog(l));

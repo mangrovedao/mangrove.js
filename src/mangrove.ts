@@ -113,8 +113,8 @@ class Mangrove {
   cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
-  reliableProvider?: ReliableProvider;
-  mangroveEventSubscriber?: MangroveEventSubscriber;
+  reliableProvider: ReliableProvider;
+  mangroveEventSubscriber: MangroveEventSubscriber;
 
   public eventEmitter: EventEmitter;
 
@@ -276,7 +276,7 @@ class Mangrove {
     reliableHttpProvider: ReliableHttpProvider.Options;
     eventEmitter: EventEmitter;
     reliableWebSocketOptions?: {
-      options: ReliableWebsocketProvider.Options;
+      options: ReliableWebsocketProvider.Options | undefined;
       wsUrl: string;
     };
   }) {
@@ -286,8 +286,11 @@ class Mangrove {
       );
     }
     this.eventEmitter = params.eventEmitter;
-    // must always pass a provider-equipped signer
-    this.provider = params.signer.provider;
+    const provider = params.signer.provider;
+    if (!provider) {
+      throw Error("Signer must be provider-equipped");
+    }
+    this.provider = provider;
     this.signer = params.signer;
     this.network = params.network;
     this._readOnly = params.readOnly;

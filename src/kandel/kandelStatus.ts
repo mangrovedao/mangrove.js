@@ -13,7 +13,7 @@ import { Bigish } from "../types";
  */
 export type OffersWithPrices = {
   offerType: Market.BA;
-  price: Bigish;
+  price: Bigish | undefined;
   index: number;
   offerId: number;
   live: boolean;
@@ -41,14 +41,14 @@ export type OfferStatus = {
     | {
         live: boolean;
         offerId: number;
-        price: Big;
+        price: Big | undefined;
       };
   bids:
     | undefined
     | {
         live: boolean;
         offerId: number;
-        price: Big;
+        price: Big | undefined;
       };
 };
 
@@ -130,7 +130,9 @@ class KandelStatus {
     spread: number,
     offers: OffersWithPrices
   ): Statuses {
-    const liveOffers = offers.filter((x) => x.live && x.index < pricePoints);
+    const liveOffers = offers
+      .filter((x) => x.live && x.index < pricePoints && x.price)
+      .map((x) => ({ ...x, price: Big(x.price as Bigish) }));
     if (!liveOffers.length) {
       throw Error(
         "Unable to determine distribution: no offers in range are live"
@@ -142,7 +144,7 @@ class KandelStatus {
       liveOffers[
         this.getIndexOfPriceClosestToMid(
           midPrice,
-          liveOffers.map((x) => Big(x.price))
+          liveOffers.map((x) => x.price)
         )
       ];
 
@@ -150,7 +152,7 @@ class KandelStatus {
     // due to rounding and due to slight drift of prices during order execution.
     const expectedPrices = this.priceCalculation.getPricesFromPrice(
       offer.index,
-      Big(offer.price),
+      offer.price,
       ratio,
       pricePoints
     );
@@ -165,10 +167,10 @@ class KandelStatus {
         expectedPrice: p,
         asks: undefined as
           | undefined
-          | { live: boolean; offerId: number; price: Big },
+          | { live: boolean; offerId: number; price: Big | undefined },
         bids: undefined as
           | undefined
-          | { live: boolean; offerId: number; price: Big },
+          | { live: boolean; offerId: number; price: Big | undefined },
       };
     });
 
@@ -176,7 +178,11 @@ class KandelStatus {
     offers
       .filter((x) => x.index < pricePoints)
       .forEach(({ offerType, index, live, offerId, price }) => {
-        statuses[index][offerType] = { live, offerId, price: Big(price) };
+        statuses[index][offerType] = {
+          live,
+          offerId,
+          price: price ? Big(price) : undefined,
+        };
       });
 
     // Offers are allowed to be dead if their dual offer is live
