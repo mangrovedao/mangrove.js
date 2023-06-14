@@ -1270,7 +1270,7 @@ describe("Market integration tests suite", () => {
         { gasLimit: 600000 }
       );
       await snipePromises.result;
-    } catch (e) {
+    } catch (e: any) {
       didThrow = true;
       const callResult = await mgv.provider.call(e.transaction);
       expect(() =>

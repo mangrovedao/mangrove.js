@@ -31,9 +31,9 @@ namespace Semibook {
     ethersLog: ethers.providers.Log;
   };
 
-  export type EventListener = (e: Event) => void;
+  export type EventListener = (e: Event) => Promise<void>;
   // block listeners are called after all events have been called
-  export type BlockListener = (n: number) => void;
+  export type BlockListener = (n: number) => Promise<void>;
 
   /**
    * Specification of how much volume to (potentially) trade on the semibook.
@@ -177,7 +177,7 @@ class Semibook
   readonly options: Semibook.ResolvedOptions; // complete and validated
 
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
-  #offer_gasbase: number;
+  #offer_gasbase = 0; // initialized in stateInitialize
 
   #eventListeners: Map<Semibook.EventListener, boolean> = new Map();
 
@@ -806,17 +806,18 @@ class Semibook
           }
         }
 
-        Array.from(this.#eventListeners.keys()).forEach((listener) =>
-          listener({
-            cbArg: {
-              type: event.name,
-              offer: expectOfferInsertionInCache ? offer : undefined,
-              offerId: id,
-              ba: this.ba,
-            },
-            event,
-            ethersLog: log,
-          })
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                offer: expectOfferInsertionInCache ? offer : undefined,
+                offerId: id,
+                ba: this.ba,
+              },
+              event,
+              ethersLog: log,
+            })
         );
         break;
       }
@@ -826,21 +827,22 @@ class Semibook
         if (id === undefined)
           throw new Error("Received OfferFail event with id = 0");
         removedOffer = this.#removeOffer(state, id);
-        Array.from(this.#eventListeners.keys()).forEach((listener) =>
-          listener({
-            cbArg: {
-              type: event.name,
-              ba: this.ba,
-              taker: event.args.taker,
-              offer: removedOffer,
-              offerId: id,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-              mgvData: ethers.utils.parseBytes32String(event.args.mgvData),
-            },
-            event,
-            ethersLog: log,
-          })
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                taker: event.args.taker,
+                offer: removedOffer,
+                offerId: id,
+                takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+                takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+                mgvData: ethers.utils.parseBytes32String(event.args.mgvData),
+              },
+              event,
+              ethersLog: log,
+            })
         );
         break;
       }
@@ -850,20 +852,21 @@ class Semibook
         if (id === undefined)
           throw new Error("Received OfferSuccess event with id = 0");
         removedOffer = this.#removeOffer(state, id);
-        Array.from(this.#eventListeners.keys()).forEach((listener) =>
-          listener({
-            cbArg: {
-              type: event.name,
-              ba: this.ba,
-              taker: event.args.taker,
-              offer: removedOffer,
-              offerId: id,
-              takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-              takerGives: inbound_tkn.fromUnits(event.args.takerGives),
-            },
-            event,
-            ethersLog: log,
-          })
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                taker: event.args.taker,
+                offer: removedOffer,
+                offerId: id,
+                takerWants: outbound_tkn.fromUnits(event.args.takerWants),
+                takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+              },
+              event,
+              ethersLog: log,
+            })
         );
         break;
       }
@@ -873,32 +876,34 @@ class Semibook
         if (id === undefined)
           throw new Error("Received OfferRetract event with id = 0");
         removedOffer = this.#removeOffer(state, id);
-        Array.from(this.#eventListeners.keys()).forEach((listener) =>
-          listener({
-            cbArg: {
-              type: event.name,
-              ba: this.ba,
-              offerId: id,
-              offer: removedOffer,
-            },
-            event,
-            ethersLog: log,
-          })
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                offerId: id,
+                offer: removedOffer,
+              },
+              event,
+              ethersLog: log,
+            })
         );
         break;
       }
 
       case "SetGasbase":
         this.#offer_gasbase = event.args.offer_gasbase.toNumber();
-        Array.from(this.#eventListeners.keys()).forEach((listener) =>
-          listener({
-            cbArg: {
-              type: event.name,
-              ba: this.ba,
-            },
-            event,
-            ethersLog: log,
-          })
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+              },
+              event,
+              ethersLog: log,
+            })
         );
         break;
       default:

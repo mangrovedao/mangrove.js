@@ -16,11 +16,10 @@ export const builder = (yargs: yargs.Argv) => {
     .option("nodeUrl", { type: "string", demandOption: true });
 };
 
-type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
-type Arguments2 = ReturnType<typeof builder>["argv"];
+type Arguments = ReturnType<typeof builder>["argv"];
 
 export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
-  const argv = await (argvOrPromiseArgv as unknown as Arguments2);
+  const argv = await argvOrPromiseArgv;
   const mangrove = await Mangrove.connect(argv.nodeUrl);
   const market = await mangrove.market({
     base: argv.base,

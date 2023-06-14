@@ -223,7 +223,7 @@ const deploy = async (params: deployParams) => {
   // test connectivity
   try {
     await params.provider.send("eth_chainId", []);
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(
       "Could not get chain id, is the anvil node running?\nOriginal error: \n" +
         err.toString()
@@ -249,20 +249,6 @@ const deploy = async (params: deployParams) => {
     });
   }
 };
-
-/* 
-  Connect to a node. Optionally spawns it before connecting. Optionally runs
-  initial deployment before connecting.
- */
-type preConnectParams = {
-  spawn: boolean;
-  deploy: boolean;
-  url: string;
-  provider: JsonRpcProvider;
-};
-type connectParams = preConnectParams &
-  ({ spawn: false } | spawnParams) &
-  deployParams;
 
 const connect = async (params: computeArgvType | serverParamsType) => {
   let spawnInfo: {

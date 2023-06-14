@@ -16,7 +16,7 @@ const serverParams = {
   setMulticallCodeIfAbsent: false, // mangrove.js is supposed to work against servers that only have ToyENS deployed but not Multicall, so we don't deploy Multicall in tests. However mangrove.js needs ToyENS so we let the node ensure it's there.
 };
 
-type proxie = {
+type proxy = {
   cancelAll: boolean;
   proxyServer: ProxyServer;
 };
@@ -27,16 +27,16 @@ type account = {
 };
 
 export type hookInfo = {
-  proxies: proxie[];
-  accounts: {
+  proxies?: proxy[];
+  accounts?: {
     deployer: account;
     maker: account;
     cleaner: account;
     tester: account;
     arbitrager: account;
   };
-  server: ProxyServer;
-  closeCurrentProxy: () => Promise<void>;
+  server?: ProxyServer;
+  closeCurrentProxy?: () => Promise<void>;
 };
 
 let currentProxyPort = 8546;
@@ -146,7 +146,7 @@ export const mochaHooks = {
         // Tear down existing proxy - waiting for all outstanding connections to close.
         // Note: anvil could still be processing something when this completes in case its async,
         // Consider probing anvil for completion.
-        const currentProxy = hook.proxies[currentProxyPort];
+        const currentProxy = hook.proxies?.[currentProxyPort];
         if (currentProxy) {
           currentProxy.cancelAll = true;
           const closedDeferred = new Deferred();
@@ -230,14 +230,14 @@ export const mochaHooks = {
   },
 
   async beforeAll() {
-    await mochaHooks.beforeAllImpl(serverParams, this);
+    await mochaHooks.beforeAllImpl(serverParams, this as hookInfo);
   },
 
   async beforeEach() {
-    await mochaHooks.beforeEachImpl(this);
+    await mochaHooks.beforeEachImpl(this as hookInfo);
   },
 
   async afterAll() {
-    await mochaHooks.afterAllImpl(this);
+    await mochaHooks.afterAllImpl(this as hookInfo);
   },
 };

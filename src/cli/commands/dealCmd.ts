@@ -9,8 +9,7 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8545;
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 
-type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
-type Arguments2 = ReturnType<typeof builder>["argv"];
+type Arguments = ReturnType<typeof builder>["argv"];
 
 export const builder = (yargs: yargs.Argv) => {
   return yargs
@@ -46,7 +45,7 @@ export const builder = (yargs: yargs.Argv) => {
 };
 
 export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
-  const argv = await (argvOrPromiseArgv as unknown as Arguments2);
+  const argv = await argvOrPromiseArgv;
   const { spawnEndedPromise, deal } = await (
     await node({
       spawn: false,
