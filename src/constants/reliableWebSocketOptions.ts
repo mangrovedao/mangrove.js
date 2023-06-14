@@ -14,4 +14,11 @@ export const reliableWebSocketOptionsByNetworkName = {
     pingTimeoutMs: 1000,
     estimatedBlockTimeMs: 2000,
   },
-};
+} as Record<
+  string,
+  {
+    pingIntervalMs: number;
+    pingTimeoutMs: number;
+    estimatedBlockTimeMs: number;
+  }
+>;

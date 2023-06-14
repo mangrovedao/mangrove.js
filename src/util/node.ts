@@ -22,10 +22,12 @@ const DUMPFILE = "mangroveJsNodeState.dump";
 
 const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
+import type { MarkRequired } from "ts-essentials";
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { runScript } from "./forgeScript";
 import { spawn, spawnParams } from "./spawn";
+import { ChildProcessWithoutNullStreams } from "child_process";
 
 // default first three default anvil accounts,
 // TODO once --unlocked is added to forge script: use anvil's eth_accounts return value & remove Mnemonic class
@@ -36,28 +38,42 @@ const anvilAccounts = [0, 1, 2, 3, 4, 5].map((i) => ({
 }));
 
 /* Run a deployment, populate Mangrove addresses */
-type deployParams = {
+type inputDeployParams = {
   provider?: any;
   stateCache?: boolean;
   targetContract?: string;
-  script?: string;
+  script: string;
   url?: string;
   pipe?: boolean;
   setMulticallCodeIfAbsent?: boolean;
   setToyENSCodeIfAbsent?: boolean;
 };
 
-export type serverParamsType = {
+export type inputServerParamsTypeOnly = {
   host?: string;
   port?: number; // use 8546 for the actual node, but let all connections go through proxies to be able to cut the connection before snapshot revert.
   spawn?: boolean;
   deploy?: boolean;
   forkUrl?: string;
   forkBlockNumber?: number;
-} & deployParams;
+};
 
-export type computeArgvType = {
-  [x: string]: unknown;
+export type inputServerParamsType = inputServerParamsTypeOnly &
+  inputDeployParams;
+
+type deployParams = MarkRequired<
+  inputDeployParams,
+  "provider" | "url" | "stateCache" | "pipe"
+>;
+
+type serverParamsTypeOnly = MarkRequired<
+  inputServerParamsTypeOnly,
+  "host" | "port"
+>;
+
+export type serverParamsType = serverParamsTypeOnly & deployParams;
+
+export type partialComputeArgvType = {
   host: string;
   url?: string;
   port: string | number;
@@ -66,12 +82,12 @@ export type computeArgvType = {
   stateCache: boolean;
   deploy: boolean;
   script: string;
-  "fork-url": string;
-  forkUrl: string;
-  "fork-block-number": number;
-  forkBlockNumber: number;
-  "chain-id": number;
-  chainId: number;
+  "fork-url"?: string;
+  forkUrl?: string;
+  "fork-block-number"?: number;
+  forkBlockNumber?: number;
+  "chain-id"?: number;
+  chainId?: number;
   pipe: boolean;
   "set-multicall-code-if-absent": boolean;
   setMulticallCodeIfAbsent: boolean;
@@ -82,6 +98,11 @@ export type computeArgvType = {
   provider?: JsonRpcProvider;
 };
 
+export type computeArgvType = MarkRequired<
+  partialComputeArgvType,
+  "url" | "provider"
+>;
+
 export type nodeType = {
   connect(): Promise<{
     url: string;
@@ -90,7 +111,7 @@ export type nodeType = {
       key: string;
     }[];
     params: computeArgvType | serverParamsType;
-    deploy: () => Promise<void>;
+    deploy?: () => Promise<void>;
     snapshot: () => Promise<string>;
     revert: (snapshotId?: string) => Promise<void>;
     deal: (dealParams: {
@@ -99,10 +120,11 @@ export type nodeType = {
       amount?: number;
       internalAmount?: ethers.BigNumber;
     }) => Promise<void>;
-    process: any;
-    spawnEndedPromise: any;
+    process?: ChildProcessWithoutNullStreams;
+    spawnEndedPromise?: Promise<void>;
   }>;
-  watchAllToyENSEntries(): Promise<DevNode.fetchedContract[]>;
+  // FIXME remove optionality here
+  watchAllToyENSEntries?: () => Promise<DevNode.fetchedContract[]>;
 };
 
 const stateCacheFile = path.resolve(`./${DUMPFILE}`);
@@ -172,9 +194,9 @@ export const builder = (yargs: yargs.Argv<{}>) => {
 };
 
 const computeArgv = async (
-  params: serverParamsType,
+  params: inputServerParamsType,
   ignoreCmdLineArgs = false
-): Promise<computeArgvType> => {
+): Promise<partialComputeArgvType> => {
   // ignore command line if not main module, but still read from env vars
   // note: this changes yargs' default precedence, which is (high to low):
   // cmdline args -> env vars -> config(obj) -> defaults
@@ -201,7 +223,7 @@ const deploy = async (params: deployParams) => {
   // test connectivity
   try {
     await params.provider.send("eth_chainId", []);
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(
       "Could not get chain id, is the anvil node running?\nOriginal error: \n" +
         err.toString()
@@ -228,22 +250,11 @@ const deploy = async (params: deployParams) => {
   }
 };
 
-/* 
-  Connect to a node. Optionally spawns it before connecting. Optionally runs
-  initial deployment before connecting.
- */
-type preConnectParams = {
-  spawn: boolean;
-  deploy: boolean;
-  url: string;
-  provider: JsonRpcProvider;
-};
-type connectParams = preConnectParams &
-  ({ spawn: false } | spawnParams) &
-  deployParams;
-
 const connect = async (params: computeArgvType | serverParamsType) => {
-  let spawnInfo = { process: null, spawnEndedPromise: null };
+  let spawnInfo: {
+    process?: ChildProcessWithoutNullStreams;
+    spawnEndedPromise?: Promise<void>;
+  } = { process: undefined, spawnEndedPromise: undefined };
   if (params.spawn) {
     spawnInfo = await spawn(params, LOCAL_MNEMONIC);
   }
@@ -301,14 +312,17 @@ const connect = async (params: computeArgvType | serverParamsType) => {
 };
 
 /* Generate initial parameters with yargs, add data, then return node actions. */
-export const node = async (
-  argv: serverParamsType,
-  useYargs: boolean = true
-): Promise<nodeType> => {
-  const params = useYargs ? await computeArgv(argv) : argv;
+export const node = async (argv: inputServerParamsType): Promise<nodeType> => {
+  const computedArgv = await computeArgv(argv);
+  return nodeWithComputedArgv(computedArgv);
+};
 
+/* Return node actions from generated yargs parameters */
+export const nodeWithComputedArgv = async (
+  params: partialComputeArgvType
+): Promise<nodeType> => {
   // if node is initialized with a URL, host/port
-  if (typeof params.url === "undefined") {
+  if (params.url === undefined) {
     params.url = `http://${params.host}:${params.port}`;
   } else if (params.spawn) {
     throw new Error(
@@ -322,11 +336,12 @@ export const node = async (
 
   return {
     connect() {
-      return connect(params);
+      return connect(params as computeArgvType);
     },
-    watchAllToyENSEntries() {
-      return devNode.watchAllToyENSEntries(params.provider);
-    },
+    // FIXME restore this utility fn
+    // watchAllToyENSEntries() {
+    //   return devNode.watchAllToyENSEntries(params.provider);
+    // },
   };
 };
 
@@ -338,6 +353,7 @@ if (require.main === module) {
     const { spawnEndedPromise } = await (
       await node({
         pipe: true,
+        script: "",
       })
     ).connect();
     if (spawnEndedPromise) {

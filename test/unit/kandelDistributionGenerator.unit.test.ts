@@ -282,7 +282,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
       const priceParams = { minPrice, ratio, pricePoints };
       const midPrice = Big(7000);
       it("throws if both constant", () => {
-        // Act/sddrty
+        // Act/Assert
         assert.throws(
           () =>
             sut.calculateMinimumDistribution({
@@ -381,10 +381,10 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         // Assert
         const oldPrices = distribution
           .getPricesForDistribution()
-          .map((x) => x.toNumber());
+          .map((x) => x?.toNumber());
         const newPrices = result.distribution
           .getPricesForDistribution()
-          .map((x) => x.toNumber());
+          .map((x) => x?.toNumber());
         assert.deepStrictEqual(newPrices, oldPrices);
         assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
         assert.ok(

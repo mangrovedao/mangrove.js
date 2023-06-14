@@ -235,7 +235,9 @@ class KandelInstance {
           "ratio in parameter overrides does not match the ratio of the distribution."
         );
       }
-      current.ratio = Big(parameters.ratio ?? distributionRatio);
+      current.ratio = Big(
+        parameters.ratio ?? distributionRatio ?? current.ratio
+      );
     }
     if (parameters.gasprice) {
       current.gasprice = parameters.gasprice;
@@ -257,7 +259,10 @@ class KandelInstance {
         );
       }
 
-      current.pricePoints = parameters.pricePoints ?? distributionPricePoints;
+      current.pricePoints =
+        parameters.pricePoints ??
+        distributionPricePoints ??
+        current.pricePoints;
     }
     return current;
   }
@@ -317,10 +322,13 @@ class KandelInstance {
     const pivots: number[] = Array(distribution.getOfferCount());
     for (let i = 0; i < pivots.length; i++) {
       const offer = distribution.offers[i];
-      pivots[i] = await this.market.getPivotId(
-        offer.offerType,
-        prices[offer.index]
-      );
+      // Use 0 as pivot when none is found
+      const price = prices[offer.index];
+      if (price == undefined) {
+        pivots[i] = 0;
+      } else {
+        pivots[i] = (await this.market.getPivotId(offer.offerType, price)) ?? 0;
+      }
     }
     return pivots;
   }
@@ -629,10 +637,7 @@ class KandelInstance {
   }) {
     params.distribution.verifyDistribution();
 
-    // Use 0 as pivot when none is found
-    const pivots = (await this.getPivots(params.distribution)).map(
-      (x) => x ?? 0
-    );
+    const pivots = await this.getPivots(params.distribution);
 
     const distributions = params.distribution.chunkDistribution(
       pivots,
@@ -651,6 +656,17 @@ class KandelInstance {
     };
   }
 
+  async getGasreqAndGasprice(gasreq?: number, gasprice?: number) {
+    if (!gasreq || !gasprice) {
+      const parameters = await this.getParameters();
+      return {
+        gasreq: gasreq ?? parameters.gasreq,
+        gasprice: gasprice ?? parameters.gasprice,
+      };
+    }
+    return { gasreq, gasprice };
+  }
+
   /** Determines the required provision for the offers in the distribution or the supplied offer count.
    * @param params The parameters used to calculate the provision.
    * @param params.distribution The distribution to calculate the provision for. Optional if offerCount is provided.
@@ -666,16 +682,15 @@ class KandelInstance {
     gasreq?: number;
     gasprice?: number;
   }) {
+    const { gasreq, gasprice } = await this.getGasreqAndGasprice(
+      params.gasreq,
+      params.gasprice
+    );
     const provisionParams = {
-      gasreq: params.gasreq,
-      gasprice: params.gasprice,
+      gasreq,
+      gasprice,
       market: this.market,
     };
-    if (!provisionParams.gasreq || !provisionParams.gasprice) {
-      const parameters = await this.getParameters();
-      provisionParams.gasreq ??= parameters.gasreq;
-      provisionParams.gasprice ??= parameters.gasprice;
-    }
 
     return (
       (await params.distribution?.getRequiredProvision(provisionParams)) ??

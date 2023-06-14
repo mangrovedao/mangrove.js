@@ -1,8 +1,8 @@
 import { JsonRpcProvider } from "@ethersproject/providers/lib";
 import * as eth from "../eth";
 
-const fs = require("fs");
-const childProcess = require("child_process");
+import fs from "fs";
+import childProcess from "child_process";
 
 export function execForgeCmd(
   command: string,

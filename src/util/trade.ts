@@ -44,7 +44,7 @@ class Trade {
     } else {
       wants = Big(params.wants);
       gives = Big(params.gives);
-      fillWants = "fillWants" in params ? params.fillWants : true;
+      fillWants = params.fillWants ?? true;
     }
 
     const slippage = this.validateSlippage(params.slippage);
@@ -78,7 +78,7 @@ class Trade {
     } else {
       wants = Big(params.wants);
       gives = Big(params.gives);
-      fillWants = "fillWants" in params ? params.fillWants : false;
+      fillWants = params.fillWants ?? false;
     }
 
     const slippage = this.validateSlippage(params.slippage);
@@ -105,18 +105,46 @@ class Trade {
 
   comparePrices(
     price: Bigish,
-    priceComparison: string,
+    priceComparison: "lt" | "gt",
     referencePrice: Bigish
   ) {
     return Big(price)[priceComparison](Big(referencePrice));
   }
 
-  isPriceBetter(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
+  // undefined ~ infinite
+  isPriceBetter(
+    price: Bigish | undefined,
+    referencePrice: Bigish | undefined,
+    ba: Market.BA
+  ) {
+    if (price === undefined && referencePrice === undefined) {
+      return false;
+    }
+    if (price === undefined) {
+      return ba !== "asks";
+    }
+    if (referencePrice === undefined) {
+      return ba === "asks";
+    }
     const priceComparison = ba === "asks" ? "lt" : "gt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
-  isPriceWorse(price: Bigish, referencePrice: Bigish, ba: Market.BA) {
+  // undefined ~ infinite
+  isPriceWorse(
+    price: Bigish | undefined,
+    referencePrice: Bigish | undefined,
+    ba: Market.BA
+  ) {
+    if (price === undefined && referencePrice === undefined) {
+      return false;
+    }
+    if (price === undefined) {
+      return ba === "asks";
+    }
+    if (referencePrice === undefined) {
+      return ba !== "asks";
+    }
     const priceComparison = ba === "asks" ? "gt" : "lt";
     return this.comparePrices(price, priceComparison, referencePrice);
   }
@@ -181,6 +209,32 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
+    // const { wants, gives, fillWants } =
+    //   bs === "buy"
+    //     ? this.getParamsForBuy(params, market.base, market.quote)
+    //     : this.getParamsForSell(params, market.base, market.quote);
+    // const restingOrderParams =
+    //   "restingOrder" in params ? params.restingOrder : undefined;
+    // if (
+    //   !!params.fillOrKill ||
+    //   !!restingOrderParams ||
+    //   !!params.forceRoutingToMangroveOrder
+    // ) {
+    //   return this.mangroveOrder(
+    //     {
+    //       wants: wants,
+    //       gives: gives,
+    //       orderType: bs,
+    //       fillWants: fillWants,
+    //       expiryDate: params.expiryDate ?? 0,
+    //       restingParams: restingOrderParams,
+    //       market: market,
+    //       fillOrKill: params.fillOrKill ?? false,
+    //     },
+    //     overrides
+    //   );
+    // } else {
+    //   if ("offerId" in params && params.offerId) {
     const {
       wants,
       gives,
@@ -197,28 +251,29 @@ class Trade {
             gives: gives,
             orderType: bs,
             fillWants: fillWants,
-            expiryDate: "expiryDate" in params ? params.expiryDate : 0,
-            restingParams: restingOrderParams,
+            expiryDate: params.expiryDate ?? 0,
+            restingParams: restingOrderParams ?? undefined,
             market: market,
             fillOrKill: params.fillOrKill ? params.fillOrKill : false,
-            gasLowerBound: params.gasLowerBound,
+            gasLowerBound: params.gasLowerBound ?? 0,
           },
           overrides
         );
       case "snipe":
+        //
         return this.snipes(
           {
             targets: [
               {
-                offerId: snipeOfferId,
+                offerId: snipeOfferId as number,
                 takerGives: gives,
                 takerWants: wants,
-                gasLimit: null,
+                gasLimit: undefined,
               },
             ],
             fillWants: fillWants,
             ba: this.bsToBa(bs),
-            gasLowerBound: params.gasLowerBound,
+            gasLowerBound: params.gasLowerBound ?? 0,
           },
           market,
           overrides
@@ -232,10 +287,12 @@ class Trade {
             orderType: bs,
             fillWants: fillWants,
             market,
-            gasLowerBound: params.gasLowerBound,
+            gasLowerBound: params.gasLowerBound ?? 0,
           },
           overrides
         );
+      default:
+        throw new Error(`Unknown order type ${orderType}`);
     }
   }
 
@@ -319,6 +376,8 @@ class Trade {
         return undefined;
       case "marketOrder":
         return await market.estimateGas(bs, wants);
+      default:
+        throw new Error(`Unknown order type ${orderType}`);
     }
   }
 
@@ -453,7 +512,7 @@ class Trade {
       contextInfo: "market.marketOrder",
       data: { receipt: receipt },
     });
-    const result: Market.OrderResult = this.initialResult(receipt);
+    const result = this.initialResult(receipt);
     this.tradeEventManagement.processMangroveEvents(
       result,
       receipt,
@@ -463,7 +522,7 @@ class Trade {
       gives,
       market
     );
-    if (!result.summary) {
+    if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("market order went wrong");
     }
     return result;
@@ -487,7 +546,7 @@ class Trade {
       fillWants: boolean;
       fillOrKill: boolean;
       expiryDate: number;
-      restingParams: Market.RestingOrderParams;
+      restingParams: Market.RestingOrderParams | undefined;
       market: Market;
       gasLowerBound: ethers.BigNumberish;
     },
@@ -513,7 +572,10 @@ class Trade {
 
     // Find pivot in opposite semibook
     const pivotId =
-      (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ?? 0;
+      price === undefined
+        ? 0
+        : (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ??
+          0;
 
     const response = this.createTxWithOptionalGasEstimation(
       market.mgv.orderContract.take,
@@ -562,7 +624,7 @@ class Trade {
       data: { receipt: receipt },
     });
 
-    const result: Market.OrderResult = this.initialResult(receipt);
+    const result = this.initialResult(receipt);
 
     this.tradeEventManagement.processMangroveEvents(
       result,
@@ -583,14 +645,13 @@ class Trade {
       market
     );
 
-    if (!result.summary) {
+    if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("mangrove order went wrong");
     }
-    // if resting order was not posted, result.summary is still undefined.
     return result;
   }
 
-  getRestingOrderParams(params: Market.RestingOrderParams): {
+  getRestingOrderParams(params: Market.RestingOrderParams | undefined): {
     provision: Bigish;
     postRestingOrder: boolean;
   } {
@@ -604,7 +665,7 @@ class Trade {
     }
   }
 
-  initialResult(receipt: ethers.ContractReceipt): Market.OrderResult {
+  initialResult(receipt: ethers.ContractReceipt) {
     return {
       txReceipt: receipt,
       summary: undefined,
@@ -708,7 +769,7 @@ class Trade {
   ) {
     const receipt = await (await response).wait();
 
-    const result: Market.OrderResult = this.initialResult(receipt);
+    const result = this.initialResult(receipt);
 
     logger.debug("Snipes raw receipt", {
       contextInfo: "market.snipes",
@@ -725,7 +786,7 @@ class Trade {
       ethers.BigNumber.from(0),
       market
     );
-    if (!result.summary) {
+    if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("snipes went wrong");
     }
     return result;

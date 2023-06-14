@@ -79,7 +79,8 @@ describe("OfferMaker", () => {
     });
 
     /* Make sure tx has been mined so we can read the result off the chain */
-    const w = async (r) => (await r).wait(1);
+    const w = async (r: Promise<ethers.providers.TransactionResponse>) =>
+      (await r).wait(1);
 
     describe("Before setup", () => {
       it("checks allowance for onchain logic", async () => {

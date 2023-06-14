@@ -1,7 +1,5 @@
 import * as yargs from "yargs";
-import chalk from "chalk";
-import { Mangrove, Semibook } from "../..";
-import { builder, node } from "../../util/node";
+import { builder, nodeWithComputedArgv } from "../../util/node";
 
 export const command = "node";
 export const aliases = [];
@@ -9,19 +7,16 @@ export const describe = "Run a mangrove node";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 
-type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
+type Arguments = ReturnType<typeof builder>["argv"];
 
 export { builder };
 
 export async function handler(argv: Arguments): Promise<void> {
   const { spawnEndedPromise } = await (
-    await node(
-      {
-        ...argv,
-        pipe: true,
-      },
-      false
-    )
+    await nodeWithComputedArgv({
+      ...(await argv),
+      pipe: true,
+    })
   ).connect();
   if (spawnEndedPromise) {
     console.log("Node ready.");

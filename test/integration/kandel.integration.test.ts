@@ -458,7 +458,7 @@ describe("Kandel integration tests suite", function () {
         await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
         const pivots = await kandel.getPivots(distribution);
-        assert.deepStrictEqual(pivots, [1, 2, undefined, undefined, 1, 2]);
+        assert.deepStrictEqual(pivots, [1, 2, 0, 0, 1, 2]);
       });
 
       [true, false].forEach((inChunks) => {
@@ -549,7 +549,8 @@ describe("Kandel integration tests suite", function () {
             .flat();
           const countOfferWrites = allEvents.reduce(
             (totalOfferWrites, e) =>
-              totalOfferWrites + (e["name"] == "OfferWrite" ? 1 : 0),
+              totalOfferWrites +
+              ("name" in e && e["name"] == "OfferWrite" ? 1 : 0),
             0
           );
           assert.equal(
@@ -663,7 +664,7 @@ describe("Kandel integration tests suite", function () {
         );
         const statuses = await kandel.getOfferStatuses(1000);
         assert.equal(
-          statuses.statuses[0].bids.price.toNumber(),
+          statuses.statuses[0].bids?.price?.toNumber(),
           900,
           "distribution should have been updated"
         );
@@ -941,10 +942,10 @@ describe("Kandel integration tests suite", function () {
         assert.equal(6, statuses.statuses.length);
         assert.equal(statuses.baseOffer.offerType, "bids");
         assert.equal(statuses.baseOffer.index, 2);
-        assert.equal(statuses.statuses[0].bids.live, false);
+        assert.equal(statuses.statuses[0].bids?.live, false);
         assert.equal(statuses.statuses[0].expectedLiveBid, true);
         assert.equal(
-          statuses.statuses[4].asks.price.round(0).toString(),
+          statuses.statuses[4].asks?.price?.round(0).toString(),
           "1360"
         );
       });
@@ -970,10 +971,10 @@ describe("Kandel integration tests suite", function () {
         assert.equal(6, statuses.statuses.length);
         assert.equal(statuses.baseOffer.offerType, "bids");
         assert.equal(statuses.baseOffer.index, 2);
-        assert.equal(statuses.statuses[0].bids.live, false);
+        assert.equal(statuses.statuses[0].bids?.live, false);
         assert.equal(statuses.statuses[0].expectedLiveBid, true);
         assert.equal(
-          statuses.statuses[4].asks.price.round(0).toString(),
+          statuses.statuses[4].asks?.price?.round(0).toString(),
           "1360"
         );
       });
@@ -992,7 +993,7 @@ describe("Kandel integration tests suite", function () {
           receipts[receipts.length - 1].blockNumber
         );
         const statuses = await kandel.getOfferStatuses(Big(1170));
-        assert.equal(statuses.statuses[0].bids.live, false);
+        assert.equal(statuses.statuses[0].bids?.live, false);
         assert.equal(statuses.statuses[0].expectedLiveBid, true);
         const parameters = await kandel.getParameters();
 
@@ -1018,7 +1019,7 @@ describe("Kandel integration tests suite", function () {
           receipts[receipts.length - 1].blockNumber
         );
         const statusesPost = await kandel.getOfferStatuses(Big(1170));
-        assert.equal(statusesPost.statuses[0].bids.live, true);
+        assert.equal(statusesPost.statuses[0].bids?.live, true);
         assert.equal(
           singleOfferDistribution.ratio.toNumber(),
           parameters.ratio.toNumber()
@@ -1068,10 +1069,10 @@ describe("Kandel integration tests suite", function () {
         assert.deepEqual(
           distribution
             .getPricesForDistribution()
-            .map((x) => x.round(4).toNumber()),
+            .map((x) => x?.round(4).toNumber()),
           originalDistribution
             .getPricesForDistribution()
-            .map((x) => x.round(4).toNumber())
+            .map((x) => x?.round(4).toNumber())
         );
         const volume = distribution.getOfferedVolumeForDistribution();
         const originalVolume =
@@ -1369,18 +1370,16 @@ describe("Kandel integration tests suite", function () {
         );
 
         // Create a distribution for the live offers
-        const indexerOffers = (await kandel.getOffers()).map(
-          ({ offer, offerId, index, offerType }) => ({
+        const liveOffers = (await kandel.getOffers())
+          .filter((x) => kandel.market.isLiveOffer(x.offer))
+          .map(({ offer, offerId, index, offerType }) => ({
             offerType,
             offerId,
             index,
-            live: kandel.market.isLiveOffer(offer),
-            price: offer.price,
+            price: offer.price as Big,
             gives: offer.gives,
-          })
-        );
+          }));
 
-        const liveOffers = indexerOffers.filter((o) => o.live);
         const existingDistribution = await kandel.createDistributionWithOffers({
           explicitOffers: liveOffers,
         });
@@ -1746,6 +1745,7 @@ describe("Kandel integration tests suite", function () {
               minimumBasePerOffer: gasreq
                 ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
                     ...minParams,
+                    gasreq,
                     offerType: "asks",
                   })
                 : await kandelStrategies.seeder.getMinimumVolume({
@@ -1755,6 +1755,7 @@ describe("Kandel integration tests suite", function () {
               minimumQuotePerOffer: gasreq
                 ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
                     ...minParams,
+                    gasreq,
                     offerType: "bids",
                   })
                 : await kandelStrategies.seeder.getMinimumVolume({

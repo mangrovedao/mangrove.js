@@ -60,7 +60,7 @@ describe("Market unit tests suite", () => {
   });
 
   describe("getWantsForPrice", () => {
-    it("returns gives multipled by price", async function () {
+    it("returns gives multiplied by price", async function () {
       // Arrange
       const gives = Big(12);
       const price = Big(13);
@@ -88,7 +88,7 @@ describe("Market unit tests suite", () => {
       // Act
       const result = Market.getPrice("bids", gives, wants);
       // Assert
-      assert.ok(gives.div(wants).eq(result));
+      assert.ok(result && gives.div(wants).eq(result));
     });
   });
 

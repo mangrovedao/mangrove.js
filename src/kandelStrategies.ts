@@ -50,11 +50,20 @@ class KandelStrategies {
   }) {
     const market =
       params.market ??
-      ((baseAddress: string, quoteAddress: string) =>
-        this.mgv.market({
-          base: this.mgv.getNameFromAddress(baseAddress),
-          quote: this.mgv.getNameFromAddress(quoteAddress),
-        }));
+      ((baseAddress: string, quoteAddress: string) => {
+        const baseToken = this.mgv.getNameFromAddress(baseAddress);
+        if (!baseToken) {
+          throw new Error(`Unknown token at address ${baseAddress}`);
+        }
+        const quoteToken = this.mgv.getNameFromAddress(quoteAddress);
+        if (!quoteToken) {
+          throw new Error(`Unknown token at address ${quoteAddress}`);
+        }
+        return this.mgv.market({
+          base: baseToken,
+          quote: quoteToken,
+        });
+      });
 
     return KandelInstance.create({
       address: params.address,

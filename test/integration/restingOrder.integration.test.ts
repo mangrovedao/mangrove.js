@@ -14,7 +14,7 @@ import {
 import { AbstractRouter } from "../../src/types/typechain";
 
 import { Big } from "big.js";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
 
 //pretty-print when using console.log
@@ -58,7 +58,7 @@ describe("RestingOrder", () => {
 
   describe("Resting order integration tests suite", () => {
     /* Make sure tx has been mined so we can read the result off the chain */
-    const w = async (r) => (await r).wait(1);
+    const w = async (r: Promise<TransactionResponse>) => (await r).wait(1);
 
     beforeEach(async function () {
       //set mgv object
@@ -288,7 +288,7 @@ describe("RestingOrder", () => {
           : false
       );
       assert(
-        orderResult.restingOrder ? orderResult.restingOrder.price.eq(1) : false
+        orderResult.restingOrder ? orderResult.restingOrder.price?.eq(1) : false
       );
       assert(
         orderResult.restingOrder ? orderResult.restingOrder.wants.eq(10) : false

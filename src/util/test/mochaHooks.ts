@@ -1,7 +1,7 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
 import { Mangrove } from "../../";
-import node, { serverParamsType } from "../../util/node";
+import node, { inputServerParamsType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
 import DevNode from "../devNode";
@@ -16,7 +16,7 @@ const serverParams = {
   setMulticallCodeIfAbsent: false, // mangrove.js is supposed to work against servers that only have ToyENS deployed but not Multicall, so we don't deploy Multicall in tests. However mangrove.js needs ToyENS so we let the node ensure it's there.
 };
 
-type proxie = {
+type proxy = {
   cancelAll: boolean;
   proxyServer: ProxyServer;
 };
@@ -27,22 +27,22 @@ type account = {
 };
 
 export type hookInfo = {
-  proxies: proxie[];
-  accounts: {
+  proxies?: proxy[];
+  accounts?: {
     deployer: account;
     maker: account;
     cleaner: account;
     tester: account;
     arbitrager: account;
   };
-  server: ProxyServer;
-  closeCurrentProxy: () => Promise<void>;
+  server?: ProxyServer;
+  closeCurrentProxy?: () => Promise<void>;
 };
 
 let currentProxyPort = 8546;
 
 export const mochaHooks = {
-  async beforeAllImpl(args: serverParamsType, hook: hookInfo) {
+  async beforeAllImpl(args: inputServerParamsType, hook: hookInfo) {
     if (process.env.MOCHA_WORKER_ID) {
       // running in parallel mode - change port
       serverParams.port =
@@ -146,7 +146,7 @@ export const mochaHooks = {
         // Tear down existing proxy - waiting for all outstanding connections to close.
         // Note: anvil could still be processing something when this completes in case its async,
         // Consider probing anvil for completion.
-        const currentProxy = hook.proxies[currentProxyPort];
+        const currentProxy = hook.proxies?.[currentProxyPort];
         if (currentProxy) {
           currentProxy.cancelAll = true;
           const closedDeferred = new Deferred();
@@ -182,7 +182,7 @@ export const mochaHooks = {
     // Create a new proxy for a new port (in case an outstanding async operation for a previous test sends a request)
     const newProxy = {
       cancelAll: false,
-      proxyServer: null,
+      proxyServer: null as ProxyServer | null,
     };
     currentProxyPort++;
     newProxy.proxyServer = new ProxyServer({
@@ -213,7 +213,7 @@ export const mochaHooks = {
         return data;
       },
     });
-    newProxy.proxyServer.listen(currentProxyPort, serverParams.host);
+    newProxy.proxyServer?.listen(currentProxyPort, serverParams.host);
     hook.proxies[currentProxyPort] = newProxy;
     // Tests reference the anvil instance through the following address.
     // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request
@@ -230,14 +230,14 @@ export const mochaHooks = {
   },
 
   async beforeAll() {
-    await mochaHooks.beforeAllImpl(serverParams, this);
+    await mochaHooks.beforeAllImpl(serverParams, this as hookInfo);
   },
 
   async beforeEach() {
-    await mochaHooks.beforeEachImpl(this);
+    await mochaHooks.beforeEachImpl(this as hookInfo);
   },
 
   async afterAll() {
-    await mochaHooks.afterAllImpl(this);
+    await mochaHooks.afterAllImpl(this as hookInfo);
   },
 };

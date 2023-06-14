@@ -9,7 +9,10 @@ import mgvCore from "@mangrovedao/mangrove-core";
 
 // Merge known addresses and addresses provided by mangrove-core, no clash permitted
 
-const addresses = { ...knownAddresses };
+const addresses = { ...knownAddresses } as Record<
+  string,
+  Record<string, string>
+>;
 
 // Make sure all addresses are with checksum casing
 for (const [network, networkAddresses] of Object.entries(addresses)) {
@@ -20,7 +23,7 @@ for (const [network, networkAddresses] of Object.entries(addresses)) {
   }
 }
 
-let mgvCoreAddresses = [];
+let mgvCoreAddresses: any[] = [];
 
 if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
   if (mgvCore.addresses.deployed) {
@@ -51,9 +54,15 @@ for (const [network, networkAddresses] of mgvCoreAddresses) {
 }
 
 export { addresses };
-export const decimals = tokenDecimals;
+export const decimals = tokenDecimals as Record<string, number>;
 export const defaultDisplayedDecimals = 2;
-export const displayedDecimals = tokenDisplayedDecimals;
+export const displayedDecimals = tokenDisplayedDecimals as Record<
+  string,
+  number
+>;
 export const defaultDisplayedPriceDecimals = 6;
-export const displayedPriceDecimals = tokenDisplayedAsPriceDecimals;
-export const cashness = tokenCashness;
+export const displayedPriceDecimals = tokenDisplayedAsPriceDecimals as Record<
+  string,
+  number
+>;
+export const cashness = tokenCashness as Record<string, number>;

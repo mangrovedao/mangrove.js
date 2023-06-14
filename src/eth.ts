@@ -47,7 +47,10 @@ export interface ProviderNetwork {
 export class Mnemonic {
   mnemonic: string;
   iterateOn: "account" | "change" | "index";
-  static path(iterator, iterateOn: "account" | "change" | "index"): string {
+  static path(
+    iterator: number,
+    iterateOn: "account" | "change" | "index"
+  ): string {
     const params = { account: 0, change: 0, index: 0 };
     params[iterateOn] = iterator;
     return `m/44'/60'/${params.account}'/${params.change}/${params.index}`;
@@ -90,9 +93,9 @@ export async function getProviderNetwork(
   _provider: Provider
 ): Promise<ProviderNetwork> {
   let networkId;
-  if (_provider["send"]) {
+  if ("send" in _provider && _provider["send"]) {
     networkId = await (_provider as any).send("net_version");
-  } else if (_provider["_network"]) {
+  } else if ("_network" in _provider && _provider["_network"]) {
     networkId = (_provider as any)._network.chainId;
   } else {
     throw Error(
@@ -202,7 +205,7 @@ export async function _createSigner(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let provider: any = options.provider;
 
-  let signer: Signer;
+  let signer: Signer | undefined;
 
   // Create an ethers provider, web3s can sign
   if (typeof provider === "string") {
@@ -234,7 +237,7 @@ export async function _createSigner(
     provider.getSigner &&
     !("forceReadOnly" in options && options.forceReadOnly)
   ) {
-    signer = provider.getSigner(options.signerIndex || 0);
+    signer = provider.getSigner(options.signerIndex || 0) as ethers.Signer;
     await signer.getAddress().catch(() => {
       logger.warn("Cannot use signer retrieved from provider.getSigner", {
         contextInfo: "eth.signer",
@@ -316,6 +319,10 @@ export async function _createSigner(
       "0x0000000000000000000000000000000000000001",
       provider
     );
+  }
+
+  if (typeof signer == "undefined") {
+    throw new Error("Could not define a signer");
   }
 
   return { readOnly, signer };
