@@ -21,11 +21,10 @@ export const builder = (yargs: yargs.Argv) => {
     .option("deprovision", { type: "boolean", default: false });
 };
 
-type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
-type Arguments2 = ReturnType<typeof builder>["argv"];
+type Arguments = ReturnType<typeof builder>["argv"];
 
 export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
-  const argv = await (argvOrPromiseArgv as unknown as Arguments2);
+  const argv = await argvOrPromiseArgv;
   const provider = getDefaultProvider(argv.nodeUrl);
   const wallet = new Wallet(argv.privateKey, provider);
   const nonceManager = new NonceManager(wallet);

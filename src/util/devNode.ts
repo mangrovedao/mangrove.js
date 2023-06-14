@@ -118,7 +118,7 @@ export const devNodeInfos: { [key: string]: DevNode.info } = {
 
 class DevNode {
   provider: DevNode.provider;
-  web3ClientVersion: string;
+  web3ClientVersion: string | undefined = undefined;
   multicallAddress: string;
   constructor(provider: any) {
     this.multicallAddress = multicallAddress;
@@ -138,7 +138,7 @@ class DevNode {
         []
       );
     }
-    return this.web3ClientVersion;
+    return this.web3ClientVersion as string;
   }
 
   async clientType(): Promise<string> {

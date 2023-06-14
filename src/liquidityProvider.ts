@@ -356,11 +356,11 @@ class LiquidityProvider {
 
     const callback = async (
       cbArg: Market.BookSubscriptionCbArgument,
-      bookEvent: Market.BookSubscriptionEvent,
-      ethersLog: ethers.providers.Log
+      bookEvent?: Market.BookSubscriptionEvent,
+      ethersLog?: ethers.providers.Log
     ) => {
       const txHash = (await txPromise).hash;
-      const logTxHash = ethersLog.transactionHash;
+      const logTxHash = ethersLog?.transactionHash;
       if (txHash === logTxHash && filter(cbArg)) {
         promiseResolve(await cb(cbArg, bookEvent, ethersLog));
       }

@@ -250,15 +250,15 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
-  #asksSemibook: Semibook;
-  #bidsSemibook: Semibook;
+  #asksSemibook: Semibook | undefined;
+  #bidsSemibook: Semibook | undefined;
   #initClosure?: () => Promise<void>;
   trade: Trade = new Trade();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
-  private asksCb: Semibook.EventListener;
-  private bidsCb: Semibook.EventListener;
+  private asksCb: Semibook.EventListener | undefined;
+  private bidsCb: Semibook.EventListener | undefined;
 
   static async connect(
     params: {
@@ -301,6 +301,14 @@ class Market {
   }
 
   public close() {
+    if (
+      !this.asksCb ||
+      !this.bidsCb ||
+      !this.#asksSemibook ||
+      !this.#bidsSemibook
+    ) {
+      throw Error("Market is not initialized");
+    }
     this.#asksSemibook.removeEventListener(this.asksCb);
     this.#bidsSemibook.removeEventListener(this.bidsCb);
   }
@@ -404,6 +412,9 @@ class Market {
    * Order is from best to worse from taker perspective.
    */
   getBook(): Market.Book {
+    if (!this.#asksSemibook || !this.#bidsSemibook) {
+      throw Error("Market is not initialized");
+    }
     return {
       asks: this.#asksSemibook,
       bids: this.#bidsSemibook,
@@ -414,12 +425,18 @@ class Market {
    * Return the asks or bids semibook
    */
   getSemibook(ba: Market.BA): Semibook {
+    if (!this.#asksSemibook || !this.#bidsSemibook) {
+      throw Error("Market is not initialized");
+    }
     return ba === "asks" ? this.#asksSemibook : this.#bidsSemibook;
   }
 
   async requestBook(
     opts: Market.BookOptions = bookOptsDefault
   ): Promise<{ asks: Market.Offer[]; bids: Market.Offer[] }> {
+    if (!this.#asksSemibook || !this.#bidsSemibook) {
+      throw Error("Market is not initialized");
+    }
     const asksPromise = this.#asksSemibook.requestOfferListPrefix(opts);
     const bidsPromise = this.#bidsSemibook.requestOfferListPrefix(opts);
     return {
@@ -677,7 +694,7 @@ class Market {
   }
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
-    const semibook = bs === "buy" ? this.#asksSemibook : this.#bidsSemibook;
+    const semibook = this.getSemibook(this.trade.bsToBa(bs));
     const {
       local: { density, offer_gasbase },
     } = await semibook.getRawConfig();
@@ -752,9 +769,9 @@ class Market {
       (params.what === "base" && params.to === "buy") ||
       (params.what === "quote" && params.to === "sell")
     ) {
-      return await this.#asksSemibook.estimateVolume(params);
+      return await this.getSemibook("asks").estimateVolume(params);
     } else {
-      return await this.#bidsSemibook.estimateVolume(params);
+      return await this.getSemibook("bids").estimateVolume(params);
     }
   }
 
@@ -787,8 +804,8 @@ class Market {
     asks: Mangrove.LocalConfig;
     bids: Mangrove.LocalConfig;
   }> {
-    const asksConfigPromise = this.#asksSemibook.getConfig();
-    const bidsConfigPromise = this.#bidsSemibook.getConfig();
+    const asksConfigPromise = this.getSemibook("asks").getConfig();
+    const bidsConfigPromise = this.getSemibook("bids").getConfig();
     return {
       asks: await asksConfigPromise,
       bids: await bidsConfigPromise,
@@ -942,9 +959,10 @@ class Market {
 
   /** Determine the first decimal place where the smallest price difference between neighboring offers in the order book cache is visible. */
   getDisplayDecimalsForPriceDifferences(): number {
+    const books = this.getBook();
     return Market.getDisplayDecimalsForPriceDifferences([
-      ...this.#asksSemibook,
-      ...[...this.#bidsSemibook].slice().reverse(),
+      ...books.asks,
+      ...[...books.bids].slice().reverse(),
     ]);
   }
 
