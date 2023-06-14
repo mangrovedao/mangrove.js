@@ -252,7 +252,7 @@ let eventsForLastTxHaveBeenGeneratedDeferred: Deferred<void>;
  */
 export let eventsForLastTxHaveBeenGeneratedPromise: Promise<void>;
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function waitForBlock(mgv: Mangrove, blockNumber: number) {
   let block = await mgv.reliableProvider.blockManager.getBlock(blockNumber);

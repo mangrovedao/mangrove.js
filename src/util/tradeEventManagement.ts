@@ -380,7 +380,7 @@ class TradeEventManagement {
       );
     }
   }
-  s;
+
   processMangroveOrderEvents(
     result: OrderResultWithOptionalSummary,
     receipt: ethers.ContractReceipt,

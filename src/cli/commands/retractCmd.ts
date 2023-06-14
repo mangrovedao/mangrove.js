@@ -11,7 +11,7 @@ export const aliases = [];
 export const describe = "retracts all offers from the given market";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export const builder = (yargs) => {
+export const builder = (yargs: yargs.Argv) => {
   return yargs
     .positional("base", { type: "string", demandOption: true })
     .positional("quote", { type: "string", demandOption: true })
@@ -22,8 +22,10 @@ export const builder = (yargs) => {
 };
 
 type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
+type Arguments2 = ReturnType<typeof builder>["argv"];
 
-export async function handler(argv: Arguments): Promise<void> {
+export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
+  const argv = await (argvOrPromiseArgv as unknown as Arguments2);
   const provider = getDefaultProvider(argv.nodeUrl);
   const wallet = new Wallet(argv.privateKey, provider);
   const nonceManager = new NonceManager(wallet);
@@ -41,7 +43,7 @@ export async function handler(argv: Arguments): Promise<void> {
   const { asks, bids } = market.getBook();
 
   if (!argv.ba || argv.ba === "asks") {
-    await retractAllFromOfferlist(
+    await retractAllFromOfferList(
       market,
       "asks",
       asks,
@@ -51,7 +53,7 @@ export async function handler(argv: Arguments): Promise<void> {
   }
 
   if (!argv.ba || argv.ba === "bids") {
-    await retractAllFromOfferlist(
+    await retractAllFromOfferList(
       market,
       "bids",
       bids,
@@ -63,7 +65,7 @@ export async function handler(argv: Arguments): Promise<void> {
   process.exit(0);
 }
 
-async function retractAllFromOfferlist(
+async function retractAllFromOfferList(
   market: Market,
   ba: "asks" | "bids",
   semibook: Semibook,

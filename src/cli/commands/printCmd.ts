@@ -7,7 +7,7 @@ export const aliases = [];
 export const describe = "print the offers on a market";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export const builder = (yargs) => {
+export const builder = (yargs: yargs.Argv) => {
   return yargs
     .positional("base", { type: "string", demandOption: true })
     .positional("quote", { type: "string", demandOption: true })
@@ -17,8 +17,10 @@ export const builder = (yargs) => {
 };
 
 type Arguments = yargs.Arguments<ReturnType<typeof builder>>;
+type Arguments2 = ReturnType<typeof builder>["argv"];
 
-export async function handler(argv: Arguments): Promise<void> {
+export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
+  const argv = await (argvOrPromiseArgv as unknown as Arguments2);
   const mangrove = await Mangrove.connect(argv.nodeUrl);
   const market = await mangrove.market({
     base: argv.base,
