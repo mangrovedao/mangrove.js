@@ -8,8 +8,6 @@
     "emitDecoratorMetadata": false, // this is the default. Calling it out since esbuild does not support it.
     "target": "es2020",
     "strict": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
     "noErrorTruncation": true,
     "moduleResolution": "node",
     "sourceMap": true,
