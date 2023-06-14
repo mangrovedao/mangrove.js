@@ -47,7 +47,10 @@ export interface ProviderNetwork {
 export class Mnemonic {
   mnemonic: string;
   iterateOn: "account" | "change" | "index";
-  static path(iterator, iterateOn: "account" | "change" | "index"): string {
+  static path(
+    iterator: number,
+    iterateOn: "account" | "change" | "index"
+  ): string {
     const params = { account: 0, change: 0, index: 0 };
     params[iterateOn] = iterator;
     return `m/44'/60'/${params.account}'/${params.change}/${params.index}`;
@@ -90,9 +93,9 @@ export async function getProviderNetwork(
   _provider: Provider
 ): Promise<ProviderNetwork> {
   let networkId;
-  if (_provider["send"]) {
+  if ("send" in _provider && _provider["send"]) {
     networkId = await (_provider as any).send("net_version");
-  } else if (_provider["_network"]) {
+  } else if ("_network" in _provider && _provider["_network"]) {
     networkId = (_provider as any)._network.chainId;
   } else {
     throw Error(

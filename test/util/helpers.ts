@@ -12,7 +12,7 @@ export type AsyncQueue<T> = {
 };
 
 export const asyncQueue = <T>(): AsyncQueue<T> => {
-  const promises: ((T) => void)[] = [];
+  const promises: ((arg0: T) => void)[] = [];
   const elements: T[] = [];
   return {
     empty: () => {

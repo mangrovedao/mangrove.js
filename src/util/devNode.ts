@@ -5,7 +5,7 @@
 import { ethers } from "ethers";
 import * as ToyENS from "./ToyENSCode";
 import { typechain } from "../types";
-const multicallAbi = require("../constants/artifacts/Multicall2.json");
+import multicallAbi from "../constants/artifacts/Multicall2.json";
 
 const multicallAddress = "0xdecaf1" + "0".repeat(34);
 
@@ -32,7 +32,10 @@ export const callDecimalsOn = async (
     if (success) {
       try {
         // if not a token, decoding will trigger the error encoded in returnData
-        decoded = ierc20.decodeFunctionResult("decimals", returnData)[0];
+        decoded = ierc20.decodeFunctionResult(
+          "decimals",
+          returnData
+        )[0] as number;
       } catch (e) {}
     }
     return decoded;
@@ -51,7 +54,7 @@ export const connectToToyENSContract = (
 /* onSets is called at most once per block with the list of name,address pairs that were set during the block */
 export const watchAllToyENSEntries = async (
   provider: ethers.providers.JsonRpcProvider,
-  onSet?: (name, address, decimals?: number) => void
+  onSet?: (name: string, address: string, decimals?: number) => void
 ): Promise<DevNode.fetchedContract[]> => {
   const ens = connectToToyENSContract(provider);
   const initialBlock = await provider.getBlockNumber();
@@ -199,7 +202,9 @@ class DevNode {
     return connectToToyENSContract(this.provider);
   }
 
-  watchAllToyENSEntries(onSet?: (name, address, decimals?: number) => void) {
+  watchAllToyENSEntries(
+    onSet?: (name: string, address: string, decimals?: number) => void
+  ) {
     return watchAllToyENSEntries(this.provider, onSet);
   }
 }

@@ -1151,7 +1151,7 @@ class Semibook
       !("desiredVolume" in options) &&
       !("desiredPrice" in options)
     ) {
-      result["maxOffers"] = Semibook.DEFAULT_MAX_OFFERS;
+      (result as any)["maxOffers"] = Semibook.DEFAULT_MAX_OFFERS;
     }
 
     if (
@@ -1162,18 +1162,19 @@ class Semibook
       throw Error("Semibook options.maxOffers must be >= 0");
     }
 
-    result.chunkSize = options.chunkSize;
-    if (result.chunkSize === undefined) {
-      result.chunkSize =
+    let chunkSize = options.chunkSize;
+    if (chunkSize === undefined) {
+      chunkSize =
         "maxOffers" in options &&
         options.maxOffers !== undefined &&
         options.maxOffers > 0
           ? options.maxOffers
           : Semibook.DEFAULT_MAX_OFFERS;
     }
-    if (result.chunkSize <= 0) {
+    if (chunkSize <= 0) {
       throw Error("Semibook options.chunkSize must be > 0");
     }
+    result.chunkSize = chunkSize;
 
     return result as Semibook.ResolvedOptions;
   }

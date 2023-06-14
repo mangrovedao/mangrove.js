@@ -1455,7 +1455,8 @@ describe("Market integration tests suite", () => {
     /* Reorder array a (array) such that an element with id i
      * goes to position o.indexOf(i). o is the order we want.
      */
-    const reorder = (a, o) => o.map((i) => a[a.findIndex((e) => e.id == i)]);
+    const reorder = (a: typeof asks, o: number[]) =>
+      o.map((i) => a[a.findIndex((e) => e.id == i)]);
 
     /* Put bids and asks in expected order (from best price to worse) */
     asks = reorder(asks, [3, 1, 2]);
@@ -1466,18 +1467,18 @@ describe("Market integration tests suite", () => {
     // Add price/volume, prev/next, +extra info to expected book.
     // Volume always in base, price always in quote/base.
     const config = await market.config();
-    const complete = (isAsk, ary) => {
+    const complete = (isAsk: boolean, ary: typeof bids) => {
       return ary.map((ofr, i) => {
         const _config = config[isAsk ? "asks" : "bids"];
         const [baseVolume, quoteVolume] = isAsk
-          ? ["gives", "wants"]
-          : ["wants", "gives"];
+          ? [ofr.gives, ofr.wants]
+          : [ofr.wants, ofr.gives];
         return {
           ...ofr,
-          prev: ary[i - 1]?.id,
-          next: ary[i + 1]?.id,
-          volume: Big(ofr[baseVolume]),
-          price: Big(ofr[quoteVolume]).div(Big(ofr[baseVolume])),
+          prev: ary[i - 1]?.id as number | undefined,
+          next: ary[i + 1]?.id as number | undefined,
+          volume: Big(baseVolume),
+          price: Big(quoteVolume).div(Big(baseVolume)) as Bigish | undefined,
           maker: selfAddress,
           offer_gasbase: _config.offer_gasbase,
         };
@@ -1485,22 +1486,28 @@ describe("Market integration tests suite", () => {
     };
 
     // Reorder elements, add prev/next pointers
-    asks = complete(true, asks);
-    bids = complete(false, bids);
+    const asks2 = complete(true, asks);
+    const bids2 = complete(false, bids);
 
+    type Bs = {
+      wants: Bigish;
+      gives: Bigish;
+      volume: Bigish;
+      price: Bigish | undefined;
+    }[];
     /* Start testing */
 
     const book = await market.requestBook({ maxOffers: 3 });
 
     // Convert big.js numbers to string for easier debugging
-    const stringify = ({ bids, asks }) => {
-      const s = (obj) => {
+    const stringify = ({ bids, asks }: { bids: Bs; asks: Bs }) => {
+      const s = (obj: Bs[number]) => {
         return {
           ...obj,
           wants: obj.wants.toString(),
           gives: obj.gives.toString(),
           volume: obj.volume.toString(),
-          price: obj.price.toString(),
+          price: obj.price?.toString(),
         };
       };
       return { bids: bids.map(s), asks: asks.map(s) };
@@ -1508,7 +1515,7 @@ describe("Market integration tests suite", () => {
 
     assert.deepStrictEqual(
       stringify(book),
-      stringify({ bids, asks }),
+      stringify({ bids: bids2, asks: asks2 }),
       "bad book"
     );
   });

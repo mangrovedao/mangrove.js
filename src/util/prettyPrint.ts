@@ -34,7 +34,7 @@ class PrettyPrint {
         id: obj.id,
         maker: obj.maker,
         volume: obj.volume.toString(),
-        price: obj.price.toString(),
+        price: obj.price?.toString(),
         wants: obj.wants.toString(),
         gives: obj.gives.toString(),
         offer_gasbase: obj.offer_gasbase,

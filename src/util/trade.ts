@@ -105,7 +105,7 @@ class Trade {
 
   comparePrices(
     price: Bigish,
-    priceComparison: string,
+    priceComparison: "lt" | "gt",
     referencePrice: Bigish
   ) {
     return Big(price)[priceComparison](Big(referencePrice));

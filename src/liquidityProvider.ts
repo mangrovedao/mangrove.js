@@ -241,7 +241,7 @@ class LiquidityProvider {
     }
     const fund = p.fund;
 
-    return { wants, gives, price, fund };
+    return { wants: Big(wants), gives: Big(gives), price: Big(price), fund };
   }
 
   static optValueToPayableOverride(

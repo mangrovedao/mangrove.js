@@ -11,7 +11,7 @@ const ENV_VAR_PREFIX = "MGV";
 // type StrictCM = yargs.CommandModule & { builder: (...args: any[]) => any };
 
 // const check = (cmd: StrictCM) => cmd;
-yargs
+void yargs
   .command(printCmd)
   .command(retractCmd)
   .command(dealCmd) // note: node subcommand env vars are prefixed with MGV_NODE instead of MGV_

@@ -9,7 +9,7 @@
     "target": "es2020",
     //"strict": true,
     "strictNullChecks": true,
-    //"noImplicitAny": true,
+    "noImplicitAny": true,
     "noErrorTruncation": true,
     "moduleResolution": "node",
     "sourceMap": true,
@@ -25,5 +25,8 @@
     "rootDir": "src/",
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/**/*.json"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/**/*.json"],
+  "ts-node": {
+    "files": true
+  }
 }
