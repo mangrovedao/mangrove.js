@@ -1,5 +1,7 @@
 # Next version
 
+- fix `[object]` being pretty printed when calling `consoleAks/Bids`.
+
 # 1.3.2
 
 - Add missing dependency on object-inspect

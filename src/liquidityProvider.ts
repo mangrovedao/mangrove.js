@@ -411,7 +411,7 @@ class LiquidityProvider {
       throw new Error(`${util.inspect(this)} must be defined`);
     }
     const thisMaker = this.eoa ? this.eoa : this.logic.address;
-    const offerMakerAddress = (await offer).maker;
+    const offerMakerAddress = offer.maker;
     if (offerMakerAddress != thisMaker) {
       throw Error(
         `The offer is owned by a different address ${offerMakerAddress}, not the expected address ${thisMaker}.`
