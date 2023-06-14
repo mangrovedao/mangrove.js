@@ -549,7 +549,8 @@ describe("Kandel integration tests suite", function () {
             .flat();
           const countOfferWrites = allEvents.reduce(
             (totalOfferWrites, e) =>
-              totalOfferWrites + (e["name"] == "OfferWrite" ? 1 : 0),
+              totalOfferWrites +
+              ("name" in e && e["name"] == "OfferWrite" ? 1 : 0),
             0
           );
           assert.equal(
