@@ -6,6 +6,9 @@ import {
   displayedDecimals as loadedDisplayedDecimals,
   displayedPriceDecimals as loadedDisplayedPriceDecimals,
   cashness as loadedCashness,
+  blockManagerOptionsByNetworkName,
+  reliableHttpProviderOptionsByNetworkName,
+  reliableWebSocketOptionsByNetworkName,
 } from "./constants";
 import * as eth from "./eth";
 import DevNode from "./util/devNode";
@@ -35,10 +38,7 @@ import {
   ReliableHttpProvider,
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
-import { blockManagerOptionsByNetworkName } from "./constants/blockManagerOptions";
 import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
-import { reliableWebSocketOptionsByNetworkName } from "./constants/reliableWebSocketOptions";
-import { reliableHttpProviderOptionsByNetworkName } from "./constants/reliableHttpOptions";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
 import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";

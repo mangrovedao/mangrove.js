@@ -3,8 +3,12 @@ import tokenDecimals from "./constants/tokenDecimals.json";
 import tokenDisplayedDecimals from "./constants/tokenDisplayedDecimals.json";
 import tokenCashness from "./constants/tokenCashness.json";
 import tokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedAsPriceDecimals.json";
-import { ethers } from "ethers";
+import defaultBlockManagerOptionsByNetworkName from "./constants/blockManagerOptionsByNetworkName.json";
+import defaultReliableHttpProviderOptionsByNetworkName from "./constants/reliableHttpProviderOptionsByNetworkName.json";
+import defaultReliableWebSocketOptionsByNetworkName from "./constants/reliableWebSocketOptionsByNetworkName.json";
 
+import { ethers } from "ethers";
+import { BlockManager } from "@mangrovedao/reliable-event-subscriber";
 import mgvCore from "@mangrovedao/mangrove-core";
 
 // Merge known addresses and addresses provided by mangrove-core, no clash permitted
@@ -53,7 +57,32 @@ for (const [network, networkAddresses] of mgvCoreAddresses) {
   }
 }
 
-export { addresses };
+const blockManagerOptionsByNetworkName =
+  defaultBlockManagerOptionsByNetworkName as Record<
+    string,
+    BlockManager.Options
+  >;
+const reliableHttpProviderOptionsByNetworkName =
+  defaultReliableHttpProviderOptionsByNetworkName as Record<
+    string,
+    { estimatedBlockTimeMs: number }
+  >;
+const reliableWebSocketOptionsByNetworkName =
+  defaultReliableWebSocketOptionsByNetworkName as Record<
+    string,
+    {
+      pingIntervalMs: number;
+      pingTimeoutMs: number;
+      estimatedBlockTimeMs: number;
+    }
+  >;
+
+export {
+  addresses,
+  blockManagerOptionsByNetworkName,
+  reliableHttpProviderOptionsByNetworkName,
+  reliableWebSocketOptionsByNetworkName,
+};
 export const decimals = tokenDecimals as Record<string, number>;
 export const defaultDisplayedDecimals = 2;
 export const displayedDecimals = tokenDisplayedDecimals as Record<
