@@ -1,10 +1,10 @@
 import Big from "big.js";
 import * as ethers from "ethers";
-import { decimals as loadedDecimals } from "./constants";
 import Mangrove from "./mangrove";
 import { Bigish } from "./types";
 import * as typechain from "./types/typechain";
 import UnitCalculations from "./util/unitCalculations";
+import * as configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace MgvToken {
@@ -71,20 +71,20 @@ class MgvToken {
       }
 
       if ("decimals" in options && options.decimals !== undefined) {
-        Mangrove.setDecimals(name, options.decimals);
+        configuration.setDecimals(name, options.decimals);
       }
 
       if (
         "displayedDecimals" in options &&
         options.displayedDecimals !== undefined
       ) {
-        Mangrove.setDisplayedDecimals(name, options.displayedDecimals);
+        configuration.setDisplayedDecimals(name, options.displayedDecimals);
       }
     }
 
     this.address = this.mgv.getAddress(this.name);
-    this.decimals = Mangrove.getDecimals(this.name);
-    this.displayedDecimals = Mangrove.getDisplayedDecimals(this.name);
+    this.decimals = configuration.getDecimals(this.name);
+    this.displayedDecimals = configuration.getDisplayedDecimals(this.name);
 
     this.contract = typechain.TestToken__factory.connect(
       this.address,
@@ -183,18 +183,14 @@ class MgvToken {
    * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimals(tokenName: string): number {
-    if (typeof loadedDecimals[tokenName] !== "number") {
-      throw Error(`No decimals on record for token ${tokenName}`);
-    }
-
-    return loadedDecimals[tokenName] as number;
+    return configuration.getDecimals(tokenName);
   }
 
   /**
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
-    loadedDecimals[tokenName] = dec;
+    configuration.setDecimals(tokenName, dec);
   }
 
   /**

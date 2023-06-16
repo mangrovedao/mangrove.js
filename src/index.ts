@@ -6,7 +6,6 @@
 
 import { ethers } from "ethers";
 import * as eth from "./eth";
-import { decimals } from "./constants";
 
 import Mangrove from "./mangrove";
 import Market from "./market";
@@ -32,7 +31,6 @@ export default Mangrove;
 export {
   eth,
   typechain,
-  decimals,
   ethers,
   Mangrove,
   Market,

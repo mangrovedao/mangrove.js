@@ -1,6 +1,7 @@
 # Next version
 
 - fix `[object]` being pretty printed when calling `consoleAks/Bids`.
+- Renamed `constants.ts` to `configuration.ts` and encapsulated all configuration there
 
 # 1.3.2
 

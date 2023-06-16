@@ -1,15 +1,5 @@
 import { LiquidityProvider, Market, MgvToken, OfferLogic, Semibook } from ".";
-import {
-  addresses,
-  defaultDisplayedDecimals,
-  defaultDisplayedPriceDecimals,
-  displayedDecimals as loadedDisplayedDecimals,
-  displayedPriceDecimals as loadedDisplayedPriceDecimals,
-  cashness as loadedCashness,
-  blockManagerOptionsByNetworkName,
-  reliableHttpProviderOptionsByNetworkName,
-  reliableWebSocketOptionsByNetworkName,
-} from "./constants";
+import * as configuration from "./configuration";
 import * as eth from "./eth";
 import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
@@ -121,7 +111,6 @@ class Mangrove {
 
   static devNode: DevNode;
   static typechain = typechain;
-  static addresses = addresses;
 
   /**
    * Creates an instance of the Mangrove Typescript object
@@ -171,19 +160,9 @@ class Mangrove {
     }
 
     if (!options.blockManagerOptions) {
-      options.blockManagerOptions =
-        blockManagerOptionsByNetworkName[network.name];
-
-      if (!options.blockManagerOptions) {
-        options.blockManagerOptions = {
-          maxBlockCached: 50,
-          maxRetryGetBlock: 10,
-          retryDelayGetBlockMs: 500,
-          maxRetryGetLogs: 10,
-          retryDelayGetLogsMs: 500,
-          batchSize: 200,
-        };
-      }
+      options.blockManagerOptions = configuration.getBlockManagerOptions(
+        network.name
+      );
     }
 
     if (!options.blockManagerOptions) {
@@ -191,39 +170,18 @@ class Mangrove {
     }
 
     if (!options.reliableWebsocketProviderOptions && options.providerWsUrl) {
-      const _default = reliableWebSocketOptionsByNetworkName[network.name];
-      if (_default) {
-        options.reliableWebsocketProviderOptions = {
-          wsUrl: options.providerWsUrl,
-          pingIntervalMs: _default.pingIntervalMs,
-          pingTimeoutMs: _default.pingTimeoutMs,
-          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
-        };
-      } else {
-        options.reliableWebsocketProviderOptions = {
-          wsUrl: options.providerWsUrl,
-          pingIntervalMs: 10000,
-          pingTimeoutMs: 5000,
-          estimatedBlockTimeMs: 2000,
-        };
-      }
+      options.reliableWebsocketProviderOptions = {
+        ...configuration.getReliableWebSocketOptions(network.name),
+        wsUrl: options.providerWsUrl,
+      };
     }
 
     const eventEmitter = new EventEmitter();
     if (!options.reliableHttpProviderOptions) {
-      const _default = reliableHttpProviderOptionsByNetworkName[network.name];
-
-      if (_default) {
-        options.reliableHttpProviderOptions = {
-          estimatedBlockTimeMs: _default.estimatedBlockTimeMs,
-          onError: onEthersError(eventEmitter),
-        };
-      } else {
-        options.reliableHttpProviderOptions = {
-          estimatedBlockTimeMs: 2000,
-          onError: onEthersError(eventEmitter),
-        };
-      }
+      options.reliableHttpProviderOptions = {
+        ...configuration.getReliableHttpProviderOptions(network.name),
+        onError: onEthersError(eventEmitter),
+      };
     }
     canConstructMangrove = true;
     const mgv = new Mangrove({
@@ -455,7 +413,7 @@ class Mangrove {
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getAddress(name: string): string {
-    return Mangrove.getAddress(name, this.network.name || "mainnet");
+    return configuration.getAddress(name, this.network.name || "mainnet");
   }
 
   /**
@@ -464,7 +422,7 @@ class Mangrove {
    * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.
    */
   setAddress(name: string, address: string): void {
-    Mangrove.setAddress(name, address, this.network.name || "mainnet");
+    configuration.setAddress(name, address, this.network.name || "mainnet");
   }
 
   /**
@@ -473,20 +431,10 @@ class Mangrove {
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getNameFromAddress(address: string): string | null {
-    const networkAddresses = Mangrove.addresses[this.network.name];
-
-    if (networkAddresses) {
-      address = ethers.utils.getAddress(address);
-
-      for (const [name, candidateAddress] of Object.entries(
-        networkAddresses
-      ) as any) {
-        if (candidateAddress == address) {
-          return name;
-        }
-      }
-    }
-    return null;
+    return configuration.getNameFromAddress(
+      address,
+      this.network.name || "mainnet"
+    );
   }
 
   /** Gets the token corresponding to the address if it is known; otherwise, null.
@@ -750,37 +698,30 @@ class Mangrove {
    * Read all contract addresses on the given network.
    */
   static getAllAddresses(network: string): [string, string][] {
-    if (!addresses[network]) {
-      throw Error(`No addresses for network ${network}.`);
-    }
-
-    return Object.entries(Mangrove.addresses[network]);
+    return configuration.getAllAddresses(network);
   }
 
   /**
    * Read a contract address on a given network.
    */
   static getAddress(name: string, network: string): string {
-    if (!Mangrove.addresses[network]) {
-      throw Error(`No addresses for network ${network}.`);
-    }
-
-    if (!Mangrove.addresses[network][name]) {
-      throw Error(`No address for ${name} on network ${network}.`);
-    }
-
-    return Mangrove.addresses[network]?.[name] as string;
+    return configuration.getAddress(name, network);
   }
 
   /**
    * Set a contract address on the given network.
    */
   static setAddress(name: string, address: string, network: string): void {
-    if (!Mangrove.addresses[network]) {
-      Mangrove.addresses[network] = {};
-    }
-    address = ethers.utils.getAddress(address);
-    Mangrove.addresses[network][name] = address;
+    configuration.setAddress(name, address, network);
+  }
+
+  /**
+   * Gets the name of an address on the given network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  static getNameFromAddress(address: string, network: string): string | null {
+    return configuration.getNameFromAddress(address, network);
   }
 
   /**
@@ -788,44 +729,42 @@ class Mangrove {
    * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimals(tokenName: string): number {
-    return MgvToken.getDecimals(tokenName);
+    return configuration.getDecimals(tokenName);
   }
 
   /**
    * Read displayed decimals for `tokenName`.
    */
   static getDisplayedDecimals(tokenName: string): number {
-    return loadedDisplayedDecimals[tokenName] || defaultDisplayedDecimals;
+    return configuration.getDisplayedPriceDecimals(tokenName);
   }
 
   /**
    * Read displayed decimals for `tokenName` when displayed as a price.
    */
   static getDisplayedPriceDecimals(tokenName: string): number {
-    return (
-      loadedDisplayedPriceDecimals[tokenName] || defaultDisplayedPriceDecimals
-    );
+    return configuration.getDisplayedPriceDecimals(tokenName);
   }
 
   /**
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
-    MgvToken.setDecimals(tokenName, dec);
+    configuration.setDecimals(tokenName, dec);
   }
 
   /**
    * Set displayed decimals for `tokenName`.
    */
   static setDisplayedDecimals(tokenName: string, dec: number): void {
-    loadedDisplayedDecimals[tokenName] = dec;
+    configuration.setDisplayedDecimals(tokenName, dec);
   }
 
   /**
    * Set displayed decimals for `tokenName` when displayed as a price.
    */
   static setDisplayedPriceDecimals(tokenName: string, dec: number): void {
-    loadedDisplayedPriceDecimals[tokenName] = dec;
+    configuration.setDisplayedPriceDecimals(tokenName, dec);
   }
 
   /**
@@ -835,14 +774,7 @@ class Mangrove {
     tokenName: string,
     provider: Provider
   ): Promise<number> {
-    const network = await eth.getProviderNetwork(provider);
-    const token = typechain.IERC20__factory.connect(
-      Mangrove.getAddress(tokenName, network.name),
-      provider
-    );
-    const decimals = await token.decimals();
-    this.setDecimals(tokenName, decimals);
-    return decimals;
+    return configuration.fetchDecimals(tokenName, provider);
   }
 
   /**
@@ -856,12 +788,16 @@ class Mangrove {
     await devNode.setToyENSCodeIfAbsent();
     await devNode.setMulticallCodeIfAbsent();
     // register Multicall2
-    Mangrove.setAddress("Multicall2", devNode.multicallAddress, network.name);
+    configuration.setAddress(
+      "Multicall2",
+      devNode.multicallAddress,
+      network.name
+    );
     // get currently deployed contracts & listen for future ones
     const setAddress = (name: string, address: string, decimals?: number) => {
-      Mangrove.setAddress(name, address, network.name);
+      configuration.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
-        Mangrove.setDecimals(name, decimals);
+        configuration.setDecimals(name, decimals);
       }
     };
     const contracts = await devNode.watchAllToyENSEntries(setAddress);
@@ -1043,10 +979,11 @@ class Mangrove {
     );
   }
 
-  // relative cashness of a token will determine which is base & which is quote
-  // lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol)
+  /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
+   * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
+   */
   setCashness(name: string, cashness: number) {
-    loadedCashness[name] = cashness;
+    configuration.setCashness(name, cashness);
   }
 
   // cashness is "how similar to cash is a token". The cashier token is the quote.
@@ -1054,11 +991,10 @@ class Mangrove {
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
   static toBaseQuoteByCashness(name0: string, name1: string) {
-    let cash0 = 0;
-    let cash1 = 0;
-    if (name0 in loadedCashness && name1 in loadedCashness) {
-      cash0 = loadedCashness[name0];
-      cash1 = loadedCashness[name1];
+    let cash0 = configuration.getCashness(name0);
+    let cash1 = configuration.getCashness(name1);
+    if (cash0 === undefined || cash1 === undefined) {
+      cash0 = cash1 = 0;
     }
     if (cash0 < cash1 || (cash0 === cash1 && name0 < name1)) {
       return { baseName: name0, quoteName: name1 };
