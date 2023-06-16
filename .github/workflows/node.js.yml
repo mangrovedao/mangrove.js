@@ -7,7 +7,7 @@ on:
       - master
       - develop
       - 'run-ci/**'
-  pull_request_target:
+  pull_request:
     branches: [ master, develop, test-pr ]
     types: [opened, synchronize, reopened, labeled]
 
@@ -17,55 +17,13 @@ concurrency:
 
 env:
   NODE_ENV: test
-  # Ternary-esque expression hack: The first line is the condition,
-  # the 2nd line is the value if `true`, the 3rd line is the value if `false`.
-  GIT_REF_TO_TEST: >
-                   ${{  (   github.event_name != 'pull_request_target'
-                         && github.ref )
-                      || format('refs/pull/{0}/merge', github.event.number) }}
+
 jobs:
-  # ==== Job: Security guard ====
-  # The security guard job only allows workflows triggered by external PR's to continue
-  # if they are labelled 'safe to test'.
-  security-guard:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Comment external PR's with first time (before being labelled 'external PR')
-      if: >
-          !(   github.event_name != 'pull_request_target'
-            || github.event.pull_request.head.repo.full_name == github.repository
-            || contains(github.event.pull_request.labels.*.name, 'external PR') )
-      uses: peter-evans/create-or-update-comment@v3
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: >
-              Pull requests from forks must be reviewed before build and tests are run.
-
-              A maintainer will review and add the 'safe to test' label if everything looks good.
-
-    - name: Label external PR's with 'external PR'
-      if: >
-          !(   github.event_name != 'pull_request_target'
-            || github.event.pull_request.head.repo.full_name == github.repository
-            || contains(github.event.pull_request.labels.*.name, 'external PR') )
-      uses: actions-ecosystem/action-add-labels@v1
-      with:
-        labels: external PR
-
-  # ==== End job: Security guard ====
   file-guard:
-    needs: [security-guard]
     runs-on: ubuntu-latest
     steps:
-    # == Git checkout ==
     - name: Checkout
       uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
 
     - uses: dorny/paths-filter@v2
       id: changes
@@ -76,64 +34,31 @@ jobs:
 
     - name: Fail if addresses changed unless PR has 'update address' label
       if: >
-          (    github.event_name == 'pull_request_target'
+          (    github.event_name == 'pull_request'
            &&  !contains(github.event.pull_request.labels.*.name,'update address') 
            &&  steps.changes.outputs.addresses == 'true')
       uses: actions/github-script@v6
       with:
         script: core.setFailed('You have changed an address in mangrove.js (addresses.json). PR must be marked \'update address\' for CI to run')
 
-  # ==== Job: Build and test mangrove.js ====
   mangrove-js:
-    needs: [security-guard]
-
     runs-on: ubuntu-latest
 
-    env:
-      working-directory: .
-
-    defaults:
-      run:
-        working-directory: ${{env.working-directory}}
-
-    permissions:
-      checks: write
-
-    strategy:
-      matrix:
-        node-version: [16.x]
-
     steps:
-
-    # == Git checkout ==
     - name: Checkout
       uses: actions/checkout@v3
-      # Workaround for https://github.com/npm/cli/issues/2610
-      with:
-        persist-credentials: false
-        ref: ${{ env.GIT_REF_TO_TEST }}
-        submodules: recursive
 
-    - name: Reconfigure git to use HTTP authentication
-      # Workaround for https://github.com/npm/cli/issues/2610    
-      run: >
-        git config --global url."https://github.com/".insteadOf
-        ssh://git@github.com/
-
-    # == yarn setup ==
     - name: Yarn setup (caching yarn dependencies)
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 18.x
         cache: 'yarn'
 
     - run: yarn install --immutable
-      working-directory: . # Yarn must run in root to ensure monorepo setup
 
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
 
-    # == build == 
     - name: Mangrove.js build
       run: yarn run build
       env:
@@ -143,7 +68,6 @@ jobs:
       run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
 
     # == run and report tests == 
-    # env vars reuse paths of foundry-setup
     - name: Mangrove.js Tests
       env:
         FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
@@ -155,7 +79,7 @@ jobs:
       if: ${{ env.mangrove_js_built && (success() || failure()) }}
       with:
         name: Mangrove.js Tests                                     # Name of the check run which will be created
-        path: ${{env.working-directory}}/coverage-tests-report.json # Path to test results
+        path: ./coverage-tests-report.json                          # Path to test results
         reporter: mocha-json                                        # Format of test results
         fail-on-error: 'false'                                      # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
 
@@ -168,21 +92,18 @@ jobs:
      # to HEAD because a branch is checked out. We here find the actual SHA for HEAD.
     - name: Set Coveralls vars
       id: coveralls_vars
-      if: github.event_name != 'pull_request_target' 
+      if: github.event_name != 'pull_request' 
       run: echo "::set-output name=sha_for_head::$(git rev-parse HEAD)"
 
     - name: Upload to Coveralls for mangrove.js
       uses: coverallsapp/github-action@master
-      if: github.event_name != 'pull_request_target' 
+      if: github.event_name != 'pull_request' 
       with:
         git-commit: ${{ steps.coveralls_vars.outputs.sha_for_head }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ${{env.working-directory}}/coverage/lcov.info
-        base-path	: ${{env.working-directory}}
+        path-to-lcov: ./coverage/lcov.info
+        base-path	: .
         flag-name: js
-
-  # ==== End job: mangrove-js ====
-
 
   # ==== final "check" job, using alls-green to have one single job to check for green workflow ====
   # see https://github.com/re-actors/alls-green
@@ -191,7 +112,6 @@ jobs:
     if: always()
 
     needs:
-    - security-guard
     - file-guard
     - mangrove-js
 
