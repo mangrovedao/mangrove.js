@@ -1,8 +1,5 @@
 import loadedAddresses from "./constants/addresses.json";
-import loadedTokenDecimals from "./constants/tokenDecimals.json";
-import loadedTokenDisplayedDecimals from "./constants/tokenDisplayedDecimals.json";
-import loadedTokenCashness from "./constants/tokenCashness.json";
-import loadedTokenDisplayedAsPriceDecimals from "./constants/tokenDisplayedAsPriceDecimals.json";
+import loadedTokens from "./constants/tokens.json";
 import loadedBlockManagerOptionsByNetworkName from "./constants/blockManagerOptionsByNetworkName.json";
 import loadedReliableHttpProviderOptionsByNetworkName from "./constants/reliableHttpProviderOptionsByNetworkName.json";
 import loadedReliableWebSocketOptionsByNetworkName from "./constants/reliableWebSocketOptionsByNetworkName.json";
@@ -17,19 +14,16 @@ import { Provider, typechain } from "./types";
 import mgvCore from "@mangrovedao/mangrove-core";
 import * as eth from "./eth";
 
-const tokenDecimals = loadedTokenDecimals as Record<string, number>;
-const tokenCashness = loadedTokenCashness as Record<string, number>;
+export type TokenConfig = {
+  decimals?: number;
+  displayedDecimals?: number;
+  displayedAsPriceDecimals?: number;
+  cashness?: number;
+};
+const tokens = loadedTokens as Record<string, TokenConfig>;
 
 const defaultDisplayedDecimals = 2;
-const displayedDecimals = loadedTokenDisplayedDecimals as Record<
-  string,
-  number
->;
 const defaultDisplayedPriceDecimals = 6;
-const displayedPriceDecimals = loadedTokenDisplayedAsPriceDecimals as Record<
-  string,
-  number
->;
 
 const defaultBlockManagerOptions: BlockManager.Options = {
   maxBlockCached: 50,
@@ -237,54 +231,17 @@ export function watchAddress(
 /// TOKENS
 
 /**
- * Read decimals for `tokenName` on given network.
+ * Read decimals for `tokenName`.
  * To read decimals directly onchain, use `fetchDecimals`.
  */
 export function getDecimals(tokenName: string): number {
-  if (typeof tokenDecimals[tokenName] !== "number") {
-    // FIXME: Read decimals from chain instead of failing
+  const decimals = tokens[tokenName]?.decimals;
+
+  if (decimals === undefined) {
     throw Error(`No decimals on record for token ${tokenName}`);
   }
 
-  return tokenDecimals[tokenName] as number;
-}
-
-/**
- * Read displayed decimals for `tokenName`.
- */
-export function getDisplayedDecimals(tokenName: string): number {
-  return displayedDecimals[tokenName] || defaultDisplayedDecimals;
-}
-
-/**
- * Read displayed decimals for `tokenName` when displayed as a price.
- */
-export function getDisplayedPriceDecimals(tokenName: string): number {
-  return displayedPriceDecimals[tokenName] || defaultDisplayedPriceDecimals;
-}
-
-/**
- * Set decimals for `tokenName`.
- */
-export function setDecimals(tokenName: string, dec: number): void {
-  tokenDecimals[tokenName] = dec;
-}
-
-/**
- * Set displayed decimals for `tokenName`.
- */
-export function setDisplayedDecimals(tokenName: string, dec: number): void {
-  displayedDecimals[tokenName] = dec;
-}
-
-/**
- * Set displayed decimals for `tokenName` when displayed as a price.
- */
-export function setDisplayedPriceDecimals(
-  tokenName: string,
-  dec: number
-): void {
-  displayedPriceDecimals[tokenName] = dec;
+  return decimals;
 }
 
 /**
@@ -304,15 +261,63 @@ export const fetchDecimals = async (
   return decimals;
 };
 
-/** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
- * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
+/**
+ * Read displayed decimals for `tokenName`.
  */
-export function setCashness(tokenName: string, cashn: number) {
-  tokenCashness[tokenName] = cashn;
+export function getDisplayedDecimals(tokenName: string): number {
+  return tokens[tokenName]?.displayedDecimals || defaultDisplayedDecimals;
+}
+
+/**
+ * Read displayed decimals for `tokenName` when displayed as a price.
+ */
+export function getDisplayedPriceDecimals(tokenName: string): number {
+  return (
+    tokens[tokenName]?.displayedAsPriceDecimals || defaultDisplayedPriceDecimals
+  );
 }
 
 /** Get the cashness of a token. See {@link setCashness} for details.
  */
 export function getCashness(tokenName: string): number | undefined {
-  return tokenCashness[tokenName];
+  return tokens[tokenName]?.cashness;
+}
+
+function getOrCreateTokenConfig(tokenName: string) {
+  let tokenConfig = tokens[tokenName];
+  if (tokenConfig === undefined) {
+    tokens[tokenName] = tokenConfig = {};
+  }
+  return tokenConfig;
+}
+
+/**
+ * Set decimals for `tokenName`.
+ */
+export function setDecimals(tokenName: string, dec: number): void {
+  getOrCreateTokenConfig(tokenName).decimals = dec;
+}
+
+/**
+ * Set displayed decimals for `tokenName`.
+ */
+export function setDisplayedDecimals(tokenName: string, dec: number): void {
+  getOrCreateTokenConfig(tokenName).displayedDecimals = dec;
+}
+
+/**
+ * Set displayed decimals for `tokenName` when displayed as a price.
+ */
+export function setDisplayedPriceDecimals(
+  tokenName: string,
+  dec: number
+): void {
+  getOrCreateTokenConfig(tokenName).displayedAsPriceDecimals = dec;
+}
+
+/** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
+ * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
+ */
+export function setCashness(tokenName: string, cashness: number) {
+  getOrCreateTokenConfig(tokenName).cashness = cashness;
 }
