@@ -68,17 +68,25 @@ const reliableWebSocketOptionsByNetworkName =
     Omit<ReliableWebsocketProvider.Options, "wsUrl">
   >;
 
-// Merge known addresses and addresses provided by mangrove-core, no clash permitted
+// Load addresses in the following order:
+// 1. loaded addresses
+// 2. mangrove-core addresses
+// Last loaded address is used
 
-const addresses = { ...loadedAddresses } as Record<
-  string,
-  Record<string, string>
->;
+const addressesByNetworkName = {} as Record<string, Record<string, string>>;
 
 const addressWatchers: Map<
   string,
   Map<string, ((address: string) => void)[]>
 > = new Map(); // network -> name -> watchers[]
+
+for (const [network, networkAddresses] of Object.entries(loadedAddresses)) {
+  for (const [name, address] of Object.entries(networkAddresses) as any) {
+    if (address) {
+      setAddress(name, address, network);
+    }
+  }
+}
 
 let mgvCoreAddresses: any[] = [];
 
@@ -96,17 +104,8 @@ if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
 mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
 
 for (const [network, networkAddresses] of mgvCoreAddresses) {
-  addresses[network] ??= {};
   for (const { name, address } of networkAddresses as any) {
-    if (addresses[network][name] && addresses[network][name] !== address) {
-      throw new Error(
-        `address ${name} (network: ${network}) cannot be added twice. Existing address: ${
-          addresses[network][name]
-        }. New address: ${address.toString()}`
-      );
-    } else {
-      addresses[network][name] = ethers.utils.getAddress(address);
-    }
+    setAddress(name, address, network);
   }
 }
 
@@ -142,26 +141,29 @@ export function getReliableWebSocketOptions(
  * Read all contract addresses on the given network.
  */
 export function getAllAddresses(network: string): [string, string][] {
-  if (!addresses[network]) {
+  const networkAddresses = addressesByNetworkName[network];
+  if (networkAddresses === undefined) {
     throw Error(`No addresses for network ${network}.`);
   }
 
-  return Object.entries(addresses[network]);
+  return Object.entries(networkAddresses);
 }
 
 /**
  * Read a contract address on a given network.
  */
 export function getAddress(name: string, network: string): string {
-  if (!addresses[network]) {
+  const networkAddresses = addressesByNetworkName[network];
+  if (networkAddresses === undefined) {
     throw Error(`No addresses for network ${network}.`);
   }
 
-  if (!addresses[network][name]) {
+  const address = networkAddresses[name];
+  if (address === undefined) {
     throw Error(`No address for ${name} on network ${network}.`);
   }
 
-  return addresses[network]?.[name] as string;
+  return address;
 }
 
 /**
@@ -172,11 +174,13 @@ export function setAddress(
   address: string,
   network: string
 ): void {
-  if (!addresses[network]) {
-    addresses[network] = {};
+  let networkAddresses = addressesByNetworkName[network];
+  if (networkAddresses === undefined) {
+    networkAddresses = {};
+    addressesByNetworkName[network] = networkAddresses;
   }
-  address = ethers.utils.getAddress(address);
-  addresses[network][name] = address;
+  address = ethers.utils.getAddress(address); // Normalize addresses to allow easy comparison
+  addressesByNetworkName[network][name] = address;
 
   const watchers = addressWatchers.get(network)?.get(name);
   if (watchers !== undefined) {
@@ -195,11 +199,10 @@ export function getNameFromAddress(
   address: string,
   network: string
 ): string | null {
-  const networkAddresses = addresses[network];
+  const networkAddresses = addressesByNetworkName[network];
+  address = ethers.utils.getAddress(address); // normalize
 
   if (networkAddresses) {
-    address = ethers.utils.getAddress(address);
-
     for (const [name, candidateAddress] of Object.entries(
       networkAddresses
     ) as any) {
