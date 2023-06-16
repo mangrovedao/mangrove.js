@@ -1,5 +1,6 @@
 import { logger } from "./util/logger";
 import * as ethers from "ethers";
+import util from "util";
 
 import Market from "./market";
 // syntactic sugar
@@ -240,7 +241,7 @@ class LiquidityProvider {
     }
     const fund = p.fund;
 
-    return { wants, gives, price, fund };
+    return { wants: Big(wants), gives: Big(gives), price: Big(price), fund };
   }
 
   static optValueToPayableOverride(
@@ -294,7 +295,7 @@ class LiquidityProvider {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
     const pivot = await this.market.getPivotId(p.ba, price);
 
-    let txPromise: Promise<ethers.ContractTransaction> = null;
+    let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
 
     // send offer
     if (this.contract) {
@@ -328,11 +329,11 @@ class LiquidityProvider {
     return this.#constructPromise(
       this.market,
       (_cbArg, _bookEvent, _ethersLog) => ({
-        id: _cbArg.offerId,
-        pivot: pivot,
-        event: _ethersLog,
+        id: _cbArg.offerId as number,
+        pivot: pivot ?? 0,
+        event: _ethersLog as ethers.providers.Log,
       }),
-      txPromise,
+      txPromise as Promise<ethers.ContractTransaction>,
       (cbArg) => cbArg.type === "OfferWrite"
     );
   }
@@ -355,11 +356,11 @@ class LiquidityProvider {
 
     const callback = async (
       cbArg: Market.BookSubscriptionCbArgument,
-      bookEvent: Market.BookSubscriptionEvent,
-      ethersLog: ethers.providers.Log
+      bookEvent?: Market.BookSubscriptionEvent,
+      ethersLog?: ethers.providers.Log
     ) => {
       const txHash = (await txPromise).hash;
-      const logTxHash = ethersLog.transactionHash;
+      const logTxHash = ethersLog?.transactionHash;
       if (txHash === logTxHash && filter(cbArg)) {
         promiseResolve(await cb(cbArg, bookEvent, ethersLog));
       }
@@ -406,6 +407,9 @@ class LiquidityProvider {
     if (typeof offer === "undefined") {
       throw Error(`No offer in market with id ${id}.`);
     }
+    if (typeof this.logic == "undefined") {
+      throw new Error(`${util.inspect(this)} must be defined`);
+    }
     const thisMaker = this.eoa ? this.eoa : this.logic.address;
     const offerMakerAddress = offer.maker;
     if (offerMakerAddress != thisMaker) {
@@ -417,7 +421,7 @@ class LiquidityProvider {
       LiquidityProvider.normalizeOfferParams(p);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
-    let txPromise: Promise<ethers.ContractTransaction> = null;
+    let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
 
     // update offer
     if (this.contract) {
@@ -453,7 +457,7 @@ class LiquidityProvider {
     return this.#constructPromise(
       this.market,
       (_cbArg, _bookEvent, _ethersLog) => ({
-        event: _ethersLog,
+        event: _ethersLog as ethers.providers.Log,
       }),
       txPromise,
       (cbArg) => cbArg.type === "OfferWrite"
@@ -488,7 +492,7 @@ class LiquidityProvider {
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
     const retracter = this.contract ?? this.mgv.contract;
 
-    let txPromise: Promise<ethers.ContractTransaction> = null;
+    let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
 
     // retract offer
     txPromise = retracter.retractOffer(

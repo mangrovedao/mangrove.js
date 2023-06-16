@@ -5,4 +5,4 @@ export const reliableHttpProviderOptionsByNetworkName = {
   matic: {
     estimatedBlockTimeMs: 2000,
   },
-};
+} as Record<string, { estimatedBlockTimeMs: number }>;

@@ -97,7 +97,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
     it("throws error if not enough parameters are given", () => {
       const sut = new KandelPriceCalculation(5);
       assert.throws(
-        () => sut.calculatePrices({ minPrice: Big(1), maxPrice: Big(2) }),
+        () => sut.calculatePrices({ pricePoints: 10, maxPrice: Big(2) }),
         new Error(
           "Exactly three of minPrice, maxPrice, ratio, and pricePoints must be given"
         )
@@ -129,7 +129,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
 
         // Assert
         assert.deepStrictEqual(
-          prices.map((x) => x.toNumber()),
+          prices.map((x) => x?.toNumber()),
           [1000, 2000, 4000, 8000, 16000, 32000]
         );
       });
@@ -217,7 +217,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
   describe(KandelPriceCalculation.prototype.getPricesFromPrice.name, () => {
     it("gets first price from end", () => {
       // Arrange/act
-      const pricesAndRatio = new KandelPriceCalculation(5).getPricesFromPrice(
+      const prices = new KandelPriceCalculation(5).getPricesFromPrice(
         4,
         Big(16000),
         Big(2),
@@ -225,15 +225,14 @@ describe("KandelPriceCalculation unit tests suite", () => {
       );
 
       // Assert
-      assert.equal(pricesAndRatio.ratio.toNumber(), 2);
       assert.deepStrictEqual(
-        pricesAndRatio.prices.map((x) => x.toNumber()),
+        prices.map((x) => x.toNumber()),
         [1000, 2000, 4000, 8000, 16000, 32000]
       );
     });
     it("gets first price from first", () => {
       // Arrange
-      const pricesAndRatio = new KandelPriceCalculation(5).getPricesFromPrice(
+      const prices = new KandelPriceCalculation(5).getPricesFromPrice(
         0,
         Big(16000),
         Big(2),
@@ -241,9 +240,8 @@ describe("KandelPriceCalculation unit tests suite", () => {
       );
 
       // Act/assert
-      assert.equal(pricesAndRatio.ratio.toNumber(), 2);
       assert.deepStrictEqual(
-        pricesAndRatio.prices.map((x) => x.toNumber()),
+        prices.map((x) => x.toNumber()),
         [16000, 32000]
       );
     });

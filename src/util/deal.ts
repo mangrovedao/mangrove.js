@@ -21,8 +21,8 @@ export async function deal(dealParams: {
   };
 
   // parse script results to get storage slot and token decimals
-  let slot: string;
-  let decimals: number;
+  let slot: string = "";
+  let decimals: number = 0;
 
   let ret: any = await runScript({
     url: dealParams.url,
@@ -38,20 +38,24 @@ export async function deal(dealParams: {
     const slotMatch = line.match(/\s*slot:\s*(\S+)/);
     if (slotMatch) {
       slot = slotMatch[1];
+    } else {
+      throw new Error("Could not find slot value in script output");
     }
     const decimalsMatch = line.match(/\s*decimals:\s*(\S+)/);
     if (decimalsMatch) {
       decimals = parseInt(decimalsMatch[1], 10);
+    } else {
+      throw new Error("Could not find decimals value in script output");
     }
   }
 
-  if ("internalAmount" in dealParams) {
-    if ("amount" in dealParams) {
+  if (dealParams.internalAmount !== undefined) {
+    if (dealParams.amount !== undefined) {
       throw new Error(
         "Cannot specify both amount (display units) and internal amount (internal units). Please pick one."
       );
     }
-  } else if ("amount" in dealParams) {
+  } else if (dealParams.amount !== undefined) {
     dealParams.internalAmount = ethers.utils.parseUnits(
       `${dealParams.amount}`,
       decimals

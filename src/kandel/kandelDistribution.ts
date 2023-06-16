@@ -172,7 +172,7 @@ class KandelDistribution {
    * @returns The prices in the distribution.
    */
   public getPricesForDistribution() {
-    const prices: Big[] = Array(this.pricePoints).fill(undefined);
+    const prices: (Big | undefined)[] = Array(this.pricePoints).fill(undefined);
 
     this.offers.forEach((o) => {
       prices[o.index] = o.base.gt(0) ? o.quote.div(o.base) : undefined;

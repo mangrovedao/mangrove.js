@@ -60,7 +60,7 @@ describe("TradeEventManagement unit tests suite", () => {
   });
 
   describe("createSummaryForOrderComplete", () => {
-    it("returns createSummary, allways", async function () {
+    it("returns createSummary, always", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
@@ -101,7 +101,7 @@ describe("TradeEventManagement unit tests suite", () => {
   });
 
   describe("createSummaryForOrderSummary", () => {
-    it("returns createSummary with offerId, allways", async function () {
+    it("returns createSummary with offerId, always", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
@@ -155,7 +155,7 @@ describe("TradeEventManagement unit tests suite", () => {
   });
 
   describe("createSuccess", () => {
-    it("returns Succes object, allways", async function () {
+    it("returns Success object, always", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const mockedEvent = mock<OfferSuccessEvent>();
@@ -190,7 +190,7 @@ describe("TradeEventManagement unit tests suite", () => {
   });
 
   describe("createTradeFailure", () => {
-    it("returns TradeFailure object, allways", async function () {
+    it("returns TradeFailure object, always", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const mockedEvent = mock<OfferFailEvent>();
@@ -231,7 +231,7 @@ describe("TradeEventManagement unit tests suite", () => {
   });
 
   describe("createPosthookFailure", () => {
-    it("returns posthookFailure object, allways", async function () {
+    it("returns posthookFailure object, always", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const mockedEvent = mock<PosthookFailEvent>();

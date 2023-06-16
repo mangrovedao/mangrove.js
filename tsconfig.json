@@ -7,8 +7,7 @@
     "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": false, // this is the default. Calling it out since esbuild does not support it.
     "target": "es2020",
-    //"strict": true,
-    //"noImplicitAny": true,
+    "strict": true,
     "noErrorTruncation": true,
     "moduleResolution": "node",
     "sourceMap": true,
@@ -24,5 +23,8 @@
     "rootDir": "src/",
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/**/*.json"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/constants/**/*.json"],
+  "ts-node": {
+    "files": true
+  }
 }
