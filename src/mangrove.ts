@@ -402,9 +402,20 @@ class Mangrove {
     }
   }
 
-  /* Return MgvToken instance tied. */
-  token(name: string, options?: MgvToken.ConstructorOptions): MgvToken {
-    return new MgvToken(name, this, options ?? {});
+  /* Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  async token(
+    name: string,
+    options?: MgvToken.ConstructorOptions
+  ): Promise<MgvToken> {
+    return MgvToken.createToken(name, this, options);
+  }
+
+  /* Return MgvToken instance reading only from configuration, not from chain. */
+  tokenFromConfig(
+    name: string,
+    options?: MgvToken.ConstructorOptions
+  ): MgvToken {
+    return new MgvToken(name, this, options);
   }
 
   /**
@@ -430,18 +441,23 @@ class Mangrove {
    *
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
-  getNameFromAddress(address: string): string | null {
+  getNameFromAddress(address: string): string | undefined {
     return configuration.getNameFromAddress(
       address,
       this.network.name || "mainnet"
     );
   }
 
-  /** Gets the token corresponding to the address if it is known; otherwise, null.
+  /** Gets the token corresponding to the address if it is known; otherwise, undefined.
    */
-  getTokenAndAddress(address: string) {
+  async getTokenAndAddress(
+    address: string
+  ): Promise<{ address: string; token?: MgvToken }> {
     const name = this.getNameFromAddress(address);
-    return { address, token: name ? this.token(name) : null };
+    return {
+      address,
+      token: name === undefined ? undefined : await this.token(name),
+    };
   }
 
   /** Convert public token amount to internal token representation.
@@ -510,11 +526,12 @@ class Mangrove {
     return this.contract.withdraw(this.toUnits(amount, 18), overrides);
   }
 
-  approveMangrove(
+  async approveMangrove(
     tokenName: string,
     arg: ApproveArgs = {}
   ): Promise<ethers.ContractTransaction> {
-    return this.token(tokenName).approveMangrove(arg);
+    const token = await this.token(tokenName);
+    return token.approveMangrove(arg);
   }
 
   /** Calculates the provision required or locked for an offer based on the given parameters
@@ -720,7 +737,10 @@ class Mangrove {
    *
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
-  static getNameFromAddress(address: string, network: string): string | null {
+  static getNameFromAddress(
+    address: string,
+    network: string
+  ): string | undefined {
     return configuration.getNameFromAddress(address, network);
   }
 
@@ -728,8 +748,37 @@ class Mangrove {
    * Read decimals for `tokenName` on given network.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  static getDecimals(tokenName: string): number {
+  static getDecimals(tokenName: string): number | undefined {
     return configuration.getDecimals(tokenName);
+  }
+
+  /**
+   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
+   * To read decimals directly onchain, use `fetchDecimals`.
+   */
+  static getDecimalsOrFail(tokenName: string): number {
+    return configuration.getDecimalsOrFail(tokenName);
+  }
+
+  /**
+   * Read decimals for `tokenName` on given network.
+   * If not found in the local configuration, fetch them from the current network and save them
+   */
+  static getOrFetchDecimals(
+    tokenName: string,
+    provider: Provider
+  ): Promise<number> {
+    return configuration.getOrFetchDecimals(tokenName, provider);
+  }
+
+  /**
+   * Read chain for decimals of `tokenName` on current network and save them
+   */
+  static async fetchDecimals(
+    tokenName: string,
+    provider: Provider
+  ): Promise<number> {
+    return configuration.fetchDecimals(tokenName, provider);
   }
 
   /**
@@ -765,16 +814,6 @@ class Mangrove {
    */
   static setDisplayedPriceDecimals(tokenName: string, dec: number): void {
     configuration.setDisplayedPriceDecimals(tokenName, dec);
-  }
-
-  /**
-   * Read chain for decimals of `tokenName` on current network and save them
-   */
-  static async fetchDecimals(
-    tokenName: string,
-    provider: Provider
-  ): Promise<number> {
-    return configuration.fetchDecimals(tokenName, provider);
   }
 
   /**
@@ -960,14 +999,14 @@ class Mangrove {
     // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
     return Promise.all(
       openMarketsData.map(({ base, quote }) => {
-        this.token(base.name, {
-          address: base.address,
-          decimals: base.decimals,
-        });
-        this.token(quote.name, {
-          address: quote.address,
-          decimals: quote.decimals,
-        });
+        this.setAddress(base.name, base.address);
+        if (configuration.getDecimals(base.name) === undefined) {
+          configuration.setDecimals(base.name, base.decimals);
+        }
+        this.setAddress(quote.name, quote.address);
+        if (configuration.getDecimals(quote.name) === undefined) {
+          configuration.setDecimals(quote.name, quote.decimals);
+        }
         return Market.connect({
           mgv: this,
           base: base.name,

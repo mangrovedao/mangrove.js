@@ -2,6 +2,10 @@
 
 - fix `[object]` being pretty printed when calling `consoleAks/Bids`.
 - Renamed `constants.ts` to `configuration.ts` and encapsulated all configuration there
+- Token decimals handling and API have been improved:
+  - `Mangrove.token(.)` is now async and will fetch decimals from chain if they are not in the configuration. This makes it more robust with respect to tokens that are not included in the configuration of mangrove.js. The old sync behaviour that relied only on the configuration (and failed if the decimals were unknown) is still available in `Mangrove.fromConfig(.)`.
+  - `MgvToken.getDecimals(.)` etc. will now return `undefined` if the decimals are not in the configuration instead of throwing an `Error`. The old behaviour is still available in the new `MgvToken.getDecimalsOrFail(.)`.
+  - `MgvToken.getOrFetchDecimals(.)` will first look for decimals in the configuration and then, if they are not found, fetch them from chain.
 
 # 1.3.2
 

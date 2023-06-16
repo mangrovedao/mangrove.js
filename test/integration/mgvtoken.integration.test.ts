@@ -33,7 +33,7 @@ describe("MGV Token integration tests suite", () => {
   });
 
   it("reads allowance and sets", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
     const allowance1 = await usdc.allowance();
     assert.equal(allowance1.toNumber(), 0, "allowance should start at 0");
     await waitForTransaction(usdc.approveMangrove(100));
@@ -42,14 +42,14 @@ describe("MGV Token integration tests suite", () => {
   });
 
   it("allowanceInfinite is true if infinite allowance ", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
     assert.ok(!(await usdc.allowanceInfinite()));
     await waitForTransaction(usdc.approveMangrove());
     assert.ok(await usdc.allowanceInfinite());
   });
 
   it("approve sets approved amount", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
     await waitForTransaction(await usdc.approve(mgv.address, 100));
     await waitForTransaction(await usdc.approve(mgv.address, 200));
     const allowance = await usdc.allowance();
@@ -61,7 +61,7 @@ describe("MGV Token integration tests suite", () => {
   });
 
   it("approve can be set to 0", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
     await waitForTransaction(await usdc.approve(mgv.address, 100));
     await waitForTransaction(await usdc.approve(mgv.address, 0));
     const allowance = await usdc.allowance();
@@ -69,7 +69,7 @@ describe("MGV Token integration tests suite", () => {
   });
 
   it("approveIfHigher sets when higher but not when lower", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
 
     await waitForOptionalTransaction(
       await usdc.approveIfHigher(mgv.address, 100)
@@ -107,7 +107,7 @@ describe("MGV Token integration tests suite", () => {
   });
 
   it("increaseApproval increases except when at max", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
 
     await waitForOptionalTransaction(
       await usdc.increaseApproval(mgv.address, 100)
@@ -140,7 +140,7 @@ describe("MGV Token integration tests suite", () => {
   });
 
   it("approveIfNotInfinite creates approval TX only if finite", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
 
     await waitForOptionalTransaction(
       await usdc.approveIfNotInfinite(mgv.address, 100)
@@ -180,9 +180,9 @@ describe("MGV Token integration tests suite", () => {
   });
 
   it("converts", async function () {
-    const usdc = mgv.token("USDC");
+    const usdc = await mgv.token("USDC");
     assert.strictEqual(usdc.toFixed("10.3213"), "10.32");
-    const weth = mgv.token("WETH");
+    const weth = await mgv.token("WETH");
     assert.strictEqual(weth.toFixed("10.32132"), "10.3213");
   });
 

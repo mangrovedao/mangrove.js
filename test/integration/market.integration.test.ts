@@ -45,8 +45,8 @@ describe("Market integration tests suite", () => {
     mgv.provider.pollingInterval = 10;
     await mgv.contract["fund()"]({ value: toWei(10) });
 
-    const tokenA = mgv.token("TokenA");
-    const tokenB = mgv.token("TokenB");
+    const tokenA = await mgv.token("TokenA");
+    const tokenB = await mgv.token("TokenB");
 
     await tokenA.approveMangrove(1000000000000000);
     await tokenB.approveMangrove(1000000000000000);
@@ -98,8 +98,8 @@ describe("Market integration tests suite", () => {
   describe("getOutboundInbound", () => {
     it("returns base as outbound and quote as inbound, when asks", async function () {
       //Arrange
-      const quote = mgv.token("TokenB");
-      const base = mgv.token("TokenA");
+      const quote = await mgv.token("TokenB");
+      const base = await mgv.token("TokenA");
       //Act
       const result = Market.getOutboundInbound("asks", base, quote);
       //Assert
@@ -109,8 +109,8 @@ describe("Market integration tests suite", () => {
 
     it("returns base as inbound and quote as outbound, when bids", async function () {
       //Arrange
-      const quote = mgv.token("TokenB");
-      const base = mgv.token("TokenA");
+      const quote = await mgv.token("TokenB");
+      const base = await mgv.token("TokenA");
       //Act
       const result = Market.getOutboundInbound("bids", base, quote);
       //Assert

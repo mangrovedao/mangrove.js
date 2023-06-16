@@ -192,7 +192,7 @@ export function setAddress(
 export function getNameFromAddress(
   address: string,
   network: string
-): string | null {
+): string | undefined {
   const networkAddresses = addressesByNetworkName[network];
   address = ethers.utils.getAddress(address); // normalize
 
@@ -205,7 +205,7 @@ export function getNameFromAddress(
       }
     }
   }
-  return null;
+  return undefined;
 }
 
 /** Register a watcher for changes to the address associated with a name on a specific network. */
@@ -234,14 +234,37 @@ export function watchAddress(
  * Read decimals for `tokenName`.
  * To read decimals directly onchain, use `fetchDecimals`.
  */
-export function getDecimals(tokenName: string): number {
-  const decimals = tokens[tokenName]?.decimals;
+export function getDecimals(tokenName: string): number | undefined {
+  return tokens[tokenName]?.decimals;
+}
 
+/**
+ * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
+ * To read decimals directly onchain, use `fetchDecimals`.
+ */
+export function getDecimalsOrFail(tokenName: string): number {
+  const decimals = getDecimals(tokenName);
   if (decimals === undefined) {
     throw Error(`No decimals on record for token ${tokenName}`);
   }
 
   return decimals;
+}
+
+/**
+ * Read decimals for `tokenName` on given network.
+ * If not found in the local configuration, fetch them from the current network and save them
+ */
+export async function getOrFetchDecimals(
+  tokenName: string,
+  provider: Provider
+): Promise<number> {
+  const decimals = getDecimals(tokenName);
+  if (decimals !== undefined) {
+    return decimals;
+  }
+
+  return fetchDecimals(tokenName, provider);
 }
 
 /**

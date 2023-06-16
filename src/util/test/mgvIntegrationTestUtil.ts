@@ -68,8 +68,8 @@ export const getAddresses = async (): Promise<Addresses> => {
       mgv.getAddress("SimpleTestMaker"),
       mgv.signer
     );
-    const ta = mgv.token("TokenA").contract;
-    const tb = mgv.token("TokenB").contract;
+    const ta = (await mgv.token("TokenA")).contract;
+    const tb = (await mgv.token("TokenB")).contract;
     addresses = {
       mangrove: { address: mg.address, signer: await mg.signer.getAddress() },
       testMaker: { address: tm.address, signer: await tm.signer.getAddress() },

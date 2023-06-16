@@ -30,7 +30,7 @@ class AaveV3Module {
     tokenName: string,
     signer?: SignerOrProvider
   ): Promise<typechain.ICreditDelegationToken> {
-    const asset_address = this.mgv.token(tokenName).address;
+    const asset_address = this.mgv.getAddress(tokenName);
     const debt_address = await this.contract.debtToken(asset_address);
     return typechain.ICreditDelegationToken__factory.connect(
       debt_address,
@@ -55,7 +55,7 @@ class AaveV3Module {
     tokenName: string,
     account: string
   ): Promise<{ available: Big; borrowable: Big; borrowing: Big }> {
-    const asset = this.mgv.token(tokenName);
+    const asset = await this.mgv.token(tokenName);
     const dToken = await this.#debtToken(tokenName);
     const { maxRedeemableUnderlying, maxBorrowAfterRedeemInUnderlying } =
       await this.contract.maxGettableUnderlying(asset.address, true, account);

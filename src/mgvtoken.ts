@@ -1,7 +1,7 @@
 import Big from "big.js";
 import * as ethers from "ethers";
 import Mangrove from "./mangrove";
-import { Bigish } from "./types";
+import { Bigish, Provider } from "./types";
 import * as typechain from "./types/typechain";
 import UnitCalculations from "./util/unitCalculations";
 import * as configuration from "./configuration";
@@ -61,29 +61,14 @@ class MgvToken {
   constructor(
     name: string,
     mgv: Mangrove,
-    options: MgvToken.ConstructorOptions
+    options?: MgvToken.ConstructorOptions
   ) {
     this.mgv = mgv;
     this.name = name;
-    if (options) {
-      if ("address" in options && options.address !== undefined) {
-        this.mgv.setAddress(name, options.address);
-      }
-
-      if ("decimals" in options && options.decimals !== undefined) {
-        configuration.setDecimals(name, options.decimals);
-      }
-
-      if (
-        "displayedDecimals" in options &&
-        options.displayedDecimals !== undefined
-      ) {
-        configuration.setDisplayedDecimals(name, options.displayedDecimals);
-      }
-    }
+    MgvToken.#applyOptions(name, mgv, options);
 
     this.address = this.mgv.getAddress(this.name);
-    this.decimals = configuration.getDecimals(this.name);
+    this.decimals = configuration.getDecimalsOrFail(this.name);
     this.displayedDecimals = configuration.getDisplayedDecimals(this.name);
 
     this.contract = typechain.TestToken__factory.connect(
@@ -92,15 +77,54 @@ class MgvToken {
     );
   }
 
+  /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
+  static async createToken(
+    name: string,
+    mgv: Mangrove,
+    options?: MgvToken.ConstructorOptions
+  ): Promise<MgvToken> {
+    MgvToken.#applyOptions(name, mgv, options);
+
+    // Ensure decimals are known before token construction as it will otherwise fail.
+    await MgvToken.getOrFetchDecimals(name, mgv.provider);
+
+    return new MgvToken(name, mgv, options);
+  }
+
+  static #applyOptions(
+    name: string,
+    mgv: Mangrove,
+    options?: MgvToken.ConstructorOptions
+  ) {
+    if (options === undefined) {
+      return;
+    }
+
+    if ("address" in options && options.address !== undefined) {
+      mgv.setAddress(name, options.address);
+    }
+
+    if ("decimals" in options && options.decimals !== undefined) {
+      configuration.setDecimals(name, options.decimals);
+    }
+
+    if (
+      "displayedDecimals" in options &&
+      options.displayedDecimals !== undefined
+    ) {
+      configuration.setDisplayedDecimals(name, options.displayedDecimals);
+    }
+  }
+
   /**
    * Convert base/quote from internal amount to public amount.
    * Uses each token's `decimals` parameter.
    *
    * @example
    * ```
-   * const usdc = mgv.token("USDC");
+   * const usdc = await mgv.token("USDC");
    * token.fromUnits("1e7") // 10
-   * const dai = mgv.token("DAI")
+   * const dai = await mgv.token("DAI")
    * market.fromUnits("1e18") // 1
    * ```
    */
@@ -115,9 +139,9 @@ class MgvToken {
    *
    * @example
    * ```
-   * const usdc = mgv.token("USDC");
+   * const usdc = await mgv.token("USDC");
    * token.toUnits(10) // 10e7 as ethers.BigNumber
-   * const dai = mgv.token("DAI")
+   * const dai = await mgv.token("DAI")
    * market.toUnits(1) // 1e18 as ethers.BigNumber
    * ```
    */
@@ -182,8 +206,27 @@ class MgvToken {
    * Read decimals for `tokenName` on given network.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  static getDecimals(tokenName: string): number {
+  static getDecimals(tokenName: string): number | undefined {
     return configuration.getDecimals(tokenName);
+  }
+
+  /**
+   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
+   * To read decimals directly onchain, use `fetchDecimals`.
+   */
+  static getDecimalsOrFail(tokenName: string): number {
+    return configuration.getDecimalsOrFail(tokenName);
+  }
+
+  /**
+   * Read decimals for `tokenName` on given network.
+   * If not found in the local configuration, fetch them from the current network and save them
+   */
+  static getOrFetchDecimals(
+    tokenName: string,
+    provider: Provider
+  ): Promise<number> {
+    return configuration.getOrFetchDecimals(tokenName, provider);
   }
 
   /**

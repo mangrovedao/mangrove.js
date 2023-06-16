@@ -267,8 +267,10 @@ class Market {
       quote: string;
     } & Partial<Market.OptionalParams>
   ): Promise<Market> {
+    const base = await params.mgv.token(params.base);
+    const quote = await params.mgv.token(params.quote);
     canConstructMarket = true;
-    const market = new Market(params);
+    const market = new Market({ mgv: params.mgv, base, quote });
     canConstructMarket = false;
     if (params["noInit"]) {
       market.#initClosure = () => {
@@ -286,7 +288,11 @@ class Market {
    *
    * `params.mgv` will be used as mangrove instance
    */
-  private constructor(params: { mgv: Mangrove; base: string; quote: string }) {
+  private constructor(params: {
+    mgv: Mangrove;
+    base: MgvToken;
+    quote: MgvToken;
+  }) {
     if (!canConstructMarket) {
       throw Error(
         "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)"
@@ -296,8 +302,8 @@ class Market {
 
     this.mgv = params.mgv;
 
-    this.base = this.mgv.token(params.base);
-    this.quote = this.mgv.token(params.quote);
+    this.base = params.base;
+    this.quote = params.quote;
   }
 
   public close() {
