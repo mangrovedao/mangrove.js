@@ -1,5 +1,8 @@
 import { LiquidityProvider, Market, MgvToken, OfferLogic, Semibook } from ".";
-import * as configuration from "./configuration";
+import configuration, {
+  Configuration as MangroveJsConfiguration,
+  PartialConfiguration as PartialMangroveJsConfiguration,
+} from "./configuration";
 import * as eth from "./eth";
 import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
@@ -91,6 +94,10 @@ namespace Mangrove {
     reliableWebsocketProviderOptions?: ReliableWebsocketProvider.Options;
     reliableHttpProviderOptions?: ReliableHttpProvider.Options;
   };
+
+  export type Configuration = MangroveJsConfiguration;
+
+  export type PartialConfiguration = PartialMangroveJsConfiguration;
 }
 
 class Mangrove {
@@ -133,7 +140,6 @@ class Mangrove {
    *
    * @returns {Mangrove} Returns an instance mangrove.js
    */
-
   static async connect(
     options?: Mangrove.CreateOptions | string
   ): Promise<Mangrove> {
@@ -160,9 +166,10 @@ class Mangrove {
     }
 
     if (!options.blockManagerOptions) {
-      options.blockManagerOptions = configuration.getBlockManagerOptions(
-        network.name
-      );
+      options.blockManagerOptions =
+        configuration.reliableEventSubscriber.getBlockManagerOptions(
+          network.name
+        );
     }
 
     if (!options.blockManagerOptions) {
@@ -171,7 +178,9 @@ class Mangrove {
 
     if (!options.reliableWebsocketProviderOptions && options.providerWsUrl) {
       options.reliableWebsocketProviderOptions = {
-        ...configuration.getReliableWebSocketOptions(network.name),
+        ...configuration.reliableEventSubscriber.getReliableWebSocketOptions(
+          network.name
+        ),
         wsUrl: options.providerWsUrl,
       };
     }
@@ -179,7 +188,9 @@ class Mangrove {
     const eventEmitter = new EventEmitter();
     if (!options.reliableHttpProviderOptions) {
       options.reliableHttpProviderOptions = {
-        ...configuration.getReliableHttpProviderOptions(network.name),
+        ...configuration.reliableEventSubscriber.getReliableHttpProviderOptions(
+          network.name
+        ),
         onError: onEthersError(eventEmitter),
       };
     }
@@ -313,6 +324,21 @@ class Mangrove {
     );
   }
 
+  /** Update the configuration by providing a partial configuration containing only the values that should be changed/added.
+   *
+   * Example for adding configuration for a new token with symbol "SYM":
+   *
+   *    updateConfiguration({tokens: { SYM: { decimals: 18}}})
+   */
+  updateConfiguration(defaults: Mangrove.PartialConfiguration): void {
+    configuration.updateConfiguration(defaults);
+  }
+
+  /** Reset the configuration to defaults provided by mangrove.js */
+  resetConfiguration(): void {
+    configuration.resetConfiguration();
+  }
+
   /**
    * Initialize reliable provider
    */
@@ -424,7 +450,10 @@ class Mangrove {
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getAddress(name: string): string {
-    return configuration.getAddress(name, this.network.name || "mainnet");
+    return configuration.addresses.getAddress(
+      name,
+      this.network.name || "mainnet"
+    );
   }
 
   /**
@@ -433,7 +462,11 @@ class Mangrove {
    * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.
    */
   setAddress(name: string, address: string): void {
-    configuration.setAddress(name, address, this.network.name || "mainnet");
+    configuration.addresses.setAddress(
+      name,
+      address,
+      this.network.name || "mainnet"
+    );
   }
 
   /**
@@ -442,7 +475,7 @@ class Mangrove {
    * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
    */
   getNameFromAddress(address: string): string | undefined {
-    return configuration.getNameFromAddress(
+    return configuration.addresses.getNameFromAddress(
       address,
       this.network.name || "mainnet"
     );
@@ -715,21 +748,21 @@ class Mangrove {
    * Read all contract addresses on the given network.
    */
   static getAllAddresses(network: string): [string, string][] {
-    return configuration.getAllAddresses(network);
+    return configuration.addresses.getAllAddresses(network);
   }
 
   /**
    * Read a contract address on a given network.
    */
   static getAddress(name: string, network: string): string {
-    return configuration.getAddress(name, network);
+    return configuration.addresses.getAddress(name, network);
   }
 
   /**
    * Set a contract address on the given network.
    */
   static setAddress(name: string, address: string, network: string): void {
-    configuration.setAddress(name, address, network);
+    configuration.addresses.setAddress(name, address, network);
   }
 
   /**
@@ -741,7 +774,7 @@ class Mangrove {
     address: string,
     network: string
   ): string | undefined {
-    return configuration.getNameFromAddress(address, network);
+    return configuration.addresses.getNameFromAddress(address, network);
   }
 
   /**
@@ -749,7 +782,7 @@ class Mangrove {
    * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimals(tokenName: string): number | undefined {
-    return configuration.getDecimals(tokenName);
+    return configuration.tokens.getDecimals(tokenName);
   }
 
   /**
@@ -757,7 +790,7 @@ class Mangrove {
    * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimalsOrFail(tokenName: string): number {
-    return configuration.getDecimalsOrFail(tokenName);
+    return configuration.tokens.getDecimalsOrFail(tokenName);
   }
 
   /**
@@ -768,7 +801,7 @@ class Mangrove {
     tokenName: string,
     provider: Provider
   ): Promise<number> {
-    return configuration.getOrFetchDecimals(tokenName, provider);
+    return configuration.tokens.getOrFetchDecimals(tokenName, provider);
   }
 
   /**
@@ -778,42 +811,42 @@ class Mangrove {
     tokenName: string,
     provider: Provider
   ): Promise<number> {
-    return configuration.fetchDecimals(tokenName, provider);
+    return configuration.tokens.fetchDecimals(tokenName, provider);
   }
 
   /**
    * Read displayed decimals for `tokenName`.
    */
   static getDisplayedDecimals(tokenName: string): number {
-    return configuration.getDisplayedPriceDecimals(tokenName);
+    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
   }
 
   /**
    * Read displayed decimals for `tokenName` when displayed as a price.
    */
   static getDisplayedPriceDecimals(tokenName: string): number {
-    return configuration.getDisplayedPriceDecimals(tokenName);
+    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
   }
 
   /**
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
-    configuration.setDecimals(tokenName, dec);
+    configuration.tokens.setDecimals(tokenName, dec);
   }
 
   /**
    * Set displayed decimals for `tokenName`.
    */
   static setDisplayedDecimals(tokenName: string, dec: number): void {
-    configuration.setDisplayedDecimals(tokenName, dec);
+    configuration.tokens.setDisplayedDecimals(tokenName, dec);
   }
 
   /**
    * Set displayed decimals for `tokenName` when displayed as a price.
    */
   static setDisplayedPriceDecimals(tokenName: string, dec: number): void {
-    configuration.setDisplayedPriceDecimals(tokenName, dec);
+    configuration.tokens.setDisplayedPriceDecimals(tokenName, dec);
   }
 
   /**
@@ -827,16 +860,16 @@ class Mangrove {
     await devNode.setToyENSCodeIfAbsent();
     await devNode.setMulticallCodeIfAbsent();
     // register Multicall2
-    configuration.setAddress(
+    configuration.addresses.setAddress(
       "Multicall2",
       devNode.multicallAddress,
       network.name
     );
     // get currently deployed contracts & listen for future ones
     const setAddress = (name: string, address: string, decimals?: number) => {
-      configuration.setAddress(name, address, network.name);
+      configuration.addresses.setAddress(name, address, network.name);
       if (typeof decimals !== "undefined") {
-        configuration.setDecimals(name, decimals);
+        configuration.tokens.setDecimals(name, decimals);
       }
     };
     const contracts = await devNode.watchAllToyENSEntries(setAddress);
@@ -1000,12 +1033,12 @@ class Mangrove {
     return Promise.all(
       openMarketsData.map(({ base, quote }) => {
         this.setAddress(base.name, base.address);
-        if (configuration.getDecimals(base.name) === undefined) {
-          configuration.setDecimals(base.name, base.decimals);
+        if (configuration.tokens.getDecimals(base.name) === undefined) {
+          configuration.tokens.setDecimals(base.name, base.decimals);
         }
         this.setAddress(quote.name, quote.address);
-        if (configuration.getDecimals(quote.name) === undefined) {
-          configuration.setDecimals(quote.name, quote.decimals);
+        if (configuration.tokens.getDecimals(quote.name) === undefined) {
+          configuration.tokens.setDecimals(quote.name, quote.decimals);
         }
         return Market.connect({
           mgv: this,
@@ -1022,7 +1055,7 @@ class Mangrove {
    * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
    */
   setCashness(name: string, cashness: number) {
-    configuration.setCashness(name, cashness);
+    configuration.tokens.setCashness(name, cashness);
   }
 
   // cashness is "how similar to cash is a token". The cashier token is the quote.
@@ -1030,8 +1063,8 @@ class Mangrove {
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
   static toBaseQuoteByCashness(name0: string, name1: string) {
-    let cash0 = configuration.getCashness(name0);
-    let cash1 = configuration.getCashness(name1);
+    let cash0 = configuration.tokens.getCashness(name0);
+    let cash1 = configuration.tokens.getCashness(name1);
     if (cash0 === undefined || cash1 === undefined) {
       cash0 = cash1 = 0;
     }

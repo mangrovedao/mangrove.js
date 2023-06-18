@@ -4,7 +4,7 @@ import Mangrove from "./mangrove";
 import { Bigish, Provider } from "./types";
 import * as typechain from "./types/typechain";
 import UnitCalculations from "./util/unitCalculations";
-import * as configuration from "./configuration";
+import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace MgvToken {
@@ -68,8 +68,10 @@ class MgvToken {
     MgvToken.#applyOptions(name, mgv, options);
 
     this.address = this.mgv.getAddress(this.name);
-    this.decimals = configuration.getDecimalsOrFail(this.name);
-    this.displayedDecimals = configuration.getDisplayedDecimals(this.name);
+    this.decimals = configuration.tokens.getDecimalsOrFail(this.name);
+    this.displayedDecimals = configuration.tokens.getDisplayedDecimals(
+      this.name
+    );
 
     this.contract = typechain.TestToken__factory.connect(
       this.address,
@@ -105,14 +107,17 @@ class MgvToken {
     }
 
     if ("decimals" in options && options.decimals !== undefined) {
-      configuration.setDecimals(name, options.decimals);
+      configuration.tokens.setDecimals(name, options.decimals);
     }
 
     if (
       "displayedDecimals" in options &&
       options.displayedDecimals !== undefined
     ) {
-      configuration.setDisplayedDecimals(name, options.displayedDecimals);
+      configuration.tokens.setDisplayedDecimals(
+        name,
+        options.displayedDecimals
+      );
     }
   }
 
@@ -207,7 +212,7 @@ class MgvToken {
    * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimals(tokenName: string): number | undefined {
-    return configuration.getDecimals(tokenName);
+    return configuration.tokens.getDecimals(tokenName);
   }
 
   /**
@@ -215,7 +220,7 @@ class MgvToken {
    * To read decimals directly onchain, use `fetchDecimals`.
    */
   static getDecimalsOrFail(tokenName: string): number {
-    return configuration.getDecimalsOrFail(tokenName);
+    return configuration.tokens.getDecimalsOrFail(tokenName);
   }
 
   /**
@@ -226,14 +231,14 @@ class MgvToken {
     tokenName: string,
     provider: Provider
   ): Promise<number> {
-    return configuration.getOrFetchDecimals(tokenName, provider);
+    return configuration.tokens.getOrFetchDecimals(tokenName, provider);
   }
 
   /**
    * Set decimals for `tokenName` on current network.
    */
   static setDecimals(tokenName: string, dec: number): void {
-    configuration.setDecimals(tokenName, dec);
+    configuration.tokens.setDecimals(tokenName, dec);
   }
 
   /**

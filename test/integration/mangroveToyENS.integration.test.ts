@@ -7,7 +7,7 @@ import {
 import { Deferred } from "../../src/util";
 
 import { Mangrove } from "../../src";
-import * as configuration from "../../src/configuration";
+import configuration from "../../src/configuration";
 
 import node from "../../src/util/node";
 
@@ -50,7 +50,7 @@ describe("Mangrove functionality", () => {
 
       // setup mangrove addresses watcher
       const deferredMangroveAddressChanged = new Deferred();
-      configuration.watchAddress("local", "Mangrove", () =>
+      configuration.addresses.watchAddress("local", "Mangrove", () =>
         deferredMangroveAddressChanged.resolve()
       );
 

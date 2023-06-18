@@ -1,10 +1,12 @@
-import loadedAddresses from "./constants/addresses.json";
+import loadedAddressesByNetwork from "./constants/addresses.json";
 import loadedTokens from "./constants/tokens.json";
-import loadedBlockManagerOptionsByNetworkName from "./constants/blockManagerOptionsByNetworkName.json";
-import loadedReliableHttpProviderOptionsByNetworkName from "./constants/reliableHttpProviderOptionsByNetworkName.json";
-import loadedReliableWebSocketOptionsByNetworkName from "./constants/reliableWebSocketOptionsByNetworkName.json";
+import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsByNetwork.json";
+import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
+import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSocketOptionsByNetwork.json";
+import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
 
 import { ethers } from "ethers";
+import Big, { BigSource } from "big.js";
 import {
   BlockManager,
   ReliableHttpProvider,
@@ -13,6 +15,24 @@ import {
 import { Provider, typechain } from "./types";
 import mgvCore from "@mangrovedao/mangrove-core";
 import * as eth from "./eth";
+import clone from "just-clone";
+import deepmerge from "deepmerge";
+
+// Make keys optional at all levels of T
+export type RecursivePartial<T> = {
+  [P in keyof T]?: T[P] extends (infer U)[]
+    ? RecursivePartial<U>[]
+    : T[P] extends object | undefined
+    ? RecursivePartial<T[P]>
+    : T[P];
+};
+
+export type network = string;
+export type address = string;
+export type tokenSymbol = string;
+
+export type NamedAddresses = Record<string, address>;
+export type AddressesConfig = Record<network, NamedAddresses>;
 
 export type TokenConfig = {
   decimals?: number;
@@ -20,327 +40,460 @@ export type TokenConfig = {
   displayedAsPriceDecimals?: number;
   cashness?: number;
 };
-const tokens = loadedTokens as Record<string, TokenConfig>;
-
-const defaultDisplayedDecimals = 2;
-const defaultDisplayedPriceDecimals = 6;
-
-const defaultBlockManagerOptions: BlockManager.Options = {
-  maxBlockCached: 50,
-  maxRetryGetBlock: 10,
-  retryDelayGetBlockMs: 500,
-  maxRetryGetLogs: 10,
-  retryDelayGetLogsMs: 500,
-  batchSize: 200,
+export type TokenDefaults = {
+  defaultDisplayedDecimals: number;
+  defaultDisplayedPriceDecimals: number;
 };
-const blockManagerOptionsByNetworkName =
-  loadedBlockManagerOptionsByNetworkName as Record<
-    string,
-    BlockManager.Options
+
+export type ReliableEventSubscriberConfig = {
+  defaultBlockManagerOptions: BlockManager.Options;
+  blockManagerOptionsByNetwork: Record<network, BlockManager.Options>;
+  defaultReliableHttpProviderOptions: Omit<
+    ReliableHttpProvider.Options,
+    "onError"
   >;
-
-const defaultReliableHttpProviderOptions: Omit<
-  ReliableHttpProvider.Options,
-  "onError"
-> = {
-  estimatedBlockTimeMs: 2000,
-};
-const reliableHttpProviderOptionsByNetworkName =
-  loadedReliableHttpProviderOptionsByNetworkName as Record<
-    string,
+  reliableHttpProviderOptionsByNetwork: Record<
+    network,
     Omit<ReliableHttpProvider.Options, "onError">
   >;
-
-const defaultReliableWebSocketOptions = {
-  pingIntervalMs: 10000,
-  pingTimeoutMs: 5000,
-  estimatedBlockTimeMs: 2000,
-};
-const reliableWebSocketOptionsByNetworkName =
-  loadedReliableWebSocketOptionsByNetworkName as Record<
-    string,
+  defaultReliableWebSocketOptions: Omit<
+    ReliableWebsocketProvider.Options,
+    "wsUrl"
+  >;
+  reliableWebSocketOptionsByNetwork: Record<
+    network,
     Omit<ReliableWebsocketProvider.Options, "wsUrl">
   >;
+};
 
-// Load addresses in the following order:
-// 1. loaded addresses
-// 2. mangrove-core addresses
-// Last loaded address is used
+/** Kandel configuration for a specific chain.
+ * @param gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
+ * @param maxOffersInPopulateChunk The maximum number of offers to include in a single populate transaction to avoid exceeding the gas limit.
+ * @param maxOffersInRetractChunk The maximum number of offers to include in a single retract transaction to avoid exceeding the gas limit.
+ */
+export type KandelNetworkConfiguration = {
+  gaspriceFactor: number;
+  maxOffersInPopulateChunk: number;
+  maxOffersInRetractChunk: number;
+};
 
-const addressesByNetworkName = {} as Record<string, Record<string, string>>;
+/** Kandel configuration for a specific market.
+ * @param aaveEnabled Whether AaveKandel should be allowed to be used.
+ * @param minimumBasePerOfferFactor Additional factor for the minimum amount of base token that should be offered per offer to stay above density requirements.
+ * @param minimumQuotePerOfferFactor Additional factor for the minimum amount of quote token that should be offered per offer to stay above density requirements.
+ * @param spread The default spread used when transporting funds from an offer to its dual.
+ * @param ratio The default ratio of the geometric progression of prices.
+ */
+export type KandelMarketConfiguration = {
+  aaveEnabled: boolean;
+  minimumBasePerOfferFactor: Big;
+  minimumQuotePerOfferFactor: Big;
+  spread: number;
+  ratio: Big;
+};
+
+export type KandelRawMarketConfiguration = Omit<
+  KandelMarketConfiguration,
+  "minimumBasePerOfferFactor" | "minimumQuotePerOfferFactor" | "ratio"
+> & {
+  minimumBasePerOfferFactor: BigSource;
+  minimumQuotePerOfferFactor: BigSource;
+  ratio: BigSource;
+};
+
+export type KandelAllConfigurationFields = KandelNetworkConfiguration &
+  KandelRawMarketConfiguration;
+
+export type PartialKandelAllConfigurationFields =
+  Partial<KandelAllConfigurationFields>;
+export type PartialMarketConfig = PartialKandelAllConfigurationFields;
+export type PartialNetworkConfig = PartialKandelAllConfigurationFields & {
+  markets?: Record<tokenSymbol, Record<tokenSymbol, PartialMarketConfig>>; // base symbol -> quote symbol -> market config
+};
+
+export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
+  networks?: Record<network, PartialNetworkConfig>;
+};
+
+export type Configuration = {
+  addressesByNetwork: AddressesConfig;
+  tokenDefaults: TokenDefaults;
+  tokens: Record<tokenSymbol, TokenConfig>;
+  reliableEventSubscriber: ReliableEventSubscriberConfig;
+  kandel: PartialKandelConfiguration;
+};
+
+let config: Configuration;
+
+export type PartialConfiguration = RecursivePartial<Configuration>;
+
+/// ADDRESSSES
 
 const addressWatchers: Map<
   string,
   Map<string, ((address: string) => void)[]>
 > = new Map(); // network -> name -> watchers[]
 
-for (const [network, networkAddresses] of Object.entries(loadedAddresses)) {
-  for (const [name, address] of Object.entries(networkAddresses) as any) {
-    if (address) {
-      setAddress(name, address, network);
+export const addressesConfiguration = {
+  /**
+   * Read all contract addresses on the given network.
+   */
+  getAllAddresses: (network: string): [string, string][] => {
+    const networkAddresses = config.addressesByNetwork[network];
+    if (networkAddresses === undefined) {
+      throw Error(`No addresses for network ${network}.`);
     }
-  }
-}
 
-let mgvCoreAddresses: any[] = [];
+    return Object.entries(networkAddresses);
+  },
 
-if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
-  if (mgvCore.addresses.deployed) {
-    mgvCoreAddresses.push(mgvCore.addresses.deployed);
-  }
-  if (mgvCore.addresses.context) {
-    mgvCoreAddresses.push(mgvCore.addresses.context);
-  }
-} else {
-  mgvCoreAddresses.push(mgvCore.addresses);
-}
-
-mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
-
-for (const [network, networkAddresses] of mgvCoreAddresses) {
-  for (const { name, address } of networkAddresses as any) {
-    setAddress(name, address, network);
-  }
-}
-
-// Configuration read and write API
-// TODO: Modularize
-
-/// RELIABLE EVENT SUBSCRTIBER
-export function getBlockManagerOptions(network: string): BlockManager.Options {
-  const blockManagerOptions = blockManagerOptionsByNetworkName[network];
-
-  return blockManagerOptions ?? defaultBlockManagerOptions;
-}
-
-export function getReliableHttpProviderOptions(
-  network: string
-): Omit<ReliableHttpProvider.Options, "onError"> {
-  const options = reliableHttpProviderOptionsByNetworkName[network];
-
-  return options ?? defaultReliableHttpProviderOptions;
-}
-
-export function getReliableWebSocketOptions(
-  network: string
-): Omit<ReliableWebsocketProvider.Options, "wsUrl"> {
-  const options = reliableWebSocketOptionsByNetworkName[network];
-
-  return options ?? defaultReliableWebSocketOptions;
-}
-
-/// ADDRESSSES
-
-/**
- * Read all contract addresses on the given network.
- */
-export function getAllAddresses(network: string): [string, string][] {
-  const networkAddresses = addressesByNetworkName[network];
-  if (networkAddresses === undefined) {
-    throw Error(`No addresses for network ${network}.`);
-  }
-
-  return Object.entries(networkAddresses);
-}
-
-/**
- * Read a contract address on a given network.
- */
-export function getAddress(name: string, network: string): string {
-  const networkAddresses = addressesByNetworkName[network];
-  if (networkAddresses === undefined) {
-    throw Error(`No addresses for network ${network}.`);
-  }
-
-  const address = networkAddresses[name];
-  if (address === undefined) {
-    throw Error(`No address for ${name} on network ${network}.`);
-  }
-
-  return address;
-}
-
-/**
- * Set a contract address on the given network.
- */
-export function setAddress(
-  name: string,
-  address: string,
-  network: string
-): void {
-  let networkAddresses = addressesByNetworkName[network];
-  if (networkAddresses === undefined) {
-    networkAddresses = {};
-    addressesByNetworkName[network] = networkAddresses;
-  }
-  address = ethers.utils.getAddress(address); // Normalize addresses to allow easy comparison
-  addressesByNetworkName[network][name] = address;
-
-  const watchers = addressWatchers.get(network)?.get(name);
-  if (watchers !== undefined) {
-    for (const watcher of watchers) {
-      watcher(address);
+  /**
+   * Read a contract address on a given network.
+   */
+  getAddress: (name: string, network: string): string => {
+    const networkAddresses = config.addressesByNetwork[network];
+    if (networkAddresses === undefined) {
+      throw Error(`No addresses for network ${network}.`);
     }
-  }
-}
 
-/**
- * Gets the name of an address on the current network.
- *
- * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
- */
-export function getNameFromAddress(
-  address: string,
-  network: string
-): string | undefined {
-  const networkAddresses = addressesByNetworkName[network];
-  address = ethers.utils.getAddress(address); // normalize
+    const address = networkAddresses[name];
+    if (address === undefined) {
+      throw Error(`No address for ${name} on network ${network}.`);
+    }
 
-  if (networkAddresses) {
-    for (const [name, candidateAddress] of Object.entries(
-      networkAddresses
-    ) as any) {
-      if (candidateAddress == address) {
-        return name;
+    return address;
+  },
+
+  /** Register a watcher for changes to the address associated with a name on a specific network. */
+  watchAddress: (
+    network: string,
+    name: string,
+    callback: (address: string) => void
+  ) => {
+    let networkWatchers = addressWatchers.get(network);
+    if (networkWatchers === undefined) {
+      networkWatchers = new Map();
+      addressWatchers.set(network, networkWatchers);
+    }
+
+    let watchers = networkWatchers.get(name);
+    if (watchers === undefined) {
+      watchers = [];
+      networkWatchers.set(name, watchers);
+    }
+    watchers.push(callback);
+  },
+
+  /**
+   * Set a contract address on the given network.
+   */
+  setAddress: (name: string, address: string, network: string): void => {
+    let networkAddresses = config.addressesByNetwork[network];
+    if (networkAddresses === undefined) {
+      networkAddresses = {};
+      config.addressesByNetwork[network] = networkAddresses;
+    }
+    address = ethers.utils.getAddress(address); // Normalize addresses to allow easy comparison
+    config.addressesByNetwork[network][name] = address;
+
+    const watchers = addressWatchers.get(network)?.get(name);
+    if (watchers !== undefined) {
+      for (const watcher of watchers) {
+        watcher(address);
       }
     }
-  }
-  return undefined;
-}
+  },
 
-/** Register a watcher for changes to the address associated with a name on a specific network. */
-export function watchAddress(
-  network: string,
-  name: string,
-  callback: (address: string) => void
-) {
-  let networkWatchers = addressWatchers.get(network);
-  if (networkWatchers === undefined) {
-    networkWatchers = new Map();
-    addressWatchers.set(network, networkWatchers);
-  }
+  /**
+   * Gets the name of an address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  getNameFromAddress: (
+    address: string,
+    network: string
+  ): string | undefined => {
+    const networkAddresses = config.addressesByNetwork[network];
+    address = ethers.utils.getAddress(address); // normalize
 
-  let watchers = networkWatchers.get(name);
-  if (watchers === undefined) {
-    watchers = [];
-    networkWatchers.set(name, watchers);
-  }
-  watchers.push(callback);
-}
+    if (networkAddresses) {
+      for (const [name, candidateAddress] of Object.entries(
+        networkAddresses
+      ) as any) {
+        if (candidateAddress == address) {
+          return name;
+        }
+      }
+    }
+    return undefined;
+  },
+};
 
 /// TOKENS
 
-/**
- * Read decimals for `tokenName`.
- * To read decimals directly onchain, use `fetchDecimals`.
- */
-export function getDecimals(tokenName: string): number | undefined {
-  return tokens[tokenName]?.decimals;
-}
-
-/**
- * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
- * To read decimals directly onchain, use `fetchDecimals`.
- */
-export function getDecimalsOrFail(tokenName: string): number {
-  const decimals = getDecimals(tokenName);
-  if (decimals === undefined) {
-    throw Error(`No decimals on record for token ${tokenName}`);
-  }
-
-  return decimals;
-}
-
-/**
- * Read decimals for `tokenName` on given network.
- * If not found in the local configuration, fetch them from the current network and save them
- */
-export async function getOrFetchDecimals(
-  tokenName: string,
-  provider: Provider
-): Promise<number> {
-  const decimals = getDecimals(tokenName);
-  if (decimals !== undefined) {
-    return decimals;
-  }
-
-  return fetchDecimals(tokenName, provider);
-}
-
-/**
- * Read chain for decimals of `tokenName` on current network and save them
- */
-export const fetchDecimals = async (
-  tokenName: string,
-  provider: Provider
-): Promise<number> => {
-  const network = await eth.getProviderNetwork(provider);
-  const token = typechain.IERC20__factory.connect(
-    getAddress(tokenName, network.name),
-    provider
-  );
-  const decimals = await token.decimals();
-  setDecimals(tokenName, decimals);
-  return decimals;
-};
-
-/**
- * Read displayed decimals for `tokenName`.
- */
-export function getDisplayedDecimals(tokenName: string): number {
-  return tokens[tokenName]?.displayedDecimals || defaultDisplayedDecimals;
-}
-
-/**
- * Read displayed decimals for `tokenName` when displayed as a price.
- */
-export function getDisplayedPriceDecimals(tokenName: string): number {
-  return (
-    tokens[tokenName]?.displayedAsPriceDecimals || defaultDisplayedPriceDecimals
-  );
-}
-
-/** Get the cashness of a token. See {@link setCashness} for details.
- */
-export function getCashness(tokenName: string): number | undefined {
-  return tokens[tokenName]?.cashness;
-}
-
 function getOrCreateTokenConfig(tokenName: string) {
-  let tokenConfig = tokens[tokenName];
+  let tokenConfig = config.tokens[tokenName];
   if (tokenConfig === undefined) {
-    tokens[tokenName] = tokenConfig = {};
+    config.tokens[tokenName] = tokenConfig = {};
   }
   return tokenConfig;
 }
 
-/**
- * Set decimals for `tokenName`.
- */
-export function setDecimals(tokenName: string, dec: number): void {
-  getOrCreateTokenConfig(tokenName).decimals = dec;
+export const tokensConfiguration = {
+  /**
+   * Read decimals for `tokenName`.
+   * To read decimals directly onchain, use `fetchDecimals`.
+   */
+  getDecimals: (tokenName: string): number | undefined => {
+    return config.tokens[tokenName]?.decimals;
+  },
+
+  /**
+   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
+   * To read decimals directly onchain, use `fetchDecimals`.
+   */
+  getDecimalsOrFail: (tokenName: string): number => {
+    const decimals = tokensConfiguration.getDecimals(tokenName);
+    if (decimals === undefined) {
+      throw Error(`No decimals on record for token ${tokenName}`);
+    }
+
+    return decimals;
+  },
+
+  /**
+   * Read decimals for `tokenName` on given network.
+   * If not found in the local configuration, fetch them from the current network and save them
+   */
+  getOrFetchDecimals: async (
+    tokenName: string,
+    provider: Provider
+  ): Promise<number> => {
+    const decimals = tokensConfiguration.getDecimals(tokenName);
+    if (decimals !== undefined) {
+      return decimals;
+    }
+
+    return tokensConfiguration.fetchDecimals(tokenName, provider);
+  },
+
+  /**
+   * Read chain for decimals of `tokenName` on current network and save them
+   */
+  fetchDecimals: async (
+    tokenName: string,
+    provider: Provider
+  ): Promise<number> => {
+    const network = await eth.getProviderNetwork(provider);
+    const token = typechain.IERC20__factory.connect(
+      addressesConfiguration.getAddress(tokenName, network.name),
+      provider
+    );
+    const decimals = await token.decimals();
+    tokensConfiguration.setDecimals(tokenName, decimals);
+    return decimals;
+  },
+
+  /**
+   * Read displayed decimals for `tokenName`.
+   */
+  getDisplayedDecimals: (tokenName: string): number => {
+    return (
+      config.tokens[tokenName]?.displayedDecimals ||
+      config.tokenDefaults.defaultDisplayedDecimals
+    );
+  },
+
+  /**
+   * Read displayed decimals for `tokenName` when displayed as a price.
+   */
+  getDisplayedPriceDecimals: (tokenName: string): number => {
+    return (
+      config.tokens[tokenName]?.displayedAsPriceDecimals ||
+      config.tokenDefaults.defaultDisplayedPriceDecimals
+    );
+  },
+
+  /** Get the cashness of a token. See {@link setCashness} for details.
+   */
+  getCashness: (tokenName: string): number | undefined => {
+    return config.tokens[tokenName]?.cashness;
+  },
+
+  /**
+   * Set decimals for `tokenName`.
+   */
+  setDecimals: (tokenName: string, dec: number): void => {
+    getOrCreateTokenConfig(tokenName).decimals = dec;
+  },
+
+  /**
+   * Set displayed decimals for `tokenName`.
+   */
+  setDisplayedDecimals: (tokenName: string, dec: number): void => {
+    getOrCreateTokenConfig(tokenName).displayedDecimals = dec;
+  },
+
+  /**
+   * Set displayed decimals for `tokenName` when displayed as a price.
+   */
+  setDisplayedPriceDecimals: (tokenName: string, dec: number): void => {
+    getOrCreateTokenConfig(tokenName).displayedAsPriceDecimals = dec;
+  },
+
+  /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
+   * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
+   */
+  setCashness: (tokenName: string, cashness: number) => {
+    getOrCreateTokenConfig(tokenName).cashness = cashness;
+  },
+};
+
+/// RELIABLE EVENT SUBSCRIBER
+
+export const reliableEventSubscriberConfiguration = {
+  getBlockManagerOptions: (network: string): BlockManager.Options => {
+    return (
+      config.reliableEventSubscriber.blockManagerOptionsByNetwork[network] ??
+      config.reliableEventSubscriber.defaultBlockManagerOptions
+    );
+  },
+
+  getReliableHttpProviderOptions: (
+    network: string
+  ): Omit<ReliableHttpProvider.Options, "onError"> => {
+    return (
+      config.reliableEventSubscriber.reliableHttpProviderOptionsByNetwork[
+        network
+      ] ?? config.reliableEventSubscriber.defaultReliableHttpProviderOptions
+    );
+  },
+
+  getReliableWebSocketOptions: (
+    network: string
+  ): Omit<ReliableWebsocketProvider.Options, "wsUrl"> => {
+    return (
+      config.reliableEventSubscriber.reliableWebSocketOptionsByNetwork[
+        network
+      ] ?? config.reliableEventSubscriber.defaultReliableWebSocketOptions
+    );
+  },
+};
+
+/// KANDEL
+
+export const kandelConfiguration = {
+  getRawConfiguration: (): PartialKandelConfiguration => {
+    return config.kandel;
+  },
+};
+
+/// CONFIGURATION RESET & UPDATE
+
+/** Reset the configuration to defaults provided by mangrove.js */
+export function resetConfiguration(): void {
+  config = {
+    addressesByNetwork: {}, // Addresses are loaded below to ensure normalization
+    tokenDefaults: {
+      defaultDisplayedDecimals: 2,
+      defaultDisplayedPriceDecimals: 6,
+    },
+    tokens: clone(loadedTokens as Record<tokenSymbol, TokenConfig>),
+    reliableEventSubscriber: {
+      defaultBlockManagerOptions: {
+        maxBlockCached: 50,
+        maxRetryGetBlock: 10,
+        retryDelayGetBlockMs: 500,
+        maxRetryGetLogs: 10,
+        retryDelayGetLogsMs: 500,
+        batchSize: 200,
+      },
+      blockManagerOptionsByNetwork: clone(
+        loadedBlockManagerOptionsByNetwork as Record<
+          network,
+          BlockManager.Options
+        >
+      ),
+      defaultReliableHttpProviderOptions: {
+        estimatedBlockTimeMs: 2000,
+      },
+      reliableHttpProviderOptionsByNetwork: clone(
+        loadedReliableHttpProviderOptionsByNetwork as Record<
+          network,
+          Omit<ReliableHttpProvider.Options, "onError">
+        >
+      ),
+      defaultReliableWebSocketOptions: {
+        pingIntervalMs: 10000,
+        pingTimeoutMs: 5000,
+        estimatedBlockTimeMs: 2000,
+      },
+      reliableWebSocketOptionsByNetwork: clone(
+        loadedReliableWebSocketOptionsByNetwork as Record<
+          network,
+          Omit<ReliableWebsocketProvider.Options, "wsUrl">
+        >
+      ),
+    },
+    kandel: clone(loadedKandelConfiguration as PartialKandelConfiguration),
+  };
+
+  // Load addresses in the following order:
+  // 1. loaded addresses
+  // 2. mangrove-core addresses
+  // Last loaded address is used
+
+  for (const [network, networkAddresses] of Object.entries(
+    loadedAddressesByNetwork
+  )) {
+    for (const [name, address] of Object.entries(networkAddresses) as any) {
+      if (address) {
+        addressesConfiguration.setAddress(name, address, network);
+      }
+    }
+  }
+
+  let mgvCoreAddresses: any[] = [];
+
+  if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
+    if (mgvCore.addresses.deployed) {
+      mgvCoreAddresses.push(mgvCore.addresses.deployed);
+    }
+    if (mgvCore.addresses.context) {
+      mgvCoreAddresses.push(mgvCore.addresses.context);
+    }
+  } else {
+    mgvCoreAddresses.push(mgvCore.addresses);
+  }
+
+  mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
+
+  for (const [network, networkAddresses] of mgvCoreAddresses) {
+    for (const { name, address } of networkAddresses as any) {
+      addressesConfiguration.setAddress(name, address, network);
+    }
+  }
 }
 
-/**
- * Set displayed decimals for `tokenName`.
+/** Update the configuration by providing a partial configuration containing only the values that should be changed/added.
+ *
+ * Example for adding configuration for a new token with symbol "SYM":
+ *
+ *    updateConfiguration({tokens: { SYM: { decimals: 18}}})
  */
-export function setDisplayedDecimals(tokenName: string, dec: number): void {
-  getOrCreateTokenConfig(tokenName).displayedDecimals = dec;
+export function updateConfiguration(defaults: PartialConfiguration): void {
+  config = deepmerge(config, defaults) as Configuration;
 }
 
-/**
- * Set displayed decimals for `tokenName` when displayed as a price.
- */
-export function setDisplayedPriceDecimals(
-  tokenName: string,
-  dec: number
-): void {
-  getOrCreateTokenConfig(tokenName).displayedAsPriceDecimals = dec;
-}
+// Initialize configuration
+resetConfiguration();
 
-/** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
- * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
- */
-export function setCashness(tokenName: string, cashness: number) {
-  getOrCreateTokenConfig(tokenName).cashness = cashness;
-}
+export const configuration = {
+  addresses: addressesConfiguration,
+  tokens: tokensConfiguration,
+  reliableEventSubscriber: reliableEventSubscriberConfiguration,
+  kandel: kandelConfiguration,
+  resetConfiguration,
+  updateConfiguration,
+};
+export default configuration;
