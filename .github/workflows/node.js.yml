@@ -44,6 +44,10 @@ jobs:
   mangrove-js:
     runs-on: ubuntu-latest
 
+    permissions:
+      statuses: write
+      checks: write
+
     steps:
     - name: Checkout
       uses: actions/checkout@v3
