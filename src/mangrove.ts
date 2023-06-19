@@ -326,12 +326,22 @@ class Mangrove {
 
   /** Update the configuration by providing a partial configuration containing only the values that should be changed/added.
    *
-   * Example for adding configuration for a new token with symbol "SYM":
+   * @param {Mangrove.PartialConfiguration} [config] Partial configuration that should be merged into the existing configuration.
    *
-   *    updateConfiguration({tokens: { SYM: { decimals: 18}}})
+   * @example
+   * ```
+   * updateConfiguration({
+   *   tokens: {
+   *     SYM: {
+   *       decimals: 18
+   *     }
+   *   }
+   * })
+   * ```
+   * This adds configuration for a new token with symbol "SYM". Or, if "SYM" was already configured, ensures that its `decimals` is set to 18.
    */
-  updateConfiguration(defaults: Mangrove.PartialConfiguration): void {
-    configuration.updateConfiguration(defaults);
+  updateConfiguration(config: Mangrove.PartialConfiguration): void {
+    configuration.updateConfiguration(config);
   }
 
   /** Reset the configuration to defaults provided by mangrove.js */
@@ -428,7 +438,7 @@ class Mangrove {
     }
   }
 
-  /* Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
   async token(
     name: string,
     options?: MgvToken.ConstructorOptions
@@ -436,7 +446,7 @@ class Mangrove {
     return MgvToken.createToken(name, this, options);
   }
 
-  /* Return MgvToken instance reading only from configuration, not from chain. */
+  /** Return MgvToken instance reading only from configuration, not from chain. */
   tokenFromConfig(
     name: string,
     options?: MgvToken.ConstructorOptions
