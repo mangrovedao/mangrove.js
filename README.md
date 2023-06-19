@@ -5,7 +5,6 @@ This repo contains the SDK for developing TypeScript (and JavaScript) apps using
 The core contracts for Mangrove with example Solidity offer logics live in the [mangrove-core](https://github.com/mangrovedao/mangrove-core) repo.
 
 # Documentation
-
 If you are looking for the Mangrove developer documentation, the main site to go to is [docs.mangrove.exchange](https://docs.mangrove.exchange).
 
 # Prerequisites
