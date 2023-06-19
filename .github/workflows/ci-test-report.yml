@@ -3,7 +3,7 @@ on:
   workflow_run:
     workflows: ["CI"]
     types:
-      - completed    
+      - completed
 jobs:
   test-results:
     name: Test Results

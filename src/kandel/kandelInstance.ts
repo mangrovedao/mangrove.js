@@ -429,9 +429,7 @@ class KandelInstance {
    * @param params.explicitOffers The explicit offers to use.
    * @returns The new distribution.
    */
-  public async createDistributionWithOffers(params: {
-    explicitOffers: OffersWithGives;
-  }) {
+  createDistributionWithOffers(params: { explicitOffers: OffersWithGives }) {
     const parameters = await this.getParameters();
     return this.generator.createDistributionWithOffers({
       explicitOffers: params.explicitOffers,
