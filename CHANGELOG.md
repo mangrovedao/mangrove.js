@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.0
+
 - Fix `[object]` being pretty printed when calling `consoleAks/Bids`.
 - Renamed `constants.ts` to `configuration.ts` and encapsulated all configuration there
 - Configuration can now be extended and/or changed via the `Mangrove.updateConfiguration(partialConfiguration)` method. The provided `partialConfiguration` will be merged into the existing configuration, overriding any configuration that occurs in both. See the `Configuration` type for the structure of the configuration.
