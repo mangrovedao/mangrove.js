@@ -1,4 +1,4 @@
-[![CI](https://github.com/mangrovedao/mangrove-ts/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove-ts/actions/workflows/node.js.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove-ts/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove-ts)
+[![CI](https://github.com/mangrovedao/mangrove.js/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove.js/actions/workflows/node.js.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove.js/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove.js)
 
 This repo contains the SDK for developing TypeScript (and JavaScript) apps using the Mangrove.
 
@@ -37,7 +37,7 @@ For Linux or macOS everything should work out of the box, if you are using Windo
 4. Clone the git repo with sub-modules
 
    ```shell
-   $ git clone --recurse-submodules https://github.com/mangrovedao/mangrove-ts.git
+   $ git clone --recurse-submodules https://github.com/mangrovedao/mangrove.js.git
    # Or set the global git config once: git config --global submodule.recurse true
    ```
 
