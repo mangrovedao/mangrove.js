@@ -44,7 +44,7 @@ jobs:
   mangrove-js:
     runs-on: ubuntu-latest
 
-    permissions:
+    permissions: # needed by dorny/test-reporter@v1 when the worfklow is triggered by Dependabot commits
       statuses: write
       checks: write
 
