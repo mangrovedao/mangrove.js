@@ -59,23 +59,20 @@ jobs:
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
 
-    - name: Build
+    - name: build
       run: yarn run build
       env:
         NODE_OPTIONS: "--max_old_space_size=8192"
 
-    - name: Save status of build
-      run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
-
     # == run and upload test result (reporter run in separate workflow) == 
-    - name: Run tests
+    - name: test
       env:
         FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
         FOUNDRY_OUT: "~/.foundry/build-out"
       run: yarn run test:coverage
 
     - uses: actions/upload-artifact@v2
-      if: ${{ env.mangrove_js_built && (success() || failure())}}
+      if: ${{ steps.build.conclusion == 'success' && (success() || failure())}}
       with:
         name: test-results
         path: ./coverage-tests-report.json
