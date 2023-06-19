@@ -59,13 +59,14 @@ jobs:
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
 
-    - name: build
+    - name: Build
+      id: build
       run: yarn run build
       env:
         NODE_OPTIONS: "--max_old_space_size=8192"
 
     # == run and upload test result (reporter run in separate workflow) == 
-    - name: test
+    - name: Test
       env:
         FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
         FOUNDRY_OUT: "~/.foundry/build-out"
