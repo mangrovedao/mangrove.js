@@ -88,7 +88,7 @@
     "@types/big.js": "^6.1.6",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.15.11",
+    "@types/node": "^20.3.1",
     "@types/node-cleanup": "^2.1.2",
     "@types/shelljs": "^0.8.11",
     "@types/yargs": "^17.0.12",
