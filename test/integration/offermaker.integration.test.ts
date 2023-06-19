@@ -84,8 +84,9 @@ describe("OfferMaker", () => {
 
     describe("Before setup", () => {
       it("checks allowance for onchain logic", async () => {
+        const tokenB = await mgv.token("TokenB");
         const logic = onchain_lp.logic as OfferLogic;
-        let allowanceForLogic /*:Big*/ = await mgv.token("TokenB").allowance({
+        let allowanceForLogic /*:Big*/ = await tokenB.allowance({
           owner: logic.address,
           spender: mgv.address,
         });
@@ -98,7 +99,7 @@ describe("OfferMaker", () => {
 
         // test default approve amount
         await w(logic.activate(["TokenB"]));
-        allowanceForLogic /*:Big*/ = await mgv.token("TokenB").allowance({
+        allowanceForLogic /*:Big*/ = await tokenB.allowance({
           owner: logic.address,
           spender: mgv.address,
         });
@@ -111,9 +112,11 @@ describe("OfferMaker", () => {
       });
 
       it("checks allowance for EOA provider", async () => {
-        let allowanceForEOA = await mgv
-          .token("TokenB")
-          .allowance({ owner: eoa_lp.eoa, spender: mgv.address });
+        const tokenB = await mgv.token("TokenB");
+        let allowanceForEOA = await tokenB.allowance({
+          owner: eoa_lp.eoa,
+          spender: mgv.address,
+        });
 
         assert.strictEqual(
           allowanceForEOA.toNumber(),
@@ -124,13 +127,12 @@ describe("OfferMaker", () => {
         const overridesTest = { gasLimit: 100000 };
         // test specified approve amount
         await w(
-          mgv
-            .token("TokenB")
-            .approveMangrove({ amount: 10 ** 9, overrides: overridesTest })
+          tokenB.approveMangrove({ amount: 10 ** 9, overrides: overridesTest })
         );
-        allowanceForEOA = await mgv
-          .token("TokenB")
-          .allowance({ owner: eoa_lp.eoa, spender: mgv.address });
+        allowanceForEOA = await tokenB.allowance({
+          owner: eoa_lp.eoa,
+          spender: mgv.address,
+        });
 
         assert.strictEqual(
           allowanceForEOA.toNumber(),
@@ -138,11 +140,12 @@ describe("OfferMaker", () => {
           "allowance should be 1 billion"
         );
         // test default approve amount
-        await w(mgv.token("TokenB").approveMangrove());
+        await w(tokenB.approveMangrove());
 
-        allowanceForEOA = await mgv
-          .token("TokenB")
-          .allowance({ owner: eoa_lp.eoa, spender: mgv.address });
+        allowanceForEOA = await tokenB.allowance({
+          owner: eoa_lp.eoa,
+          spender: mgv.address,
+        });
 
         assert.strictEqual(
           mgv.toUnits(allowanceForEOA, 6).toString(),
@@ -211,7 +214,7 @@ describe("OfferMaker", () => {
 
     describe("After setup", () => {
       beforeEach(async () => {
-        await mgv.token("TokenB").approveMangrove();
+        await (await mgv.token("TokenB")).approveMangrove();
         //await logic.fundMangrove(10);
       });
 

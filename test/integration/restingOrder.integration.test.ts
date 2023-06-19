@@ -6,6 +6,7 @@ import { utils } from "ethers";
 import assert from "assert";
 import {
   Mangrove,
+  MgvToken,
   LiquidityProvider,
   Market,
   OfferLogic,
@@ -24,6 +25,8 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 
 describe("RestingOrder", () => {
   let mgv: Mangrove;
+  let tokenA: MgvToken;
+  let tokenB: MgvToken;
   let orderLogic: OfferLogic;
   let orderLP: LiquidityProvider;
   let router: AbstractRouter;
@@ -68,6 +71,9 @@ describe("RestingOrder", () => {
         privateKey: this.accounts.deployer.key,
       });
 
+      tokenA = await mgv.token("TokenA");
+      tokenB = await mgv.token("TokenB");
+
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -86,15 +92,11 @@ describe("RestingOrder", () => {
 
       // minting As and Bs for test runner
       const me = await mgv.signer.getAddress();
-      await w(
-        mgv.token("TokenA").contract.mintTo(me, utils.parseUnits("100", 18))
-      );
-      await w(
-        mgv.token("TokenB").contract.mintTo(me, utils.parseUnits("100", 18))
-      );
+      await w(tokenA.contract.mintTo(me, utils.parseUnits("100", 18)));
+      await w(tokenB.contract.mintTo(me, utils.parseUnits("100", 18)));
 
       // `me` proposes asks on Mangrove so should approve base
-      await w(mgv.token("TokenA").approveMangrove());
+      await w(tokenA.approveMangrove());
       const meAsLP = await mgv.liquidityProvider(market);
 
       const provision = await meAsLP.computeAskProvision();
@@ -120,13 +122,10 @@ describe("RestingOrder", () => {
     it("simple resting order, with no forceRoutingToMangroveOrder", async () => {
       const provision = await orderLP.computeBidProvision();
 
-      await w(mgv.token("TokenB").approve(router.address));
-      await w(mgv.token("TokenA").approve(router.address));
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
 
-      await orderLogic.contract.checkList([
-        mgv.getAddress("TokenB"),
-        mgv.getAddress("TokenA"),
-      ]);
+      await orderLogic.contract.checkList([tokenB.address, tokenA.address]);
 
       // Fill up bids to verify that pivot is used:
       const meAsLP = await mgv.liquidityProvider(orderLP.market);
@@ -166,8 +165,8 @@ describe("RestingOrder", () => {
     it("simple resting order, with forceRoutingToMangroveOrder:true", async () => {
       const provision = await orderLP.computeBidProvision();
 
-      await w(mgv.token("TokenB").approve(router.address));
-      await w(mgv.token("TokenA").approve(router.address));
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
@@ -196,8 +195,8 @@ describe("RestingOrder", () => {
     it("simple resting order, with forceRoutingToMangroveOrder:false", async () => {
       const provision = await orderLP.computeBidProvision();
 
-      await w(mgv.token("TokenB").approve(router.address));
-      await w(mgv.token("TokenA").approve(router.address));
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: false,
@@ -224,8 +223,8 @@ describe("RestingOrder", () => {
     });
 
     it("no resting order params, with forceRoutingToMangroveOrder:true", async () => {
-      await w(mgv.token("TokenB").approve(router.address));
-      await w(mgv.token("TokenA").approve(router.address));
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
@@ -253,8 +252,8 @@ describe("RestingOrder", () => {
     it("resting order with deadline", async () => {
       const provision = await orderLP.computeBidProvision();
 
-      await w(mgv.token("TokenB").approve(router.address));
-      await w(mgv.token("TokenA").approve(router.address));
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
 
       const market: Market = orderLP.market;
 
@@ -277,8 +276,8 @@ describe("RestingOrder", () => {
         "Resting order was not posted"
       );
       const ttl = await mgv.orderContract.expiring(
-        mgv.token("TokenB").address,
-        mgv.token("TokenA").address,
+        tokenB.address,
+        tokenA.address,
         orderResult.restingOrder ? orderResult.restingOrder.id : 0
       );
 
@@ -299,8 +298,8 @@ describe("RestingOrder", () => {
 
       // taking resting offer
 
-      await w(mgv.token("TokenB").approveMangrove());
-      await w(mgv.token("TokenA").approveMangrove());
+      await w(tokenB.approveMangrove());
+      await w(tokenA.approveMangrove());
 
       const sellPromises = await market.sell({ wants: 5, gives: 5 });
       const result = await sellPromises.result;

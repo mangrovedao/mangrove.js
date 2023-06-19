@@ -85,7 +85,11 @@ $ yarn test
 
 ## Yarn usage details
 
-For more details on how to use Yarn, see [yarn details](./yarn.md).
+⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2+. Currently (November 2021), most examples and much tool support is implicitly engineered towards Yarn 1.
+
+### Lifecycle scripts and Yarn 2
+
+Yarn 2 deliberately only supports a subset of the lifecycle scripts supported by npm. So when adding/modifying lifecycle scripts, you should consult Yarn 2's documentation on the subject: https://yarnpkg.com/advanced/lifecycle-scripts#gatsby-focus-wrapper .
 
 # Git hooks and Husky
 

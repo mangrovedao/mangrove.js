@@ -85,8 +85,8 @@ export const mochaHooks = {
       privateKey: hook.accounts.deployer.key,
     });
 
-    const tokenA = mgv.token("TokenA");
-    const tokenB = mgv.token("TokenB");
+    const tokenA = await mgv.token("TokenA");
+    const tokenB = await mgv.token("TokenB");
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
