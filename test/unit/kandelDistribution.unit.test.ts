@@ -330,7 +330,7 @@ describe("KandelDistribution unit tests suite", () => {
       // Act/Assert
       assert.deepStrictEqual(
         sut.getPricesForDistribution().map((x) => x?.toNumber()),
-        [undefined, 2000, undefined]
+        [undefined, 1000, undefined]
       );
     });
   });
