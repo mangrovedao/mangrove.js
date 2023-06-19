@@ -26,23 +26,23 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
                 aaveEnabled: true,
               },
               FailingConfig0: {
-                aaveEnabled: null,
+                aaveEnabled: undefined,
                 minimumBasePerOfferFactor: 1,
                 minimumQuotePerOfferFactor: 1,
-                spread: null,
-                ratio: null,
+                spread: undefined,
+                ratio: undefined,
               },
               FailingConfig1: {},
               FailingConfig2: { minimumBasePerOfferFactor: 1 },
               FailingConfig3: {
                 minimumBasePerOfferFactor: 1,
                 minimumQuotePerOfferFactor: 1,
-                spread: null,
+                spread: undefined,
               },
               FailingConfig4: {
                 minimumBasePerOfferFactor: 1,
                 minimumQuotePerOfferFactor: 1,
-                ratio: null,
+                ratio: undefined,
               },
             },
           },
@@ -181,7 +181,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "TokenA",
         "FailingConfig0"
       );
-      assert.equal(config.spread, null);
+      assert.equal(config.spread, undefined);
       assert.equal(config.minimumBasePerOfferFactor, 1);
     });
   });

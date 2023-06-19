@@ -60,7 +60,7 @@ class OfferLogic {
       optOverrides?: ethers.Overrides;
     }
   ): Promise<ethers.ContractTransaction> {
-    const token = this.mgv.token(tokenName);
+    const token = await this.mgv.token(tokenName);
     const amount =
       args && args.optAmount != undefined
         ? token.toUnits(args.optAmount)
@@ -128,8 +128,8 @@ class OfferLogic {
     tokenNames: string[],
     overrides: ethers.Overrides = {}
   ): Promise<TransactionResponse> {
-    const tokenAddresses = tokenNames.map(
-      (tokenName) => this.mgv.token(tokenName).address
+    const tokenAddresses = tokenNames.map((tokenName) =>
+      this.mgv.getAddress(tokenName)
     );
     return this.contract.activate(tokenAddresses, overrides);
   }

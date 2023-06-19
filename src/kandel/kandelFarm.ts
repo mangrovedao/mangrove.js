@@ -55,10 +55,10 @@ class KandelFarm {
     onAave?: boolean;
   }) {
     const baseAddress = filter?.base
-      ? this.mgv.token(await filter.base).address
+      ? this.mgv.getAddress(await filter.base)
       : null;
     const quoteAddress = filter?.quote
-      ? this.mgv.token(await filter.quote).address
+      ? this.mgv.getAddress(await filter.quote)
       : null;
     const kandels =
       filter?.onAave == null || filter.onAave == false
@@ -70,9 +70,9 @@ class KandelFarm {
                 quoteAddress
               )
             )
-          ).map((x) => {
-            const baseToken = this.mgv.getTokenAndAddress(x.args.base);
-            const quoteToken = this.mgv.getTokenAndAddress(x.args.quote);
+          ).map(async (x) => {
+            const baseToken = await this.mgv.getTokenAndAddress(x.args.base);
+            const quoteToken = await this.mgv.getTokenAndAddress(x.args.quote);
             return {
               kandelAddress: x.args.kandel,
               ownerAddress: x.args.owner,
@@ -94,9 +94,9 @@ class KandelFarm {
                 quoteAddress
               )
             )
-          ).map((x) => {
-            const baseToken = this.mgv.getTokenAndAddress(x.args.base);
-            const quoteToken = this.mgv.getTokenAndAddress(x.args.quote);
+          ).map(async (x) => {
+            const baseToken = await this.mgv.getTokenAndAddress(x.args.base);
+            const quoteToken = await this.mgv.getTokenAndAddress(x.args.quote);
             return {
               kandelAddress: x.args.aaveKandel,
               ownerAddress: x.args.owner,
@@ -108,7 +108,7 @@ class KandelFarm {
             };
           })
         : [];
-    return kandels.concat(aaveKandels);
+    return Promise.all(kandels.concat(aaveKandels));
   }
 }
 

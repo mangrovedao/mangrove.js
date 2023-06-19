@@ -44,10 +44,6 @@ jobs:
   mangrove-js:
     runs-on: ubuntu-latest
 
-    permissions: # needed by dorny/test-reporter@v1 when the worfklow is triggered by Dependabot commits
-      statuses: write
-      checks: write
-
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -63,7 +59,7 @@ jobs:
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
 
-    - name: Mangrove.js build
+    - name: Build
       run: yarn run build
       env:
         NODE_OPTIONS: "--max_old_space_size=8192"
@@ -71,21 +67,18 @@ jobs:
     - name: Save status of build
       run: echo "mangrove_js_built=true" >> $GITHUB_ENV      
 
-    # == run and report tests == 
-    - name: Mangrove.js Tests
+    # == run and upload test result (reporter run in separate workflow) == 
+    - name: Run tests
       env:
         FOUNDRY_CACHE_PATH: "~/.foundry/build-cache"
         FOUNDRY_OUT: "~/.foundry/build-out"
       run: yarn run test:coverage
 
-    - name: Mangrove.js Test Report
-      uses: dorny/test-reporter@v1
-      if: ${{ env.mangrove_js_built && (success() || failure()) }}
+    - uses: actions/upload-artifact@v2
+      if: ${{ env.mangrove_js_built && (success() || failure())}}
       with:
-        name: Mangrove.js Tests                                     # Name of the check run which will be created
-        path: ./coverage-tests-report.json                          # Path to test results
-        reporter: mocha-json                                        # Format of test results
-        fail-on-error: 'false'                                      # Don't mark this step as failed if tests fail - the test step itself will be marked as failed
+        name: test-results
+        path: ./coverage-tests-report.json
 
     # == verify cli can start ==
     - name: Mgv cli Tests

@@ -1,16 +1,7 @@
-import { Signer as AbstractSigner } from "@ethersproject/abstract-signer/lib/index";
-import { FallbackProvider } from "@ethersproject/providers/lib/fallback-provider";
-import {
-  Provider,
-  BlockTag,
-  TransactionRequest,
-  TransactionResponse,
-} from "@ethersproject/abstract-provider";
+import { Provider } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
-import { Deferrable } from "@ethersproject/properties";
-import { BigNumber } from "@ethersproject/bignumber/lib/bignumber";
 import type { MarkOptional } from "ts-essentials";
-import type { Big } from "big.js";
+import type { BigSource } from "big.js";
 
 export type { Signer, Provider };
 
@@ -30,4 +21,4 @@ export interface MarketParams {
   quote: string | MarkOptional<TokenInfo, "address" | "decimals">;
 }
 
-export type Bigish = Big | number | string;
+export type Bigish = BigSource;
