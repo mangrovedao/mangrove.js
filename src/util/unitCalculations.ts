@@ -1,6 +1,6 @@
 import Big from "big.js";
 import * as ethers from "ethers";
-import Mangrove from "../mangrove";
+import configuration from "../configuration";
 import { Bigish } from "../types";
 
 class UnitCalculations {
@@ -23,7 +23,7 @@ class UnitCalculations {
     if (typeof nameOrDecimals === "number") {
       decimals = nameOrDecimals;
     } else {
-      decimals = Mangrove.getDecimals(nameOrDecimals);
+      decimals = configuration.tokens.getDecimalsOrFail(nameOrDecimals);
     }
     return ethers.BigNumber.from(Big(10).pow(decimals).mul(amount).toFixed(0));
   }
@@ -47,7 +47,7 @@ class UnitCalculations {
     if (typeof nameOrDecimals === "number") {
       decimals = nameOrDecimals;
     } else {
-      decimals = Mangrove.getDecimals(nameOrDecimals);
+      decimals = configuration.tokens.getDecimalsOrFail(nameOrDecimals);
     }
     if (amount instanceof ethers.BigNumber) {
       amount = amount.toString();

@@ -4,9 +4,10 @@ import {
   connectToToyENSContract,
   watchAllToyENSEntries,
 } from "../../src/util/devNode";
-import { Watcher } from "../../src/util";
+import { Deferred } from "../../src/util";
 
 import { Mangrove } from "../../src";
+import configuration from "../../src/configuration";
 
 import node from "../../src/util/node";
 
@@ -48,8 +49,10 @@ describe("Mangrove functionality", () => {
       (mgv.provider as any).pollingInterval = 10;
 
       // setup mangrove addresses watcher
-      const watcher = new Watcher(Mangrove.addresses.local);
-      Mangrove.addresses.local = watcher.proxy;
+      const deferredMangroveAddressChanged = new Deferred();
+      configuration.addresses.watchAddress("local", "Mangrove", () =>
+        deferredMangroveAddressChanged.resolve()
+      );
 
       // create new entry
       const ens = connectToToyENSContract(
@@ -58,11 +61,8 @@ describe("Mangrove functionality", () => {
 
       // watch for new entry
       const ADDR1 = "0x0000000000000000000000000000000000000001";
-      const watchPromise = watcher.watchFor(
-        (k, v) => k === "Mangrove" && v == ADDR1
-      );
       ens["set(string,address)"]("Mangrove", ADDR1);
-      await watchPromise;
+      await deferredMangroveAddressChanged.promise;
       mgv.disconnect();
       (server.process as any).kill();
     });
