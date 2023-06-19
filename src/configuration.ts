@@ -6,13 +6,13 @@ import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSock
 import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
 
 import { ethers } from "ethers";
-import Big, { BigSource } from "big.js";
+import Big from "big.js";
 import {
   BlockManager,
   ReliableHttpProvider,
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
-import { Provider, typechain } from "./types";
+import { Bigish, Provider, typechain } from "./types";
 import mgvCore from "@mangrovedao/mangrove-core";
 import * as eth from "./eth";
 import clone from "just-clone";
@@ -96,9 +96,9 @@ export type KandelRawMarketConfiguration = Omit<
   KandelMarketConfiguration,
   "minimumBasePerOfferFactor" | "minimumQuotePerOfferFactor" | "ratio"
 > & {
-  minimumBasePerOfferFactor: BigSource;
-  minimumQuotePerOfferFactor: BigSource;
-  ratio: BigSource;
+  minimumBasePerOfferFactor: Bigish;
+  minimumQuotePerOfferFactor: Bigish;
+  ratio: Bigish;
 };
 
 export type KandelAllConfigurationFields = KandelNetworkConfiguration &
@@ -127,7 +127,7 @@ let config: Configuration;
 
 export type PartialConfiguration = RecursivePartial<Configuration>;
 
-/// ADDRESSSES
+/// ADDRESSES
 
 const addressWatchers: Map<
   string,
