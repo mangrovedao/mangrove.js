@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.1
+
 - Fix broken `deal` functionality for tests.
 
 # 1.4.0
