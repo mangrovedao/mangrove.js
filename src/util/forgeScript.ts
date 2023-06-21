@@ -25,7 +25,7 @@ export function execForgeCmd(
   // the script seems never receives tx receipts back. Moving to `exec` solves the issue.
   // Using util.promisify on childProcess.exec recreates the issue.
   // Must be investigated further if it pops up again.
-  const scriptPromise = new Promise((ok, ko) => {
+  const scriptPromise = new Promise<string>((ok, ko) => {
     childProcess.exec(
       command,
       {
@@ -64,6 +64,7 @@ export async function runScript(params: {
   stateCache: boolean;
   stateCacheFile: string;
   targetContract?: string;
+  extra?: string;
 }) {
   /* The --root parameter sets the project root dir, but, importantly, the script still runs in `cwd`. If the command below was executed with cwd=CORE_DIR, forge would not look for a .env file in directories above CORE_DIR, because CORE_DIR contains a foundry.toml file. By leaving cwd as-is, forge will look look in cwd and up until it meets a foundry.toml file or a .git directory.
 
@@ -84,7 +85,8 @@ export async function runScript(params: {
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
-    ${params.script}`;
+    ${params.script} \
+    ${params.extra || ""}`;
 
   console.log("Running forge script:");
   // this dumps the private-key but it is a test mnemonic

@@ -1,7 +1,7 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
 import { Mangrove } from "../../";
-import node, { inputServerParamsType } from "../../util/node";
+import node, { inputServerParamsType, serverType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
 import DevNode from "../devNode";
@@ -35,7 +35,7 @@ export type hookInfo = {
     tester: account;
     arbitrager: account;
   };
-  server?: ProxyServer;
+  server?: serverType;
   closeCurrentProxy?: () => Promise<void>;
 };
 
@@ -55,7 +55,7 @@ export const mochaHooks = {
     // Workaround for https://github.com/foundry-rs/foundry/issues/2884
     for (let i = 0; i < 10; i++) {
       try {
-        await hook.server.deploy();
+        await hook.server.deploy?.();
         break;
       } catch (e) {
         console.log("Failed to deploy, retrying...");
@@ -158,7 +158,7 @@ export const mochaHooks = {
       };
     }
 
-    const provider = new ethers.providers.JsonRpcProvider(hook.server.url);
+    const provider = new ethers.providers.JsonRpcProvider(hook.server?.url);
     for (let i = 0; i < 100; i++) {
       const result = await provider.send("txpool_content", []);
       if (!Object.keys(result).length) {
@@ -215,13 +215,15 @@ export const mochaHooks = {
     });
     newProxy.proxyServer?.listen(currentProxyPort, serverParams.host);
     hook.proxies[currentProxyPort] = newProxy;
-    // Tests reference the anvil instance through the following address.
-    // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request
-    hook.server.url = `http://${serverParams.host}:${currentProxyPort}`;
+    if (hook.server) {
+      // Tests reference the anvil instance through the following address.
+      // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request
+      hook.server.url = `http://${serverParams.host}:${currentProxyPort}`;
 
-    await hook.server.revert();
-    // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
-    await hook.server.snapshot();
+      await hook.server.revert();
+      // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
+      await hook.server.snapshot();
+    }
   },
 
   async afterAllImpl(hook: hookInfo) {

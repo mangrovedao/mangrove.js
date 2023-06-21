@@ -26,7 +26,7 @@ import type { MarkRequired } from "ts-essentials";
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { runScript } from "./forgeScript";
-import { spawn, spawnParams } from "./spawn";
+import { spawn } from "./spawn";
 import { ChildProcessWithoutNullStreams } from "child_process";
 
 // default first three default anvil accounts,
@@ -81,7 +81,7 @@ export type partialComputeArgvType = {
   "state-cache": boolean;
   stateCache: boolean;
   deploy: boolean;
-  script: string;
+  script?: string;
   "fork-url"?: string;
   forkUrl?: string;
   "fork-block-number"?: number;
@@ -103,26 +103,28 @@ export type computeArgvType = MarkRequired<
   "url" | "provider"
 >;
 
+export type serverType = {
+  url: string;
+  accounts: {
+    address: string;
+    key: string;
+  }[];
+  params: computeArgvType | serverParamsType;
+  deploy?: () => Promise<void>;
+  snapshot: () => Promise<string>;
+  revert: (snapshotId?: string) => Promise<void>;
+  deal: (dealParams: {
+    token: string;
+    account: string;
+    amount?: number;
+    internalAmount?: ethers.BigNumber;
+  }) => Promise<void>;
+  process?: ChildProcessWithoutNullStreams;
+  spawnEndedPromise?: Promise<void>;
+};
+
 export type nodeType = {
-  connect(): Promise<{
-    url: string;
-    accounts: {
-      address: string;
-      key: string;
-    }[];
-    params: computeArgvType | serverParamsType;
-    deploy?: () => Promise<void>;
-    snapshot: () => Promise<string>;
-    revert: (snapshotId?: string) => Promise<void>;
-    deal: (dealParams: {
-      token: string;
-      account: string;
-      amount?: number;
-      internalAmount?: ethers.BigNumber;
-    }) => Promise<void>;
-    process?: ChildProcessWithoutNullStreams;
-    spawnEndedPromise?: Promise<void>;
-  }>;
+  connect(): Promise<serverType>;
   // FIXME remove optionality here
   watchAllToyENSEntries?: () => Promise<DevNode.fetchedContract[]>;
 };
@@ -157,7 +159,7 @@ export const builder = (yargs: yargs.Argv<{}>) => {
       default: true,
     })
     .option("script", {
-      describe: "Path to forge script (contract or path or path:contract)",
+      describe: "Path to forge script (contract or path or path:contract).",
       default: "MangroveJsDeploy",
       requiresArg: true,
       type: "string",
@@ -260,7 +262,11 @@ const connect = async (params: computeArgvType | serverParamsType) => {
   }
 
   const deployFn = () => {
-    return deploy(params);
+    const script = params.script;
+    if (script === undefined) {
+      throw new Error("script parameter is required when running deploy");
+    }
+    return deploy({ ...params, script });
   };
 
   // deploy immediately if requested, otherwise return a deploy function
