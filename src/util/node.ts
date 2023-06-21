@@ -42,7 +42,7 @@ type inputDeployParams = {
   provider?: any;
   stateCache?: boolean;
   targetContract?: string;
-  script: string;
+  script?: string;
   url?: string;
   pipe?: boolean;
   setMulticallCodeIfAbsent?: boolean;
@@ -63,7 +63,7 @@ export type inputServerParamsType = inputServerParamsTypeOnly &
 
 type deployParams = MarkRequired<
   inputDeployParams,
-  "provider" | "url" | "stateCache" | "pipe"
+  "provider" | "url" | "stateCache" | "pipe" | "script"
 >;
 
 type serverParamsTypeOnly = MarkRequired<
@@ -356,12 +356,7 @@ export default node;
 /* If running as script, start anvil. */
 if (require.main === module) {
   const main = async () => {
-    const { spawnEndedPromise } = await (
-      await node({
-        pipe: true,
-        script: "",
-      })
-    ).connect();
+    const { spawnEndedPromise } = await (await node({ pipe: true })).connect();
     if (spawnEndedPromise) {
       console.log("Node ready.");
       await spawnEndedPromise;
