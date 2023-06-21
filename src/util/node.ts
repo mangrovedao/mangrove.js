@@ -159,7 +159,7 @@ export const builder = (yargs: yargs.Argv<{}>) => {
       default: true,
     })
     .option("script", {
-      describe: "Path to forge script (contract or path or path:contract).",
+      describe: "Path to forge script (contract or path or path:contract)",
       default: "MangroveJsDeploy",
       requiresArg: true,
       type: "string",
