@@ -1,5 +1,7 @@
 # Next version
 
+- Fix broken `deal` functionality for tests.
+
 # 1.4.0
 
 - Fix `[object]` being pretty printed when calling `consoleAks/Bids`.
