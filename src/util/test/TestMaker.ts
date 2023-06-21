@@ -141,9 +141,7 @@ class TestMaker {
       this.contract.address
     );
     await (
-      await (
-        await node({ url: url, spawn: false, deploy: false, script: "" })
-      ).connect()
+      await (await node({ url: url, spawn: false, deploy: false })).connect()
     ).deal({
       token: outbound_tkn.address,
       account: this.contract.address,

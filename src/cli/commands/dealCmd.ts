@@ -53,8 +53,6 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
       host: argv.host,
       port: Number(argv.port),
       pipe: true,
-      // FIXME make script optional
-      script: "",
     })
   ).connect();
   return deal(argv);
