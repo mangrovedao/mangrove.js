@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { execForgeCmd, runScript } from "./forgeScript";
+import { runScript } from "./forgeScript";
 import DevNode from "./devNode";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import path from "path";
@@ -21,10 +21,10 @@ export async function deal(dealParams: {
   };
 
   // parse script results to get storage slot and token decimals
-  let slot: string = "";
-  let decimals: number = 0;
+  let slot: string | undefined = undefined;
+  let decimals: number | undefined = undefined;
 
-  let ret: any = await runScript({
+  const ret = await runScript({
     url: dealParams.url,
     env: env,
     provider: dealParams.provider,
@@ -38,15 +38,18 @@ export async function deal(dealParams: {
     const slotMatch = line.match(/\s*slot:\s*(\S+)/);
     if (slotMatch) {
       slot = slotMatch[1];
-    } else {
-      throw new Error("Could not find slot value in script output");
     }
     const decimalsMatch = line.match(/\s*decimals:\s*(\S+)/);
     if (decimalsMatch) {
       decimals = parseInt(decimalsMatch[1], 10);
-    } else {
-      throw new Error("Could not find decimals value in script output");
     }
+  }
+
+  if (slot === undefined) {
+    throw new Error("Could not find slot value in script output");
+  }
+  if (decimals === undefined) {
+    throw new Error("Could not find decimals value in script output");
   }
 
   if (dealParams.internalAmount !== undefined) {

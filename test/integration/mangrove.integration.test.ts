@@ -3,6 +3,7 @@ import { assert } from "chai";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { toWei } from "../util/helpers";
+import { serverType } from "../../src/util/node";
 
 import { Mangrove } from "../../src";
 
@@ -16,9 +17,11 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 describe("Mangrove integration tests suite", function () {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
+  let server: serverType;
 
   beforeEach(async function () {
     //set mgv object
+    server = this.server as serverType;
     mgv = await Mangrove.connect({
       provider: this.server.url,
       privateKey: this.accounts.tester.key,
@@ -113,6 +116,21 @@ describe("Mangrove integration tests suite", function () {
 
       assert.deepEqual(marketData[0].base, tokenBData);
       assert.deepEqual(marketData[0].quote, tokenAData);
+    });
+  });
+  describe("node utils", () => {
+    it("can deal a test token", async () => {
+      // Arrange
+      const token = await mgv.token("TokenA");
+      const account = await mgv.signer.getAddress();
+      const amount = 432432;
+
+      // Act
+      await server.deal({ token: token.address, account, amount });
+
+      // Assert
+      const balance = await token.balanceOf(account);
+      assert.equal(balance.toNumber(), amount);
     });
   });
 });
