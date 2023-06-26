@@ -1170,7 +1170,7 @@ __metadata:
     big.js: ^6.2.1
     chai: ^4.3.7
     chai-as-promised: ^7.1.1
-    chalk: ^4.1.2
+    chalk: ^5.2.0
     cross-env: ^7.0.3
     deepmerge: ^4.3.1
     dir-compare: ^4.0.0
@@ -2181,7 +2181,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:5.2.0":
+"chalk@npm:5.2.0, chalk@npm:^5.2.0":
   version: 5.2.0
   resolution: "chalk@npm:5.2.0"
   checksum: 03d8060277de6cf2fd567dc25fcf770593eb5bb85f460ce443e49255a30ff1242edd0c90a06a03803b0466ff0687a939b41db1757bec987113e83de89a003caa
@@ -2199,7 +2199,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.2":
+"chalk@npm:^4.0.0, chalk@npm:^4.1.0":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
