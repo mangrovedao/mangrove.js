@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.2
+
 - Bump reliable-event-subscriber to v1.1.21
 
 # 1.4.1
