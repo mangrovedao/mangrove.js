@@ -1,5 +1,7 @@
 # Next version
 
+- Bump reliable-event-subscriber to v1.1.21
+
 # 1.4.1
 
 - Fix broken `deal` functionality for tests.
