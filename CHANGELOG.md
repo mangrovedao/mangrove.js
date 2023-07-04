@@ -2,6 +2,8 @@
 
 # 1.4.3
 
+- Bump reliable-event-subscriber to v1.1.22
+
 # 1.4.2
 
 - Bump reliable-event-subscriber to v1.1.21
