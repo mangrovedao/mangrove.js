@@ -1,5 +1,13 @@
 # Next version
 
+# 1.4.7
+
+- fix mangrove-core version not correctly updated
+
+# 1.4.6
+
+- Bump mangrove-core to v1.5.6
+
 # 1.4.5
 
 - Bump mangrove-core to v1.5.5
