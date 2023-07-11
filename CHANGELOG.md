@@ -1,5 +1,9 @@
 # Next version
 
+# 1.4.8
+
+- Bump: reliable-event-subscriber to v1.1.23
+
 # 1.4.7
 
 - fix mangrove-core version not correctly updated
