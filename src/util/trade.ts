@@ -603,7 +603,8 @@ class Trade {
       fillWants,
       wants,
       gives,
-      market
+      market,
+      pivotId
     );
     // if resting order was not posted, result.summary is still undefined.
     return { result, response };
@@ -615,7 +616,8 @@ class Trade {
     fillWants: boolean,
     wants: ethers.BigNumber,
     gives: ethers.BigNumber,
-    market: Market
+    market: Market,
+    pivotId: number
   ) {
     const receipt = await (await response).wait();
 
@@ -642,7 +644,8 @@ class Trade {
       fillWants,
       wants,
       gives,
-      market
+      market,
+      pivotId
     );
 
     if (!this.tradeEventManagement.isOrderResult(result)) {

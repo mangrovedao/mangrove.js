@@ -176,6 +176,7 @@ namespace Market {
     gives: Big;
     volume: Big;
     price: Big | undefined;
+    pivotId?: number;
   };
 
   export type Offer = OfferSlim & {
