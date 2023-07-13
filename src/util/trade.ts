@@ -30,31 +30,33 @@ class Trade {
     baseToken: MgvToken,
     quoteToken: MgvToken
   ) {
-    let wants: Big, gives: Big, fillWants: boolean;
+    let takerWants: Big, takerGives: Big, fillWants: boolean;
     if ("price" in params) {
       if ("volume" in params) {
-        wants = Big(params.volume);
-        gives = wants.mul(params.price);
+        takerWants = Big(params.volume);
+        takerGives = takerWants.mul(params.price);
         fillWants = true;
       } else {
-        gives = Big(params.total);
-        wants = gives.div(params.price);
+        takerGives = Big(params.total);
+        takerWants = takerGives.div(params.price);
         fillWants = false;
       }
     } else {
-      wants = Big(params.wants);
-      gives = Big(params.gives);
+      takerWants = Big(params.wants);
+      takerGives = Big(params.gives);
       fillWants = params.fillWants ?? true;
     }
 
     const slippage = this.validateSlippage(params.slippage);
     const givesWithSlippage = quoteToken.toUnits(
-      gives.mul(100 + slippage).div(100)
+      takerGives.mul(100 + slippage).div(100)
     );
     return {
-      wants: baseToken.toUnits(wants),
-      givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
-      gives: givesWithSlippage,
+      takerWants: baseToken.toUnits(takerWants),
+      givesSlippageAmount: givesWithSlippage.sub(
+        quoteToken.toUnits(takerGives)
+      ),
+      takerGives: givesWithSlippage,
       fillWants: fillWants,
     };
   }
@@ -64,32 +66,34 @@ class Trade {
     baseToken: MgvToken,
     quoteToken: MgvToken
   ) {
-    let wants: Big, gives: Big, fillWants: boolean;
+    let takerWants: Big, takerGives: Big, fillWants: boolean;
     if ("price" in params) {
       if ("volume" in params) {
-        gives = Big(params.volume);
-        wants = gives.mul(params.price);
+        takerGives = Big(params.volume);
+        takerWants = takerGives.mul(params.price);
         fillWants = false;
       } else {
-        wants = Big(params.total);
-        gives = wants.div(params.price);
+        takerWants = Big(params.total);
+        takerGives = takerWants.div(params.price);
         fillWants = true;
       }
     } else {
-      wants = Big(params.wants);
-      gives = Big(params.gives);
+      takerWants = Big(params.wants);
+      takerGives = Big(params.gives);
       fillWants = params.fillWants ?? false;
     }
 
     const slippage = this.validateSlippage(params.slippage);
     const wantsWithSlippage = quoteToken.toUnits(
-      wants.mul(100 - slippage).div(100)
+      takerWants.mul(100 - slippage).div(100)
     );
 
     return {
-      gives: baseToken.toUnits(gives),
-      wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
-      wants: wantsWithSlippage,
+      takerGives: baseToken.toUnits(takerGives),
+      wantsSlippageAmount: wantsWithSlippage.sub(
+        quoteToken.toUnits(takerWants)
+      ),
+      takerWants: wantsWithSlippage,
       fillWants: fillWants,
     };
   }
@@ -150,7 +154,7 @@ class Trade {
   }
 
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { gives, wants, fillWants } =
+    const { takerGives, takerWants, fillWants } =
       bs === "buy"
         ? this.getParamsForBuy(params, market.base, market.quote)
         : this.getParamsForSell(params, market.base, market.quote);
@@ -169,8 +173,8 @@ class Trade {
         : "marketOrder";
 
     return {
-      gives,
-      wants,
+      takerGives,
+      takerWants,
       fillWants,
       restingOrderParams,
       orderType,
@@ -236,8 +240,8 @@ class Trade {
     // } else {
     //   if ("offerId" in params && params.offerId) {
     const {
-      wants,
-      gives,
+      takerWants,
+      takerGives,
       fillWants,
       restingOrderParams,
       orderType,
@@ -247,8 +251,8 @@ class Trade {
       case "restingOrder":
         return this.mangroveOrder(
           {
-            wants: wants,
-            gives: gives,
+            takerWants: takerWants,
+            takerGives: takerGives,
             orderType: bs,
             fillWants: fillWants,
             expiryDate: params.expiryDate ?? 0,
@@ -266,8 +270,8 @@ class Trade {
             targets: [
               {
                 offerId: snipeOfferId as number,
-                takerGives: gives,
-                takerWants: wants,
+                takerGives: takerGives,
+                takerWants: takerWants,
                 gasLimit: undefined,
               },
             ],
@@ -282,8 +286,8 @@ class Trade {
       case "marketOrder":
         return this.marketOrder(
           {
-            wants: wants,
-            gives: gives,
+            takerWants: takerWants,
+            takerGives: takerGives,
             orderType: bs,
             fillWants: fillWants,
             market,
@@ -364,25 +368,25 @@ class Trade {
   }
 
   async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { wants, orderType } = this.getRawParams(bs, params, market);
+    const { takerWants, orderType } = this.getRawParams(bs, params, market);
 
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.estimateGas(bs, wants)).add(
+        return (await market.estimateGas(bs, takerWants)).add(
           MANGROVE_ORDER_GAS_OVERHEAD
         );
       case "snipe":
         return undefined;
       case "marketOrder":
-        return await market.estimateGas(bs, wants);
+        return await market.estimateGas(bs, takerWants);
       default:
         throw new Error(`Unknown order type ${orderType}`);
     }
   }
 
   async simulateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { gives, wants, fillWants, orderType } = this.getRawParams(
+    const { takerGives, takerWants, fillWants, orderType } = this.getRawParams(
       bs,
       params,
       market
@@ -392,13 +396,13 @@ class Trade {
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.simulateGas(ba, gives, wants, fillWants)).add(
-          MANGROVE_ORDER_GAS_OVERHEAD
-        );
+        return (
+          await market.simulateGas(ba, takerGives, takerWants, fillWants)
+        ).add(MANGROVE_ORDER_GAS_OVERHEAD);
       case "snipe":
         return undefined;
       case "marketOrder":
-        return await market.simulateGas(ba, gives, wants, fillWants);
+        return await market.simulateGas(ba, takerGives, takerWants, fillWants);
     }
   }
 
@@ -435,15 +439,15 @@ class Trade {
    */
   async marketOrder(
     {
-      wants,
-      gives,
+      takerWants,
+      takerGives,
       orderType,
       fillWants,
       market,
       gasLowerBound,
     }: {
-      wants: ethers.BigNumber;
-      gives: ethers.BigNumber;
+      takerWants: ethers.BigNumber;
+      takerGives: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       market: Market;
@@ -465,8 +469,8 @@ class Trade {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
         fillWants: fillWants,
-        wants: wants.toString(),
-        gives: gives.toString(),
+        takerWants: takerWants.toString(),
+        takerGives: takerGives.toString(),
         orderType: orderType,
         gasLimit: overrides.gasLimit?.toString(),
       },
@@ -480,8 +484,8 @@ class Trade {
       [
         outboundTkn.address,
         inboundTkn.address,
-        wants,
-        gives,
+        takerWants,
+        takerGives,
         fillWants,
         overrides,
       ]
@@ -491,8 +495,8 @@ class Trade {
       response,
       orderType,
       fillWants,
-      wants,
-      gives,
+      takerWants,
+      takerGives,
       market
     );
     return { result, response };
@@ -502,8 +506,8 @@ class Trade {
     response: Promise<ethers.ContractTransaction>,
     orderType: Market.BS,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
+    takerWants: ethers.BigNumber,
+    takerGives: ethers.BigNumber,
     market: Market
   ) {
     const receipt = await (await response).wait();
@@ -518,8 +522,8 @@ class Trade {
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      wants,
-      gives,
+      takerWants,
+      takerGives,
       market
     );
     if (!this.tradeEventManagement.isOrderResult(result)) {
@@ -530,8 +534,8 @@ class Trade {
 
   async mangroveOrder(
     {
-      wants,
-      gives,
+      takerWants,
+      takerGives,
       orderType,
       fillWants,
       fillOrKill,
@@ -540,8 +544,8 @@ class Trade {
       market,
       gasLowerBound,
     }: {
-      wants: ethers.BigNumber;
-      gives: ethers.BigNumber;
+      takerWants: ethers.BigNumber;
+      takerGives: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       fillOrKill: boolean;
@@ -561,13 +565,15 @@ class Trade {
       ...overrides,
       value: provision ? market.mgv.toUnits(provision, 18) : 0,
     };
-
+    // if taker order was "buy", ba will be "asks" (because taker is consumming asks on mangrove)
     const ba = this.bsToBa(orderType);
+
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    // (maker) gives is takerWants:outbound, (maker) wants is takerGives:inbound
     const price = Market.getPrice(
       ba,
-      inbound_tkn.fromUnits(gives),
-      outbound_tkn.fromUnits(wants)
+      /*(maker) gives:*/ outbound_tkn.fromUnits(takerWants),
+      /*(maker) wants:*/ inbound_tkn.fromUnits(takerGives)
     );
 
     // Find pivot in opposite semibook
@@ -588,8 +594,8 @@ class Trade {
           inbound_tkn: inbound_tkn.address,
           fillOrKill: fillOrKill,
           fillWants: orderType === "buy",
-          takerWants: wants,
-          takerGives: gives,
+          takerWants: takerWants,
+          takerGives: takerGives,
           restingOrder: postRestingOrder,
           pivotId,
           expiryDate: expiryDate,
@@ -601,8 +607,8 @@ class Trade {
       response,
       orderType,
       fillWants,
-      wants,
-      gives,
+      takerWants,
+      takerGives,
       market
     );
     // if resting order was not posted, result.summary is still undefined.
