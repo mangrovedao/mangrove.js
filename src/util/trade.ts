@@ -566,8 +566,8 @@ class Trade {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const price = Market.getPrice(
       ba,
-      inbound_tkn.fromUnits(gives),
-      outbound_tkn.fromUnits(wants)
+      /* (maker) gives is takerWants*/ outbound_tkn.fromUnits(wants),
+      /* (maker) wants is takerWants*/ inbound_tkn.fromUnits(gives)
     );
 
     // Find pivot in opposite semibook
@@ -647,8 +647,7 @@ class Trade {
 
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("mangrove order went wrong");
-    }
-    return result;
+    } else return result;
   }
 
   getRestingOrderParams(params: Market.RestingOrderParams | undefined): {
