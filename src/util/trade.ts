@@ -567,7 +567,7 @@ class Trade {
     const price = Market.getPrice(
       ba,
       /* (maker) gives is takerWants*/ outbound_tkn.fromUnits(wants),
-      /* (maker) wants is takerWants*/ inbound_tkn.fromUnits(gives)
+      /* (maker) wants is takerGives*/ inbound_tkn.fromUnits(gives)
     );
 
     // Find pivot in opposite semibook
