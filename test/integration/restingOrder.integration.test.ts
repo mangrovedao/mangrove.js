@@ -130,12 +130,15 @@ describe("RestingOrder", () => {
       // Fill up bids to verify that pivot is used:
       const meAsLP = await mgv.liquidityProvider(orderLP.market);
       const meProvision = await meAsLP.computeBidProvision();
+      let pivot = 0;
       for (let i = 0; i < 15; i++) {
-        await meAsLP.newBid({
-          wants: 1 + i,
-          gives: 10,
-          fund: meProvision,
-        });
+        pivot = (
+          await meAsLP.newBid({
+            wants: 1 + i,
+            gives: 15,
+            fund: meProvision,
+          })
+        ).id;
       }
 
       const buyPromises = await orderLP.market.buy({
@@ -160,6 +163,14 @@ describe("RestingOrder", () => {
         "Order should have been partially filled"
       );
       assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
+      assert(
+        orderResult.restingOrder
+          ? orderResult.restingOrder.pivotId
+            ? orderResult.restingOrder.pivotId === pivot
+            : false
+          : false,
+        "Pivot not used"
+      );
     });
 
     it("simple resting order, with forceRoutingToMangroveOrder:true", async () => {

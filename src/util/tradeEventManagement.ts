@@ -210,7 +210,8 @@ class TradeEventManagement {
     evt: NewOwnedOfferEvent,
     taker: string,
     currentRestingOrder: Market.OfferSlim | undefined,
-    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[]
+    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[],
+    pivotId: number
   ) {
     if (evt.args.owner === taker) {
       ba = ba === "bids" ? "asks" : "bids";
@@ -218,6 +219,9 @@ class TradeEventManagement {
         offerWrites.find(
           (x) => x.ba == ba && x.offer.id === this.#rawIdToId(evt.args.offerId)
         )?.offer ?? currentRestingOrder;
+      if (currentRestingOrder) {
+        currentRestingOrder.pivotId = pivotId;
+      }
     }
     return currentRestingOrder;
   }
@@ -308,7 +312,8 @@ class TradeEventManagement {
       takerGave: ethers.BigNumber
     ) => boolean,
     result: OrderResultWithOptionalSummary,
-    market: Market
+    market: Market,
+    pivotId: number
   ) {
     if (evt.args?.taker && receipt.from !== evt.args.taker) return;
 
@@ -331,7 +336,8 @@ class TradeEventManagement {
           evt as NewOwnedOfferEvent,
           receipt.from,
           result.restingOrder,
-          result.offerWrites
+          result.offerWrites,
+          pivotId
         );
         break;
       }
@@ -388,7 +394,8 @@ class TradeEventManagement {
     fillWants: boolean,
     wants: ethers.BigNumber,
     gives: ethers.BigNumber,
-    market: Market
+    market: Market,
+    pivotId: number
   ) {
     for (const evt of this.getContractEventsFromReceipt(
       receipt,
@@ -400,7 +407,8 @@ class TradeEventManagement {
         ba,
         this.createPartialFillFunc(fillWants, wants, gives),
         result,
-        market
+        market,
+        pivotId
       );
     }
   }
