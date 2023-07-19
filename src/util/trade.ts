@@ -566,8 +566,8 @@ class Trade {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const price = Market.getPrice(
       ba,
-      inbound_tkn.fromUnits(gives),
-      outbound_tkn.fromUnits(wants)
+      /* (maker) gives is takerWants*/ outbound_tkn.fromUnits(wants),
+      /* (maker) wants is takerGives*/ inbound_tkn.fromUnits(gives)
     );
 
     // Find pivot in opposite semibook
@@ -603,7 +603,8 @@ class Trade {
       fillWants,
       wants,
       gives,
-      market
+      market,
+      pivotId
     );
     // if resting order was not posted, result.summary is still undefined.
     return { result, response };
@@ -615,7 +616,8 @@ class Trade {
     fillWants: boolean,
     wants: ethers.BigNumber,
     gives: ethers.BigNumber,
-    market: Market
+    market: Market,
+    pivotId: number
   ) {
     const receipt = await (await response).wait();
 
@@ -642,13 +644,13 @@ class Trade {
       fillWants,
       wants,
       gives,
-      market
+      market,
+      pivotId
     );
 
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("mangrove order went wrong");
-    }
-    return result;
+    } else return result;
   }
 
   getRestingOrderParams(params: Market.RestingOrderParams | undefined): {
