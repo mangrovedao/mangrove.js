@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.11-0
+
 # 1.4.10
 
 - fix: wrong pivot when posting limit orders far from the mid price.
