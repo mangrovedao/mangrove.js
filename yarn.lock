@@ -1153,7 +1153,7 @@ __metadata:
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
     "@mangrovedao/mangrove-core": ^1.5.6
-    "@mangrovedao/reliable-event-subscriber": 1.1.25
+    "@mangrovedao/reliable-event-subscriber": 1.1.26
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6
     "@types/chai-as-promised": ^7.1.5
@@ -1210,9 +1210,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mangrovedao/reliable-event-subscriber@npm:1.1.25":
-  version: 1.1.25
-  resolution: "@mangrovedao/reliable-event-subscriber@npm:1.1.25"
+"@mangrovedao/reliable-event-subscriber@npm:1.1.26":
+  version: 1.1.26
+  resolution: "@mangrovedao/reliable-event-subscriber@npm:1.1.26"
   dependencies:
     "@ethersproject/providers": ^5.7.2
     async-mutex: ^0.4.0
@@ -1220,7 +1220,7 @@ __metadata:
     ethers: ^5.7.2
     isomorphic-ws: ^5.0.0
     ws: ^8.13.0
-  checksum: 331b1f4bf0272be62776b006ba6249ef7bbec50221419962e5a27cbe37f9a4864b4708703a90491263161a204f3196fda066892007778a9f11ddc0f49dcd2324
+  checksum: da4cdab3df9a9a1ef2751834f86e5935c940728c21d4872e3b8931eab6ddc2a908be5df228c7461785297d41b5056d96f16b77b14893b5f17120864f9006e122
   languageName: node
   linkType: hard
 
