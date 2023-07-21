@@ -1,6 +1,6 @@
 # Next version
 
-# 1.4.11-0
+- Bump: reliable-event-subscriber to v1.1.25
 
 # 1.4.10
 
