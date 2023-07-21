@@ -1,5 +1,7 @@
 # Next version
 
+- Bump: reliable-event-subscriber to v1.1.25
+
 # 1.4.10
 
 - fix: wrong pivot when posting limit orders far from the mid price.
