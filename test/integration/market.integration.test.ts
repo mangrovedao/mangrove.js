@@ -1598,4 +1598,11 @@ describe("Market integration tests suite", () => {
       assert.equal(result.tradeFailures.length, 1);
     });
   });
+
+  it("get minimum volume", async () => {
+    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+
+    assert.equal(market.minVolumeAsk!.toNumber(), 0.108072);
+    assert.equal(market.minVolumeBid!.toNumber(), 0.216144);
+  });
 });

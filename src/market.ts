@@ -261,6 +261,9 @@ class Market {
   private asksCb: Semibook.EventListener | undefined;
   private bidsCb: Semibook.EventListener | undefined;
 
+  public minVolumeAsk?: Big;
+  public minVolumeBid?: Big;
+
   static async connect(
     params: {
       mgv: Mangrove;
@@ -280,6 +283,14 @@ class Market {
     } else {
       await market.#initialize(params.bookOptions);
     }
+    const config = await market.config();
+    const gasreq = await params.mgv.orderContract.callStatic.offerGasreq();
+    market.minVolumeAsk = config.asks.density.mul(
+      new Big(config.asks.offer_gasbase).plus(new Big(gasreq.toString()))
+    );
+    market.minVolumeBid = config.bids.density.mul(
+      new Big(config.bids.offer_gasbase).plus(new Big(gasreq.toString()))
+    );
 
     return market;
   }
