@@ -23,7 +23,7 @@ import KandelSeeder from "./kandel/kandelSeeder";
 import KandelInstance from "./kandel/kandelInstance";
 import OfferMaker from "./offerMaker";
 import { enableLogging } from "./util/logger";
-import { addressesConfiguration } from "./configuration";
+import { addressesConfiguration, tokensConfiguration } from "./configuration";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -49,4 +49,5 @@ export {
   OfferMaker,
   enableLogging,
   addressesConfiguration,
+  tokensConfiguration,
 };
