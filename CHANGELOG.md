@@ -1,5 +1,7 @@
 # Next version
 
+- make addresses configuration public
+
 # 1.4.14
 
 - Bump: reliable-event-subscriber to v1.1.27
