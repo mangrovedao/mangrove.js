@@ -17,6 +17,7 @@ import mgvCore from "@mangrovedao/mangrove-core";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
+import moize from "moize";
 
 // Make keys optional at all levels of T
 export type RecursivePartial<T> = {
@@ -293,6 +294,16 @@ export const tokensConfiguration = {
     tokensConfiguration.setDecimals(tokenName, decimals);
     return decimals;
   },
+
+  /**
+   * Read chain for decimals of `address` on current network
+   */
+  fetchDecimalsFromAddress: moize(
+    async (address: string, provider: Provider): Promise<number> => {
+      const token = typechain.IERC20__factory.connect(address, provider);
+      return token.decimals();
+    }
+  ),
 
   /**
    * Read displayed decimals for `tokenName`.
