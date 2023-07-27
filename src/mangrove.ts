@@ -202,6 +202,9 @@ class Mangrove {
       blockManagerOptions: options.blockManagerOptions,
       reliableHttpProvider: options.reliableHttpProviderOptions,
       eventEmitter,
+      getLogsTimeout: configuration.reliableEventSubscriber.getLogsTimeout(
+        network.name
+      ),
       reliableWebSocketOptions: options.providerWsUrl
         ? {
             options:
@@ -245,6 +248,7 @@ class Mangrove {
     readOnly: boolean;
     blockManagerOptions: BlockManager.Options;
     reliableHttpProvider: ReliableHttpProvider.Options;
+    getLogsTimeout: number;
     eventEmitter: EventEmitter;
     reliableWebSocketOptions?: {
       options: ReliableWebsocketProvider.Options;
@@ -303,6 +307,7 @@ class Mangrove {
             params.reliableWebSocketOptions.wsUrl
           ),
           multiv2Address: this.multicallContract.address,
+          getLogsTimeout: params.getLogsTimeout,
         },
         params.reliableWebSocketOptions.options
       );
@@ -312,6 +317,7 @@ class Mangrove {
           ...params.blockManagerOptions,
           provider: this.provider as JsonRpcProvider,
           multiv2Address: this.multicallContract.address,
+          getLogsTimeout: params.getLogsTimeout,
         },
         params.reliableHttpProvider
       );
