@@ -62,7 +62,7 @@
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/mangrove-core": "^1.5.6",
-    "@mangrovedao/reliable-event-subscriber": "1.1.27",
+    "@mangrovedao/reliable-event-subscriber": "1.1.28",
     "@types/object-inspect": "^1.8.1",
     "@types/triple-beam": "^1.3.2",
     "async-mutex": "^0.4.0",
