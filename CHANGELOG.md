@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.17
+
 - Bump: mangrove-core to v1.5.7
 
 # 1.4.16
