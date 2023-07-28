@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.18-0
+
 - feat: `LiquidityProvider` getter from an `OfferLogic` instance.
 
 # 1.4.17
