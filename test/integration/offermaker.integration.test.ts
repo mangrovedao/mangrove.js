@@ -74,7 +74,7 @@ describe("OfferMaker", () => {
         quote: "TokenB",
         bookOptions: { maxOffers: 30 },
       });
-      onchain_lp = await LiquidityProvider.connect(logic, market);
+      onchain_lp = await logic.liquidityProvider(market);
       eoa_lp = await mgv.liquidityProvider(market);
     });
 

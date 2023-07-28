@@ -2,7 +2,7 @@ import * as ethers from "ethers";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { Mangrove, Market } from ".";
+import { LiquidityProvider, Mangrove, Market } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import Big from "big.js";
 
@@ -214,6 +214,20 @@ class OfferLogic {
       gasreq,
       opts.gasprice
     );
+  }
+
+  /** Returns a LiquidityProvider with `this` as an underlying offer logic
+   * Note that if `this.contract` is fully compliant with the `ILiquidityProvider` interface, some functions offered by the returned `LiquidityProvider` instance might throw.
+   * @param market the market on which the liqudityProvider will manage offers
+   */
+
+  public async liquidityProvider(market: Market): Promise<LiquidityProvider> {
+    return new LiquidityProvider({
+      mgv: this.mgv,
+      logic: this,
+      gasreq: await this.offerGasreq(),
+      market: market,
+    });
   }
 }
 
