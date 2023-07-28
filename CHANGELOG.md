@@ -1,7 +1,12 @@
 # Next version
 
-# 1.4.15-0
+# 1.4.16
 
+- Bump: reliable-event-subscriber to v1.1.28
+
+# 1.4.15
+
+- add fetchDecimals with address
 - make addresses configuration public
 
 # 1.4.14
