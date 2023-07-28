@@ -1,5 +1,7 @@
 # Next version
 
+- feat: `LiquidityProvider` getter from an `OfferLogic` instance.
+
 # 1.4.17
 
 - Bump: mangrove-core to v1.5.7
