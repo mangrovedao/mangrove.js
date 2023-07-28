@@ -1,5 +1,7 @@
 # Next version
 
+- Bump: mangrove-core to v1.5.7
+
 # 1.4.16
 
 - Bump: reliable-event-subscriber to v1.1.28
