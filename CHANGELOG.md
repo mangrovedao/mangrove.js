@@ -7,6 +7,7 @@
 # 1.4.15
 
 - add fetchDecimals with address
+- make addresses configuration public
 
 # 1.4.14
 
