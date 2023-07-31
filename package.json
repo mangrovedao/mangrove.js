@@ -94,7 +94,7 @@
     "@types/node-cleanup": "^2.1.2",
     "@types/shelljs": "^0.8.11",
     "@types/yargs": "^17.0.12",
-    "@typescript-eslint/eslint-plugin": "^5.59.6",
+    "@typescript-eslint/eslint-plugin": "^6.2.0",
     "@typescript-eslint/parser": "^5.48.1",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
