@@ -1,5 +1,6 @@
 # Next version
 
+- Bump: reliable-event-subscriber to v1.1.29
 - feat: `LiquidityProvider` getter from an `OfferLogic` instance.
 
 # 1.4.17
