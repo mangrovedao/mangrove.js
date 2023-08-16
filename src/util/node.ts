@@ -20,7 +20,9 @@ const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 const DUMPFILE = "mangroveJsNodeState.dump";
 
-const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
+const CORE_DIR = path.parse(
+  require.resolve("@mangrovedao/mangrove-strats")
+).dir;
 
 import type { MarkRequired } from "ts-essentials";
 import yargs from "yargs";
