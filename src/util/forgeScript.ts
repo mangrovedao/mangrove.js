@@ -81,7 +81,6 @@ export async function runScript(params: {
         : ""
     } \
     --broadcast -vvv \
-    --root ${params.rootDir} \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \

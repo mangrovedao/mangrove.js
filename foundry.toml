@@ -1,0 +1,51 @@
+# Note: remember to `git submodule update --recursive` to pull in dependencies
+[profile.default]
+src='./node_modules/@mangrovedao/mangrove-strats/src'
+broadcast='broadcast'
+script='./node_modules/@mangrovedao/mangrove-strats/script'
+test='test'
+out='out'
+libs=['lib']
+cache_path='cache'
+fs_permissions = [{ access = "read-write", path = "./src/constants/addresses/"}, { access = "read", path = "./out/" }, {access = "read", path = "./node_modules/@mangrovedao/mangrove-core/"}, {access = "read", path = "./node_modules/@mangrovedao/mangrove-strats/"}, { access = "read", path = "./mgvConfig.json" }]
+solc_version="0.8.17"
+ffi=true
+# optimizer=true
+# optimizer_runs=20000
+
+# Private keys are expected to be of the form <NETWORK>_PRIVATE_KEY
+# The relevant code is in Deployer.sol
+[rpc_endpoints]
+polygon="${POLYGON_NODE_URL}"
+mumbai="${MUMBAI_NODE_URL}"
+ethereum="${ETHEREUM_NODE_URL}"
+testnet_zkevm="https://rpc.public.zkevm-test.net"
+zkevm="https://zkevm-rpc.com"
+goerli="${GOERLI_NODE_URL}"
+
+[etherscan]
+goerli={key="${GOERLI_API_KEY}"}
+mumbai={key="${POLYGON_API_KEY}"}
+polygon={key="${POLYGON_API_KEY}"}
+testnet_zkevm={key="${ZKEVM_API_KEY}",chain=1442,url="https://api-testnet-zkevm.polygonscan.com/api"}
+zkevm={key="${ZKEVM_API_KEY}",chain=1101,url="https://api-zkevm.polygonscan.com/api"}
+
+# The remappings are in remappings.txt so vscode solidity ext. can read them
+# The first lines are the manual remappings
+# The other lines are a copy/paste of the inferred mappings shown by `forge config` (inferred from imported libs)
+# You should update remappings.txt whenever a lib change impacts remappings
+[fmt]
+tab_width=2
+int_types="short"
+number_underscores="thousands"
+ignore = ['lib/**/*.sol','**/vendor/**/*.sol','**/preprocessed/**/*.sol']
+
+# If you use scripts from this repo but don't want to set/use config fields that
+# depend on environment variables, set FOUNDRY_PROFILE=no_env_vars. It's not
+# necessary to reset the [rpc_endpoints] section since it's lazily loaded.
+[profile.no_env_vars.etherscan]
+mumbai={key=""}
+polygon={key=""}
+goerli={key=""}
+testnet_zkevm={key="",chain=1442,url="https://api-testnet-zkevm.polygonscan.com/api"}
+zkevm={key="",chain=1101,url="https://api-zkevm.polygonscan.com/api"}
