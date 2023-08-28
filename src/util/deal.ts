@@ -29,7 +29,7 @@ export async function deal(dealParams: {
     env: env,
     provider: dealParams.provider,
     script: "GetTokenDealSlot",
-    coreDir: CORE_DIR,
+    rootDir: CORE_DIR,
     pipe: false,
     stateCache: false,
     stateCacheFile: "",

@@ -59,7 +59,7 @@ export async function runScript(params: {
   script: string;
   env?: NodeJS.ProcessEnv;
   mnemonic?: eth.Mnemonic;
-  coreDir: string;
+  rootDir: string;
   pipe: boolean;
   stateCache: boolean;
   stateCacheFile: string;
@@ -81,7 +81,7 @@ export async function runScript(params: {
         : ""
     } \
     --broadcast -vvv \
-    --root ${params.coreDir} \
+    --root ${params.rootDir} \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
@@ -95,7 +95,7 @@ export async function runScript(params: {
   const ret = await execForgeCmd(
     forgeScriptCmd,
     env,
-    params.coreDir,
+    params.rootDir,
     params.pipe
   );
 
