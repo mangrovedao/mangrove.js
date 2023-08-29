@@ -20,10 +20,6 @@ const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 const DUMPFILE = "mangroveJsNodeState.dump";
 
-const ROOT_DIR = path.parse(
-  require.resolve("@mangrovedao/mangrove-strats")
-).dir;
-
 import type { MarkRequired } from "ts-essentials";
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -246,7 +242,6 @@ const deploy = async (params: deployParams) => {
       script: params.script,
       provider: params.provider,
       targetContract: params.targetContract,
-      rootDir: ROOT_DIR,
       mnemonic,
       stateCache: params.stateCache,
       stateCacheFile,

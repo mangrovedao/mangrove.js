@@ -1,4 +1,3 @@
-import loadedAddressesByNetwork from "./constants/addresses.json";
 import loadedTokens from "./constants/tokens.json";
 import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsByNetwork.json";
 import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
@@ -14,6 +13,7 @@ import {
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish, Provider, typechain } from "./types";
 import mgvCore from "@mangrovedao/mangrove-core";
+import mgvStrats from "@mangrovedao/mangrove-strats";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
@@ -455,34 +455,30 @@ export function resetConfiguration(): void {
   // Load addresses in the following order:
   // 1. loaded addresses
   // 2. mangrove-core addresses
+  // 3. local addresses
   // Last loaded address is used
 
-  for (const [network, networkAddresses] of Object.entries(
-    loadedAddressesByNetwork
-  )) {
-    for (const [name, address] of Object.entries(networkAddresses) as any) {
-      if (address) {
-        addressesConfiguration.setAddress(name, address, network);
-      }
-    }
-  }
+  readAddresses(mgvCore.addresses);
+  readAddresses(mgvStrats.addresses);
+}
 
-  let mgvCoreAddresses: any[] = [];
+function readAddresses(addresses: any) {
+  let mgvAddresses: any[] = [];
 
-  if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
-    if (mgvCore.addresses.deployed) {
-      mgvCoreAddresses.push(mgvCore.addresses.deployed);
+  if (addresses.deployed || addresses.context) {
+    if (addresses.deployed) {
+      mgvAddresses.push(addresses.deployed);
     }
-    if (mgvCore.addresses.context) {
-      mgvCoreAddresses.push(mgvCore.addresses.context);
+    if (addresses.context) {
+      mgvAddresses.push(addresses.context);
     }
   } else {
-    mgvCoreAddresses.push(mgvCore.addresses);
+    mgvAddresses.push(addresses);
   }
 
-  mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
+  mgvAddresses = mgvAddresses.flatMap((o) => Object.entries(o));
 
-  for (const [network, networkAddresses] of mgvCoreAddresses) {
+  for (const [network, networkAddresses] of mgvAddresses) {
     for (const { name, address } of networkAddresses as any) {
       addressesConfiguration.setAddress(name, address, network);
     }

@@ -7,7 +7,6 @@ import childProcess from "child_process";
 export function execForgeCmd(
   command: string,
   env: any,
-  coreDir: string,
   pipe?: any,
   handler?: any
 ) {
@@ -31,7 +30,6 @@ export function execForgeCmd(
       {
         encoding: "utf8",
         env: env,
-        cwd: coreDir,
       },
       (error, stdout, stderr) => {
         if (pipe || error) {
@@ -59,7 +57,6 @@ export async function runScript(params: {
   script: string;
   env?: NodeJS.ProcessEnv;
   mnemonic?: eth.Mnemonic;
-  rootDir: string;
   pipe: boolean;
   stateCache: boolean;
   stateCacheFile: string;
@@ -91,12 +88,7 @@ export async function runScript(params: {
   // this dumps the private-key but it is a test mnemonic
   console.log(forgeScriptCmd);
   const env = params.env ? { ...process.env, ...params.env } : process.env;
-  const ret = await execForgeCmd(
-    forgeScriptCmd,
-    env,
-    params.rootDir,
-    params.pipe
-  );
+  const ret = await execForgeCmd(forgeScriptCmd, env, params.pipe);
 
   if (params.stateCache) {
     const stateData = await params.provider.send("anvil_dumpState", []);

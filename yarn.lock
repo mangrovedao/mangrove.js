@@ -1135,19 +1135,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#aa63a303abdc747420608057d1ef21a60f4c1b1d":
+"@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#df97c450b104b9ec7aeee7f84c1ffdfab9bfad06":
   version: 1.5.8-0
-  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=aa63a303abdc747420608057d1ef21a60f4c1b1d"
-  checksum: 9c5f4d9693bc86de665821c5d02113f8a4480bdaf566154b8cf23778aa638feebf8a5f9bde698bf105ff8ae17501af53b61ad5595ca3303b13f5cd7d4ff3c70d
+  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=df97c450b104b9ec7aeee7f84c1ffdfab9bfad06"
+  checksum: fbe9104ca6d3712e5b6783408d574504e199b4dc38bfd3425607c80fe7fc3b04f814a2a257285c027b661d7486a7590f013d40f23e491da096378fb7b304bd8a
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#996c89a09af3ae07950e8700e07e0a21d70d0aee":
+"@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#3934d9b574d9c9fd1c9de59b8e371f9e521d039e":
   version: 0.0.1
-  resolution: "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=996c89a09af3ae07950e8700e07e0a21d70d0aee"
+  resolution: "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=3934d9b574d9c9fd1c9de59b8e371f9e521d039e"
   dependencies:
-    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#aa63a303abdc747420608057d1ef21a60f4c1b1d"
-  checksum: 5f16713bd1349a872eef68041dfd912cc6209fa7dec635b9254d203aa053fc5a1a150af2ba233dcec9262af9f82720eb93b28aa948548a719f9d11427d100d64
+    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#df97c450b104b9ec7aeee7f84c1ffdfab9bfad06"
+  checksum: 9273f2ceb251865640a2fbb3b04510cd41cd0d511fea92fda3dc3c79e0009c420c10b3ff29fabfc324c9391cc149cdeb83e2bfd20f574f50bc75ac1bc9876ee6
   languageName: node
   linkType: hard
 
@@ -1161,8 +1161,8 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#aa63a303abdc747420608057d1ef21a60f4c1b1d"
-    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#996c89a09af3ae07950e8700e07e0a21d70d0aee"
+    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#df97c450b104b9ec7aeee7f84c1ffdfab9bfad06"
+    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#3934d9b574d9c9fd1c9de59b8e371f9e521d039e"
     "@mangrovedao/reliable-event-subscriber": 1.1.28
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6

@@ -6,7 +6,7 @@ mgv_script/=node_modules/@mangrovedao/mangrove-core/script/
 ds-test/=node_modules/@mangrovedao/mangrove-core/lib/forge-std/lib/ds-test/src/
 forge-std/=node_modules/@mangrovedao/mangrove-core/lib/forge-std/src/
 
-mgv_strat_src/=node_modules/@mangrovedao/mangrove-starts/src/
-mgv_strat_lib/=node_modules/@mangrovedao/mangrove-starts/lib/
-mgv_strat_test/=node_modules/@mangrovedao/mangrove-starts/test/
-mgv_strat_script/=node_modules/@mangrovedao/mangrove-starts/script/
+mgv_strat_src/=node_modules/@mangrovedao/mangrove-strats/src/
+mgv_strat_lib/=node_modules/@mangrovedao/mangrove-strats/lib/
+mgv_strat_test/=node_modules/@mangrovedao/mangrove-strats/test/
+mgv_strat_script/=node_modules/@mangrovedao/mangrove-strats/script/

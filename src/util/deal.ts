@@ -2,8 +2,6 @@ import { ethers } from "ethers";
 import { runScript } from "./forgeScript";
 import DevNode from "./devNode";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import path from "path";
-const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
 
 export async function deal(dealParams: {
   url: string;
@@ -29,7 +27,6 @@ export async function deal(dealParams: {
     env: env,
     provider: dealParams.provider,
     script: "GetTokenDealSlot",
-    rootDir: CORE_DIR,
     pipe: false,
     stateCache: false,
     stateCacheFile: "",
