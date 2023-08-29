@@ -26,7 +26,8 @@ export async function deal(dealParams: {
     url: dealParams.url,
     env: env,
     provider: dealParams.provider,
-    script: "GetTokenDealSlot",
+    script:
+      "./node_modules/@mangrovedao/mangrove-core/script/lib/GetTokenDealSlot.sol:GetTokenDealSlot",
     pipe: false,
     stateCache: false,
     stateCacheFile: "",
