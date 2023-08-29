@@ -453,6 +453,12 @@ export function resetConfiguration(): void {
     kandel: clone(loadedKandelConfiguration as PartialKandelConfiguration),
   };
 
+  // Load addresses in the following order:
+  // 1. loaded addresses
+  // 2. mangrove-core addresses
+  // 3. mangrove-strats addresses
+  // Last loaded address is used
+
   for (const [network, networkAddresses] of Object.entries(
     loadedAddressesByNetwork
   )) {
@@ -462,12 +468,6 @@ export function resetConfiguration(): void {
       }
     }
   }
-
-  // Load addresses in the following order:
-  // 1. loaded addresses
-  // 2. mangrove-core addresses
-  // 3. local addresses
-  // Last loaded address is used
 
   readAddresses(mgvCore.addresses);
   readAddresses(mgvStrats.addresses);
