@@ -1,3 +1,4 @@
+import loadedAddressesByNetwork from "./constants/addresses.json";
 import loadedTokens from "./constants/tokens.json";
 import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsByNetwork.json";
 import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
@@ -451,6 +452,16 @@ export function resetConfiguration(): void {
     },
     kandel: clone(loadedKandelConfiguration as PartialKandelConfiguration),
   };
+
+  for (const [network, networkAddresses] of Object.entries(
+    loadedAddressesByNetwork
+  )) {
+    for (const [name, address] of Object.entries(networkAddresses) as any) {
+      if (address) {
+        addressesConfiguration.setAddress(name, address, network);
+      }
+    }
+  }
 
   // Load addresses in the following order:
   // 1. loaded addresses
