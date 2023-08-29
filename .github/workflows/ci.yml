@@ -54,10 +54,10 @@ jobs:
         node-version: 18.x
         cache: 'yarn'
 
-    - run: yarn install --immutable
-
     - name: Foundry Setup
       uses: ./.github/actions/foundry-setup
+
+    - run: yarn install --immutable
 
     - name: Build
       id: build

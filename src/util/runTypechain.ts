@@ -29,7 +29,13 @@ async function main() {
     const coreDir = path.parse(
       require.resolve("@mangrovedao/mangrove-core")
     ).dir;
-    const coreAbisDir = `${coreDir}/dist/mangrove-abis`;
+    const coreAbisDir = `${coreDir}/dist/abis`;
+
+    // Get directory for mangrove-strats module's abis
+    const stratsDir = path.parse(
+      require.resolve("@mangrovedao/mangrove-strats")
+    ).dir;
+    const stratsAbisDir = `${stratsDir}/dist/abis`;
 
     // Get directory for local abis
     const localAbisDir = path.join(process.cwd(), "src/constants/artifacts");
@@ -38,7 +44,7 @@ async function main() {
     }
 
     // copy all inputs to temp dir. later dirs will have precedence.
-    for (const inDir of [coreAbisDir, localAbisDir]) {
+    for (const inDir of [coreAbisDir, stratsAbisDir, localAbisDir]) {
       shelljs.cp(`${inDir}/*.json`, tempDir);
     }
 
