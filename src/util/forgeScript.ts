@@ -57,6 +57,7 @@ export async function runScript(params: {
   script: string;
   env?: NodeJS.ProcessEnv;
   mnemonic?: eth.Mnemonic;
+  root?: string;
   pipe: boolean;
   stateCache: boolean;
   stateCacheFile: string;
@@ -78,6 +79,7 @@ export async function runScript(params: {
         : ""
     } \
     --broadcast -vvv \
+    ${params.root ? `--root ${params.root}` : ""} \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \

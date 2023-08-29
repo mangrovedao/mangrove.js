@@ -41,6 +41,7 @@ type inputDeployParams = {
   stateCache?: boolean;
   targetContract?: string;
   script?: string;
+  root?: string;
   url?: string;
   pipe?: boolean;
   setMulticallCodeIfAbsent?: boolean;
