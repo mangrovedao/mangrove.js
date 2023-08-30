@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.18-1
+
 - fix: Use new mgvConfig for mangrove-core and mangrove-strats
 - Add: mangrove-strats v0.0.2-0
 - Bump: mangrove-core to v1.5.8-1
