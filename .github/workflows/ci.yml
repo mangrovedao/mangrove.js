@@ -55,7 +55,7 @@ jobs:
         cache: 'yarn'
 
     - name: Foundry Setup
-      uses: mangrovedao/.github/.github/actions/foundry-setup@fix/peter/specific-foundry-version
+      uses: mangrovedao/.github/.github/actions/foundry-setup@master
 
     - run: yarn install --immutable
 
