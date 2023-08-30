@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/mangrove.js",
-  "version": "1.4.18-0",
+  "version": "1.4.18-1",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
@@ -11,7 +11,7 @@
     "precommit": "lint-staged",
     "prepack": "pinst --disable && yarn run build",
     "postpack": "pinst --enable",
-    "_postinstall": "husky install",
+    "postinstall": "husky install",
     "lint": "npx eslint ./src/*.ts",
     "build": "npm-run-all -pn --aggregate-output typechain lint && npm-run-all -pn --aggregate-output tscbuild esbuild && yarn make-cli-executable",
     "make-cli-executable": "shx chmod u+x ./dist/nodejs/cli/mgv.js",
