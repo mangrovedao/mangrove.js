@@ -113,6 +113,7 @@ class Mangrove {
   orderContract: typechain.MangroveOrder;
   reliableProvider: ReliableProvider;
   mangroveEventSubscriber: MangroveEventSubscriber;
+  notListenningToNewEvents: boolean;
 
   public eventEmitter: EventEmitter;
 
@@ -254,6 +255,7 @@ class Mangrove {
       options: ReliableWebsocketProvider.Options;
       wsUrl: string;
     };
+    notListenningToNewEvents?: boolean;
   }) {
     if (!canConstructMangrove) {
       throw Error(
@@ -298,6 +300,11 @@ class Mangrove {
       orderAddress,
       this.signer
     );
+
+    this.notListenningToNewEvents = false;
+    if (params.notListenningToNewEvents) {
+      this.notListenningToNewEvents = params.notListenningToNewEvents;
+    }
 
     if (params.reliableWebSocketOptions) {
       this.reliableProvider = new ReliableWebsocketProvider(
@@ -362,7 +369,12 @@ class Mangrove {
     if (!this.reliableProvider) {
       return;
     }
+    if (this.notListenningToNewEvents) {
+      logger.info(`Do not listen to new events`);
+      return;
+    }
 
+    logger.info(`Start listenning to new events`);
     logger.debug(`Initialize reliable provider`);
     const block = await this.provider.getBlock("latest");
 
