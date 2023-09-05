@@ -2,6 +2,8 @@
 
 # 1.4.19
 
+- feat: add option to enable/disable events listenning
+
 # 1.4.18
 
 - Bump: reliable-event-subscriber to v1.1.29
