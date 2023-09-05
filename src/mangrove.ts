@@ -90,6 +90,7 @@ namespace Mangrove {
   };
 
   export type CreateOptions = eth.CreateSignerOptions & {
+    shouldNotListenToNewEvents?: boolean;
     blockManagerOptions?: BlockManager.Options;
     reliableWebsocketProviderOptions?: ReliableWebsocketProvider.Options;
     reliableHttpProviderOptions?: ReliableHttpProvider.Options;
@@ -213,6 +214,7 @@ class Mangrove {
             wsUrl: options.providerWsUrl,
           }
         : undefined,
+      shouldNotListenToNewEvents: options.shouldNotListenToNewEvents,
     });
 
     await mgv.initializeProvider();
