@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.20
+
 - feat: add an option to disable events listenning
 
 # 1.4.19
