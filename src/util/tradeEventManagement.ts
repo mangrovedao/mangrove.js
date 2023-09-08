@@ -20,11 +20,10 @@ import { logger } from "./logger";
 
 type RawOfferData = {
   id: BigNumber;
-  prev: BigNumber;
   gasprice: BigNumber;
   maker: string;
   gasreq: BigNumber;
-  wants: BigNumber;
+  tick: BigNumber;
   gives: BigNumber;
 };
 
@@ -44,22 +43,18 @@ class TradeEventManagement {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
 
     const gives = outbound_tkn.fromUnits(raw.gives);
-    const wants = inbound_tkn.fromUnits(raw.wants);
 
-    const { baseVolume } = Market.getBaseQuoteVolumes(ba, gives, wants);
-    const price = Market.getPrice(ba, gives, wants);
+    const price = Market.getPrice(raw.tick);
 
     const id = this.#rawIdToId(raw.id);
     if (id === undefined) throw new Error("Offer ID is 0");
     return {
       id,
-      prev: this.#rawIdToId(raw.prev),
       gasprice: raw.gasprice.toNumber(),
       maker: raw.maker,
       gasreq: raw.gasreq.toNumber(),
+      tick: raw.tick.toNumber(),
       gives: gives,
-      wants: wants,
-      volume: baseVolume,
       price: price,
     };
   }
@@ -210,8 +205,7 @@ class TradeEventManagement {
     evt: NewOwnedOfferEvent,
     taker: string,
     currentRestingOrder: Market.OfferSlim | undefined,
-    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[],
-    pivotId: number
+    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[]
   ) {
     if (evt.args.owner === taker) {
       ba = ba === "bids" ? "asks" : "bids";
@@ -219,20 +213,16 @@ class TradeEventManagement {
         offerWrites.find(
           (x) => x.ba == ba && x.offer.id === this.#rawIdToId(evt.args.offerId)
         )?.offer ?? currentRestingOrder;
-      if (currentRestingOrder) {
-        currentRestingOrder.pivotId = pivotId;
-      }
     }
     return currentRestingOrder;
   }
 
   createPartialFillFunc(
     fillWants: boolean,
-    takerWants: ethers.ethers.BigNumber,
-    takerGives: ethers.ethers.BigNumber
+    fillVolume: ethers.ethers.BigNumber
   ) {
     return (takerGotWithFee: ethers.BigNumber, takerGave: ethers.BigNumber) =>
-      fillWants ? takerGotWithFee.lt(takerWants) : takerGave.lt(takerGives);
+      fillWants ? takerGotWithFee.lt(fillVolume) : takerGave.lt(fillVolume);
   }
 
   resultOfMangroveEventCore(
@@ -312,8 +302,7 @@ class TradeEventManagement {
       takerGave: ethers.BigNumber
     ) => boolean,
     result: OrderResultWithOptionalSummary,
-    market: Market,
-    pivotId: number
+    market: Market
   ) {
     if (evt.args?.taker && receipt.from !== evt.args.taker) return;
 
@@ -336,8 +325,7 @@ class TradeEventManagement {
           evt as NewOwnedOfferEvent,
           receipt.from,
           result.restingOrder,
-          result.offerWrites,
-          pivotId
+          result.offerWrites
         );
         break;
       }
@@ -368,8 +356,7 @@ class TradeEventManagement {
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
+    fillVolume: ethers.BigNumber,
     market: Market
   ) {
     for (const evt of this.getContractEventsFromReceipt(
@@ -380,7 +367,7 @@ class TradeEventManagement {
         receipt,
         evt,
         ba,
-        this.createPartialFillFunc(fillWants, wants, gives),
+        this.createPartialFillFunc(fillWants, fillVolume),
         result,
         market
       );
@@ -392,10 +379,8 @@ class TradeEventManagement {
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
-    market: Market,
-    pivotId: number
+    fillVolume: ethers.BigNumber,
+    market: Market
   ) {
     for (const evt of this.getContractEventsFromReceipt(
       receipt,
@@ -405,10 +390,9 @@ class TradeEventManagement {
         receipt,
         evt,
         ba,
-        this.createPartialFillFunc(fillWants, wants, gives),
+        this.createPartialFillFunc(fillWants, fillVolume),
         result,
-        market,
-        pivotId
+        market
       );
     }
   }

@@ -1135,19 +1135,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@npm:^1.5.8-1":
-  version: 1.5.8-1
-  resolution: "@mangrovedao/mangrove-core@npm:1.5.8-1"
-  checksum: 84a6e8c435267bdbda85000298723c7e20c4dfab93dc1fbcf8ac9b83f27c2ad35da36810311bce3f64904559b3aad3fe95e4f995de93228908acd19dec3e706c
+"@mangrovedao/mangrove-core@file:/Users/kejlberg/Mangrove/mangrove-core/package.tgz::locator=%40mangrovedao%2Fmangrove-strats%40file%3A%2FUsers%2Fkejlberg%2FMangrove%2Fmangrove-strats-POC%2Fpackage.tgz%3A%3Alocator%3D%2540mangrovedao%252Fmangrove.js%2540workspace%253A.":
+  version: 1.5.8-0
+  resolution: "@mangrovedao/mangrove-core@file:/Users/kejlberg/Mangrove/mangrove-core/package.tgz::locator=%40mangrovedao%2Fmangrove-strats%40file%3A%2FUsers%2Fkejlberg%2FMangrove%2Fmangrove-strats-POC%2Fpackage.tgz%3A%3Alocator%3D%2540mangrovedao%252Fmangrove.js%2540workspace%253A."
+  checksum: d8fe69ff6494b339b37081d14abe38a13e80e61f803dc2c4fd5eb6403a5d4e3eec66d391545f69b5f99ee3dedeb9c1b348b367df923e931acc3366e328dbed1e
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@npm:^0.0.2-0":
+"@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=c8d64f57235f3acf1d62d8b628a6d85f43a67a86":
+  version: 1.5.8-0
+  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=c8d64f57235f3acf1d62d8b628a6d85f43a67a86"
+  checksum: d8fe69ff6494b339b37081d14abe38a13e80e61f803dc2c4fd5eb6403a5d4e3eec66d391545f69b5f99ee3dedeb9c1b348b367df923e931acc3366e328dbed1e
+  languageName: node
+  linkType: hard
+
+"@mangrovedao/mangrove-strats@file:/Users/kejlberg/Mangrove/mangrove-strats-POC/package.tgz::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A.":
   version: 0.0.2-0
-  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-0"
+  resolution: "@mangrovedao/mangrove-strats@file:/Users/kejlberg/Mangrove/mangrove-strats-POC/package.tgz::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A."
   dependencies:
-    "@mangrovedao/mangrove-core": ^1.5.8-1
-  checksum: 2eca98d7f087a01480ae85b1bf1905495f5f64efd11d3f0fbb10d7118e40bf8fd5fbdd063a80100903d9e46581d2448cf2b81a5fde11d1cd3b61a3f783174fcc
+    "@mangrovedao/mangrove-core": /Users/kejlberg/Mangrove/mangrove-core/package.tgz
+  checksum: ec73719da2f2d65fc77bd105200c3f3827dcd514cadcaf78ca2d5a0182954ec5a39a400eb2326b2d386dbd5cb2f14d623902365558fee027aaf1fd1a8663888a
   languageName: node
   linkType: hard
 
@@ -1161,8 +1168,8 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/mangrove-core": ^1.5.8-1
-    "@mangrovedao/mangrove-strats": ^0.0.2-0
+    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#commit=c8d64f57235f3acf1d62d8b628a6d85f43a67a86"
+    "@mangrovedao/mangrove-strats": /Users/kejlberg/Mangrove/mangrove-strats-POC/package.tgz
     "@mangrovedao/reliable-event-subscriber": 1.1.28
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6
@@ -1204,6 +1211,7 @@ __metadata:
     object-inspect: ^1.12.3
     pinst: ^3.0.0
     prettier: ^2.4.1
+    queue-typescript: ^1.0.1
     rimraf: ^5.0.1
     shx: ^0.3.4
     transparent-proxy: ^1.12.1
@@ -4425,6 +4433,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"linked-list-typescript@npm:^1.0.11":
+  version: 1.0.15
+  resolution: "linked-list-typescript@npm:1.0.15"
+  checksum: c88488f3b27ae2cb26b6aedd9cc4ffa4a07f3e97957f96c99e312ce825dc095b41f3d9e5a2e5f0ac324c13ae2053b3003589e4cac62cdeb4cc12be0dc10515aa
+  languageName: node
+  linkType: hard
+
 "lint-staged@npm:^13.2.0":
   version: 13.2.2
   resolution: "lint-staged@npm:13.2.2"
@@ -5685,6 +5700,15 @@ __metadata:
   version: 1.2.3
   resolution: "queue-microtask@npm:1.2.3"
   checksum: b676f8c040cdc5b12723ad2f91414d267605b26419d5c821ff03befa817ddd10e238d22b25d604920340fd73efd8ba795465a0377c4adf45a4a41e4234e42dc4
+  languageName: node
+  linkType: hard
+
+"queue-typescript@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "queue-typescript@npm:1.0.1"
+  dependencies:
+    linked-list-typescript: ^1.0.11
+  checksum: 52db58a1e5b29927f94e97aaac1ae2951fa089571021250e728a209da8160c9471b86239cc7e277d6a85fd6a2bcb1f89cc2f8e0962816692e3cd98e86504eb3e
   languageName: node
   linkType: hard
 

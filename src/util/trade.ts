@@ -6,18 +6,19 @@ import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
+import { MgvLib } from "../../src/types/typechain/Mangrove";
 
 const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
 
-type SnipeUnitParams = {
+type CleanUnitParams = {
   ba: Market.BA;
   targets: {
     offerId: number;
+    tick: ethers.BigNumber;
+    gasreq: ethers.BigNumber;
     takerWants: ethers.BigNumber;
-    takerGives: ethers.BigNumber;
-    gasLimit?: number;
   }[];
-  fillWants?: boolean;
+  taker: string;
   gasLowerBound?: ethers.BigNumberish;
 };
 
@@ -30,31 +31,31 @@ class Trade {
     baseToken: MgvToken,
     quoteToken: MgvToken
   ) {
-    let wants: Big, gives: Big, fillWants: boolean;
+    let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     if ("price" in params) {
       if ("volume" in params) {
-        wants = Big(params.volume);
-        gives = wants.mul(params.price);
+        fillVolume = Big(params.volume);
+        tick = BigNumber.from(this.getTickFromPrice(params.price));
         fillWants = true;
       } else {
-        gives = Big(params.total);
-        wants = gives.div(params.price);
+        fillVolume = Big(params.total);
+        tick = BigNumber.from(1).div(this.getTickFromPrice(params.price));
         fillWants = false;
       }
     } else {
-      wants = Big(params.wants);
-      gives = Big(params.gives);
+      fillVolume = Big(params.fillVolume);
+      tick = BigNumber.from(params.tick);
       fillWants = params.fillWants ?? true;
     }
 
     const slippage = this.validateSlippage(params.slippage);
-    const givesWithSlippage = quoteToken.toUnits(
-      gives.mul(100 + slippage).div(100)
-    );
+    // const givesWithSlippage = quoteToken.toUnits(
+    //   gives.mul(100 + slippage).div(100)
+    // );
     return {
-      wants: baseToken.toUnits(wants),
-      givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
-      gives: givesWithSlippage,
+      tick: tick,
+      // givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
+      fillVolume: baseToken.toUnits(fillVolume),
       fillWants: fillWants,
     };
   }
@@ -64,34 +65,39 @@ class Trade {
     baseToken: MgvToken,
     quoteToken: MgvToken
   ) {
-    let wants: Big, gives: Big, fillWants: boolean;
+    let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     if ("price" in params) {
       if ("volume" in params) {
-        gives = Big(params.volume);
-        wants = gives.mul(params.price);
+        fillVolume = Big(params.volume);
+        tick = BigNumber.from(this.getTickFromPrice(params.price));
         fillWants = false;
       } else {
-        wants = Big(params.total);
-        gives = wants.div(params.price);
+        fillVolume = Big(params.total);
+        tick = BigNumber.from(1).div(this.getTickFromPrice(params.price));
         fillWants = true;
       }
     } else {
-      wants = Big(params.wants);
-      gives = Big(params.gives);
+      tick = BigNumber.from(params.tick);
+      fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
     }
 
     const slippage = this.validateSlippage(params.slippage);
-    const wantsWithSlippage = quoteToken.toUnits(
-      wants.mul(100 - slippage).div(100)
-    );
+    // const wantsWithSlippage = quoteToken.toUnits(
+    //   wants.mul(100 - slippage).div(100)
+    // );
 
     return {
-      gives: baseToken.toUnits(gives),
-      wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
-      wants: wantsWithSlippage,
+      fillVolume: baseToken.toUnits(fillVolume),
+      // wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
+      tick: tick,
       fillWants: fillWants,
     };
+  }
+  getTickFromPrice(price: Bigish): BigNumber {
+    return BigNumber.from(
+      Math.log(1.0001) / Math.log(BigNumber.from(price).toNumber())
+    );
   }
 
   validateSlippage = (slippage = 0) => {
@@ -150,31 +156,26 @@ class Trade {
   }
 
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { gives, wants, fillWants } =
+    const { tick, fillVolume, fillWants } =
       bs === "buy"
         ? this.getParamsForBuy(params, market.base, market.quote)
         : this.getParamsForSell(params, market.base, market.quote);
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
 
-    const snipeOfferId = "offerId" in params ? params.offerId : null;
-
     const orderType =
       !!params.fillOrKill ||
       !!restingOrderParams ||
       !!params.forceRoutingToMangroveOrder
         ? "restingOrder"
-        : snipeOfferId
-        ? "snipe"
         : "marketOrder";
 
     return {
-      gives,
-      wants,
+      tick,
+      fillVolume,
       fillWants,
       restingOrderParams,
       orderType,
-      snipeOfferId,
     };
   }
 
@@ -209,46 +210,14 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    // const { wants, gives, fillWants } =
-    //   bs === "buy"
-    //     ? this.getParamsForBuy(params, market.base, market.quote)
-    //     : this.getParamsForSell(params, market.base, market.quote);
-    // const restingOrderParams =
-    //   "restingOrder" in params ? params.restingOrder : undefined;
-    // if (
-    //   !!params.fillOrKill ||
-    //   !!restingOrderParams ||
-    //   !!params.forceRoutingToMangroveOrder
-    // ) {
-    //   return this.mangroveOrder(
-    //     {
-    //       wants: wants,
-    //       gives: gives,
-    //       orderType: bs,
-    //       fillWants: fillWants,
-    //       expiryDate: params.expiryDate ?? 0,
-    //       restingParams: restingOrderParams,
-    //       market: market,
-    //       fillOrKill: params.fillOrKill ?? false,
-    //     },
-    //     overrides
-    //   );
-    // } else {
-    //   if ("offerId" in params && params.offerId) {
-    const {
-      wants,
-      gives,
-      fillWants,
-      restingOrderParams,
-      orderType,
-      snipeOfferId,
-    } = this.getRawParams(bs, params, market);
+    const { tick, fillVolume, fillWants, restingOrderParams, orderType } =
+      this.getRawParams(bs, params, market);
     switch (orderType) {
       case "restingOrder":
         return this.mangroveOrder(
           {
-            wants: wants,
-            gives: gives,
+            tick,
+            fillVolume,
             orderType: bs,
             fillWants: fillWants,
             expiryDate: params.expiryDate ?? 0,
@@ -259,31 +228,11 @@ class Trade {
           },
           overrides
         );
-      case "snipe":
-        //
-        return this.snipes(
-          {
-            targets: [
-              {
-                offerId: snipeOfferId as number,
-                takerGives: gives,
-                takerWants: wants,
-                gasLimit: undefined,
-              },
-            ],
-            fillWants: fillWants,
-            ba: this.bsToBa(bs),
-            gasLowerBound: params.gasLowerBound ?? 0,
-          },
-          market,
-          overrides
-        );
-
       case "marketOrder":
         return this.marketOrder(
           {
-            wants: wants,
-            gives: gives,
+            tick,
+            fillVolume,
             orderType: bs,
             fillWants: fillWants,
             market,
@@ -309,21 +258,16 @@ class Trade {
    * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
    */
   async snipe(
-    params: Market.SnipeParams,
+    params: Market.CleanParams,
     market: Market,
     overrides: ethers.Overrides = {}
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const raw = await this.getRawSnipeParams(params, market, overrides);
+    const raw = await this.getRawCleanParams(params, market, overrides);
 
-    return this.snipesWithRawParameters(
-      raw,
-      market,
-      overrides,
-      params.requireOffersToFail
-    );
+    return this.cleanWithRawParameters(raw, market, overrides);
   }
 
   /**
@@ -338,51 +282,51 @@ class Trade {
    * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
    * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
    */
-  getRawSnipeParams(
-    params: Market.SnipeParams,
+  getRawCleanParams(
+    params: Market.CleanParams,
     market: Market,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.RawSnipeParams> {
+  ): Promise<Market.RawCleanParams> {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(params.ba);
 
-    const _targets = params.targets.map<SnipeUnitParams["targets"][number]>(
+    const _targets = params.targets.map<CleanUnitParams["targets"][number]>(
       (t) => {
         return {
           offerId: t.offerId,
           takerWants: outbound_tkn.toUnits(t.takerWants),
-          takerGives: inbound_tkn.toUnits(t.takerGives),
-          gasLimit: t.gasLimit,
+          tick: BigNumber.from(t.tick),
+          gasreq: BigNumber.from(t.gasreq),
         };
       }
     );
 
-    return this.getSnipesRawParamsFromUnitParams(
-      { targets: _targets, ba: params.ba, fillWants: params.fillWants },
+    return this.getCleanRawParamsFromUnitParams(
+      { targets: _targets, ba: params.ba, taker: params.taker },
       market,
       overrides
     );
   }
 
   async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { wants, orderType } = this.getRawParams(bs, params, market);
+    const { fillVolume, orderType } = this.getRawParams(bs, params, market);
 
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.estimateGas(bs, wants)).add(
+        return (await market.estimateGas(bs, fillVolume)).add(
           MANGROVE_ORDER_GAS_OVERHEAD
         );
       case "snipe":
         return undefined;
       case "marketOrder":
-        return await market.estimateGas(bs, wants);
+        return await market.estimateGas(bs, fillVolume);
       default:
         throw new Error(`Unknown order type ${orderType}`);
     }
   }
 
   async simulateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { gives, wants, fillWants, orderType } = this.getRawParams(
+    const { tick, fillVolume, fillWants, orderType } = this.getRawParams(
       bs,
       params,
       market
@@ -392,13 +336,13 @@ class Trade {
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.simulateGas(ba, gives, wants, fillWants)).add(
+        return (await market.simulateGas(ba, tick, fillVolume, fillWants)).add(
           MANGROVE_ORDER_GAS_OVERHEAD
         );
       case "snipe":
         return undefined;
       case "marketOrder":
-        return await market.simulateGas(ba, gives, wants, fillWants);
+        return await market.simulateGas(ba, tick, fillVolume, fillWants);
     }
   }
 
@@ -435,15 +379,15 @@ class Trade {
    */
   async marketOrder(
     {
-      wants,
-      gives,
+      tick,
+      fillVolume,
       orderType,
       fillWants,
       market,
       gasLowerBound,
     }: {
-      wants: ethers.BigNumber;
-      gives: ethers.BigNumber;
+      tick: ethers.BigNumber;
+      fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       market: Market;
@@ -465,23 +409,23 @@ class Trade {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
         fillWants: fillWants,
-        wants: wants.toString(),
-        gives: gives.toString(),
+        tick: tick.toString(),
+        fillVolume: fillVolume.toString(),
         orderType: orderType,
         gasLimit: overrides.gasLimit?.toString(),
       },
     });
 
     const response = this.createTxWithOptionalGasEstimation(
-      market.mgv.contract.marketOrder,
-      market.mgv.contract.estimateGas.marketOrder,
+      market.mgv.contract.marketOrderByTick,
+      market.mgv.contract.estimateGas.marketOrderByTick,
       gasLowerBound,
       overrides,
       [
         outboundTkn.address,
         inboundTkn.address,
-        wants,
-        gives,
+        tick,
+        fillVolume,
         fillWants,
         overrides,
       ]
@@ -491,8 +435,7 @@ class Trade {
       response,
       orderType,
       fillWants,
-      wants,
-      gives,
+      fillVolume,
       market
     );
     return { result, response };
@@ -502,8 +445,7 @@ class Trade {
     response: Promise<ethers.ContractTransaction>,
     orderType: Market.BS,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
+    fillVolume: ethers.BigNumber,
     market: Market
   ) {
     const receipt = await (await response).wait();
@@ -518,8 +460,7 @@ class Trade {
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      wants,
-      gives,
+      fillVolume,
       market
     );
     if (!this.tradeEventManagement.isOrderResult(result)) {
@@ -530,8 +471,8 @@ class Trade {
 
   async mangroveOrder(
     {
-      wants,
-      gives,
+      tick,
+      fillVolume,
       orderType,
       fillWants,
       fillOrKill,
@@ -540,8 +481,8 @@ class Trade {
       market,
       gasLowerBound,
     }: {
-      wants: ethers.BigNumber;
-      gives: ethers.BigNumber;
+      tick: ethers.BigNumber;
+      fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       fillOrKill: boolean;
@@ -564,18 +505,6 @@ class Trade {
 
     const ba = this.bsToBa(orderType);
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
-    const price = Market.getPrice(
-      ba,
-      /* (maker) gives is takerWants*/ outbound_tkn.fromUnits(wants),
-      /* (maker) wants is takerGives*/ inbound_tkn.fromUnits(gives)
-    );
-
-    // Find pivot in opposite semibook
-    const pivotId =
-      price === undefined
-        ? 0
-        : (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ??
-          0;
 
     const response = this.createTxWithOptionalGasEstimation(
       market.mgv.orderContract.take,
@@ -587,11 +516,10 @@ class Trade {
           outbound_tkn: outbound_tkn.address,
           inbound_tkn: inbound_tkn.address,
           fillOrKill: fillOrKill,
+          tick: tick,
+          fillVolume: fillVolume,
           fillWants: orderType === "buy",
-          takerWants: wants,
-          takerGives: gives,
           restingOrder: postRestingOrder,
-          pivotId,
           expiryDate: expiryDate,
         },
         overrides_,
@@ -601,10 +529,8 @@ class Trade {
       response,
       orderType,
       fillWants,
-      wants,
-      gives,
-      market,
-      pivotId
+      fillVolume,
+      market
     );
     // if resting order was not posted, result.summary is still undefined.
     return { result, response };
@@ -614,10 +540,8 @@ class Trade {
     response: Promise<ethers.ContractTransaction>,
     orderType: Market.BS,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
-    market: Market,
-    pivotId: number
+    fillVolume: ethers.BigNumber,
+    market: Market
   ) {
     const receipt = await (await response).wait();
 
@@ -633,8 +557,7 @@ class Trade {
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      wants,
-      gives,
+      fillVolume,
       market
     );
     this.tradeEventManagement.processMangroveOrderEvents(
@@ -642,10 +565,8 @@ class Trade {
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      wants,
-      gives,
-      market,
-      pivotId
+      fillVolume,
+      market
     );
 
     if (!this.tradeEventManagement.isOrderResult(result)) {
@@ -689,13 +610,11 @@ class Trade {
   /**
    * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
    */
-  async getSnipesRawParamsFromUnitParams(
-    unitParams: SnipeUnitParams,
+  async getCleanRawParamsFromUnitParams(
+    unitParams: CleanUnitParams,
     market: Market,
     overrides: ethers.Overrides
-  ): Promise<Market.RawSnipeParams> {
-    const _fillWants = unitParams.fillWants ?? true;
-
+  ): Promise<Market.RawCleanParams> {
     const [outboundTkn, inboundTkn] =
       unitParams.ba === "asks"
         ? [market.base, market.quote]
@@ -706,27 +625,28 @@ class Trade {
       data: {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
-        fillWants: _fillWants,
       },
     });
 
     // user defined gasLimit is a total max for gasreq of each offer; otherwise, each offer is allowed to use its specified gasreq,
     // this is accomplished by supplying a number larger than 2^24-1 for the offer (in this case MaxUint256).
     const _targets = unitParams.targets.map<
-      Market.RawSnipeParams["targets"][number]
-    >((t) => [
-      t.offerId,
-      t.takerWants,
-      t.takerGives,
-      t.gasLimit ?? overrides.gasLimit ?? ethers.constants.MaxUint256,
-    ]);
+      Market.RawCleanParams["targets"][number]
+    >((t) => {
+      return {
+        offerId: t.offerId,
+        tick: t.tick,
+        gasreq: t.gasreq,
+        takerWants: t.takerWants,
+      };
+    });
 
     return {
       ba: unitParams.ba,
       outboundTkn: outboundTkn.address,
       inboundTkn: inboundTkn.address,
       targets: _targets,
-      fillWants: _fillWants,
+      taker: unitParams.taker,
     };
   }
 
@@ -738,43 +658,40 @@ class Trade {
    * Returns a promise for snipes result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
    */
-  async snipesWithRawParameters(
-    raw: Market.RawSnipeParams,
+  async cleanWithRawParameters(
+    raw: Market.RawCleanParams,
     market: Market,
-    overrides: ethers.Overrides,
-    requireOffersToFail?: boolean
+    overrides: ethers.Overrides
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
     // Invoking the cleanerContract does not populate receipt.events, so we instead parse receipt.logs
-    const snipeFunction = requireOffersToFail
-      ? market.mgv.cleanerContract.collect
-      : market.mgv.contract.snipes;
+    const cleanFunction = market.mgv.contract.cleanByImpersonation;
 
-    const response = snipeFunction(
+    const response = cleanFunction(
       raw.outboundTkn,
       raw.inboundTkn,
       raw.targets,
-      raw.fillWants,
+      raw.taker,
       overrides
     );
 
-    const result = this.responseToSnipesResult(response, raw, market);
+    const result = this.responseToCleanResult(response, raw, market);
     return { result, response };
   }
 
-  async responseToSnipesResult(
+  async responseToCleanResult(
     response: Promise<ethers.ContractTransaction>,
-    raw: Market.RawSnipeParams,
+    raw: Market.RawCleanParams,
     market: Market
   ) {
     const receipt = await (await response).wait();
 
     const result = this.initialResult(receipt);
 
-    logger.debug("Snipes raw receipt", {
-      contextInfo: "market.snipes",
+    logger.debug("Clean raw receipt", {
+      contextInfo: "market.clean",
       data: { receipt: receipt },
     });
 
@@ -784,7 +701,6 @@ class Trade {
       receipt,
       raw.ba,
       true,
-      ethers.BigNumber.from(0),
       ethers.BigNumber.from(0),
       market
     );
@@ -800,21 +716,21 @@ class Trade {
    * Returns a promise for snipes result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
    */
-  async snipes(
-    unitParams: SnipeUnitParams,
+  async clean(
+    unitParams: CleanUnitParams,
     market: Market,
     overrides: ethers.Overrides
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const raw = await this.getSnipesRawParamsFromUnitParams(
+    const raw = await this.getCleanRawParamsFromUnitParams(
       unitParams,
       market,
       overrides
     );
 
-    return this.snipesWithRawParameters(raw, market, overrides);
+    return this.cleanWithRawParameters(raw, market, overrides);
   }
 }
 

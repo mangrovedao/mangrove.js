@@ -25,6 +25,7 @@ export const bookOptsDefault: Market.BookOptions = {
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
+import { MgvLib } from "./types/typechain/Mangrove";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -78,36 +79,31 @@ namespace Market {
     (
       | { volume: Bigish; price: Bigish }
       | { total: Bigish; price: Bigish }
-      | { wants: Bigish; gives: Bigish; fillWants?: boolean }
+      | { tick: Bigish; fillVolume: Bigish; fillWants?: boolean }
     );
 
   export type RestingOrderParams = {
     provision: Bigish;
   };
 
-  export type SnipeParams = {
+  export type CleanParams = {
     targets: {
       offerId: number;
       takerWants: Bigish;
-      takerGives: Bigish;
-      gasLimit?: number;
+      tick: Bigish;
+      gasreq: number;
     }[];
     ba: Market.BA;
-    fillWants?: boolean;
+    taker: string;
     requireOffersToFail?: boolean;
   };
 
-  export type RawSnipeParams = {
+  export type RawCleanParams = {
     ba: Market.BA;
     outboundTkn: string;
     inboundTkn: string;
-    targets: [
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish
-    ][];
-    fillWants: boolean;
+    targets: MgvLib.CleanTargetStruct[];
+    taker: string;
   };
 
   /**
@@ -168,20 +164,18 @@ namespace Market {
 
   export type OfferSlim = {
     id: number;
-    prev: number | undefined;
     gasprice: number;
     maker: string;
     gasreq: number;
-    wants: Big;
+    tick: number;
     gives: Big;
-    volume: Big;
     price: Big | undefined;
-    pivotId?: number;
   };
 
   export type Offer = OfferSlim & {
     next: number | undefined;
-    offer_gasbase: number;
+    prev: number | undefined;
+    kilo_offer_gasbase: number;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -231,6 +225,7 @@ namespace Market {
   export type Book = { asks: Semibook; bids: Semibook };
 
   export type VolumeEstimate = {
+    tick: BigNumber;
     estimatedVolume: Big;
     givenResidue: Big;
   };
@@ -286,10 +281,10 @@ class Market {
     const config = await market.config();
     const gasreq = await params.mgv.orderContract.callStatic.offerGasreq();
     market.minVolumeAsk = config.asks.density.mul(
-      new Big(config.asks.offer_gasbase).plus(new Big(gasreq.toString()))
+      new Big(config.asks.kilo_offer_gasbase).plus(new Big(gasreq.toString()))
     );
     market.minVolumeBid = config.bids.density.mul(
-      new Big(config.bids.offer_gasbase).plus(new Big(gasreq.toString()))
+      new Big(config.bids.kilo_offer_gasbase).plus(new Big(gasreq.toString()))
     );
 
     return market;
@@ -683,7 +678,7 @@ class Market {
    *     `await mgv.contract.approve(market.base.address, market.quote.address, mgv.cleanerContract.address, amount);`
    */
   snipe(
-    params: Market.SnipeParams,
+    params: Market.CleanParams,
     overrides: ethers.Overrides = {}
   ): Promise<{
     result: Promise<Market.OrderResult>;
@@ -705,16 +700,16 @@ class Market {
    * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
    */
   getRawSnipeParams(
-    params: Market.SnipeParams,
+    params: Market.CleanParams,
     overrides: ethers.Overrides = {}
-  ): Promise<Market.RawSnipeParams> {
-    return this.trade.getRawSnipeParams(params, this, overrides);
+  ): Promise<Market.RawCleanParams> {
+    return this.trade.getRawCleanParams(params, this, overrides);
   }
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = this.getSemibook(this.trade.bsToBa(bs));
     const {
-      local: { density, offer_gasbase },
+      local: { density, kilo_offer_gasbase },
     } = await semibook.getRawConfig();
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
@@ -722,7 +717,7 @@ class Market {
     // boosting estimates of 10% to be on the safe side
     const estimation = density.isZero()
       ? maxMarketOrderGas
-      : offer_gasbase
+      : kilo_offer_gasbase
           .add(volume.div(density))
           .add(maxGasreqOffer)
           .add(BigNumber.from(maxGasreqOffer).mul(64).div(63))
@@ -742,8 +737,8 @@ class Market {
    */
   async simulateGas(
     ba: Market.BA,
-    gives: BigNumber,
-    wants: BigNumber,
+    tick: BigNumber,
+    fillVolume: BigNumber,
     fillWants: boolean
   ): Promise<BigNumber> {
     const semibook = this.getSemibook(ba);
@@ -752,8 +747,8 @@ class Market {
     // Overestimate by 50% because market can have changed between estimation and execution and some offers may be failing.
     const estimation = (
       await semibook.simulateMarketOrder(
-        outbound_tkn.fromUnits(wants),
-        inbound_tkn.fromUnits(gives),
+        tick,
+        new Big(fillVolume.toNumber()),
         fillWants
       )
     ).gas
@@ -942,13 +937,8 @@ class Market {
   }
 
   /** Determine the price from dividing offer gives with wants depending on whether you're working with bids or asks. */
-  static getPrice(ba: Market.BA, gives: Big, wants: Big): Big | undefined {
-    const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
-      ba,
-      gives,
-      wants
-    );
-    return baseVolume.gt(0) ? quoteVolume.div(baseVolume) : undefined;
+  static getPrice(tick: BigNumber): Big | undefined {
+    return new Big(1.0001).pow(tick.toNumber());
   }
 
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */

@@ -706,7 +706,7 @@ class KandelInstance {
     return (await this.getOffers()).map((x) => ({
       gasprice: x.offer.gasprice,
       gasreq: x.offer.gasreq,
-      gasbase: x.offer.offer_gasbase,
+      gasbase: x.offer.kilo_offer_gasbase,
     }));
   }
 
@@ -850,7 +850,6 @@ class KandelInstance {
     const txs = [
       await this.kandel.populate(
         firstDistribution.rawDistribution,
-        firstDistribution.pivots,
         firstAskIndex,
         rawParameters,
         this.market.base.toUnits(params.depositBaseAmount ?? 0),
@@ -909,7 +908,6 @@ class KandelInstance {
       txs.push(
         await this.kandel.populateChunk(
           rawDistributions[i].rawDistribution,
-          rawDistributions[i].pivots,
           firstAskIndex,
           overrides
         )

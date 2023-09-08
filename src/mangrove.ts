@@ -47,10 +47,13 @@ namespace Mangrove {
     active: boolean;
     fee: number;
     density: Big;
-    offer_gasbase: number;
+    kilo_offer_gasbase: number;
     lock: boolean;
-    best: number | undefined;
     last: number | undefined;
+    tickPosInLeaf: number;
+    level0: number;
+    level1: number;
+    level2: number;
   };
 
   export type GlobalConfig = {
@@ -108,7 +111,6 @@ class Mangrove {
   address: string;
   contract: typechain.Mangrove;
   readerContract: typechain.MgvReader;
-  cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
   reliableProvider: ReliableProvider;
@@ -286,11 +288,6 @@ class Mangrove {
       this.signer
     );
 
-    const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
-    this.cleanerContract = typechain.MgvCleaner__factory.connect(
-      cleanerAddress,
-      this.signer
-    );
     const orderAddress = Mangrove.getAddress(
       "MangroveOrder",
       this.network.name
