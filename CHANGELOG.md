@@ -1,5 +1,7 @@
 # Next version
 
+- fix: semibook subscribe only if we listen to events
+
 # 1.4.20
 
 - feat: add an option to disable events listenning
