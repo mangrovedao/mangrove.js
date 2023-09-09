@@ -13,7 +13,7 @@ import { Bigish } from "../types";
  */
 export type OffersWithPrices = {
   offerType: Market.BA;
-  price: Bigish | undefined;
+  logPrice: Bigish | undefined;
   index: number;
   offerId: number;
   live: boolean;
@@ -41,14 +41,14 @@ export type OfferStatus = {
     | {
         live: boolean;
         offerId: number;
-        price: Big | undefined;
+        logPrice: Big | undefined;
       };
   bids:
     | undefined
     | {
         live: boolean;
         offerId: number;
-        price: Big | undefined;
+        logPrice: Big | undefined;
       };
 };
 
@@ -131,8 +131,8 @@ class KandelStatus {
     offers: OffersWithPrices
   ): Statuses {
     const liveOffers = offers
-      .filter((x) => x.live && x.index < pricePoints && x.price)
-      .map((x) => ({ ...x, price: Big(x.price as Bigish) }));
+      .filter((x) => x.live && x.index < pricePoints && x.logPrice)
+      .map((x) => ({ ...x, logPrice: Big(x.logPrice as Bigish) }));
     if (!liveOffers.length) {
       throw Error(
         "Unable to determine distribution: no offers in range are live"
@@ -144,7 +144,7 @@ class KandelStatus {
       liveOffers[
         this.getIndexOfPriceClosestToMid(
           midPrice,
-          liveOffers.map((x) => x.price)
+          liveOffers.map((x) => x.logPrice)
         )
       ];
 
@@ -152,7 +152,7 @@ class KandelStatus {
     // due to rounding and due to slight drift of prices during order execution.
     const expectedPrices = this.priceCalculation.getPricesFromPrice(
       offer.index,
-      offer.price,
+      offer.logPrice,
       ratio,
       pricePoints
     );
@@ -167,21 +167,21 @@ class KandelStatus {
         expectedPrice: p,
         asks: undefined as
           | undefined
-          | { live: boolean; offerId: number; price: Big | undefined },
+          | { live: boolean; offerId: number; logPrice: Big | undefined },
         bids: undefined as
           | undefined
-          | { live: boolean; offerId: number; price: Big | undefined },
+          | { live: boolean; offerId: number; logPrice: Big | undefined },
       };
     });
 
     // Merge with actual statuses
     offers
       .filter((x) => x.index < pricePoints)
-      .forEach(({ offerType, index, live, offerId, price }) => {
+      .forEach(({ offerType, index, live, offerId, logPrice }) => {
         statuses[index][offerType] = {
           live,
           offerId,
-          price: price ? Big(price) : undefined,
+          logPrice: logPrice ? Big(logPrice) : undefined,
         };
       });
 
@@ -222,9 +222,9 @@ class KandelStatus {
 
     const getPrice = (index: number) =>
       statuses[index].asks?.live
-        ? (statuses[index].asks?.price as Big) // live ask has price
+        ? (statuses[index].asks?.logPrice as Big) // live ask has price
         : statuses[index].bids?.live
-        ? (statuses[index].bids?.price as Big) // live bid has price
+        ? (statuses[index].bids?.logPrice as Big) // live bid has price
         : statuses[index].expectedPrice;
 
     return {

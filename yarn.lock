@@ -1135,26 +1135,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@file:/Users/kejlberg/Mangrove/mangrove-core/package.tgz::locator=%40mangrovedao%2Fmangrove-strats%40file%3A%2FUsers%2Fkejlberg%2FMangrove%2Fmangrove-strats-POC%2Fpackage.tgz%3A%3Alocator%3D%2540mangrovedao%252Fmangrove.js%2540workspace%253A.":
+"@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=351ec963ed943a827df21d2878fca901b451c60e":
   version: 1.5.8-0
-  resolution: "@mangrovedao/mangrove-core@file:/Users/kejlberg/Mangrove/mangrove-core/package.tgz::locator=%40mangrovedao%2Fmangrove-strats%40file%3A%2FUsers%2Fkejlberg%2FMangrove%2Fmangrove-strats-POC%2Fpackage.tgz%3A%3Alocator%3D%2540mangrovedao%252Fmangrove.js%2540workspace%253A."
-  checksum: d8fe69ff6494b339b37081d14abe38a13e80e61f803dc2c4fd5eb6403a5d4e3eec66d391545f69b5f99ee3dedeb9c1b348b367df923e931acc3366e328dbed1e
+  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=351ec963ed943a827df21d2878fca901b451c60e"
+  checksum: 6c61fe8321a2de26a4f7190531fec11ae8cf64e1bf8c87519c6467fe5c74a9e7ed50861ab22f5afe579effe35dc2a5d2f8c2b076f23bc0a428ed3cd6b2251f9e
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=c8d64f57235f3acf1d62d8b628a6d85f43a67a86":
+"@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=3c6f7030f7573b25c3e13c9a9d4cb1b378f2170c":
   version: 1.5.8-0
-  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=c8d64f57235f3acf1d62d8b628a6d85f43a67a86"
-  checksum: d8fe69ff6494b339b37081d14abe38a13e80e61f803dc2c4fd5eb6403a5d4e3eec66d391545f69b5f99ee3dedeb9c1b348b367df923e931acc3366e328dbed1e
+  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=3c6f7030f7573b25c3e13c9a9d4cb1b378f2170c"
+  checksum: 78bdd8e044ade878b5c884e5e30b9fb7c2e7f20ef1fefbdd9a3813d7a62abb5e1e685924125e9df7638ba2654de1790862689fac34bc82304d744de787a69b01
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@file:/Users/kejlberg/Mangrove/mangrove-strats-POC/package.tgz::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A.":
+"@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=e1df120e2a7e27ce258d0041bb58d2454b3f4a2f":
   version: 0.0.2-0
-  resolution: "@mangrovedao/mangrove-strats@file:/Users/kejlberg/Mangrove/mangrove-strats-POC/package.tgz::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A."
+  resolution: "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=e1df120e2a7e27ce258d0041bb58d2454b3f4a2f"
   dependencies:
-    "@mangrovedao/mangrove-core": /Users/kejlberg/Mangrove/mangrove-core/package.tgz
-  checksum: ec73719da2f2d65fc77bd105200c3f3827dcd514cadcaf78ca2d5a0182954ec5a39a400eb2326b2d386dbd5cb2f14d623902365558fee027aaf1fd1a8663888a
+    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#commit=3c6f7030f7573b25c3e13c9a9d4cb1b378f2170c"
+  checksum: 1ab72e85107af998f2a28729158ab13cf654ffce0659af52513c67c06330430bb0615aaf194cfa66e50f5f21f08fb0eb0638be0aa1aa302d4e36c1870f5ad429
   languageName: node
   linkType: hard
 
@@ -1168,8 +1168,8 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#commit=c8d64f57235f3acf1d62d8b628a6d85f43a67a86"
-    "@mangrovedao/mangrove-strats": /Users/kejlberg/Mangrove/mangrove-strats-POC/package.tgz
+    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#commit=351ec963ed943a827df21d2878fca901b451c60e"
+    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#commit=e1df120e2a7e27ce258d0041bb58d2454b3f4a2f"
     "@mangrovedao/reliable-event-subscriber": 1.1.28
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6

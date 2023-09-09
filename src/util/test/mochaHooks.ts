@@ -1,5 +1,5 @@
 // TODO do not distribute in browser version
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { Mangrove } from "../../";
 import node, { inputServerParamsType, serverType } from "../../util/node";
 import { Deferred } from "../../util";
@@ -95,28 +95,38 @@ export const mochaHooks = {
     // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
 
     const localConfig = await (
-      await mgv.market({ base: tokenA.name, quote: tokenB.name })
+      await mgv.market({
+        base: tokenA.name,
+        quote: tokenB.name,
+        tickScale: BigNumber.from(1),
+      })
     ).config();
     await mgv.contract
       .activate(
-        tokenA.address,
-        tokenB.address,
+        {
+          outbound: tokenA.address,
+          inbound: tokenB.address,
+          tickScale: 1,
+        },
         500,
         tokenA.toUnits(localConfig.asks.density),
-        localConfig.asks.offer_gasbase
+        localConfig.asks.kilo_offer_gasbase
       )
       .then((tx) => tx.wait());
 
     // Density should be >0, otherwise the tests will fail
     await mgv.contract
       .activate(
-        tokenB.address,
-        tokenA.address,
+        {
+          outbound: tokenB.address,
+          inbound: tokenA.address,
+          tickScale: 1,
+        },
         500,
         localConfig.bids.density.gt(0)
           ? tokenB.toUnits(localConfig.bids.density)
           : 1,
-        localConfig.bids.offer_gasbase
+        localConfig.bids.kilo_offer_gasbase
       )
       .then((tx) => tx.wait());
 

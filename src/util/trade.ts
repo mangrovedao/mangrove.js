@@ -14,7 +14,7 @@ type CleanUnitParams = {
   ba: Market.BA;
   targets: {
     offerId: number;
-    tick: ethers.BigNumber;
+    logPrice: ethers.BigNumber;
     gasreq: ethers.BigNumber;
     takerWants: ethers.BigNumber;
   }[];
@@ -31,20 +31,20 @@ class Trade {
     baseToken: MgvToken,
     quoteToken: MgvToken
   ) {
-    let fillVolume: Big, tick: BigNumber, fillWants: boolean;
+    let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        tick = BigNumber.from(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(this.getTickFromPrice(params.price));
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
-        tick = BigNumber.from(1).div(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(1).div(this.getTickFromPrice(params.price));
         fillWants = false;
       }
     } else {
       fillVolume = Big(params.fillVolume);
-      tick = BigNumber.from(params.tick);
+      logPrice = BigNumber.from(params.logPrice);
       fillWants = params.fillWants ?? true;
     }
 
@@ -53,7 +53,7 @@ class Trade {
     //   gives.mul(100 + slippage).div(100)
     // );
     return {
-      tick: tick,
+      logPrice: logPrice,
       // givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
       fillVolume: baseToken.toUnits(fillVolume),
       fillWants: fillWants,
@@ -65,19 +65,19 @@ class Trade {
     baseToken: MgvToken,
     quoteToken: MgvToken
   ) {
-    let fillVolume: Big, tick: BigNumber, fillWants: boolean;
+    let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        tick = BigNumber.from(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(this.getTickFromPrice(params.price));
         fillWants = false;
       } else {
         fillVolume = Big(params.total);
-        tick = BigNumber.from(1).div(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(1).div(this.getTickFromPrice(params.price));
         fillWants = true;
       }
     } else {
-      tick = BigNumber.from(params.tick);
+      logPrice = BigNumber.from(params.logPrice);
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
     }
@@ -90,7 +90,7 @@ class Trade {
     return {
       fillVolume: baseToken.toUnits(fillVolume),
       // wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
-      tick: tick,
+      logPrice: logPrice,
       fillWants: fillWants,
     };
   }
@@ -156,7 +156,7 @@ class Trade {
   }
 
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { tick, fillVolume, fillWants } =
+    const { logPrice, fillVolume, fillWants } =
       bs === "buy"
         ? this.getParamsForBuy(params, market.base, market.quote)
         : this.getParamsForSell(params, market.base, market.quote);
@@ -171,7 +171,7 @@ class Trade {
         : "marketOrder";
 
     return {
-      tick,
+      logPrice,
       fillVolume,
       fillWants,
       restingOrderParams,
@@ -210,13 +210,13 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const { tick, fillVolume, fillWants, restingOrderParams, orderType } =
+    const { logPrice, fillVolume, fillWants, restingOrderParams, orderType } =
       this.getRawParams(bs, params, market);
     switch (orderType) {
       case "restingOrder":
         return this.mangroveOrder(
           {
-            tick,
+            logPrice,
             fillVolume,
             orderType: bs,
             fillWants: fillWants,
@@ -231,7 +231,7 @@ class Trade {
       case "marketOrder":
         return this.marketOrder(
           {
-            tick,
+            logPrice,
             fillVolume,
             orderType: bs,
             fillWants: fillWants,
@@ -294,7 +294,7 @@ class Trade {
         return {
           offerId: t.offerId,
           takerWants: outbound_tkn.toUnits(t.takerWants),
-          tick: BigNumber.from(t.tick),
+          logPrice: BigNumber.from(t.logPrice),
           gasreq: BigNumber.from(t.gasreq),
         };
       }
@@ -326,7 +326,7 @@ class Trade {
   }
 
   async simulateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { tick, fillVolume, fillWants, orderType } = this.getRawParams(
+    const { logPrice, fillVolume, fillWants, orderType } = this.getRawParams(
       bs,
       params,
       market
@@ -336,13 +336,13 @@ class Trade {
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.simulateGas(ba, tick, fillVolume, fillWants)).add(
-          MANGROVE_ORDER_GAS_OVERHEAD
-        );
+        return (
+          await market.simulateGas(ba, logPrice, fillVolume, fillWants)
+        ).add(MANGROVE_ORDER_GAS_OVERHEAD);
       case "snipe":
         return undefined;
       case "marketOrder":
-        return await market.simulateGas(ba, tick, fillVolume, fillWants);
+        return await market.simulateGas(ba, logPrice, fillVolume, fillWants);
     }
   }
 
@@ -379,14 +379,14 @@ class Trade {
    */
   async marketOrder(
     {
-      tick,
+      logPrice,
       fillVolume,
       orderType,
       fillWants,
       market,
       gasLowerBound,
     }: {
-      tick: ethers.BigNumber;
+      logPrice: ethers.BigNumber;
       fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
@@ -409,7 +409,7 @@ class Trade {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
         fillWants: fillWants,
-        tick: tick.toString(),
+        logPrice: logPrice.toString(),
         fillVolume: fillVolume.toString(),
         orderType: orderType,
         gasLimit: overrides.gasLimit?.toString(),
@@ -417,14 +417,21 @@ class Trade {
     });
 
     const response = this.createTxWithOptionalGasEstimation(
-      market.mgv.contract.marketOrderByTick,
-      market.mgv.contract.estimateGas.marketOrderByTick,
+      market.mgv.contract[
+        "marketOrderByLogPrice((address,address,uint256),int256,uint256,bool)"
+      ],
+      market.mgv.contract.estimateGas[
+        "marketOrderByLogPrice((address,address,uint256),int256,uint256,bool)"
+      ],
       gasLowerBound,
       overrides,
       [
-        outboundTkn.address,
-        inboundTkn.address,
-        tick,
+        {
+          outbound: outboundTkn.address,
+          inbound: inboundTkn.address,
+          tickScale: market.tickScale,
+        },
+        logPrice,
         fillVolume,
         fillWants,
         overrides,
@@ -471,7 +478,7 @@ class Trade {
 
   async mangroveOrder(
     {
-      tick,
+      logPrice,
       fillVolume,
       orderType,
       fillWants,
@@ -481,7 +488,7 @@ class Trade {
       market,
       gasLowerBound,
     }: {
-      tick: ethers.BigNumber;
+      logPrice: ethers.BigNumber;
       fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
@@ -513,10 +520,13 @@ class Trade {
       overrides_,
       [
         {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
+          olKey: {
+            outbound: outbound_tkn.address,
+            inbound: inbound_tkn.address,
+            tickScale: market.tickScale,
+          },
           fillOrKill: fillOrKill,
-          tick: tick,
+          logPrice: logPrice,
           fillVolume: fillVolume,
           fillWants: orderType === "buy",
           restingOrder: postRestingOrder,
@@ -635,7 +645,7 @@ class Trade {
     >((t) => {
       return {
         offerId: t.offerId,
-        tick: t.tick,
+        logPrice: t.logPrice,
         gasreq: t.gasreq,
         takerWants: t.takerWants,
       };
@@ -670,8 +680,11 @@ class Trade {
     const cleanFunction = market.mgv.contract.cleanByImpersonation;
 
     const response = cleanFunction(
-      raw.outboundTkn,
-      raw.inboundTkn,
+      {
+        outbound: raw.outboundTkn,
+        inbound: raw.inboundTkn,
+        tickScale: market.tickScale,
+      },
       raw.targets,
       raw.taker,
       overrides

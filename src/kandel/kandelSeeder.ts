@@ -76,8 +76,11 @@ class KandelSeeder {
       );
     }
     const rawSeed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
-      base: seed.market.base.address,
-      quote: seed.market.quote.address,
+      olKeyBaseQuote: {
+        outbound: seed.market.base.address,
+        inbound: seed.market.quote.address,
+        tickScale: seed.market.tickScale,
+      },
       gasprice: UnitCalculations.toUnits(gasprice, 0),
       liquiditySharing: seed.liquiditySharing,
     };

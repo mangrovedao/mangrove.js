@@ -11,9 +11,12 @@ import logger from "./util/logger";
 const BookSubscriptionEventsSet = new Set([
   "OfferWrite",
   "OfferFail",
+  "OfferFailWithPosthookData",
   "OfferSuccess",
+  "OfferSuccessWithPosthookData",
   "OfferRetract",
   "SetGasbase",
+  "SetActive",
 ]);
 
 class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent> {

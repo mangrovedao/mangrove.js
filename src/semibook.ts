@@ -14,13 +14,13 @@ import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
-import {
-  OfferDetailUnpackedStructOutput,
-  OfferUnpackedStructOutput,
-} from "./types/typechain/Mangrove";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
 import { off } from "process";
 import { Queue } from "queue-typescript";
+import {
+  OfferDetailUnpackedStructOutput,
+  OfferUnpackedStructOutput,
+} from "./types/typechain/MgvReader";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -147,7 +147,7 @@ namespace Semibook {
 
   export type State = {
     offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
-    tickOfferList: Map<number, Queue<number>>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
+    logPriceOfferList: Map<number, Queue<number>>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
     bestInCache: number | undefined; // id of the best/first offer in the offer list iff #offerCache is non-empty
     worstInCache: number | undefined; // id of the worst/last offer in #offerCache
   };
@@ -259,9 +259,12 @@ class Semibook
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
       this.ba
     );
-    const [offer, details] = await this.market.mgv.contract.offerInfo(
-      outbound_tkn.address,
-      inbound_tkn.address,
+    const [offer, details] = await this.market.mgv.readerContract.offerInfo(
+      {
+        outbound: outbound_tkn.address,
+        inbound: inbound_tkn.address,
+        tickScale: this.market.tickScale,
+      },
       offerId
     );
     return {
@@ -289,7 +292,7 @@ class Semibook
    */
   async getConfig(blockNumber?: number): Promise<Mangrove.LocalConfig> {
     const rawConfig = await this.getRawConfig(blockNumber);
-    return this.#rawLocalConfigToLocalConfig(rawConfig.local);
+    return this.#rawLocalConfigToLocalConfig(rawConfig._local);
   }
 
   async getRawConfig(blockNumber?: number): Promise<Mangrove.RawConfig> {
@@ -298,9 +301,12 @@ class Semibook
       this.market.base,
       this.market.quote
     );
-    return await this.market.mgv.contract.configInfo(
-      outbound_tkn.address,
-      inbound_tkn.address,
+    return await this.market.mgv.readerContract.configInfo(
+      {
+        outbound: outbound_tkn.address,
+        inbound: inbound_tkn.address,
+        tickScale: this.market.tickScale,
+      },
       { blockTag: blockNumber }
     );
   }
@@ -345,41 +351,6 @@ class Semibook
     return this[Symbol.iterator]();
   }
 
-  /** Given a price, find the id of the immediately-better offer in the
-   * semibook. If there is no offer with a better price, `undefined` is returned.
-   */
-  async getPivotId(price: Bigish | undefined): Promise<number | undefined> {
-    // We select as pivot the immediately-better offer.
-    // The actual ordering in the offer list is lexicographic
-    // price * gasreq (or price^{-1} * gasreq)
-    // We ignore the gasreq comparison because we may not
-    // know the gasreq (could be picked by offer contract)
-    const priceAsBig = price === undefined ? undefined : Big(price);
-    const state = this.getLatestState();
-    const result = await this.#foldLeftUntil<{
-      pivotFound: boolean;
-      pivotId?: number;
-    }>(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.lastSeenEventBlock!,
-      state,
-      {
-        pivotFound: false,
-        pivotId: undefined,
-      },
-      (accumulator) => accumulator.pivotFound,
-      (offer, accumulator) => {
-        if (this.isPriceWorse(offer.price, priceAsBig)) {
-          accumulator.pivotFound = true;
-        } else {
-          accumulator.pivotId = offer.id;
-        }
-        return accumulator;
-      }
-    );
-    return result.pivotId;
-  }
-
   /**
    * Volume estimator.
    *
@@ -419,8 +390,12 @@ class Semibook
     const initialGives = Big(params.given);
     const maxTick = BigNumber.from(524287);
 
-    const { tick, fillVolume, totalGot, totalGave } =
-      await this.simulateMarketOrder(maxTick, initialGives, buying);
+    const {
+      logPrice: tick,
+      fillVolume,
+      totalGot,
+      totalGave,
+    } = await this.simulateMarketOrder(maxTick, initialGives, buying);
 
     const estimatedVolume = buying ? totalGave : totalGot;
     const givenResidue = buying ? fillVolume : fillVolume;
@@ -431,11 +406,11 @@ class Semibook
   /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */
 
   async simulateMarketOrder(
-    inititalTick: BigNumber,
+    initialLogPrice: BigNumber,
     initialFillVolume: Big,
     fillWants: boolean
   ): Promise<{
-    tick: BigNumber;
+    logPrice: BigNumber;
     fillVolume: Big;
     totalGot: Big;
     totalGave: Big;
@@ -447,7 +422,7 @@ class Semibook
 
     const initialAccumulator = {
       stop: false,
-      tick: inititalTick,
+      logPrice: initialLogPrice,
       fillVolume: initialFillVolume,
       got: Big(0),
       gave: Big(0),
@@ -467,18 +442,18 @@ class Semibook
         return !(!acc.stop && acc.fillVolume.gt(0));
       },
       (offer, acc) => {
-        const tick = acc.tick;
+        const logPrice = acc.logPrice;
         const fillVolume = acc.fillVolume;
 
         acc.offersConsidered += 1;
 
         // bad price
-        if (offer.tick > tick.toNumber()) {
+        if (offer.logPrice > logPrice.toNumber()) {
           acc.stop = true;
         } else {
           acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
           acc.lastGasreq = offer.gasreq;
-          const offerWants = offer.gives.mul(offer!.price!.toNumber());
+          const offerWants = offer.gives.mul(offer!.logPrice);
           if (
             (fillWants && fillVolume.gt(offer.gives)) ||
             (!fillWants && fillVolume.gt(offerWants))
@@ -502,7 +477,7 @@ class Semibook
           }
         }
         if (!acc.stop) {
-          acc.tick = BigNumber.from(offer.tick);
+          acc.logPrice = BigNumber.from(offer.logPrice);
           acc.totalGot = acc.totalGot.add(acc.got);
           acc.totalGave = acc.totalGave.add(acc.gave);
           acc.fillVolume = initialFillVolume.sub(
@@ -516,7 +491,7 @@ class Semibook
     Big.RM = previousBigRm;
 
     const {
-      local: { kilo_offer_gasbase },
+      _local: { kilo_offer_gasbase },
     } = await this.getRawConfig();
 
     // Assume up to offer_gasbase is used also for the bad price call, and
@@ -726,7 +701,7 @@ class Semibook
     if (offers.length > 0) {
       const state: Semibook.State = {
         bestInCache: offers[0].id,
-        tickOfferList: new Map(),
+        logPriceOfferList: new Map(),
         worstInCache: offers[offers.length - 1].id,
         offerCache: new Map(),
       };
@@ -744,7 +719,7 @@ class Semibook
     const state: Semibook.State = {
       bestInCache: undefined,
       worstInCache: undefined,
-      tickOfferList: new Map(),
+      logPriceOfferList: new Map(),
       offerCache: new Map(),
     };
 
@@ -923,47 +898,47 @@ class Semibook
   // This modifies the cache so must be called in a context where #cacheLock is acquired
   #insertOffer(state: Semibook.State, offer: Market.Offer): boolean {
     // Only insert offers that are extensions of the cache
-    if (offer.tick !== undefined) {
+    if (offer.logPrice !== undefined) {
       return false;
     }
 
     state.offerCache.set(offer.id, offer);
-    let tickOfferList = state.tickOfferList.get(offer.tick);
-    if (tickOfferList === undefined) {
-      tickOfferList = new Queue(offer.id);
-      state.tickOfferList.set(offer.tick, tickOfferList);
+    let logPriceOfferList = state.logPriceOfferList.get(offer.logPrice);
+    if (logPriceOfferList === undefined) {
+      logPriceOfferList = new Queue(offer.id);
+      state.logPriceOfferList.set(offer.logPrice, logPriceOfferList);
     } else {
-      tickOfferList.enqueue(offer.id);
-      state.tickOfferList.set(offer.tick, tickOfferList);
+      logPriceOfferList.enqueue(offer.id);
+      state.logPriceOfferList.set(offer.logPrice, logPriceOfferList);
     }
-    const bestTick = Array.from(state.tickOfferList.keys()).reduce(
+    const betLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
       (acc, tick) => (tick > acc ? tick : acc),
       -1000000
     );
-    if (bestTick == offer.tick && tickOfferList.length == 1) {
+    if (betLogPrice == offer.logPrice && logPriceOfferList.length == 1) {
       state.bestInCache = offer.id;
-      offer.prev = this.#getPrevTickOfferList(state, offer)?.front;
+      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.front;
     }
-    if (tickOfferList.length > 1) {
-      const tickOfferListAsArray = tickOfferList.toArray();
-      const index = tickOfferListAsArray.findIndex((id) => id == offer.id);
-      offer.next = tickOfferListAsArray[index - 1];
+    if (logPriceOfferList.length > 1) {
+      const logPriceOfferListAsArray = logPriceOfferList.toArray();
+      const index = logPriceOfferListAsArray.findIndex((id) => id == offer.id);
+      offer.next = logPriceOfferListAsArray[index - 1];
       this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
-      offer.prev = this.#getPrevTickOfferList(state, offer)?.front;
+      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.front;
     } else {
-      offer.prev = this.#getPrevTickOfferList(state, offer)?.front;
+      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.front;
       if (offer.prev !== undefined) {
         this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
       }
-      offer.next = this.#getNextTickOfferList(state, offer)!.tail;
+      offer.next = this.#getNextLogPriceOfferList(state, offer)!.tail;
       this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
     }
 
-    const worstTick = Array.from(state.tickOfferList.keys()).reduce(
+    const worstLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
       (acc, tick) => (tick < acc ? tick : acc),
       1000000
     );
-    if (offer.tick === worstTick) {
+    if (offer.logPrice === worstLogPrice) {
       state.worstInCache = offer.id;
     }
 
@@ -984,22 +959,24 @@ class Semibook
     return true;
   }
 
-  #getPrevTickOfferList(state: Semibook.State, offer: Market.Offer) {
-    const nextTick = Array.from(state.tickOfferList.keys()).reduce(
-      (acc, tick) => (tick > acc && tick < offer.tick ? tick : acc),
+  #getPrevLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
+    const nextLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
+      (acc, logPrice) =>
+        logPrice > acc && logPrice < offer.logPrice ? logPrice : acc,
       -1000000
     );
-    const nextTickOfferList = state.tickOfferList.get(nextTick);
-    return nextTickOfferList;
+    const nextLogPriceOfferList = state.logPriceOfferList.get(nextLogPrice);
+    return nextLogPriceOfferList;
   }
 
-  #getNextTickOfferList(state: Semibook.State, offer: Market.Offer) {
-    const nextTick = Array.from(state.tickOfferList.keys()).reduce(
-      (acc, tick) => (tick > acc && tick > offer.tick ? tick : acc),
+  #getNextLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
+    const nextLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
+      (acc, logPrice) =>
+        logPrice > acc && logPrice > offer.logPrice ? logPrice : acc,
       -1000000
     );
-    const nextTickOfferList = state.tickOfferList.get(nextTick);
-    return nextTickOfferList;
+    const nextPriceOfferList = state.logPriceOfferList.get(nextLogPrice);
+    return nextPriceOfferList;
   }
 
   // remove offer id from book and connect its prev/next.
@@ -1022,11 +999,11 @@ class Semibook
     } else {
       nextOffer.prev = offer.prev;
     }
-    const tickOfferList = state.tickOfferList.get(offer.tick);
-    if (tickOfferList?.length == 1) {
-      state.tickOfferList.delete(offer.tick);
+    const logPriceOfferList = state.logPriceOfferList.get(offer.logPrice);
+    if (logPriceOfferList?.length == 1) {
+      state.logPriceOfferList.delete(offer.logPrice);
     } else {
-      tickOfferList?.remove(id);
+      logPriceOfferList?.remove(id);
     }
 
     state.offerCache.delete(id);
@@ -1054,7 +1031,7 @@ class Semibook
         (chunk) =>
           chunk.length === 0
             ? true
-            : this.isPriceBetter(desiredPrice, chunk[chunk.length - 1].price)
+            : this.isPriceBetter(desiredPrice, chunk[chunk.length - 1].logPrice)
       );
     } else if ("desiredVolume" in options) {
       const desiredVolume = options.desiredVolume;
@@ -1062,7 +1039,7 @@ class Semibook
         if (desiredVolume.to === "buy") {
           return offer.gives;
         } else {
-          return offer.gives.mul(offer!.price!.toNumber());
+          return offer.gives.mul(offer!.logPrice);
         }
       };
       let volume = Big(0);
@@ -1110,8 +1087,11 @@ class Semibook
           OfferUnpackedStructOutput[],
           OfferDetailUnpackedStructOutput[]
         ] = await this.market.mgv.readerContract.offerList(
-          outbound_tkn.address,
-          inbound_tkn.address,
+          {
+            outbound: outbound_tkn.address,
+            inbound: inbound_tkn.address,
+            tickScale: this.market.tickScale,
+          },
           this.#idToRawId(fromId),
           chunkSize ?? Semibook.DEFAULT_MAX_OFFERS,
           { blockTag: block.number }
@@ -1152,14 +1132,14 @@ class Semibook
   }
 
   #rawLocalConfigToLocalConfig(
-    local: Mangrove.RawConfig["local"]
+    local: Mangrove.RawConfig["_local"]
   ): Mangrove.LocalConfig {
     const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
     return Semibook.rawLocalConfigToLocalConfig(local, outbound_tkn.decimals);
   }
 
   static rawLocalConfigToLocalConfig(
-    local: Mangrove.RawConfig["local"],
+    local: Mangrove.RawConfig["_local"],
     outboundDecimals: number
   ): Mangrove.LocalConfig {
     return {

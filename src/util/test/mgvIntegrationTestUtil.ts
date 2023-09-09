@@ -13,7 +13,7 @@ export type Account = {
   signer: ethers.Signer;
   connectedContracts: {
     // Contracts connected with the signer for setting chain state in test case setup
-    mangrove: typechain.Mangrove;
+    mangrove: typechain.IMangrove;
     testMaker: typechain.SimpleTestMaker;
     tokenA: typechain.TestToken;
     tokenB: typechain.TestToken;
@@ -68,6 +68,7 @@ export const getAddresses = async (): Promise<Addresses> => {
       mgv.getAddress("SimpleTestMaker"),
       mgv.signer
     );
+
     const ta = (await mgv.token("TokenA")).contract;
     const tb = (await mgv.token("TokenB")).contract;
     addresses = {
@@ -88,7 +89,7 @@ export const logAddresses = async (): Promise<void> => {
 };
 
 export type Contracts = {
-  mangrove: typechain.Mangrove;
+  mangrove: typechain.IMangrove;
   testMaker: typechain.SimpleTestMaker;
   tokenA: typechain.TestToken;
   tokenB: typechain.TestToken;
@@ -99,7 +100,7 @@ export const getContracts = async (
 ): Promise<Contracts> => {
   const addresses = await getAddresses();
   return {
-    mangrove: typechain.Mangrove__factory.connect(
+    mangrove: typechain.IMangrove__factory.connect(
       addresses.mangrove.address,
       signer
     ),
@@ -233,7 +234,7 @@ export type NewOffer = {
   market: Market;
   ba: Market.BA;
   maker: Account;
-  wants?: ethers.BigNumberish;
+  logPrice?: ethers.BigNumberish;
   gives?: ethers.BigNumberish;
   gasreq?: ethers.BigNumberish;
   shouldFail?: boolean;
@@ -366,7 +367,7 @@ export const postNewOffer = async ({
   market,
   ba,
   maker,
-  wants = 1,
+  logPrice = 1,
   gives = "90000000000000000",
   gasreq = 5e4,
   shouldFail = false,
@@ -399,8 +400,17 @@ export const postNewOffer = async ({
 
   return await waitForTransaction(
     maker.connectedContracts.testMaker[
-      "newOffer(address,address,uint256,uint256,uint256,uint256)"
-    ](outboundToken.address, inboundToken.address, wants, gives, gasreq, 1)
+      "newOfferByLogPrice((address,address,uint256),int256,uint256,uint256)"
+    ](
+      {
+        outbound: outboundToken.address,
+        inbound: inboundToken.address,
+        tickScale: market.tickScale,
+      },
+      logPrice,
+      gives,
+      gasreq
+    )
   ); // (base address, quote address, wants, gives, gasreq, pivotId)
 };
 
@@ -413,7 +423,7 @@ export const postNewRevertingOffer = async (
     market,
     ba,
     maker,
-    wants: 1,
+    logPrice: 1,
     gives: "90000000000000000",
     shouldRevert: true,
   });

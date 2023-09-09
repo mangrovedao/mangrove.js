@@ -75,7 +75,11 @@ class KandelInstance {
     signer: ethers.Signer;
     market:
       | Market
-      | ((baseAddress: string, quoteAddress: string) => Promise<Market>);
+      | ((
+          baseAddress: string,
+          quoteAddress: string,
+          tickScale: ethers.BigNumber
+        ) => Promise<Market>);
   }) {
     const kandel = typechain.GeometricKandel__factory.connect(
       params.address,
@@ -86,7 +90,11 @@ class KandelInstance {
 
     const market =
       typeof params.market === "function"
-        ? await params.market(await kandel.BASE(), await kandel.QUOTE())
+        ? await params.market(
+            await kandel.BASE(),
+            await kandel.QUOTE(),
+            await kandel.TICK_SCALE()
+          )
         : params.market;
 
     const offerLogic = new OfferLogic(
@@ -313,26 +321,6 @@ class KandelInstance {
     ).toNumber();
   }
 
-  /** Retrieves pivots to use for populating the offers in the distribution
-   * @param distribution The distribution to get pivots for.
-   * @returns The pivots to use when populating the distribution.
-   */
-  public async getPivots(distribution: KandelDistribution) {
-    const prices = distribution.getPricesForDistribution();
-    const pivots: number[] = Array(distribution.getOfferCount());
-    for (let i = 0; i < pivots.length; i++) {
-      const offer = distribution.offers[i];
-      // Use 0 as pivot when none is found
-      const price = prices[offer.index];
-      if (price == undefined) {
-        pivots[i] = 0;
-      } else {
-        pivots[i] = (await this.market.getPivotId(offer.offerType, price)) ?? 0;
-      }
-    }
-    return pivots;
-  }
-
   /** Convert public Kandel distribution to internal representation.
    * @param distribution The Kandel distribution.
    * @returns The internal representation of the Kandel distribution.
@@ -391,7 +379,7 @@ class KandelInstance {
         offerId,
         index,
         live: this.market.isLiveOffer(offer),
-        price: offer.price,
+        logPrice: offer.logPrice,
       })
     );
 
@@ -637,10 +625,7 @@ class KandelInstance {
   }) {
     params.distribution.verifyDistribution();
 
-    const pivots = await this.getPivots(params.distribution);
-
     const distributions = params.distribution.chunkDistribution(
-      pivots,
       params.maxOffersInChunk ??
         this.getMostSpecificConfig().maxOffersInPopulateChunk
     );
@@ -648,8 +633,7 @@ class KandelInstance {
     const firstAskIndex = params.distribution.getFirstAskIndex();
 
     return {
-      rawDistributions: distributions.map(({ pivots, distribution }) => ({
-        pivots,
+      rawDistributions: distributions.map(({ distribution }) => ({
         rawDistribution: this.getRawDistribution(distribution),
       })),
       firstAskIndex,
@@ -897,7 +881,6 @@ class KandelInstance {
   async populateChunks(
     firstAskIndex: number,
     rawDistributions: {
-      pivots: number[];
       rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct;
     }[],
     overrides: ethers.Overrides = {}

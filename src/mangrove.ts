@@ -36,11 +36,12 @@ import MangroveEventSubscriber from "./mangroveEventSubscriber";
 import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
 import { LocalUnpackedStructOutput } from "./types/typechain/MgvReader";
+import { OLKeyStruct } from "./types/typechain/Mangrove";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
-    ReturnType<typechain.Mangrove["functions"]["configInfo"]>
+    ReturnType<typechain.MgvReader["functions"]["configInfo"]>
   >;
 
   export type LocalConfig = {
@@ -88,6 +89,7 @@ namespace Mangrove {
   export type OpenMarketInfo = {
     base: { name: string; address: string; symbol: string; decimals: number };
     quote: { name: string; address: string; symbol: string; decimals: number };
+    tickScale: ethers.BigNumber;
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
   };
@@ -109,13 +111,14 @@ class Mangrove {
   network: eth.ProviderNetwork;
   _readOnly: boolean;
   address: string;
-  contract: typechain.Mangrove;
+  contract: typechain.IMangrove;
   readerContract: typechain.MgvReader;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
   reliableProvider: ReliableProvider;
   mangroveEventSubscriber: MangroveEventSubscriber;
   shouldNotListenToNewEvents: boolean;
+  olKeyHashMap: Map<string, OLKeyStruct> = new Map();
 
   public eventEmitter: EventEmitter;
 
@@ -278,7 +281,7 @@ class Mangrove {
       this.signer
     );
     this.address = Mangrove.getAddress("Mangrove", this.network.name);
-    this.contract = typechain.Mangrove__factory.connect(
+    this.contract = typechain.IMangrove__factory.connect(
       this.address,
       this.signer
     );
@@ -332,6 +335,20 @@ class Mangrove {
       this.contract,
       this.reliableProvider.blockManager
     );
+
+    // Read all setActive events to populate olKeyHashMap
+    const allMarkets = this.contract.queryFilter(
+      this.contract.filters.SetActive(null, null)
+    );
+    allMarkets.then((markets) => {
+      markets.map((market) => {
+        this.olKeyHashMap.set(market.args.olKeyHash, {
+          outbound: market.args.outbound_tkn,
+          inbound: market.args.inbound_tkn,
+          tickScale: market.args.tickScale,
+        });
+      });
+    });
   }
 
   /** Update the configuration by providing a partial configuration containing only the values that should be changed/added.
@@ -394,6 +411,7 @@ class Mangrove {
   async market(params: {
     base: string;
     quote: string;
+    tickScale: ethers.BigNumber;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
     logger.debug("Initialize Market", {
@@ -432,6 +450,7 @@ class Mangrove {
       | {
           base: string;
           quote: string;
+          tickScale: ethers.BigNumber;
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
@@ -653,17 +672,18 @@ class Mangrove {
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async config(): Promise<Mangrove.GlobalConfig> {
-    const config = await this.contract.configInfo(
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero
-    );
+    const config = await this.readerContract.configInfo({
+      outbound: ethers.constants.AddressZero,
+      inbound: ethers.constants.AddressZero,
+      tickScale: 0,
+    });
     return {
-      monitor: config.global.monitor,
-      useOracle: config.global.useOracle,
-      notify: config.global.notify,
-      gasprice: config.global.gasprice.toNumber(),
-      gasmax: config.global.gasmax.toNumber(),
-      dead: config.global.dead,
+      monitor: config._global.monitor,
+      useOracle: config._global.useOracle,
+      notify: config._global.notify,
+      gasprice: config._global.gasprice.toNumber(),
+      gasmax: config._global.gasmax.toNumber(),
+      dead: config._global.dead,
     };
   }
 
@@ -993,7 +1013,7 @@ class Mangrove {
     tryDecodeSymbol(returnData.slice(addresses.length), "symbol");
 
     // format return value
-    return raw.markets.map(([tkn0, tkn1]) => {
+    return raw.markets.map(([tkn0, tkn1, tickScale]) => {
       // Use internal mgv name if defined; otherwise use the symbol.
       const tkn0Name = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
       const tkn1Name = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
@@ -1017,6 +1037,7 @@ class Mangrove {
           symbol: data[quote].symbol,
           decimals: data[quote].decimals,
         },
+        tickScale: tickScale,
         asksConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
               data[base].configs[quote],
@@ -1060,7 +1081,7 @@ class Mangrove {
     });
     // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
     return Promise.all(
-      openMarketsData.map(({ base, quote }) => {
+      openMarketsData.map(({ base, quote, tickScale }) => {
         this.setAddress(base.name, base.address);
         if (configuration.tokens.getDecimals(base.name) === undefined) {
           configuration.tokens.setDecimals(base.name, base.decimals);
@@ -1073,6 +1094,7 @@ class Mangrove {
           mgv: this,
           base: base.name,
           quote: quote.name,
+          tickScale: tickScale,
           bookOptions: bookOptions,
           noInit: noInit,
         });

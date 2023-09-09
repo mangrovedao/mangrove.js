@@ -46,6 +46,7 @@ namespace TestMaker {
     mgv: Mangrove;
     base: string;
     quote: string;
+    tickScale: ethers.BigNumber;
   };
 }
 
@@ -82,7 +83,11 @@ class TestMaker {
     const quoteAddress = p.mgv.getAddress(p.quote);
     const contract = await new typechain.SimpleTestMaker__factory(
       p.mgv.signer
-    ).deploy(p.mgv.address, baseAddress, quoteAddress);
+    ).deploy(p.mgv.address, {
+      outbound: baseAddress,
+      inbound: quoteAddress,
+      tickScale: p.tickScale,
+    });
     await contract.deployTransaction.wait();
 
     const amount = Mangrove.toUnits(PROVISION_AMOUNT_IN_ETHERS, 18);
@@ -122,7 +127,7 @@ class TestMaker {
 
     p = { ...defaults, ...p };
 
-    const { wants, gives, price, fund } =
+    const { logPrice, gives, price, fund } =
       LiquidityProvider.normalizeOfferParams(p);
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
@@ -160,18 +165,18 @@ class TestMaker {
       executeData: p.executeData as string,
     };
 
-    const pivot = (await this.market.getPivotId(p.ba, price)) ?? 0;
-
     const txPromise = this.contract[
-      "newOfferWithFunding(address,address,uint256,uint256,uint256,uint256,uint256,uint256,(bool,string))"
+      "newOfferByLogPriceWithFunding((address,address,uint256),int256,uint256,uint256,uint256,uint256,(bool,string))"
     ](
-      this.market.base.address,
-      this.market.quote.address,
-      inbound_tkn.toUnits(wants),
+      {
+        outbound: outbound_tkn.address,
+        inbound: inbound_tkn.address,
+        tickScale: this.market.tickScale,
+      },
+      logPrice,
       outbound_tkn.toUnits(gives),
       p.gasreq as number,
       p.gasprice as number,
-      pivot,
       amount,
       offerData,
       payableOverrides
@@ -181,7 +186,6 @@ class TestMaker {
       this.market,
       (_cbArg, _bookEevnt, _ethersLog) => ({
         id: _cbArg.offerId as number,
-        pivot: pivot,
         event: _ethersLog as Log,
       }),
       txPromise,

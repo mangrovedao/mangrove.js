@@ -15,6 +15,7 @@ export const builder = (yargs: yargs.Argv) => {
   return yargs
     .positional("base", { type: "string", demandOption: true })
     .positional("quote", { type: "string", demandOption: true })
+    .option("tickScale", { type: "number", demandOption: true })
     .option("ba", { choices: ["asks", "bids"] })
     .option("nodeUrl", { type: "string", demandOption: true })
     .option("privateKey", { type: "string", demandOption: true })
@@ -32,6 +33,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
   const market = await mangrove.market({
     base: argv.base,
     quote: argv.quote,
+    tickScale: ethers.BigNumber.from(argv.tickScale),
     bookOptions: { maxOffers: 200 },
   });
 
@@ -80,15 +82,21 @@ async function retractAllFromOfferList(
   for (const offer of offerList) {
     if (offer.maker == makerAddress) {
       const provision = await market.mgv.contract.callStatic.retractOffer(
-        outbound_tkn.address,
-        inbound_tkn.address,
+        {
+          outbound: outbound_tkn.address,
+          inbound: inbound_tkn.address,
+          tickScale: market.tickScale,
+        },
         offer.id,
         deprovision
       );
       const txPromise = market.mgv.contract
         .retractOffer(
-          outbound_tkn.address,
-          inbound_tkn.address,
+          {
+            outbound: outbound_tkn.address,
+            inbound: inbound_tkn.address,
+            tickScale: market.tickScale,
+          },
           offer.id,
           deprovision
         )

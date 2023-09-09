@@ -44,11 +44,9 @@ namespace Market {
     gave: Big;
   };
   export type Summary = {
-    got: Big;
-    gave: Big;
-    partialFill: boolean;
-    bounty: Big;
-    feePaid: Big;
+    olKeyHash: string;
+    taker: string;
+    fee: Big;
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
@@ -79,7 +77,7 @@ namespace Market {
     (
       | { volume: Bigish; price: Bigish }
       | { total: Bigish; price: Bigish }
-      | { tick: Bigish; fillVolume: Bigish; fillWants?: boolean }
+      | { logPrice: Bigish; fillVolume: Bigish; fillWants?: boolean }
     );
 
   export type RestingOrderParams = {
@@ -90,7 +88,7 @@ namespace Market {
     targets: {
       offerId: number;
       takerWants: Bigish;
-      tick: Bigish;
+      logPrice: Bigish;
       gasreq: number;
     }[];
     ba: Market.BA;
@@ -167,9 +165,8 @@ namespace Market {
     gasprice: number;
     maker: string;
     gasreq: number;
-    tick: number;
+    logPrice: number;
     gives: Big;
-    price: Big | undefined;
   };
 
   export type Offer = OfferSlim & {
@@ -245,6 +242,7 @@ class Market {
   mgv: Mangrove;
   base: MgvToken;
   quote: MgvToken;
+  tickScale: BigNumber;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook | undefined;
   #bidsSemibook: Semibook | undefined;
@@ -264,12 +262,18 @@ class Market {
       mgv: Mangrove;
       base: string;
       quote: string;
+      tickScale: BigNumber;
     } & Partial<Market.OptionalParams>
   ): Promise<Market> {
     const base = await params.mgv.token(params.base);
     const quote = await params.mgv.token(params.quote);
     canConstructMarket = true;
-    const market = new Market({ mgv: params.mgv, base, quote });
+    const market = new Market({
+      mgv: params.mgv,
+      base,
+      quote,
+      tickScale: params.tickScale,
+    });
     canConstructMarket = false;
     if (params["noInit"]) {
       market.#initClosure = () => {
@@ -299,6 +303,7 @@ class Market {
     mgv: Mangrove;
     base: MgvToken;
     quote: MgvToken;
+    tickScale: BigNumber;
   }) {
     if (!canConstructMarket) {
       throw Error(
@@ -311,6 +316,7 @@ class Market {
 
     this.base = params.base;
     this.quote = params.quote;
+    this.tickScale = params.tickScale;
   }
 
   public close() {
@@ -475,16 +481,6 @@ class Market {
     return offer.gives.gt(0);
   }
 
-  /** Given a price, find the id of the immediately-better offer in the
-   * book. If there is no offer with a better price, `undefined` is returned.
-   */
-  async getPivotId(
-    ba: Market.BA,
-    price: Bigish | undefined
-  ): Promise<number | undefined> {
-    return this.getSemibook(ba).getPivotId(price);
-  }
-
   /** Gets the amount of ethers necessary to provision an offer on the market.
    * @param ba bids or asks
    * @param gasreq gas required for the offer execution.
@@ -499,9 +495,15 @@ class Market {
     // 0 makes calculation use mgv gasprice
     gasprice ??= 0;
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
-    const prov = await this.mgv.readerContract[
-      "getProvision(address,address,uint256,uint256)"
-    ](outbound_tkn.address, inbound_tkn.address, gasreq, gasprice);
+    const prov = await this.mgv.readerContract.getProvision(
+      {
+        outbound: outbound_tkn.address,
+        inbound: inbound_tkn.address,
+        tickScale: this.tickScale,
+      },
+      gasreq,
+      gasprice
+    );
     return this.mgv.fromUnits(prov, 18);
   }
 
@@ -709,7 +711,7 @@ class Market {
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = this.getSemibook(this.trade.bsToBa(bs));
     const {
-      local: { density, kilo_offer_gasbase },
+      _local: { density, kilo_offer_gasbase },
     } = await semibook.getRawConfig();
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
@@ -737,7 +739,7 @@ class Market {
    */
   async simulateGas(
     ba: Market.BA,
-    tick: BigNumber,
+    logPrice: BigNumber,
     fillVolume: BigNumber,
     fillWants: boolean
   ): Promise<BigNumber> {
@@ -747,7 +749,7 @@ class Market {
     // Overestimate by 50% because market can have changed between estimation and execution and some offers may be failing.
     const estimation = (
       await semibook.simulateMarketOrder(
-        tick,
+        logPrice,
         new Big(fillVolume.toNumber()),
         fillWants
       )
@@ -983,11 +985,11 @@ class Market {
     const absPriceDiffs = new Array<Big | undefined>(offers.length - 1);
     offers.slice(1).reduce((prevPrice, o, i) => {
       absPriceDiffs[i] =
-        prevPrice === undefined || o.price === undefined
+        prevPrice === undefined || o.logPrice === undefined
           ? undefined
-          : prevPrice.sub(o.price).abs();
-      return o.price;
-    }, offers[0].price);
+          : Big(prevPrice).sub(o.logPrice).abs();
+      return o.logPrice;
+    }, offers[0].logPrice);
 
     const minBig = (
       b1: Big | undefined,

@@ -130,9 +130,8 @@ class KandelDistribution {
    * @param maxOffersInChunk The maximum number of offers in a single chunk.
    * @returns The chunks.
    */
-  public chunkDistribution(pivots: number[], maxOffersInChunk: number) {
+  public chunkDistribution(maxOffersInChunk: number) {
     const chunks: {
-      pivots: number[];
       distribution: OfferDistribution;
     }[] = [];
 
@@ -143,16 +142,13 @@ class KandelDistribution {
       const indexLow = offerMiddle - i - 1;
       const indexHigh = offerMiddle + i;
       if (indexLow >= 0 && indexLow < this.offers.length) {
-        pivotsChunk.unshift(pivots[indexLow]);
         distributionChunk.unshift(this.offers[indexLow]);
       }
       if (indexHigh < this.offers.length) {
-        pivotsChunk.push(pivots[indexHigh]);
         distributionChunk.push(this.offers[indexHigh]);
       }
       if (pivotsChunk.length >= maxOffersInChunk) {
         chunks.push({
-          pivots: pivotsChunk,
           distribution: distributionChunk,
         });
         pivotsChunk = [];
@@ -161,7 +157,6 @@ class KandelDistribution {
     }
     if (pivotsChunk.length) {
       chunks.push({
-        pivots: pivotsChunk,
         distribution: distributionChunk,
       });
     }

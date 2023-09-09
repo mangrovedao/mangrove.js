@@ -80,18 +80,18 @@ class KandelPriceCalculation {
 
   /** Gets the prices for the geometric distribution based on a single known price at an index.
    * @param index The index of the known price.
-   * @param priceAtIndex The known price.
+   * @param logPriceAtIndex The known price.
    * @param ratio The ratio between each price point.
    * @param pricePoints The number of price points in the distribution.
    * @returns The prices in the distribution.
    */
   public getPricesFromPrice(
     index: number,
-    priceAtIndex: Big,
+    logPriceAtIndex: Big,
     ratio: Big,
     pricePoints: number
   ) {
-    const priceOfIndex0 = priceAtIndex.div(ratio.pow(index));
+    const priceOfIndex0 = logPriceAtIndex.div(ratio.pow(index));
 
     const prices = this.calculatePrices({
       minPrice: priceOfIndex0,
