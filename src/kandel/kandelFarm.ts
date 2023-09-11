@@ -80,7 +80,9 @@ class KandelFarm {
               this.kandelSeeder.filters.NewKandel(filter?.owner, olKeyHash)
             )
           ).map(async (x) => {
-            const olKeyStruct = this.mgv.olKeyHashMap.get(x.args.olKeyHash);
+            const olKeyStruct = this.mgv.olKeyHashToOLKeyStrucMap.get(
+              x.args.olKeyHash
+            );
             const baseToken = await this.mgv.getTokenAndAddress(
               await olKeyStruct!.outbound
             );
@@ -108,7 +110,9 @@ class KandelFarm {
               )
             )
           ).map(async (x) => {
-            const olKeyStruct = this.mgv.olKeyHashMap.get(x.args.olKeyHash);
+            const olKeyStruct = this.mgv.olKeyHashToOLKeyStrucMap.get(
+              x.args.olKeyHash
+            );
             const baseToken = await this.mgv.getTokenAndAddress(
               await olKeyStruct!.outbound
             );

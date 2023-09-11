@@ -78,7 +78,7 @@ class KandelInstance {
       | ((
           baseAddress: string,
           quoteAddress: string,
-          tickScale: ethers.BigNumber
+          tickScale: Bigish
         ) => Promise<Market>);
   }) {
     const kandel = typechain.GeometricKandel__factory.connect(
@@ -93,7 +93,7 @@ class KandelInstance {
         ? await params.market(
             await kandel.BASE(),
             await kandel.QUOTE(),
-            await kandel.TICK_SCALE()
+            (await kandel.TICK_SCALE()).toString()
           )
         : params.market;
 

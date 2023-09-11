@@ -189,12 +189,10 @@ describe("KandelDistribution unit tests suite", () => {
       );
 
       // Act
-      const chunks = sut.chunkDistribution([1, 2, 3], 2);
+      const chunks = sut.chunkDistribution(2);
 
       // Assert
       assert.equal(chunks.length, 2);
-      assert.deepStrictEqual(chunks[0].pivots, [2, 3]);
-      assert.deepStrictEqual(chunks[1].pivots, [1]);
 
       assert.equal(chunks[0].distribution[0].base.toNumber(), 3);
       assert.equal(chunks[0].distribution[1].base.toNumber(), 5);
@@ -217,12 +215,10 @@ describe("KandelDistribution unit tests suite", () => {
       );
 
       // Act
-      const chunks = sut.chunkDistribution([1, 2, 3, 4], 2);
+      const chunks = sut.chunkDistribution(2);
 
       // Assert
       assert.equal(chunks.length, 2);
-      assert.deepStrictEqual(chunks[0].pivots, [2, 3]);
-      assert.deepStrictEqual(chunks[1].pivots, [1, 4]);
 
       assert.equal(chunks[0].distribution[0].base.toNumber(), 3);
       assert.equal(chunks[0].distribution[1].base.toNumber(), 5);
@@ -246,11 +242,10 @@ describe("KandelDistribution unit tests suite", () => {
       );
 
       // Act
-      const chunks = sut.chunkDistribution([1, 2, 3, 4], 3);
+      const chunks = sut.chunkDistribution(3);
 
       // Assert
       assert.equal(chunks.length, 1);
-      assert.deepStrictEqual(chunks[0].pivots, [1, 2, 3, 4]);
 
       assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
       assert.equal(chunks[0].distribution[1].base.toNumber(), 3);
@@ -270,11 +265,10 @@ describe("KandelDistribution unit tests suite", () => {
         );
 
         // Act
-        const chunks = sut.chunkDistribution([1], 2);
+        const chunks = sut.chunkDistribution(2);
 
         // Assert
         assert.equal(chunks.length, 1);
-        assert.deepStrictEqual(chunks[0].pivots, [1]);
         assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
       });
     });

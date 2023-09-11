@@ -41,6 +41,7 @@ describe("OfferMaker", () => {
       const lp = await LiquidityProvider.connect(logic, {
         base: "TokenA",
         quote: "TokenB",
+        tickScale: 1,
         bookOptions: { maxOffers: 30 },
       });
       await lp.logic?.contract.offerGasreq();
@@ -72,6 +73,7 @@ describe("OfferMaker", () => {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
+        tickScale: 1,
         bookOptions: { maxOffers: 30 },
       });
       onchain_lp = await logic.liquidityProvider(market);
@@ -184,7 +186,7 @@ describe("OfferMaker", () => {
           const mgvGasprice = (await mgv.config()).gasprice;
           const provision = await lp.computeAskProvision();
           const { id } = await lp.newAsk({
-            wants: 10,
+            logPrice: 10,
             gives: 10,
             fund: provision,
           });
@@ -197,7 +199,7 @@ describe("OfferMaker", () => {
           const expectedInitialProvision = mgv.calculateOfferProvision(
             mgvGasprice,
             lp.gasreq,
-            (await lp.market.getSemibook("asks").getConfig()).offer_gasbase
+            (await lp.market.getSemibook("asks").getConfig()).kilo_offer_gasbase
           );
           assert.equal(
             provision.toNumber(),
@@ -241,7 +243,7 @@ describe("OfferMaker", () => {
       it("pushes a new offer", async () => {
         const provision = await onchain_lp.computeAskProvision();
         const { id: ofrId } = await onchain_lp.newAsk({
-          wants: 10,
+          logPrice: 10,
           gives: 10,
           fund: provision,
         });
@@ -269,7 +271,7 @@ describe("OfferMaker", () => {
 
       it("fails, when trying to push new offer without sufficient provision", async () => {
         const newAskPromise = onchain_lp.newAsk({
-          wants: 10,
+          logPrice: 10,
           gives: 10,
           fund: 0, // explicitly setting no provision
         });
@@ -288,7 +290,7 @@ describe("OfferMaker", () => {
         prov = await onchain_lp.computeBidProvision();
 
         const { id: ofrId } = await onchain_lp.newBid({
-          wants: 10,
+          logPrice: 10,
           gives: 20,
           fund: prov,
         });
@@ -331,13 +333,17 @@ describe("OfferMaker", () => {
       it("fails, when trying to create an offer on a closed market", async () => {
         const base = onchain_lp.market.base.address;
         const quote = onchain_lp.market.quote.address;
-        const closetx = await adminMgv.contract.deactivate(base, quote);
+        const closetx = await adminMgv.contract.deactivate({
+          outbound: base,
+          inbound: quote,
+          tickScale: 1,
+        });
         await closetx.wait();
 
         const prov = await onchain_lp.computeBidProvision();
 
         const createPromise = onchain_lp.newAsk({
-          wants: 10,
+          logPrice: 10,
           gives: 20,
           fund: prov,
         });
@@ -350,7 +356,7 @@ describe("OfferMaker", () => {
 
       it("updates offer", async () => {
         const { id: ofrId } = await onchain_lp.newAsk({
-          wants: 10,
+          logPrice: 10,
           gives: 20,
           fund: await onchain_lp.computeAskProvision({}),
         });
@@ -360,11 +366,11 @@ describe("OfferMaker", () => {
           0,
           `There should be no need to reprovision`
         );
-        await onchain_lp.updateAsk(ofrId, { wants: 12, gives: 10 });
+        await onchain_lp.updateAsk(ofrId, { logPrice: 12, gives: 10 });
 
         const asks = onchain_lp.asks();
         assert.strictEqual(
-          asks[0].wants.toNumber(),
+          asks[0].logPrice,
           12,
           "offer should have updated wants"
         );
@@ -379,18 +385,22 @@ describe("OfferMaker", () => {
         const prov = await onchain_lp.computeBidProvision();
 
         const { id: ofrId } = await onchain_lp.newBid({
-          wants: 10,
+          logPrice: 10,
           gives: 20,
           fund: prov,
         });
 
         const base = onchain_lp.market.base.address;
         const quote = onchain_lp.market.quote.address;
-        const closetx = await adminMgv.contract.deactivate(base, quote);
+        const closetx = await adminMgv.contract.deactivate({
+          outbound: base,
+          inbound: quote,
+          tickScale: 1,
+        });
         await closetx.wait();
 
         const updatePromise = onchain_lp.updateAsk(ofrId, {
-          wants: 12,
+          logPrice: 12,
           gives: 10,
         });
 

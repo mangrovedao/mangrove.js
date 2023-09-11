@@ -86,9 +86,33 @@ describe("Market unit tests suite", () => {
       const gives = Big(12);
       const wants = Big(13);
       // Act
-      const result = Market.getPrice("bids", gives, wants);
+      const result = Market.getPrice({ ba: "bids", gives, wants });
       // Assert
       assert.ok(result && gives.div(wants).eq(result));
+    });
+
+    it("returns price based on tick and tickScale", async function () {
+      // Arrange
+      const tick = Big(12);
+      const tickScale = Big(13);
+      // Act
+      const result = Market.getPrice({ tick, tickScale });
+      // Assert
+      const logPrice = tick.mul(tickScale);
+      assert.ok(
+        result && Big(Math.pow(1.0001, logPrice.toNumber())).eq(result)
+      );
+    });
+
+    it("returns price based on tick and tickScale", async function () {
+      // Arrange
+      const logPrice = Big(12);
+      // Act
+      const result = Market.getPrice({ logPrice });
+      // Assert
+      assert.ok(
+        result && Big(Math.pow(1.0001, logPrice.toNumber())).eq(result)
+      );
     });
   });
 
@@ -124,11 +148,9 @@ describe("Market unit tests suite", () => {
         gasprice: 1,
         maker: "",
         gasreq: 1,
-        offer_gasbase: 1,
-        wants: Big(1),
+        kilo_offer_gasbase: 1,
         gives: Big(1),
-        volume: Big(1),
-        price: Big(price),
+        logPrice: price,
       };
     }
 

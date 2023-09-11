@@ -94,7 +94,7 @@ class LiquidityProvider {
       | {
           base: string;
           quote: string;
-          tickScale: ethers.BigNumber;
+          tickScale: Bigish;
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {

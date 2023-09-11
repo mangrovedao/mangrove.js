@@ -18,7 +18,7 @@ import Trade from "../../src/util/trade";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {
-    it("returns wants as volume, gives as wants*price and fillWants true, when params has price!=null and volume", async function () {
+    it("returns fillVolume as volume, logPrice as logPrice(price) and fillWants true, when params has price!=null and volume", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -48,30 +48,16 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken)
       );
       const [wants] = capture(baseToken.toUnits).first();
-      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
-      const expectedGivesWithoutSlippage = Big(params.volume).mul(price);
-      assert.equal(result.wants.eq(BigNumber.from(params.volume)), true);
-      assert.equal(
-        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
-          result.gives.sub(result.givesSlippageAmount)
-        ),
-        true
-      );
-      assert.equal(result.gives.eq(BigNumber.from(params.price)), true);
+      const logPrice = trade.getLogPriceFromPrice(params.price);
+      assert.equal(result.fillVolume.eq(BigNumber.from(params.volume)), true);
+      assert.equal(result.logPrice.eq(BigNumber.from(logPrice)), true);
       assert.equal(result.fillWants, true);
       assert.equal(Big(params.volume).eq(wants), true);
-      assert.equal(
-        expectedGivesWithoutSlippage
-          .mul(100 + slippage)
-          .div(100)
-          .eq(gives),
-        true
-      );
     });
 
-    it("returns gives as total, wants as gives.div(price) and fillWants false, when params has price!=null and total", async function () {
+    it("returns fillVolume as total, logPrice as -1*logPrice(price) and fillWants false, when params has price!=null and total", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -98,55 +84,36 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).first();
-      const [gives] = capture(quoteToken.toUnits).first();
-
+      const logPrice = trade.getLogPriceFromPrice(params.price);
       //Assert
-      const expectedGivesWithoutSlippage = Big(params.total);
       assert.equal(
-        result.gives.eq(BigNumber.from(Big(params.total).toFixed(0))),
-        true
-      );
-      assert.equal(
-        result.wants.eq(
-          BigNumber.from(Big(params.total).div(price).toFixed(0))
-        ),
+        result.fillVolume.eq(BigNumber.from(Big(params.total).toFixed(0))),
         true
       );
       assert.equal(result.fillWants, false);
-      assert.equal(Big(params.total).div(price).eq(wants), true);
       assert.equal(
-        expectedGivesWithoutSlippage
-          .mul(100 + slippage)
-          .div(100)
-          .eq(gives),
-        true
-      );
-      assert.equal(
-        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
-          result.gives.sub(result.givesSlippageAmount)
-        ),
-        true
+        result.logPrice.toString(),
+        BigNumber.from(-1).mul(logPrice).toString()
       );
     });
 
-    it("returns gives as gives, wants as want and fillWants as true, when params has gives and wants, but no fillWants ", async function () {
+    it("returns fillVolume as fillVolume, logPrice as logPrice and fillWants as true, when params has fillVolume and logPrice, but no fillWants ", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
       const slippage = 3;
       const params: Market.TradeParams = {
-        gives: 20,
-        wants: 30,
+        logPrice: 20,
+        fillVolume: 30,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.wants).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0))
       );
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.gives).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0))
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -156,54 +123,37 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).first();
-      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
-      const expectedGivesWithoutSlippage = Big(params.gives);
       assert.equal(
-        result.gives.eq(BigNumber.from(Big(params.gives).toFixed(0))),
-        true
-      );
-      assert.equal(
-        result.wants.eq(BigNumber.from(Big(params.wants).toFixed(0))),
+        result.fillVolume.eq(BigNumber.from(Big(params.fillVolume).toFixed(0))),
         true
       );
       assert.equal(result.fillWants, true);
-      assert.equal(Big(params.wants).eq(wants), true);
       assert.equal(
-        expectedGivesWithoutSlippage
-          .mul(100 + slippage)
-          .div(100)
-          .eq(gives),
-        true
-      );
-      assert.equal(
-        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
-          result.gives.sub(result.givesSlippageAmount)
-        ),
-        true
+        result.logPrice.toString(),
+        BigNumber.from(params.logPrice).toString()
       );
     });
 
-    it("returns gives as gives, wants as want and fillWants as fillWants, when params has gives, wants and fillWants ", async function () {
+    it("returns fillVolume as fillVolume, logPrice as logPrice and fillWants as fillWants, when params has logPrice, fillVolume and fillWants ", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
       const slippage = 3;
       const params: Market.TradeParams = {
-        gives: 20,
-        wants: 30,
+        logPrice: 20,
+        fillVolume: 30,
         fillWants: false,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.wants).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0))
       );
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.gives).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0))
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -213,39 +163,22 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [wants] = capture(baseToken.toUnits).first();
-      const [gives] = capture(quoteToken.toUnits).first();
 
       //Assert
-      const expectedGivesWithoutSlippage = Big(params.gives);
       assert.equal(
-        result.gives.eq(BigNumber.from(Big(params.gives).toFixed(0))),
+        result.fillVolume.eq(BigNumber.from(Big(params.fillVolume).toFixed(0))),
         true
       );
       assert.equal(
-        result.wants.eq(BigNumber.from(Big(params.wants).toFixed(0))),
+        result.logPrice.eq(BigNumber.from(Big(params.logPrice).toFixed(0))),
         true
       );
       assert.equal(result.fillWants, params.fillWants);
-      assert.equal(Big(params.wants).eq(wants), true);
-      assert.equal(
-        expectedGivesWithoutSlippage
-          .mul(100 + slippage)
-          .div(100)
-          .eq(gives),
-        true
-      );
-      assert.equal(
-        BigNumber.from(expectedGivesWithoutSlippage.toFixed(0)).eq(
-          result.gives.sub(result.givesSlippageAmount)
-        ),
-        true
-      );
     });
   });
 
   describe("getParamsForSell", () => {
-    it("returns gives as volume, wants as gives.mul(price) and fillWants false, when params has price!=null and volume", async function () {
+    it("returns fillVolume as volume, logPrice as logPrice(price) and fillWants false, when params has price!=null and volume", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -272,36 +205,18 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).first();
-      const [wants] = capture(quoteToken.toUnits).first();
+      const logPrice = trade.getLogPriceFromPrice(params.price);
 
       //Assert
-      const expectedWantsWithoutSlippage = Big(params.volume).mul(price);
       assert.equal(
-        result.wants.eq(
-          BigNumber.from(Big(params.volume).mul(price).toFixed(0))
-        ),
-        true
+        result.logPrice.toString(),
+        BigNumber.from(logPrice).toString()
       );
-      assert.equal(
-        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
-          result.wants.sub(result.wantsSlippageAmount)
-        ),
-        true
-      );
-      assert.equal(result.gives.eq(BigNumber.from(params.volume)), true);
+      assert.equal(result.fillVolume.eq(BigNumber.from(params.volume)), true);
       assert.equal(result.fillWants, false);
-      assert.equal(Big(params.volume).eq(gives), true);
-      assert.equal(
-        expectedWantsWithoutSlippage
-          .mul(100 - slippage)
-          .div(100)
-          .eq(wants),
-        true
-      );
     });
 
-    it("returns wants as total, gives as wants.div(price) and fillWants true, when params has price!=null and total", async function () {
+    it("returns fillVolume as total, logPrice as logPrice(price) and fillWants true, when params has price!=null and total", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -328,55 +243,37 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).first();
-      const [wants] = capture(quoteToken.toUnits).first();
+      const logPrice = trade.getLogPriceFromPrice(params.price);
 
       //Assert
-      const expectedWantsWithoutSlippage = Big(params.total);
       assert.equal(
-        result.wants.eq(BigNumber.from(Big(params.total).toFixed(0))),
-        true
+        result.fillVolume.toString(),
+        BigNumber.from(params.total).toString()
       );
       assert.equal(
-        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
-          result.wants.sub(result.wantsSlippageAmount)
-        ),
-        true
-      );
-      assert.equal(
-        result.gives.eq(
-          BigNumber.from(Big(params.total).div(price).toFixed(0))
-        ),
-        true
+        result.logPrice.toString(),
+        BigNumber.from(-1).mul(logPrice).toString()
       );
       assert.equal(result.fillWants, true);
-      assert.equal(Big(params.total).div(price).eq(gives), true);
-      assert.equal(
-        expectedWantsWithoutSlippage
-          .mul(100 - slippage)
-          .div(100)
-          .eq(wants),
-        true
-      );
     });
 
-    it("returns wants as wants, gives as gives and fillWants false, when params has wants and gives, but no fillWants", async function () {
+    it("returns fillVolume as fillVolume, logPrice as logPrice and fillWants false, when params has wants and gives, but no fillWants", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
       const slippage = 3;
       const params: Market.TradeParams = {
-        wants: 20,
-        gives: 30,
+        fillVolume: 20,
+        logPrice: 30,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.wants)
+        BigNumber.from(params.fillVolume)
       );
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.gives)
+        BigNumber.from(params.fillVolume)
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -386,35 +283,17 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).first();
-      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
-      const expectedWantsWithoutSlippage = Big(params.wants);
       assert.equal(
-        result.wants.eq(BigNumber.from(Big(params.wants).toFixed(0))),
-        true
-      );
-
-      assert.equal(
-        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
-          result.wants.sub(result.wantsSlippageAmount)
-        ),
-        true
+        result.fillVolume.toString(),
+        BigNumber.from(params.fillVolume).toString()
       );
       assert.equal(
-        result.gives.eq(BigNumber.from(Big(params.gives).toFixed(0))),
-        true
+        result.logPrice.toString(),
+        BigNumber.from(params.logPrice).toString()
       );
       assert.equal(result.fillWants, false);
-      assert.equal(Big(params.gives).eq(gives), true);
-      assert.equal(
-        expectedWantsWithoutSlippage
-          .mul(100 - slippage)
-          .div(100)
-          .eq(wants),
-        true
-      );
     });
 
     it("returns wants as wants, gives as gives and fillWants as fillWants, when params has wants, gives and fillWants", async function () {
@@ -423,18 +302,18 @@ describe("Trade unit tests suite", () => {
       const spyTrade = spy(trade);
       const slippage = 3;
       const params: Market.TradeParams = {
-        wants: 20,
-        gives: 30,
+        fillVolume: 20,
+        logPrice: 30,
         fillWants: true,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.wants)
+        BigNumber.from(params.fillVolume)
       );
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.gives)
+        BigNumber.from(params.fillVolume)
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -444,34 +323,17 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const [gives] = capture(baseToken.toUnits).first();
-      const [wants] = capture(quoteToken.toUnits).first();
 
       //Assert
-      const expectedWantsWithoutSlippage = Big(params.wants);
       assert.equal(
-        result.wants.eq(BigNumber.from(Big(params.wants).toFixed(0))),
-        true
+        result.fillVolume.toString(),
+        BigNumber.from(params.fillVolume).toString()
       );
       assert.equal(
-        BigNumber.from(expectedWantsWithoutSlippage.toFixed(0)).eq(
-          result.wants.sub(result.wantsSlippageAmount)
-        ),
-        true
-      );
-      assert.equal(
-        result.gives.eq(BigNumber.from(Big(params.gives).toFixed(0))),
-        true
+        result.logPrice.toString(),
+        BigNumber.from(params.logPrice).toString()
       );
       assert.equal(result.fillWants, true);
-      assert.equal(Big(params.gives).eq(gives), true);
-      assert.equal(
-        expectedWantsWithoutSlippage
-          .mul(100 - slippage)
-          .div(100)
-          .eq(wants),
-        true
-      );
     });
   });
 

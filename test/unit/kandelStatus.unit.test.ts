@@ -12,10 +12,10 @@ describe("KandelStatus unit tests suite", () => {
   }
   function assertEqual(
     actual:
-      | { live: boolean; offerId: number; price: Big | undefined }
+      | { live: boolean; offerId: number; logPrice: Big | undefined }
       | undefined,
     expected:
-      | { live: boolean; offerId: number; price: Big | undefined }
+      | { live: boolean; offerId: number; logPrice: Big | undefined }
       | undefined,
     i: number
   ) {
@@ -36,8 +36,8 @@ describe("KandelStatus unit tests suite", () => {
         `unexpected offerId at Index ${i}`
       );
       assert.equal(
-        actual?.price?.toString(),
-        expected.price?.toString(),
+        actual?.logPrice?.toString(),
+        expected.logPrice?.toString(),
         `unexpected price at Index ${i}`
       );
     }
@@ -51,12 +51,12 @@ describe("KandelStatus unit tests suite", () => {
       asks?: {
         live: boolean;
         offerId: number;
-        price: Big | undefined;
+        logPrice: Big | undefined;
       };
       bids?: {
         live: boolean;
         offerId: number;
-        price: Big | undefined;
+        logPrice: Big | undefined;
       };
     }[];
     expectedMinPrice: Big;
@@ -144,7 +144,7 @@ describe("KandelStatus unit tests suite", () => {
               offerType: "bids",
               index: 22,
               live: false,
-              price: Big(1),
+              logPrice: Big(1),
               offerId: 1,
             },
           ]),
@@ -186,7 +186,7 @@ describe("KandelStatus unit tests suite", () => {
             index: i,
             live: p != undefined,
             offerId: getOfferId(offerType, i),
-            price: p,
+            logPrice: p,
           };
         })
       );
@@ -208,14 +208,14 @@ describe("KandelStatus unit tests suite", () => {
             : {
                 live: p != undefined,
                 offerId: getOfferId("bids", i),
-                price: p,
+                logPrice: p,
               };
           const asks = p?.lte(midPrice)
             ? undefined
             : {
                 live: p != undefined,
                 offerId: getOfferId("asks", i),
-                price: p,
+                logPrice: p,
               };
           return {
             bids,
@@ -238,21 +238,21 @@ describe("KandelStatus unit tests suite", () => {
       const statuses = sut.getOfferStatuses(midPrice, ratio, pricePoints, 1, [
         {
           offerType: "bids",
-          price: Big(1001),
+          logPrice: Big(1001),
           index: 0,
           offerId: 43,
           live: false,
         },
         {
           offerType: "bids",
-          price: Big(2000),
+          logPrice: Big(2000),
           index: 1,
           offerId: 42,
           live: true,
         },
         {
           offerType: "bids",
-          price: Big(15000),
+          logPrice: Big(15000),
           index: 4,
           offerId: 55,
           live: true,
@@ -273,19 +273,19 @@ describe("KandelStatus unit tests suite", () => {
           {
             expectedLiveBid: true,
             expectedPrice: Big(1000),
-            bids: { live: false, offerId: 43, price: Big(1001) },
+            bids: { live: false, offerId: 43, logPrice: Big(1001) },
           },
           {
             expectedLiveBid: true,
             expectedPrice: Big(2000),
-            bids: { live: true, offerId: 42, price: Big(2000) },
+            bids: { live: true, offerId: 42, logPrice: Big(2000) },
           },
           { expectedLiveBid: true, expectedPrice: Big(4000) },
           { expectedLiveAsk: true, expectedPrice: Big(8000) },
           {
             expectedLiveAsk: true,
             expectedPrice: Big(16000),
-            bids: { live: true, offerId: 55, price: Big(15000) },
+            bids: { live: true, offerId: 55, logPrice: Big(15000) },
           },
           {
             expectedLiveAsk: false,
@@ -342,42 +342,42 @@ describe("KandelStatus unit tests suite", () => {
             [
               {
                 offerType: "bids",
-                price: Big(1000),
+                logPrice: Big(1000),
                 index: 0,
                 offerId: 42,
                 live: true,
               },
               {
                 offerType: "bids",
-                price: Big(2000),
+                logPrice: Big(2000),
                 index: 1,
                 offerId: 43,
                 live: dead < 3,
               },
               {
                 offerType: "bids",
-                price: Big(4000),
+                logPrice: Big(4000),
                 index: 2,
                 offerId: 44,
                 live: dead < 1,
               },
               {
                 offerType: "asks",
-                price: Big(8000),
+                logPrice: Big(8000),
                 index: 3,
                 offerId: 45,
                 live: dead < 2,
               },
               {
                 offerType: "asks",
-                price: Big(16000),
+                logPrice: Big(16000),
                 index: 4,
                 offerId: 46,
                 live: dead < 4,
               },
               {
                 offerType: "asks",
-                price: Big(32000),
+                logPrice: Big(32000),
                 index: 5,
                 offerId: 47,
                 live: true,
@@ -422,14 +422,14 @@ describe("KandelStatus unit tests suite", () => {
       const statuses = sut.getOfferStatuses(midPrice, ratio, pricePoints, 1, [
         {
           offerType: "bids",
-          price: Big(5000),
+          logPrice: Big(5000),
           index: 3,
           offerId: 42,
           live: true,
         },
         {
           offerType: "bids",
-          price: Big(2000),
+          logPrice: Big(2000),
           index: 1,
           offerId: 43,
           live: true,
@@ -451,7 +451,7 @@ describe("KandelStatus unit tests suite", () => {
           {
             expectedLiveBid: true,
             expectedPrice: Big(2000),
-            bids: { live: true, offerId: 43, price: Big(2000) },
+            bids: { live: true, offerId: 43, logPrice: Big(2000) },
           },
         ],
         statuses,

@@ -6,7 +6,6 @@ import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
-import { MgvLib } from "../../src/types/typechain/Mangrove";
 
 const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
 
@@ -35,11 +34,13 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        logPrice = BigNumber.from(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(this.getLogPriceFromPrice(params.price));
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
-        logPrice = BigNumber.from(1).div(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(-1).mul(
+          this.getLogPriceFromPrice(params.price)
+        );
         fillWants = false;
       }
     } else {
@@ -55,7 +56,9 @@ class Trade {
     return {
       logPrice: logPrice,
       // givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
-      fillVolume: baseToken.toUnits(fillVolume),
+      fillVolume: fillWants
+        ? baseToken.toUnits(fillVolume)
+        : quoteToken.toUnits(fillVolume),
       fillWants: fillWants,
     };
   }
@@ -69,11 +72,13 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        logPrice = BigNumber.from(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(this.getLogPriceFromPrice(params.price));
         fillWants = false;
       } else {
         fillVolume = Big(params.total);
-        logPrice = BigNumber.from(1).div(this.getTickFromPrice(params.price));
+        logPrice = BigNumber.from(-1).mul(
+          this.getLogPriceFromPrice(params.price)
+        );
         fillWants = true;
       }
     } else {
@@ -88,16 +93,31 @@ class Trade {
     // );
 
     return {
-      fillVolume: baseToken.toUnits(fillVolume),
+      fillVolume: fillWants
+        ? quoteToken.toUnits(fillVolume)
+        : baseToken.toUnits(fillVolume),
       // wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
       logPrice: logPrice,
       fillWants: fillWants,
     };
   }
-  getTickFromPrice(price: Bigish): BigNumber {
-    return BigNumber.from(
-      Math.log(1.0001) / Math.log(BigNumber.from(price).toNumber())
-    );
+
+  getTickFromLogPriceAndTickScale(logPrice: Bigish, tickScale: Bigish) {
+    return BigNumber.from(logPrice).div(BigNumber.from(tickScale));
+  }
+
+  getTickScaleFromLogPriceAndTick(logPrice: Bigish, tick: Bigish) {
+    return BigNumber.from(logPrice).div(BigNumber.from(tick));
+  }
+
+  getLogPriceFromPrice(price: Bigish): BigNumber {
+    const newLocal = Math.log(BigNumber.from(price).toNumber());
+    const newLocal_1 = Math.log(1.0001);
+    return BigNumber.from(Math.floor(newLocal / newLocal_1));
+  }
+
+  getPriceFromLogPrice(logPrice: Bigish): BigNumber {
+    return BigNumber.from(1.0001).pow(BigNumber.from(logPrice));
   }
 
   validateSlippage = (slippage = 0) => {

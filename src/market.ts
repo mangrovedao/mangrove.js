@@ -30,6 +30,19 @@ import { MgvLib } from "./types/typechain/Mangrove";
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
   export type BA = "bids" | "asks";
+  export type getPriceParams =
+    | {
+        ba: Market.BA;
+        gives: Big;
+        wants: Big;
+      }
+    | {
+        tick: Big;
+        tickScale: Big;
+      }
+    | {
+        logPrice: Big;
+      };
   export type BS = "buy" | "sell";
   export type MgvReader = typechain.MgvReader;
   export type Failure = {
@@ -222,7 +235,7 @@ namespace Market {
   export type Book = { asks: Semibook; bids: Semibook };
 
   export type VolumeEstimate = {
-    tick: BigNumber;
+    logPrice: BigNumber;
     estimatedVolume: Big;
     givenResidue: Big;
   };
@@ -262,7 +275,7 @@ class Market {
       mgv: Mangrove;
       base: string;
       quote: string;
-      tickScale: BigNumber;
+      tickScale: Bigish;
     } & Partial<Market.OptionalParams>
   ): Promise<Market> {
     const base = await params.mgv.token(params.base);
@@ -272,7 +285,7 @@ class Market {
       mgv: params.mgv,
       base,
       quote,
-      tickScale: params.tickScale,
+      tickScale: BigNumber.from(params.tickScale),
     });
     canConstructMarket = false;
     if (params["noInit"]) {
@@ -939,10 +952,21 @@ class Market {
   }
 
   /** Determine the price from dividing offer gives with wants depending on whether you're working with bids or asks. */
-  static getPrice(tick: BigNumber): Big | undefined {
-    return new Big(1.0001).pow(tick.toNumber());
+  static getPrice(params: Market.getPriceParams): Big | undefined {
+    if ("gives" in params) {
+      const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
+        params.ba,
+        params.gives,
+        params.wants
+      );
+      return baseVolume.gt(0) ? quoteVolume.div(baseVolume) : undefined;
+    } else if ("tick" in params) {
+      const logPrice = params.tick.mul(params.tickScale);
+      return Big(Math.pow(1.0001, logPrice.toNumber()));
+    } else {
+      return Big(Math.pow(1.0001, params.logPrice.toNumber()));
+    }
   }
-
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
   static getWantsForPrice(ba: Market.BA, gives: Big, price: Big): Big {
     return ba === "asks" ? gives.mul(price) : gives.div(price);

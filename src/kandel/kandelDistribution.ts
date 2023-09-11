@@ -136,7 +136,6 @@ class KandelDistribution {
     }[] = [];
 
     const offerMiddle = this.getOffersIndexOfFirstAskIndex();
-    let pivotsChunk: number[] = [];
     let distributionChunk: OfferDistribution = [];
     for (let i = 0; i < this.offers.length; i++) {
       const indexLow = offerMiddle - i - 1;
@@ -147,15 +146,14 @@ class KandelDistribution {
       if (indexHigh < this.offers.length) {
         distributionChunk.push(this.offers[indexHigh]);
       }
-      if (pivotsChunk.length >= maxOffersInChunk) {
+      if (distributionChunk.length >= maxOffersInChunk) {
         chunks.push({
           distribution: distributionChunk,
         });
-        pivotsChunk = [];
         distributionChunk = [];
       }
     }
-    if (pivotsChunk.length) {
+    if (distributionChunk.length) {
       chunks.push({
         distribution: distributionChunk,
       });

@@ -18,11 +18,9 @@ describe("PrettyPrint Unit test suite", () => {
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(21),
+        kilo_offer_gasbase: 0,
         gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        logPrice: 31,
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -51,11 +49,9 @@ describe("PrettyPrint Unit test suite", () => {
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(21),
+        kilo_offer_gasbase: 0,
         gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        logPrice: 31,
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -83,11 +79,9 @@ describe("PrettyPrint Unit test suite", () => {
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(21),
+        kilo_offer_gasbase: 0,
         gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        logPrice: 31,
       };
       const offers: Iterable<Market.Offer> = [offer, offer];
 

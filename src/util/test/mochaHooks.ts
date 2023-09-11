@@ -98,7 +98,7 @@ export const mochaHooks = {
       await mgv.market({
         base: tokenA.name,
         quote: tokenB.name,
-        tickScale: BigNumber.from(1),
+        tickScale: 1,
       })
     ).config();
     await mgv.contract

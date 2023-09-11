@@ -400,7 +400,7 @@ class Semibook
     const estimatedVolume = buying ? totalGave : totalGot;
     const givenResidue = buying ? fillVolume : fillVolume;
 
-    return { tick, estimatedVolume, givenResidue };
+    return { logPrice: tick, estimatedVolume, givenResidue };
   }
 
   /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */

@@ -118,7 +118,8 @@ class Mangrove {
   reliableProvider: ReliableProvider;
   mangroveEventSubscriber: MangroveEventSubscriber;
   shouldNotListenToNewEvents: boolean;
-  olKeyHashMap: Map<string, OLKeyStruct> = new Map();
+  olKeyHashToOLKeyStrucMap: Map<string, OLKeyStruct> = new Map();
+  olKeyStructToOlKeyHashMap: Map<OLKeyStruct, string> = new Map();
 
   public eventEmitter: EventEmitter;
 
@@ -342,11 +343,19 @@ class Mangrove {
     );
     allMarkets.then((markets) => {
       markets.map((market) => {
-        this.olKeyHashMap.set(market.args.olKeyHash, {
+        this.olKeyHashToOLKeyStrucMap.set(market.args.olKeyHash, {
           outbound: market.args.outbound_tkn,
           inbound: market.args.inbound_tkn,
           tickScale: market.args.tickScale,
         });
+        this.olKeyStructToOlKeyHashMap.set(
+          {
+            outbound: market.args.outbound_tkn,
+            inbound: market.args.inbound_tkn,
+            tickScale: market.args.tickScale,
+          },
+          market.args.olKeyHash
+        );
       });
     });
   }
@@ -411,7 +420,7 @@ class Mangrove {
   async market(params: {
     base: string;
     quote: string;
-    tickScale: ethers.BigNumber;
+    tickScale: Bigish;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
     logger.debug("Initialize Market", {
@@ -450,7 +459,7 @@ class Mangrove {
       | {
           base: string;
           quote: string;
-          tickScale: ethers.BigNumber;
+          tickScale: Bigish;
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
@@ -1094,7 +1103,7 @@ class Mangrove {
           mgv: this,
           base: base.name,
           quote: quote.name,
-          tickScale: tickScale,
+          tickScale: tickScale.toString(),
           bookOptions: bookOptions,
           noInit: noInit,
         });

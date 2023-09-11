@@ -8,6 +8,7 @@ import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandel/kandelPriceCalculation";
 import KandelConfiguration from "./kandel/kandelConfiguration";
 import { BigNumber } from "ethers";
+import { Bigish } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -50,12 +51,12 @@ class KandelStrategies {
       | ((
           baseAddress: string,
           quoteAddress: string,
-          tickScale: BigNumber
+          tickScale: Bigish
         ) => Promise<Market>);
   }) {
     const market =
       params.market ??
-      ((baseAddress: string, quoteAddress: string, tickScale: BigNumber) => {
+      ((baseAddress: string, quoteAddress: string, tickScale: Bigish) => {
         const baseToken = this.mgv.getNameFromAddress(baseAddress);
         if (!baseToken) {
           throw new Error(`Unknown token at address ${baseAddress}`);
