@@ -5,7 +5,7 @@
 
 import { ethers, providers } from "ethers";
 import { Provider, Signer } from "./types";
-import { logger, logdataLimiter } from "./util/logger";
+import { logger } from "./util/logger";
 import { readJsonWallet } from "./util/readJsonWallet";
 
 interface JsonWalletOptions {
@@ -197,7 +197,7 @@ export async function _createSigner(
   if (options.signer && options.signer.provider) {
     logger.debug("Uses provider from given signer", {
       contextInfo: "eth.signer",
-      data: logdataLimiter({ signer: options.signer }),
+      data: { signer: await options.signer.getAddress() },
     });
     return { readOnly, signer: options.signer };
   }

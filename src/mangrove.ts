@@ -6,7 +6,7 @@ import configuration, {
 import * as eth from "./eth";
 import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
-import { logdataLimiter, logger } from "./util/logger";
+import { logger } from "./util/logger";
 import { TypedDataSigner } from "@ethersproject/abstract-signer";
 import { ApproveArgs } from "./mgvtoken";
 
@@ -221,11 +221,11 @@ class Mangrove {
 
     logger.debug("Initialize Mangrove", {
       contextInfo: "mangrove.base",
-      data: logdataLimiter({
-        signer: signer,
-        network: network,
+      data: {
+        signer: await signer.getAddress(),
+        network: network.name,
         readOnly: readOnly,
-      }),
+      },
     });
 
     return mgv;

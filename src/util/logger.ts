@@ -1,19 +1,10 @@
-import { createConsoleLogger } from "./consoleLogger";
-import { logdataLimiter } from "./coreLogger";
-import { enableLogging as reliableEventSubscriberEnableLogging } from "@mangrovedao/reliable-event-subscriber";
+import { LevelWithSilent } from "pino";
 
-let loggingEnabled = false;
+import { generateLogger } from "./generateLogger";
 
-const logLevel = process.env["LOG_LEVEL"] ? process.env["LOG_LEVEL"] : "debug";
-export const logger = createConsoleLogger(() => loggingEnabled, logLevel);
-
-export function enableLogging(): void {
-  reliableEventSubscriberEnableLogging(logger);
-  loggingEnabled = true;
-}
-export function disableLogging(): void {
-  loggingEnabled = false;
-}
+const logLevel = process.env.LOG_LEVEL ? process.env.LOG_LEVEL : "debug";
+export const logger = generateLogger(logLevel as LevelWithSilent);
 
 export default logger;
-export { logdataLimiter };
+
+logger.info("test");
