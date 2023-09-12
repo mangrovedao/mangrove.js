@@ -459,7 +459,7 @@ class Trade {
         ? [market.base, market.quote]
         : [market.quote, market.base];
 
-    logger.debug("Creating market order", {
+    logger.debug("Creating market order %o", {
       contextInfo: "market.marketOrder",
       data: {
         outboundTkn: outboundTkn.name,
@@ -508,7 +508,7 @@ class Trade {
   ) {
     const receipt = await (await response).wait();
 
-    logger.debug("Market order raw receipt", {
+    logger.debug("Market order raw receipt %o", {
       contextInfo: "market.marketOrder",
       data: { receipt: receipt },
     });
@@ -621,7 +621,7 @@ class Trade {
   ) {
     const receipt = await (await response).wait();
 
-    logger.debug("Mangrove order raw receipt", {
+    logger.debug("Mangrove order raw receipt %o", {
       contextInfo: "market.mangrove",
       data: { receipt: receipt },
     });
@@ -701,7 +701,7 @@ class Trade {
         ? [market.base, market.quote]
         : [market.quote, market.base];
 
-    logger.debug("Creating snipes", {
+    logger.debug("Creating snipes %o", {
       contextInfo: "market.snipes",
       data: {
         outboundTkn: outboundTkn.name,
@@ -773,7 +773,7 @@ class Trade {
 
     const result = this.initialResult(receipt);
 
-    logger.debug("Snipes raw receipt", {
+    logger.debug("Snipes raw receipt %o", {
       contextInfo: "market.snipes",
       data: { receipt: receipt },
     });

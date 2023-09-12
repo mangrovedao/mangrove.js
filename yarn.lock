@@ -1165,7 +1165,6 @@ __metadata:
     "@types/node-cleanup": ^2.1.2
     "@types/pino": ^7.0.5
     "@types/shelljs": ^0.8.11
-    "@types/stringify-object": ^4.0.2
     "@types/yargs": ^17.0.12
     "@typescript-eslint/eslint-plugin": ^5.59.6
     "@typescript-eslint/parser": ^5.48.1
@@ -1182,7 +1181,6 @@ __metadata:
     eslint-config-prettier: ^8.8.0
     ethers: ^5.7.2
     husky: ^8.0.3
-    json-truncate: ^3.0.0
     just-clone: ^6.2.0
     lint-staged: ^13.2.0
     mkdirp: ^3.0.1
@@ -1192,14 +1190,12 @@ __metadata:
     node-cleanup: ^2.1.2
     npm-run-all: ^4.1.5
     nyc: ^15.1.0
-    object-inspect: ^1.12.3
     pino: ^8.15.1
     pino-pretty: ^10.2.0
     pinst: ^3.0.0
     prettier: ^2.4.1
     rimraf: ^5.0.1
     shx: ^0.3.4
-    stringify-object: ^5.0.0
     transparent-proxy: ^1.12.1
     ts-essentials: ^9.3.1
     ts-mockito: ^2.0.0
@@ -1457,13 +1453,6 @@ __metadata:
     "@types/glob": ~7.2.0
     "@types/node": "*"
   checksum: ffb47809abef9ee53f900c6b49adb1382d1d78af7f8b50dd474534e3f73127bc4a3849394e4c9de16481cd50203b12464141b4b49d48e88ba6b4c7cc2c85948c
-  languageName: node
-  linkType: hard
-
-"@types/stringify-object@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "@types/stringify-object@npm:4.0.2"
-  checksum: 5a8eaf8bc3b4ea22571d4bcb5767662d1a5bf7bd85407cec424ef17acccaa2096c678021de61bcc78075f46faa4ce40af26a7b4e16be942316dfc0518157ce99
   languageName: node
   linkType: hard
 
@@ -3495,13 +3484,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-own-enumerable-keys@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "get-own-enumerable-keys@npm:1.0.0"
-  checksum: 729a04c0c64264e784a61d90ece827725f1cbe98f6c42dfd49d45337654d73cddec23da1fd745646c4150f0969cb898736566c242ac3fa3eef9486b1441c830f
-  languageName: node
-  linkType: hard
-
 "get-package-type@npm:^0.1.0":
   version: 0.1.0
   resolution: "get-package-type@npm:0.1.0"
@@ -4147,13 +4129,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-obj@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "is-obj@npm:3.0.0"
-  checksum: 75e97a99ed0b0884778887f8e913791864151307774914283b068b06b57ca86f695b024aa1ba5ed04411918edef93e2bfd8f84d68c6b6aab417802cc76f5061b
-  languageName: node
-  linkType: hard
-
 "is-path-inside@npm:^3.0.3":
   version: 3.0.3
   resolution: "is-path-inside@npm:3.0.3"
@@ -4175,13 +4150,6 @@ __metadata:
     call-bind: ^1.0.2
     has-tostringtag: ^1.0.0
   checksum: 362399b33535bc8f386d96c45c9feb04cf7f8b41c182f54174c1a45c9abbbe5e31290bbad09a458583ff6bf3b2048672cdb1881b13289569a7c548370856a652
-  languageName: node
-  linkType: hard
-
-"is-regexp@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "is-regexp@npm:3.1.0"
-  checksum: d39dbd9892f0a25d01ee1a8e650c3f2e045bf7b1fa87eafb50b31dd29342869aa9135fd372628202254398956bf7f4b62094bdda39283ec2a9bb749fbb7f427c
   languageName: node
   linkType: hard
 
@@ -4450,13 +4418,6 @@ __metadata:
   version: 1.0.1
   resolution: "json-stable-stringify-without-jsonify@npm:1.0.1"
   checksum: cff44156ddce9c67c44386ad5cddf91925fe06b1d217f2da9c4910d01f358c6e3989c4d5a02683c7a5667f9727ff05831f7aa8ae66c8ff691c556f0884d49215
-  languageName: node
-  linkType: hard
-
-"json-truncate@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "json-truncate@npm:3.0.0"
-  checksum: 15c6ce4ff848cbeb64d219e9154ee27adb978bf93a5256bb5463ddcd2ef63e240505d8d8d891939d4fce107bd3a4e193135badffacc4341cc9c150a92784a8b9
   languageName: node
   linkType: hard
 
@@ -6591,17 +6552,6 @@ __metadata:
   dependencies:
     safe-buffer: ~5.1.0
   checksum: 9ab7e56f9d60a28f2be697419917c50cac19f3e8e6c28ef26ed5f4852289fe0de5d6997d29becf59028556f2c62983790c1d9ba1e2a3cc401768ca12d5183a5b
-  languageName: node
-  linkType: hard
-
-"stringify-object@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "stringify-object@npm:5.0.0"
-  dependencies:
-    get-own-enumerable-keys: ^1.0.0
-    is-obj: ^3.0.0
-    is-regexp: ^3.1.0
-  checksum: 2a2c0c0c4c4e03e1154a881efc88461f532e22ee6ee7f4fc1705b111adcff22dc7522603cc96a8c633f9e9080bd7d1c2a366ef94099c5790b375005c43948f20
   languageName: node
   linkType: hard
 

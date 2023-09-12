@@ -219,7 +219,7 @@ class Mangrove {
 
     canConstructMangrove = false;
 
-    logger.debug("Initialize Mangrove", {
+    logger.debug("Initialize Mangrove %o", {
       contextInfo: "mangrove.base",
       data: {
         signer: await signer.getAddress(),
@@ -237,7 +237,7 @@ class Mangrove {
       this.reliableProvider.stop();
     }
 
-    logger.debug("Disconnect from Mangrove", {
+    logger.debug("Disconnect from Mangrove %o", {
       contextInfo: "mangrove.base",
     });
   }
@@ -399,7 +399,7 @@ class Mangrove {
     quote: string;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
-    logger.debug("Initialize Market", {
+    logger.debug("Initialize Market %o", {
       contextInfo: "mangrove.base",
       data: {
         base: params.base,

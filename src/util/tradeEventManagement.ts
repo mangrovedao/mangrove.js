@@ -165,7 +165,7 @@ class TradeEventManagement {
       outbound_tkn.address != evt.args.outbound_tkn ||
       inbound_tkn.address != evt.args.inbound_tkn
     ) {
-      logger.debug("OfferWrite for unknown market!", {
+      logger.debug("OfferWrite for unknown market! %o", {
         contextInfo: "tradeEventManagement",
         base: market.base.name,
         quote: market.quote.name,

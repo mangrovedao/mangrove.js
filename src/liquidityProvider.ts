@@ -321,7 +321,7 @@ class LiquidityProvider {
       );
     }
 
-    logger.debug(`Post new offer`, {
+    logger.debug(`Post new offer %o`, {
       contextInfo: "mangrove.maker",
       data: { params: p, overrides: overrides },
     });
@@ -449,7 +449,7 @@ class LiquidityProvider {
       );
     }
 
-    logger.debug(`Update offer`, {
+    logger.debug(`Update offer %o`, {
       contextInfo: "mangrove.maker",
       data: { id: id, params: p, overrides: overrides },
     });
@@ -503,7 +503,7 @@ class LiquidityProvider {
       overrides
     );
 
-    logger.debug(`Cancel offer`, {
+    logger.debug(`Cancel offer %o`, {
       contextInfo: "mangrove.maker",
       data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
     });
