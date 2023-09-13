@@ -1142,12 +1142,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=0ece3ec9fbe634c61a273f0667e842da50acb55f":
+"@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=3a2d9711c12a3fc1a46e1dc4e7719cf405441857":
+  version: 1.5.8-0
+  resolution: "@mangrovedao/mangrove-core@https://github.com/mangrovedao/mangrove-core.git#commit=3a2d9711c12a3fc1a46e1dc4e7719cf405441857"
+  checksum: c6bb6e2af975d425ca10d02f1c2eb4f614fac2c7d15d8cae6da0c318eb4514b0210136505df780b0a3188afa13d017cdde9bb91b1e924411018913043b48c920
+  languageName: node
+  linkType: hard
+
+"@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=dcebe2b7ba9d4841c42f9b6f01b530226e2f06f3":
   version: 0.0.2-0
-  resolution: "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=0ece3ec9fbe634c61a273f0667e842da50acb55f"
+  resolution: "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=dcebe2b7ba9d4841c42f9b6f01b530226e2f06f3"
   dependencies:
-    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#commit=351ec963ed943a827df21d2878fca901b451c60e"
-  checksum: 15bef4ce1940fedb8fb4015323293f5102688c7508b55efe85dc4bbc2db19981d4802b924bf5586ac5bf87c798e34ff31a6b6f00eee6b54d8143b9cf10c9d2e9
+    "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#commit=3a2d9711c12a3fc1a46e1dc4e7719cf405441857"
+  checksum: f0e02ac0a8428294c4bf2769c0048e64f268482f4dedfd7d9843706f755c55383370d28758aa24b45eff3d3aeb2ef95455a6366331f88b49263cc025407e3a5f
   languageName: node
   linkType: hard
 
@@ -1162,7 +1169,7 @@ __metadata:
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
     "@mangrovedao/mangrove-core": "https://github.com/mangrovedao/mangrove-core.git#commit=351ec963ed943a827df21d2878fca901b451c60e"
-    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#commit=0ece3ec9fbe634c61a273f0667e842da50acb55f"
+    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#commit=dcebe2b7ba9d4841c42f9b6f01b530226e2f06f3"
     "@mangrovedao/reliable-event-subscriber": 1.1.28
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6
