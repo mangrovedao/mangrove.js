@@ -14,7 +14,7 @@ import {
 } from "../types/typechain/Mangrove";
 import {
   NewOwnedOfferEvent,
-  OrderStartSummaryEvent,
+  MangroveOrderStartEvent,
 } from "../types/typechain/MangroveOrder";
 import UnitCalculations from "./unitCalculations";
 import { BaseContract, BigNumber } from "ethers";
@@ -162,7 +162,7 @@ class TradeEventManagement {
   }
 
   createSummaryFromOrderSummaryEvent(
-    evt: OrderStartSummaryEvent
+    evt: MangroveOrderStartEvent
   ): Market.Summary {
     return this.createSummaryFromEvent({
       args: {
@@ -305,7 +305,7 @@ class TradeEventManagement {
       case "OrderSummary": {
         //last OrderSummary is ours so it overrides previous summaries if any
         result.summary = this.createSummaryFromOrderSummaryEvent(
-          evt as OrderStartSummaryEvent
+          evt as MangroveOrderStartEvent
         );
         break;
       }

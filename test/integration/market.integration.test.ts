@@ -695,7 +695,7 @@ describe("Market integration tests suite", () => {
 
     await helpers
       .newOffer(mgv, market.quote, market.base, {
-        logPrice: "1.3",
+        logPrice: "1",
         gives: "1.1",
       })
       .then((tx) => tx.wait());
@@ -707,11 +707,9 @@ describe("Market integration tests suite", () => {
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      offer_gasbase: (await market.config()).asks.kilo_offer_gasbase,
-      wants: Big("1"),
+      kilo_offer_gasbase: (await market.config()).asks.kilo_offer_gasbase,
+      logPrice: 1,
       gives: Big("1.2"),
-      volume: Big("1.2"),
-      price: Big("1").div(Big("1.2")),
     };
 
     const offer2 = {
@@ -721,11 +719,9 @@ describe("Market integration tests suite", () => {
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      offer_gasbase: (await market.config()).bids.kilo_offer_gasbase,
-      wants: Big("1.3"),
+      kilo_offer_gasbase: (await market.config()).bids.kilo_offer_gasbase,
+      logPrice: 1,
       gives: Big("1.1"),
-      volume: Big("1.3"),
-      price: Big("1.1").div(Big("1.3")),
     };
 
     // Events may be received in different order

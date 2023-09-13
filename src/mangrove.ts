@@ -119,7 +119,7 @@ class Mangrove {
   mangroveEventSubscriber: MangroveEventSubscriber;
   shouldNotListenToNewEvents: boolean;
   olKeyHashToOLKeyStrucMap: Map<string, OLKeyStruct> = new Map();
-  olKeyStructToOlKeyHashMap: Map<OLKeyStruct, string> = new Map();
+  olKeyStructToOlKeyHashMap: Map<string, string> = new Map();
 
   public eventEmitter: EventEmitter;
 
@@ -349,15 +349,24 @@ class Mangrove {
           tickScale: market.args.tickScale,
         });
         this.olKeyStructToOlKeyHashMap.set(
-          {
-            outbound: market.args.outbound_tkn,
-            inbound: market.args.inbound_tkn,
-            tickScale: market.args.tickScale,
-          },
+          ` ${market.args.outbound_tkn.toLowerCase()}_${market.args.inbound_tkn.toLowerCase()}_${market.args.tickScale.toNumber()}`,
           market.args.olKeyHash
         );
       });
     });
+  }
+
+  getOlKeyHash(
+    outbound: string,
+    inbound: string,
+    tickScale: number
+  ): string | undefined {
+    return this.olKeyStructToOlKeyHashMap.get(
+      ` ${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickScale}`
+    );
+  }
+  getOlKeyStruct(olKeyHash: string): OLKeyStruct | undefined {
+    return this.olKeyHashToOLKeyStrucMap.get(olKeyHash);
   }
 
   /** Update the configuration by providing a partial configuration containing only the values that should be changed/added.

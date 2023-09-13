@@ -215,9 +215,7 @@ class LiquidityProvider {
     // deduce price from wants&gives, or deduce wants&gives from volume&price
     if ("gives" in p) {
       [logPrice, gives] = [ethers.BigNumber.from(p.logPrice), p.gives];
-      price = ethers.BigNumber.from(1.0001)
-        .pow(ethers.BigNumber.from(logPrice))
-        .toString();
+      price = Math.pow(1.0001, logPrice.toNumber());
     } else {
       price = p.price;
       logPrice = ethers.BigNumber.from(

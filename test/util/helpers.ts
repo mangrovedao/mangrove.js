@@ -85,8 +85,8 @@ export const newOffer = async (
       inbound: inboundInfo.address,
       tickScale: 1,
     },
-    outboundInfo.value,
     logPrice,
+    outboundInfo.value,
     gasreq || 10000,
     gasprice || 1
   );

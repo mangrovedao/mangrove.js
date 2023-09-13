@@ -21,6 +21,7 @@ import {
   OfferDetailUnpackedStructOutput,
   OfferUnpackedStructOutput,
 } from "./types/typechain/MgvReader";
+import { stat } from "fs";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -147,7 +148,7 @@ namespace Semibook {
 
   export type State = {
     offerCache: Map<number, Market.Offer>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
-    logPriceOfferList: Map<number, Queue<number>>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
+    logPriceOfferList: Map<number, number[]>; // NB: Modify only via #insertOffer and #removeOffer to ensure cache consistency
     bestInCache: number | undefined; // id of the best/first offer in the offer list iff #offerCache is non-empty
     worstInCache: number | undefined; // id of the worst/last offer in #offerCache
   };
@@ -898,40 +899,45 @@ class Semibook
   // This modifies the cache so must be called in a context where #cacheLock is acquired
   #insertOffer(state: Semibook.State, offer: Market.Offer): boolean {
     // Only insert offers that are extensions of the cache
-    if (offer.logPrice !== undefined) {
+    if (offer.logPrice == undefined) {
       return false;
     }
 
     state.offerCache.set(offer.id, offer);
     let logPriceOfferList = state.logPriceOfferList.get(offer.logPrice);
     if (logPriceOfferList === undefined) {
-      logPriceOfferList = new Queue(offer.id);
+      logPriceOfferList = [offer.id];
       state.logPriceOfferList.set(offer.logPrice, logPriceOfferList);
     } else {
-      logPriceOfferList.enqueue(offer.id);
-      state.logPriceOfferList.set(offer.logPrice, logPriceOfferList);
+      logPriceOfferList.push(offer.id);
     }
-    const betLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
+    const bestLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
       (acc, tick) => (tick > acc ? tick : acc),
       -1000000
     );
-    if (betLogPrice == offer.logPrice && logPriceOfferList.length == 1) {
+    if (bestLogPrice == offer.logPrice && logPriceOfferList.length == 1) {
       state.bestInCache = offer.id;
-      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.front;
+      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.[0];
     }
     if (logPriceOfferList.length > 1) {
-      const logPriceOfferListAsArray = logPriceOfferList.toArray();
-      const index = logPriceOfferListAsArray.findIndex((id) => id == offer.id);
-      offer.next = logPriceOfferListAsArray[index - 1];
+      const index = logPriceOfferList.findIndex((id) => id == offer.id);
+      offer.next = logPriceOfferList[index - 1];
       this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
-      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.front;
+      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.[0];
     } else {
-      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.front;
+      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.[0];
       if (offer.prev !== undefined) {
         this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
       }
-      offer.next = this.#getNextLogPriceOfferList(state, offer)!.tail;
-      this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
+
+      const nextLogPriceOfferList = this.#getNextLogPriceOfferList(
+        state,
+        offer
+      );
+      offer.next = nextLogPriceOfferList?.[nextLogPriceOfferList.length - 1];
+      if (offer.next !== undefined) {
+        this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
+      }
     }
 
     const worstLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
@@ -965,8 +971,9 @@ class Semibook
         logPrice > acc && logPrice < offer.logPrice ? logPrice : acc,
       -1000000
     );
-    const nextLogPriceOfferList = state.logPriceOfferList.get(nextLogPrice);
-    return nextLogPriceOfferList;
+    return nextLogPrice == -1000000
+      ? undefined
+      : state.logPriceOfferList.get(nextLogPrice);
   }
 
   #getNextLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
@@ -1000,10 +1007,8 @@ class Semibook
       nextOffer.prev = offer.prev;
     }
     const logPriceOfferList = state.logPriceOfferList.get(offer.logPrice);
-    if (logPriceOfferList?.length == 1) {
-      state.logPriceOfferList.delete(offer.logPrice);
-    } else {
-      logPriceOfferList?.remove(id);
+    if (logPriceOfferList !== undefined) {
+      state.logPriceOfferList.set(offer.logPrice, logPriceOfferList.slice(1));
     }
 
     state.offerCache.delete(id);
