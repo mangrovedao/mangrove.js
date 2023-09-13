@@ -33,7 +33,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Act
         const distribution = sut.calculateDistributionConstantGives(
-          Big(2),
+          2,
           prices.map((x) => (x ? Big(x) : undefined)),
           Big(1),
           Big(1000),
@@ -70,7 +70,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
           // Act
           const distribution = sut.calculateDistributionConstantGives(
-            Big(2),
+            2,
             prices.map((x) => (x ? Big(x) : undefined)),
             Big(1),
             Big(1000),
@@ -78,7 +78,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
           );
 
           // Assert
-          assert.equal(distribution.ratio.toNumber(), 2);
+          assert.equal(distribution.logPriceOffset, 2);
           assert.equal(
             distribution.getFirstAskIndex(),
             offerType == "asks" ? 0 : distribution.pricePoints
@@ -106,14 +106,14 @@ describe("KandelDistributionHelper unit tests suite", () => {
       it("rounds off base and gives according to decimals", () => {
         // Arrange
         const sut = new KandelDistributionHelper(4, 6);
-        const ratio = 1.01;
+        const logPriceOffset = 1.01;
         const prices = [
           1000,
-          1000 * ratio,
-          1000 * ratio ** 2,
-          1000 * ratio ** 3,
-          1000 * ratio ** 4,
-          1000 * ratio ** 5,
+          1000 * logPriceOffset,
+          1000 * logPriceOffset ** 2,
+          1000 * logPriceOffset ** 3,
+          1000 * logPriceOffset ** 4,
+          1000 * logPriceOffset ** 5,
         ];
         const firstAskIndex = 3;
         const desiredBaseVolume = Big(3);
@@ -121,7 +121,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
 
         // Act
         const distribution = sut.calculateDistributionConstantGives(
-          Big(ratio),
+          logPriceOffset,
           prices.map((x) => Big(x)),
           Big(1),
           Big(1000),
@@ -129,7 +129,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         );
 
         // Assert
-        assert.equal(distribution.ratio.toNumber(), ratio);
+        assert.equal(distribution.logPriceOffset, logPriceOffset);
         assertIsRounded(distribution);
 
         const { requiredBase, requiredQuote } =
@@ -144,7 +144,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
     KandelDistributionHelper.prototype.calculateDistributionConstantBase.name,
     KandelDistributionHelper.prototype.calculateDistributionConstantQuote.name,
   ].forEach((methodName) => {
-    const ratio = new Big(1.08);
+    const logPriceOffset = 1.08;
     const firstBase = Big(2);
     const firstQuote = Big(3000);
     const pricePoints = 10;
@@ -158,20 +158,20 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const sut = new KandelDistributionHelper(12, 12);
         const pricesAndRatio = new KandelPriceCalculation(5).calculatePrices({
           minPrice: firstQuote.div(firstBase),
-          ratio,
+          logPriceOffset,
           pricePoints,
         });
 
         // Act
         const distribution = constantBase
           ? sut.calculateDistributionConstantBase(
-              pricesAndRatio.ratio,
+              pricesAndRatio.logPriceOffset,
               pricesAndRatio.prices,
               firstBase,
               firstAskIndex
             )
           : sut.calculateDistributionConstantQuote(
-              pricesAndRatio.ratio,
+              pricesAndRatio.logPriceOffset,
               pricesAndRatio.prices,
               firstQuote,
               firstAskIndex
@@ -191,7 +191,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
           } else {
             assert.equal(firstQuote.toNumber(), e.quote.toNumber());
           }
-          price = price.mul(ratio);
+          price = price.mul(logPriceOffset);
         });
       });
       it(`rounds off base and gives according to decimals for fixed base/quote constantBase=${constantBase}`, () => {
@@ -199,21 +199,21 @@ describe("KandelDistributionHelper unit tests suite", () => {
         const sut = new KandelDistributionHelper(4, 6);
         const pricesAndRatio = new KandelPriceCalculation(5).calculatePrices({
           minPrice: firstQuote.div(firstBase),
-          ratio,
+          logPriceOffset,
           pricePoints,
-          midPrice: firstQuote.div(firstBase).mul(ratio),
+          midPrice: firstQuote.div(firstBase).mul(logPriceOffset),
         });
 
         // Act
         const distribution = constantBase
           ? sut.calculateDistributionConstantBase(
-              pricesAndRatio.ratio,
+              pricesAndRatio.logPriceOffset,
               pricesAndRatio.prices,
               firstBase,
               firstAskIndex
             )
           : sut.calculateDistributionConstantQuote(
-              pricesAndRatio.ratio,
+              pricesAndRatio.logPriceOffset,
               pricesAndRatio.prices,
               firstQuote,
               firstAskIndex
@@ -441,7 +441,7 @@ describe("KandelDistributionHelper unit tests suite", () => {
         sut = new KandelDistributionHelper(4, 6);
         prices = [1000, 2000, 4000, undefined, 8000, 16000, 32000];
         distribution = sut.calculateDistributionConstantGives(
-          Big(2),
+          2,
           prices.map((x) => (x ? Big(x) : undefined)),
           Big(10),
           Big(10000),

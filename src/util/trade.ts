@@ -34,12 +34,14 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        logPrice = BigNumber.from(this.getLogPriceFromPrice(params.price));
+        logPrice = BigNumber.from(
+          this.getLogPriceFromPrice(params.price, params.tickScale)
+        );
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
         logPrice = BigNumber.from(-1).mul(
-          this.getLogPriceFromPrice(params.price)
+          this.getLogPriceFromPrice(params.price, params.tickScale)
         );
         fillWants = false;
       }
@@ -72,12 +74,14 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        logPrice = BigNumber.from(this.getLogPriceFromPrice(params.price));
+        logPrice = BigNumber.from(
+          this.getLogPriceFromPrice(params.price, params.tickScale)
+        );
         fillWants = false;
       } else {
         fillVolume = Big(params.total);
         logPrice = BigNumber.from(-1).mul(
-          this.getLogPriceFromPrice(params.price)
+          this.getLogPriceFromPrice(params.price, params.tickScale)
         );
         fillWants = true;
       }
@@ -102,18 +106,20 @@ class Trade {
     };
   }
 
-  getTickFromLogPriceAndTickScale(logPrice: Bigish, tickScale: Bigish) {
+  getTickFromLogPriceAndTickScale(logPrice: Bigish, tickScale: number) {
     return BigNumber.from(logPrice).div(BigNumber.from(tickScale));
   }
 
-  getTickScaleFromLogPriceAndTick(logPrice: Bigish, tick: Bigish) {
+  getTickScaleFromLogPriceAndTick(logPrice: Bigish, tick: number) {
     return BigNumber.from(logPrice).div(BigNumber.from(tick));
   }
 
-  getLogPriceFromPrice(price: Bigish): BigNumber {
-    const newLocal = Math.log(BigNumber.from(price).toNumber());
-    const newLocal_1 = Math.log(1.0001);
-    return BigNumber.from(Math.floor(newLocal / newLocal_1));
+  getLogPriceFromPrice(price: Bigish, tickScale: number): number {
+    const logOfPrice = Math.log(BigNumber.from(price).toNumber());
+    const logOf0001 = Math.log(1.0001);
+    const logPriceNoTickScale = Math.floor(logOfPrice / logOf0001);
+    const highestPossibleTick = Math.floor(logPriceNoTickScale / tickScale);
+    return highestPossibleTick * tickScale;
   }
 
   getPriceFromLogPrice(logPrice: Bigish): BigNumber {

@@ -805,7 +805,6 @@ describe("Market integration tests suite", () => {
       utils.parseBytes32String(result.tradeFailures[0].reason)
     ).to.be.equal("mgv/makerTransferFail");
     expect(result.successes).to.have.lengthOf(0);
-    expect(result.summary.fee.toNumber()).to.be.greaterThan(0);
     //expect(result.failures[0].offerId).to.be.equal(1);
 
     const offerEvent = await queue.get();
@@ -820,7 +819,6 @@ describe("Market integration tests suite", () => {
     }
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
-
     const tx2 = await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
     await mgvTestUtil.waitForBlock(mgv, tx2.blockNumber);
     const buyPromises_ = await market.buy({
@@ -871,7 +869,6 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
-    expect(result.summary.fee.toNumber()).to.be.greaterThan(0);
   });
 
   it("buying uses best price, with forceRoutingToMangroveOrder:false", async function () {
@@ -910,7 +907,6 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
-    expect(result.summary.fee.toNumber()).to.be.greaterThan(0);
   });
 
   it("selling uses best price", async function () {
@@ -944,6 +940,7 @@ describe("Market integration tests suite", () => {
     const sellPromises = await market.sell({
       volume: "0.0000000000000001",
       price: 0,
+      tickScale: market.tickScale.toNumber(),
     });
     const result = await sellPromises.result;
 
@@ -1058,6 +1055,7 @@ describe("Market integration tests suite", () => {
       offerId: notBest,
       total: 1,
       price: Big(ethers.constants.MaxUint256.toString()),
+      tickScale: market.tickScale.toNumber(),
     });
     const result = await buyPromises.result;
 
@@ -1627,6 +1625,7 @@ describe("Market integration tests suite", () => {
     const gasEstimate = await market.gasEstimateSell({
       volume: market.quote.fromUnits(1),
       price: 0,
+      tickScale: market.tickScale.toNumber(),
     });
 
     // we need to use BigNumber.isBigNumber() function to test variable type
@@ -1646,6 +1645,7 @@ describe("Market integration tests suite", () => {
     const emptyBookAsksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
       price: 0,
+      tickScale: market.tickScale.toNumber(),
     });
 
     /* create asks */
@@ -1662,6 +1662,7 @@ describe("Market integration tests suite", () => {
     const asksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
       price: 0,
+      tickScale: market.tickScale.toNumber(),
     });
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate

@@ -5,7 +5,7 @@ import { BigNumber } from "ethers";
 import { describe, it } from "mocha";
 import { anything, instance, mock, spy, verify, when } from "ts-mockito";
 import { Market, MgvToken } from "../../src";
-import { OrderSummaryEvent } from "../../src/types/typechain/MangroveOrder";
+import { OrderStartSummaryEvent } from "../../src/types/typechain/MangroveOrder";
 import TradeEventManagement from "../../src/util/tradeEventManagement";
 import UnitCalculations from "../../src/util/unitCalculations";
 import {
@@ -28,15 +28,10 @@ describe("TradeEventManagement unit tests suite", () => {
         },
       };
 
-      const gotToken = mock(MgvToken);
-      const gaveToken = mock(MgvToken);
-      const expectedFeePaid = UnitCalculations.fromUnits(evt.args.fee, 18);
-
       //Act
       const result = tradeEventManagement.createSummaryFromEvent(evt);
 
       //Assert
-      assert.deepStrictEqual(result.fee, expectedFeePaid);
       assert.deepStrictEqual(result.olKeyHash, evt.args.olKeyHash);
       assert.deepStrictEqual(result.taker, evt.args.taker);
     });
@@ -68,12 +63,11 @@ describe("TradeEventManagement unit tests suite", () => {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
-      const mockedEvent = mock<OrderSummaryEvent>();
+      const mockedEvent = mock<OrderStartSummaryEvent>();
       const event = instance(mockedEvent);
       const summary: Market.Summary = {
         olKeyHash: "olKeyHash",
         taker: "taker",
-        fee: Big(4),
       };
       const expectedOfferId = BigNumber.from(20);
       const args: any = { restingOrderId: expectedOfferId };
@@ -89,7 +83,6 @@ describe("TradeEventManagement unit tests suite", () => {
 
       //Asset
       verify(spyTradeEventManagement.createSummaryFromEvent(anything())).once();
-      assert.equal(result.fee, summary.fee);
       assert.equal(result.taker, summary.taker);
       assert.equal(result.olKeyHash, summary.olKeyHash);
     });

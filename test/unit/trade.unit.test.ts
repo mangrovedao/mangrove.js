@@ -27,6 +27,7 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         volume: 30,
+        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -50,7 +51,10 @@ describe("Trade unit tests suite", () => {
       const [wants] = capture(baseToken.toUnits).first();
 
       //Assert
-      const logPrice = trade.getLogPriceFromPrice(params.price);
+      const logPrice = trade.getLogPriceFromPrice(
+        params.price,
+        params.tickScale
+      );
       assert.equal(result.fillVolume.eq(BigNumber.from(params.volume)), true);
       assert.equal(result.logPrice.eq(BigNumber.from(logPrice)), true);
       assert.equal(result.fillWants, true);
@@ -66,6 +70,7 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         total: 30,
+        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -84,7 +89,10 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const logPrice = trade.getLogPriceFromPrice(params.price);
+      const logPrice = trade.getLogPriceFromPrice(
+        params.price,
+        params.tickScale
+      );
       //Assert
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.total).toFixed(0))),
@@ -187,6 +195,7 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         volume: 30,
+        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -205,7 +214,10 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const logPrice = trade.getLogPriceFromPrice(params.price);
+      const logPrice = trade.getLogPriceFromPrice(
+        params.price,
+        params.tickScale
+      );
 
       //Assert
       assert.equal(
@@ -225,6 +237,7 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         total: 30,
+        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -243,7 +256,10 @@ describe("Trade unit tests suite", () => {
         instance(baseToken),
         instance(quoteToken)
       );
-      const logPrice = trade.getLogPriceFromPrice(params.price);
+      const logPrice = trade.getLogPriceFromPrice(
+        params.price,
+        params.tickScale
+      );
 
       //Assert
       assert.equal(

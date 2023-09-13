@@ -78,7 +78,7 @@ export async function runScript(params: {
         --private-key ${params.mnemonic.key(0)} `
         : ""
     } \
-    --broadcast -vvv \
+    --broadcast \
     ${params.root ? `--root ${params.root}` : ""} \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""

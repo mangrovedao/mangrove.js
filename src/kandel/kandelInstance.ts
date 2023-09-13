@@ -30,7 +30,7 @@ import KandelSeeder from "./kandelSeeder";
 export type KandelParameters = {
   gasprice: number;
   gasreq: number;
-  ratio: Big;
+  logPriceOffset: number;
   spread: number;
   pricePoints: number;
 };
@@ -43,7 +43,7 @@ export type KandelParameters = {
 export type KandelParameterOverrides = {
   gasprice?: number;
   gasreq?: number;
-  ratio?: Bigish;
+  logPriceOffset?: number;
   spread?: number;
   pricePoints?: number;
 };
@@ -86,7 +86,7 @@ class KandelInstance {
       params.signer
     );
 
-    const precision = (await kandel.PRECISION()).toNumber();
+    const precision = 0; // (await kandel.PRECISION()).toNumber();
 
     const market =
       typeof params.market === "function"
@@ -198,7 +198,7 @@ class KandelInstance {
     return {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
-      ratio: UnitCalculations.fromUnits(params.ratio, this.precision),
+      logPriceOffset: params.logPriceOffset,
       spread: params.spread,
       pricePoints: params.pricePoints,
     };
@@ -212,7 +212,7 @@ class KandelInstance {
     return {
       gasprice: parameters.gasprice,
       gasreq: parameters.gasreq,
-      ratio: UnitCalculations.toUnits(parameters.ratio, this.precision),
+      logPriceOffset: parameters.logPriceOffset,
       compoundRateBase: UnitCalculations.toUnits(1, this.precision),
       compoundRateQuote: UnitCalculations.toUnits(1, this.precision),
       spread: parameters.spread,
@@ -222,30 +222,34 @@ class KandelInstance {
 
   /** Gets new Kandel parameters based on current and some overrides.
    * @param parameters The Kandel parameters to override, those left out will keep their current value.
-   * @param distributionRatio The ratio of the Kandel distribution.
+   * @param distributionLogPriceOffset The ratio of the Kandel distribution.
    * @param distributionPricePoints The number of price points of the Kandel distribution.
    * @returns The new Kandel parameters.
    * @remarks Ratio and price points provided in the parameters must match a provided distribution.
    */
   public async getParametersWithOverrides(
     parameters: KandelParameterOverrides,
-    distributionRatio?: Bigish,
+    distributionLogPriceOffset?: number,
     distributionPricePoints?: number
   ): Promise<KandelParameters> {
     const current = await this.getParameters();
-    if (parameters.ratio != null || distributionRatio != null) {
+    if (
+      parameters.logPriceOffset != null ||
+      distributionLogPriceOffset != null
+    ) {
       if (
-        parameters.ratio != null &&
-        distributionRatio != null &&
-        !Big(parameters.ratio).eq(distributionRatio)
+        parameters.logPriceOffset != null &&
+        distributionLogPriceOffset != null &&
+        !Big(parameters.logPriceOffset).eq(distributionLogPriceOffset)
       ) {
         throw Error(
-          "ratio in parameter overrides does not match the ratio of the distribution."
+          "logPriceOffset in parameter overrides does not match the ratio of the distribution."
         );
       }
-      current.ratio = Big(
-        parameters.ratio ?? distributionRatio ?? current.ratio
-      );
+      current.logPriceOffset =
+        parameters.logPriceOffset ??
+        distributionLogPriceOffset ??
+        current.logPriceOffset;
     }
     if (parameters.gasprice) {
       current.gasprice = parameters.gasprice;
@@ -328,13 +332,13 @@ class KandelInstance {
   public getRawDistribution(distribution: OfferDistribution) {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
       {
-        baseDist: Array(distribution.length),
-        quoteDist: Array(distribution.length),
+        givesDist: Array(distribution.length),
+        logPriceDist: Array(distribution.length),
         indices: Array(distribution.length),
       };
     distribution.forEach((o, i) => {
-      rawDistribution.baseDist[i] = this.market.base.toUnits(o.base);
-      rawDistribution.quoteDist[i] = this.market.quote.toUnits(o.quote);
+      rawDistribution.logPriceDist[i] = this.market.base.toUnits(o.base);
+      rawDistribution.givesDist[i] = this.market.quote.toUnits(o.quote);
       rawDistribution.indices[i] = o.index;
     });
     return rawDistribution;
@@ -405,7 +409,7 @@ class KandelInstance {
 
     return this.status.getOfferStatuses(
       Big(params.midPrice),
-      parameters.ratio,
+      parameters.logPriceOffset,
       parameters.pricePoints,
       parameters.spread,
       params.offers
@@ -424,7 +428,7 @@ class KandelInstance {
     return this.generator.createDistributionWithOffers({
       explicitOffers: params.explicitOffers,
       distribution: {
-        ratio: parameters.ratio,
+        logPriceOffset: parameters.logPriceOffset,
         pricePoints: parameters.pricePoints,
       },
     });
@@ -465,7 +469,7 @@ class KandelInstance {
       offerType: params.offerType,
       index: params.index,
       price: Big(params.price),
-      ratio: parameters.ratio,
+      logPriceOffset: parameters.logPriceOffset,
       pricePoints: parameters.pricePoints,
       spread: parameters.spread,
       minimumBasePerOffer: mins.minimumBasePerOffer,
@@ -552,7 +556,7 @@ class KandelInstance {
     const distribution = this.generator.calculateMinimumDistribution({
       priceParams: {
         minPrice: params.minPrice,
-        ratio: parameters.ratio,
+        logPriceOffset: parameters.logPriceOffset,
         pricePoints: parameters.pricePoints,
       },
       midPrice: params.midPrice,
@@ -797,7 +801,7 @@ class KandelInstance {
     const parameterOverrides = params.parameters ?? {};
     const parameters = await this.getParametersWithOverrides(
       parameterOverrides,
-      params.distribution?.ratio,
+      params.distribution?.logPriceOffset,
       params.distribution?.pricePoints
     );
     // If no distribution is provided, then create an empty distribution to pass information around.
@@ -827,7 +831,7 @@ class KandelInstance {
       rawDistributions.length > 0
         ? rawDistributions[0]
         : {
-            rawDistribution: { indices: [], quoteDist: [], baseDist: [] },
+            rawDistribution: { indices: [], givesDist: [], logPriceDist: [] },
             pivots: [],
           };
 

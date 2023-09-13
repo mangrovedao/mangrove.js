@@ -46,7 +46,7 @@ namespace TestMaker {
     mgv: Mangrove;
     base: string;
     quote: string;
-    tickScale: ethers.BigNumber;
+    tickScale: number;
   };
 }
 

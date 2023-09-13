@@ -83,7 +83,7 @@ class KandelDistributionGenerator {
       pricesAndRatio.prices
     );
     return this.distributionHelper.calculateDistributionFromPrices(
-      pricesAndRatio.ratio,
+      pricesAndRatio.logPriceOffset,
       pricesAndRatio.prices,
       firstAskIndex,
       params.initialAskGives ? Big(params.initialAskGives) : undefined,
@@ -112,7 +112,7 @@ class KandelDistributionGenerator {
 
     const prices = params.distribution.getPricesForDistribution();
     return this.distributionHelper.calculateDistributionFromPrices(
-      params.distribution.ratio,
+      params.distribution.logPriceOffset,
       prices,
       params.distribution.getFirstAskIndex(),
       initialGives.askGives,
@@ -166,7 +166,7 @@ class KandelDistributionGenerator {
     explicitOffers: OffersWithGives;
     distribution:
       | {
-          ratio: Bigish;
+          logPriceOffset: number;
           pricePoints: number;
         }
       | KandelDistribution;
@@ -175,7 +175,7 @@ class KandelDistributionGenerator {
       params.distribution instanceof KandelDistribution
         ? params.distribution
         : {
-            ratio: Big(params.distribution.ratio),
+            logPriceOffset: params.distribution.logPriceOffset,
             pricePoints: params.distribution.pricePoints,
           };
     return this.distributionHelper.createDistributionWithOffers(
@@ -200,7 +200,7 @@ class KandelDistributionGenerator {
     offerType: Market.BA;
     index: number;
     price: Bigish;
-    ratio: Bigish;
+    logPriceOffset: number;
     spread: number;
     pricePoints: number;
     minimumBasePerOffer: Bigish;
@@ -209,7 +209,7 @@ class KandelDistributionGenerator {
     const prices = this.priceCalculation.getPricesFromPrice(
       params.index,
       Big(params.price),
-      Big(params.ratio),
+      params.logPriceOffset,
       params.pricePoints
     );
 

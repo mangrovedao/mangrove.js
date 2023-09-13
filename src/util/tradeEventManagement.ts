@@ -14,7 +14,7 @@ import {
 } from "../types/typechain/Mangrove";
 import {
   NewOwnedOfferEvent,
-  OrderSummaryEvent,
+  OrderStartSummaryEvent,
 } from "../types/typechain/MangroveOrder";
 import UnitCalculations from "./unitCalculations";
 import { BaseContract, BigNumber } from "ethers";
@@ -67,16 +67,11 @@ class TradeEventManagement {
     args: {
       olKeyHash: string;
       taker: string;
-      fee: ethers.BigNumber;
     };
   }): Market.Summary {
     return {
       taker: event.args.taker,
       olKeyHash: event.args.olKeyHash,
-      fee:
-        "fee" in event.args && event.args.fee !== undefined
-          ? UnitCalculations.fromUnits(event.args.fee, 18)
-          : Big(0),
     };
   }
   createSummaryFromOrderCompleteEvent(evt: OrderCompleteEvent) {
@@ -166,12 +161,13 @@ class TradeEventManagement {
     return { ba, offer: this.rawOfferToOffer(market, ba, evt.args) };
   }
 
-  createSummaryFromOrderSummaryEvent(evt: OrderSummaryEvent): Market.Summary {
+  createSummaryFromOrderSummaryEvent(
+    evt: OrderStartSummaryEvent
+  ): Market.Summary {
     return this.createSummaryFromEvent({
       args: {
         olKeyHash: evt.args.olKeyHash,
         taker: evt.args.taker,
-        fee: evt.args.fee,
       },
     });
   }
@@ -309,7 +305,7 @@ class TradeEventManagement {
       case "OrderSummary": {
         //last OrderSummary is ours so it overrides previous summaries if any
         result.summary = this.createSummaryFromOrderSummaryEvent(
-          evt as OrderSummaryEvent
+          evt as OrderStartSummaryEvent
         );
         break;
       }

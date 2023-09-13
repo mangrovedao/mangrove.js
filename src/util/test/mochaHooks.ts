@@ -108,7 +108,7 @@ export const mochaHooks = {
           inbound: tokenB.address,
           tickScale: 1,
         },
-        500,
+        250,
         tokenA.toUnits(localConfig.asks.density),
         localConfig.asks.kilo_offer_gasbase
       )
@@ -122,7 +122,7 @@ export const mochaHooks = {
           inbound: tokenA.address,
           tickScale: 1,
         },
-        500,
+        250,
         localConfig.bids.density.gt(0)
           ? tokenB.toUnits(localConfig.bids.density)
           : 1,

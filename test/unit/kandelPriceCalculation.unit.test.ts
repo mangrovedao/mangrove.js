@@ -11,7 +11,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
         // Arrange
         const minPrice = Big(1001);
         const maxPrice = Big(1588.461197266944);
-        const ratio = Big(1.08);
+        const logPriceOffset = 1.08;
         const pricePoints = 7;
         const sut = new KandelPriceCalculation(5);
 
@@ -19,7 +19,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
         const pricesAndRatio1 = sut.calculatePrices({
           minPrice,
           maxPrice,
-          ratio,
+          logPriceOffset,
           midPrice,
         });
         const pricesAndRatio2 = sut.calculatePrices({
@@ -30,13 +30,13 @@ describe("KandelPriceCalculation unit tests suite", () => {
         });
         const pricesAndRatio3 = sut.calculatePrices({
           minPrice,
-          ratio,
+          logPriceOffset,
           pricePoints,
           midPrice,
         });
         const pricesAndRatio4 = sut.calculatePrices({
           maxPrice,
-          ratio,
+          logPriceOffset,
           pricePoints,
           midPrice,
         });
@@ -67,10 +67,10 @@ describe("KandelPriceCalculation unit tests suite", () => {
           pricesAndRatio4.prices.map((x) => x?.toNumber()),
           expectedPrices
         );
-        assert.equal(pricesAndRatio1.ratio.toNumber(), ratio.toNumber());
-        assert.equal(pricesAndRatio2.ratio.toNumber(), ratio.toNumber());
-        assert.equal(pricesAndRatio3.ratio.toNumber(), ratio.toNumber());
-        assert.equal(pricesAndRatio4.ratio.toNumber(), ratio.toNumber());
+        assert.equal(pricesAndRatio1.logPriceOffset, logPriceOffset);
+        assert.equal(pricesAndRatio2.logPriceOffset, logPriceOffset);
+        assert.equal(pricesAndRatio3.logPriceOffset, logPriceOffset);
+        assert.equal(pricesAndRatio4.logPriceOffset, logPriceOffset);
       });
     });
 
@@ -86,9 +86,9 @@ describe("KandelPriceCalculation unit tests suite", () => {
 
       // Assert
       assert.equal(
-        pricesAndRatio.ratio.toString(),
+        pricesAndRatio.logPriceOffset.toString(),
         UnitCalculations.fromUnits(
-          UnitCalculations.toUnits(pricesAndRatio.ratio, 5),
+          UnitCalculations.toUnits(pricesAndRatio.logPriceOffset, 5),
           5
         ).toString()
       );
@@ -99,7 +99,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
       assert.throws(
         () => sut.calculatePrices({ pricePoints: 10, maxPrice: Big(2) }),
         new Error(
-          "Exactly three of minPrice, maxPrice, ratio, and pricePoints must be given"
+          "Exactly three of minPrice, maxPrice, logPriceOffset, and pricePoints must be given"
         )
       );
     });
@@ -125,7 +125,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
         // Arrange/act
         const prices = new KandelPriceCalculation(
           5
-        ).calculatePricesFromMinMaxRatio(Big(1000), Big(2), Big(32000));
+        ).calculatePricesFromMinMaxRatio(Big(1000), 2, Big(32000));
 
         // Assert
         assert.deepStrictEqual(
@@ -140,7 +140,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
           5
         ).calculatePricesFromMinMaxRatio(
           Big(1000),
-          Big(2),
+          2,
           Big(32000),
           undefined,
           Big(4000)
@@ -159,31 +159,29 @@ describe("KandelPriceCalculation unit tests suite", () => {
 
         // Act/Assert
         assert.throws(
-          () => sut.calculatePricesFromMinMaxRatio(Big(0), Big(2), Big(1000)),
+          () => sut.calculatePricesFromMinMaxRatio(Big(0), 2, Big(1000)),
           new Error("minPrice must be positive")
         );
         assert.throws(
-          () => sut.calculatePricesFromMinMaxRatio(Big(1), Big(1), Big(1000)),
+          () => sut.calculatePricesFromMinMaxRatio(Big(1), 1, Big(1000)),
           new Error("ratio must be larger than 1")
         );
         assert.throws(
-          () =>
-            sut.calculatePricesFromMinMaxRatio(Big(1), Big(2.00001), Big(1000)),
+          () => sut.calculatePricesFromMinMaxRatio(Big(1), 2.00001, Big(1000)),
           new Error("ratio must be less than or equal to 2")
         );
         assert.throws(
-          () => sut.calculatePricesFromMinMaxRatio(Big(1000), Big(1.01)),
+          () => sut.calculatePricesFromMinMaxRatio(Big(1000), 1.01),
           new Error("exactly one of pricePoints or maxPrice must be provided")
         );
         assert.throws(
-          () =>
-            sut.calculatePricesFromMinMaxRatio(Big(1), Big(1.001), Big(100000)),
+          () => sut.calculatePricesFromMinMaxRatio(Big(1), 1.001, Big(100000)),
           new Error(
             "minPrice and maxPrice are too far apart, too many price points needed."
           )
         );
         assert.throws(
-          () => sut.calculatePricesFromMinMaxRatio(Big(1), Big(1.001), Big(1)),
+          () => sut.calculatePricesFromMinMaxRatio(Big(1), 1.001, Big(1)),
           new Error(
             "minPrice and maxPrice are too close. There must be room for at least two price points"
           )
@@ -220,7 +218,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
       const prices = new KandelPriceCalculation(5).getPricesFromPrice(
         4,
         Big(16000),
-        Big(2),
+        2,
         6
       );
 
@@ -235,7 +233,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
       const prices = new KandelPriceCalculation(5).getPricesFromPrice(
         0,
         Big(16000),
-        Big(2),
+        2,
         2
       );
 

@@ -139,7 +139,7 @@ describe("KandelStatus unit tests suite", () => {
     it("throws on no live offers", () => {
       assert.throws(
         () =>
-          sut.getOfferStatuses(Big(5), Big(1), 10, 1, [
+          sut.getOfferStatuses(Big(5), 1, 10, 1, [
             {
               offerType: "bids",
               index: 22,
@@ -157,15 +157,15 @@ describe("KandelStatus unit tests suite", () => {
     it("gets all as expected for initial distribution", () => {
       // Arrange
       const pricePoints = 6;
-      const ratio = Big(2);
+      const logPriceOffset = 2;
       const midPrice = Big(5000);
       const originalPricesAndRatio = sut.priceCalculation.calculatePrices({
         minPrice: Big(1000),
-        ratio,
+        logPriceOffset,
         pricePoints,
       });
       const dist = sut.distributionHelper.calculateDistributionConstantBase(
-        originalPricesAndRatio.ratio,
+        originalPricesAndRatio.logPriceOffset,
         originalPricesAndRatio.prices,
         Big(2),
         3
@@ -176,7 +176,7 @@ describe("KandelStatus unit tests suite", () => {
       // Act
       const statuses = sut.getOfferStatuses(
         midPrice,
-        ratio,
+        logPriceOffset,
         pricePoints,
         1,
         prices.map((p, i) => {
@@ -230,34 +230,40 @@ describe("KandelStatus unit tests suite", () => {
 
     it("gets price and status with dead and crossed offers", () => {
       // Arrange
-      const ratio = Big(2);
+      const logPriceOffset = 2;
       const pricePoints = 6;
       const midPrice = Big(5000);
 
       // Act
-      const statuses = sut.getOfferStatuses(midPrice, ratio, pricePoints, 1, [
-        {
-          offerType: "bids",
-          logPrice: Big(1001),
-          index: 0,
-          offerId: 43,
-          live: false,
-        },
-        {
-          offerType: "bids",
-          logPrice: Big(2000),
-          index: 1,
-          offerId: 42,
-          live: true,
-        },
-        {
-          offerType: "bids",
-          logPrice: Big(15000),
-          index: 4,
-          offerId: 55,
-          live: true,
-        },
-      ]);
+      const statuses = sut.getOfferStatuses(
+        midPrice,
+        logPriceOffset,
+        pricePoints,
+        1,
+        [
+          {
+            offerType: "bids",
+            logPrice: Big(1001),
+            index: 0,
+            offerId: 43,
+            live: false,
+          },
+          {
+            offerType: "bids",
+            logPrice: Big(2000),
+            index: 1,
+            offerId: 42,
+            live: true,
+          },
+          {
+            offerType: "bids",
+            logPrice: Big(15000),
+            index: 4,
+            offerId: 55,
+            live: true,
+          },
+        ]
+      );
 
       // Assert
       assertStatuses({
@@ -329,14 +335,14 @@ describe("KandelStatus unit tests suite", () => {
       ({ spread, dead, unexpectedDeadBid, unexpectedDeadAsk, reason }) => {
         it(`gets status with ${dead} dead near mid with spread=${spread} where ${reason}`, () => {
           // Arrange
-          const ratio = Big(2);
+          const logPriceOffset = 2;
           const pricePoints = 6;
           const midPrice = Big(5000);
 
           // Act
           const statuses = sut.getOfferStatuses(
             midPrice,
-            ratio,
+            logPriceOffset,
             pricePoints,
             spread,
             [
@@ -414,27 +420,33 @@ describe("KandelStatus unit tests suite", () => {
 
     it("discards outliers even though price is near mid", () => {
       // Arrange
-      const ratio = Big(2);
+      const logPriceOffset = 2;
       const pricePoints = 2;
       const midPrice = Big(5000);
 
       // Act
-      const statuses = sut.getOfferStatuses(midPrice, ratio, pricePoints, 1, [
-        {
-          offerType: "bids",
-          logPrice: Big(5000),
-          index: 3,
-          offerId: 42,
-          live: true,
-        },
-        {
-          offerType: "bids",
-          logPrice: Big(2000),
-          index: 1,
-          offerId: 43,
-          live: true,
-        },
-      ]);
+      const statuses = sut.getOfferStatuses(
+        midPrice,
+        logPriceOffset,
+        pricePoints,
+        1,
+        [
+          {
+            offerType: "bids",
+            logPrice: Big(5000),
+            index: 3,
+            offerId: 42,
+            live: true,
+          },
+          {
+            offerType: "bids",
+            logPrice: Big(2000),
+            index: 1,
+            offerId: 43,
+            live: true,
+          },
+        ]
+      );
 
       // Assert
       assertStatuses({

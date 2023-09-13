@@ -26,7 +26,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
   const market = await mangrove.market({
     base: argv.base,
     quote: argv.quote,
-    tickScale: BigNumber.from(argv.tickScale),
+    tickScale: argv.tickScale,
     bookOptions: { maxOffers: argv.maxOffers },
   });
   const { asks, bids } = market.getBook();

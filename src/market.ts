@@ -59,7 +59,6 @@ namespace Market {
   export type Summary = {
     olKeyHash: string;
     taker: string;
-    fee: Big;
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
@@ -88,8 +87,8 @@ namespace Market {
     gasLowerBound?: ethers.ethers.BigNumberish;
   } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
     (
-      | { volume: Bigish; price: Bigish }
-      | { total: Bigish; price: Bigish }
+      | { volume: Bigish; price: Bigish; tickScale: number }
+      | { total: Bigish; price: Bigish; tickScale: number }
       | { logPrice: Bigish; fillVolume: Bigish; fillWants?: boolean }
     );
 
@@ -967,6 +966,7 @@ class Market {
       return Big(Math.pow(1.0001, params.logPrice.toNumber()));
     }
   }
+
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
   static getWantsForPrice(ba: Market.BA, gives: Big, price: Big): Big {
     return ba === "asks" ? gives.mul(price) : gives.div(price);

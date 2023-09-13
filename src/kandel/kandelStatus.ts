@@ -112,7 +112,7 @@ class KandelStatus {
 
   /** Determines the status of the Kandel instance based on the passed in offers.
    * @param midPrice The current mid price of the market used to discern expected bids from asks.
-   * @param ratio The ratio of the geometric distribution.
+   * @param logPriceOffset The ratio of the geometric distribution.
    * @param pricePoints The number of price points in the Kandel instance.
    * @param spread The spread used when transporting funds from an offer to its dual.
    * @param offers The offers to determine the status of.
@@ -125,7 +125,7 @@ class KandelStatus {
    */
   public getOfferStatuses(
     midPrice: Big,
-    ratio: Big,
+    logPriceOffset: number,
     pricePoints: number,
     spread: number,
     offers: OffersWithPrices
@@ -153,7 +153,7 @@ class KandelStatus {
     const expectedPrices = this.priceCalculation.getPricesFromPrice(
       offer.index,
       offer.logPrice,
-      ratio,
+      logPriceOffset,
       pricePoints
     );
 

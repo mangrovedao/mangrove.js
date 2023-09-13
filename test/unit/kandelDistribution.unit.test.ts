@@ -15,7 +15,7 @@ describe("KandelDistribution unit tests suite", () => {
       let sut: KandelDistribution;
       beforeEach(() => {
         sut = new KandelDistribution(
-          Big(1),
+          1,
           5,
           [
             { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
@@ -72,7 +72,7 @@ describe("KandelDistribution unit tests suite", () => {
     it("can be less than pricePoints", () => {
       // Arrange
       const sut = new KandelDistribution(
-        Big(1),
+        1,
         5,
         [{ offerType: "bids", base: Big(11), quote: Big(2000), index: 0 }],
         4,
@@ -88,7 +88,7 @@ describe("KandelDistribution unit tests suite", () => {
     it("is correct when none", () => {
       // Arrange
       const sut = new KandelDistribution(
-        Big(1),
+        1,
         5,
         [
           { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
@@ -105,7 +105,7 @@ describe("KandelDistribution unit tests suite", () => {
     it("is correct when some", () => {
       // Arrange
       const sut = new KandelDistribution(
-        Big(1),
+        1,
         5,
         [
           { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
@@ -152,7 +152,7 @@ describe("KandelDistribution unit tests suite", () => {
           },
         ];
 
-        const sut = new KandelDistribution(Big(1), offers.length, offers, 4, 6);
+        const sut = new KandelDistribution(1, offers.length, offers, 4, 6);
 
         // Act
         const { requiredBase, requiredQuote } =
@@ -177,7 +177,7 @@ describe("KandelDistribution unit tests suite", () => {
     it("can chunk an uneven set", () => {
       // Arrange
       const sut = new KandelDistribution(
-        Big(1),
+        1,
         3,
         [
           { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
@@ -202,7 +202,7 @@ describe("KandelDistribution unit tests suite", () => {
     it("can chunk an even set", () => {
       // Arrange
       const sut = new KandelDistribution(
-        Big(1),
+        1,
         3,
         [
           { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
@@ -229,7 +229,7 @@ describe("KandelDistribution unit tests suite", () => {
     it("can have one extra offer due to boundary", () => {
       // Arrange
       const sut = new KandelDistribution(
-        Big(1),
+        1,
         3,
         [
           { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
@@ -257,7 +257,7 @@ describe("KandelDistribution unit tests suite", () => {
       it(`works with all ${offerType}`, () => {
         // Arrange
         const sut = new KandelDistribution(
-          Big(1),
+          1,
           3,
           [{ base: Big(1), quote: Big(2), index: 0, offerType: offerType }],
           4,
@@ -277,20 +277,20 @@ describe("KandelDistribution unit tests suite", () => {
   describe(KandelDistribution.prototype.getPricesForDistribution.name, () => {
     it("returns prices according to bid/ask", () => {
       // Arrange
-      const ratio = new Big(1.09);
+      const logPriceOffset = 1.09;
       const firstBase = Big(3);
       const firstQuote = Big(5000);
       const pricePoints = 10;
       const priceCalculation = new KandelPriceCalculation(5);
       const pricesAndRatio = priceCalculation.calculatePrices({
         minPrice: firstQuote.div(firstBase),
-        ratio,
+        logPriceOffset,
         pricePoints,
       });
 
       const helper = new KandelDistributionHelper(12, 12);
       const sut = helper.calculateDistributionConstantBase(
-        ratio,
+        logPriceOffset,
         pricesAndRatio.prices,
         firstBase,
         3
@@ -307,14 +307,14 @@ describe("KandelDistribution unit tests suite", () => {
           price.toNumber(),
           `Price is not as expected at ${i}`
         );
-        price = price.mul(ratio);
+        price = price.mul(logPriceOffset);
       });
     });
 
     it("returns undefined for dead offers", () => {
       // Arrange
       const sut = new KandelDistribution(
-        Big(1),
+        1,
         3,
         [{ offerType: "bids", base: Big(1), quote: Big(2000), index: 1 }],
         4,

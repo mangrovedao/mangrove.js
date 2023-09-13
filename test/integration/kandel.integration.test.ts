@@ -74,7 +74,7 @@ describe("Kandel integration tests suite", function () {
         tickScale: 1,
       });
       distribution = strategies.generator(market).calculateDistribution({
-        priceParams: { minPrice: 900, ratio: 1.01, pricePoints: 6 },
+        priceParams: { minPrice: 900, logPriceOffset: 1.01, pricePoints: 6 },
         midPrice: 1000,
         initialAskGives: 1,
       });
@@ -109,22 +109,6 @@ describe("Kandel integration tests suite", function () {
 
           // Assert
           const params = await kandel.getParameters();
-          assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateBase,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compound rate should be set during seed"
-          );
-          assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateQuote,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compound rate should be set during seed"
-          );
           assert.equal("TokenA", kandel.getBase().name, "wrong base");
           assert.equal("TokenB", kandel.getQuote().name, "wrong base");
           assert.equal(market, kandel.market, "wrong market");
@@ -141,7 +125,7 @@ describe("Kandel integration tests suite", function () {
             "router should only be there for aave"
           );
           assert.equal(params.spread, 0, "spread should be default");
-          assert.equal(params.ratio.toNumber(), 0, "ratio should be default");
+          assert.equal(params.logPriceOffset, 0, "ratio should be default");
           assert.equal(params.pricePoints, 0, "pricePoints should be default");
           assert.equal(
             params.gasprice,
@@ -382,14 +366,14 @@ describe("Kandel integration tests suite", function () {
       deposit: boolean;
       syncBooks?: boolean;
     }) {
-      const ratio = new Big(1.08);
+      const logPriceOffset = 1.08;
       const firstBase = Big(1);
       const firstQuote = Big(1000);
       const pricePoints = 6;
       const distribution = kandel.generator.calculateDistribution({
         priceParams: {
           minPrice: firstQuote.div(firstBase),
-          ratio,
+          logPriceOffset,
           pricePoints,
         },
         midPrice: Big(1200),
@@ -423,7 +407,7 @@ describe("Kandel integration tests suite", function () {
       }
 
       return {
-        ratio,
+        logPriceOffset,
         firstBase,
         firstQuote,
         pricePoints,
@@ -442,7 +426,7 @@ describe("Kandel integration tests suite", function () {
         it(`populate populates a market, deposits and sets parameters inChunks=${inChunks}`, async function () {
           // Arrange
           const market = kandel.market;
-          const ratio = new Big(1.08);
+          const logPriceOffset = 1.08;
           const firstBase = Big(1);
           const firstQuote = Big(1000);
           const pricePoints = 6;
@@ -450,7 +434,7 @@ describe("Kandel integration tests suite", function () {
           const distribution = kandel.generator.calculateDistribution({
             priceParams: {
               minPrice: firstQuote.div(firstBase),
-              ratio,
+              logPriceOffset,
               pricePoints,
               midPrice,
             },
@@ -488,29 +472,13 @@ describe("Kandel integration tests suite", function () {
           const params = await kandel.getParameters();
 
           assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateQuote,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compoundRateQuote should have been left unchanged"
-          );
-          assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateBase,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compoundRateBase should have been left unchanged"
-          );
-          assert.equal(
             params.pricePoints,
             pricePoints,
             "pricePoints should have been updated"
           );
           assert.equal(
-            params.ratio.toString(),
-            ratio.toString(),
+            params.logPriceOffset.toString(),
+            logPriceOffset.toString(),
             "ratio should have been updated"
           );
           assert.equal(params.spread, 1, "spread should have been updated");
@@ -626,7 +594,7 @@ describe("Kandel integration tests suite", function () {
         await populateKandel({ approve: true, deposit: true });
 
         const distribution = kandel.generator.calculateDistribution({
-          priceParams: { minPrice: 900, ratio: 1.01, pricePoints: 6 },
+          priceParams: { minPrice: 900, logPriceOffset: 1.01, pricePoints: 6 },
           midPrice: 1000,
           initialAskGives: 1,
         });
@@ -656,11 +624,11 @@ describe("Kandel integration tests suite", function () {
         // Act/Assert
         await assert.rejects(
           kandel.populate({
-            parameters: { ratio: 2 },
+            parameters: { logPriceOffset: 2 },
             distribution:
               kandel.generator.distributionHelper.createDistributionWithOffers(
                 [],
-                { ratio: Big(1), pricePoints: 5 }
+                { logPriceOffset: 1, pricePoints: 5 }
               ),
           }),
           new Error(
@@ -680,7 +648,7 @@ describe("Kandel integration tests suite", function () {
             distribution:
               kandel.generator.distributionHelper.createDistributionWithOffers(
                 [],
-                { ratio: Big(1), pricePoints: 5 }
+                { logPriceOffset: 1, pricePoints: 5 }
               ),
           }),
           new Error(
@@ -1000,8 +968,8 @@ describe("Kandel integration tests suite", function () {
         const statusesPost = await kandel.getOfferStatuses(Big(1170));
         assert.equal(statusesPost.statuses[0].bids?.live, true);
         assert.equal(
-          singleOfferDistribution.ratio.toNumber(),
-          parameters.ratio.toNumber()
+          singleOfferDistribution.logPriceOffset,
+          parameters.logPriceOffset
         );
         assert.equal(
           singleOfferDistribution.pricePoints,
@@ -1038,8 +1006,8 @@ describe("Kandel integration tests suite", function () {
 
         // Assert
         assert.equal(
-          distribution.ratio.toNumber(),
-          originalDistribution.ratio.toNumber()
+          distribution.logPriceOffset,
+          originalDistribution.logPriceOffset
         );
         assert.equal(
           distribution.pricePoints,
@@ -1389,11 +1357,11 @@ describe("Kandel integration tests suite", function () {
 
       it("can go through life-cycle with numbers as Bigish", async function () {
         // Arrange
-        const ratio = 1.08;
+        const logPriceOffset = 1.08;
         const initialAskGives = 1;
         const pricePoints = 6;
         const distribution = kandel.generator.calculateDistribution({
-          priceParams: { minPrice: 1000, ratio, pricePoints },
+          priceParams: { minPrice: 1000, logPriceOffset, pricePoints },
           midPrice: 1200,
           initialAskGives,
         });
@@ -1407,7 +1375,7 @@ describe("Kandel integration tests suite", function () {
           kandel.populate({
             distribution,
             parameters: {
-              ratio,
+              logPriceOffset,
               spread: 1,
               pricePoints: distribution.pricePoints,
             },
@@ -1682,7 +1650,7 @@ describe("Kandel integration tests suite", function () {
           const distribution = kandel.generator.calculateMinimumDistribution({
             priceParams: {
               minPrice: 900,
-              ratio: 1.08,
+              logPriceOffset: 1.08,
               maxPrice: 1100,
             },
             midPrice: 1000,
@@ -1717,7 +1685,7 @@ describe("Kandel integration tests suite", function () {
             const distribution = kandel.generator.calculateMinimumDistribution({
               priceParams: {
                 minPrice: 900,
-                ratio: 1.08,
+                logPriceOffset: 1.08,
                 maxPrice: 1100,
               },
               midPrice: 1000,
