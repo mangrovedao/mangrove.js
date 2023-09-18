@@ -2,6 +2,8 @@
 
 # 1.4.22
 
+- fix: do not call getLastBlock if reliable provider does not listen to events
+
 # 1.4.21
 
 - fix: semibook subscribe only if we listen to events
