@@ -409,7 +409,11 @@ class Mangrove {
         bookOptions: params.bookOptions,
       },
     });
-    if (this.reliableProvider && this.reliableProvider.getLatestBlock) {
+    if (
+      !this.shouldNotListenToNewEvents &&
+      this.reliableProvider &&
+      this.reliableProvider.getLatestBlock
+    ) {
       await this.reliableProvider.getLatestBlock(); // trigger a quick update to get latest block on market initialization
     }
     return await Market.connect({ ...params, mgv: this });
