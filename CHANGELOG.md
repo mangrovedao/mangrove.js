@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.22
+
 # 1.4.21
 
 - fix: semibook subscribe only if we listen to events
