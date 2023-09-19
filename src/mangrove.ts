@@ -37,6 +37,7 @@ import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
 import { LocalUnpackedStructOutput } from "./types/typechain/MgvReader";
 import { OLKeyStruct } from "./types/typechain/Mangrove";
+import { Density } from "./util/Density";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -47,7 +48,7 @@ namespace Mangrove {
   export type LocalConfig = {
     active: boolean;
     fee: number;
-    density: Big;
+    density: Density;
     kilo_offer_gasbase: number;
     lock: boolean;
     last: number | undefined;

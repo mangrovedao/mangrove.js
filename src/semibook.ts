@@ -11,7 +11,7 @@ import {
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish } from "./types";
 import logger from "./util/logger";
-import Trade from "./util/trade";
+import Trade, { MAX_LOG_PRICE } from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
@@ -22,6 +22,7 @@ import {
   OfferUnpackedStructOutput,
 } from "./types/typechain/MgvReader";
 import { stat } from "fs";
+import { Density } from "./util/Density";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -389,14 +390,14 @@ class Semibook
         ? Big(ethers.constants.MaxUint256.toString())
         : 0;
     const initialGives = Big(params.given);
-    const maxTick = BigNumber.from(524287);
+    const maxLogPrice = BigNumber.from(MAX_LOG_PRICE);
 
     const {
       logPrice: tick,
       fillVolume,
       totalGot,
       totalGave,
-    } = await this.simulateMarketOrder(maxTick, initialGives, buying);
+    } = await this.simulateMarketOrder(maxLogPrice, initialGives, buying);
 
     const estimatedVolume = buying ? totalGave : totalGot;
     const givenResidue = buying ? fillVolume : fillVolume;
@@ -454,7 +455,9 @@ class Semibook
         } else {
           acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
           acc.lastGasreq = offer.gasreq;
-          const offerWants = offer.gives.mul(offer!.logPrice);
+          const offerWants = offer.gives.mul(
+            this.tradeManagement.getPriceFromLogPrice(offer!.logPrice)
+          );
           if (
             (fillWants && fillVolume.gt(offer.gives)) ||
             (!fillWants && fillVolume.gt(offerWants))
@@ -472,7 +475,7 @@ class Semibook
               if (offer.gives.eq(0)) {
                 acc.got = offer.gives;
               } else {
-                acc.gave = fillVolume.mul(offer.gives).div(offerWants);
+                acc.got = fillVolume.mul(offer.gives).div(offerWants);
               }
             }
           }
@@ -482,7 +485,7 @@ class Semibook
           acc.totalGot = acc.totalGot.add(acc.got);
           acc.totalGave = acc.totalGave.add(acc.gave);
           acc.fillVolume = initialFillVolume.sub(
-            fillWants ? acc.totalGave : acc.totalGot
+            fillWants ? acc.totalGot : acc.totalGave
           );
         }
         return acc;
@@ -917,26 +920,26 @@ class Semibook
     );
     if (bestLogPrice == offer.logPrice && logPriceOfferList.length == 1) {
       state.bestInCache = offer.id;
-      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.[0];
+      offer.next = this.#getNextLogPriceOfferList(state, offer)?.[0];
     }
     if (logPriceOfferList.length > 1) {
       const index = logPriceOfferList.findIndex((id) => id == offer.id);
-      offer.next = logPriceOfferList[index - 1];
-      this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
-      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.[0];
+      offer.prev = logPriceOfferList[index - 1];
+      this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
+      offer.next = this.#getNextLogPriceOfferList(state, offer)?.[0];
     } else {
-      offer.prev = this.#getPrevLogPriceOfferList(state, offer)?.[0];
-      if (offer.prev !== undefined) {
-        this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
+      offer.next = this.#getNextLogPriceOfferList(state, offer)?.[0];
+      if (offer.next !== undefined) {
+        this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
       }
 
-      const nextLogPriceOfferList = this.#getNextLogPriceOfferList(
+      const prevLogPriceOfferList = this.#getPrevLogPriceOfferList(
         state,
         offer
       );
-      offer.next = nextLogPriceOfferList?.[nextLogPriceOfferList.length - 1];
-      if (offer.next !== undefined) {
-        this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
+      offer.prev = prevLogPriceOfferList?.[prevLogPriceOfferList.length - 1];
+      if (offer.prev !== undefined) {
+        this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
       }
     }
 
@@ -965,7 +968,7 @@ class Semibook
     return true;
   }
 
-  #getPrevLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
+  #getNextLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
     const nextLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
       (acc, logPrice) =>
         logPrice > acc && logPrice < offer.logPrice ? logPrice : acc,
@@ -976,7 +979,7 @@ class Semibook
       : state.logPriceOfferList.get(nextLogPrice);
   }
 
-  #getNextLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
+  #getPrevLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
     const nextLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
       (acc, logPrice) =>
         logPrice > acc && logPrice > offer.logPrice ? logPrice : acc,
@@ -1150,7 +1153,7 @@ class Semibook
     return {
       active: local.active,
       fee: local.fee.toNumber(),
-      density: UnitCalculations.fromUnits(local.density, outboundDecimals),
+      density: new Density(local.density, outboundDecimals),
       kilo_offer_gasbase: local.kilo_offer_gasbase.toNumber(),
       lock: local.lock,
       last: Semibook.rawIdToId(local.last),
@@ -1167,7 +1170,11 @@ class Semibook
    */
   public async getMinimumVolume(gasreq: number) {
     const config = await this.getConfig();
-    const min = config.density.mul(gasreq + config.kilo_offer_gasbase);
+    const min = config.density.multiplyUpReadable(
+      BigNumber.from(gasreq).add(
+        BigNumber.from(config.kilo_offer_gasbase).mul(1000)
+      )
+    );
     return min.gt(0)
       ? min
       : UnitCalculations.fromUnits(

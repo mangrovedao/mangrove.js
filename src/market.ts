@@ -59,6 +59,12 @@ namespace Market {
   export type Summary = {
     olKeyHash: string;
     taker: string;
+    fillOrKill?: boolean;
+    logPrice: Number;
+    fillVolume: Number;
+    fillWants: boolean;
+    restingOrder?: boolean;
+    fee?: Number;
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
@@ -85,8 +91,7 @@ namespace Market {
     fillOrKill?: boolean;
     expiryDate?: number;
     gasLowerBound?: ethers.ethers.BigNumberish;
-  } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
-    (
+  } & { restingOrder?: RestingOrderParams } & (
       | { volume: Bigish; price: Bigish; tickScale: number }
       | { total: Bigish; price: Bigish; tickScale: number }
       | { logPrice: Bigish; fillVolume: Bigish; fillWants?: boolean }
@@ -296,13 +301,16 @@ class Market {
     }
     const config = await market.config();
     const gasreq = await params.mgv.orderContract.callStatic.offerGasreq();
-    market.minVolumeAsk = config.asks.density.mul(
-      new Big(config.asks.kilo_offer_gasbase).plus(new Big(gasreq.toString()))
+    market.minVolumeAsk = config.asks.density.multiplyUpReadable(
+      BigNumber.from(config.asks.kilo_offer_gasbase)
+        .mul(1000)
+        .add(gasreq.toString())
     );
-    market.minVolumeBid = config.bids.density.mul(
-      new Big(config.bids.kilo_offer_gasbase).plus(new Big(gasreq.toString()))
+    market.minVolumeBid = config.bids.density.multiplyUpReadable(
+      BigNumber.from(config.bids.kilo_offer_gasbase)
+        .mul(1000)
+        .add(gasreq.toString())
     );
-
     return market;
   }
 

@@ -12,6 +12,7 @@ import { Mangrove, OfferMaker, Semibook } from "../../src";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import { TransactionReceipt } from "@ethersproject/providers";
+import { Density } from "../../src/util/Density";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -133,7 +134,9 @@ describe("Semibook integration tests suite", function () {
       const config = await semibook.getConfig(active.blockNumber);
 
       expect(config.fee).to.be.eq(fee);
-      expect(config.density.eq(2)).to.be.eq(true);
+      expect(config.density.eq(new Density(BigNumber.from(2), 0))).to.be.eq(
+        true
+      );
       expect(config.kilo_offer_gasbase).to.be.eq(gasbase);
       mgv.disconnect();
     });
@@ -177,7 +180,9 @@ describe("Semibook integration tests suite", function () {
       const config = await semibook.getConfig();
 
       expect(config.fee).to.be.eq(fee);
-      expect(config.density.eq(2)).to.be.eq(true);
+      expect(config.density.eq(new Density(BigNumber.from(2), 0))).to.be.eq(
+        true
+      );
       expect(config.kilo_offer_gasbase).to.be.eq(gasbase);
       mgv.disconnect();
     });
@@ -299,7 +304,9 @@ describe("Semibook integration tests suite", function () {
       const config = await semibook.getConfig();
 
       expect(config.fee).to.be.eq(fee);
-      expect(config.density.eq(2)).to.be.eq(true);
+      expect(config.density.eq(new Density(BigNumber.from(2), 0))).to.be.eq(
+        true
+      );
       expect(config.kilo_offer_gasbase).to.be.eq(gasbase);
     });
   });

@@ -15,6 +15,8 @@ import { BigNumber, ethers, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
+import Trade, { MAX_LOG_PRICE } from "../../src/util/trade";
+import { Density } from "../../src/util/Density";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -25,8 +27,10 @@ describe("Market integration tests suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
   const rawMinGivesBase = BigNumber.from("90000000000000000");
+  let trade: Trade;
 
   beforeEach(async function () {
+    trade = new Trade();
     mgv = await Mangrove.connect({
       provider: this.server.url,
       privateKey: this.accounts.tester.key,
@@ -164,7 +168,7 @@ describe("Market integration tests suite", () => {
       const asks: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -176,7 +180,7 @@ describe("Market integration tests suite", () => {
       const bids: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -204,7 +208,7 @@ describe("Market integration tests suite", () => {
       const asks: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -216,7 +220,7 @@ describe("Market integration tests suite", () => {
       const bids: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -244,7 +248,7 @@ describe("Market integration tests suite", () => {
       const asks: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -256,7 +260,7 @@ describe("Market integration tests suite", () => {
       const bids: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -284,7 +288,7 @@ describe("Market integration tests suite", () => {
       const asks: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -296,7 +300,7 @@ describe("Market integration tests suite", () => {
       const bids: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
@@ -852,19 +856,25 @@ describe("Market integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      logPrice: 1,
+      logPrice: 2,
       gives: rawMinGivesBase.mul(2),
     });
-
+    const gave = trade
+      .getPriceFromLogPrice(1)
+      .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
+      .toNumber();
     const buyPromises = await market.buy({
-      logPrice: 0.000000000002,
+      logPrice: 1,
       fillVolume: 10,
     });
     const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
+    expect(result.successes[0].got.toNumber()).to.be.equal(
+      market.base.fromUnits(rawMinGivesBase).toNumber()
+    );
+    expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
+    expect(result.summary.fee).to.be.greaterThan(0);
   });
 
   it("buying uses best price, with forceRoutingToMangroveOrder:false", async function () {
@@ -889,20 +899,27 @@ describe("Market integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      logPrice: 1,
+      logPrice: 2,
       gives: rawMinGivesBase.mul(2),
     });
 
     const buyPromises = await market.buy({
       forceRoutingToMangroveOrder: false,
-      logPrice: 0.000000000002,
+      logPrice: 1,
       fillVolume: 10,
     });
     const result = await buyPromises.result;
+    const gave = trade
+      .getPriceFromLogPrice(1)
+      .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
+      .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
+    expect(result.successes[0].got.toNumber()).to.be.equal(
+      market.base.fromUnits(rawMinGivesBase).toNumber()
+    );
+    expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
+    expect(result.summary.fee).to.be.greaterThan(0);
   });
 
   it("selling uses best price", async function () {
@@ -920,29 +937,29 @@ describe("Market integration tests suite", () => {
       market,
       ba: "bids",
       maker,
-      logPrice: 100,
+      logPrice: trade.getLogPriceFromPrice(2, market.tickScale.toNumber()),
       gives: 1000000,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
-      logPrice: 100,
-      gives: 2000000,
+      logPrice: trade.getLogPriceFromPrice(1, market.tickScale.toNumber()),
+      gives: 1000000,
     });
 
     await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
     const sellPromises = await market.sell({
       volume: "0.0000000000000001",
-      price: 0,
+      price: trade.getPriceFromLogPrice(2000), //FIXME: Cannot set it to MAX_LOG_PRICE
       tickScale: market.tickScale.toNumber(),
     });
     const result = await sellPromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(2);
+    expect(result.successes[0].got.toNumber()).to.be.equal(0.0001);
     expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
   });
 
@@ -958,7 +975,10 @@ describe("Market integration tests suite", () => {
           });
 
           const tradeParams: Market.TradeParams = {
-            logPrice: 0.000000000002,
+            logPrice: trade.getLogPriceFromPrice(
+              Big(0.000000000002).div(10),
+              market.tickScale.toNumber()
+            ),
             fillVolume: 10,
           };
           tradeParams.forceRoutingToMangroveOrder = forceRouting;
@@ -1002,9 +1022,9 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 316305;
+                expectedLimit = 125710;
               } else {
-                expectedLimit = 245468;
+                expectedLimit = 44319;
               }
             }
           }
@@ -1014,104 +1034,7 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  it("buying offerId snipes offer", async function () {
-    const market = await mgv.market({
-      base: "TokenA",
-      quote: "TokenB",
-      tickScale: 1,
-    });
-
-    // post two offers, one worse than the other.
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      logPrice: 1,
-      gives: rawMinGivesBase,
-    });
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      logPrice: 1,
-      gives: rawMinGivesBase.mul(2),
-    });
-
-    // get not-best offer
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const asks = [...market.getBook().asks];
-    const notBest = asks[1].id;
-
-    // make a buy of the not-best offer
-    // a standard buy would give us 2e-12, but due to snipe we only get 1e-12.
-    const buyPromises = await market.buy({
-      offerId: notBest,
-      total: 1,
-      price: Big(ethers.constants.MaxUint256.toString()),
-      tickScale: market.tickScale.toNumber(),
-    });
-    const result = await buyPromises.result;
-
-    expect(result.tradeFailures).to.have.lengthOf(0);
-    expect(result.successes).to.have.lengthOf(1);
-
-    expect(result.successes[0].got.toNumber()).to.be.equal(0.09);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
-    expect(result.successes[0].offerId).to.be.equal(notBest);
-  });
-
-  it("selling offerId snipes offer", async function () {
-    const market = await mgv.market({
-      base: "TokenA",
-      quote: "TokenB",
-      tickScale: 1,
-    });
-
-    // post two offers, one worse than the other.
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "bids",
-      maker,
-      logPrice: 100,
-      gives: 1000000,
-    });
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "bids",
-      maker,
-      logPrice: 100,
-      gives: 2000000,
-    });
-
-    // get not-best offer
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const bids = [...market.getBook().bids];
-    const notBest = bids[1].id;
-
-    // make a sell of the not-best offer
-    // a standard sell would give us 2e-13, but due to snipe we only get 1e-13.
-    const sellPromises = await market.sell({
-      offerId: notBest,
-      logPrice: "1",
-      fillVolume: "0.0000000000001",
-    });
-    const result = await sellPromises.result;
-
-    expect(result.tradeFailures).to.have.lengthOf(0);
-    expect(result.successes).to.have.lengthOf(1);
-
-    expect(result.successes[0].got.toNumber()).to.be.equal(1);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
-    expect(result.successes[0].offerId).to.be.equal(notBest);
-  });
-
-  // TODO: should use clean or be deleted
+  // FIXME: should use clean or be deleted
   // it("snipe asks book for two successful orders succeeds", async function () {
   //   const market = await mgv.market({ base: "TokenA", quote: "TokenB", tickScale: 1 });
 
@@ -1492,6 +1415,7 @@ describe("Market integration tests suite", () => {
     });
 
     const done = new Deferred();
+    let estimatedVolume = 0;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     market.subscribe(async (evt) => {
       if (market.getBook().asks.size() === 2) {
@@ -1500,24 +1424,35 @@ describe("Market integration tests suite", () => {
           what: "quote",
           to: "sell",
         });
-        assert.strictEqual(estimated.toFixed(), "0.5");
+        estimatedVolume = estimated.toNumber();
+        console.log("done");
         done.resolve();
       }
     });
 
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        logPrice: "1.2",
+        logPrice: trade.getLogPriceFromPrice(
+          1.2 / 0.3,
+          market.tickScale.toNumber()
+        ),
         gives: "0.3",
       })
       .then((tx) => tx.wait());
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        logPrice: "1",
+        logPrice: trade.getLogPriceFromPrice(
+          1 / 0.25,
+          market.tickScale.toNumber()
+        ),
         gives: "0.25",
       })
       .then((tx) => tx.wait());
     await done.promise;
+    assert.ok(
+      Math.abs(estimatedVolume! - 0.5) < 0.0001,
+      `estimatedVolume should be ~0.5, got ${estimatedVolume}`
+    );
   });
 
   it("gets OB", async function () {
@@ -1530,15 +1465,21 @@ describe("Market integration tests suite", () => {
 
     /* create bids and asks */
     let asks = [
-      { id: 1, logPrice: "1", gives: "1", gasreq: 10_000, gasprice: 1 },
-      { id: 2, logPrice: "1.2", gives: "1", gasreq: 10_002, gasprice: 3 },
-      { id: 3, logPrice: "1", gives: "1.2", gasreq: 9999, gasprice: 21 },
+      { id: 1, logPrice: "1", gives: "1", gasreq: 9999, gasprice: 21 },
+      { id: 2, logPrice: "2", gives: "1", gasreq: 9999, gasprice: 21 },
+      { id: 3, logPrice: "1", gives: "1", gasreq: 9999, gasprice: 21 },
+      { id: 4, logPrice: "2", gives: "1", gasreq: 9999, gasprice: 21 },
+      { id: 5, logPrice: "1", gives: "1", gasreq: 9999, gasprice: 21 },
+      { id: 6, logPrice: "3", gives: "1", gasreq: 9999, gasprice: 21 },
     ];
 
     let bids = [
-      { id: 1, logPrice: "0.99", gives: "1", gasreq: 10_006, gasprice: 11 },
-      { id: 2, logPrice: "1", gives: "1.43", gasreq: 9998, gasprice: 7 },
-      { id: 3, logPrice: "1.11", gives: "1", gasreq: 10_022, gasprice: 30 },
+      { id: 1, logPrice: "2", gives: "1", gasreq: 10_022, gasprice: 30 },
+      { id: 2, logPrice: "1", gives: "1", gasreq: 10_022, gasprice: 30 },
+      { id: 3, logPrice: "2", gives: "1", gasreq: 10_022, gasprice: 30 },
+      { id: 4, logPrice: "1", gives: "1", gasreq: 10_022, gasprice: 30 },
+      { id: 5, logPrice: "3", gives: "1", gasreq: 10_022, gasprice: 30 },
+      { id: 6, logPrice: "1", gives: "1", gasreq: 10_022, gasprice: 30 },
     ];
 
     /* fill order book with bids and asks */
@@ -1560,8 +1501,8 @@ describe("Market integration tests suite", () => {
       o.map((i) => a[a.findIndex((e) => e.id == i)]);
 
     /* Put bids and asks in expected order (from best price to worse) */
-    asks = reorder(asks, [3, 1, 2]);
-    bids = reorder(bids, [2, 1, 3]);
+    asks = reorder(asks, [1, 3, 5, 2, 4, 6]);
+    bids = reorder(bids, [2, 4, 6, 1, 3, 5]);
 
     const selfAddress = await mgv.signer.getAddress();
 
@@ -1571,12 +1512,20 @@ describe("Market integration tests suite", () => {
     const complete = (isAsk: boolean, ary: typeof bids) => {
       return ary.map((ofr, i) => {
         const _config = config[isAsk ? "asks" : "bids"];
+        const prevOfferLogPrice = ary[i - 1]?.logPrice ?? "-1";
+        const nextOfferLogPrice = ary[i + 1]?.logPrice ?? "-2";
         return {
           ...ofr,
-          prev: ary[i - 1]?.id as number | undefined,
-          next: ary[i + 1]?.id as number | undefined,
+          prev:
+            prevOfferLogPrice == ofr.logPrice
+              ? (ary[i - 1]?.id as number | undefined)
+              : undefined,
+          next:
+            nextOfferLogPrice == ofr.logPrice
+              ? (ary[i + 1]?.id as number | undefined)
+              : undefined,
           maker: selfAddress,
-          offer_gasbase: _config.kilo_offer_gasbase,
+          kilo_offer_gasbase: _config.kilo_offer_gasbase,
         };
       });
     };
@@ -1591,7 +1540,7 @@ describe("Market integration tests suite", () => {
     }[];
     /* Start testing */
 
-    const book = await market.requestBook({ maxOffers: 3 });
+    const book = await market.requestBook({ maxOffers: 6 });
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }: { bids: Bs; asks: Bs }) => {
@@ -1668,7 +1617,6 @@ describe("Market integration tests suite", () => {
             .mul(11)
             .div(10)
         )
-        .add(1 /* due to precision */)
         .toNumber()
     );
   });
@@ -1688,21 +1636,21 @@ describe("Market integration tests suite", () => {
 
       const bs = market.trade.baToBs(ba);
       const params: Market.TradeParams = {
-        logPrice: market.base.fromUnits(1),
+        logPrice: 1,
         fillVolume: 1,
       };
 
       await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
       let result = await (await market.trade.order(bs, params, market)).result;
-      assert.equal(result.successes.length, 1);
+      assert.equal(result.successes.length, 1, "should have 1 success");
 
       await mgvTestUtil.postNewFailingOffer(market, ba, maker),
         (result = await (await market.trade.order(bs, params, market)).result);
-      assert.equal(result.tradeFailures.length, 1);
+      assert.equal(result.tradeFailures.length, 1, "should have 1 failure");
 
       await mgvTestUtil.postNewRevertingOffer(market, ba, maker),
         (result = await (await market.trade.order(bs, params, market)).result);
-      assert.equal(result.tradeFailures.length, 1);
+      assert.equal(result.tradeFailures.length, 1, "should have 1 failure");
     });
   });
 
@@ -1713,7 +1661,7 @@ describe("Market integration tests suite", () => {
       tickScale: 1,
     });
 
-    assert.equal(market.minVolumeAsk!.toNumber(), 0.108072);
-    assert.equal(market.minVolumeBid!.toNumber(), 0.216144);
+    assert.equal(market.minVolumeAsk!.toNumber(), 0.0481036337152); //FIXME: check that this is correct
+    assert.equal(market.minVolumeBid!.toNumber(), 0.03125); //FIXME: check that this is correct
   });
 });

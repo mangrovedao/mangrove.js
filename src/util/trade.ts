@@ -8,6 +8,8 @@ import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
 
 const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
+export const MIN_LOG_PRICE = -((1 << 19) - 1);
+export const MAX_LOG_PRICE = -MIN_LOG_PRICE;
 
 type CleanUnitParams = {
   ba: Market.BA;
@@ -34,15 +36,24 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        logPrice = BigNumber.from(
-          this.getLogPriceFromPrice(params.price, params.tickScale)
-        );
+        if (params.price == 0) {
+          logPrice = BigNumber.from(MAX_LOG_PRICE);
+        } else {
+          logPrice = BigNumber.from(
+            this.getLogPriceFromPrice(params.price, params.tickScale)
+          );
+        }
+
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
-        logPrice = BigNumber.from(-1).mul(
-          this.getLogPriceFromPrice(params.price, params.tickScale)
-        );
+        if (params.price == 0) {
+          logPrice = BigNumber.from(MIN_LOG_PRICE);
+        } else {
+          logPrice = BigNumber.from(-1).mul(
+            this.getLogPriceFromPrice(params.price, params.tickScale)
+          );
+        }
         fillWants = false;
       }
     } else {
@@ -74,15 +85,23 @@ class Trade {
     if ("price" in params) {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        logPrice = BigNumber.from(
-          this.getLogPriceFromPrice(params.price, params.tickScale)
-        );
+        if (params.price == 0) {
+          logPrice = BigNumber.from(MIN_LOG_PRICE);
+        } else {
+          logPrice = BigNumber.from(
+            this.getLogPriceFromPrice(params.price, params.tickScale)
+          );
+        }
         fillWants = false;
       } else {
         fillVolume = Big(params.total);
-        logPrice = BigNumber.from(-1).mul(
-          this.getLogPriceFromPrice(params.price, params.tickScale)
-        );
+        if (params.price == 0) {
+          logPrice = BigNumber.from(MAX_LOG_PRICE);
+        } else {
+          logPrice = BigNumber.from(-1).mul(
+            this.getLogPriceFromPrice(params.price, params.tickScale)
+          );
+        }
         fillWants = true;
       }
     } else {
@@ -115,15 +134,15 @@ class Trade {
   }
 
   getLogPriceFromPrice(price: Bigish, tickScale: number): number {
-    const logOfPrice = Math.log(BigNumber.from(price).toNumber());
+    const logOfPrice = Math.log(Big(price).toNumber());
     const logOf0001 = Math.log(1.0001);
     const logPriceNoTickScale = Math.floor(logOfPrice / logOf0001);
     const highestPossibleTick = Math.floor(logPriceNoTickScale / tickScale);
     return highestPossibleTick * tickScale;
   }
 
-  getPriceFromLogPrice(logPrice: Bigish): BigNumber {
-    return BigNumber.from(1.0001).pow(BigNumber.from(logPrice));
+  getPriceFromLogPrice(logPrice: number): Big {
+    return Big(1.0001).pow(logPrice);
   }
 
   validateSlippage = (slippage = 0) => {

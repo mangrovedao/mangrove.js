@@ -109,7 +109,7 @@ export const mochaHooks = {
           tickScale: 1,
         },
         250,
-        tokenA.toUnits(localConfig.asks.density),
+        localConfig.asks.density.to96X32(),
         localConfig.asks.kilo_offer_gasbase
       )
       .then((tx) => tx.wait());
@@ -123,8 +123,8 @@ export const mochaHooks = {
           tickScale: 1,
         },
         250,
-        localConfig.bids.density.gt(0)
-          ? tokenB.toUnits(localConfig.bids.density)
+        localConfig.bids.density.multiplyUp(BigNumber.from(1)).eq(0)
+          ? localConfig.bids.density.to96X32()
           : 1,
         localConfig.bids.kilo_offer_gasbase
       )

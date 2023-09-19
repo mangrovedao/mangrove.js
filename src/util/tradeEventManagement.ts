@@ -11,6 +11,7 @@ import {
   OfferSuccessWithPosthookDataEvent,
   OfferWriteEvent,
   OrderCompleteEvent,
+  OrderStartEvent,
 } from "../types/typechain/Mangrove";
 import {
   NewOwnedOfferEvent,
@@ -63,19 +64,41 @@ class TradeEventManagement {
     return id === 0 ? undefined : id;
   }
 
-  createSummaryFromEvent(event: {
-    args: {
-      olKeyHash: string;
-      taker: string;
-    };
-  }): Market.Summary {
+  createSummaryFromEvent(
+    event: {
+      args: {
+        olKeyHash: string;
+        taker: string;
+        fillOrKill?: boolean;
+        logPrice?: BigNumber;
+        maxLogPrice?: BigNumber;
+        fillVolume: BigNumber;
+        fillWants: boolean;
+        restingOrder?: boolean;
+      };
+    },
+    fillToken: MgvToken
+  ): Market.Summary {
+    if (
+      (!event.args.logPrice && !event.args.maxLogPrice) ||
+      (event.args.logPrice && event.args.maxLogPrice)
+    ) {
+      throw new Error(
+        "Exactly one of logPrice or maxLogPrice must be provided"
+      );
+    }
     return {
       taker: event.args.taker,
       olKeyHash: event.args.olKeyHash,
+      fillOrKill: event.args.fillOrKill,
+      logPrice:
+        event.args.logPrice?.toNumber() ??
+        event.args.maxLogPrice?.toNumber() ??
+        0,
+      fillVolume: fillToken.fromUnits(event.args.fillVolume).toNumber(),
+      fillWants: event.args.fillWants,
+      restingOrder: event.args.restingOrder,
     };
-  }
-  createSummaryFromOrderCompleteEvent(evt: OrderCompleteEvent) {
-    return this.createSummaryFromEvent(evt);
   }
 
   createSuccessFromEvent(
@@ -162,14 +185,23 @@ class TradeEventManagement {
   }
 
   createSummaryFromOrderSummaryEvent(
-    evt: MangroveOrderStartEvent
+    evt: MangroveOrderStartEvent,
+    fillToken: MgvToken
   ): Market.Summary {
-    return this.createSummaryFromEvent({
-      args: {
-        olKeyHash: evt.args.olKeyHash,
-        taker: evt.args.taker,
+    return this.createSummaryFromEvent(
+      {
+        args: {
+          olKeyHash: evt.args.olKeyHash,
+          taker: evt.args.taker,
+          fillOrKill: evt.args.fillOrKill,
+          logPrice: evt.args.logPrice,
+          fillVolume: evt.args.fillVolume,
+          fillWants: evt.args.fillWants,
+          restingOrder: evt.args.restingOrder,
+        },
       },
-    });
+      fillToken
+    );
   }
 
   createRestingOrderFromEvent(
@@ -205,6 +237,7 @@ class TradeEventManagement {
       takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean,
+    fillWants: boolean,
     result: OrderResultWithOptionalSummary,
     market: Market
   ) {
@@ -213,11 +246,18 @@ class TradeEventManagement {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
+      case "OrderStart": {
+        result.summary = this.createSummaryFromEvent(
+          evt as OrderStartEvent,
+          fillWants ? inbound_tkn : outbound_tkn
+        );
+        break;
+      }
       case "OrderComplete": {
         //last OrderComplete is ours so it overrides previous summaries if any
-        result.summary = this.createSummaryFromOrderCompleteEvent(
-          evt as OrderCompleteEvent
-        );
+        if (result.summary != undefined) {
+          result.summary.fee = (evt as OrderCompleteEvent).args.fee.toNumber();
+        }
         break;
       }
       case "OfferSuccess": {
@@ -230,7 +270,7 @@ class TradeEventManagement {
         );
         break;
       }
-      case "OfferSuccessWithPosthookDataEvent": {
+      case "OfferSuccessWithPosthookData": {
         result.posthookFailures.push(
           this.createPosthookFailureFromEvent(
             evt as OfferSuccessWithPosthookDataEvent
@@ -255,7 +295,7 @@ class TradeEventManagement {
         );
         break;
       }
-      case "OfferFailWithPosthookDataEvent": {
+      case "OfferFailWithPosthookData": {
         result.posthookFailures.push(
           this.createPosthookFailureFromEvent(
             evt as OfferFailWithPosthookDataEvent
@@ -294,6 +334,7 @@ class TradeEventManagement {
       takerGotWithFee: ethers.BigNumber,
       takerGave: ethers.BigNumber
     ) => boolean,
+    fillWants: boolean,
     result: OrderResultWithOptionalSummary,
     market: Market
   ) {
@@ -305,8 +346,16 @@ class TradeEventManagement {
       case "OrderSummary": {
         //last OrderSummary is ours so it overrides previous summaries if any
         result.summary = this.createSummaryFromOrderSummaryEvent(
-          evt as MangroveOrderStartEvent
+          evt as MangroveOrderStartEvent,
+          fillWants ? inbound_tkn : outbound_tkn
         );
+        break;
+      }
+      case "OrderComplete": {
+        //last OrderComplete is ours so it overrides previous summaries if any
+        if (result.summary != undefined) {
+          result.summary.fee = (evt as OrderCompleteEvent).args.fee.toNumber();
+        }
         break;
       }
       case "NewOwnedOffer": {
@@ -358,6 +407,7 @@ class TradeEventManagement {
         evt,
         ba,
         this.createPartialFillFunc(fillWants, fillVolume),
+        fillWants,
         result,
         market
       );
@@ -381,6 +431,7 @@ class TradeEventManagement {
         evt,
         ba,
         this.createPartialFillFunc(fillWants, fillVolume),
+        fillWants,
         result,
         market
       );
