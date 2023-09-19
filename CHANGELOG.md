@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.23
+
 - fix: Disable esbuild minification of identifiers
 
 # 1.4.22
