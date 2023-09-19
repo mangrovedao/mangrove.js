@@ -35,7 +35,9 @@ const shimOnResolvePlugin = {
 build({
   entryPoints: ["./src/index.ts"],
   bundle: true,
-  minify: true,
+  minifyWhitespace: true,
+  minifySyntax: true,
+  // minifyIdentifiers: true, // Disabled: Breaks certain imports with next.js
   outfile: BrowserBuildPath,
   platform: "browser",
   format: "iife",

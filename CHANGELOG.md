@@ -1,5 +1,7 @@
 # Next version
 
+- fix: Disable esbuild minification of identifiers
+
 # 1.4.22
 
 - fix: do not call getLastBlock if reliable provider does not listen to events
