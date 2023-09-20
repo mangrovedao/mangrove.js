@@ -49,3 +49,4 @@ packages/bot-arbitrage/broadcast
 # deploy output by deploy script
 deploy_output.txt
 mangroveJsNodeState.dump
+out

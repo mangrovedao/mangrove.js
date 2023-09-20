@@ -1135,10 +1135,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@npm:^1.5.7":
-  version: 1.5.7
-  resolution: "@mangrovedao/mangrove-core@npm:1.5.7"
-  checksum: 24d711e29fa40f22861a2e2aa306eba0190f597469f61862d1bfbfee0b2cd069afab2d331369167ceff1490207f82abd31f7e31e4fab15f69398fa25fb663aab
+"@mangrovedao/mangrove-core@npm:^1.5.8-1":
+  version: 1.5.8-1
+  resolution: "@mangrovedao/mangrove-core@npm:1.5.8-1"
+  checksum: 84a6e8c435267bdbda85000298723c7e20c4dfab93dc1fbcf8ac9b83f27c2ad35da36810311bce3f64904559b3aad3fe95e4f995de93228908acd19dec3e706c
+  languageName: node
+  linkType: hard
+
+"@mangrovedao/mangrove-strats@npm:^0.0.2-0":
+  version: 0.0.2-0
+  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-0"
+  dependencies:
+    "@mangrovedao/mangrove-core": ^1.5.8-1
+  checksum: 2eca98d7f087a01480ae85b1bf1905495f5f64efd11d3f0fbb10d7118e40bf8fd5fbdd063a80100903d9e46581d2448cf2b81a5fde11d1cd3b61a3f783174fcc
   languageName: node
   linkType: hard
 
@@ -1152,7 +1161,8 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/mangrove-core": ^1.5.7
+    "@mangrovedao/mangrove-core": ^1.5.8-1
+    "@mangrovedao/mangrove-strats": ^0.0.2-0
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6
@@ -5975,11 +5985,11 @@ __metadata:
   linkType: hard
 
 "semver@npm:2 || 3 || 4 || 5, semver@npm:^5.4.1, semver@npm:^5.5.0":
-  version: 5.7.1
-  resolution: "semver@npm:5.7.1"
+  version: 5.7.2
+  resolution: "semver@npm:5.7.2"
   bin:
-    semver: ./bin/semver
-  checksum: 57fd0acfd0bac382ee87cd52cd0aaa5af086a7dc8d60379dfe65fea491fb2489b6016400813930ecd61fd0952dae75c115287a1b16c234b1550887117744dfaf
+    semver: bin/semver
+  checksum: fb4ab5e0dd1c22ce0c937ea390b4a822147a9c53dbd2a9a0132f12fe382902beef4fbf12cf51bb955248d8d15874ce8cd89532569756384f994309825f10b686
   languageName: node
   linkType: hard
 
@@ -7050,9 +7060,9 @@ __metadata:
   linkType: hard
 
 "word-wrap@npm:^1.2.3":
-  version: 1.2.3
-  resolution: "word-wrap@npm:1.2.3"
-  checksum: 30b48f91fcf12106ed3186ae4fa86a6a1842416df425be7b60485de14bec665a54a68e4b5156647dec3a70f25e84d270ca8bc8cd23182ed095f5c7206a938c1f
+  version: 1.2.5
+  resolution: "word-wrap@npm:1.2.5"
+  checksum: f93ba3586fc181f94afdaff3a6fef27920b4b6d9eaefed0f428f8e07adea2a7f54a5f2830ce59406c8416f033f86902b91eb824072354645eea687dff3691ccb
   languageName: node
   linkType: hard
 

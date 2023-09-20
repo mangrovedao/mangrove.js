@@ -470,6 +470,10 @@ class Mangrove {
     return MgvToken.createToken(name, this, options);
   }
 
+  async tokenFromAddress(address: string): Promise<MgvToken> {
+    return MgvToken.createTokenFromAddress(address, this);
+  }
+
   /** Return MgvToken instance reading only from configuration, not from chain. */
   tokenFromConfig(
     name: string,
