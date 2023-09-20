@@ -90,6 +90,7 @@ namespace Mangrove {
   };
 
   export type CreateOptions = eth.CreateSignerOptions & {
+    shouldNotListenToNewEvents?: boolean;
     blockManagerOptions?: BlockManager.Options;
     reliableWebsocketProviderOptions?: ReliableWebsocketProvider.Options;
     reliableHttpProviderOptions?: ReliableHttpProvider.Options;
@@ -213,6 +214,7 @@ class Mangrove {
             wsUrl: options.providerWsUrl,
           }
         : undefined,
+      shouldNotListenToNewEvents: options.shouldNotListenToNewEvents,
     });
 
     await mgv.initializeProvider();
@@ -407,7 +409,11 @@ class Mangrove {
         bookOptions: params.bookOptions,
       },
     });
-    if (this.reliableProvider && this.reliableProvider.getLatestBlock) {
+    if (
+      !this.shouldNotListenToNewEvents &&
+      this.reliableProvider &&
+      this.reliableProvider.getLatestBlock
+    ) {
       await this.reliableProvider.getLatestBlock(); // trigger a quick update to get latest block on market initialization
     }
     return await Market.connect({ ...params, mgv: this });

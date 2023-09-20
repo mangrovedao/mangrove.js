@@ -206,7 +206,9 @@ class Semibook
       logger.debug(
         `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`
       );
-      await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
+      if (!market.mgv.shouldNotListenToNewEvents) {
+        await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
+      }
       canConstructSemibook = false;
     } else {
       semibook.addEventListener(eventListener);

@@ -1,5 +1,29 @@
 # Next version
 
+# 1.4.23
+
+- fix: Disable esbuild minification of identifiers
+
+# 1.4.22
+
+- fix: do not call getLastBlock if reliable provider does not listen to events
+
+# 1.4.21
+
+- fix: semibook subscribe only if we listen to events
+
+# 1.4.20
+
+- feat: add an option to disable events listenning
+
+# 1.4.19
+
+- Same as 1.4.18.
+
+# 1.4.18
+
+- Bump: reliable-event-subscriber to v1.1.29
+
 # 1.4.18-1
 
 - fix: Use new mgvConfig for mangrove-core and mangrove-strats
