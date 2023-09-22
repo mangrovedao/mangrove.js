@@ -54,7 +54,7 @@ class TradeEventManagement {
       gasprice: raw.gasprice.toNumber(),
       maker: raw.maker,
       gasreq: raw.gasreq.toNumber(),
-      logPrice: raw.logPrice.toNumber(),
+      logPrice: raw.logPrice,
       gives: gives,
     };
   }
@@ -95,7 +95,8 @@ class TradeEventManagement {
         event.args.logPrice?.toNumber() ??
         event.args.maxLogPrice?.toNumber() ??
         0,
-      fillVolume: fillToken.fromUnits(event.args.fillVolume).toNumber(),
+      fillVolume: fillToken.fromUnits(event.args.fillVolume),
+
       fillWants: event.args.fillWants,
       restingOrder: event.args.restingOrder,
     };
@@ -124,6 +125,7 @@ class TradeEventManagement {
       reason: evt.args.mgvData,
       FailToDeliver: got.fromUnits(evt.args.takerWants),
       volumeGiven: gave.fromUnits(evt.args.takerGives),
+      penalty: evt.args.penalty,
     };
     return tradeFailure;
   }
@@ -146,24 +148,18 @@ class TradeEventManagement {
     let ba: Market.BA = "asks";
     let { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     // If no match, try flipping
-    let olKey: OLKeyStruct = {
-      outbound: outbound_tkn.address,
-      inbound: inbound_tkn.address,
-      tickScale: market.tickScale,
-    };
-    let olKeyHash = ethers.utils.solidityKeccak256(
-      ["address", "address", "uint256"],
-      [olKey.outbound, olKey.inbound, olKey.tickScale]
+    let olKeyHash = market.mgv.getOlKeyHash(
+      outbound_tkn.address,
+      inbound_tkn.address,
+      market.tickScale.toNumber()
     );
 
     if (olKeyHash != evt.args.olKeyHash) {
       ba = "bids";
-      const bidsOutIn = market.getOutboundInbound(ba);
-      outbound_tkn = bidsOutIn.outbound_tkn;
-      inbound_tkn = bidsOutIn.inbound_tkn;
-      olKeyHash = ethers.utils.solidityKeccak256(
-        ["address", "address", "uint256"],
-        [olKey.inbound, olKey.outbound, market.tickScale]
+      olKeyHash = market.mgv.getOlKeyHash(
+        inbound_tkn.address,
+        outbound_tkn.address,
+        market.tickScale.toNumber()
       );
     }
 
@@ -229,24 +225,27 @@ class TradeEventManagement {
       fillWants ? takerGotWithFee.lt(fillVolume) : takerGave.lt(fillVolume);
   }
 
+  private numberOfOrderStart = 0;
+
   resultOfMangroveEventCore(
-    receipt: ethers.ContractReceipt,
     evt: ethers.Event | LogDescription,
     ba: Market.BA,
     partialFillFunc: (
-      takerGotWithFee: ethers.BigNumber,
-      takerGave: ethers.BigNumber
+      takerGotWithFee: BigNumber,
+      takerGave: BigNumber
     ) => boolean,
     fillWants: boolean,
     result: OrderResultWithOptionalSummary,
     market: Market
   ) {
-    if (evt.args?.taker && receipt.from !== evt.args.taker) return;
-
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
       case "OrderStart": {
+        this.numberOfOrderStart++;
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.summary = this.createSummaryFromEvent(
           evt as OrderStartEvent,
           fillWants ? inbound_tkn : outbound_tkn
@@ -254,13 +253,41 @@ class TradeEventManagement {
         break;
       }
       case "OrderComplete": {
+        if (this.numberOfOrderStart > 1) {
+          this.numberOfOrderStart--;
+          break;
+        }
+        this.numberOfOrderStart--;
         //last OrderComplete is ours so it overrides previous summaries if any
         if (result.summary != undefined) {
-          result.summary.fee = (evt as OrderCompleteEvent).args.fee.toNumber();
+          result.summary.fee = outbound_tkn.fromUnits(
+            (evt as OrderCompleteEvent).args.fee
+          );
+          result.summary.totalGot = result.successes
+            .reduce((acc, current) => acc.add(current.got), Big(0))
+            .sub(result.summary.fee);
+          result.summary.totalGave = result.successes.reduce(
+            (acc, current) => acc.add(current.gave),
+            Big(0)
+          );
+          result.summary.partialFill = partialFillFunc(
+            outbound_tkn.toUnits(
+              result.summary.totalGot.add(result.summary.fee)
+            ),
+            inbound_tkn.toUnits(result.summary.totalGave)
+          );
+          result.summary.bounty = result.tradeFailures.reduce(
+            (acc, current) => acc.add(current.penalty ?? 0),
+            BigNumber.from(0)
+          );
         }
+
         break;
       }
       case "OfferSuccess": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.successes.push(
           this.createSuccessFromEvent(
             evt as OfferSuccessEvent,
@@ -271,6 +298,9 @@ class TradeEventManagement {
         break;
       }
       case "OfferSuccessWithPosthookData": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.posthookFailures.push(
           this.createPosthookFailureFromEvent(
             evt as OfferSuccessWithPosthookDataEvent
@@ -286,6 +316,9 @@ class TradeEventManagement {
         break;
       }
       case "OfferFail": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.tradeFailures.push(
           this.createTradeFailureFromEvent(
             evt as OfferFailEvent,
@@ -296,6 +329,9 @@ class TradeEventManagement {
         break;
       }
       case "OfferFailWithPosthookData": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.posthookFailures.push(
           this.createPosthookFailureFromEvent(
             evt as OfferFailWithPosthookDataEvent
@@ -311,6 +347,9 @@ class TradeEventManagement {
         break;
       }
       case "OfferWrite": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         const offerWrite = this.createOfferWriteFromEvent(
           market,
           evt as OfferWriteEvent
@@ -330,10 +369,6 @@ class TradeEventManagement {
     receipt: ethers.ContractReceipt,
     evt: ethers.Event | LogDescription,
     ba: Market.BA,
-    partialFillFunc: (
-      takerGotWithFee: ethers.BigNumber,
-      takerGave: ethers.BigNumber
-    ) => boolean,
     fillWants: boolean,
     result: OrderResultWithOptionalSummary,
     market: Market
@@ -343,19 +378,15 @@ class TradeEventManagement {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
-      case "OrderSummary": {
-        //last OrderSummary is ours so it overrides previous summaries if any
-        result.summary = this.createSummaryFromOrderSummaryEvent(
-          evt as MangroveOrderStartEvent,
-          fillWants ? inbound_tkn : outbound_tkn
-        );
-        break;
-      }
-      case "OrderComplete": {
-        //last OrderComplete is ours so it overrides previous summaries if any
-        if (result.summary != undefined) {
-          result.summary.fee = (evt as OrderCompleteEvent).args.fee.toNumber();
-        }
+      case "MangroveOrderStart": {
+        //last MangroveOrderStart is ours so it overrides previous summaries if any
+        result.summary = {
+          ...result.summary,
+          ...this.createSummaryFromOrderSummaryEvent(
+            evt as MangroveOrderStartEvent,
+            fillWants ? inbound_tkn : outbound_tkn
+          ),
+        };
         break;
       }
       case "NewOwnedOffer": {
@@ -403,7 +434,6 @@ class TradeEventManagement {
       market.mgv.contract
     )) {
       this.resultOfMangroveEventCore(
-        receipt,
         evt,
         ba,
         this.createPartialFillFunc(fillWants, fillVolume),
@@ -430,7 +460,6 @@ class TradeEventManagement {
         receipt,
         evt,
         ba,
-        this.createPartialFillFunc(fillWants, fillVolume),
         fillWants,
         result,
         market

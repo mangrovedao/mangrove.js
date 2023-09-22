@@ -518,7 +518,7 @@ describe("Kandel integration tests suite", function () {
               d.base.toString(),
               "gives should be base for ask"
             );
-            // TODO: fix when distribution is return logprice
+            // FIXME: fix when distribution is return logprice
             // assert.equal(
             //   offer.wants.toString(),
             //   d.quote.toString(),
@@ -543,7 +543,7 @@ describe("Kandel integration tests suite", function () {
               d.quote.toString(),
               "gives should be quote for bid"
             );
-            // TODO: fix when distribution is return logprice
+            // FIXME: fix when distribution is return logprice
             // assert.equal(
             //   offer.wants.toString(),
             //   d.base.toString(),
@@ -1326,7 +1326,7 @@ describe("Kandel integration tests suite", function () {
             logPrice: offer.logPrice,
             gives: offer.gives,
           }));
-        // TODO: fix when distribution uses logprice
+        // FIXME: fix when distribution uses logprice
         // const existingDistribution = await kandel.createDistributionWithOffers({
         //   explicitOffers: liveOffers,
         // });

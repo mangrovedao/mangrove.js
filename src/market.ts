@@ -50,6 +50,7 @@ namespace Market {
     reason: string;
     FailToDeliver?: Big;
     volumeGiven?: Big;
+    penalty?: BigNumber;
   };
   export type Success = {
     offerId: number;
@@ -60,11 +61,15 @@ namespace Market {
     olKeyHash: string;
     taker: string;
     fillOrKill?: boolean;
-    logPrice: Number;
-    fillVolume: Number;
+    logPrice: number;
+    fillVolume: Big;
     fillWants: boolean;
     restingOrder?: boolean;
-    fee?: Number;
+    fee?: Big;
+    totalGot?: Big;
+    totalGave?: Big;
+    partialFill?: boolean;
+    bounty?: BigNumber;
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
@@ -92,8 +97,8 @@ namespace Market {
     expiryDate?: number;
     gasLowerBound?: ethers.ethers.BigNumberish;
   } & { restingOrder?: RestingOrderParams } & (
-      | { volume: Bigish; price: Bigish; tickScale: number }
-      | { total: Bigish; price: Bigish; tickScale: number }
+      | { volume: Bigish; price: Bigish }
+      | { total: Bigish; price: Bigish }
       | { logPrice: Bigish; fillVolume: Bigish; fillWants?: boolean }
     );
 
@@ -182,7 +187,7 @@ namespace Market {
     gasprice: number;
     maker: string;
     gasreq: number;
-    logPrice: number;
+    logPrice: BigNumber;
     gives: Big;
   };
 
@@ -1019,7 +1024,7 @@ class Market {
       absPriceDiffs[i] =
         prevPrice === undefined || o.logPrice === undefined
           ? undefined
-          : Big(prevPrice).sub(o.logPrice).abs();
+          : Big(prevPrice.toNumber()).sub(o.logPrice.toNumber()).abs(); // FIXME:
       return o.logPrice;
     }, offers[0].logPrice);
 

@@ -17,6 +17,8 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big, { BigSource } from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
+import Trade from "./util/trade";
+import { BigNumber } from "@ethersproject/bignumber";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -61,6 +63,7 @@ class LiquidityProvider {
   market: Market; // API market abstraction over Mangrove's offer lists
   prettyP = new PrettyPrint();
   gasreq: number;
+  trade: Trade = new Trade();
 
   constructor(p: LiquidityProvider.ConstructionParams) {
     if (p.eoa || p.logic) {
@@ -202,7 +205,12 @@ class LiquidityProvider {
    *  return `{price,wants,gives}`
    */
   static normalizeOfferParams(
-    p: { ba: Market.BA } & LiquidityProvider.OfferParams
+    p: { ba: Market.BA } & LiquidityProvider.OfferParams,
+    market: {
+      tickScale: BigNumber;
+      base: { decimals: number };
+      quote: { decimals: number };
+    }
   ): {
     price: Big;
     logPrice: ethers.BigNumber;
@@ -212,15 +220,14 @@ class LiquidityProvider {
     fund?: Bigish;
   } {
     let logPrice: ethers.BigNumber, gives, price: BigSource;
+    const trade = new Trade();
     // deduce price from wants&gives, or deduce wants&gives from volume&price
     if ("gives" in p) {
       [logPrice, gives] = [ethers.BigNumber.from(p.logPrice), p.gives];
-      price = Math.pow(1.0001, logPrice.toNumber());
+      price = trade.getPriceFromLogPrice(logPrice);
     } else {
       price = p.price;
-      logPrice = ethers.BigNumber.from(
-        Math.log(ethers.BigNumber.from(price).toNumber()) / Math.log(1.0001)
-      );
+      logPrice = trade.getLogPriceFromPrice(price, market.tickScale.toNumber());
       let wants = Big(0);
       [wants, gives] = [Big(p.volume).mul(price), Big(p.volume)];
       if (p.ba === "bids") {
@@ -229,6 +236,23 @@ class LiquidityProvider {
       }
     }
     const fund = p.fund;
+    if (p.ba === "asks") {
+      const priceWithCorrectDecimals = Big(price).div(
+        Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
+      );
+      logPrice = trade.getLogPriceFromPrice(
+        priceWithCorrectDecimals,
+        market.tickScale.toNumber()
+      );
+    } else {
+      const priceWithCorrectDecimals = Big(price).mul(
+        Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
+      );
+      logPrice = trade.getLogPriceFromPrice(
+        priceWithCorrectDecimals,
+        market.tickScale.toNumber()
+      );
+    }
 
     return { logPrice: logPrice, gives: Big(gives), price: Big(price), fund };
   }
@@ -279,7 +303,7 @@ class LiquidityProvider {
     overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.providers.Log }> {
     const { logPrice, gives, price, fund } =
-      LiquidityProvider.normalizeOfferParams(p);
+      LiquidityProvider.normalizeOfferParams(p, this.market);
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
@@ -409,7 +433,7 @@ class LiquidityProvider {
       );
     }
     const { logPrice, gives, price, fund } =
-      LiquidityProvider.normalizeOfferParams(p);
+      LiquidityProvider.normalizeOfferParams(p, this.market);
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;

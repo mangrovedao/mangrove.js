@@ -4,6 +4,7 @@ import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
+import { BigNumber } from "ethers/lib/ethers";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -140,7 +141,7 @@ describe("Market unit tests suite", () => {
   });
 
   describe("getDisplayDecimalsForPriceDifferences", () => {
-    function makeOfferWithPrice(price: number) {
+    function makeOfferWithPrice(logPrice: number) {
       return {
         id: 0,
         prev: undefined,
@@ -150,7 +151,7 @@ describe("Market unit tests suite", () => {
         gasreq: 1,
         kilo_offer_gasbase: 1,
         gives: Big(1),
-        logPrice: price,
+        logPrice: BigNumber.from(logPrice),
       };
     }
 

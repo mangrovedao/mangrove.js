@@ -11,7 +11,6 @@ import {
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish } from "./types";
 import logger from "./util/logger";
-import Trade, { MAX_LOG_PRICE } from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
@@ -22,7 +21,9 @@ import {
   OfferUnpackedStructOutput,
 } from "./types/typechain/MgvReader";
 import { stat } from "fs";
-import { Density } from "./util/Density";
+import { Density } from "./util/coreCalcuations/Density";
+import Trade from "./util/trade";
+import { MAX_LOG_PRICE } from "./util/coreCalcuations/Constants";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -390,7 +391,7 @@ class Semibook
         ? Big(ethers.constants.MaxUint256.toString())
         : 0;
     const initialGives = Big(params.given);
-    const maxLogPrice = BigNumber.from(MAX_LOG_PRICE);
+    const maxLogPrice = MAX_LOG_PRICE;
 
     const {
       logPrice: tick,
@@ -450,7 +451,7 @@ class Semibook
         acc.offersConsidered += 1;
 
         // bad price
-        if (offer.logPrice > logPrice.toNumber()) {
+        if (offer.logPrice.gt(logPrice)) {
           acc.stop = true;
         } else {
           acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
@@ -907,10 +908,12 @@ class Semibook
     }
 
     state.offerCache.set(offer.id, offer);
-    let logPriceOfferList = state.logPriceOfferList.get(offer.logPrice);
+    let logPriceOfferList = state.logPriceOfferList.get(
+      offer.logPrice.toNumber()
+    );
     if (logPriceOfferList === undefined) {
       logPriceOfferList = [offer.id];
-      state.logPriceOfferList.set(offer.logPrice, logPriceOfferList);
+      state.logPriceOfferList.set(offer.logPrice.toNumber(), logPriceOfferList);
     } else {
       logPriceOfferList.push(offer.id);
     }
@@ -918,7 +921,10 @@ class Semibook
       (acc, tick) => (tick > acc ? tick : acc),
       -1000000
     );
-    if (bestLogPrice == offer.logPrice && logPriceOfferList.length == 1) {
+    if (
+      bestLogPrice == offer.logPrice.toNumber() &&
+      logPriceOfferList.length == 1
+    ) {
       state.bestInCache = offer.id;
       offer.next = this.#getNextLogPriceOfferList(state, offer)?.[0];
     }
@@ -947,7 +953,7 @@ class Semibook
       (acc, tick) => (tick < acc ? tick : acc),
       1000000
     );
-    if (offer.logPrice === worstLogPrice) {
+    if (offer.logPrice.toNumber() === worstLogPrice) {
       state.worstInCache = offer.id;
     }
 
@@ -971,7 +977,7 @@ class Semibook
   #getNextLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
     const nextLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
       (acc, logPrice) =>
-        logPrice > acc && logPrice < offer.logPrice ? logPrice : acc,
+        logPrice > acc && offer.logPrice.gt(logPrice) ? logPrice : acc,
       -1000000
     );
     return nextLogPrice == -1000000
@@ -982,7 +988,7 @@ class Semibook
   #getPrevLogPriceOfferList(state: Semibook.State, offer: Market.Offer) {
     const nextLogPrice = Array.from(state.logPriceOfferList.keys()).reduce(
       (acc, logPrice) =>
-        logPrice > acc && logPrice > offer.logPrice ? logPrice : acc,
+        logPrice > acc && offer.logPrice.gt(logPrice) ? logPrice : acc,
       -1000000
     );
     const nextPriceOfferList = state.logPriceOfferList.get(nextLogPrice);
@@ -1009,9 +1015,14 @@ class Semibook
     } else {
       nextOffer.prev = offer.prev;
     }
-    const logPriceOfferList = state.logPriceOfferList.get(offer.logPrice);
+    const logPriceOfferList = state.logPriceOfferList.get(
+      offer.logPrice.toNumber()
+    );
     if (logPriceOfferList !== undefined) {
-      state.logPriceOfferList.set(offer.logPrice, logPriceOfferList.slice(1));
+      state.logPriceOfferList.set(
+        offer.logPrice.toNumber(),
+        logPriceOfferList.slice(1)
+      );
     }
 
     state.offerCache.delete(id);
@@ -1039,7 +1050,10 @@ class Semibook
         (chunk) =>
           chunk.length === 0
             ? true
-            : this.isPriceBetter(desiredPrice, chunk[chunk.length - 1].logPrice)
+            : this.isPriceBetter(
+                desiredPrice,
+                chunk[chunk.length - 1].logPrice.toNumber()
+              )
       );
     } else if ("desiredVolume" in options) {
       const desiredVolume = options.desiredVolume;
@@ -1047,7 +1061,7 @@ class Semibook
         if (desiredVolume.to === "buy") {
           return offer.gives;
         } else {
-          return offer.gives.mul(offer!.logPrice);
+          return offer.gives.mul(offer!.logPrice.toNumber());
         }
       };
       let volume = Big(0);

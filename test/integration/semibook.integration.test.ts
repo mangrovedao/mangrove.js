@@ -12,7 +12,7 @@ import { Mangrove, OfferMaker, Semibook } from "../../src";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import { TransactionReceipt } from "@ethersproject/providers";
-import { Density } from "../../src/util/Density";
+import { Density } from "../../src/util/coreCalcuations/Density";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -1019,7 +1019,7 @@ describe("Semibook integration tests suite", function () {
         tickScale: 1,
       });
       await waitForTransaction(
-        mgvAdmin.contract.setDensity(
+        mgvAdmin.contract.setDensity96X32(
           {
             outbound: market.base.address,
             inbound: market.quote.address,

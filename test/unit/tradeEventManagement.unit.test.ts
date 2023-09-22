@@ -5,7 +5,6 @@ import { BigNumber } from "ethers";
 import { describe, it } from "mocha";
 import { anything, instance, mock, spy, verify, when } from "ts-mockito";
 import { Market, MgvToken } from "../../src";
-import { OrderStartSummaryEvent } from "../../src/types/typechain/MangroveOrder";
 import TradeEventManagement from "../../src/util/tradeEventManagement";
 import UnitCalculations from "../../src/util/unitCalculations";
 import {
@@ -14,22 +13,38 @@ import {
   OfferSuccessEvent,
   OrderCompleteEvent,
 } from "../../src/types/typechain/Mangrove";
+import { MangroveOrderStartEvent } from "../../src/types/typechain/MangroveOrder";
 
 describe("TradeEventManagement unit tests suite", () => {
+  type summaryEvent = {
+    args: {
+      olKeyHash: string;
+      taker: string;
+      fillOrKill?: boolean;
+      logPrice?: BigNumber;
+      maxLogPrice?: BigNumber;
+      fillVolume: BigNumber;
+      fillWants: boolean;
+      restingOrder?: boolean;
+    };
+  };
   describe("createSummary", () => {
     it("return summary with partialFill as true, when partialFill func returns true", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
-      const evt = {
+      const mockedToken = mock(MgvToken);
+      const token = instance(mockedToken);
+      const evt: summaryEvent = {
         args: {
           olKeyHash: "olKeyHash",
           taker: "taker",
-          fee: BigNumber.from(2),
+          fillVolume: BigNumber.from(1),
+          fillWants: true,
         },
       };
 
       //Act
-      const result = tradeEventManagement.createSummaryFromEvent(evt);
+      const result = tradeEventManagement.createSummaryFromEvent(evt, token);
 
       //Assert
       assert.deepStrictEqual(result.olKeyHash, evt.args.olKeyHash);
@@ -40,20 +55,25 @@ describe("TradeEventManagement unit tests suite", () => {
   describe("createSummaryForOrderComplete", () => {
     it("returns createSummary, always", async function () {
       //Arrange
+
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
-      const event = instance(mock<OrderCompleteEvent>());
+      const mockedToken = mock(MgvToken);
+      const token = instance(mockedToken);
+      const event = instance(mock<summaryEvent>());
       const summary: any = "summary";
 
-      when(spyTradeEventManagement.createSummaryFromEvent(event)).thenReturn(
-        summary
-      );
+      when(
+        spyTradeEventManagement.createSummaryFromEvent(event, token)
+      ).thenReturn(summary);
 
       //Act
-      const result = tradeEventManagement.createSummaryFromEvent(event);
+      const result = tradeEventManagement.createSummaryFromEvent(event, token);
 
       //Asset
-      verify(spyTradeEventManagement.createSummaryFromEvent(event)).once();
+      verify(
+        spyTradeEventManagement.createSummaryFromEvent(event, token)
+      ).once();
       assert(result, summary);
     });
   });
@@ -63,26 +83,35 @@ describe("TradeEventManagement unit tests suite", () => {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
-      const mockedEvent = mock<OrderStartSummaryEvent>();
+      const mockedEvent = mock<MangroveOrderStartEvent>();
+      const mockedToken = mock(MgvToken);
+      const token = instance(mockedToken);
       const event = instance(mockedEvent);
       const summary: Market.Summary = {
         olKeyHash: "olKeyHash",
         taker: "taker",
+        logPrice: 1,
+        fillVolume: Big(2),
+        fillWants: true,
       };
       const expectedOfferId = BigNumber.from(20);
       const args: any = { restingOrderId: expectedOfferId };
 
       when(
-        spyTradeEventManagement.createSummaryFromEvent(anything())
+        spyTradeEventManagement.createSummaryFromEvent(anything(), anything())
       ).thenReturn(summary);
       when(mockedEvent.args).thenReturn(args);
 
       //Act
-      const result =
-        tradeEventManagement.createSummaryFromOrderSummaryEvent(event);
+      const result = tradeEventManagement.createSummaryFromOrderSummaryEvent(
+        event,
+        token
+      );
 
       //Asset
-      verify(spyTradeEventManagement.createSummaryFromEvent(anything())).once();
+      verify(
+        spyTradeEventManagement.createSummaryFromEvent(anything(), anything())
+      ).once();
       assert.equal(result.taker, summary.taker);
       assert.equal(result.olKeyHash, summary.olKeyHash);
     });

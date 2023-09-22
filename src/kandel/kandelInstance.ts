@@ -383,7 +383,7 @@ class KandelInstance {
         offerId,
         index,
         live: this.market.isLiveOffer(offer),
-        logPrice: offer.logPrice,
+        logPrice: offer.logPrice.toNumber(),
       })
     );
 

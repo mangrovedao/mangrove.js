@@ -37,7 +37,7 @@ import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
 import { LocalUnpackedStructOutput } from "./types/typechain/MgvReader";
 import { OLKeyStruct } from "./types/typechain/Mangrove";
-import { Density } from "./util/Density";
+import { Density } from "./util/coreCalcuations/Density";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {

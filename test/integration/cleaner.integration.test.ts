@@ -43,5 +43,5 @@ describe("Cleaner integration tests suite", () => {
   //     ).to.eventually.throw("AccessControlled/Invalid");
   // });
 
-  // TODO test other Cleaner functions
+  // FIXME: test other Cleaner functions
 });

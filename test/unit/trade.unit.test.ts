@@ -27,7 +27,6 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         volume: 30,
-        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -46,15 +45,13 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
       const [wants] = capture(baseToken.toUnits).first();
 
       //Assert
-      const logPrice = trade.getLogPriceFromPrice(
-        params.price,
-        params.tickScale
-      );
+      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
       assert.equal(result.fillVolume.eq(BigNumber.from(params.volume)), true);
       assert.equal(result.logPrice.eq(BigNumber.from(logPrice)), true);
       assert.equal(result.fillWants, true);
@@ -70,7 +67,6 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         total: 30,
-        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -87,12 +83,10 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
-      const logPrice = trade.getLogPriceFromPrice(
-        params.price,
-        params.tickScale
-      );
+      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
       //Assert
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.total).toFixed(0))),
@@ -129,7 +123,8 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
 
       //Assert
@@ -169,7 +164,8 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
 
       //Assert
@@ -195,7 +191,6 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         volume: 30,
-        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -212,12 +207,10 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
-      const logPrice = trade.getLogPriceFromPrice(
-        params.price,
-        params.tickScale
-      );
+      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
 
       //Assert
       assert.equal(
@@ -237,7 +230,6 @@ describe("Trade unit tests suite", () => {
       const params: Market.TradeParams = {
         price: price,
         total: 30,
-        tickScale: 1,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -254,12 +246,10 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
-      const logPrice = trade.getLogPriceFromPrice(
-        params.price,
-        params.tickScale
-      );
+      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
 
       //Assert
       assert.equal(
@@ -297,7 +287,8 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
 
       //Assert
@@ -337,7 +328,8 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
+        1
       );
 
       //Assert

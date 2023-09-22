@@ -6,10 +6,11 @@ import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
+import { MAX_LOG_PRICE, MIN_LOG_PRICE } from "./coreCalcuations/Constants";
+import { LogPriceConversionLib } from "./coreCalcuations/LogPriceConversionLib";
+import { LogPriceLib } from "./coreCalcuations/LogPriceLib";
 
 const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
-export const MIN_LOG_PRICE = -((1 << 19) - 1);
-export const MAX_LOG_PRICE = -MIN_LOG_PRICE;
 
 type CleanUnitParams = {
   ba: Market.BA;
@@ -30,7 +31,8 @@ class Trade {
   getParamsForBuy(
     params: Market.TradeParams,
     baseToken: MgvToken,
-    quoteToken: MgvToken
+    quoteToken: MgvToken,
+    tickScale: number
   ) {
     let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
     if ("price" in params) {
@@ -40,7 +42,7 @@ class Trade {
           logPrice = BigNumber.from(MAX_LOG_PRICE);
         } else {
           logPrice = BigNumber.from(
-            this.getLogPriceFromPrice(params.price, params.tickScale)
+            this.getLogPriceFromPrice(params.price, tickScale)
           );
         }
 
@@ -51,7 +53,7 @@ class Trade {
           logPrice = BigNumber.from(MIN_LOG_PRICE);
         } else {
           logPrice = BigNumber.from(-1).mul(
-            this.getLogPriceFromPrice(params.price, params.tickScale)
+            this.getLogPriceFromPrice(params.price, tickScale)
           );
         }
         fillWants = false;
@@ -66,6 +68,11 @@ class Trade {
     // const givesWithSlippage = quoteToken.toUnits(
     //   gives.mul(100 + slippage).div(100)
     // );
+    const price = this.getPriceFromLogPrice(logPrice);
+    const priceWithCorrectDecimals = price.div(
+      Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
+    );
+    logPrice = this.getLogPriceFromPrice(priceWithCorrectDecimals, tickScale);
     return {
       logPrice: logPrice,
       // givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
@@ -79,7 +86,8 @@ class Trade {
   getParamsForSell(
     params: Market.TradeParams,
     baseToken: MgvToken,
-    quoteToken: MgvToken
+    quoteToken: MgvToken,
+    tickScale: number
   ) {
     let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
     if ("price" in params) {
@@ -89,7 +97,7 @@ class Trade {
           logPrice = BigNumber.from(MIN_LOG_PRICE);
         } else {
           logPrice = BigNumber.from(
-            this.getLogPriceFromPrice(params.price, params.tickScale)
+            this.getLogPriceFromPrice(params.price, tickScale)
           );
         }
         fillWants = false;
@@ -99,11 +107,17 @@ class Trade {
           logPrice = BigNumber.from(MAX_LOG_PRICE);
         } else {
           logPrice = BigNumber.from(-1).mul(
-            this.getLogPriceFromPrice(params.price, params.tickScale)
+            this.getLogPriceFromPrice(params.price, tickScale)
           );
         }
         fillWants = true;
       }
+
+      const price = this.getPriceFromLogPrice(logPrice);
+      const priceWithCorrectDecimals = price.mul(
+        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
+      );
+      logPrice = this.getLogPriceFromPrice(priceWithCorrectDecimals, tickScale);
     } else {
       logPrice = BigNumber.from(params.logPrice);
       fillVolume = Big(params.fillVolume);
@@ -125,24 +139,16 @@ class Trade {
     };
   }
 
-  getTickFromLogPriceAndTickScale(logPrice: Bigish, tickScale: number) {
-    return BigNumber.from(logPrice).div(BigNumber.from(tickScale));
-  }
-
-  getTickScaleFromLogPriceAndTick(logPrice: Bigish, tick: number) {
-    return BigNumber.from(logPrice).div(BigNumber.from(tick));
-  }
-
-  getLogPriceFromPrice(price: Bigish, tickScale: number): number {
+  getLogPriceFromPrice(price: Bigish, tickScale: number): BigNumber {
     const logOfPrice = Math.log(Big(price).toNumber());
     const logOf0001 = Math.log(1.0001);
     const logPriceNoTickScale = Math.floor(logOfPrice / logOf0001);
     const highestPossibleTick = Math.floor(logPriceNoTickScale / tickScale);
-    return highestPossibleTick * tickScale;
+    return BigNumber.from(highestPossibleTick * tickScale);
   }
 
-  getPriceFromLogPrice(logPrice: number): Big {
-    return Big(1.0001).pow(logPrice);
+  getPriceFromLogPrice(logPrice: BigNumber): Big {
+    return LogPriceConversionLib.priceFromLogPriceReadable(logPrice);
   }
 
   validateSlippage = (slippage = 0) => {
@@ -203,8 +209,18 @@ class Trade {
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { logPrice, fillVolume, fillWants } =
       bs === "buy"
-        ? this.getParamsForBuy(params, market.base, market.quote)
-        : this.getParamsForSell(params, market.base, market.quote);
+        ? this.getParamsForBuy(
+            params,
+            market.base,
+            market.quote,
+            market.tickScale.toNumber()
+          )
+        : this.getParamsForSell(
+            params,
+            market.base,
+            market.quote,
+            market.tickScale.toNumber()
+          );
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
 
@@ -576,6 +592,7 @@ class Trade {
           fillWants: orderType === "buy",
           restingOrder: postRestingOrder,
           expiryDate: expiryDate,
+          offerId: 0, //FIXME: Should be able to specify offerId
         },
         overrides_,
       ]

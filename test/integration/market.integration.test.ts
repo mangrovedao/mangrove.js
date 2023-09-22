@@ -15,8 +15,8 @@ import { BigNumber, ethers, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
-import Trade, { MAX_LOG_PRICE } from "../../src/util/trade";
-import { Density } from "../../src/util/Density";
+import Trade from "../../src/util/trade";
+import { Density } from "../../src/util/coreCalcuations/Density";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -339,7 +339,7 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(23),
-        logPrice: 23,
+        logPrice: BigNumber.from(23),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -371,7 +371,7 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: 23,
+        logPrice: BigNumber.from(23),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -484,7 +484,7 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: 23,
+        logPrice: BigNumber.from(23),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -513,7 +513,7 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: 23,
+        logPrice: BigNumber.from(23),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -544,7 +544,7 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: 23,
+        logPrice: BigNumber.from(23),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -763,7 +763,7 @@ describe("Market integration tests suite", () => {
     assert.strictEqual(offerFail.ba, "bids");
 
     assert.strictEqual(queue2.empty(), true);
-    //TODO: test offerRetract, offerFail, setGasbase
+    //FIXME: test offerRetract, offerFail, setGasbase
   });
 
   it("returns correct data when taking offers", async function () {
@@ -860,7 +860,7 @@ describe("Market integration tests suite", () => {
       gives: rawMinGivesBase.mul(2),
     });
     const gave = trade
-      .getPriceFromLogPrice(1)
+      .getPriceFromLogPrice(BigNumber.from(1))
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
@@ -910,7 +910,7 @@ describe("Market integration tests suite", () => {
     });
     const result = await buyPromises.result;
     const gave = trade
-      .getPriceFromLogPrice(1)
+      .getPriceFromLogPrice(BigNumber.from(1))
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -952,8 +952,7 @@ describe("Market integration tests suite", () => {
 
     const sellPromises = await market.sell({
       volume: "0.0000000000000001",
-      price: trade.getPriceFromLogPrice(2000), //FIXME: Cannot set it to MAX_LOG_PRICE
-      tickScale: market.tickScale.toNumber(),
+      price: trade.getPriceFromLogPrice(BigNumber.from(2000)), //FIXME: Cannot set it to MAX_LOG_PRICE
     });
     const result = await sellPromises.result;
 
@@ -975,10 +974,12 @@ describe("Market integration tests suite", () => {
           });
 
           const tradeParams: Market.TradeParams = {
-            logPrice: trade.getLogPriceFromPrice(
-              Big(0.000000000002).div(10),
-              market.tickScale.toNumber()
-            ),
+            logPrice: trade
+              .getLogPriceFromPrice(
+                Big(0.000000000002).div(10),
+                market.tickScale.toNumber()
+              )
+              .toNumber(),
             fillVolume: 10,
           };
           tradeParams.forceRoutingToMangroveOrder = forceRouting;
@@ -1022,9 +1023,9 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 125710;
+                expectedLimit = 125418;
               } else {
-                expectedLimit = 44319;
+                expectedLimit = 43974;
               }
             }
           }
@@ -1536,7 +1537,7 @@ describe("Market integration tests suite", () => {
 
     type Bs = {
       gives: Bigish;
-      logPrice: Bigish;
+      logPrice: Bigish | BigNumber;
     }[];
     /* Start testing */
 
@@ -1570,7 +1571,6 @@ describe("Market integration tests suite", () => {
     const gasEstimate = await market.gasEstimateSell({
       volume: market.quote.fromUnits(1),
       price: 0,
-      tickScale: market.tickScale.toNumber(),
     });
 
     // we need to use BigNumber.isBigNumber() function to test variable type
@@ -1590,7 +1590,6 @@ describe("Market integration tests suite", () => {
     const emptyBookAsksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
       price: 0,
-      tickScale: market.tickScale.toNumber(),
     });
 
     /* create asks */
@@ -1607,7 +1606,6 @@ describe("Market integration tests suite", () => {
     const asksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
       price: 0,
-      tickScale: market.tickScale.toNumber(),
     });
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate
