@@ -40,8 +40,11 @@ describe("TradeEventManagement unit tests suite", () => {
           taker: "taker",
           fillVolume: BigNumber.from(1),
           fillWants: true,
+          logPrice: BigNumber.from(0),
         },
       };
+
+      when(mockedToken.fromUnits(anything())).thenReturn(Big(1));
 
       //Act
       const result = tradeEventManagement.createSummaryFromEvent(evt, token);
@@ -49,6 +52,9 @@ describe("TradeEventManagement unit tests suite", () => {
       //Assert
       assert.deepStrictEqual(result.olKeyHash, evt.args.olKeyHash);
       assert.deepStrictEqual(result.taker, evt.args.taker);
+      assert.deepStrictEqual(result.fillVolume, Big(1));
+      assert.deepStrictEqual(result.fillWants, evt.args.fillWants);
+      assert.deepStrictEqual(result.logPrice, 0);
     });
   });
 

@@ -20,6 +20,7 @@ import {
 import UnitCalculations from "./unitCalculations";
 import { BaseContract, BigNumber } from "ethers";
 import { logger } from "./logger";
+import { LogPriceConversionLib } from "./coreCalcuations/LogPriceConversionLib";
 
 type RawOfferData = {
   id: BigNumber;
@@ -56,6 +57,7 @@ class TradeEventManagement {
       gasreq: raw.gasreq.toNumber(),
       logPrice: raw.logPrice,
       gives: gives,
+      price: LogPriceConversionLib.priceFromLogPriceReadable(raw.logPrice),
     };
   }
 

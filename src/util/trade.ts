@@ -36,13 +36,16 @@ class Trade {
   ) {
     let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
     if ("price" in params) {
+      const priceWithCorrectDecimals = Big(params.price).mul(
+        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
+      );
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
           logPrice = BigNumber.from(MAX_LOG_PRICE);
         } else {
-          logPrice = BigNumber.from(
-            this.getLogPriceFromPrice(params.price, tickScale)
+          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+            priceWithCorrectDecimals
           );
         }
 
@@ -52,8 +55,8 @@ class Trade {
         if (params.price == 0) {
           logPrice = BigNumber.from(MIN_LOG_PRICE);
         } else {
-          logPrice = BigNumber.from(-1).mul(
-            this.getLogPriceFromPrice(params.price, tickScale)
+          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+            Big(1).div(priceWithCorrectDecimals)
           );
         }
         fillWants = false;
@@ -68,11 +71,6 @@ class Trade {
     // const givesWithSlippage = quoteToken.toUnits(
     //   gives.mul(100 + slippage).div(100)
     // );
-    const price = this.getPriceFromLogPrice(logPrice);
-    const priceWithCorrectDecimals = price.div(
-      Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
-    );
-    logPrice = this.getLogPriceFromPrice(priceWithCorrectDecimals, tickScale);
     return {
       logPrice: logPrice,
       // givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
@@ -91,13 +89,16 @@ class Trade {
   ) {
     let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
     if ("price" in params) {
+      const priceWithCorrectDecimals = Big(params.price).mul(
+        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
+      );
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
           logPrice = BigNumber.from(MIN_LOG_PRICE);
         } else {
-          logPrice = BigNumber.from(
-            this.getLogPriceFromPrice(params.price, tickScale)
+          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+            priceWithCorrectDecimals
           );
         }
         fillWants = false;
@@ -106,18 +107,12 @@ class Trade {
         if (params.price == 0) {
           logPrice = BigNumber.from(MAX_LOG_PRICE);
         } else {
-          logPrice = BigNumber.from(-1).mul(
-            this.getLogPriceFromPrice(params.price, tickScale)
+          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+            Big(1).div(priceWithCorrectDecimals)
           );
         }
         fillWants = true;
       }
-
-      const price = this.getPriceFromLogPrice(logPrice);
-      const priceWithCorrectDecimals = price.mul(
-        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
-      );
-      logPrice = this.getLogPriceFromPrice(priceWithCorrectDecimals, tickScale);
     } else {
       logPrice = BigNumber.from(params.logPrice);
       fillVolume = Big(params.fillVolume);
@@ -125,7 +120,7 @@ class Trade {
     }
 
     const slippage = this.validateSlippage(params.slippage);
-    // const wantsWithSlippage = quoteToken.toUnits(
+    // const wantsWithSlippage = quoteToken.toUnits( //FIXME: should handle slippage
     //   wants.mul(100 - slippage).div(100)
     // );
 
@@ -137,18 +132,6 @@ class Trade {
       logPrice: logPrice,
       fillWants: fillWants,
     };
-  }
-
-  getLogPriceFromPrice(price: Bigish, tickScale: number): BigNumber {
-    const logOfPrice = Math.log(Big(price).toNumber());
-    const logOf0001 = Math.log(1.0001);
-    const logPriceNoTickScale = Math.floor(logOfPrice / logOf0001);
-    const highestPossibleTick = Math.floor(logPriceNoTickScale / tickScale);
-    return BigNumber.from(highestPossibleTick * tickScale);
-  }
-
-  getPriceFromLogPrice(logPrice: BigNumber): Big {
-    return LogPriceConversionLib.priceFromLogPriceReadable(logPrice);
   }
 
   validateSlippage = (slippage = 0) => {

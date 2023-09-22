@@ -11,6 +11,7 @@ import {
 } from "./Constants";
 import { BitLib } from "./BitLib";
 import Big from "big.js";
+import { Bigish } from "../../types";
 
 export namespace LogPriceConversionLib {
   // returns a normalized price within the max/min price range
@@ -277,6 +278,16 @@ export namespace LogPriceConversionLib {
       man: man.shl(18),
       exp: BigNumber.from(128 + 18 + extra_shift),
     };
+  }
+
+  export function getLogPriceFromPrice(price: Bigish): BigNumber {
+    const priceAsString = price.toString();
+    const maxSize = 32 - Big(price).minus(Big(price).mod(1)).toFixed().length;
+    const newLocal_1 = Big(10).pow(maxSize).mul(priceAsString);
+    const newLocal = newLocal_1.sub(newLocal_1.mod(1).toFixed());
+    const inboundAmt = BigNumber.from(newLocal.toFixed());
+    const outboundAmt = BigNumber.from(1).mul(BigNumber.from(10).pow(maxSize));
+    return LogPriceConversionLib.logPriceFromVolumes(inboundAmt, outboundAmt);
   }
 
   export function priceFromLogPriceReadable(logPrice: BigNumber): Big {

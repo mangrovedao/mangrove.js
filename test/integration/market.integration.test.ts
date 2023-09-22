@@ -17,6 +17,7 @@ import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
 import Trade from "../../src/util/trade";
 import { Density } from "../../src/util/coreCalcuations/Density";
+import { MAX_LOG_PRICE } from "../../src/util/coreCalcuations/Constants";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -952,7 +953,7 @@ describe("Market integration tests suite", () => {
 
     const sellPromises = await market.sell({
       volume: "0.0000000000000001",
-      price: trade.getPriceFromLogPrice(BigNumber.from(2000)), //FIXME: Cannot set it to MAX_LOG_PRICE
+      price: trade.getPriceFromLogPrice(MAX_LOG_PRICE),
     });
     const result = await sellPromises.result;
 

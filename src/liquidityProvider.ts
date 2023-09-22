@@ -19,6 +19,7 @@ import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
 import { BigNumber } from "@ethersproject/bignumber";
+import { LogPriceConversionLib } from "./util/coreCalcuations/LogPriceConversionLib";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -224,10 +225,10 @@ class LiquidityProvider {
     // deduce price from wants&gives, or deduce wants&gives from volume&price
     if ("gives" in p) {
       [logPrice, gives] = [ethers.BigNumber.from(p.logPrice), p.gives];
-      price = trade.getPriceFromLogPrice(logPrice);
+      price = LogPriceConversionLib.priceFromLogPriceReadable(logPrice);
     } else {
       price = p.price;
-      logPrice = trade.getLogPriceFromPrice(price, market.tickScale.toNumber());
+      logPrice = LogPriceConversionLib.getLogPriceFromPrice(price);
       let wants = Big(0);
       [wants, gives] = [Big(p.volume).mul(price), Big(p.volume)];
       if (p.ba === "bids") {
@@ -240,17 +241,15 @@ class LiquidityProvider {
       const priceWithCorrectDecimals = Big(price).div(
         Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
       );
-      logPrice = trade.getLogPriceFromPrice(
-        priceWithCorrectDecimals,
-        market.tickScale.toNumber()
+      logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+        priceWithCorrectDecimals
       );
     } else {
       const priceWithCorrectDecimals = Big(price).mul(
         Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
       );
-      logPrice = trade.getLogPriceFromPrice(
-        priceWithCorrectDecimals,
-        market.tickScale.toNumber()
+      logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+        priceWithCorrectDecimals
       );
     }
 

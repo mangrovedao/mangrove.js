@@ -15,6 +15,7 @@ import {
 import { Market, MgvToken } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
+import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {
@@ -51,11 +52,17 @@ describe("Trade unit tests suite", () => {
       const [wants] = capture(baseToken.toUnits).first();
 
       //Assert
-      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
-      assert.equal(result.fillVolume.eq(BigNumber.from(params.volume)), true);
-      assert.equal(result.logPrice.eq(BigNumber.from(logPrice)), true);
+      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(params.price);
+      assert.equal(
+        result.fillVolume.toString(),
+        BigNumber.from(params.volume).toString()
+      );
+      assert.equal(
+        result.logPrice.toString(),
+        BigNumber.from(logPrice).toString()
+      );
       assert.equal(result.fillWants, true);
-      assert.equal(Big(params.volume).eq(wants), true);
+      assert.equal(Big(params.volume).toFixed(), Big(wants).toFixed());
     });
 
     it("returns fillVolume as total, logPrice as -1*logPrice(price) and fillWants false, when params has price!=null and total", async function () {
@@ -86,17 +93,16 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken),
         1
       );
-      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
+      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+        Big(1).div(params.price)
+      );
       //Assert
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.total).toFixed(0))),
         true
       );
       assert.equal(result.fillWants, false);
-      assert.equal(
-        result.logPrice.toString(),
-        BigNumber.from(-1).mul(logPrice).toString()
-      );
+      assert.equal(result.logPrice.toString(), logPrice.toString());
     });
 
     it("returns fillVolume as fillVolume, logPrice as logPrice and fillWants as true, when params has fillVolume and logPrice, but no fillWants ", async function () {
@@ -210,7 +216,7 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken),
         1
       );
-      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
+      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(params.price);
 
       //Assert
       assert.equal(
@@ -249,17 +255,16 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken),
         1
       );
-      const logPrice = trade.getLogPriceFromPrice(params.price, 1);
+      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(
+        Big(1).div(params.price)
+      );
 
       //Assert
       assert.equal(
         result.fillVolume.toString(),
         BigNumber.from(params.total).toString()
       );
-      assert.equal(
-        result.logPrice.toString(),
-        BigNumber.from(-1).mul(logPrice).toString()
-      );
+      assert.equal(result.logPrice.toString(), logPrice.toString());
       assert.equal(result.fillWants, true);
     });
 

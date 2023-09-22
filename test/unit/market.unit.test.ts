@@ -5,6 +5,7 @@ import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
 import { BigNumber } from "ethers/lib/ethers";
+import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -141,7 +142,7 @@ describe("Market unit tests suite", () => {
   });
 
   describe("getDisplayDecimalsForPriceDifferences", () => {
-    function makeOfferWithPrice(logPrice: number) {
+    function makeOfferWithPrice(price: number) {
       return {
         id: 0,
         prev: undefined,
@@ -151,7 +152,8 @@ describe("Market unit tests suite", () => {
         gasreq: 1,
         kilo_offer_gasbase: 1,
         gives: Big(1),
-        logPrice: BigNumber.from(logPrice),
+        logPrice: LogPriceConversionLib.getLogPriceFromPrice(price),
+        price: Big(price),
       };
     }
 

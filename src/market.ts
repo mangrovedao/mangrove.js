@@ -188,6 +188,7 @@ namespace Market {
     maker: string;
     gasreq: number;
     logPrice: BigNumber;
+    price: Big;
     gives: Big;
   };
 
@@ -1022,11 +1023,11 @@ class Market {
     const absPriceDiffs = new Array<Big | undefined>(offers.length - 1);
     offers.slice(1).reduce((prevPrice, o, i) => {
       absPriceDiffs[i] =
-        prevPrice === undefined || o.logPrice === undefined
+        prevPrice === undefined || o.price === undefined
           ? undefined
-          : Big(prevPrice.toNumber()).sub(o.logPrice.toNumber()).abs(); // FIXME:
-      return o.logPrice;
-    }, offers[0].logPrice);
+          : Big(prevPrice.toNumber()).sub(o.price.toNumber()).abs(); // FIXME:
+      return o.price;
+    }, offers[0].price);
 
     const minBig = (
       b1: Big | undefined,

@@ -24,6 +24,7 @@ import { stat } from "fs";
 import { Density } from "./util/coreCalcuations/Density";
 import Trade from "./util/trade";
 import { MAX_LOG_PRICE } from "./util/coreCalcuations/Constants";
+import { LogPriceConversionLib } from "./util/coreCalcuations/LogPriceConversionLib";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -457,7 +458,7 @@ class Semibook
           acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
           acc.lastGasreq = offer.gasreq;
           const offerWants = offer.gives.mul(
-            this.tradeManagement.getPriceFromLogPrice(offer!.logPrice)
+            LogPriceConversionLib.priceFromLogPriceReadable(offer!.logPrice)
           );
           if (
             (fillWants && fillVolume.gt(offer.gives)) ||
