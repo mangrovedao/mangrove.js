@@ -128,7 +128,7 @@ class TestMaker {
     p = { ...defaults, ...p };
 
     const { logPrice, gives, price, fund } =
-      LiquidityProvider.normalizeOfferParams(p);
+      LiquidityProvider.normalizeOfferParams(p, this.market);
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
