@@ -18,6 +18,7 @@ import { Deferred } from "../../src/util";
 import Trade from "../../src/util/trade";
 import { Density } from "../../src/util/coreCalcuations/Density";
 import { MAX_LOG_PRICE } from "../../src/util/coreCalcuations/Constants";
+import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -341,6 +342,9 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         gives: new Big(23),
         logPrice: BigNumber.from(23),
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(23)
+        ),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -373,6 +377,9 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
         logPrice: BigNumber.from(23),
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(23)
+        ),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -486,6 +493,9 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
         logPrice: BigNumber.from(23),
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(23)
+        ),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -515,6 +525,9 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
         logPrice: BigNumber.from(23),
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(23)
+        ),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -546,6 +559,9 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
         logPrice: BigNumber.from(23),
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(23)
+        ),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -713,8 +729,9 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       kilo_offer_gasbase: (await market.config()).asks.kilo_offer_gasbase,
-      logPrice: 1,
+      logPrice: BigNumber.from(1),
       gives: Big("1.2"),
+      price: LogPriceConversionLib.priceFromLogPriceReadable(BigNumber.from(1)),
     };
 
     const offer2 = {
@@ -725,8 +742,9 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       kilo_offer_gasbase: (await market.config()).bids.kilo_offer_gasbase,
-      logPrice: 1,
+      logPrice: BigNumber.from(1),
       gives: Big("1.1"),
+      price: LogPriceConversionLib.priceFromLogPriceReadable(BigNumber.from(1)),
     };
 
     // Events may be received in different order
@@ -746,7 +764,7 @@ describe("Market integration tests suite", () => {
       },
     ];
     const events = [await queue.get(), await queue.get()];
-    expect(events).to.have.deep.members(expectedEvents);
+    assert.deepStrictEqual(events, expectedEvents);
 
     const events2 = [await queue2.get(), await queue2.get()];
     expect(events2).to.have.deep.members(expectedEvents);
@@ -860,8 +878,9 @@ describe("Market integration tests suite", () => {
       logPrice: 2,
       gives: rawMinGivesBase.mul(2),
     });
-    const gave = trade
-      .getPriceFromLogPrice(BigNumber.from(1))
+    const gave = LogPriceConversionLib.priceFromLogPriceReadable(
+      BigNumber.from(1)
+    )
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
@@ -875,7 +894,7 @@ describe("Market integration tests suite", () => {
       market.base.fromUnits(rawMinGivesBase).toNumber()
     );
     expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
-    expect(result.summary.fee).to.be.greaterThan(0);
+    expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);
   });
 
   it("buying uses best price, with forceRoutingToMangroveOrder:false", async function () {
@@ -910,8 +929,9 @@ describe("Market integration tests suite", () => {
       fillVolume: 10,
     });
     const result = await buyPromises.result;
-    const gave = trade
-      .getPriceFromLogPrice(BigNumber.from(1))
+    const gave = LogPriceConversionLib.priceFromLogPriceReadable(
+      BigNumber.from(1)
+    )
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -920,7 +940,7 @@ describe("Market integration tests suite", () => {
       market.base.fromUnits(rawMinGivesBase).toNumber()
     );
     expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
-    expect(result.summary.fee).to.be.greaterThan(0);
+    expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);
   });
 
   it("selling uses best price", async function () {
@@ -938,14 +958,14 @@ describe("Market integration tests suite", () => {
       market,
       ba: "bids",
       maker,
-      logPrice: trade.getLogPriceFromPrice(2, market.tickScale.toNumber()),
+      logPrice: LogPriceConversionLib.getLogPriceFromPrice(2),
       gives: 1000000,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
-      logPrice: trade.getLogPriceFromPrice(1, market.tickScale.toNumber()),
+      logPrice: LogPriceConversionLib.getLogPriceFromPrice(1),
       gives: 1000000,
     });
 
@@ -953,7 +973,7 @@ describe("Market integration tests suite", () => {
 
     const sellPromises = await market.sell({
       volume: "0.0000000000000001",
-      price: trade.getPriceFromLogPrice(MAX_LOG_PRICE),
+      price: LogPriceConversionLib.priceFromLogPriceReadable(MAX_LOG_PRICE),
     });
     const result = await sellPromises.result;
 
@@ -975,12 +995,9 @@ describe("Market integration tests suite", () => {
           });
 
           const tradeParams: Market.TradeParams = {
-            logPrice: trade
-              .getLogPriceFromPrice(
-                Big(0.000000000002).div(10),
-                market.tickScale.toNumber()
-              )
-              .toNumber(),
+            logPrice: LogPriceConversionLib.getLogPriceFromPrice(
+              Big(0.000000000002).div(10)
+            ).toNumber(),
             fillVolume: 10,
           };
           tradeParams.forceRoutingToMangroveOrder = forceRouting;
@@ -1434,19 +1451,13 @@ describe("Market integration tests suite", () => {
 
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        logPrice: trade.getLogPriceFromPrice(
-          1.2 / 0.3,
-          market.tickScale.toNumber()
-        ),
+        logPrice: LogPriceConversionLib.getLogPriceFromPrice(1.2 / 0.3),
         gives: "0.3",
       })
       .then((tx) => tx.wait());
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        logPrice: trade.getLogPriceFromPrice(
-          1 / 0.25,
-          market.tickScale.toNumber()
-        ),
+        logPrice: LogPriceConversionLib.getLogPriceFromPrice(1 / 0.25),
         gives: "0.25",
       })
       .then((tx) => tx.wait());

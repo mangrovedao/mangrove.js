@@ -1,5 +1,9 @@
 import { BigNumber } from "ethers";
-import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
+import {
+  LogPriceConversionLib,
+  bigNumberToBits,
+  priceToMantissaAndExponent,
+} from "../../src/util/coreCalcuations/LogPriceConversionLib";
 import {
   MAX_LOG_PRICE,
   MAX_PRICE_EXP,
@@ -236,7 +240,14 @@ describe("LogPriceConversionLib unit test suite", () => {
     it("should return the correct price for logPrice, MIN_LOG_PRICE", () => {
       const result =
         LogPriceConversionLib.priceFromLogPriceReadable(MIN_LOG_PRICE);
-      assert.deepStrictEqual(result.eq(Big("2.90564908704712e-46")), true); // lowest price
+      assert.deepStrictEqual(
+        result.eq(
+          Big(
+            "0.00000000000000000000000000000000000000000000029056490870471083908940426326017522727650096011029103985976865748876021617662263225462445799950903077596895734157121994188554148680612228342415260134404797"
+          )
+        ),
+        true
+      ); // lowest price
     });
 
     it("should return the correct price for logPrice, 0", () => {
@@ -392,6 +403,96 @@ describe("LogPriceConversionLib unit test suite", () => {
         () => LogPriceConversionLib.normalizePrice(mantissa, exp),
         new Error("mgv/normalizePrice/lowExp")
       );
+    });
+  });
+  describe("getLogPriceFromPrice", () => {
+    it("should return the correct logPrice for price, MAX_LOG_PRICE", () => {
+      const maxPrice =
+        LogPriceConversionLib.priceFromLogPriceReadable(MAX_LOG_PRICE);
+      const result = LogPriceConversionLib.getLogPriceFromPrice(maxPrice);
+      assert.deepStrictEqual(result, MAX_LOG_PRICE);
+    });
+  });
+
+  describe("priceToMantissaAndExponent", () => {
+    it("should return the correct mantissa and exponent for price, MAX_LOG_PRICE", () => {
+      const maxPrice =
+        LogPriceConversionLib.priceFromLogPriceReadable(MAX_LOG_PRICE);
+      const { man, exp } =
+        LogPriceConversionLib.priceFromLogPrice(MAX_LOG_PRICE);
+      const result = priceToMantissaAndExponent(maxPrice);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, MIN_LOG_PRICE", () => {
+      const minPrice =
+        LogPriceConversionLib.priceFromLogPriceReadable(MIN_LOG_PRICE);
+      const { man, exp } =
+        LogPriceConversionLib.priceFromLogPrice(MIN_LOG_PRICE);
+      const result = priceToMantissaAndExponent(minPrice);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, logPrice = 1", () => {
+      const minPrice = LogPriceConversionLib.priceFromLogPriceReadable(
+        BigNumber.from(1)
+      );
+      const { man, exp } = LogPriceConversionLib.priceFromLogPrice(
+        BigNumber.from(1)
+      );
+      const result = priceToMantissaAndExponent(minPrice);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, logPrice = 0", () => {
+      const minPrice = LogPriceConversionLib.priceFromLogPriceReadable(
+        BigNumber.from(0)
+      );
+      const { man, exp } = LogPriceConversionLib.priceFromLogPrice(
+        BigNumber.from(0)
+      );
+      const result = priceToMantissaAndExponent(minPrice);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, logPrice = -1", () => {
+      const minPrice = LogPriceConversionLib.priceFromLogPriceReadable(
+        BigNumber.from(-1)
+      );
+      const { man, exp } = LogPriceConversionLib.priceFromLogPrice(
+        BigNumber.from(-1)
+      );
+      const result = priceToMantissaAndExponent(minPrice);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, logPrice = 1000", () => {
+      const minPrice = LogPriceConversionLib.priceFromLogPriceReadable(
+        BigNumber.from(1000)
+      );
+      const { man, exp } = LogPriceConversionLib.priceFromLogPrice(
+        BigNumber.from(1000)
+      );
+      const result = priceToMantissaAndExponent(minPrice);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, logPrice = -1000", () => {
+      const minPrice = LogPriceConversionLib.priceFromLogPriceReadable(
+        BigNumber.from(-1000)
+      );
+      const { man, exp } = LogPriceConversionLib.priceFromLogPrice(
+        BigNumber.from(-1000)
+      );
+      const result = priceToMantissaAndExponent(minPrice);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
     });
   });
 });

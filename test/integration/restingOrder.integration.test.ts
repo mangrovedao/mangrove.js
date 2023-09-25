@@ -18,6 +18,7 @@ import { Big } from "big.js";
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
 import Trade from "../../src/util/trade";
+import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -111,16 +112,12 @@ describe("RestingOrder", () => {
         fund: provision,
       });
       await meAsLP.newAsk({
-        logPrice: trade
-          .getLogPriceFromPrice(10 / 9, market.tickScale.toNumber())
-          .toNumber(),
+        logPrice: LogPriceConversionLib.getLogPriceFromPrice(10 / 9).toNumber(),
         gives: 9,
         fund: provision,
       });
       await meAsLP.newAsk({
-        logPrice: trade
-          .getLogPriceFromPrice(10 / 8, market.tickScale.toNumber())
-          .toNumber(),
+        logPrice: LogPriceConversionLib.getLogPriceFromPrice(10 / 8).toNumber(),
         gives: 8,
         fund: provision,
       });
@@ -274,9 +271,7 @@ describe("RestingOrder", () => {
       const market: Market = orderLP.market;
 
       const buyPromises = await market.buy({
-        logPrice: trade
-          .getLogPriceFromPrice(1, market.tickScale.toNumber())
-          .toNumber(), // tokenA
+        logPrice: LogPriceConversionLib.getLogPriceFromPrice(1).toNumber(), // tokenA
         fillVolume: 20, // tokenB
         expiryDate:
           (
@@ -307,7 +302,9 @@ describe("RestingOrder", () => {
       );
       assert(
         orderResult.restingOrder
-          ? trade.getPriceFromLogPrice(orderResult.restingOrder.logPrice).eq(1)
+          ? LogPriceConversionLib.priceFromLogPriceReadable(
+              orderResult.restingOrder.logPrice
+            ).eq(1)
           : false,
         `orderResult.restingOrder.price should be 0 but is ${orderResult.restingOrder?.logPrice}`
       );

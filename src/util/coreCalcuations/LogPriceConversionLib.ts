@@ -281,13 +281,10 @@ export namespace LogPriceConversionLib {
   }
 
   export function getLogPriceFromPrice(price: Bigish): BigNumber {
-    const priceAsString = price.toString();
-    const maxSize = 32 - Big(price).minus(Big(price).mod(1)).toFixed().length;
-    const newLocal_1 = Big(10).pow(maxSize).mul(priceAsString);
-    const newLocal = newLocal_1.sub(newLocal_1.mod(1).toFixed());
-    const inboundAmt = BigNumber.from(newLocal.toFixed());
-    const outboundAmt = BigNumber.from(1).mul(BigNumber.from(10).pow(maxSize));
-    return LogPriceConversionLib.logPriceFromVolumes(inboundAmt, outboundAmt);
+    const { man, exp } = priceToMantissaAndExponent(
+      price instanceof Big ? (price as Big) : new Big(price)
+    );
+    return LogPriceConversionLib.logPriceFromPrice(man, exp);
   }
 
   export function priceFromLogPriceReadable(logPrice: BigNumber): Big {
@@ -309,7 +306,10 @@ export namespace LogPriceConversionLib {
     );
     const decimalNumber = decimalBitsToNumber(decimals);
     const integerNumber = integerBitsToNumber(integers);
-    return integerNumber.add(decimalNumber);
+    Big.DP = 60;
+    const result = integerNumber.add(decimalNumber);
+    Big.DP = 40;
+    return result;
   }
 
   // return price from logPrice, as a normalized float
@@ -367,7 +367,61 @@ export namespace LogPriceConversionLib {
 
 //helpers to translate between mantissa and exponent to a Big
 
-function bigNumberToBits(bn: BigNumber): string {
+export function priceToMantissaAndExponent(price: Big): {
+  man: BigNumber;
+  exp: BigNumber;
+} {
+  Big.DP = 200;
+  // Step 1: Split the price into integer and decimal parts
+  const integerPart = price.round(0, 0);
+  const decimalPart = price.minus(integerPart);
+
+  // Step 2: Convert integer part to binary
+  const integerBinary = bigNumberToBits(BigNumber.from(integerPart.toFixed()));
+
+  // Step 3: Convert decimal part to binary
+  let decimalBinary = "";
+  let tempDecimalPart = decimalPart;
+  let i = 0;
+  let zeroesInFront = 0;
+  let hitFirstZero = false;
+  while (!tempDecimalPart.eq(0) && i < MIN_PRICE_EXP.toNumber()) {
+    tempDecimalPart = tempDecimalPart.times(2);
+    if (tempDecimalPart.gte(1)) {
+      if (!hitFirstZero && price.lt(1)) {
+        zeroesInFront = i;
+      }
+      hitFirstZero = true;
+      decimalBinary += "1";
+      tempDecimalPart = tempDecimalPart.minus(1);
+    } else {
+      decimalBinary += "0";
+    }
+    i++;
+  }
+
+  // Step 4: Calculate the exponent based on the length of integer part's binary
+  const exp = price.gte(1)
+    ? MANTISSA_BITS.sub(integerBinary.length)
+    : BigNumber.from(MANTISSA_BITS.toNumber()).add(zeroesInFront);
+
+  // Step 5: Form the mantissa by concatenating integer and decimal binary, then convert to hex
+  const combinedBinary = (
+    price.gte(1)
+      ? integerBinary + decimalBinary
+      : decimalBinary.slice(zeroesInFront)
+  ).slice(0, MANTISSA_BITS.toNumber());
+  const man = BigNumber.from(
+    integerBitsToNumber(
+      combinedBinary.padEnd(MANTISSA_BITS.toNumber(), "0")
+    ).toFixed()
+  );
+  const t = bigNumberToBits(man);
+  Big.DP = 40;
+  return { man, exp };
+}
+
+export function bigNumberToBits(bn: BigNumber): string {
   let isNegative = bn.isNegative();
   let hexValue = bn.abs().toHexString(); // Use absolute value
 
@@ -389,14 +443,17 @@ function bigNumberToBits(bn: BigNumber): string {
   if (isNegative) {
     binaryString = `1${binaryString}`; // Add a 1 to the front of the string
   }
+  while (binaryString[0] === "0") {
+    binaryString = binaryString.slice(1);
+  }
 
   return binaryString;
 }
 
 function decimalBitsToNumber(decimalBits: string): Big {
+  Big.DP = 200;
   let result = Big(0);
   let num = Big(2);
-  Big.DP = 60;
   for (let i = 0; i < decimalBits.length; i++) {
     if (decimalBits[i] === "1") {
       result = result.add(Big(1).div(num));
