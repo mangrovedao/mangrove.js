@@ -1478,21 +1478,129 @@ describe("Market integration tests suite", () => {
 
     /* create bids and asks */
     let asks = [
-      { id: 1, logPrice: "1", gives: "1", gasreq: 9999, gasprice: 21 },
-      { id: 2, logPrice: "2", gives: "1", gasreq: 9999, gasprice: 21 },
-      { id: 3, logPrice: "1", gives: "1", gasreq: 9999, gasprice: 21 },
-      { id: 4, logPrice: "2", gives: "1", gasreq: 9999, gasprice: 21 },
-      { id: 5, logPrice: "1", gives: "1", gasreq: 9999, gasprice: 21 },
-      { id: 6, logPrice: "3", gives: "1", gasreq: 9999, gasprice: 21 },
+      {
+        id: 1,
+        logPrice: "1",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(1)
+        ),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21,
+      },
+      {
+        id: 2,
+        logPrice: "2",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(2)
+        ),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21,
+      },
+      {
+        id: 3,
+        logPrice: "1",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(1)
+        ),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21,
+      },
+      {
+        id: 4,
+        logPrice: "2",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(2)
+        ),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21,
+      },
+      {
+        id: 5,
+        logPrice: "1",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(1)
+        ),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21,
+      },
+      {
+        id: 6,
+        logPrice: "3",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(3)
+        ),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21,
+      },
     ];
 
     let bids = [
-      { id: 1, logPrice: "2", gives: "1", gasreq: 10_022, gasprice: 30 },
-      { id: 2, logPrice: "1", gives: "1", gasreq: 10_022, gasprice: 30 },
-      { id: 3, logPrice: "2", gives: "1", gasreq: 10_022, gasprice: 30 },
-      { id: 4, logPrice: "1", gives: "1", gasreq: 10_022, gasprice: 30 },
-      { id: 5, logPrice: "3", gives: "1", gasreq: 10_022, gasprice: 30 },
-      { id: 6, logPrice: "1", gives: "1", gasreq: 10_022, gasprice: 30 },
+      {
+        id: 1,
+        logPrice: "2",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(2)
+        ),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30,
+      },
+      {
+        id: 2,
+        logPrice: "1",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(1)
+        ),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30,
+      },
+      {
+        id: 3,
+        logPrice: "2",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(2)
+        ),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30,
+      },
+      {
+        id: 4,
+        logPrice: "1",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(1)
+        ),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30,
+      },
+      {
+        id: 5,
+        logPrice: "3",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(3)
+        ),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30,
+      },
+      {
+        id: 6,
+        logPrice: "1",
+        price: LogPriceConversionLib.priceFromLogPriceReadable(
+          BigNumber.from(1)
+        ),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30,
+      },
     ];
 
     /* fill order book with bids and asks */

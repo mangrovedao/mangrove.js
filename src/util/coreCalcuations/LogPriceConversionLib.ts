@@ -377,7 +377,9 @@ export function priceToMantissaAndExponent(price: Big): {
   const decimalPart = price.minus(integerPart);
 
   // Step 2: Convert integer part to binary
-  const integerBinary = bigNumberToBits(BigNumber.from(integerPart.toFixed()));
+  const integerBinary = bigNumberToBits(
+    BigNumber.from(integerPart.toFixed())
+  ).slice(0, MANTISSA_BITS.toNumber());
 
   // Step 3: Convert decimal part to binary
   let decimalBinary = "";
@@ -405,18 +407,19 @@ export function priceToMantissaAndExponent(price: Big): {
     ? MANTISSA_BITS.sub(integerBinary.length)
     : BigNumber.from(MANTISSA_BITS.toNumber()).add(zeroesInFront);
 
-  // Step 5: Form the mantissa by concatenating integer and decimal binary, then convert to hex
+  // Step 5: Form the mantissa by concatenating integer and decimal binary
   const combinedBinary = (
     price.gte(1)
       ? integerBinary + decimalBinary
       : decimalBinary.slice(zeroesInFront)
   ).slice(0, MANTISSA_BITS.toNumber());
+
   const man = BigNumber.from(
     integerBitsToNumber(
       combinedBinary.padEnd(MANTISSA_BITS.toNumber(), "0")
     ).toFixed()
   );
-  const t = bigNumberToBits(man);
+
   Big.DP = 40;
   return { man, exp };
 }
