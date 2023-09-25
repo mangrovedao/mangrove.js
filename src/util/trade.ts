@@ -6,9 +6,8 @@ import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
-import { MAX_LOG_PRICE, MIN_LOG_PRICE } from "./coreCalcuations/Constants";
-import { LogPriceConversionLib } from "./coreCalcuations/LogPriceConversionLib";
-import { LogPriceLib } from "./coreCalcuations/LogPriceLib";
+import { MAX_TICK, MIN_TICK } from "./coreCalcuations/Constants";
+import { TickLib } from "./coreCalcuations/TickLib";
 
 const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
 
@@ -16,7 +15,7 @@ type CleanUnitParams = {
   ba: Market.BA;
   targets: {
     offerId: number;
-    logPrice: ethers.BigNumber;
+    tick: ethers.BigNumber;
     gasreq: ethers.BigNumber;
     takerWants: ethers.BigNumber;
   }[];
@@ -32,9 +31,9 @@ class Trade {
     params: Market.TradeParams,
     baseToken: MgvToken,
     quoteToken: MgvToken,
-    tickScale: number
+    tickSpacing: number
   ) {
-    let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
+    let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     if ("price" in params) {
       const priceWithCorrectDecimals = Big(params.price).mul(
         Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
@@ -42,28 +41,24 @@ class Trade {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
-          logPrice = BigNumber.from(MAX_LOG_PRICE);
+          tick = BigNumber.from(MAX_TICK);
         } else {
-          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-            priceWithCorrectDecimals
-          );
+          tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         }
 
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
         if (params.price == 0) {
-          logPrice = BigNumber.from(MIN_LOG_PRICE);
+          tick = BigNumber.from(MIN_TICK);
         } else {
-          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-            Big(1).div(priceWithCorrectDecimals)
-          );
+          tick = TickLib.getTickFromPrice(Big(1).div(priceWithCorrectDecimals));
         }
         fillWants = false;
       }
     } else {
       fillVolume = Big(params.fillVolume);
-      logPrice = BigNumber.from(params.logPrice);
+      tick = BigNumber.from(params.tick);
       fillWants = params.fillWants ?? true;
     }
 
@@ -72,7 +67,7 @@ class Trade {
     //   gives.mul(100 + slippage).div(100)
     // );
     return {
-      logPrice: logPrice,
+      tick: tick,
       // givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
       fillVolume: fillWants
         ? baseToken.toUnits(fillVolume)
@@ -85,9 +80,9 @@ class Trade {
     params: Market.TradeParams,
     baseToken: MgvToken,
     quoteToken: MgvToken,
-    tickScale: number
+    tickSpacing: number
   ) {
-    let fillVolume: Big, logPrice: BigNumber, fillWants: boolean;
+    let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     if ("price" in params) {
       const priceWithCorrectDecimals = Big(params.price).mul(
         Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
@@ -95,26 +90,22 @@ class Trade {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
-          logPrice = BigNumber.from(MIN_LOG_PRICE);
+          tick = BigNumber.from(MIN_TICK);
         } else {
-          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-            priceWithCorrectDecimals
-          );
+          tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         }
         fillWants = false;
       } else {
         fillVolume = Big(params.total);
         if (params.price == 0) {
-          logPrice = BigNumber.from(MAX_LOG_PRICE);
+          tick = BigNumber.from(MAX_TICK);
         } else {
-          logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-            Big(1).div(priceWithCorrectDecimals)
-          );
+          tick = TickLib.getTickFromPrice(Big(1).div(priceWithCorrectDecimals));
         }
         fillWants = true;
       }
     } else {
-      logPrice = BigNumber.from(params.logPrice);
+      tick = BigNumber.from(params.tick);
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
     }
@@ -129,7 +120,7 @@ class Trade {
         ? quoteToken.toUnits(fillVolume)
         : baseToken.toUnits(fillVolume),
       // wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
-      logPrice: logPrice,
+      tick: tick,
       fillWants: fillWants,
     };
   }
@@ -190,19 +181,19 @@ class Trade {
   }
 
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { logPrice, fillVolume, fillWants } =
+    const { tick, fillVolume, fillWants } =
       bs === "buy"
         ? this.getParamsForBuy(
             params,
             market.base,
             market.quote,
-            market.tickScale.toNumber()
+            market.tickSpacing.toNumber()
           )
         : this.getParamsForSell(
             params,
             market.base,
             market.quote,
-            market.tickScale.toNumber()
+            market.tickSpacing.toNumber()
           );
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
@@ -215,7 +206,7 @@ class Trade {
         : "marketOrder";
 
     return {
-      logPrice,
+      tick,
       fillVolume,
       fillWants,
       restingOrderParams,
@@ -254,13 +245,13 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const { logPrice, fillVolume, fillWants, restingOrderParams, orderType } =
+    const { tick, fillVolume, fillWants, restingOrderParams, orderType } =
       this.getRawParams(bs, params, market);
     switch (orderType) {
       case "restingOrder":
         return this.mangroveOrder(
           {
-            logPrice,
+            tick,
             fillVolume,
             orderType: bs,
             fillWants: fillWants,
@@ -275,7 +266,7 @@ class Trade {
       case "marketOrder":
         return this.marketOrder(
           {
-            logPrice,
+            tick,
             fillVolume,
             orderType: bs,
             fillWants: fillWants,
@@ -338,7 +329,7 @@ class Trade {
         return {
           offerId: t.offerId,
           takerWants: outbound_tkn.toUnits(t.takerWants),
-          logPrice: BigNumber.from(t.logPrice),
+          tick: BigNumber.from(t.tick),
           gasreq: BigNumber.from(t.gasreq),
         };
       }
@@ -370,7 +361,7 @@ class Trade {
   }
 
   async simulateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { logPrice, fillVolume, fillWants, orderType } = this.getRawParams(
+    const { tick, fillVolume, fillWants, orderType } = this.getRawParams(
       bs,
       params,
       market
@@ -380,13 +371,13 @@ class Trade {
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (
-          await market.simulateGas(ba, logPrice, fillVolume, fillWants)
-        ).add(MANGROVE_ORDER_GAS_OVERHEAD);
+        return (await market.simulateGas(ba, tick, fillVolume, fillWants)).add(
+          MANGROVE_ORDER_GAS_OVERHEAD
+        );
       case "snipe":
         return undefined;
       case "marketOrder":
-        return await market.simulateGas(ba, logPrice, fillVolume, fillWants);
+        return await market.simulateGas(ba, tick, fillVolume, fillWants);
     }
   }
 
@@ -423,14 +414,14 @@ class Trade {
    */
   async marketOrder(
     {
-      logPrice,
+      tick: tick,
       fillVolume,
       orderType,
       fillWants,
       market,
       gasLowerBound,
     }: {
-      logPrice: ethers.BigNumber;
+      tick: ethers.BigNumber;
       fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
@@ -453,7 +444,7 @@ class Trade {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
         fillWants: fillWants,
-        logPrice: logPrice.toString(),
+        tick: tick.toString(),
         fillVolume: fillVolume.toString(),
         orderType: orderType,
         gasLimit: overrides.gasLimit?.toString(),
@@ -462,10 +453,10 @@ class Trade {
 
     const response = this.createTxWithOptionalGasEstimation(
       market.mgv.contract[
-        "marketOrderByLogPrice((address,address,uint256),int256,uint256,bool)"
+        "marketOrderByTick((address,address,uint256),int256,uint256,bool)"
       ],
       market.mgv.contract.estimateGas[
-        "marketOrderByLogPrice((address,address,uint256),int256,uint256,bool)"
+        "marketOrderByTick((address,address,uint256),int256,uint256,bool)"
       ],
       gasLowerBound,
       overrides,
@@ -473,9 +464,9 @@ class Trade {
         {
           outbound: outboundTkn.address,
           inbound: inboundTkn.address,
-          tickScale: market.tickScale,
+          tickSpacing: market.tickSpacing,
         },
-        logPrice,
+        tick,
         fillVolume,
         fillWants,
         overrides,
@@ -522,7 +513,7 @@ class Trade {
 
   async mangroveOrder(
     {
-      logPrice,
+      tick: tick,
       fillVolume,
       orderType,
       fillWants,
@@ -532,7 +523,7 @@ class Trade {
       market,
       gasLowerBound,
     }: {
-      logPrice: ethers.BigNumber;
+      tick: ethers.BigNumber;
       fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
@@ -567,10 +558,10 @@ class Trade {
           olKey: {
             outbound: outbound_tkn.address,
             inbound: inbound_tkn.address,
-            tickScale: market.tickScale,
+            tickSpacing: market.tickSpacing,
           },
           fillOrKill: fillOrKill,
-          logPrice: logPrice,
+          tick: tick,
           fillVolume: fillVolume,
           fillWants: orderType === "buy",
           restingOrder: postRestingOrder,
@@ -690,7 +681,7 @@ class Trade {
     >((t) => {
       return {
         offerId: t.offerId,
-        logPrice: t.logPrice,
+        tick: t.tick,
         gasreq: t.gasreq,
         takerWants: t.takerWants,
       };
@@ -728,7 +719,7 @@ class Trade {
       {
         outbound: raw.outboundTkn,
         inbound: raw.inboundTkn,
-        tickScale: market.tickScale,
+        tickSpacing: market.tickSpacing,
       },
       raw.targets,
       raw.taker,

@@ -18,7 +18,7 @@ import { Big } from "big.js";
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
 import Trade from "../../src/util/trade";
-import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
+import { TickLib } from "../../src/util/coreCalcuations/TickLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -52,7 +52,7 @@ describe("RestingOrder", () => {
       orderLP = await LiquidityProvider.connect(orderLogic, {
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
         bookOptions: { maxOffers: 30 },
       });
 
@@ -86,7 +86,7 @@ describe("RestingOrder", () => {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
         bookOptions: { maxOffers: 30 },
       });
 
@@ -107,17 +107,17 @@ describe("RestingOrder", () => {
       const provision = await meAsLP.computeAskProvision();
       // fills Asks semi book
       await meAsLP.newAsk({
-        logPrice: 0, //tokenB
+        tick: 0, //tokenB
         gives: 10, //tokenA
         fund: provision,
       });
       await meAsLP.newAsk({
-        logPrice: LogPriceConversionLib.getLogPriceFromPrice(10 / 9).toNumber(),
+        tick: TickLib.getTickFromPrice(10 / 9).toNumber(),
         gives: 9,
         fund: provision,
       });
       await meAsLP.newAsk({
-        logPrice: LogPriceConversionLib.getLogPriceFromPrice(10 / 8).toNumber(),
+        tick: TickLib.getTickFromPrice(10 / 8).toNumber(),
         gives: 8,
         fund: provision,
       });
@@ -137,14 +137,14 @@ describe("RestingOrder", () => {
       const meProvision = await meAsLP.computeBidProvision();
       for (let i = 0; i < 15; i++) {
         await meAsLP.newBid({
-          logPrice: 1 + i,
+          tick: 1 + i,
           gives: 15,
           fund: meProvision,
         });
       }
 
       const buyPromises = await orderLP.market.buy({
-        logPrice: 0,
+        tick: 0,
         fillVolume: 20,
         restingOrder: { provision: provision },
       });
@@ -178,7 +178,7 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
-        logPrice: 0,
+        tick: 0,
         fillVolume: 20,
         restingOrder: { provision: provision },
       });
@@ -211,7 +211,7 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: false,
-        logPrice: 20, // tokenA
+        tick: 20, // tokenA
         fillVolume: 20, // tokenB
         restingOrder: { provision: provision },
       });
@@ -240,7 +240,7 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
-        logPrice: 5, // tokenA
+        tick: 5, // tokenA
         fillVolume: 5, // tokenB
       });
       const orderResult = await buyPromises.result;
@@ -271,7 +271,7 @@ describe("RestingOrder", () => {
       const market: Market = orderLP.market;
 
       const buyPromises = await market.buy({
-        logPrice: LogPriceConversionLib.getLogPriceFromPrice(1).toNumber(), // tokenA
+        tick: TickLib.getTickFromPrice(1).toNumber(), // tokenA
         fillVolume: 20, // tokenB
         expiryDate:
           (
@@ -302,11 +302,9 @@ describe("RestingOrder", () => {
       );
       assert(
         orderResult.restingOrder
-          ? LogPriceConversionLib.priceFromLogPriceReadable(
-              orderResult.restingOrder.logPrice
-            ).eq(1)
+          ? TickLib.priceFromTick(orderResult.restingOrder.tick).eq(1)
           : false,
-        `orderResult.restingOrder.price should be 0 but is ${orderResult.restingOrder?.logPrice}`
+        `orderResult.restingOrder.price should be 0 but is ${orderResult.restingOrder?.tick}`
       );
 
       // taking resting offer
@@ -314,7 +312,7 @@ describe("RestingOrder", () => {
       await w(tokenB.approveMangrove());
       await w(tokenA.approveMangrove());
 
-      const sellPromises = await market.sell({ logPrice: 0, fillVolume: 5 });
+      const sellPromises = await market.sell({ tick: 0, fillVolume: 5 });
       const result = await sellPromises.result;
       const tx2 = await waitForTransaction(sellPromises.response);
       await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
@@ -338,7 +336,7 @@ describe("RestingOrder", () => {
       //   ),
       //   "Timestamp did not advance"
       // );
-      // const sellPromises_ = await market.sell({ logPrice: 5, fillVolume: 5 });
+      // const sellPromises_ = await market.sell({ tick: 5, fillVolume: 5 });
       // const result_ = await sellPromises_.result;
       // assert(result_.summary.bounty.gt(0), "Order should have reneged");
     });

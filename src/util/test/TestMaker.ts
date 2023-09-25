@@ -46,7 +46,7 @@ namespace TestMaker {
     mgv: Mangrove;
     base: string;
     quote: string;
-    tickScale: number;
+    tickSpacing: number;
   };
 }
 
@@ -86,7 +86,7 @@ class TestMaker {
     ).deploy(p.mgv.address, {
       outbound: baseAddress,
       inbound: quoteAddress,
-      tickScale: p.tickScale,
+      tickSpacing: p.tickSpacing,
     });
     await contract.deployTransaction.wait();
 
@@ -127,8 +127,10 @@ class TestMaker {
 
     p = { ...defaults, ...p };
 
-    const { logPrice, gives, price, fund } =
-      LiquidityProvider.normalizeOfferParams(p, this.market);
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      p,
+      this.market
+    );
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
@@ -166,14 +168,14 @@ class TestMaker {
     };
 
     const txPromise = this.contract[
-      "newOfferByLogPriceWithFunding((address,address,uint256),int256,uint256,uint256,uint256,uint256,(bool,string))"
+      "newOfferByTickWithFunding((address,address,uint256),int256,uint256,uint256,uint256,uint256,(bool,string))"
     ](
       {
         outbound: outbound_tkn.address,
         inbound: inbound_tkn.address,
-        tickScale: this.market.tickScale,
+        tickSpacing: this.market.tickSpacing,
       },
-      logPrice,
+      tick,
       outbound_tkn.toUnits(gives),
       p.gasreq as number,
       p.gasprice as number,

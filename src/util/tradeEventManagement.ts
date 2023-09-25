@@ -20,14 +20,14 @@ import {
 import UnitCalculations from "./unitCalculations";
 import { BaseContract, BigNumber } from "ethers";
 import { logger } from "./logger";
-import { LogPriceConversionLib } from "./coreCalcuations/LogPriceConversionLib";
+import { TickLib } from "./coreCalcuations/TickLib";
 
 type RawOfferData = {
   id: BigNumber;
   gasprice: BigNumber;
   maker: string;
   gasreq: BigNumber;
-  logPrice: BigNumber;
+  tick: BigNumber;
   gives: BigNumber;
 };
 
@@ -55,9 +55,9 @@ class TradeEventManagement {
       gasprice: raw.gasprice.toNumber(),
       maker: raw.maker,
       gasreq: raw.gasreq.toNumber(),
-      logPrice: raw.logPrice,
+      tick: raw.tick,
       gives: gives,
-      price: LogPriceConversionLib.priceFromLogPriceReadable(raw.logPrice),
+      price: TickLib.priceFromTick(raw.tick),
     };
   }
 
@@ -72,8 +72,8 @@ class TradeEventManagement {
         olKeyHash: string;
         taker: string;
         fillOrKill?: boolean;
-        logPrice?: BigNumber;
-        maxLogPrice?: BigNumber;
+        tick?: BigNumber;
+        maxTick?: BigNumber;
         fillVolume: BigNumber;
         fillWants: boolean;
         restingOrder?: boolean;
@@ -82,21 +82,16 @@ class TradeEventManagement {
     fillToken: MgvToken
   ): Market.Summary {
     if (
-      (!event.args.logPrice && !event.args.maxLogPrice) ||
-      (event.args.logPrice && event.args.maxLogPrice)
+      (!event.args.tick && !event.args.maxTick) ||
+      (event.args.tick && event.args.maxTick)
     ) {
-      throw new Error(
-        "Exactly one of logPrice or maxLogPrice must be provided"
-      );
+      throw new Error("Exactly one of tick or maxTick must be provided");
     }
     return {
       taker: event.args.taker,
       olKeyHash: event.args.olKeyHash,
       fillOrKill: event.args.fillOrKill,
-      logPrice:
-        event.args.logPrice?.toNumber() ??
-        event.args.maxLogPrice?.toNumber() ??
-        0,
+      tick: event.args.tick?.toNumber() ?? event.args.maxTick?.toNumber() ?? 0,
       fillVolume: fillToken.fromUnits(event.args.fillVolume),
 
       fillWants: event.args.fillWants,
@@ -153,7 +148,7 @@ class TradeEventManagement {
     let olKeyHash = market.mgv.getOlKeyHash(
       outbound_tkn.address,
       inbound_tkn.address,
-      market.tickScale.toNumber()
+      market.tickSpacing.toNumber()
     );
 
     if (olKeyHash != evt.args.olKeyHash) {
@@ -161,7 +156,7 @@ class TradeEventManagement {
       olKeyHash = market.mgv.getOlKeyHash(
         inbound_tkn.address,
         outbound_tkn.address,
-        market.tickScale.toNumber()
+        market.tickSpacing.toNumber()
       );
     }
 
@@ -170,7 +165,7 @@ class TradeEventManagement {
         contextInfo: "tradeEventManagement",
         base: market.base.name,
         quote: market.quote.name,
-        tickScale: market.tickScale,
+        tickSpacing: market.tickSpacing,
         data: {
           olKeyHash: evt.args.olKeyHash,
         },
@@ -192,7 +187,7 @@ class TradeEventManagement {
           olKeyHash: evt.args.olKeyHash,
           taker: evt.args.taker,
           fillOrKill: evt.args.fillOrKill,
-          logPrice: evt.args.logPrice,
+          tick: evt.args.tick,
           fillVolume: evt.args.fillVolume,
           fillWants: evt.args.fillWants,
           restingOrder: evt.args.restingOrder,

@@ -15,11 +15,11 @@ import {
 import { Market, MgvToken } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
-import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
+import { TickLib } from "../../src/util/coreCalcuations/TickLib";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {
-    it("returns fillVolume as volume, logPrice as logPrice(price) and fillWants true, when params has price!=null and volume", async function () {
+    it("returns fillVolume as volume, tick as tick(price) and fillWants true, when params has price!=null and volume", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -52,20 +52,17 @@ describe("Trade unit tests suite", () => {
       const [wants] = capture(baseToken.toUnits).first();
 
       //Assert
-      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(params.price);
+      const tick = TickLib.getTickFromPrice(params.price);
       assert.equal(
         result.fillVolume.toString(),
         BigNumber.from(params.volume).toString()
       );
-      assert.equal(
-        result.logPrice.toString(),
-        BigNumber.from(logPrice).toString()
-      );
+      assert.equal(result.tick.toString(), BigNumber.from(tick).toString());
       assert.equal(result.fillWants, true);
       assert.equal(Big(params.volume).toFixed(), Big(wants).toFixed());
     });
 
-    it("returns fillVolume as total, logPrice as -1*logPrice(price) and fillWants false, when params has price!=null and total", async function () {
+    it("returns fillVolume as total, tick as -1*tick(price) and fillWants false, when params has price!=null and total", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -93,25 +90,23 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken),
         1
       );
-      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-        Big(1).div(params.price)
-      );
+      const tick = TickLib.getTickFromPrice(Big(1).div(params.price));
       //Assert
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.total).toFixed(0))),
         true
       );
       assert.equal(result.fillWants, false);
-      assert.equal(result.logPrice.toString(), logPrice.toString());
+      assert.equal(result.tick.toString(), tick.toString());
     });
 
-    it("returns fillVolume as fillVolume, logPrice as logPrice and fillWants as true, when params has fillVolume and logPrice, but no fillWants ", async function () {
+    it("returns fillVolume as fillVolume, tick as tick and fillWants as true, when params has fillVolume and tick, but no fillWants ", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
       const slippage = 3;
       const params: Market.TradeParams = {
-        logPrice: 20,
+        tick: 20,
         fillVolume: 30,
         slippage: slippage,
       };
@@ -140,18 +135,18 @@ describe("Trade unit tests suite", () => {
       );
       assert.equal(result.fillWants, true);
       assert.equal(
-        result.logPrice.toString(),
-        BigNumber.from(params.logPrice).toString()
+        result.tick.toString(),
+        BigNumber.from(params.tick).toString()
       );
     });
 
-    it("returns fillVolume as fillVolume, logPrice as logPrice and fillWants as fillWants, when params has logPrice, fillVolume and fillWants ", async function () {
+    it("returns fillVolume as fillVolume, tick as tick and fillWants as fillWants, when params has tick, fillVolume and fillWants ", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
       const slippage = 3;
       const params: Market.TradeParams = {
-        logPrice: 20,
+        tick: 20,
         fillVolume: 30,
         fillWants: false,
         slippage: slippage,
@@ -180,7 +175,7 @@ describe("Trade unit tests suite", () => {
         true
       );
       assert.equal(
-        result.logPrice.eq(BigNumber.from(Big(params.logPrice).toFixed(0))),
+        result.tick.eq(BigNumber.from(Big(params.tick).toFixed(0))),
         true
       );
       assert.equal(result.fillWants, params.fillWants);
@@ -188,7 +183,7 @@ describe("Trade unit tests suite", () => {
   });
 
   describe("getParamsForSell", () => {
-    it("returns fillVolume as volume, logPrice as logPrice(price) and fillWants false, when params has price!=null and volume", async function () {
+    it("returns fillVolume as volume, tick as tick(price) and fillWants false, when params has price!=null and volume", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -216,18 +211,15 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken),
         1
       );
-      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(params.price);
+      const tick = TickLib.getTickFromPrice(params.price);
 
       //Assert
-      assert.equal(
-        result.logPrice.toString(),
-        BigNumber.from(logPrice).toString()
-      );
+      assert.equal(result.tick.toString(), BigNumber.from(tick).toString());
       assert.equal(result.fillVolume.eq(BigNumber.from(params.volume)), true);
       assert.equal(result.fillWants, false);
     });
 
-    it("returns fillVolume as total, logPrice as logPrice(price) and fillWants true, when params has price!=null and total", async function () {
+    it("returns fillVolume as total, tick as tick(price) and fillWants true, when params has price!=null and total", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -255,27 +247,25 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken),
         1
       );
-      const logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-        Big(1).div(params.price)
-      );
+      const tick = TickLib.getTickFromPrice(Big(1).div(params.price));
 
       //Assert
       assert.equal(
         result.fillVolume.toString(),
         BigNumber.from(params.total).toString()
       );
-      assert.equal(result.logPrice.toString(), logPrice.toString());
+      assert.equal(result.tick.toString(), tick.toString());
       assert.equal(result.fillWants, true);
     });
 
-    it("returns fillVolume as fillVolume, logPrice as logPrice and fillWants false, when params has wants and gives, but no fillWants", async function () {
+    it("returns fillVolume as fillVolume, tick as tick and fillWants false, when params has wants and gives, but no fillWants", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
       const slippage = 3;
       const params: Market.TradeParams = {
         fillVolume: 20,
-        logPrice: 30,
+        tick: 30,
         slippage: slippage,
       };
       const baseToken = mock(MgvToken);
@@ -302,8 +292,8 @@ describe("Trade unit tests suite", () => {
         BigNumber.from(params.fillVolume).toString()
       );
       assert.equal(
-        result.logPrice.toString(),
-        BigNumber.from(params.logPrice).toString()
+        result.tick.toString(),
+        BigNumber.from(params.tick).toString()
       );
       assert.equal(result.fillWants, false);
     });
@@ -315,7 +305,7 @@ describe("Trade unit tests suite", () => {
       const slippage = 3;
       const params: Market.TradeParams = {
         fillVolume: 20,
-        logPrice: 30,
+        tick: 30,
         fillWants: true,
         slippage: slippage,
       };
@@ -343,8 +333,8 @@ describe("Trade unit tests suite", () => {
         BigNumber.from(params.fillVolume).toString()
       );
       assert.equal(
-        result.logPrice.toString(),
-        BigNumber.from(params.logPrice).toString()
+        result.tick.toString(),
+        BigNumber.from(params.tick).toString()
       );
       assert.equal(result.fillWants, true);
     });

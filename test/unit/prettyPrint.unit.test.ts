@@ -5,7 +5,7 @@ import { capture, spy } from "ts-mockito";
 import { Market } from "../../src";
 import Big from "big.js";
 import { BigNumber } from "ethers";
-import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
+import { TickLib } from "../../src/util/coreCalcuations/TickLib";
 
 describe("PrettyPrint Unit test suite", () => {
   describe("consoleOffers", () => {
@@ -22,10 +22,8 @@ describe("PrettyPrint Unit test suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(12),
-        logPrice: BigNumber.from(31),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(31)
-        ),
+        tick: BigNumber.from(31),
+        price: TickLib.priceFromTick(BigNumber.from(31)),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -56,10 +54,8 @@ describe("PrettyPrint Unit test suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(12),
-        logPrice: BigNumber.from(31),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(31)
-        ),
+        tick: BigNumber.from(31),
+        price: TickLib.priceFromTick(BigNumber.from(31)),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -89,10 +85,8 @@ describe("PrettyPrint Unit test suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(12),
-        logPrice: BigNumber.from(31),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(31)
-        ),
+        tick: BigNumber.from(31),
+        price: TickLib.priceFromTick(BigNumber.from(31)),
       };
       const offers: Iterable<Market.Offer> = [offer, offer];
 

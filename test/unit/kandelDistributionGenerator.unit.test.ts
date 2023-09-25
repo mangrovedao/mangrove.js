@@ -23,7 +23,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         const distribution = sut.calculateDistribution({
           priceParams: {
             minPrice: Big(1000),
-            logPriceOffset: 2,
+            stepSize: 2,
             pricePoints: 7,
           },
           midPrice: Big(5000),
@@ -61,7 +61,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         const distribution = sut.calculateDistribution({
           priceParams: {
             minPrice: Big(1000),
-            logPriceOffset: 2,
+            stepSize: 2,
             pricePoints: 7,
           },
           midPrice: Big(5000),
@@ -99,7 +99,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         const distribution = sut.calculateDistribution({
           priceParams: {
             minPrice: Big(1000),
-            logPriceOffset: 2,
+            stepSize: 2,
             pricePoints: 7,
           },
           midPrice: Big(5000),
@@ -158,10 +158,10 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
   describe(
     KandelDistributionGenerator.prototype.calculateDistribution.name,
     () => {
-      const logPriceOffset = 2;
+      const tickOffset = 2;
       const minPrice = Big(1000);
       const pricePoints = 5;
-      const priceParams = { minPrice, logPriceOffset, pricePoints };
+      const priceParams = { minPrice, tickOffset, pricePoints };
       const midPrice = Big(7000);
 
       it("can calculate distribution with constant base", () => {
@@ -181,7 +181,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           assert.equal(d.base.toNumber(), 1, `wrong base at ${i}`);
           assert.equal(
             d.quote.toNumber(),
-            minPrice.mul(Big(logPriceOffset).pow(i)).toNumber(),
+            minPrice.mul(Big(tickOffset).pow(i)).toNumber(),
             `wrong quote at ${i}`
           );
         });
@@ -209,7 +209,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           assert.equal(d.base.toNumber(), 1, `wrong base at ${d.index}`);
           assert.equal(
             d.quote.toNumber(),
-            minPrice.mul(Big(logPriceOffset).pow(d.index)).toNumber(),
+            minPrice.mul(Big(tickOffset).pow(d.index)).toNumber(),
             `wrong quote at ${d.index}`
           );
         });
@@ -232,7 +232,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           assert.equal(d.quote.toNumber(), 1000, `wrong quote at ${i}`);
           assert.equal(
             d.base.toNumber(),
-            d.quote.div(minPrice.mul(Big(logPriceOffset).pow(i)).toNumber()),
+            d.quote.div(minPrice.mul(Big(tickOffset).pow(i)).toNumber()),
             `wrong base at ${i}`
           );
         });
@@ -270,15 +270,13 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         distribution.offers.forEach((d, i) => {
           assert.equal(
             d.base.toNumber(),
-            d.offerType == "asks"
-              ? 1
-              : 1 / Big(logPriceOffset).pow(i).toNumber(),
+            d.offerType == "asks" ? 1 : 1 / Big(tickOffset).pow(i).toNumber(),
             `wrong base at ${i}`
           );
           assert.equal(
             d.quote.toNumber(),
             d.offerType == "asks"
-              ? minPrice.mul(Big(logPriceOffset).pow(i)).toNumber()
+              ? minPrice.mul(Big(tickOffset).pow(i)).toNumber()
               : 1000,
             `wrong quote at ${i}`
           );
@@ -290,10 +288,10 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
   describe(
     KandelDistributionGenerator.prototype.calculateMinimumDistribution.name,
     () => {
-      const logPriceOffset = 2;
+      const tickOffset = 2;
       const minPrice = Big(1000);
       const pricePoints = 5;
-      const priceParams = { minPrice, logPriceOffset, pricePoints };
+      const priceParams = { minPrice, tickOffset, pricePoints };
       const midPrice = Big(7000);
       it("throws if both constant", () => {
         // Act/Assert
@@ -378,7 +376,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         const distribution = sut.calculateDistribution({
           priceParams: {
             minPrice: Big(1000),
-            logPriceOffset: 2,
+            stepSize: 2,
             pricePoints: 7,
           },
           midPrice: Big(5000),
@@ -438,9 +436,9 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             offerType: offerType as Market.BA,
             index: 2,
             price: 4000,
-            spread: 1,
+            // spread: 1,
             pricePoints: 10,
-            logPriceOffset: 2,
+            stepSize: 2,
             minimumBasePerOffer,
             minimumQuotePerOffer,
           });

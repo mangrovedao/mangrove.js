@@ -11,7 +11,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
         // Arrange
         const minPrice = Big(1001);
         const maxPrice = Big(1588.461197266944);
-        const logPriceOffset = 1.08;
+        const stepSize = 1.08;
         const pricePoints = 7;
         const sut = new KandelPriceCalculation(5);
 
@@ -19,7 +19,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
         const pricesAndRatio1 = sut.calculatePrices({
           minPrice,
           maxPrice,
-          logPriceOffset,
+          stepSize,
           midPrice,
         });
         const pricesAndRatio2 = sut.calculatePrices({
@@ -30,13 +30,13 @@ describe("KandelPriceCalculation unit tests suite", () => {
         });
         const pricesAndRatio3 = sut.calculatePrices({
           minPrice,
-          logPriceOffset,
+          stepSize,
           pricePoints,
           midPrice,
         });
         const pricesAndRatio4 = sut.calculatePrices({
           maxPrice,
-          logPriceOffset,
+          stepSize,
           pricePoints,
           midPrice,
         });
@@ -67,10 +67,10 @@ describe("KandelPriceCalculation unit tests suite", () => {
           pricesAndRatio4.prices.map((x) => x?.toNumber()),
           expectedPrices
         );
-        assert.equal(pricesAndRatio1.logPriceOffset, logPriceOffset);
-        assert.equal(pricesAndRatio2.logPriceOffset, logPriceOffset);
-        assert.equal(pricesAndRatio3.logPriceOffset, logPriceOffset);
-        assert.equal(pricesAndRatio4.logPriceOffset, logPriceOffset);
+        assert.equal(pricesAndRatio1.tickOffset, stepSize);
+        assert.equal(pricesAndRatio2.tickOffset, stepSize);
+        assert.equal(pricesAndRatio3.tickOffset, stepSize);
+        assert.equal(pricesAndRatio4.tickOffset, stepSize);
       });
     });
 
@@ -86,9 +86,9 @@ describe("KandelPriceCalculation unit tests suite", () => {
 
       // Assert
       assert.equal(
-        pricesAndRatio.logPriceOffset.toString(),
+        pricesAndRatio.tickOffset.toString(),
         UnitCalculations.fromUnits(
-          UnitCalculations.toUnits(pricesAndRatio.logPriceOffset, 5),
+          UnitCalculations.toUnits(pricesAndRatio.tickOffset, 5),
           5
         ).toString()
       );
@@ -99,7 +99,7 @@ describe("KandelPriceCalculation unit tests suite", () => {
       assert.throws(
         () => sut.calculatePrices({ pricePoints: 10, maxPrice: Big(2) }),
         new Error(
-          "Exactly three of minPrice, maxPrice, logPriceOffset, and pricePoints must be given"
+          "Exactly three of minPrice, maxPrice, tickOffset, and pricePoints must be given"
         )
       );
     });

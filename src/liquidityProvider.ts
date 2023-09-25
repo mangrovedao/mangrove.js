@@ -19,7 +19,7 @@ import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
 import { BigNumber } from "@ethersproject/bignumber";
-import { LogPriceConversionLib } from "./util/coreCalcuations/LogPriceConversionLib";
+import { TickLib } from "./util/coreCalcuations/TickLib";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -39,7 +39,7 @@ namespace LiquidityProvider {
 
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
-    | ({ logPrice: Bigish; gives: Bigish } & OptParams);
+    | ({ tick: Bigish; gives: Bigish } & OptParams);
 
   export type OfferActionResult = {
     offerType: Market.BA;
@@ -98,7 +98,7 @@ class LiquidityProvider {
       | {
           base: string;
           quote: string;
-          tickScale: Bigish;
+          tickSpacing: Bigish;
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
@@ -208,32 +208,32 @@ class LiquidityProvider {
   static normalizeOfferParams(
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     market: {
-      tickScale: BigNumber;
+      tickSpacing: BigNumber;
       base: { decimals: number };
       quote: { decimals: number };
     }
   ): {
     price: Big;
-    logPrice: ethers.BigNumber;
+    tick: ethers.BigNumber;
     gives: Big;
     gasreq?: number;
     gasprice?: number;
     fund?: Bigish;
   } {
-    let logPrice: ethers.BigNumber, gives, price: BigSource;
+    let tick: ethers.BigNumber, gives, price: BigSource;
     const trade = new Trade();
     // deduce price from wants&gives, or deduce wants&gives from volume&price
     if ("gives" in p) {
-      [logPrice, gives] = [ethers.BigNumber.from(p.logPrice), p.gives];
-      price = LogPriceConversionLib.priceFromLogPriceReadable(logPrice);
+      [tick, gives] = [ethers.BigNumber.from(p.tick), p.gives];
+      price = TickLib.priceFromTick(tick);
     } else {
       price = p.price;
-      logPrice = LogPriceConversionLib.getLogPriceFromPrice(price);
+      tick = TickLib.getTickFromPrice(price);
       let wants = Big(0);
       [wants, gives] = [Big(p.volume).mul(price), Big(p.volume)];
       if (p.ba === "bids") {
         [wants, gives] = [gives, wants];
-        logPrice = logPrice.mul(-1);
+        tick = tick.mul(-1);
       }
     }
     const fund = p.fund;
@@ -241,19 +241,15 @@ class LiquidityProvider {
       const priceWithCorrectDecimals = Big(price).div(
         Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
       );
-      logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-        priceWithCorrectDecimals
-      );
+      tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
     } else {
       const priceWithCorrectDecimals = Big(price).mul(
         Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
       );
-      logPrice = LogPriceConversionLib.getLogPriceFromPrice(
-        priceWithCorrectDecimals
-      );
+      tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
     }
 
-    return { logPrice: logPrice, gives: Big(gives), price: Big(price), fund };
+    return { tick: tick, gives: Big(gives), price: Big(price), fund };
   }
 
   static optValueToPayableOverride(
@@ -301,8 +297,10 @@ class LiquidityProvider {
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.providers.Log }> {
-    const { logPrice, gives, price, fund } =
-      LiquidityProvider.normalizeOfferParams(p, this.market);
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      p,
+      this.market
+    );
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
@@ -314,21 +312,21 @@ class LiquidityProvider {
         {
           outbound: outbound_tkn.address,
           inbound: inbound_tkn.address,
-          tickScale: this.market.tickScale,
+          tickSpacing: this.market.tickSpacing,
         },
-        logPrice,
+        tick,
         outbound_tkn.toUnits(gives),
         this.gasreq,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {
-      txPromise = this.mgv.contract.newOfferByLogPrice(
+      txPromise = this.mgv.contract.newOfferByTick(
         {
           outbound: outbound_tkn.address,
           inbound: inbound_tkn.address,
-          tickScale: this.market.tickScale,
+          tickSpacing: this.market.tickSpacing,
         },
-        logPrice,
+        tick,
         outbound_tkn.toUnits(gives),
         this.gasreq,
         0, //gasprice
@@ -431,8 +429,10 @@ class LiquidityProvider {
         `The offer is owned by a different address ${offerMakerAddress}, not the expected address ${thisMaker}.`
       );
     }
-    const { logPrice, gives, price, fund } =
-      LiquidityProvider.normalizeOfferParams(p, this.market);
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      p,
+      this.market
+    );
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
@@ -443,22 +443,22 @@ class LiquidityProvider {
         {
           outbound: outbound_tkn.address,
           inbound: inbound_tkn.address,
-          tickScale: this.market.tickScale,
+          tickSpacing: this.market.tickSpacing,
         },
-        logPrice,
+        tick,
         outbound_tkn.toUnits(gives),
         id,
         this.gasreq,
         LiquidityProvider.optValueToPayableOverride(overrides, fund)
       );
     } else {
-      txPromise = this.mgv.contract.updateOfferByLogPrice(
+      txPromise = this.mgv.contract.updateOfferByTick(
         {
           outbound: outbound_tkn.address,
           inbound: inbound_tkn.address,
-          tickScale: this.market.tickScale,
+          tickSpacing: this.market.tickSpacing,
         },
-        logPrice,
+        tick,
         outbound_tkn.toUnits(gives),
         0,
         0,
@@ -517,7 +517,7 @@ class LiquidityProvider {
       {
         outbound: outbound_tkn.address,
         inbound: inbound_tkn.address,
-        tickScale: this.market.tickScale,
+        tickSpacing: this.market.tickSpacing,
       },
       id,
       deprovision,

@@ -87,7 +87,7 @@ class OfferLogic {
 
   /** Retrieves the gasreq necessary for offers of this OfferLogic to execute a trade. */
   async offerGasreq(): Promise<number> {
-    const offerGasreq = await this.contract.offerGasreq();
+    const offerGasreq = await this.contract["offerGasreq()"]();
     return offerGasreq.toNumber();
   }
 
@@ -183,7 +183,7 @@ class OfferLogic {
         {
           outbound: outbound_tkn.address,
           inbound: inbound_tkn.address,
-          tickScale: market.tickScale,
+          tickSpacing: market.tickSpacing,
         },
         offerId
       ),

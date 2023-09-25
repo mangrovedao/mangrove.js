@@ -277,20 +277,20 @@ describe("KandelDistribution unit tests suite", () => {
   describe(KandelDistribution.prototype.getPricesForDistribution.name, () => {
     it("returns prices according to bid/ask", () => {
       // Arrange
-      const logPriceOffset = 1.09;
+      const stepSize = 1.09;
       const firstBase = Big(3);
       const firstQuote = Big(5000);
       const pricePoints = 10;
       const priceCalculation = new KandelPriceCalculation(5);
       const pricesAndRatio = priceCalculation.calculatePrices({
         minPrice: firstQuote.div(firstBase),
-        logPriceOffset,
+        stepSize,
         pricePoints,
       });
 
       const helper = new KandelDistributionHelper(12, 12);
       const sut = helper.calculateDistributionConstantBase(
-        logPriceOffset,
+        stepSize,
         pricesAndRatio.prices,
         firstBase,
         3
@@ -307,7 +307,7 @@ describe("KandelDistribution unit tests suite", () => {
           price.toNumber(),
           `Price is not as expected at ${i}`
         );
-        price = price.mul(logPriceOffset);
+        price = price.mul(stepSize);
       });
     });
 

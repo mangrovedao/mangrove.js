@@ -57,7 +57,7 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -65,7 +65,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const asksSemibook = market.getSemibook("asks");
       const offer = await asksSemibook.offerInfo(1);
@@ -77,14 +77,14 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
       );
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
         bookOptions: { maxOffers: 0 },
       });
       const asksSemibook = market.getSemibook("asks");
@@ -101,7 +101,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
@@ -112,7 +112,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           fee,
           density,
@@ -124,7 +124,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           3,
           BigNumber.from("4000000000000000000"),
@@ -147,7 +147,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
@@ -158,7 +158,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           3,
           BigNumber.from("4000000000000000000"),
@@ -170,7 +170,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           fee,
           density,
@@ -193,12 +193,12 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -210,14 +210,14 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
       );
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
 
       const bestInCache = market.getSemibook("asks").getBestInCache();
@@ -230,7 +230,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
@@ -241,7 +241,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           fee,
           density,
@@ -253,7 +253,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           3,
           BigNumber.from("4000000000000000000"),
@@ -271,7 +271,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
@@ -282,7 +282,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           3,
           BigNumber.from("4000000000000000000"),
@@ -294,7 +294,7 @@ describe("Semibook integration tests suite", function () {
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           fee,
           density,
@@ -316,7 +316,7 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -324,7 +324,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const asksSemibook = market.getSemibook("asks");
       const offer = await asksSemibook.offerInfo(1);
@@ -336,7 +336,7 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -344,7 +344,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
         bookOptions: { maxOffers: 0 },
       });
       const asksSemibook = market.getSemibook("asks");
@@ -361,7 +361,7 @@ describe("Semibook integration tests suite", function () {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
           });
           const semibook = market.getSemibook("asks");
           expect(await semibook.estimateVolume({ given: 1, to })).to.deep.equal(
@@ -375,7 +375,7 @@ describe("Semibook integration tests suite", function () {
         it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
           // Put one offer on asks
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
 
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -383,7 +383,7 @@ describe("Semibook integration tests suite", function () {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: { maxOffers: 0 },
           });
           const semibook = market.getSemibook("asks");
@@ -398,10 +398,10 @@ describe("Semibook integration tests suite", function () {
         it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
           // Put one offer on asks
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
 
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -410,7 +410,7 @@ describe("Semibook integration tests suite", function () {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: { maxOffers: 1 },
           });
           const semibook = market.getSemibook("asks");
@@ -425,10 +425,10 @@ describe("Semibook integration tests suite", function () {
         it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
           // Put two offers on asks
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
 
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -436,7 +436,7 @@ describe("Semibook integration tests suite", function () {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: { maxOffers: 1 },
           });
           const semibook = market.getSemibook("asks");
@@ -453,14 +453,14 @@ describe("Semibook integration tests suite", function () {
     describe("estimateVolume({to: buy}) - calculation tests", () => {
       it("returns zero when given is zero", async function () {
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -473,7 +473,7 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -481,7 +481,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -494,10 +494,10 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "3" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -505,7 +505,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -518,7 +518,7 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", logPrice: "4" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "4" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -526,7 +526,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -539,10 +539,10 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", logPrice: "4" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "4" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -550,7 +550,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -565,7 +565,7 @@ describe("Semibook integration tests suite", function () {
     describe("estimateVolume({to: sell}) - calculation tests", () => {
       it("returns zero when given is zero", async function () {
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -573,7 +573,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -586,7 +586,7 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -594,7 +594,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -607,10 +607,10 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "3" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -618,7 +618,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -631,7 +631,7 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", logPrice: "4" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "4" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -639,7 +639,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -652,10 +652,10 @@ describe("Semibook integration tests suite", function () {
 
       it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", logPrice: "4" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "4" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -663,7 +663,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
         expect(
@@ -682,7 +682,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
           bookOptions: {
             desiredPrice: 1,
             chunkSize: 1, // Fetch only 1 offer in each chunk
@@ -694,17 +694,17 @@ describe("Semibook integration tests suite", function () {
 
       it("fetches all offers if all have a better price", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
           bookOptions: {
             desiredPrice: 3,
             chunkSize: 1, // Fetch only 1 offer in each chunk
@@ -716,10 +716,10 @@ describe("Semibook integration tests suite", function () {
 
       it("fetches only one chunk if no offers have a better price", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "3" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" })
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -727,7 +727,7 @@ describe("Semibook integration tests suite", function () {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
           bookOptions: {
             desiredPrice: 1,
             chunkSize: 1, // Fetch only 1 offer in each chunk
@@ -739,23 +739,23 @@ describe("Semibook integration tests suite", function () {
 
       it("stops fetching when a chunk with a worse price has been fetched", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
         );
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
         );
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "3" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" })
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "4" })
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "4" })
         );
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
           bookOptions: {
             desiredPrice: 2,
             chunkSize: 1, // Fetch only 1 offer in each chunk
@@ -772,7 +772,7 @@ describe("Semibook integration tests suite", function () {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 1,
@@ -788,17 +788,17 @@ describe("Semibook integration tests suite", function () {
 
         it("fetches all offers if offer list has insufficient volume", async function () {
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 3,
@@ -814,17 +814,17 @@ describe("Semibook integration tests suite", function () {
 
         it("fetches only one chunk if it has sufficient volume", async function () {
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 1,
@@ -840,23 +840,23 @@ describe("Semibook integration tests suite", function () {
 
         it("stops fetching when sufficient volume has been fetched", async function () {
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "2" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" })
           );
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "3" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "4" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "4" })
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 3,
@@ -876,7 +876,7 @@ describe("Semibook integration tests suite", function () {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 1,
@@ -892,17 +892,17 @@ describe("Semibook integration tests suite", function () {
 
         it("fetches all offers if offer list has insufficient volume", async function () {
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "1" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 3,
@@ -918,17 +918,17 @@ describe("Semibook integration tests suite", function () {
 
         it("fetches only one chunk if it has sufficient volume", async function () {
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "1" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 1,
@@ -944,23 +944,23 @@ describe("Semibook integration tests suite", function () {
 
         it("stops fetching when sufficient volume has been fetched", async function () {
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "4", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "4", tick: "1" })
           );
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "3", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "3", tick: "1" })
           );
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "1" })
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", logPrice: "1" })
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" })
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
             bookOptions: {
               desiredVolume: {
                 given: 3,
@@ -983,7 +983,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const semibook = market.getSemibook("asks");
 
@@ -996,7 +996,7 @@ describe("Semibook integration tests suite", function () {
         {
           outbound: market.base.address,
           inbound: market.quote.address,
-          tickScale: 1,
+          tickSpacing: 1,
         },
         offerGasreq
       );
@@ -1016,14 +1016,14 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       await waitForTransaction(
         mgvAdmin.contract.setDensity96X32(
           {
             outbound: market.base.address,
             inbound: market.quote.address,
-            tickScale: 1,
+            tickSpacing: 1,
           },
           0
         )
@@ -1043,7 +1043,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const semibook = market.getSemibook("asks");
       expect(await semibook.getMaxGasReq()).to.be.undefined;
@@ -1060,21 +1060,21 @@ describe("Semibook integration tests suite", function () {
       const asks = [
         {
           id: 1,
-          logPrice: "1",
+          tick: "1",
           gives: "1",
           gasreq: expectedAsksMaxGasReq - 100,
           gasprice: 1,
         },
         {
           id: 2,
-          logPrice: "1.2",
+          tick: "1.2",
           gives: "1",
           gasreq: expectedAsksMaxGasReq,
           gasprice: 3,
         },
         {
           id: 3,
-          logPrice: "1",
+          tick: "1",
           gives: "1.2",
           gasreq: expectedAsksMaxGasReq - 2,
           gasprice: 21,
@@ -1084,21 +1084,21 @@ describe("Semibook integration tests suite", function () {
       const bids = [
         {
           id: 1,
-          logPrice: "0.99",
+          tick: "0.99",
           gives: "1",
           gasreq: expectedBidsMaxGasReq - 7,
           gasprice: 11,
         },
         {
           id: 2,
-          logPrice: "1",
+          tick: "1",
           gives: "1.43",
           gasreq: expectedBidsMaxGasReq - 10,
           gasprice: 7,
         },
         {
           id: 3,
-          logPrice: "1.11",
+          tick: "1.11",
           gives: "1",
           gasreq: expectedBidsMaxGasReq,
           gasprice: 30,
@@ -1122,7 +1122,7 @@ describe("Semibook integration tests suite", function () {
       const market = await mgv.market({
         base: base,
         quote: quote,
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const actualAsksMaxGasReq = await market.getBook().asks.getMaxGasReq();
       const actualBidsMaxGasReq = await market.getBook().bids.getMaxGasReq();

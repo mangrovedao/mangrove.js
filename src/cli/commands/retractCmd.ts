@@ -15,7 +15,7 @@ export const builder = (yargs: yargs.Argv) => {
   return yargs
     .positional("base", { type: "string", demandOption: true })
     .positional("quote", { type: "string", demandOption: true })
-    .option("tickScale", { type: "number", demandOption: true })
+    .option("tickSpacing", { type: "number", demandOption: true })
     .option("ba", { choices: ["asks", "bids"] })
     .option("nodeUrl", { type: "string", demandOption: true })
     .option("privateKey", { type: "string", demandOption: true })
@@ -33,7 +33,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
   const market = await mangrove.market({
     base: argv.base,
     quote: argv.quote,
-    tickScale: argv.tickScale,
+    tickSpacing: argv.tickSpacing,
     bookOptions: { maxOffers: 200 },
   });
 
@@ -85,7 +85,7 @@ async function retractAllFromOfferList(
         {
           outbound: outbound_tkn.address,
           inbound: inbound_tkn.address,
-          tickScale: market.tickScale,
+          tickSpacing: market.tickSpacing,
         },
         offer.id,
         deprovision
@@ -95,7 +95,7 @@ async function retractAllFromOfferList(
           {
             outbound: outbound_tkn.address,
             inbound: inbound_tkn.address,
-            tickScale: market.tickScale,
+            tickSpacing: market.tickSpacing,
           },
           offer.id,
           deprovision

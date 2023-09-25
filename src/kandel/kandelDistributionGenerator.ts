@@ -83,7 +83,7 @@ class KandelDistributionGenerator {
       pricesAndRatio.prices
     );
     return this.distributionHelper.calculateDistributionFromPrices(
-      pricesAndRatio.logPriceOffset,
+      pricesAndRatio.tickOffset,
       pricesAndRatio.prices,
       firstAskIndex,
       params.initialAskGives ? Big(params.initialAskGives) : undefined,
@@ -112,7 +112,7 @@ class KandelDistributionGenerator {
 
     const prices = params.distribution.getPricesForDistribution();
     return this.distributionHelper.calculateDistributionFromPrices(
-      params.distribution.logPriceOffset,
+      params.distribution.stepSize,
       prices,
       params.distribution.getFirstAskIndex(),
       initialGives.askGives,
@@ -166,7 +166,7 @@ class KandelDistributionGenerator {
     explicitOffers: OffersWithGives;
     distribution:
       | {
-          logPriceOffset: number;
+          stepSize: number;
           pricePoints: number;
         }
       | KandelDistribution;
@@ -175,7 +175,7 @@ class KandelDistributionGenerator {
       params.distribution instanceof KandelDistribution
         ? params.distribution
         : {
-            logPriceOffset: params.distribution.logPriceOffset,
+            stepSize: params.distribution.stepSize,
             pricePoints: params.distribution.pricePoints,
           };
     return this.distributionHelper.createDistributionWithOffers(
@@ -200,8 +200,8 @@ class KandelDistributionGenerator {
     offerType: Market.BA;
     index: number;
     price: Bigish;
-    logPriceOffset: number;
-    spread: number;
+    stepSize: number;
+    // spread: number;
     pricePoints: number;
     minimumBasePerOffer: Bigish;
     minimumQuotePerOffer: Bigish;
@@ -209,7 +209,7 @@ class KandelDistributionGenerator {
     const prices = this.priceCalculation.getPricesFromPrice(
       params.index,
       Big(params.price),
-      params.logPriceOffset,
+      params.stepSize,
       params.pricePoints
     );
 
@@ -217,7 +217,7 @@ class KandelDistributionGenerator {
       params.offerType,
       params.index,
       params.pricePoints,
-      params.spread
+      params.stepSize
     );
 
     // Prices don't have to be sorted

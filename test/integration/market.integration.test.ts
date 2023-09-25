@@ -17,8 +17,8 @@ import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
 import Trade from "../../src/util/trade";
 import { Density } from "../../src/util/coreCalcuations/Density";
-import { MAX_LOG_PRICE } from "../../src/util/coreCalcuations/Constants";
-import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
+import { MAX_TICK } from "../../src/util/coreCalcuations/Constants";
+import { TickLib } from "../../src/util/coreCalcuations/TickLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -82,12 +82,12 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const marketReadonly = await mgvReadonly.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -99,7 +99,7 @@ describe("Market integration tests suite", () => {
         );
       });
       await helpers.newOffer(mgv, market.base, market.quote, {
-        logPrice: 1,
+        tick: 1,
         gives: "1.2",
       });
       await pro1;
@@ -134,7 +134,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       // Act
       const result = market.getOutboundInbound("asks");
@@ -148,7 +148,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       // Act
       const result = market.getOutboundInbound("bids");
@@ -164,7 +164,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
@@ -174,10 +174,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
       const bids: Mangrove.LocalConfig = {
         active: true,
@@ -186,10 +187,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
 
       mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
@@ -204,7 +206,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
@@ -214,10 +216,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
       const bids: Mangrove.LocalConfig = {
         active: false,
@@ -226,10 +229,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
 
       mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
@@ -244,7 +248,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
@@ -254,10 +258,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
       const bids: Mangrove.LocalConfig = {
         active: false,
@@ -266,10 +271,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
 
       mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
@@ -284,7 +290,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
@@ -294,10 +300,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
       const bids: Mangrove.LocalConfig = {
         active: true,
@@ -306,10 +313,11 @@ describe("Market integration tests suite", () => {
         kilo_offer_gasbase: 0,
         lock: false,
         last: undefined,
-        tickPosInLeaf: 1,
-        level0: 1,
+        binPosInLeaf: 1,
+        root: 1,
         level1: 1,
         level2: 1,
+        level3: 1,
       };
 
       mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
@@ -326,7 +334,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
@@ -341,10 +349,8 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(23),
-        logPrice: BigNumber.from(23),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(23)
-        ),
+        tick: BigNumber.from(23),
+        price: TickLib.priceFromTick(BigNumber.from(23)),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -361,7 +367,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
@@ -376,10 +382,8 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: BigNumber.from(23),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(23)
-        ),
+        tick: BigNumber.from(23),
+        price: TickLib.priceFromTick(BigNumber.from(23)),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -400,7 +404,7 @@ describe("Market integration tests suite", () => {
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
-          tickScale: 1,
+          tickSpacing: 1,
         });
         const gasreq = 10000;
         const config = await market.config();
@@ -452,7 +456,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const provision = await market.getOfferProvision("bids", 30000);
 
@@ -480,7 +484,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const offer: Market.Offer = {
@@ -492,10 +496,8 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: BigNumber.from(23),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(23)
-        ),
+        tick: BigNumber.from(23),
+        price: TickLib.priceFromTick(BigNumber.from(23)),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -512,7 +514,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const offer: Market.Offer = {
@@ -524,10 +526,8 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: BigNumber.from(23),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(23)
-        ),
+        tick: BigNumber.from(23),
+        price: TickLib.priceFromTick(BigNumber.from(23)),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -544,7 +544,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
@@ -558,10 +558,8 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         kilo_offer_gasbase: 0,
         gives: new Big(-12),
-        logPrice: BigNumber.from(23),
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(23)
-        ),
+        tick: BigNumber.from(23),
+        price: TickLib.priceFromTick(BigNumber.from(23)),
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -584,7 +582,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const params: Market.DirectionlessVolumeParams = {
@@ -592,7 +590,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        logPrice: BigNumber.from(0),
+        tick: BigNumber.from(0),
         estimatedVolume: new Big(12),
         givenResidue: new Big(12),
       };
@@ -614,7 +612,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const params: Market.DirectionlessVolumeParams = {
@@ -622,7 +620,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        logPrice: BigNumber.from(0),
+        tick: BigNumber.from(0),
         estimatedVolume: new Big(12),
         givenResidue: new Big(12),
       };
@@ -644,7 +642,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenB",
         quote: "TokenA",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
       const params: Market.DirectionlessVolumeParams = {
@@ -652,7 +650,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        logPrice: BigNumber.from(0),
+        tick: BigNumber.from(0),
         estimatedVolume: new Big(12),
         givenResidue: new Big(12),
       };
@@ -677,12 +675,12 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
     const market2 = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     console.log("markets created");
@@ -711,12 +709,12 @@ describe("Market integration tests suite", () => {
     market2.subscribe(cb2);
 
     await helpers
-      .newOffer(mgv, market.base, market.quote, { logPrice: "1", gives: "1.2" })
+      .newOffer(mgv, market.base, market.quote, { tick: "1", gives: "1.2" })
       .then((tx) => tx.wait());
 
     await helpers
       .newOffer(mgv, market.quote, market.base, {
-        logPrice: "1",
+        tick: "1",
         gives: "1.1",
       })
       .then((tx) => tx.wait());
@@ -729,9 +727,9 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       kilo_offer_gasbase: (await market.config()).asks.kilo_offer_gasbase,
-      logPrice: BigNumber.from(1),
+      tick: BigNumber.from(1),
       gives: Big("1.2"),
-      price: LogPriceConversionLib.priceFromLogPriceReadable(BigNumber.from(1)),
+      price: TickLib.priceFromTick(BigNumber.from(1)),
     };
 
     const offer2 = {
@@ -742,9 +740,9 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       kilo_offer_gasbase: (await market.config()).bids.kilo_offer_gasbase,
-      logPrice: BigNumber.from(1),
+      tick: BigNumber.from(1),
       gives: Big("1.1"),
-      price: LogPriceConversionLib.priceFromLogPriceReadable(BigNumber.from(1)),
+      price: TickLib.priceFromTick(BigNumber.from(1)),
     };
 
     // Events may be received in different order
@@ -776,7 +774,7 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ logPrice: "1", fillVolume: "1.3" });
+    await market.sell({ tick: "1", fillVolume: "1.3" });
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
@@ -792,7 +790,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
@@ -815,7 +813,7 @@ describe("Market integration tests suite", () => {
 
     // make a buy, which we expect to provoke an OfferFail
     const buyPromises = await market.buy({
-      logPrice: "1",
+      tick: "1",
       fillVolume: "1.5e12",
     });
     const result = await buyPromises.result;
@@ -841,7 +839,7 @@ describe("Market integration tests suite", () => {
     const tx2 = await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
     await mgvTestUtil.waitForBlock(mgv, tx2.blockNumber);
     const buyPromises_ = await market.buy({
-      logPrice: "1",
+      tick: "1",
       fillVolume: "1.5e12",
     });
     const result_ = await buyPromises_.result;
@@ -857,7 +855,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     // post two offers, one worse than the other.
@@ -868,23 +866,21 @@ describe("Market integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      logPrice: 1,
+      tick: 1,
       gives: rawMinGivesBase,
     });
     await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
-      logPrice: 2,
+      tick: 2,
       gives: rawMinGivesBase.mul(2),
     });
-    const gave = LogPriceConversionLib.priceFromLogPriceReadable(
-      BigNumber.from(1)
-    )
+    const gave = TickLib.priceFromTick(BigNumber.from(1))
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
-      logPrice: 1,
+      tick: 1,
       fillVolume: 10,
     });
     const result = await buyPromises.result;
@@ -901,7 +897,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     // post two offers, one worse than the other.
@@ -912,26 +908,24 @@ describe("Market integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      logPrice: 1,
+      tick: 1,
       gives: rawMinGivesBase,
     });
     await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
-      logPrice: 2,
+      tick: 2,
       gives: rawMinGivesBase.mul(2),
     });
 
     const buyPromises = await market.buy({
       forceRoutingToMangroveOrder: false,
-      logPrice: 1,
+      tick: 1,
       fillVolume: 10,
     });
     const result = await buyPromises.result;
-    const gave = LogPriceConversionLib.priceFromLogPriceReadable(
-      BigNumber.from(1)
-    )
+    const gave = TickLib.priceFromTick(BigNumber.from(1))
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -947,7 +941,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     // post two offers, one worse than the other.
@@ -958,14 +952,14 @@ describe("Market integration tests suite", () => {
       market,
       ba: "bids",
       maker,
-      logPrice: LogPriceConversionLib.getLogPriceFromPrice(2),
+      tick: TickLib.getTickFromPrice(2),
       gives: 1000000,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
-      logPrice: LogPriceConversionLib.getLogPriceFromPrice(1),
+      tick: TickLib.getTickFromPrice(1),
       gives: 1000000,
     });
 
@@ -973,7 +967,7 @@ describe("Market integration tests suite", () => {
 
     const sellPromises = await market.sell({
       volume: "0.0000000000000001",
-      price: LogPriceConversionLib.priceFromLogPriceReadable(MAX_LOG_PRICE),
+      price: TickLib.priceFromTick(MAX_TICK),
     });
     const result = await sellPromises.result;
 
@@ -991,11 +985,11 @@ describe("Market integration tests suite", () => {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
-            tickScale: 1,
+            tickSpacing: 1,
           });
 
           const tradeParams: Market.TradeParams = {
-            logPrice: LogPriceConversionLib.getLogPriceFromPrice(
+            tick: TickLib.getTickFromPrice(
               Big(0.000000000002).div(10)
             ).toNumber(),
             fillVolume: 10,
@@ -1021,7 +1015,7 @@ describe("Market integration tests suite", () => {
             market,
             ba: "asks",
             maker,
-            logPrice: 1,
+            tick: 1,
             gives: rawMinGivesBase,
           });
 
@@ -1055,7 +1049,7 @@ describe("Market integration tests suite", () => {
 
   // FIXME: should use clean or be deleted
   // it("snipe asks book for two successful orders succeeds", async function () {
-  //   const market = await mgv.market({ base: "TokenA", quote: "TokenB", tickScale: 1 });
+  //   const market = await mgv.market({ base: "TokenA", quote: "TokenB", tickSpacing: 1 });
 
   //   // post progressively worse offers.
   //   const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -1065,21 +1059,21 @@ describe("Market integration tests suite", () => {
   //     market,
   //     ba: "asks",
   //     maker,
-  //     logPrice: 1,
+  //     tick: 1,
   //     gives: rawMinGivesBase,
   //   });
   //   await mgvTestUtil.postNewOffer({
   //     market,
   //     ba: "asks",
   //     maker,
-  //     logPrice: 1,
+  //     tick: 1,
   //     gives: rawMinGivesBase.mul(2),
   //   });
   //   const tx = await mgvTestUtil.postNewOffer({
   //     market,
   //     ba: "asks",
   //     maker,
-  //     logPrice: 1,
+  //     tick: 1,
   //     gives: rawMinGivesBase.mul(3),
   //   });
 
@@ -1359,13 +1353,13 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
     await mgvAsAdmin.contract.setFee(
       {
         outbound: market.base.address,
         inbound: market.quote.address,
-        tickScale: market.tickScale,
+        tickSpacing: market.tickSpacing,
       },
       fee
     );
@@ -1379,7 +1373,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1391,7 +1385,7 @@ describe("Market integration tests suite", () => {
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
-      logPrice: "1",
+      tick: "1",
       gives: "1.2",
     });
     await pro1;
@@ -1405,7 +1399,7 @@ describe("Market integration tests suite", () => {
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
-      logPrice: "1",
+      tick: "1",
       gives: "1.2",
     });
     await pro2;
@@ -1419,7 +1413,7 @@ describe("Market integration tests suite", () => {
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
-      logPrice: "1",
+      tick: "1",
       gives: "1.2",
     });
     await pro3;
@@ -1430,7 +1424,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     const done = new Deferred();
@@ -1451,13 +1445,13 @@ describe("Market integration tests suite", () => {
 
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        logPrice: LogPriceConversionLib.getLogPriceFromPrice(1.2 / 0.3),
+        tick: TickLib.getTickFromPrice(1.2 / 0.3),
         gives: "0.3",
       })
       .then((tx) => tx.wait());
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        logPrice: LogPriceConversionLib.getLogPriceFromPrice(1 / 0.25),
+        tick: TickLib.getTickFromPrice(1 / 0.25),
         gives: "0.25",
       })
       .then((tx) => tx.wait());
@@ -1473,67 +1467,55 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     /* create bids and asks */
     let asks = [
       {
         id: 1,
-        logPrice: "1",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(1)
-        ),
+        tick: "1",
+        price: TickLib.priceFromTick(BigNumber.from(1)),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
       },
       {
         id: 2,
-        logPrice: "2",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(2)
-        ),
+        tick: "2",
+        price: TickLib.priceFromTick(BigNumber.from(2)),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
       },
       {
         id: 3,
-        logPrice: "1",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(1)
-        ),
+        tick: "1",
+        price: TickLib.priceFromTick(BigNumber.from(1)),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
       },
       {
         id: 4,
-        logPrice: "2",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(2)
-        ),
+        tick: "2",
+        price: TickLib.priceFromTick(BigNumber.from(2)),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
       },
       {
         id: 5,
-        logPrice: "1",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(1)
-        ),
+        tick: "1",
+        price: TickLib.priceFromTick(BigNumber.from(1)),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
       },
       {
         id: 6,
-        logPrice: "3",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(3)
-        ),
+        tick: "3",
+        price: TickLib.priceFromTick(BigNumber.from(3)),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
@@ -1543,60 +1525,48 @@ describe("Market integration tests suite", () => {
     let bids = [
       {
         id: 1,
-        logPrice: "2",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(2)
-        ),
+        tick: "2",
+        price: TickLib.priceFromTick(BigNumber.from(2)),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
       },
       {
         id: 2,
-        logPrice: "1",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(1)
-        ),
+        tick: "1",
+        price: TickLib.priceFromTick(BigNumber.from(1)),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
       },
       {
         id: 3,
-        logPrice: "2",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(2)
-        ),
+        tick: "2",
+        price: TickLib.priceFromTick(BigNumber.from(2)),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
       },
       {
         id: 4,
-        logPrice: "1",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(1)
-        ),
+        tick: "1",
+        price: TickLib.priceFromTick(BigNumber.from(1)),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
       },
       {
         id: 5,
-        logPrice: "3",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(3)
-        ),
+        tick: "3",
+        price: TickLib.priceFromTick(BigNumber.from(3)),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
       },
       {
         id: 6,
-        logPrice: "1",
-        price: LogPriceConversionLib.priceFromLogPriceReadable(
-          BigNumber.from(1)
-        ),
+        tick: "1",
+        price: TickLib.priceFromTick(BigNumber.from(1)),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
@@ -1633,16 +1603,16 @@ describe("Market integration tests suite", () => {
     const complete = (isAsk: boolean, ary: typeof bids) => {
       return ary.map((ofr, i) => {
         const _config = config[isAsk ? "asks" : "bids"];
-        const prevOfferLogPrice = ary[i - 1]?.logPrice ?? "-1";
-        const nextOfferLogPrice = ary[i + 1]?.logPrice ?? "-2";
+        const prevOfferTick = ary[i - 1]?.tick ?? "-1";
+        const nextOfferTick = ary[i + 1]?.tick ?? "-2";
         return {
           ...ofr,
           prev:
-            prevOfferLogPrice == ofr.logPrice
+            prevOfferTick == ofr.tick
               ? (ary[i - 1]?.id as number | undefined)
               : undefined,
           next:
-            nextOfferLogPrice == ofr.logPrice
+            nextOfferTick == ofr.tick
               ? (ary[i + 1]?.id as number | undefined)
               : undefined,
           maker: selfAddress,
@@ -1657,7 +1627,7 @@ describe("Market integration tests suite", () => {
 
     type Bs = {
       gives: Bigish;
-      logPrice: Bigish | BigNumber;
+      tick: Bigish | BigNumber;
     }[];
     /* Start testing */
 
@@ -1668,7 +1638,7 @@ describe("Market integration tests suite", () => {
       const s = (obj: Bs[number]) => {
         return {
           ...obj,
-          logPrice: obj.logPrice.toString(),
+          tick: obj.tick.toString(),
           gives: obj.gives.toString(),
         };
       };
@@ -1686,7 +1656,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
     const gasEstimate = await market.gasEstimateSell({
       volume: market.quote.fromUnits(1),
@@ -1704,7 +1674,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     const emptyBookAsksEstimate = await market.gasEstimateBuy({
@@ -1715,7 +1685,7 @@ describe("Market integration tests suite", () => {
     /* create asks */
     const askGasReq = 10000;
     const asks = [
-      { id: 1, logPrice: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
+      { id: 1, tick: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
     ];
 
     const lastTx = await waitForTransaction(
@@ -1744,7 +1714,7 @@ describe("Market integration tests suite", () => {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
       await market.quote.approveMangrove(1000000000000000);
@@ -1754,7 +1724,7 @@ describe("Market integration tests suite", () => {
 
       const bs = market.trade.baToBs(ba);
       const params: Market.TradeParams = {
-        logPrice: 1,
+        tick: 1,
         fillVolume: 1,
       };
 
@@ -1776,7 +1746,7 @@ describe("Market integration tests suite", () => {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickScale: 1,
+      tickSpacing: 1,
     });
 
     assert.equal(market.minVolumeAsk!.toNumber(), 0.0481036337152); //FIXME: check that this is correct

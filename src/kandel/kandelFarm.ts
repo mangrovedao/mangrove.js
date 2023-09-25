@@ -54,7 +54,7 @@ class KandelFarm {
     olKeyStruct?: PromiseOrValue<{
       base: PromiseOrValue<string>;
       quote: PromiseOrValue<string>;
-      tickScale: PromiseOrValue<number>;
+      tickSpacing: PromiseOrValue<number>;
     }> | null;
     onAave?: boolean;
   }) {
@@ -65,12 +65,12 @@ class KandelFarm {
     const quoteAddress = olKeyStruct?.quote
       ? this.mgv.getAddress(await olKeyStruct.quote)
       : null;
-    const tickScale = olKeyStruct?.tickScale ?? 0;
+    const tickSpacing = olKeyStruct?.tickSpacing ?? 0;
 
     const olKeyHash = olKeyStruct
       ? ethers.utils.solidityKeccak256(
           ["address", "address", "uint256"],
-          [baseAddress, quoteAddress, tickScale]
+          [baseAddress, quoteAddress, tickSpacing]
         )
       : undefined;
     const kandels =

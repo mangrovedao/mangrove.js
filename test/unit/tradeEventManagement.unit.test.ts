@@ -21,8 +21,8 @@ describe("TradeEventManagement unit tests suite", () => {
       olKeyHash: string;
       taker: string;
       fillOrKill?: boolean;
-      logPrice?: BigNumber;
-      maxLogPrice?: BigNumber;
+      tick?: BigNumber;
+      maxTick?: BigNumber;
       fillVolume: BigNumber;
       fillWants: boolean;
       restingOrder?: boolean;
@@ -40,7 +40,7 @@ describe("TradeEventManagement unit tests suite", () => {
           taker: "taker",
           fillVolume: BigNumber.from(1),
           fillWants: true,
-          logPrice: BigNumber.from(0),
+          tick: BigNumber.from(0),
         },
       };
 
@@ -54,7 +54,7 @@ describe("TradeEventManagement unit tests suite", () => {
       assert.deepStrictEqual(result.taker, evt.args.taker);
       assert.deepStrictEqual(result.fillVolume, Big(1));
       assert.deepStrictEqual(result.fillWants, evt.args.fillWants);
-      assert.deepStrictEqual(result.logPrice, 0);
+      assert.deepStrictEqual(result.tick, 0);
     });
   });
 
@@ -96,7 +96,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const summary: Market.Summary = {
         olKeyHash: "olKeyHash",
         taker: "taker",
-        logPrice: 1,
+        tick: 1,
         fillVolume: Big(2),
         fillWants: true,
       };

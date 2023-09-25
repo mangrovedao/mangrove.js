@@ -52,10 +52,11 @@ namespace Mangrove {
     kilo_offer_gasbase: number;
     lock: boolean;
     last: number | undefined;
-    tickPosInLeaf: number;
-    level0: number;
+    binPosInLeaf: number;
+    root: number;
     level1: number;
     level2: number;
+    level3: number;
   };
 
   export type GlobalConfig = {
@@ -90,7 +91,7 @@ namespace Mangrove {
   export type OpenMarketInfo = {
     base: { name: string; address: string; symbol: string; decimals: number };
     quote: { name: string; address: string; symbol: string; decimals: number };
-    tickScale: ethers.BigNumber;
+    tickSpacing: ethers.BigNumber;
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
   };
@@ -349,10 +350,10 @@ class Mangrove {
         this.olKeyHashToOLKeyStrucMap.set(market.args.olKeyHash, {
           outbound: market.args.outbound_tkn,
           inbound: market.args.inbound_tkn,
-          tickScale: market.args.tickScale,
+          tickSpacing: market.args.tickSpacing,
         });
         this.olKeyStructToOlKeyHashMap.set(
-          ` ${market.args.outbound_tkn.toLowerCase()}_${market.args.inbound_tkn.toLowerCase()}_${market.args.tickScale.toNumber()}`,
+          ` ${market.args.outbound_tkn.toLowerCase()}_${market.args.inbound_tkn.toLowerCase()}_${market.args.tickSpacing.toNumber()}`,
           market.args.olKeyHash
         );
       });
@@ -362,10 +363,10 @@ class Mangrove {
   getOlKeyHash(
     outbound: string,
     inbound: string,
-    tickScale: number
+    tickSpacing: number
   ): string | undefined {
     return this.olKeyStructToOlKeyHashMap.get(
-      ` ${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickScale}`
+      ` ${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickSpacing}`
     );
   }
   getOlKeyStruct(olKeyHash: string): OLKeyStruct | undefined {
@@ -432,7 +433,7 @@ class Mangrove {
   async market(params: {
     base: string;
     quote: string;
-    tickScale: Bigish;
+    tickSpacing: Bigish;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
     logger.debug("Initialize Market", {
@@ -475,7 +476,7 @@ class Mangrove {
       | {
           base: string;
           quote: string;
-          tickScale: Bigish;
+          tickSpacing: Bigish;
           bookOptions?: Market.BookOptions;
         }
   ): Promise<LiquidityProvider> {
@@ -700,7 +701,7 @@ class Mangrove {
     const config = await this.readerContract.configInfo({
       outbound: ethers.constants.AddressZero,
       inbound: ethers.constants.AddressZero,
-      tickScale: 0,
+      tickSpacing: 0,
     });
     return {
       monitor: config._global.monitor,
@@ -1038,7 +1039,7 @@ class Mangrove {
     tryDecodeSymbol(returnData.slice(addresses.length), "symbol");
 
     // format return value
-    return raw.markets.map(([tkn0, tkn1, tickScale]) => {
+    return raw.markets.map(([tkn0, tkn1, tickSpacing]) => {
       // Use internal mgv name if defined; otherwise use the symbol.
       const tkn0Name = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
       const tkn1Name = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
@@ -1062,7 +1063,7 @@ class Mangrove {
           symbol: data[quote].symbol,
           decimals: data[quote].decimals,
         },
-        tickScale: tickScale,
+        tickSpacing: tickSpacing,
         asksConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
               data[base].configs[quote],
@@ -1106,7 +1107,7 @@ class Mangrove {
     });
     // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
     return Promise.all(
-      openMarketsData.map(({ base, quote, tickScale }) => {
+      openMarketsData.map(({ base, quote, tickSpacing }) => {
         this.setAddress(base.name, base.address);
         if (configuration.tokens.getDecimals(base.name) === undefined) {
           configuration.tokens.setDecimals(base.name, base.decimals);
@@ -1119,7 +1120,7 @@ class Mangrove {
           mgv: this,
           base: base.name,
           quote: quote.name,
-          tickScale: tickScale.toString(),
+          tickSpacing: tickSpacing.toString(),
           bookOptions: bookOptions,
           noInit: noInit,
         });

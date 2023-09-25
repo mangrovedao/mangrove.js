@@ -5,7 +5,7 @@ import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
 import { BigNumber } from "ethers/lib/ethers";
-import { LogPriceConversionLib } from "../../src/util/coreCalcuations/LogPriceConversionLib";
+import { TickLib } from "../../src/util/coreCalcuations/TickLib";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -93,28 +93,24 @@ describe("Market unit tests suite", () => {
       assert.ok(result && gives.div(wants).eq(result));
     });
 
-    it("returns price based on tick and tickScale", async function () {
+    it("returns price based on tick and tickSpacing", async function () {
       // Arrange
       const tick = Big(12);
-      const tickScale = Big(13);
+      const tickSpacing = Big(13);
       // Act
-      const result = Market.getPrice({ tick, tickScale });
+      const result = Market.getPrice({ tick, tickSpacing });
       // Assert
-      const logPrice = tick.mul(tickScale);
-      assert.ok(
-        result && Big(Math.pow(1.0001, logPrice.toNumber())).eq(result)
-      );
+      const ratio = tick.mul(tickSpacing);
+      assert.ok(result && Big(Math.pow(1.0001, ratio.toNumber())).eq(result));
     });
 
-    it("returns price based on tick and tickScale", async function () {
+    it("returns price based on tick and tickSpacing", async function () {
       // Arrange
-      const logPrice = Big(12);
+      const tick = Big(12);
       // Act
-      const result = Market.getPrice({ logPrice });
+      const result = Market.getPrice({ tick: tick });
       // Assert
-      assert.ok(
-        result && Big(Math.pow(1.0001, logPrice.toNumber())).eq(result)
-      );
+      assert.ok(result && Big(Math.pow(1.0001, tick.toNumber())).eq(result));
     });
   });
 
@@ -152,7 +148,7 @@ describe("Market unit tests suite", () => {
         gasreq: 1,
         kilo_offer_gasbase: 1,
         gives: Big(1),
-        logPrice: LogPriceConversionLib.getLogPriceFromPrice(price),
+        tick: TickLib.getTickFromPrice(price),
         price: Big(price),
       };
     }

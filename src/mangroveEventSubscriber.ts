@@ -55,14 +55,14 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
           .getOlKeyHash(
             market.base.address,
             market.quote.address,
-            market.tickScale.toNumber()
+            market.tickSpacing.toNumber()
           )!
           .toLowerCase()
       : market.mgv
           .getOlKeyHash(
             market.quote.address,
             market.base.address,
-            market.tickScale.toNumber()
+            market.tickSpacing.toNumber()
           )!
           .toLowerCase();
   }

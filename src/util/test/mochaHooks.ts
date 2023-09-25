@@ -98,7 +98,7 @@ export const mochaHooks = {
       await mgv.market({
         base: tokenA.name,
         quote: tokenB.name,
-        tickScale: 1,
+        tickSpacing: 1,
       })
     ).config();
     await mgv.contract
@@ -106,7 +106,7 @@ export const mochaHooks = {
         {
           outbound: tokenA.address,
           inbound: tokenB.address,
-          tickScale: 1,
+          tickSpacing: 1,
         },
         250,
         localConfig.asks.density.to96X32(),
@@ -120,7 +120,7 @@ export const mochaHooks = {
         {
           outbound: tokenB.address,
           inbound: tokenA.address,
-          tickScale: 1,
+          tickSpacing: 1,
         },
         250,
         localConfig.bids.density.multiplyUp(BigNumber.from(1)).eq(0)

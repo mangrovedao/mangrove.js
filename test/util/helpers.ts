@@ -56,7 +56,7 @@ export const approxEq = (
 
 export type OfferData = {
   gives: string;
-  logPrice: BigNumberish;
+  tick: BigNumberish;
   gasreq?: BigNumberish;
   gasprice?: BigNumberish;
 };
@@ -74,18 +74,18 @@ export const newOffer = async (
   mgv: Mangrove,
   outbound_tkn: string | MgvToken,
   inbound_tkn: string | MgvToken,
-  { gives, gasreq, gasprice, logPrice }: OfferData
+  { gives, gasreq, gasprice, tick }: OfferData
 ): Promise<ContractTransaction> => {
   const outboundInfo = await getAmountAndAddress(mgv, outbound_tkn, gives);
   const inboundInfo = await getAddress(inbound_tkn, mgv);
 
-  return mgv.contract.newOfferByLogPrice(
+  return mgv.contract.newOfferByTick(
     {
       outbound: outboundInfo.address,
       inbound: inboundInfo.address,
-      tickScale: 1,
+      tickSpacing: 1,
     },
-    logPrice,
+    tick,
     outboundInfo.value,
     gasreq || 10000,
     gasprice || 1

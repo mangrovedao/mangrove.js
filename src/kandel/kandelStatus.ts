@@ -13,7 +13,7 @@ import { Bigish } from "../types";
  */
 export type OffersWithPrices = {
   offerType: Market.BA;
-  logPrice: Bigish | undefined;
+  tick: Bigish | undefined;
   index: number;
   offerId: number;
   live: boolean;
@@ -41,14 +41,14 @@ export type OfferStatus = {
     | {
         live: boolean;
         offerId: number;
-        logPrice: Big | undefined;
+        tick: Big | undefined;
       };
   bids:
     | undefined
     | {
         live: boolean;
         offerId: number;
-        logPrice: Big | undefined;
+        tick: Big | undefined;
       };
 };
 
@@ -112,7 +112,7 @@ class KandelStatus {
 
   /** Determines the status of the Kandel instance based on the passed in offers.
    * @param midPrice The current mid price of the market used to discern expected bids from asks.
-   * @param logPriceOffset The ratio of the geometric distribution.
+   * @param stepSize The ratio of the geometric distribution.
    * @param pricePoints The number of price points in the Kandel instance.
    * @param spread The spread used when transporting funds from an offer to its dual.
    * @param offers The offers to determine the status of.
@@ -125,14 +125,14 @@ class KandelStatus {
    */
   public getOfferStatuses(
     midPrice: Big,
-    logPriceOffset: number,
+    stepSize: number,
     pricePoints: number,
-    spread: number,
+    // spread: number,
     offers: OffersWithPrices
   ): Statuses {
     const liveOffers = offers
-      .filter((x) => x.live && x.index < pricePoints && x.logPrice)
-      .map((x) => ({ ...x, logPrice: Big(x.logPrice as Bigish) }));
+      .filter((x) => x.live && x.index < pricePoints && x.tick)
+      .map((x) => ({ ...x, tick: Big(x.tick as Bigish) }));
     if (!liveOffers.length) {
       throw Error(
         "Unable to determine distribution: no offers in range are live"
@@ -144,7 +144,7 @@ class KandelStatus {
       liveOffers[
         this.getIndexOfPriceClosestToMid(
           midPrice,
-          liveOffers.map((x) => x.logPrice)
+          liveOffers.map((x) => x.tick)
         )
       ];
 
@@ -152,8 +152,8 @@ class KandelStatus {
     // due to rounding and due to slight drift of prices during order execution.
     const expectedPrices = this.priceCalculation.getPricesFromPrice(
       offer.index,
-      offer.logPrice,
-      logPriceOffset,
+      offer.tick,
+      stepSize,
       pricePoints
     );
 
@@ -167,21 +167,21 @@ class KandelStatus {
         expectedPrice: p,
         asks: undefined as
           | undefined
-          | { live: boolean; offerId: number; logPrice: Big | undefined },
+          | { live: boolean; offerId: number; tick: Big | undefined },
         bids: undefined as
           | undefined
-          | { live: boolean; offerId: number; logPrice: Big | undefined },
+          | { live: boolean; offerId: number; tick: Big | undefined },
       };
     });
 
     // Merge with actual statuses
     offers
       .filter((x) => x.index < pricePoints)
-      .forEach(({ offerType, index, live, offerId, logPrice }) => {
+      .forEach(({ offerType, index, live, offerId, tick: tick }) => {
         statuses[index][offerType] = {
           live,
           offerId,
-          logPrice: logPrice ? Big(logPrice) : undefined,
+          tick: tick ? Big(tick) : undefined,
         };
       });
 
@@ -192,7 +192,7 @@ class KandelStatus {
           "bids",
           index,
           pricePoints,
-          spread
+          stepSize
         );
         if (statuses[dualIndex].bids?.live) {
           s.expectedLiveAsk = false;
@@ -203,7 +203,7 @@ class KandelStatus {
           "asks",
           index,
           pricePoints,
-          spread
+          stepSize
         );
         if (statuses[dualIndex].asks?.live) {
           s.expectedLiveBid = false;
@@ -222,9 +222,9 @@ class KandelStatus {
 
     const getPrice = (index: number) =>
       statuses[index].asks?.live
-        ? (statuses[index].asks?.logPrice as Big) // live ask has price
+        ? (statuses[index].asks?.tick as Big) // live ask has price
         : statuses[index].bids?.live
-        ? (statuses[index].bids?.logPrice as Big) // live bid has price
+        ? (statuses[index].bids?.tick as Big) // live bid has price
         : statuses[index].expectedPrice;
 
     return {

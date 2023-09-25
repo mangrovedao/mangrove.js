@@ -52,24 +52,24 @@ describe("Mangrove integration tests suite", function () {
       await mgvAdmin.contract.deactivate({
         outbound: mgv.getAddress("TokenA"),
         inbound: mgv.getAddress("TokenB"),
-        tickScale: 1,
+        tickSpacing: 1,
       });
       await mgvAdmin.contract.deactivate({
         outbound: mgv.getAddress("TokenB"),
         inbound: mgv.getAddress("TokenA"),
-        tickScale: 1,
+        tickSpacing: 1,
       });
       await mgv.readerContract.updateMarket({
         tkn0: mgv.getAddress("TokenA"),
         tkn1: mgv.getAddress("TokenB"),
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const marketsBefore = await mgv.openMarkets();
       await mgvAdmin.contract.activate(
         {
           outbound: mgv.getAddress("TokenA"),
           inbound: mgv.getAddress("TokenB"),
-          tickScale: 1,
+          tickSpacing: 1,
         },
         1,
         1,
@@ -78,7 +78,7 @@ describe("Mangrove integration tests suite", function () {
       await mgv.readerContract.updateMarket({
         tkn0: mgv.getAddress("TokenA"),
         tkn1: mgv.getAddress("TokenB"),
-        tickScale: 1,
+        tickSpacing: 1,
       });
       const markets = await mgv.openMarkets();
       assert.equal(
@@ -101,7 +101,7 @@ describe("Mangrove integration tests suite", function () {
       await mgv.readerContract.updateMarket({
         tkn0: mgv.getAddress("TokenA"),
         tkn1: mgv.getAddress("TokenB"),
-        tickScale: 1,
+        tickSpacing: 1,
       });
       let marketData = await mgv.openMarketsData();
       const tokenAData = {

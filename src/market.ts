@@ -38,10 +38,10 @@ namespace Market {
       }
     | {
         tick: Big;
-        tickScale: Big;
+        tickSpacing: Big;
       }
     | {
-        logPrice: Big;
+        tick: Big;
       };
   export type BS = "buy" | "sell";
   export type MgvReader = typechain.MgvReader;
@@ -61,7 +61,7 @@ namespace Market {
     olKeyHash: string;
     taker: string;
     fillOrKill?: boolean;
-    logPrice: number;
+    tick: number;
     fillVolume: Big;
     fillWants: boolean;
     restingOrder?: boolean;
@@ -99,7 +99,7 @@ namespace Market {
   } & { restingOrder?: RestingOrderParams } & (
       | { volume: Bigish; price: Bigish }
       | { total: Bigish; price: Bigish }
-      | { logPrice: Bigish; fillVolume: Bigish; fillWants?: boolean }
+      | { tick: Bigish; fillVolume: Bigish; fillWants?: boolean }
     );
 
   export type RestingOrderParams = {
@@ -110,7 +110,7 @@ namespace Market {
     targets: {
       offerId: number;
       takerWants: Bigish;
-      logPrice: Bigish;
+      tick: Bigish;
       gasreq: number;
     }[];
     ba: Market.BA;
@@ -187,7 +187,7 @@ namespace Market {
     gasprice: number;
     maker: string;
     gasreq: number;
-    logPrice: BigNumber;
+    tick: BigNumber;
     price: Big;
     gives: Big;
   };
@@ -245,7 +245,7 @@ namespace Market {
   export type Book = { asks: Semibook; bids: Semibook };
 
   export type VolumeEstimate = {
-    logPrice: BigNumber;
+    tick: BigNumber;
     estimatedVolume: Big;
     givenResidue: Big;
   };
@@ -265,7 +265,7 @@ class Market {
   mgv: Mangrove;
   base: MgvToken;
   quote: MgvToken;
-  tickScale: BigNumber;
+  tickSpacing: BigNumber;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook | undefined;
   #bidsSemibook: Semibook | undefined;
@@ -285,7 +285,7 @@ class Market {
       mgv: Mangrove;
       base: string;
       quote: string;
-      tickScale: Bigish;
+      tickSpacing: Bigish;
     } & Partial<Market.OptionalParams>
   ): Promise<Market> {
     const base = await params.mgv.token(params.base);
@@ -295,7 +295,7 @@ class Market {
       mgv: params.mgv,
       base,
       quote,
-      tickScale: BigNumber.from(params.tickScale),
+      tickSpacing: BigNumber.from(params.tickSpacing),
     });
     canConstructMarket = false;
     if (params["noInit"]) {
@@ -306,7 +306,7 @@ class Market {
       await market.#initialize(params.bookOptions);
     }
     const config = await market.config();
-    const gasreq = await params.mgv.orderContract.callStatic.offerGasreq();
+    const gasreq = await params.mgv.orderContract.callStatic["offerGasreq()"]();
     market.minVolumeAsk = config.asks.density.multiplyUpReadable(
       BigNumber.from(config.asks.kilo_offer_gasbase)
         .mul(1000)
@@ -329,7 +329,7 @@ class Market {
     mgv: Mangrove;
     base: MgvToken;
     quote: MgvToken;
-    tickScale: BigNumber;
+    tickSpacing: BigNumber;
   }) {
     if (!canConstructMarket) {
       throw Error(
@@ -342,7 +342,7 @@ class Market {
 
     this.base = params.base;
     this.quote = params.quote;
-    this.tickScale = params.tickScale;
+    this.tickSpacing = params.tickSpacing;
   }
 
   public close() {
@@ -525,7 +525,7 @@ class Market {
       {
         outbound: outbound_tkn.address,
         inbound: inbound_tkn.address,
-        tickScale: this.tickScale,
+        tickSpacing: this.tickSpacing,
       },
       gasreq,
       gasprice
@@ -765,7 +765,7 @@ class Market {
    */
   async simulateGas(
     ba: Market.BA,
-    logPrice: BigNumber,
+    tick: BigNumber,
     fillVolume: BigNumber,
     fillWants: boolean
   ): Promise<BigNumber> {
@@ -775,7 +775,7 @@ class Market {
     // Overestimate by 50% because market can have changed between estimation and execution and some offers may be failing.
     const estimation = (
       await semibook.simulateMarketOrder(
-        logPrice,
+        tick,
         new Big(fillVolume.toNumber()),
         fillWants
       )
@@ -973,11 +973,11 @@ class Market {
         params.wants
       );
       return baseVolume.gt(0) ? quoteVolume.div(baseVolume) : undefined;
-    } else if ("tick" in params) {
-      const logPrice = params.tick.mul(params.tickScale);
-      return Big(Math.pow(1.0001, logPrice.toNumber()));
+    } else if ("tickSpacing" in params) {
+      const tick = params.tick.mul(params.tickSpacing);
+      return Big(Math.pow(1.0001, tick.toNumber()));
     } else {
-      return Big(Math.pow(1.0001, params.logPrice.toNumber()));
+      return Big(Math.pow(1.0001, params.tick.toNumber()));
     }
   }
 

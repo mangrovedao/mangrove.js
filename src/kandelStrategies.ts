@@ -51,12 +51,12 @@ class KandelStrategies {
       | ((
           baseAddress: string,
           quoteAddress: string,
-          tickScale: Bigish
+          tickSpacing: Bigish
         ) => Promise<Market>);
   }) {
     const market =
       params.market ??
-      ((baseAddress: string, quoteAddress: string, tickScale: Bigish) => {
+      ((baseAddress: string, quoteAddress: string, tickSpacing: Bigish) => {
         const baseToken = this.mgv.getNameFromAddress(baseAddress);
         if (!baseToken) {
           throw new Error(`Unknown token at address ${baseAddress}`);
@@ -68,7 +68,7 @@ class KandelStrategies {
         return this.mgv.market({
           base: baseToken,
           quote: quoteToken,
-          tickScale,
+          tickSpacing,
         });
       });
 

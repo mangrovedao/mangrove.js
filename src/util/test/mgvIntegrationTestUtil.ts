@@ -234,7 +234,7 @@ export type NewOffer = {
   market: Market;
   ba: Market.BA;
   maker: Account;
-  logPrice?: ethers.BigNumberish;
+  tick?: ethers.BigNumberish;
   gives?: ethers.BigNumberish;
   gasreq?: ethers.BigNumberish;
   shouldFail?: boolean;
@@ -367,7 +367,7 @@ export const postNewOffer = async ({
   market,
   ba,
   maker,
-  logPrice = 1,
+  tick = 1,
   gives = "90000000000000000",
   gasreq = 10e4, // FIXME: what is the correct gasreq?
   shouldFail = false,
@@ -400,14 +400,14 @@ export const postNewOffer = async ({
 
   return await waitForTransaction(
     maker.connectedContracts.testMaker[
-      "newOfferByLogPrice((address,address,uint256),int256,uint256,uint256)"
+      "newOfferByTick((address,address,uint256),int256,uint256,uint256)"
     ](
       {
         outbound: outboundToken.address,
         inbound: inboundToken.address,
-        tickScale: market.tickScale,
+        tickSpacing: market.tickSpacing,
       },
-      logPrice,
+      tick,
       gives,
       gasreq
     )
@@ -423,7 +423,7 @@ export const postNewRevertingOffer = async (
     market,
     ba,
     maker,
-    logPrice: 1,
+    tick: 1,
     gives: "90000000000000000",
     shouldRevert: true,
   });

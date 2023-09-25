@@ -18,6 +18,7 @@ import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import OfferLogic from "../offerLogic";
 import KandelConfiguration from "./kandelConfiguration";
 import KandelSeeder from "./kandelSeeder";
+import { DirectWithBidsAndAsksDistribution } from "../types/typechain/GeometricKandel";
 
 /**
  * @notice Parameters for a Kandel instance.
@@ -30,8 +31,8 @@ import KandelSeeder from "./kandelSeeder";
 export type KandelParameters = {
   gasprice: number;
   gasreq: number;
-  logPriceOffset: number;
-  spread: number;
+  stepSize: number;
+  // spread: number; //FIXME: is spread gone?
   pricePoints: number;
 };
 
@@ -43,7 +44,7 @@ export type KandelParameters = {
 export type KandelParameterOverrides = {
   gasprice?: number;
   gasreq?: number;
-  logPriceOffset?: number;
+  stepSize?: number;
   spread?: number;
   pricePoints?: number;
 };
@@ -78,7 +79,7 @@ class KandelInstance {
       | ((
           baseAddress: string,
           quoteAddress: string,
-          tickScale: Bigish
+          tickSpacing: Bigish
         ) => Promise<Market>);
   }) {
     const kandel = typechain.GeometricKandel__factory.connect(
@@ -93,7 +94,7 @@ class KandelInstance {
         ? await params.market(
             await kandel.BASE(),
             await kandel.QUOTE(),
-            (await kandel.TICK_SCALE()).toString()
+            (await kandel.TICK_SPACING()).toString()
           )
         : params.market;
 
@@ -198,9 +199,9 @@ class KandelInstance {
     return {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
-      logPriceOffset: params.logPriceOffset,
-      spread: params.spread,
-      pricePoints: params.pricePoints,
+      stepSize: params.stepSize.toNumber(),
+      // spread: params.,
+      pricePoints: params.pricePoints.toNumber(),
     };
   }
 
@@ -212,44 +213,39 @@ class KandelInstance {
     return {
       gasprice: parameters.gasprice,
       gasreq: parameters.gasreq,
-      logPriceOffset: parameters.logPriceOffset,
+      stepSize: parameters.stepSize,
       compoundRateBase: UnitCalculations.toUnits(1, this.precision),
       compoundRateQuote: UnitCalculations.toUnits(1, this.precision),
-      spread: parameters.spread,
+      // spread: parameters.spread,
       pricePoints: parameters.pricePoints,
     };
   }
 
   /** Gets new Kandel parameters based on current and some overrides.
    * @param parameters The Kandel parameters to override, those left out will keep their current value.
-   * @param distributionLogPriceOffset The ratio of the Kandel distribution.
+   * @param distributionStepSize The ratio of the Kandel distribution.
    * @param distributionPricePoints The number of price points of the Kandel distribution.
    * @returns The new Kandel parameters.
    * @remarks Ratio and price points provided in the parameters must match a provided distribution.
    */
   public async getParametersWithOverrides(
     parameters: KandelParameterOverrides,
-    distributionLogPriceOffset?: number,
+    distributionStepSize?: number,
     distributionPricePoints?: number
   ): Promise<KandelParameters> {
     const current = await this.getParameters();
-    if (
-      parameters.logPriceOffset != null ||
-      distributionLogPriceOffset != null
-    ) {
+    if (parameters.stepSize != null || distributionStepSize != null) {
       if (
-        parameters.logPriceOffset != null &&
-        distributionLogPriceOffset != null &&
-        !Big(parameters.logPriceOffset).eq(distributionLogPriceOffset)
+        parameters.stepSize != null &&
+        distributionStepSize != null &&
+        !Big(parameters.stepSize).eq(distributionStepSize)
       ) {
         throw Error(
-          "logPriceOffset in parameter overrides does not match the ratio of the distribution."
+          "tickOffset in parameter overrides does not match the ratio of the distribution."
         );
       }
-      current.logPriceOffset =
-        parameters.logPriceOffset ??
-        distributionLogPriceOffset ??
-        current.logPriceOffset;
+      current.stepSize =
+        parameters.stepSize ?? distributionStepSize ?? current.stepSize;
     }
     if (parameters.gasprice) {
       current.gasprice = parameters.gasprice;
@@ -257,9 +253,9 @@ class KandelInstance {
     if (parameters.gasreq) {
       current.gasreq = parameters.gasreq;
     }
-    if (parameters.spread) {
-      current.spread = parameters.spread;
-    }
+    // if (parameters.spread) {
+    //   current.spread = parameters.spread;
+    // }
     if (parameters.pricePoints != null || distributionPricePoints != null) {
       if (
         parameters.pricePoints != null &&
@@ -330,16 +326,12 @@ class KandelInstance {
    * @returns The internal representation of the Kandel distribution.
    */
   public getRawDistribution(distribution: OfferDistribution) {
-    const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
-      {
-        givesDist: Array(distribution.length),
-        logPriceDist: Array(distribution.length),
-        indices: Array(distribution.length),
-      };
+    const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionOfferStruct[] =
+      Array(distribution.length);
     distribution.forEach((o, i) => {
-      rawDistribution.logPriceDist[i] = this.market.base.toUnits(o.base);
-      rawDistribution.givesDist[i] = this.market.quote.toUnits(o.quote);
-      rawDistribution.indices[i] = o.index;
+      rawDistribution[i].tick = this.market.base.toUnits(o.base);
+      rawDistribution[i].gives = this.market.quote.toUnits(o.quote);
+      rawDistribution[i].index = o.index;
     });
     return rawDistribution;
   }
@@ -383,7 +375,7 @@ class KandelInstance {
         offerId,
         index,
         live: this.market.isLiveOffer(offer),
-        logPrice: offer.logPrice.toNumber(),
+        tick: offer.tick.toNumber(),
       })
     );
 
@@ -409,9 +401,9 @@ class KandelInstance {
 
     return this.status.getOfferStatuses(
       Big(params.midPrice),
-      parameters.logPriceOffset,
+      parameters.stepSize,
       parameters.pricePoints,
-      parameters.spread,
+      // parameters.spread,
       params.offers
     );
   }
@@ -428,7 +420,7 @@ class KandelInstance {
     return this.generator.createDistributionWithOffers({
       explicitOffers: params.explicitOffers,
       distribution: {
-        logPriceOffset: parameters.logPriceOffset,
+        stepSize: parameters.stepSize,
         pricePoints: parameters.pricePoints,
       },
     });
@@ -469,9 +461,9 @@ class KandelInstance {
       offerType: params.offerType,
       index: params.index,
       price: Big(params.price),
-      logPriceOffset: parameters.logPriceOffset,
+      stepSize: parameters.stepSize,
       pricePoints: parameters.pricePoints,
-      spread: parameters.spread,
+      // spread: parameters.spread,
       minimumBasePerOffer: mins.minimumBasePerOffer,
       minimumQuotePerOffer: mins.minimumQuotePerOffer,
     });
@@ -556,7 +548,7 @@ class KandelInstance {
     const distribution = this.generator.calculateMinimumDistribution({
       priceParams: {
         minPrice: params.minPrice,
-        logPriceOffset: parameters.logPriceOffset,
+        stepSize: parameters.stepSize,
         pricePoints: parameters.pricePoints,
       },
       midPrice: params.midPrice,
@@ -797,11 +789,12 @@ class KandelInstance {
       maxOffersInChunk?: number;
     },
     overrides: ethers.Overrides = {}
-  ): Promise<ethers.ethers.ContractTransaction[]> {
+  ) // : Promise<ethers.ethers.ContractTransaction[]>  // FIXME:
+  {
     const parameterOverrides = params.parameters ?? {};
     const parameters = await this.getParametersWithOverrides(
       parameterOverrides,
-      params.distribution?.logPriceOffset,
+      params.distribution?.stepSize,
       params.distribution?.pricePoints
     );
     // If no distribution is provided, then create an empty distribution to pass information around.
@@ -831,28 +824,28 @@ class KandelInstance {
       rawDistributions.length > 0
         ? rawDistributions[0]
         : {
-            rawDistribution: { indices: [], givesDist: [], logPriceDist: [] },
-            pivots: [],
+            asks: [] as DirectWithBidsAndAsksDistribution.DistributionOfferStruct[],
+            bids: [] as DirectWithBidsAndAsksDistribution.DistributionOfferStruct[],
           };
 
-    const txs = [
-      await this.kandel.populate(
-        firstDistribution.rawDistribution,
-        firstAskIndex,
-        rawParameters,
-        this.market.base.toUnits(params.depositBaseAmount ?? 0),
-        this.market.quote.toUnits(params.depositQuoteAmount ?? 0),
-        LiquidityProvider.optValueToPayableOverride(overrides, funds)
-      ),
-    ];
+    //FIXME: distribution has change a lot
+    // const txs = [
+    //   await this.kandel.populate(
+    //     firstDistribution,
+    //     rawParameters,
+    //     this.market.base.toUnits(params.depositBaseAmount ?? 0),
+    //     this.market.quote.toUnits(params.depositQuoteAmount ?? 0),
+    //     LiquidityProvider.optValueToPayableOverride(overrides, funds)
+    //   ),
+    // ];
 
-    return txs.concat(
-      await this.populateChunks(
-        firstAskIndex,
-        rawDistributions.slice(1),
-        overrides
-      )
-    );
+    // return txs.concat(
+    //   await this.populateChunks(
+    //     firstAskIndex,
+    //     rawDistributions.slice(1),
+    //     overrides
+    //   )
+    // );
   }
 
   /** Populates the offers in the distribution for the Kandel instance. To set parameters or add funds, use populate.
@@ -870,8 +863,7 @@ class KandelInstance {
       await this.getRawDistributionChunks(params);
 
     return await this.populateChunks(
-      firstAskIndex,
-      rawDistributions,
+      [], //rawDistributions, //FIXME:
       overrides
     );
   }
@@ -883,7 +875,6 @@ class KandelInstance {
    * @returns The transaction(s) used to populate the offers.
    */
   async populateChunks(
-    firstAskIndex: number,
     rawDistributions: {
       rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct;
     }[],
@@ -895,7 +886,6 @@ class KandelInstance {
       txs.push(
         await this.kandel.populateChunk(
           rawDistributions[i].rawDistribution,
-          firstAskIndex,
           overrides
         )
       );

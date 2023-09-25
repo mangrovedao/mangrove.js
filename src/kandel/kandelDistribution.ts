@@ -20,7 +20,7 @@ class KandelDistribution {
   offers: OfferDistribution;
   baseDecimals: number;
   quoteDecimals: number;
-  logPriceOffset: number;
+  stepSize: number;
   pricePoints: number;
   helper: KandelDistributionHelper;
 
@@ -32,7 +32,7 @@ class KandelDistribution {
    * @param quoteDecimals The number of decimals for the quote token.
    */
   public constructor(
-    logPriceOffset: number,
+    stepSize: number,
     pricePoints: number,
     offers: OfferDistribution,
     baseDecimals: number,
@@ -40,7 +40,7 @@ class KandelDistribution {
   ) {
     this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
     this.helper.sortByIndex(offers);
-    this.logPriceOffset = logPriceOffset;
+    this.stepSize = stepSize;
     this.pricePoints = pricePoints;
     this.offers = offers;
     this.baseDecimals = baseDecimals;
