@@ -177,6 +177,37 @@ describe("OfferMaker", () => {
         assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
       });
 
+      it("checks provision for onchain logic by calling provisionOf", async () => {
+        const lp = onchain_lp;
+        const provision = await lp.computeAskProvision();
+        const { id } = await lp.newAsk({
+          logPrice: 10,
+          gives: 10,
+          fund: provision,
+        });
+
+        const { outbound_tkn, inbound_tkn } =
+          lp.market.getOutboundInbound("asks");
+        const provisionOfOffer = await lp.contract?.provisionOf(
+          {
+            outbound: outbound_tkn.address,
+            inbound: inbound_tkn.address,
+            tickScale: lp.market.tickScale,
+          },
+          id
+        );
+
+        const provisionOfOfferWithCorrectDecimals = mgv.fromUnits(
+          provisionOfOffer!,
+          18
+        );
+        assert.deepStrictEqual(
+          provisionOfOfferWithCorrectDecimals.toNumber(),
+          provision.toNumber(),
+          "wrong provision"
+        );
+      });
+
       [true, false].forEach((eoaLP) => {
         it(`gets missing provision for ${
           eoaLP ? "eoa" : "onchain"
