@@ -23,7 +23,7 @@ import {
 import { stat } from "fs";
 import { Density } from "./util/coreCalcuations/Density";
 import Trade from "./util/trade";
-import { MAX_TICK } from "./util/coreCalcuations/Constants";
+import { MAX_TICK, MIN_TICK } from "./util/coreCalcuations/Constants";
 import { TickLib } from "./util/coreCalcuations/TickLib";
 
 // Guard constructor against external calls
@@ -182,6 +182,8 @@ class Semibook
   readonly ba: Market.BA;
   readonly market: Market;
   readonly options: Semibook.ResolvedOptions; // complete and validated
+  private readonly cahceOperations: SemibookCacheOperatoins =
+    new SemibookCacheOperatoins();
 
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
   #kilo_offer_gasbase = 0; // initialized in stateInitialize
@@ -594,8 +596,8 @@ class Semibook
     // Are we certain to be at the end of the book?
     const isCacheCertainlyComplete =
       state.worstInCache !== undefined &&
-      this.#getOfferFromCacheOrFail(state, state.worstInCache).next ===
-        undefined;
+      this.cahceOperations.getOfferFromCacheOrFail(state, state.worstInCache)
+        .next === undefined;
     if (isCacheCertainlyComplete) {
       return accumulator;
     }
@@ -619,8 +621,8 @@ class Semibook
       // Are we certain to be at the end of the book?
       const isCacheCertainlyComplete =
         state.worstInCache !== undefined &&
-        this.#getOfferFromCacheOrFail(state, state.worstInCache).next ===
-          undefined;
+        this.cahceOperations.getOfferFromCacheOrFail(state, state.worstInCache)
+          .next === undefined;
       if (isCacheCertainlyComplete) {
         return accumulator;
       }
@@ -630,7 +632,10 @@ class Semibook
       const nextId =
         state.worstInCache === undefined
           ? undefined
-          : this.#getOfferFromCacheOrFail(state, state.worstInCache).next;
+          : this.cahceOperations.getOfferFromCacheOrFail(
+              state,
+              state.worstInCache
+            ).next;
 
       await this.#fetchOfferListPrefixUntil(
         block,
@@ -639,7 +644,12 @@ class Semibook
         (chunk: Market.Offer[]) => {
           for (const offer of chunk) {
             // We try to insert all the fetched offers in case the cache is not at max size
-            this.#insertOffer(state, offer);
+            this.cahceOperations.insertOffer(state, offer, {
+              maxOffers:
+                "maxOffers" in this.options
+                  ? this.options.maxOffers
+                  : undefined,
+            });
 
             // Only apply op f stop condition is _not_ met
             if (!stopCondition(accumulator)) {
@@ -715,7 +725,10 @@ class Semibook
       };
 
       for (const offer of offers) {
-        this.#insertOffer(state, offer);
+        this.cahceOperations.insertOffer(state, offer, {
+          maxOffers:
+            "maxOffers" in this.options ? this.options.maxOffers : undefined,
+        });
       }
 
       return {
@@ -762,7 +775,7 @@ class Semibook
         if (id === undefined)
           throw new Error("Received OfferWrite event with id = 0");
         let expectOfferInsertionInCache = true;
-        this.#removeOffer(state, id);
+        this.cahceOperations.removeOffer(state, id);
 
         /* After removing the offer (a noop if the offer was not in local cache), we reinsert it.
          * The offer comes with id of its prev. If prev does not exist in cache, we skip
@@ -782,7 +795,12 @@ class Semibook
           ),
         };
 
-        if (!this.#insertOffer(state, offer)) {
+        if (
+          !this.cahceOperations.insertOffer(state, offer, {
+            maxOffers:
+              "maxOffers" in this.options ? this.options.maxOffers : undefined,
+          })
+        ) {
           // Offer was not inserted
           expectOfferInsertionInCache = false;
         }
@@ -807,7 +825,7 @@ class Semibook
         const id = Semibook.rawIdToId(event.args.id);
         if (id === undefined)
           throw new Error("Received OfferFail event with id = 0");
-        removedOffer = this.#removeOffer(state, id);
+        removedOffer = this.cahceOperations.removeOffer(state, id);
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
@@ -832,7 +850,7 @@ class Semibook
         const id = Semibook.rawIdToId(event.args.id);
         if (id === undefined)
           throw new Error("Received OfferSuccess event with id = 0");
-        removedOffer = this.#removeOffer(state, id);
+        removedOffer = this.cahceOperations.removeOffer(state, id);
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
@@ -856,7 +874,7 @@ class Semibook
         const id = Semibook.rawIdToId(event.args.id);
         if (id === undefined)
           throw new Error("Received OfferRetract event with id = 0");
-        removedOffer = this.#removeOffer(state, id);
+        removedOffer = this.cahceOperations.removeOffer(state, id);
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
@@ -892,127 +910,6 @@ class Semibook
     }
 
     return state;
-  }
-
-  // Gets the offer with the given id known to be in the cache
-  #getOfferFromCacheOrFail(state: Semibook.State, id: number): Market.Offer {
-    const offer = state.offerCache.get(id);
-    if (offer === undefined) throw Error(`Offer ${id} is not in cache`);
-    return offer;
-  }
-
-  // Assumes id is not already in the cache
-  // Returns `true` if the offer was inserted into the cache; Otherwise, `false`.
-  // This modifies the cache so must be called in a context where #cacheLock is acquired
-  #insertOffer(state: Semibook.State, offer: Market.Offer): boolean {
-    // Only insert offers that are extensions of the cache
-    if (offer.tick == undefined) {
-      return false;
-    }
-
-    state.offerCache.set(offer.id, offer);
-    let tickOfferList = state.tickOfferList.get(offer.tick.toNumber());
-    if (tickOfferList === undefined) {
-      tickOfferList = [offer.id];
-      state.tickOfferList.set(offer.tick.toNumber(), tickOfferList);
-    } else {
-      tickOfferList.push(offer.id);
-    }
-    const bestTick = Array.from(state.tickOfferList.keys()).reduce(
-      (acc, tick) => (tick > acc ? tick : acc),
-      -1000000
-    );
-    if (bestTick == offer.tick.toNumber() && tickOfferList.length == 1) {
-      state.bestInCache = offer.id;
-      offer.next = this.#getNextTickOfferList(state, offer)?.[0];
-    }
-    if (tickOfferList.length > 1) {
-      const index = tickOfferList.findIndex((id) => id == offer.id);
-      offer.prev = tickOfferList[index - 1];
-      this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
-      offer.next = this.#getNextTickOfferList(state, offer)?.[0];
-    } else {
-      offer.next = this.#getNextTickOfferList(state, offer)?.[0];
-      if (offer.next !== undefined) {
-        this.#getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
-      }
-
-      const prevTickOfferList = this.#getPrevTickOfferList(state, offer);
-      offer.prev = prevTickOfferList?.[prevTickOfferList.length - 1];
-      if (offer.prev !== undefined) {
-        this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
-      }
-    }
-
-    const worstTick = Array.from(state.tickOfferList.keys()).reduce(
-      (acc, tick) => (tick < acc ? tick : acc),
-      1000000
-    );
-    if (offer.tick.toNumber() === worstTick) {
-      state.worstInCache = offer.id;
-    }
-
-    // If maxOffers option has been specified, evict worst offer if over max size
-    if (
-      "maxOffers" in this.options &&
-      this.options.maxOffers !== undefined &&
-      state.offerCache.size > this.options.maxOffers
-    ) {
-      const removedOffer = this.#removeOffer(
-        state,
-        state.worstInCache as number
-      ); // state.offerCache.size > this.options.maxOffers  implies  worstInCache !== undefined
-      if (offer.id === removedOffer?.id) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  #getNextTickOfferList(state: Semibook.State, offer: Market.Offer) {
-    const nextTick = Array.from(state.tickOfferList.keys()).reduce(
-      (acc, tick) => (tick > acc && offer.tick.gt(tick) ? tick : acc),
-      -1000000
-    );
-    return nextTick == -1000000 ? undefined : state.tickOfferList.get(nextTick);
-  }
-
-  #getPrevTickOfferList(state: Semibook.State, offer: Market.Offer) {
-    const nextTick = Array.from(state.tickOfferList.keys()).reduce(
-      (acc, tick) => (tick > acc && offer.tick.gt(tick) ? tick : acc),
-      -1000000
-    );
-    const nextPriceOfferList = state.tickOfferList.get(nextTick);
-    return nextPriceOfferList;
-  }
-
-  // remove offer id from book and connect its prev/next.
-  // return 'undefined' if offer was not found in book
-  // This modifies the cache so must be called in a context where #cacheLock is acquired
-  #removeOffer(state: Semibook.State, id: number): Market.Offer | undefined {
-    const offer = state.offerCache.get(id);
-    if (offer === undefined) return undefined;
-
-    if (offer.prev === undefined) {
-      state.bestInCache = offer.next;
-    } else {
-      this.#getOfferFromCacheOrFail(state, offer.prev).next = offer.next;
-    }
-
-    const nextOffer =
-      offer.next === undefined ? undefined : state.offerCache.get(offer.next);
-    if (nextOffer === undefined) {
-      state.worstInCache = offer.prev;
-    } else {
-      nextOffer.prev = offer.prev;
-    }
-    const tickOfferList = state.tickOfferList.get(offer.tick.toNumber());
-    if (tickOfferList !== undefined) {
-      state.tickOfferList.set(offer.tick.toNumber(), tickOfferList.slice(1));
-    }
-
-    state.offerCache.delete(id);
-    return offer;
   }
 
   /** Fetches offers from the network.
@@ -1317,6 +1214,141 @@ class CacheIterator implements Semibook.CacheIterator {
 
   toArray(): Market.Offer[] {
     return [...this];
+  }
+}
+
+export class SemibookCacheOperatoins {
+  // Assumes id is not already in the cache
+  // Returns `true` if the offer was inserted into the cache; Otherwise, `false`.
+  // This modifies the cache so must be called in a context where #cacheLock is acquired
+  insertOffer(
+    state: Semibook.State,
+    offer: Market.Offer,
+    options?: { maxOffers?: number }
+  ): boolean {
+    // Only insert offers that are extensions of the cache
+    if (offer.tick == undefined) {
+      return false;
+    }
+
+    state.offerCache.set(offer.id, offer);
+    let tickOfferList = state.tickOfferList.get(offer.tick.toNumber());
+    if (tickOfferList === undefined) {
+      tickOfferList = [offer.id];
+      state.tickOfferList.set(offer.tick.toNumber(), tickOfferList);
+    } else {
+      tickOfferList.push(offer.id);
+    }
+    const bestTick = Array.from(state.tickOfferList.keys()).reduce(
+      (acc, tick) => (tick > acc ? tick : acc),
+      MIN_TICK.toNumber()
+    );
+    if (bestTick == offer.tick.toNumber() && tickOfferList.length == 1) {
+      state.bestInCache = offer.id;
+      offer.next = this.getNextTickOfferList(state, offer.tick)?.[0];
+    }
+    if (tickOfferList.length > 1) {
+      const index = tickOfferList.findIndex((id) => id == offer.id);
+      offer.prev = tickOfferList[index - 1];
+      this.getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
+      offer.next = this.getNextTickOfferList(state, offer.tick)?.[0];
+      if (offer.next !== undefined) {
+        this.getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
+      }
+    } else {
+      offer.next = this.getNextTickOfferList(state, offer.tick)?.[0];
+      if (offer.next !== undefined) {
+        this.getOfferFromCacheOrFail(state, offer.next).prev = offer.id;
+      }
+
+      const prevTickOfferList = this.getPrevTickOfferList(state, offer.tick);
+      offer.prev = prevTickOfferList?.[prevTickOfferList.length - 1];
+      if (offer.prev !== undefined) {
+        this.getOfferFromCacheOrFail(state, offer.prev).next = offer.id;
+      }
+    }
+
+    const worstTick = Array.from(state.tickOfferList.keys()).reduce(
+      (acc, tick) => (tick < acc ? tick : acc),
+      MAX_TICK.toNumber()
+    );
+    if (offer.tick.toNumber() === worstTick) {
+      state.worstInCache = offer.id;
+    }
+
+    // If maxOffers option has been specified, evict worst offer if over max size
+    if (
+      options &&
+      "maxOffers" in options &&
+      options.maxOffers !== undefined &&
+      state.offerCache.size > options.maxOffers
+    ) {
+      const removedOffer = this.removeOffer(
+        state,
+        state.worstInCache as number
+      ); // state.offerCache.size > this.options.maxOffers  implies  worstInCache !== undefined
+      if (offer.id === removedOffer?.id) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  getNextTickOfferList(state: Semibook.State, offerTick: BigNumber) {
+    const nextTick = Array.from(state.tickOfferList.keys()).reduce(
+      (acc, tick) => (tick > acc && offerTick.gt(tick) ? tick : acc),
+      MIN_TICK.toNumber() - 1
+    );
+    return nextTick == MIN_TICK.toNumber() - 1
+      ? undefined
+      : state.tickOfferList.get(nextTick);
+  }
+
+  getPrevTickOfferList(state: Semibook.State, offerTick: BigNumber) {
+    const nextTick = Array.from(state.tickOfferList.keys()).reduce(
+      (acc, tick) => (tick < acc && offerTick.lt(tick) ? tick : acc),
+      MAX_TICK.toNumber() + 1
+    );
+    return nextTick == MIN_TICK.toNumber() + 1
+      ? undefined
+      : state.tickOfferList.get(nextTick);
+  }
+
+  // remove offer id from book and connect its prev/next.
+  // return 'undefined' if offer was not found in book
+  // This modifies the cache so must be called in a context where #cacheLock is acquired
+  removeOffer(state: Semibook.State, id: number): Market.Offer | undefined {
+    const offer = state.offerCache.get(id);
+    if (offer === undefined) return undefined;
+
+    if (offer.prev === undefined) {
+      state.bestInCache = offer.next;
+    } else {
+      this.getOfferFromCacheOrFail(state, offer.prev).next = offer.next;
+    }
+
+    const nextOffer =
+      offer.next === undefined ? undefined : state.offerCache.get(offer.next);
+    if (nextOffer === undefined) {
+      state.worstInCache = offer.prev;
+    } else {
+      nextOffer.prev = offer.prev;
+    }
+    const tickOfferList = state.tickOfferList.get(offer.tick.toNumber());
+    if (tickOfferList !== undefined && tickOfferList.length > 1) {
+      state.tickOfferList.set(offer.tick.toNumber(), tickOfferList.slice(1));
+    } else if (tickOfferList !== undefined) {
+      state.tickOfferList.delete(offer.tick.toNumber());
+    }
+
+    state.offerCache.delete(id);
+    return offer;
+  }
+
+  getOfferFromCacheOrFail(state: Semibook.State, id: number): Market.Offer {
+    const offer = state.offerCache.get(id);
+    if (offer === undefined) throw Error(`Offer ${id} is not in cache`);
+    return offer;
   }
 }
 

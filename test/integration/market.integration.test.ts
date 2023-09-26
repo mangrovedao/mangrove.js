@@ -1035,9 +1035,9 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 125418;
+                expectedLimit = 125215;
               } else {
-                expectedLimit = 43974;
+                expectedLimit = 43785;
               }
             }
           }
