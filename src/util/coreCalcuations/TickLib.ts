@@ -71,7 +71,7 @@ export namespace TickLib {
     * else if e > 255 then 0 < a < 2^e, so rem must be 1. (1<<e)-1 is type(uint).max, so a & mask is a > 0.
     * else a & mask is a % 2**e
     */
-    const rem = a.and(e.shl(1).sub(1)).gt(0) ? 1 : 0;
+    const rem = a.and(BigNumber.from(1).shl(e.toNumber()).sub(1)).gt(0) ? 1 : 0;
     return a.shr(e.toNumber()).add(rem);
   }
 
