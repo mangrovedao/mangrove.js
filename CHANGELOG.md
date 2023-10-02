@@ -1,5 +1,7 @@
 # Next version
 
+- fix: Restore ability to enableLogging in a browser-context (shimmed via esbuild)
+
 # 1.4.23
 
 - fix: Disable esbuild minification of identifiers
