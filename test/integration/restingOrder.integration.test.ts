@@ -5,20 +5,19 @@ import { utils } from "ethers";
 
 import assert from "assert";
 import {
-  Mangrove,
-  MgvToken,
   LiquidityProvider,
+  Mangrove,
   Market,
+  MgvToken,
   OfferLogic,
   mgvTestUtil,
 } from "../../src";
 import { AbstractRouter } from "../../src/types/typechain";
 
-import { Big } from "big.js";
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
+import { Big } from "big.js";
 import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
 import Trade from "../../src/util/trade";
-import { TickLib } from "../../src/util/coreCalcuations/TickLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -107,18 +106,18 @@ describe("RestingOrder", () => {
       const provision = await meAsLP.computeAskProvision();
       // fills Asks semi book
       await meAsLP.newAsk({
-        tick: 0, //tokenB
-        gives: 10, //tokenA
+        price: 10 / 10,
+        volume: 10,
         fund: provision,
       });
       await meAsLP.newAsk({
-        tick: TickLib.getTickFromPrice(10 / 9).toNumber(),
-        gives: 9,
+        price: 10 / 9,
+        volume: 9,
         fund: provision,
       });
       await meAsLP.newAsk({
-        tick: TickLib.getTickFromPrice(10 / 8).toNumber(),
-        gives: 8,
+        price: 10 / 8,
+        volume: 8,
         fund: provision,
       });
       mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
@@ -130,22 +129,9 @@ describe("RestingOrder", () => {
       await w(tokenB.approve(router.address));
       await w(tokenA.approve(router.address));
 
-      await orderLogic.contract.checkList([tokenB.address, tokenA.address]);
-
-      // Fill up bids to verify that pivot is used:
-      const meAsLP = await mgv.liquidityProvider(orderLP.market);
-      const meProvision = await meAsLP.computeBidProvision();
-      for (let i = 0; i < 15; i++) {
-        await meAsLP.newBid({
-          tick: 1 + i,
-          gives: 15,
-          fund: meProvision,
-        });
-      }
-
       const buyPromises = await orderLP.market.buy({
-        tick: 0,
-        fillVolume: 20,
+        price: 1,
+        volume: 20,
         restingOrder: { provision: provision },
       });
 
@@ -178,8 +164,8 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
-        tick: 0,
-        fillVolume: 20,
+        price: 1,
+        volume: 20,
         restingOrder: { provision: provision },
       });
       const orderResult = await buyPromises.result;
@@ -211,27 +197,29 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: false,
-        tick: 20, // tokenA
-        fillVolume: 20, // tokenB
+        price: 1, // tokenA
+        volume: 20, // tokenB
         restingOrder: { provision: provision },
       });
       const orderResult = await buyPromises.result;
-      //FIXME: test on orderStart, offerWrite and OrderComplete
-      // assert(
-      //   // 5% fee configured in mochaHooks.js
-      //   orderResult.summary.got.eq(10 * 0.95),
-      //   "Taker received an incorrect amount"
-      // );
-      // assert(orderResult.summary.gave.eq(10), "Taker gave an incorrect amount");
-      // assert(
-      //   orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-      //   "Resting order was not posted"
-      // );
-      // assert(
-      //   orderResult.summary.partialFill,
-      //   "Order should have been partially filled"
-      // );
-      // assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
+      assert(
+        // 2.5% fee configured in mochaHooks.js
+        orderResult.summary.totalGot!.eq(10 * 0.975),
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+      );
+      assert(
+        orderResult.summary.totalGave!.sub(10).abs().lt(0.001),
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+      );
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        "Resting order was not posted"
+      );
+      assert(
+        orderResult.summary.partialFill,
+        "Order should have been partially filled"
+      );
+      assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
 
     it("no resting order params, with forceRoutingToMangroveOrder:true", async () => {
@@ -240,26 +228,25 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
-        tick: 5, // tokenA
-        fillVolume: 5, // tokenB
+        price: 1, // tokenA
+        volume: 5, // tokenB
       });
       const orderResult = await buyPromises.result;
-      //FIXME: test on orderStart, offerWrite and OrderComplete
-      // assert(
-      //   // 5% fee configured in mochaHooks.js
-      //   orderResult.summary.got.eq(5 * 0.95),
-      //   "Taker received an incorrect amount"
-      // );
-      // assert(orderResult.summary.gave.eq(5), "Taker gave an incorrect amount");
-      // assert(
-      //   !orderResult.restingOrder?.id,
-      //   "Resting order should not have been posted"
-      // );
-      // assert(
-      //   !orderResult.summary.partialFill,
-      //   "Order should have been fully filled"
-      // );
-      // assert(orderResult.summary.bounty.eq(0), "No offer should have failed");
+      assert(
+        // 2,5% fee configured in mochaHooks.js
+        orderResult.summary.totalGot!.eq(5 * 0.975),
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+      );
+      assert(
+        orderResult.summary.totalGave!.sub(5).abs().lt(0.001),
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+      );
+      assert(!orderResult.restingOrder?.id, "Resting order was posted");
+      assert(
+        !orderResult.summary.partialFill,
+        "Order should have been fully filled"
+      );
+      assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
 
     it("resting order with deadline", async () => {
@@ -271,8 +258,8 @@ describe("RestingOrder", () => {
       const market: Market = orderLP.market;
 
       const buyPromises = await market.buy({
-        tick: TickLib.getTickFromPrice(1).toNumber(), // tokenA
-        fillVolume: 20, // tokenB
+        price: 1, // tokenA
+        volume: 20, // tokenB
         expiryDate:
           (
             await mgv.provider.getBlock(mgv.provider.getBlockNumber())
@@ -302,9 +289,9 @@ describe("RestingOrder", () => {
       );
       assert(
         orderResult.restingOrder
-          ? TickLib.priceFromTick(orderResult.restingOrder.tick).eq(1)
+          ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
           : false,
-        `orderResult.restingOrder.price should be 0 but is ${orderResult.restingOrder?.tick}`
+        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toFixed()}`
       );
 
       // taking resting offer
@@ -312,33 +299,45 @@ describe("RestingOrder", () => {
       await w(tokenB.approveMangrove());
       await w(tokenA.approveMangrove());
 
-      const sellPromises = await market.sell({ tick: 0, fillVolume: 5 });
+      const sellPromises = await market.sell({
+        tick: orderResult.restingOrder!.tick.toNumber(),
+        fillVolume: 1,
+        fillWants: true,
+      });
       const result = await sellPromises.result;
       const tx2 = await waitForTransaction(sellPromises.response);
-      await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
-      // 5% fee configured in mochaHooks.js
-      //FIXME: test on orderStart, offerWrite and OrderComplete
-      // assert(result.summary.got.eq(5 * 0.95), "Sell order went wrong");
-      // assert(
-      //   await orderLP.market.isLive(
-      //     "bids",
-      //     orderResult.restingOrder ? orderResult.restingOrder.id : 0
-      //   ),
-      //   "Residual should still be in the book"
-      // );
-      // // Advance time 6 seconds by changing clock and mining block
-      // await (mgv.provider as JsonRpcProvider).send("evm_increaseTime", ["6"]);
-      // await (mgv.provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
 
-      // assert(
-      //   ttl.lt(
-      //     (await mgv.provider.getBlock(mgv.provider.getBlockNumber())).timestamp
-      //   ),
-      //   "Timestamp did not advance"
-      // );
-      // const sellPromises_ = await market.sell({ tick: 5, fillVolume: 5 });
-      // const result_ = await sellPromises_.result;
-      // assert(result_.summary.bounty.gt(0), "Order should have reneged");
+      await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
+
+      // 2,5% fee configured in mochaHooks.js
+      assert(
+        result.summary
+          .totalGot!.minus(1 * 0.975)
+          .abs()
+          .lt(0.001),
+        `Taker received an incorrect amount ${result.summary.totalGot}`
+      );
+      assert(
+        await orderLP.market.isLive(
+          "bids",
+          orderResult.restingOrder ? orderResult.restingOrder.id : 0
+        ),
+        "Residual should still be in the book"
+      );
+      // Advance time 6 seconds by changing clock and mining block
+      await (mgv.provider as JsonRpcProvider).send("evm_increaseTime", ["6"]);
+      await (mgv.provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
+
+      assert(
+        ttl.lt(
+          (await mgv.provider.getBlock(mgv.provider.getBlockNumber())).timestamp
+        ),
+        "Timestamp did not advance"
+      );
+
+      const sellPromises_ = await market.sell({ price: 1.0001, volume: 5 });
+      const result_ = await sellPromises_.result;
+      assert(result_.summary.bounty!.gt(0), "Order should have reneged");
     });
   });
 });

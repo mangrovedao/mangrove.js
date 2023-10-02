@@ -4,6 +4,7 @@ import assert from "assert";
 import { ethers } from "ethers";
 
 import { Mangrove, LiquidityProvider, OfferMaker, OfferLogic } from "../../src";
+import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { approxEq } from "../util/helpers";
 
 import { Big } from "big.js";
@@ -18,6 +19,7 @@ describe("OfferMaker integration test suite", () => {
   let adminMgv: Mangrove;
 
   afterEach(async () => {
+    mgvTestUtil.stopPollOfTransactionTracking();
     mgv.disconnect();
     adminMgv.disconnect();
   });
@@ -32,6 +34,9 @@ describe("OfferMaker integration test suite", () => {
         provider: this.server.url,
         privateKey: this.accounts.deployer.key,
       });
+
+      mgvTestUtil.setConfig(mgv, this.accounts, adminMgv);
+
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -45,6 +50,7 @@ describe("OfferMaker integration test suite", () => {
         bookOptions: { maxOffers: 30 },
       });
       await lp.logic?.contract["offerGasreq()"]();
+      mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
     });
   });
 
@@ -63,6 +69,8 @@ describe("OfferMaker integration test suite", () => {
         privateKey: this.accounts.deployer.key,
       });
 
+      mgvTestUtil.setConfig(mgv, this.accounts, adminMgv);
+
       //shorten polling for faster tests
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -77,6 +85,7 @@ describe("OfferMaker integration test suite", () => {
       });
       onchain_lp = await logic.liquidityProvider(market);
       eoa_lp = await mgv.liquidityProvider(market);
+      mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
     });
 
     /* Make sure tx has been mined so we can read the result off the chain */

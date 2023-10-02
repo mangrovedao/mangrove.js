@@ -8,11 +8,10 @@ export type prettyPrintFilter = Array<
   | "gasprice"
   | "maker"
   | "gasreq"
-  | "offer_gasbase"
-  | "wants"
+  | "kilo_offer_gasbase"
   | "gives"
-  | "volume"
   | "price"
+  | "tick"
 >;
 // type Writable<T> = -readonly T;
 class PrettyPrint {
@@ -23,7 +22,7 @@ class PrettyPrint {
   ): void {
     const column = filter
       ? filter
-      : (["id", "maker", "volume", "price"] as const);
+      : (["id", "maker", "gives", "price"] as const);
     this.prettyPrint(offers, column as Writable<typeof column>);
   }
 
@@ -33,11 +32,12 @@ class PrettyPrint {
       return {
         id: obj.id,
         maker: obj.maker,
-        tick: obj.tick,
+        tick: obj.tick.toNumber(),
         gives: obj.gives.toString(),
-        offer_gasbase: obj.kilo_offer_gasbase,
+        kilo_offer_gasbase: obj.kilo_offer_gasbase,
         gasreq: obj.gasreq,
         gasprice: obj.gasprice,
+        price: obj.price.toFixed(4),
         prev: obj.prev,
         next: obj.next,
       };

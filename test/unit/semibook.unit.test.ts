@@ -4,6 +4,7 @@ import { SemibookCacheOperatoins } from "../../src/semibook";
 import Big from "big.js";
 import { BigNumber } from "ethers";
 import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { nextTick, off } from "process";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
     it("returns false, when desiredVolume is undefined", async function () {
@@ -153,7 +154,7 @@ describe("Semibook unit test suite", () => {
       const book = new SemibookCacheOperatoins();
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -173,60 +174,11 @@ describe("Semibook unit test suite", () => {
       book.insertOffer(state, offer);
       // Assert
       assert.equal(state.offerCache.size, 1);
-      assert.equal(state.tickOfferList.size, 1);
+      assert.equal(state.binCache.size, 1);
       assert.deepStrictEqual(state.bestInCache, offer.id);
       assert.deepStrictEqual(state.worstInCache, offer.id);
       assert.deepStrictEqual(offer.next, undefined);
       assert.deepStrictEqual(offer.prev, undefined);
-    });
-
-    it("inserts offer in non empty book, offer is better", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        price: Big(1),
-        next: undefined,
-        prev: undefined,
-        tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
-      };
-      const offer2: Market.Offer = {
-        id: 2,
-        maker: "0x2",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(2),
-        price: Big(1),
-        next: undefined,
-        prev: undefined,
-        tick: BigNumber.from(1),
-        kilo_offer_gasbase: 1,
-      };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-
-      //Act
-      book.insertOffer(state, offer2);
-
-      // Assert
-      assert.equal(state.offerCache.size, 2);
-      assert.equal(state.tickOfferList.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
-      assert.deepStrictEqual(offer1.prev, offer2.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer2.next, offer1.id);
     });
 
     it("inserts offer in non empty book, offer is worse", () => {
@@ -241,7 +193,7 @@ describe("Semibook unit test suite", () => {
         price: Big(1),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(1),
+        tick: BigNumber.from(0),
         kilo_offer_gasbase: 1,
       };
       const offer2: Market.Offer = {
@@ -250,15 +202,15 @@ describe("Semibook unit test suite", () => {
         gasprice: 1,
         gasreq: 1,
         gives: Big(2),
-        price: Big(0),
+        price: Big(1),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: BigNumber.from(1),
         kilo_offer_gasbase: 1,
       };
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -269,13 +221,75 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 2);
-      assert.equal(state.tickOfferList.size, 2);
+      assert.equal(state.binCache.size, 2);
       assert.deepStrictEqual(state.bestInCache, offer1.id);
       assert.deepStrictEqual(state.worstInCache, offer2.id);
-      assert.deepStrictEqual(offer1.next, offer2.id);
+      assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offer2.prev, offer1.id);
+      assert.deepStrictEqual(offer2.prev, undefined);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id],
+        prev: undefined,
+        next: offer2.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id],
+        prev: offer1.tick.toNumber(),
+        next: undefined,
+      });
+    });
+
+    it("inserts offer in non empty book, offer is better", () => {
+      //Arrange
+      const book = new SemibookCacheOperatoins();
+      const offer1: Market.Offer = {
+        id: 1,
+        maker: "0x1",
+        gasprice: 1,
+        gasreq: 1,
+        gives: Big(1),
+        price: Big(1),
+        next: undefined,
+        prev: undefined,
+        tick: BigNumber.from(1),
+        kilo_offer_gasbase: 1,
+      };
+      const offer2 = { ...offer1, id: 2, tick: BigNumber.from(0) };
+      const state: Semibook.State = {
+        offerCache: new Map(),
+        binCache: new Map(),
+        bestInCache: undefined,
+        worstInCache: undefined,
+      };
+      book.insertOffer(state, offer1);
+
+      //Act
+      book.insertOffer(state, offer2);
+
+      // Assert
+      assert.equal(state.offerCache.size, 2);
+      assert.equal(state.binCache.size, 2);
+      assert.deepStrictEqual(state.bestInCache, offer2.id);
+      assert.deepStrictEqual(state.worstInCache, offer1.id);
+      assert.deepStrictEqual(offer1.prev, undefined);
+      assert.deepStrictEqual(offer1.next, undefined);
+      assert.deepStrictEqual(offer2.prev, undefined);
+      assert.deepStrictEqual(offer2.next, undefined);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id],
+        prev: offer2.tick.toNumber(),
+        next: undefined,
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id],
+        prev: undefined,
+        next: offer1.tick.toNumber(),
+      });
     });
 
     it("inserts offer in non empty book, offer is in the middle", () => {
@@ -306,7 +320,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -318,15 +332,33 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 3);
-      assert.equal(state.tickOfferList.size, 3);
-      assert.deepStrictEqual(state.bestInCache, offer3.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
-      assert.deepStrictEqual(offer1.prev, offer2.id);
+      assert.equal(state.binCache.size, 3);
+      assert.deepStrictEqual(state.bestInCache, offer1.id);
+      assert.deepStrictEqual(state.worstInCache, offer3.id);
       assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer2.prev, offer3.id);
-      assert.deepStrictEqual(offer2.next, offer1.id);
+      assert.deepStrictEqual(offer1.prev, undefined);
+      assert.deepStrictEqual(offer2.next, undefined);
+      assert.deepStrictEqual(offer2.prev, undefined);
+      assert.deepStrictEqual(offer3.next, undefined);
       assert.deepStrictEqual(offer3.prev, undefined);
-      assert.deepStrictEqual(offer3.next, offer2.id);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id],
+        prev: undefined,
+        next: offer2.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id],
+        prev: offer1.tick.toNumber(),
+        next: offer3.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer3.tick.toNumber()), {
+        tick: offer3.tick.toNumber(),
+        offers: [offer3.id],
+        prev: offer2.tick.toNumber(),
+        next: undefined,
+      });
     });
 
     it("inserts offer in non empty book, offer is in the middle at an already existing tick", () => {
@@ -362,7 +394,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -376,133 +408,164 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 4);
-      assert.equal(state.tickOfferList.size, 3);
-      assert.deepStrictEqual(
-        state.tickOfferList.get(offer2.tick.toNumber()),
-        [2, 4]
-      );
-      assert.deepStrictEqual(state.bestInCache, offer3.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
-      assert.deepStrictEqual(offer1.prev, offer4.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer2.prev, offer3.id);
-      assert.deepStrictEqual(offer2.next, offer4.id);
-      assert.deepStrictEqual(offer3.prev, undefined);
-      assert.deepStrictEqual(offer3.next, offer2.id);
-      assert.deepStrictEqual(offer4.prev, offer2.id);
-      assert.deepStrictEqual(offer4.next, offer1.id);
-    });
-
-    it("inserts offer in non empty book, offer is at best tick, tick already exist", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: BigNumber.from(1),
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: BigNumber.from(1),
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-
-      //Act
-      book.insertOffer(state, offer3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 3);
-      assert.equal(state.tickOfferList.size, 2);
-      assert.deepStrictEqual(
-        state.tickOfferList.get(offer2.tick.toNumber()),
-        [2, 3]
-      );
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
-      assert.deepStrictEqual(offer1.prev, offer3.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer2.next, offer3.id);
-      assert.deepStrictEqual(offer3.prev, offer2.id);
-      assert.deepStrictEqual(offer3.next, offer1.id);
-    });
-
-    it("inserts offer in non empty book, offer is at worst tick, tick already exist", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: BigNumber.from(1),
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: BigNumber.from(0),
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-
-      //Act
-      book.insertOffer(state, offer3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 3);
-      assert.equal(state.tickOfferList.size, 2);
-      assert.deepStrictEqual(
-        state.tickOfferList.get(offer1.tick.toNumber()),
-        [1, 3]
-      );
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
+      assert.equal(state.binCache.size, 3);
+      assert.deepStrictEqual(state.bestInCache, offer1.id);
       assert.deepStrictEqual(state.worstInCache, offer3.id);
-      assert.deepStrictEqual(offer1.prev, offer2.id);
-      assert.deepStrictEqual(offer1.next, offer3.id);
+      assert.deepStrictEqual(offer1.next, undefined);
+      assert.deepStrictEqual(offer1.prev, undefined);
+      assert.deepStrictEqual(offer2.next, offer4.id);
       assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer2.next, offer1.id);
-      assert.deepStrictEqual(offer3.prev, offer1.id);
       assert.deepStrictEqual(offer3.next, undefined);
+      assert.deepStrictEqual(offer3.prev, undefined);
+      assert.deepStrictEqual(offer4.next, undefined);
+      assert.deepStrictEqual(offer4.prev, offer2.id);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id],
+        prev: undefined,
+        next: offer2.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id, offer4.id],
+        prev: offer1.tick.toNumber(),
+        next: offer3.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer3.tick.toNumber()), {
+        tick: offer3.tick.toNumber(),
+        offers: [offer3.id],
+        prev: offer2.tick.toNumber(),
+        next: undefined,
+      });
+    });
+
+    it("inserts offer in non empty book, offer is at worse tick, tick already exist", () => {
+      //Arrange
+      const book = new SemibookCacheOperatoins();
+      const offer1: Market.Offer = {
+        id: 1,
+        maker: "0x1",
+        gasprice: 1,
+        gasreq: 1,
+        gives: Big(1),
+        price: Big(0),
+        next: undefined,
+        prev: undefined,
+        tick: BigNumber.from(0),
+        kilo_offer_gasbase: 1,
+      };
+      const offer2: Market.Offer = {
+        ...offer1,
+        id: 2,
+        tick: BigNumber.from(1),
+      };
+      const offer3: Market.Offer = {
+        ...offer1,
+        id: 3,
+        tick: BigNumber.from(1),
+      };
+
+      const state: Semibook.State = {
+        offerCache: new Map(),
+        binCache: new Map(),
+        bestInCache: undefined,
+        worstInCache: undefined,
+      };
+
+      book.insertOffer(state, offer1);
+      book.insertOffer(state, offer2);
+
+      //Act
+      book.insertOffer(state, offer3);
+
+      // Assert
+      assert.equal(state.offerCache.size, 3);
+      assert.equal(state.binCache.size, 2);
+      assert.deepStrictEqual(state.bestInCache, offer1.id);
+      assert.deepStrictEqual(state.worstInCache, offer3.id);
+      assert.deepStrictEqual(offer1.next, undefined);
+      assert.deepStrictEqual(offer1.prev, undefined);
+      assert.deepStrictEqual(offer2.next, offer3.id);
+      assert.deepStrictEqual(offer2.prev, undefined);
+      assert.deepStrictEqual(offer3.next, undefined);
+      assert.deepStrictEqual(offer3.prev, offer2.id);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id],
+        prev: undefined,
+        next: offer2.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id, offer3.id],
+        prev: offer1.tick.toNumber(),
+        next: undefined,
+      });
+    });
+
+    it("inserts offer in non empty book, offer is at a better tick, tick already exist", () => {
+      //Arrange
+      const book = new SemibookCacheOperatoins();
+      const offer1: Market.Offer = {
+        id: 1,
+        maker: "0x1",
+        gasprice: 1,
+        gasreq: 1,
+        gives: Big(1),
+        price: Big(0),
+        next: undefined,
+        prev: undefined,
+        tick: BigNumber.from(0),
+        kilo_offer_gasbase: 1,
+      };
+      const offer2: Market.Offer = {
+        ...offer1,
+        id: 2,
+        tick: BigNumber.from(1),
+      };
+      const offer3: Market.Offer = {
+        ...offer1,
+        id: 3,
+        tick: BigNumber.from(0),
+      };
+
+      const state: Semibook.State = {
+        offerCache: new Map(),
+        binCache: new Map(),
+        bestInCache: undefined,
+        worstInCache: undefined,
+      };
+
+      book.insertOffer(state, offer1);
+      book.insertOffer(state, offer2);
+
+      //Act
+      book.insertOffer(state, offer3);
+
+      // Assert
+      assert.equal(state.offerCache.size, 3);
+      assert.equal(state.binCache.size, 2);
+
+      assert.deepStrictEqual(state.bestInCache, offer1.id);
+      assert.deepStrictEqual(state.worstInCache, offer2.id);
+      assert.deepStrictEqual(offer1.next, offer3.id);
+      assert.deepStrictEqual(offer1.prev, undefined);
+      assert.deepStrictEqual(offer2.next, undefined);
+      assert.deepStrictEqual(offer2.prev, undefined);
+      assert.deepStrictEqual(offer3.next, undefined);
+      assert.deepStrictEqual(offer3.prev, offer1.id);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id, offer3.id],
+        prev: undefined,
+        next: offer2.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id],
+        prev: offer1.tick.toNumber(),
+        next: undefined,
+      });
     });
 
     it("inserting offer exeeds maxOffer size, offer is not worst offer", () => {
@@ -523,7 +586,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -538,8 +601,7 @@ describe("Semibook unit test suite", () => {
       const offer: Market.Offer = {
         ...offer1,
         id: 6,
-        price: Big(1),
-        tick: BigNumber.from(1),
+        tick: BigNumber.from(-1),
       };
 
       const isInserted = book.insertOffer(state, offer, options);
@@ -567,7 +629,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -600,7 +662,7 @@ describe("Semibook unit test suite", () => {
       const book = new SemibookCacheOperatoins();
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: 0,
         worstInCache: 0,
       };
@@ -609,7 +671,7 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 0);
-      assert.equal(state.tickOfferList.size, 0);
+      assert.equal(state.binCache.size, 0);
       assert.equal(offerRemoved, undefined);
     });
 
@@ -642,7 +704,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -655,14 +717,26 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 2);
-      assert.equal(state.tickOfferList.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
-      assert.deepStrictEqual(offer1.prev, offer2.id);
+      assert.equal(state.binCache.size, 2);
+      assert.deepStrictEqual(state.bestInCache, offer1.id);
+      assert.deepStrictEqual(state.worstInCache, offer2.id);
       assert.deepStrictEqual(offer1.next, undefined);
+      assert.deepStrictEqual(offer1.prev, undefined);
+      assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer2.next, offer1.id);
       assert.deepStrictEqual(offerRemoved, offer3);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id],
+        prev: undefined,
+        next: offer2.tick.toNumber(),
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id],
+        prev: offer1.tick.toNumber(),
+        next: undefined,
+      });
     });
 
     it("removes offer from non empty book, offer is best offer, does not have others at same tick", () => {
@@ -694,7 +768,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -707,7 +781,7 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 2);
-      assert.equal(state.tickOfferList.size, 1);
+      assert.equal(state.binCache.size, 1);
       assert.deepStrictEqual(state.bestInCache, offer1.id);
       assert.deepStrictEqual(state.worstInCache, offer2.id);
       assert.deepStrictEqual(offer1.next, offer2.id);
@@ -715,6 +789,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offer2.prev, offer1.id);
       assert.deepStrictEqual(offerRemoved, offer3);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id, offer2.id],
+        prev: undefined,
+        next: undefined,
+      });
+      assert.deepStrictEqual(
+        state.binCache.get(offer3.tick.toNumber()),
+        undefined
+      );
     });
 
     it("removes offer from non empty book, offer is worst offer, has others at same tick", () => {
@@ -746,7 +830,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -759,14 +843,26 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 2);
-      assert.equal(state.tickOfferList.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
+      assert.equal(state.binCache.size, 2);
+      assert.deepStrictEqual(state.bestInCache, offer2.id);
+      assert.deepStrictEqual(state.worstInCache, offer1.id);
       assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer1.next, offer2.id);
-      assert.deepStrictEqual(offer2.prev, offer1.id);
+      assert.deepStrictEqual(offer1.next, undefined);
+      assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offerRemoved, offer3);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id],
+        prev: offer2.tick.toNumber(),
+        next: undefined,
+      });
+      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
+        tick: offer2.tick.toNumber(),
+        offers: [offer2.id],
+        prev: undefined,
+        next: offer1.tick.toNumber(),
+      });
     });
 
     it("removes offer from non empty book, offer is worst offer, has others at same tick", () => {
@@ -798,7 +894,7 @@ describe("Semibook unit test suite", () => {
 
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -811,7 +907,7 @@ describe("Semibook unit test suite", () => {
 
       // Assert
       assert.equal(state.offerCache.size, 2);
-      assert.equal(state.tickOfferList.size, 1);
+      assert.equal(state.binCache.size, 1);
       assert.deepStrictEqual(state.bestInCache, offer1.id);
       assert.deepStrictEqual(state.worstInCache, offer2.id);
       assert.deepStrictEqual(offer1.prev, undefined);
@@ -819,29 +915,22 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.prev, offer1.id);
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offerRemoved, offer3);
+      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
+        tick: offer1.tick.toNumber(),
+        offers: [offer1.id, offer2.id],
+        prev: undefined,
+        next: undefined,
+      });
+      assert.deepStrictEqual(
+        state.binCache.get(offer3.tick.toNumber()),
+        undefined
+      );
     });
-  });
 
-  describe("getNextTickOfferList", () => {
-    it("returns undefined when tickOfferList is empty", () => {
+    it("removes last offer in book", () => {
       //Arrange
       const book = new SemibookCacheOperatoins();
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      //Act
-      const result = book.getNextTickOfferList(state, BigNumber.from(1));
-
-      // Assert
-      assert.equal(result, undefined);
-    });
-    it("returns undefined when tickOfferList does not have tick that is worse", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const offer1: Market.Offer = {
+      const offer: Market.Offer = {
         id: 1,
         maker: "0x1",
         gasprice: 2,
@@ -855,148 +944,21 @@ describe("Semibook unit test suite", () => {
       };
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
-      book.insertOffer(state, offer1);
+      book.insertOffer(state, offer);
 
       //Act
-      const result = book.getNextTickOfferList(state, offer1.tick);
+      const offerRemoved = book.removeOffer(state, 1);
 
       // Assert
-      assert.equal(result, undefined);
-    });
-
-    it("returns correct tickOfferList", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 2,
-        gasreq: 1,
-        gives: Big(2),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: BigNumber.from(2),
-        kilo_offer_gasbase: 1,
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: BigNumber.from(1),
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: BigNumber.from(0),
-      };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-      book.insertOffer(state, offer3);
-
-      //Act
-      const result = book.getNextTickOfferList(state, offer1.tick);
-
-      // Assert
-      assert.deepStrictEqual(result, [2]);
-    });
-  });
-
-  describe("getPrevTickOfferList", () => {
-    it("returns undefined when tickOfferList is empty", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      //Act
-      const result = book.getPrevTickOfferList(state, BigNumber.from(1));
-
-      // Assert
-      assert.equal(result, undefined);
-    });
-    it("returns undefined when tickOfferList does not have tick that is better", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 2,
-        gasreq: 1,
-        gives: Big(2),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: BigNumber.from(2),
-        kilo_offer_gasbase: 1,
-      };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-
-      //Act
-      const result = book.getPrevTickOfferList(state, offer1.tick);
-
-      // Assert
-      assert.equal(result, undefined);
-    });
-
-    it("returns correct tickOfferList", () => {
-      //Arrange
-      const book = new SemibookCacheOperatoins();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 2,
-        gasreq: 1,
-        gives: Big(2),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: BigNumber.from(2),
-        kilo_offer_gasbase: 1,
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: BigNumber.from(1),
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: BigNumber.from(0),
-      };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        tickOfferList: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-      book.insertOffer(state, offer3);
-
-      //Act
-      const result = book.getPrevTickOfferList(state, offer3.tick);
-
-      // Assert
-      assert.deepStrictEqual(result, [2]);
+      assert.equal(state.offerCache.size, 0);
+      assert.equal(state.binCache.size, 0);
+      assert.deepStrictEqual(state.bestInCache, undefined);
+      assert.deepStrictEqual(state.worstInCache, undefined);
+      assert.deepStrictEqual(offerRemoved, offer);
     });
   });
 
@@ -1006,7 +968,7 @@ describe("Semibook unit test suite", () => {
       const book = new SemibookCacheOperatoins();
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };
@@ -1036,7 +998,7 @@ describe("Semibook unit test suite", () => {
       };
       const state: Semibook.State = {
         offerCache: new Map(),
-        tickOfferList: new Map(),
+        binCache: new Map(),
         bestInCache: undefined,
         worstInCache: undefined,
       };

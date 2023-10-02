@@ -91,7 +91,7 @@ describe("PrettyPrint Unit test suite", () => {
       const offers: Iterable<Market.Offer> = [offer, offer];
 
       //Act
-      prettyPrint.prettyPrint(offers, ["id", "next", "wants"]);
+      prettyPrint.prettyPrint(offers, ["id", "next", "gives"]);
       //Assert
     });
   });

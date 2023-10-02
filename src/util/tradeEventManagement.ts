@@ -47,6 +47,10 @@ class TradeEventManagement {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
 
     const gives = outbound_tkn.fromUnits(raw.gives);
+    const diffInDecimals = Math.abs(
+      outbound_tkn.decimals - inbound_tkn.decimals
+    );
+    const divOrMul = ba == "bids" ? "div" : "mul";
 
     const id = this.#rawIdToId(raw.id);
     if (id === undefined) throw new Error("Offer ID is 0");
@@ -57,7 +61,9 @@ class TradeEventManagement {
       gasreq: raw.gasreq.toNumber(),
       tick: raw.tick,
       gives: gives,
-      price: TickLib.priceFromTick(raw.tick),
+      price: TickLib.priceFromTick(raw.tick)[divOrMul](
+        Big(10).pow(diffInDecimals)
+      ),
     };
   }
 

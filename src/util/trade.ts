@@ -41,18 +41,18 @@ class Trade {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
-          tick = BigNumber.from(MAX_TICK);
+          tick = BigNumber.from(MIN_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
+          tick = TickLib.getTickFromPrice(Big(1).div(priceWithCorrectDecimals));
         }
 
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
         if (params.price == 0) {
-          tick = BigNumber.from(MIN_TICK);
+          tick = BigNumber.from(MAX_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(Big(1).div(priceWithCorrectDecimals));
+          tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         }
         fillWants = false;
       }
@@ -90,7 +90,7 @@ class Trade {
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
-          tick = BigNumber.from(MIN_TICK);
+          tick = BigNumber.from(MAX_TICK);
         } else {
           tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         }
@@ -98,7 +98,7 @@ class Trade {
       } else {
         fillVolume = Big(params.total);
         if (params.price == 0) {
-          tick = BigNumber.from(MAX_TICK);
+          tick = BigNumber.from(MIN_TICK);
         } else {
           tick = TickLib.getTickFromPrice(Big(1).div(priceWithCorrectDecimals));
         }

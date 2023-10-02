@@ -54,9 +54,9 @@ namespace Mangrove {
     last: number | undefined;
     binPosInLeaf: number;
     root: number;
-    level1: number;
-    level2: number;
-    level3: number;
+    level1: ethers.BigNumber;
+    level2: ethers.BigNumber;
+    level3: ethers.BigNumber;
   };
 
   export type GlobalConfig = {

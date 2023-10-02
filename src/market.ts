@@ -84,7 +84,9 @@ namespace Market {
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
     | ({ name: "OfferFail" } & TCM.OfferFailEvent)
+    | ({ name: "OfferFailWithPosthookData" } & TCM.OfferFailEvent)
     | ({ name: "OfferSuccess" } & TCM.OfferSuccessEvent)
+    | ({ name: "OfferSuccessWithPosthookData" } & TCM.OfferSuccessEvent)
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
     | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
 
@@ -221,7 +223,20 @@ namespace Market {
         takerGives: Big;
         mgvData: string;
       }
+    | {
+        type: "OfferFailWithPosthookData";
+        taker: string;
+        takerWants: Big;
+        takerGives: Big;
+        mgvData: string;
+      }
     | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
+    | {
+        type: "OfferSuccessWithPosthookData";
+        taker: string;
+        takerWants: Big;
+        takerGives: Big;
+      }
     | { type: "OfferRetract" }
     | { type: "SetGasbase" }
   );
@@ -247,7 +262,7 @@ namespace Market {
   export type VolumeEstimate = {
     tick: BigNumber;
     estimatedVolume: Big;
-    givenResidue: Big;
+    remainingFillVolume: Big;
   };
 }
 // no unsubscribe yet

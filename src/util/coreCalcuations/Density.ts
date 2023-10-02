@@ -2,14 +2,14 @@ import Big from "big.js";
 import { BigNumber } from "ethers";
 import { BitLib } from "./BitLib";
 
-const ONES = -1;
-const MAX_MARKET_ORDER_GAS = 10000000;
-const BITS = 9; // must match structs.ts
-const MANTISSA_BITS = 2;
-const SUBNORMAL_LIMIT = ~(ONES << (MANTISSA_BITS + 1));
+const ONES = -1n;
+const MAX_MARKET_ORDER_GAS = 10000000n;
+const BITS = 9n; // must match structs.ts
+const MANTISSA_BITS = 2n;
+const SUBNORMAL_LIMIT = ~(ONES << (MANTISSA_BITS + 1n));
 const MANTISSA_MASK = ~(ONES << MANTISSA_BITS);
 const MASK = ~(ONES << BITS);
-const MANTISSA_INTEGER = 1 << MANTISSA_BITS;
+const MANTISSA_INTEGER = 1n << MANTISSA_BITS;
 const EXPONENT_BITS = BITS - MANTISSA_BITS;
 
 export class Density {
@@ -21,19 +21,26 @@ export class Density {
   }
 
   eq(value: Density): boolean {
-    return this.#value === value.#value;
+    return this.#value.eq(value.#value);
+  }
+
+  toString(): string {
+    return this.#value.toString();
   }
 
   checkDensity96X32(density96X32: BigNumber): boolean {
-    return density96X32.lt(1 << (96 + 32));
+    return density96X32.lt(BigNumber.from(1).shl(96 + 32));
   }
 
-  from96X32(density96X32: BigNumber, outbound_decimals: number): Density {
+  static from96X32(
+    density96X32: BigNumber,
+    outbound_decimals: number
+  ): Density {
     if (density96X32.lte(MANTISSA_MASK)) {
       return new Density(density96X32, outbound_decimals);
     }
     let exp = BitLib.fls(density96X32);
-    return this.make(
+    return Density.make(
       density96X32.shr(exp.sub(MANTISSA_BITS).toNumber()),
       exp,
       outbound_decimals
@@ -44,7 +51,9 @@ export class Density {
     if (this.#value.lte(SUBNORMAL_LIMIT)) {
       return this.#value.and(MANTISSA_MASK);
     }
-    let shift = this.#value.shr(MANTISSA_BITS).sub(MANTISSA_BITS);
+    let shift = this.#value
+      .shr(BigNumber.from(MANTISSA_BITS).toNumber())
+      .sub(MANTISSA_BITS);
     return this.#value
       .and(MANTISSA_MASK)
       .or(MANTISSA_INTEGER)
@@ -56,16 +65,18 @@ export class Density {
   }
 
   exponent(): BigNumber {
-    return this.#value.shr(MANTISSA_BITS);
+    return this.#value.shr(BigNumber.from(MANTISSA_BITS).toNumber());
   }
 
-  make(
+  static make(
     mantissa: BigNumber,
     exponent: BigNumber,
     outbound_decimals: number
   ): Density {
     return new Density(
-      exponent.shl(MANTISSA_BITS).or(mantissa.and(MANTISSA_MASK)),
+      exponent
+        .shl(BigNumber.from(MANTISSA_BITS).toNumber())
+        .or(mantissa.and(MANTISSA_MASK)),
       outbound_decimals
     );
   }
@@ -76,20 +87,16 @@ export class Density {
 
   multiplyUp(m: BigNumber): BigNumber {
     let part = m.mul(this.to96X32());
-    return part.shr(32).add(part.mod(2 << 32).eq(0) ? 0 : 1);
+    return part.shr(32).add(part.mod(BigNumber.from(2).shl(32)).eq(0) ? 0 : 1);
   }
 
   multiplyUpReadable(m: BigNumber): Big {
-    let part = m.mul(this.to96X32());
-    return Big(
-      part
-        .shr(32)
-        .add(part.mod(2 << 32).eq(0) ? 0 : 1)
-        .toString()
-    ).div(Math.pow(10, this.outbound_decimals));
+    return Big(this.multiplyUp(m).toString()).div(
+      Big(10).pow(this.outbound_decimals)
+    );
   }
 
-  paramsTo96X32(
+  static paramsTo96X32(
     outbound_decimals: number,
     gasprice_in_gwei: BigNumber,
     eth_in_usdx100: BigNumber,
@@ -105,9 +112,11 @@ export class Density {
     }
     let num = cover_factor
       .mul(gasprice_in_gwei)
-      .mul(Math.pow(10, outbound_decimals))
+      .mul(BigNumber.from(10).pow(outbound_decimals))
       .mul(eth_in_usdx100);
-    return num.mul(1 << 32).div(outbound_display_in_usdx100.mul(1e9));
+    return num
+      .mul(BigNumber.from(1).shl(32))
+      .div(outbound_display_in_usdx100.mul(1e9));
   }
 
   paramsTo96X32_2(
@@ -126,6 +135,30 @@ export class Density {
     let num = cover_factor
       .mul(gasprice_in_gwei)
       .mul(Math.pow(10, outbound_decimals));
-    return num.mul(1 << 32).div(outbound_display_in_gwei);
+    return num.mul(BigNumber.from(1).shl(32)).div(outbound_display_in_gwei);
+  }
+
+  densityToString() {
+    const newLocal = this.#value.and(MASK);
+    if (!newLocal.eq(this.#value)) {
+      throw new Error("Given density is too big");
+    }
+    const mantissa = this.mantissa();
+    const exp = this.exponent();
+    if (exp.eq(1)) {
+      throw new Error("Invalid density, value not canonical");
+    }
+    if (exp.lt(2)) {
+      return `${exp} * 2^-32`;
+    }
+    const unbiasedExp = exp.sub(32);
+    const mant = mantissa.eq(0)
+      ? "1"
+      : mantissa.eq(1)
+      ? "1.25"
+      : mantissa.eq(2)
+      ? "1.5"
+      : "1.75";
+    return `${mant.toString()} * 2^${unbiasedExp.toString()}`;
   }
 }
