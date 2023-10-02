@@ -54,12 +54,12 @@ describe("TickLib unit test suite", () => {
   describe("inboundFromOutboundUp", () => {
     it("should return the correct rounded up value of inbound from outbound based on tick", () => {
       const tick = TickLib.tickFromVolumes(
-        MAX_SAFE_VOLUME.div(2),
-        MAX_SAFE_VOLUME
+        BigNumber.from(5),
+        BigNumber.from(10)
       );
       const outboundAmt = BigNumber.from(5);
       const result = TickLib.inboundFromOutboundUp(tick, outboundAmt);
-      assert.deepStrictEqual(result, BigNumber.from(2));
+      assert.deepStrictEqual(result, BigNumber.from(3));
     });
   });
 
@@ -78,12 +78,12 @@ describe("TickLib unit test suite", () => {
   describe("outboundFromInboundUp", () => {
     it("should return the correct rounded up value of outbound from inbound based on tick", () => {
       const tick = TickLib.tickFromVolumes(
-        MAX_SAFE_VOLUME.div(2),
-        MAX_SAFE_VOLUME
+        BigNumber.from(5),
+        BigNumber.from(10)
       );
       const inboundAmt = BigNumber.from(5);
       const result = TickLib.outboundFromInboundUp(tick, inboundAmt);
-      assert.deepStrictEqual(result, BigNumber.from(10));
+      assert.deepStrictEqual(result, BigNumber.from(11));
     });
   });
 

@@ -37,7 +37,7 @@ describe("PrettyPrint Unit test suite", () => {
       assert.equal(4, secArg.length);
       assert.equal(secArg[0], "id");
       assert.equal(secArg[1], "maker");
-      assert.equal(secArg[2], "volume");
+      assert.equal(secArg[2], "gives");
       assert.equal(secArg[3], "price");
     });
 

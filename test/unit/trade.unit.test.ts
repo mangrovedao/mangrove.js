@@ -19,7 +19,7 @@ import { TickLib } from "../../src/util/coreCalcuations/TickLib";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {
-    it("returns fillVolume as volume, tick as tick(price) and fillWants true, when params has price!=null and volume", async function () {
+    it("returns fillVolume as volume, tick as -1*tick(price) and fillWants true, when params has price!=null and volume", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -52,7 +52,7 @@ describe("Trade unit tests suite", () => {
       const [wants] = capture(baseToken.toUnits).first();
 
       //Assert
-      const tick = TickLib.getTickFromPrice(params.price);
+      const tick = TickLib.getTickFromPrice(Big(1).div(params.price));
       assert.equal(
         result.fillVolume.toString(),
         BigNumber.from(params.volume).toString()
@@ -62,7 +62,7 @@ describe("Trade unit tests suite", () => {
       assert.equal(Big(params.volume).toFixed(), Big(wants).toFixed());
     });
 
-    it("returns fillVolume as total, tick as -1*tick(price) and fillWants false, when params has price!=null and total", async function () {
+    it("returns fillVolume as total, tick as tick(price) and fillWants false, when params has price!=null and total", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -90,7 +90,7 @@ describe("Trade unit tests suite", () => {
         instance(quoteToken),
         1
       );
-      const tick = TickLib.getTickFromPrice(Big(1).div(params.price));
+      const tick = TickLib.getTickFromPrice(params.price);
       //Assert
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.total).toFixed(0))),
