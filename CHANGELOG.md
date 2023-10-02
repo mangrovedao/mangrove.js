@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.24
+
 - fix: Restore ability to enableLogging in a browser-context (shimmed via esbuild)
 
 # 1.4.23
