@@ -22,6 +22,7 @@ import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
+import { OfferFailEvent, OfferSuccessEvent } from "./types/typechain/IMangrove";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -922,7 +923,7 @@ class Semibook
   private handleOfferFail(
     event: {
       name: "OfferFail" | "OfferFailWithPosthookData";
-    } & import("/Users/kejlberg/Mangrove/mangrove.js/src/types/typechain/Mangrove").OfferFailEvent,
+    } & OfferFailEvent,
     removedOffer: Market.Offer | undefined,
     state: Semibook.State,
     outbound_tkn: MgvToken,
@@ -956,7 +957,7 @@ class Semibook
   private handleOfferSuccess(
     event: {
       name: "OfferSuccess" | "OfferSuccessWithPosthookData";
-    } & import("/Users/kejlberg/Mangrove/mangrove.js/src/types/typechain/Mangrove").OfferSuccessEvent,
+    } & OfferSuccessEvent,
     removedOffer: Market.Offer | undefined,
     state: Semibook.State,
     outbound_tkn: MgvToken,
