@@ -1808,10 +1808,10 @@ describe("Market integration tests suite", () => {
     assert.equal(
       market.minVolumeAsk!.mul(Big(10).pow(market.base.decimals)).toFixed(),
       baseAsOutbound.toString()
-    ); //FIXME: check that this is correct
+    );
     assert.equal(
       market.minVolumeBid!.mul(Big(10).pow(market.quote.decimals)).toFixed(),
       quoteAsOutbound.toString()
-    ); //FIXME: check that this is correct
+    );
   });
 });

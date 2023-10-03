@@ -30,20 +30,23 @@ class Trade {
   getParamsForBuy(
     params: Market.TradeParams,
     baseToken: MgvToken,
-    quoteToken: MgvToken,
-    tickSpacing: number
+    quoteToken: MgvToken
   ) {
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
+    const slippage = this.validateSlippage(params.slippage);
     if ("price" in params) {
       const priceWithCorrectDecimals = Big(params.price).mul(
         Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
       );
+      const priceWithSlippage = priceWithCorrectDecimals
+        .mul(100 + slippage)
+        .div(100);
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
           tick = BigNumber.from(MIN_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(Big(1).div(priceWithCorrectDecimals));
+          tick = TickLib.getTickFromPrice(Big(1).div(priceWithSlippage));
         }
 
         fillWants = true;
@@ -52,23 +55,25 @@ class Trade {
         if (params.price == 0) {
           tick = BigNumber.from(MAX_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
+          tick = TickLib.getTickFromPrice(priceWithSlippage);
         }
         fillWants = false;
       }
     } else {
       fillVolume = Big(params.fillVolume);
-      tick = BigNumber.from(params.tick);
       fillWants = params.fillWants ?? true;
+      if (slippage > 0) {
+        // if slippage is 0, we don't need to do anything
+        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differenes
+        const priceWithSlippage = price.mul(100 + slippage).div(100);
+        tick = TickLib.getTickFromPrice(priceWithSlippage);
+      } else {
+        tick = BigNumber.from(params.tick);
+      }
     }
 
-    const slippage = this.validateSlippage(params.slippage);
-    // const givesWithSlippage = quoteToken.toUnits(
-    //   gives.mul(100 + slippage).div(100)
-    // );
     return {
       tick: tick,
-      // givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
       fillVolume: fillWants
         ? baseToken.toUnits(fillVolume)
         : quoteToken.toUnits(fillVolume),
@@ -79,20 +84,23 @@ class Trade {
   getParamsForSell(
     params: Market.TradeParams,
     baseToken: MgvToken,
-    quoteToken: MgvToken,
-    tickSpacing: number
+    quoteToken: MgvToken
   ) {
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
+    const slippage = this.validateSlippage(params.slippage);
     if ("price" in params) {
       const priceWithCorrectDecimals = Big(params.price).mul(
         Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
       );
+      const priceWithSlippage = priceWithCorrectDecimals
+        .mul(100 - slippage)
+        .div(100);
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
           tick = BigNumber.from(MAX_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
+          tick = TickLib.getTickFromPrice(priceWithSlippage);
         }
         fillWants = false;
       } else {
@@ -100,26 +108,27 @@ class Trade {
         if (params.price == 0) {
           tick = BigNumber.from(MIN_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(Big(1).div(priceWithCorrectDecimals));
+          tick = TickLib.getTickFromPrice(Big(1).div(priceWithSlippage));
         }
         fillWants = true;
       }
     } else {
-      tick = BigNumber.from(params.tick);
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
+      if (slippage > 0) {
+        // if slippage is 0, we don't need to do anything
+        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differenes
+        const priceWithSlippage = price.mul(100 - slippage).div(100);
+        tick = TickLib.getTickFromPrice(priceWithSlippage);
+      } else {
+        tick = BigNumber.from(params.tick);
+      }
     }
-
-    const slippage = this.validateSlippage(params.slippage);
-    // const wantsWithSlippage = quoteToken.toUnits( //FIXME: should handle slippage
-    //   wants.mul(100 - slippage).div(100)
-    // );
 
     return {
       fillVolume: fillWants
         ? quoteToken.toUnits(fillVolume)
         : baseToken.toUnits(fillVolume),
-      // wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
       tick: tick,
       fillWants: fillWants,
     };
@@ -183,18 +192,8 @@ class Trade {
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { tick, fillVolume, fillWants } =
       bs === "buy"
-        ? this.getParamsForBuy(
-            params,
-            market.base,
-            market.quote,
-            market.tickSpacing.toNumber()
-          )
-        : this.getParamsForSell(
-            params,
-            market.base,
-            market.quote,
-            market.tickSpacing.toNumber()
-          );
+        ? this.getParamsForBuy(params, market.base, market.quote)
+        : this.getParamsForSell(params, market.base, market.quote);
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
 

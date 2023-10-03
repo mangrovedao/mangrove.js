@@ -201,7 +201,7 @@ describe("TickLib unit test suite", () => {
     });
   });
 
-  describe("tickFromPrice", () => {
+  describe("tickFromRatio", () => {
     it("should return the correct tick for price", () => {
       const result = TickLib.tickFromRatio(
         BigNumber.from(1).shl(151),
@@ -315,6 +315,15 @@ describe("TickLib unit test suite", () => {
     it("should return the correct price for tick, 0", () => {
       const result = TickLib.priceFromTick(BigNumber.from(0));
       assert.deepStrictEqual(result, Big("1")); // tick 0 = price 1
+    });
+
+    it("should return the correct price for tick, 1 ", () => {
+      const result = TickLib.priceFromTick(BigNumber.from(1));
+      assert.deepStrictEqual(
+        result.minus(Big("1.0001")).abs().gt(0) && result.lt(1.0001),
+        true,
+        `price should be sligtly less than 1.0001 but is ${result}, do to man and exp cannot express 1.0001`
+      );
     });
   });
 
