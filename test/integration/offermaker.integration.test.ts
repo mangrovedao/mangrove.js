@@ -198,8 +198,8 @@ describe("OfferMaker integration test suite", () => {
           lp.market.getOutboundInbound("asks");
         const provisionOfOffer = await lp.contract?.provisionOf(
           {
-            outbound: outbound_tkn.address,
-            inbound: inbound_tkn.address,
+            outbound_tkn: outbound_tkn.address,
+            inbound_tkn: inbound_tkn.address,
             tickSpacing: lp.market.tickSpacing,
           },
           id
@@ -324,7 +324,7 @@ describe("OfferMaker integration test suite", () => {
       it("cancels offer", async () => {
         //sets huge gasprice to induce high provision, to make sure taker receives more than gas cost when cancelling their offer
         let prov = await onchain_lp.computeBidProvision();
-        const tx = await adminMgv.contract.setGasprice(1200);
+        const tx = await adminMgv.contract.setGasprice(12000);
         await tx.wait();
         prov = await onchain_lp.computeBidProvision();
 
@@ -343,7 +343,9 @@ describe("OfferMaker integration test suite", () => {
         );
         assert(
           prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
-          "Maker was not refunded"
+          `Maker was not refunded, prov: ${mgv
+            .toUnits(prov, 18)
+            .toString()} balance_before: ${prov_before_cancel}, balance_after: ${prov_after_cancel}`
         );
         assert(
           onchain_lp.bids().length === 0,
@@ -373,8 +375,8 @@ describe("OfferMaker integration test suite", () => {
         const base = onchain_lp.market.base.address;
         const quote = onchain_lp.market.quote.address;
         const closetx = await adminMgv.contract.deactivate({
-          outbound: base,
-          inbound: quote,
+          outbound_tkn: base,
+          inbound_tkn: quote,
           tickSpacing: 1,
         });
         await closetx.wait();
@@ -429,8 +431,8 @@ describe("OfferMaker integration test suite", () => {
         const base = onchain_lp.market.base.address;
         const quote = onchain_lp.market.quote.address;
         const closetx = await adminMgv.contract.deactivate({
-          outbound: base,
-          inbound: quote,
+          outbound_tkn: base,
+          inbound_tkn: quote,
           tickSpacing: 1,
         });
         await closetx.wait();

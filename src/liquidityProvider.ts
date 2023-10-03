@@ -310,8 +310,8 @@ class LiquidityProvider {
     if (this.contract) {
       txPromise = this.contract.newOffer(
         {
-          outbound: outbound_tkn.address,
-          inbound: inbound_tkn.address,
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
           tickSpacing: this.market.tickSpacing,
         },
         tick,
@@ -322,8 +322,8 @@ class LiquidityProvider {
     } else {
       txPromise = this.mgv.contract.newOfferByTick(
         {
-          outbound: outbound_tkn.address,
-          inbound: inbound_tkn.address,
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
           tickSpacing: this.market.tickSpacing,
         },
         tick,
@@ -441,8 +441,8 @@ class LiquidityProvider {
     if (this.contract) {
       txPromise = this.contract.updateOffer(
         {
-          outbound: outbound_tkn.address,
-          inbound: inbound_tkn.address,
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
           tickSpacing: this.market.tickSpacing,
         },
         tick,
@@ -454,8 +454,8 @@ class LiquidityProvider {
     } else {
       txPromise = this.mgv.contract.updateOfferByTick(
         {
-          outbound: outbound_tkn.address,
-          inbound: inbound_tkn.address,
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
           tickSpacing: this.market.tickSpacing,
         },
         tick,
@@ -515,8 +515,8 @@ class LiquidityProvider {
     // retract offer
     txPromise = retracter.retractOffer(
       {
-        outbound: outbound_tkn.address,
-        inbound: inbound_tkn.address,
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
         tickSpacing: this.market.tickSpacing,
       },
       id,

@@ -1,6 +1,10 @@
 import { BigNumber } from "ethers";
 import { expect } from "chai";
-import { TickLib, priceToRatio } from "../../src/util/coreCalcuations/TickLib";
+import {
+  TickLib,
+  bigNumberToBits,
+  priceToRatio,
+} from "../../src/util/coreCalcuations/TickLib";
 import {
   MAX_TICK,
   MAX_RATIO_EXP,
@@ -9,6 +13,8 @@ import {
   MIN_TICK,
   MIN_RATIO_EXP,
   MIN_RATIO_MANTISSA,
+  MANTISSA_BITS_MINUS_ONE,
+  MANTISSA_BITS,
 } from "../../src/util/coreCalcuations/Constants";
 import assert from "assert";
 import Big from "big.js";
@@ -25,17 +31,6 @@ describe("TickLib unit test suite", () => {
       const tick = MAX_TICK.add(1);
       const result = TickLib.inRange(tick);
       assert.deepStrictEqual(result, false);
-    });
-  });
-
-  describe("fromTick", () => {
-    it("should return the correct value of tick multiplied by tickSpacing", () => {
-      const tick = BigNumber.from(5);
-      const tickSpacing = BigNumber.from(10);
-      assert.deepStrictEqual(
-        TickLib.fromTick(tick, tickSpacing),
-        BigNumber.from(50)
-      );
     });
   });
 
@@ -135,8 +130,11 @@ describe("TickLib unit test suite", () => {
       const inboundAmt = BigNumber.from(5);
       const outboundAmt = BigNumber.from(10);
       const result = TickLib.ratioFromVolumes(inboundAmt, outboundAmt); // price 0.5
-      assert.deepStrictEqual(result.mantissa, BigNumber.from(1).shl(151));
-      assert.deepStrictEqual(result.exp, BigNumber.from(152));
+      assert.deepStrictEqual(
+        result.mantissa,
+        BigNumber.from(1).shl(MANTISSA_BITS_MINUS_ONE.toNumber())
+      );
+      assert.deepStrictEqual(result.exp, BigNumber.from(MANTISSA_BITS));
     });
 
     // Add more test cases to cover other scenarios
@@ -216,31 +214,34 @@ describe("TickLib unit test suite", () => {
   describe("tickFromNormalizedPrice", () => {
     it("should return the correct tick for normalizedPrice", () => {
       const result = TickLib.tickFromNormalizedRatio(
-        BigNumber.from(1).shl(151),
-        BigNumber.from(152)
+        BigNumber.from(1).shl(MANTISSA_BITS_MINUS_ONE.toNumber()),
+        BigNumber.from(MANTISSA_BITS.toNumber())
       );
-      assert.deepStrictEqual(result, BigNumber.from(-6932));
+      assert.deepStrictEqual(
+        result.toString(),
+        BigNumber.from(-6932).toString()
+      );
     });
 
-    it("should revert with mgv/price/tooLow", () => {
+    it("should revert with mgv/tickFromRatio/tooLow", () => {
       assert.throws(
         () =>
           TickLib.tickFromNormalizedRatio(
             BigNumber.from(0),
             BigNumber.from(304)
           ),
-        new Error("mgv/price/tooLow")
+        new Error("mgv/tickFromRatio/tooLow")
       );
     });
 
-    it("should revert with mgv/price/tooHigh", () => {
+    it("should revert with mgv/tickFromRatio/tooHigh", () => {
       assert.throws(
         () =>
           TickLib.tickFromNormalizedRatio(
             MAX_RATIO_MANTISSA.add(1),
             BigNumber.from(0)
           ),
-        new Error("mgv/price/tooHigh")
+        new Error("mgv/tickFromRatio/tooHigh")
       );
     });
   });
@@ -295,25 +296,20 @@ describe("TickLib unit test suite", () => {
     });
   });
 
-  describe("priceFromTickReadable", () => {
+  describe("priceFromTick", () => {
     it("should return the correct price for tick, MAX_TICK", () => {
       const result = TickLib.priceFromTick(MAX_TICK);
-      assert.deepStrictEqual(
-        result,
-        Big("3.441571814221581909035848501253497354125574144e+45")
-      ); // biggest price
+      assert.deepStrictEqual(result, Big(MAX_RATIO_MANTISSA.toString())); // biggest price
     });
 
     it("should return the correct price for tick, MIN_TICK", () => {
       const result = TickLib.priceFromTick(MIN_TICK);
+      Big.DP = 42;
       assert.deepStrictEqual(
-        result.eq(
-          Big(
-            "0.00000000000000000000000000000000000000000000029056490870471083908940426326017522727650096011029103985976865748876021617662263225462445799950903077596895734157121994188554148680612228342415260134404797"
-          )
-        ),
-        true
+        result.toFixed(42),
+        Big(1).div(Big(2).pow(MANTISSA_BITS.toNumber())).toFixed(42) // because of ticks, we canoot hit the number exactly, so we only compare the first 42 digits
       ); // lowest price
+      Big.DP = 20;
     });
 
     it("should return the correct price for tick, 0", () => {
@@ -329,8 +325,8 @@ describe("TickLib unit test suite", () => {
       const result = TickLib.nonNormalizedRatioFromTick(tick);
 
       assert.deepStrictEqual(result, {
-        man: BigNumber.from("90099440608780781990828364496540139993169920"),
-        exp: BigNumber.from(146),
+        man: BigNumber.from("343702089724658134425462205873642501805"),
+        exp: BigNumber.from(128),
       });
     });
 
@@ -339,8 +335,8 @@ describe("TickLib unit test suite", () => {
 
       const result = TickLib.nonNormalizedRatioFromTick(tick);
       assert.deepStrictEqual(result, {
-        man: BigNumber.from("88315440459916769398717044968430092780568576"),
-        exp: BigNumber.from(146),
+        man: BigNumber.from("336896669234911992640369586824150439379"),
+        exp: BigNumber.from(128),
       });
     });
 
@@ -350,8 +346,19 @@ describe("TickLib unit test suite", () => {
       const result = TickLib.nonNormalizedRatioFromTick(tick);
 
       assert.deepStrictEqual(result, {
-        man: BigNumber.from("3441571814221581909035848501253497354125574144"),
-        exp: BigNumber.from(0),
+        man: BigNumber.from("2722054294691104752406446280423572328676"),
+        exp: BigNumber.from(3),
+      });
+    });
+
+    it("Test with minimum tick", () => {
+      const tick: BigNumber = MIN_TICK;
+
+      const result = TickLib.nonNormalizedRatioFromTick(tick);
+
+      assert.deepStrictEqual(result, {
+        man: BigNumber.from("42538493616070995358806404484514269423"),
+        exp: BigNumber.from(253),
       });
     });
 
@@ -364,53 +371,43 @@ describe("TickLib unit test suite", () => {
     });
   });
 
-  describe("priceFromTick", () => {
-    it("test_priceFromTick", () => {
-      inner_test_priceFromTick({
+  describe("ratioFromTick", () => {
+    it("test_ratioFromTick", () => {
+      inner_test_ratioFromTick({
         tick: MIN_TICK,
-        expected_sig: BigNumber.from(
-          "4735129379934731672174804159539094721182826496"
-        ),
-        expected_exp: BigNumber.from(303),
+        expected_sig: MIN_RATIO_MANTISSA,
+        expected_exp: MIN_RATIO_EXP,
       });
-      inner_test_priceFromTick({
-        tick: BigNumber.from(2 ** 20 - 1),
-        expected_sig: BigNumber.from(
-          "3441571814221581909035848501253497354125574144"
-        ),
-        expected_exp: BigNumber.from(0),
+      inner_test_ratioFromTick({
+        tick: MAX_TICK,
+        expected_sig: MAX_RATIO_MANTISSA,
+        expected_exp: MAX_RATIO_EXP,
       });
 
-      inner_test_priceFromTick({
+      inner_test_ratioFromTick({
         tick: BigNumber.from(138162),
         expected_sig: BigNumber.from(
-          "5444510673556857440102348422228887810808479744"
-        ),
-        expected_exp: BigNumber.from(132),
+          "324518124673179235464474464787774551547"
+        ).add(12),
+        expected_exp: BigNumber.from(108),
       });
 
-      inner_test_priceFromTick({
+      inner_test_ratioFromTick({
         tick: BigNumber.from(-1),
-        expected_sig: BigNumber.from(
-          "5708419928830956428590284849313049240594808832"
-        ),
-        expected_exp: BigNumber.from(152),
+        expected_sig: BigNumber.from("340248342086729790484326174814286782777"),
+        expected_exp: BigNumber.from(128),
       });
 
-      inner_test_priceFromTick({
+      inner_test_ratioFromTick({
         tick: BigNumber.from(0),
-        expected_sig: BigNumber.from(
-          "2854495385411919762116571938898990272765493248"
-        ),
-        expected_exp: BigNumber.from(151),
+        expected_sig: BigNumber.from("170141183460469231731687303715884105728"),
+        expected_exp: BigNumber.from(127),
       });
 
-      inner_test_priceFromTick({
+      inner_test_ratioFromTick({
         tick: BigNumber.from(1),
-        expected_sig: BigNumber.from(
-          "2854780834950460954092783596092880171791548416"
-        ),
-        expected_exp: BigNumber.from(151),
+        expected_sig: BigNumber.from("170158197578815278654860472446255694138"),
+        expected_exp: BigNumber.from(127),
       });
     });
     // Add test cases for tickFromNormalizedPrice function
@@ -422,7 +419,7 @@ describe("TickLib unit test suite", () => {
       const exp = BigNumber.from(123); // provide a valid exp value
       assert.throws(
         () => TickLib.normalizeRatio(mantissa, exp),
-        new Error("normalizePrice/mantissaIs0")
+        new Error("mgv/normalizeRatio/mantissaIs0")
       );
     });
 
@@ -436,9 +433,9 @@ describe("TickLib unit test suite", () => {
       // add assertions to check if the result is correct after normalization
       assert.deepStrictEqual(
         result.man,
-        BigNumber.from("5485983318838533292817786695071496930471182336")
+        BigNumber.from("0xf6000000000000000000000000000000")
       );
-      assert.deepStrictEqual(result.normalized_exp, BigNumber.from(197));
+      assert.deepStrictEqual(result.normalized_exp, BigNumber.from(173));
     });
 
     it("should handle negative shift correctly", () => {
@@ -486,7 +483,7 @@ describe("TickLib unit test suite", () => {
       const minPrice = TickLib.priceFromTick(MIN_TICK);
       const { man, exp } = TickLib.ratioFromTick(MIN_TICK);
       const result = priceToRatio(minPrice);
-      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.man.toString(), man.toString());
       assert.deepStrictEqual(result.exp, exp);
     });
 
@@ -494,6 +491,7 @@ describe("TickLib unit test suite", () => {
       const minPrice = TickLib.priceFromTick(BigNumber.from(1));
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1));
       const result = priceToRatio(minPrice);
+
       assert.deepStrictEqual(result.man, man);
       assert.deepStrictEqual(result.exp, exp);
     });
@@ -532,7 +530,7 @@ describe("TickLib unit test suite", () => {
   });
 });
 
-function inner_test_priceFromTick(p: {
+function inner_test_ratioFromTick(p: {
   tick: BigNumber;
   expected_sig: BigNumber;
   expected_exp: BigNumber;

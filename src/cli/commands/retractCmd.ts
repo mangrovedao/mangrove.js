@@ -83,8 +83,8 @@ async function retractAllFromOfferList(
     if (offer.maker == makerAddress) {
       const provision = await market.mgv.contract.callStatic.retractOffer(
         {
-          outbound: outbound_tkn.address,
-          inbound: inbound_tkn.address,
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
           tickSpacing: market.tickSpacing,
         },
         offer.id,
@@ -93,8 +93,8 @@ async function retractAllFromOfferList(
       const txPromise = market.mgv.contract
         .retractOffer(
           {
-            outbound: outbound_tkn.address,
-            inbound: inbound_tkn.address,
+            outbound_tkn: outbound_tkn.address,
+            inbound_tkn: inbound_tkn.address,
             tickSpacing: market.tickSpacing,
           },
           offer.id,

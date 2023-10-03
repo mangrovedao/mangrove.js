@@ -452,18 +452,14 @@ class Trade {
     });
 
     const response = this.createTxWithOptionalGasEstimation(
-      market.mgv.contract[
-        "marketOrderByTick((address,address,uint256),int256,uint256,bool)"
-      ],
-      market.mgv.contract.estimateGas[
-        "marketOrderByTick((address,address,uint256),int256,uint256,bool)"
-      ],
+      market.mgv.contract.marketOrderByTick,
+      market.mgv.contract.estimateGas.marketOrderByTick,
       gasLowerBound,
       overrides,
       [
         {
-          outbound: outboundTkn.address,
-          inbound: inboundTkn.address,
+          outbound_tkn: outboundTkn.address,
+          inbound_tkn: inboundTkn.address,
           tickSpacing: market.tickSpacing,
         },
         tick,
@@ -556,8 +552,8 @@ class Trade {
       [
         {
           olKey: {
-            outbound: outbound_tkn.address,
-            inbound: inbound_tkn.address,
+            outbound_tkn: outbound_tkn.address,
+            inbound_tkn: inbound_tkn.address,
             tickSpacing: market.tickSpacing,
           },
           fillOrKill: fillOrKill,
@@ -717,8 +713,8 @@ class Trade {
 
     const response = cleanFunction(
       {
-        outbound: raw.outboundTkn,
-        inbound: raw.inboundTkn,
+        outbound_tkn: raw.outboundTkn,
+        inbound_tkn: raw.inboundTkn,
         tickSpacing: market.tickSpacing,
       },
       raw.targets,

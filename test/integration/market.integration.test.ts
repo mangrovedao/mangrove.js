@@ -409,8 +409,8 @@ describe("Market integration tests suite", () => {
         });
         const gasreq = 10000;
         const config = await market.config();
-        const gasbase = (ba == "asks" ? config.asks : config.bids)
-          .kilo_offer_gasbase;
+        const gasbase =
+          (ba == "asks" ? config.asks : config.bids).kilo_offer_gasbase * 1000;
 
         const mgvProvision = mgv.calculateOfferProvision(
           gasprice ?? (await mgv.config()).gasprice,
@@ -1044,9 +1044,9 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 125215;
+                expectedLimit = 125081;
               } else {
-                expectedLimit = 43785;
+                expectedLimit = 43475;
               }
             }
           }
@@ -1366,8 +1366,8 @@ describe("Market integration tests suite", () => {
     });
     await mgvAsAdmin.contract.setFee(
       {
-        outbound: market.base.address,
-        inbound: market.quote.address,
+        outbound_tkn: market.base.address,
+        inbound_tkn: market.quote.address,
         tickSpacing: market.tickSpacing,
       },
       fee
@@ -1786,13 +1786,13 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
     const olKeyBaseAsOutbound: OLKeyStruct = {
-      outbound: market.base.address,
-      inbound: market.quote.address,
+      outbound_tkn: market.base.address,
+      inbound_tkn: market.quote.address,
       tickSpacing: market.tickSpacing,
     };
     const olKeyQuoteAsOutbound: OLKeyStruct = {
-      outbound: market.quote.address,
-      inbound: market.base.address,
+      outbound_tkn: market.quote.address,
+      inbound_tkn: market.base.address,
       tickSpacing: market.tickSpacing,
     };
     const gasreq = await mgv.orderContract.callStatic["offerGasreq()"]();

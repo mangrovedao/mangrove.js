@@ -50,13 +50,13 @@ describe("Mangrove integration tests suite", function () {
   describe("getMarkets", function () {
     it("updates with mgvReader", async function () {
       await mgvAdmin.contract.deactivate({
-        outbound: mgv.getAddress("TokenA"),
-        inbound: mgv.getAddress("TokenB"),
+        outbound_tkn: mgv.getAddress("TokenA"),
+        inbound_tkn: mgv.getAddress("TokenB"),
         tickSpacing: 1,
       });
       await mgvAdmin.contract.deactivate({
-        outbound: mgv.getAddress("TokenB"),
-        inbound: mgv.getAddress("TokenA"),
+        outbound_tkn: mgv.getAddress("TokenB"),
+        inbound_tkn: mgv.getAddress("TokenA"),
         tickSpacing: 1,
       });
       await mgv.readerContract.updateMarket({
@@ -67,8 +67,8 @@ describe("Mangrove integration tests suite", function () {
       const marketsBefore = await mgv.openMarkets();
       await mgvAdmin.contract.activate(
         {
-          outbound: mgv.getAddress("TokenA"),
-          inbound: mgv.getAddress("TokenB"),
+          outbound_tkn: mgv.getAddress("TokenA"),
+          inbound_tkn: mgv.getAddress("TokenB"),
           tickSpacing: 1,
         },
         1,

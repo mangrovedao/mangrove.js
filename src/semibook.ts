@@ -273,8 +273,8 @@ class Semibook
     );
     const [offer, details] = await this.market.mgv.readerContract.offerInfo(
       {
-        outbound: outbound_tkn.address,
-        inbound: inbound_tkn.address,
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
         tickSpacing: this.market.tickSpacing,
       },
       offerId
@@ -315,8 +315,8 @@ class Semibook
     );
     return await this.market.mgv.readerContract.configInfo(
       {
-        outbound: outbound_tkn.address,
-        inbound: inbound_tkn.address,
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
         tickSpacing: this.market.tickSpacing,
       },
       { blockTag: blockNumber }
@@ -1067,8 +1067,8 @@ class Semibook
           OfferDetailUnpackedStructOutput[]
         ] = await this.market.mgv.readerContract.offerList(
           {
-            outbound: outbound_tkn.address,
-            inbound: inbound_tkn.address,
+            outbound_tkn: outbound_tkn.address,
+            inbound_tkn: inbound_tkn.address,
             tickSpacing: this.market.tickSpacing,
           },
           this.#idToRawId(fromId),

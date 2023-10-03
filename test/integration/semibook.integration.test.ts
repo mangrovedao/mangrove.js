@@ -14,6 +14,7 @@ import { BigNumber } from "ethers";
 import { TransactionReceipt } from "@ethersproject/providers";
 import { Density } from "../../src/util/coreCalcuations/Density";
 import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { MAX_TICK } from "../../src/util/coreCalcuations/Constants";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -117,8 +118,8 @@ describe("Semibook integration tests suite", function () {
       const active = await waitForTransaction(
         mgv.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           fee,
@@ -129,8 +130,8 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         mgv.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           3,
@@ -171,8 +172,8 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         mgv.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           3,
@@ -190,8 +191,8 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         mgv.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           fee,
@@ -272,8 +273,8 @@ describe("Semibook integration tests suite", function () {
       const active = await waitForTransaction(
         mgvAdmin.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           fee,
@@ -284,8 +285,8 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         mgvAdmin.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           3,
@@ -333,8 +334,8 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         mgvAdmin.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           3,
@@ -345,8 +346,8 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         mgvAdmin.contract.activate(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           fee,
@@ -421,7 +422,7 @@ describe("Semibook integration tests suite", function () {
           const semibook = market.getSemibook("asks");
           const volume = await semibook.estimateVolume({ given: 1, to });
           expect(volume).to.deep.equal({
-            tick: BigNumber.from(1048575),
+            tick: MAX_TICK,
             estimatedVolume: Big(0),
             remainingFillVolume: Big(1),
           });
@@ -1258,8 +1259,8 @@ describe("Semibook integration tests suite", function () {
 
       const readerMinVolume = await mgv.readerContract.minVolume(
         {
-          outbound: market.base.address,
-          inbound: market.quote.address,
+          outbound_tkn: market.base.address,
+          inbound_tkn: market.quote.address,
           tickSpacing: 1,
         },
         offerGasreq
@@ -1285,8 +1286,8 @@ describe("Semibook integration tests suite", function () {
       await waitForTransaction(
         mgvAdmin.contract.setDensity96X32(
           {
-            outbound: market.base.address,
-            inbound: market.quote.address,
+            outbound_tkn: market.base.address,
+            inbound_tkn: market.quote.address,
             tickSpacing: 1,
           },
           0

@@ -9,6 +9,8 @@ import {
   MIN_TICK,
   MIN_RATIO_EXP,
   MIN_RATIO_MANTISSA,
+  LOG_BP_SHIFT,
+  LOG_BP_2X235,
 } from "./Constants";
 import Big from "big.js";
 import { BitLib } from "./BitLib";
@@ -18,8 +20,24 @@ export namespace TickLib {
   export function inRange(tick: BigNumber): boolean {
     return tick.gte(MIN_TICK) && tick.lte(MAX_TICK);
   }
-  export function fromTick(tick: BigNumber, tickSpacing: BigNumber): BigNumber {
-    return tick.mul(tickSpacing);
+
+  // normalized float comparison
+  export function floatLt(
+    mantissa_a: BigNumber,
+    exp_a: BigNumber,
+    mantissa_b: BigNumber,
+    exp_b: BigNumber
+  ): boolean {
+    return exp_a.gt(exp_b) || (exp_a.eq(exp_b) && mantissa_a.lt(mantissa_b));
+  }
+
+  export function nearestBin(
+    tick: BigNumber,
+    tickSpacing: BigNumber
+  ): BigNumber {
+    const bin = tick.div(tickSpacing);
+    const remainder = tick.mod(tickSpacing);
+    return bin.add(remainder.gt(0) ? 1 : 0);
   }
 
   // tick underestimates the price, so we underestimate  inbound here, i.e. the inbound/outbound price will again be underestimated
@@ -29,7 +47,7 @@ export namespace TickLib {
     tick: BigNumber,
     outboundAmt: BigNumber
   ): BigNumber {
-    const { man: sig, exp } = nonNormalizedRatioFromTick(tick);
+    const { man: sig, exp } = ratioFromTick(tick);
     return sig.mul(outboundAmt).shr(exp.toNumber());
   }
 
@@ -39,7 +57,7 @@ export namespace TickLib {
     tick: BigNumber,
     outboundAmt: BigNumber
   ): BigNumber {
-    const { man: sig, exp } = nonNormalizedRatioFromTick(tick);
+    const { man: sig, exp } = ratioFromTick(tick);
     return divExpUp(sig.mul(outboundAmt), exp);
   }
 
@@ -50,7 +68,7 @@ export namespace TickLib {
     tick: BigNumber,
     inboundAmt: BigNumber
   ): BigNumber {
-    const { man: sig, exp } = nonNormalizedRatioFromTick(tick.mul(-1));
+    const { man: sig, exp } = ratioFromTick(tick.mul(-1));
     return sig.mul(inboundAmt).shr(exp.toNumber());
   }
 
@@ -58,26 +76,16 @@ export namespace TickLib {
     tick: BigNumber,
     inboundAmt: BigNumber
   ): BigNumber {
-    const { man: sig, exp } = nonNormalizedRatioFromTick(tick.mul(-1));
+    const { man: sig, exp } = ratioFromTick(tick.mul(-1));
     return divExpUp(sig.mul(inboundAmt), exp);
   }
 
-  // Return a/2**e rounded up
-  export function divExpUp(a: BigNumber, e: BigNumber): BigNumber {
-    /* 
-    Let mask be (1<<e)-1, rem is 1 if a & mask > 0, and 0 otherwise.
-    Explanation:
-    * if a is 0 then rem must be 0. 0 & mask is 0.
-    * else if e > 255 then 0 < a < 2^e, so rem must be 1. (1<<e)-1 is type(uint).max, so a & mask is a > 0.
-    * else a & mask is a % 2**e
-    */
-    const rem = a.and(BigNumber.from(1).shl(e.toNumber()).sub(1)).gt(0) ? 1 : 0;
-    return a.shr(e.toNumber()).add(rem);
-  }
+  /* ### (outbound,inbound) → ratio */
 
-  // returns a normalized price within the max/min price range
-  // returns max_price if at least outboundAmt==0
-  // returns min_price if only inboundAmt==0
+  /* `ratioFromVolumes` converts a pair of (inbound,outbound) volumes to a floating-point, normalized ratio.
+   * `outboundAmt = 0` has a special meaning and the highest possible ratio will be returned.
+   * `inboundAmt = 0` has a special meaning if `outboundAmt != 0` and the lowest possible ratio will be returned.
+   */
   export function ratioFromVolumes(
     inboundAmt: BigNumber,
     outboundAmt: BigNumber
@@ -94,7 +102,7 @@ export namespace TickLib {
       return { mantissa: MIN_RATIO_MANTISSA, exp: MIN_RATIO_EXP };
     }
     const ratio = inboundAmt.shl(MANTISSA_BITS.toNumber()).div(outboundAmt);
-    // ratio cannot be 0 as long as (1<<MANTISSA_BITS)/MAX_SAFE_VOLUME > 0
+
     const log2 = BitLib.fls(ratio);
     if (ratio.eq(0)) {
       throw new Error("priceFromVolumes/zeroRatio");
@@ -114,6 +122,7 @@ export namespace TickLib {
     }
   }
 
+  /* ### (outbound,inbound) → tick */
   export function tickFromVolumes(
     inboundAmt: BigNumber,
     outboundAmt: BigNumber
@@ -122,7 +131,8 @@ export namespace TickLib {
     return tickFromNormalizedRatio(mantissa, exp);
   }
 
-  // expects a normalized price float
+  /* ### ratio → tick */
+  /* Does not require a normalized ratio. */
   export function tickFromRatio(
     mantissa: BigNumber,
     exp: BigNumber
@@ -131,20 +141,35 @@ export namespace TickLib {
     return tickFromNormalizedRatio(man, normalized_exp);
   }
 
-  // return greatest tick t such that price(tick) <= input price
-  // does not expect a normalized price float
+  /* ### low-level ratio → tick */
+  /* Given `ratio`, return greatest tick `t` such that `ratioFromTick(t) <= ratio`. 
+  * Input ratio must be within the maximum and minimum ratios returned by the available ticks. 
+  * Does _not_ expected a normalized float.
+  
+  The function works as follows:
+  * Approximate log2(ratio) to the 13th fractional digit.
+  * Following <a href="https://hackmd.io/@mangrovedao/HJvl21zla">https://hackmd.io/@mangrovedao/HJvl21zla</a>, obtain `tickLow` and `tickHigh` such that $\log_{1.0001}(ratio)$ is between them
+  * Return the highest one that yields a ratio below the input ratio.
+  */
   export function tickFromNormalizedRatio(
     mantissa: BigNumber,
     exp: BigNumber
   ): BigNumber {
     if (floatLt(mantissa, exp, MIN_RATIO_MANTISSA, MIN_RATIO_EXP)) {
-      throw new Error("mgv/price/tooLow");
+      throw new Error("mgv/tickFromRatio/tooLow");
     }
     if (floatLt(MAX_RATIO_MANTISSA, MAX_RATIO_EXP, mantissa, exp)) {
-      throw new Error("mgv/price/tooHigh");
+      throw new Error("mgv/tickFromRatio/tooHigh");
     }
     let log2price = MANTISSA_BITS_MINUS_ONE.sub(exp).toBigInt() << 64n;
     let mpow = mantissa.shr(MANTISSA_BITS_MINUS_ONE.sub(127).toNumber()); // give 129 bits of room left
+
+    /* How the fractional digits of the log are computed:
+     * for a given `n` compute $n^2$.
+     * If $\lfloor\log_2(n^2)\rfloor = 2\lfloor\log_2(n)\rfloor$ then the fractional part of $\log_2(n^2)$ was $< 0.5$ (first digit is 0).
+     * If $\lfloor\log_2(n^2)\rfloor = 1 + 2\lfloor\log_2(n)\rfloor$ then the fractional part of $\log_2(n^2)$ was $\geq 0.5$ (first digit is 1).
+     * Apply starting with `n=mpow` repeatedly by keeping `n` on 127 bits through right-shifts (has no impact on high fractional bits).
+     */
 
     // 13 bits of precision
     mpow = BigNumber.from(mpow).mul(mpow).shr(127);
@@ -212,52 +237,62 @@ export namespace TickLib {
     log2price = log2price | highbit.shl(51).toBigInt();
     mpow = mpow.shr(highbit.toNumber());
 
-    mpow = BigNumber.from(mpow).mul(mpow).shr(127);
-    highbit = mpow.shr(128);
-    log2price = log2price | highbit.shl(50).toBigInt();
-    mpow = mpow.shr(highbit.toNumber());
+    // Convert log base 2 to log base 1.0001 (multiply by `log2(1.0001)^-1 << 64`), since log2ratio is x64 this yields a x128 number.
+    const log_bp_price = log2price * 127869479499801913173571n;
 
-    const log_bp_price = log2price * 127869479499801913173570n;
-
+    // tickLow is approx - maximum error
     const tickLow = BigNumber.from(
-      (log_bp_price - 1701479891078076505009565712080972645n) >> 128n
+      (log_bp_price - 1701496478404567508395759362389778998n) >> 128n
     );
+    // tickHigh is approx + minimum error
     const tickHigh = BigNumber.from(
-      (log_bp_price + 290040965921304576580754310682015830659n) >> 128n
+      (log_bp_price + 289637967442836606107396900709005211253n) >> 128n
     );
 
     const { man: mantissaHigh, exp: expHigh } = ratioFromTick(tickHigh);
 
-    const priceHighGt = floatLt(mantissa, exp, mantissaHigh, expHigh);
-    if (tickLow == tickHigh || priceHighGt) {
+    const ratioHighGt = floatLt(mantissa, exp, mantissaHigh, expHigh);
+    if (tickLow == tickHigh || ratioHighGt) {
       return tickLow;
     } else {
       return tickHigh;
     }
   }
 
-  // normalized float comparison
-  export function floatLt(
-    mantissa_a: BigNumber,
-    exp_a: BigNumber,
-    mantissa_b: BigNumber,
-    exp_b: BigNumber
-  ): boolean {
-    return exp_a.gt(exp_b) || (exp_a.eq(exp_b) && mantissa_a.lt(mantissa_b));
+  /* ### tick → ratio conversion function */
+  /* Returns a normalized (man,exp) ratio floating-point number. The mantissa is on 128 bits to avoid overflow when mulitplying with token amounts. The exponent has no bias. for easy comparison. */
+  export function ratioFromTick(tick: BigNumber) {
+    let { man, exp } = nonNormalizedRatioFromTick(tick);
+    const shiftedTick = tick.toBigInt() << LOG_BP_SHIFT.toBigInt();
+    let log2Ratio = shiftedTick / LOG_BP_2X235.toBigInt();
+    log2Ratio =
+      log2Ratio - (shiftedTick % LOG_BP_2X235.toBigInt() < 0n ? 1n : 0n);
+    const diff = BigNumber.from(log2Ratio)
+      .add(exp)
+      .sub(MANTISSA_BITS_MINUS_ONE);
+    if (diff.gt(0)) {
+      man = man.shr(diff.toNumber());
+    } else {
+      man = man.shl(diff.mul(-1).toNumber());
+    }
+    exp = MANTISSA_BITS_MINUS_ONE.sub(log2Ratio);
+    return { man, exp };
   }
 
-  // return price from tick, as a non-normalized float (meaning the leftmost set bit is not always in the  same position)
-  // first return value is the mantissa, second value is the opposite of the exponent
+  /* ### low-level tick → ratio conversion */
+  /* Compute 1.0001^tick and returns it as a (mantissa,exponent) pair. Works by checking each set bit of `|tick|` multiplying by `1.0001^(-2**i)<<128` if the ith bit of tick is set. Since we inspect the absolute value of `tick`, `-1048576` is not a valid tick. If the tick is positive this computes `1.0001^-tick`, and we take the inverse at the end. For maximum precision some powers of 1.0001 are shifted until they occupy 128 bits. The `extra_shift` is recorded and added to the exponent.
+
+  Since the resulting mantissa is left-shifted by 128 bits, if tick was positive, we divide `2**256` by the mantissa to get the 128-bit left-shifted inverse of the mantissa.
+  */
   export function nonNormalizedRatioFromTick(tick: BigNumber): {
     man: BigNumber;
     exp: BigNumber;
   } {
     const absTick = tick.lt(0) ? tick.mul(-1) : tick;
     if (!absTick.lte(MAX_TICK)) {
-      throw new Error("absTick/tooBig");
+      throw new Error("mgv/absTick/outOfBounds");
     }
 
-    // each 1.0001^(2^i) below is shifted 128+(an additional shift value)
     let extra_shift = 0;
     let man: BigNumber;
     if (!absTick.and("0x1").eq(0)) {
@@ -331,14 +366,49 @@ export namespace TickLib {
     }
 
     if (tick.gt(0)) {
-      man = ethers.constants.MaxUint256.div(man);
+      /* We use [Remco Bloemen's trick](https://xn--2-umb.com/17/512-bit-division/#divide-2-256-by-a-given-number) to divide `2**256` by `man`: */
+      man = ethers.constants.MaxUint256.sub(man).div(man).add(1);
       extra_shift = -extra_shift;
     }
-    // 18 ensures exp>= 0
     return {
-      man: man.shl(18),
-      exp: BigNumber.from(128 + 18 + extra_shift),
+      man: man,
+      exp: BigNumber.from(128 + extra_shift),
     };
+  }
+
+  /* Shift mantissa so it occupies exactly `MANTISSA_BITS` and adjust `exp` in consequence. */
+  export function normalizeRatio(
+    mantissa: BigNumber,
+    exp: BigNumber
+  ): { man: BigNumber; normalized_exp: BigNumber } {
+    if (mantissa.eq(0)) {
+      throw new Error("mgv/normalizeRatio/mantissaIs0");
+    }
+    const log2price = BitLib.fls(mantissa);
+    const shift = MANTISSA_BITS_MINUS_ONE.sub(log2price);
+    if (shift.lt(0)) {
+      mantissa = mantissa.shr(shift.mul(-1).toNumber());
+    } else {
+      mantissa = mantissa.shl(shift.toNumber());
+    }
+    exp = exp.add(shift);
+    if (exp.lt(0)) {
+      throw new Error("mgv/normalizePrice/lowExp");
+    }
+    return { man: mantissa, normalized_exp: exp };
+  }
+
+  // Return a/2**e rounded up
+  export function divExpUp(a: BigNumber, e: BigNumber): BigNumber {
+    /* 
+    Let mask be (1<<e)-1, rem is 1 if a & mask > 0, and 0 otherwise.
+    Explanation:
+    * if a is 0 then rem must be 0. 0 & mask is 0.
+    * else if e > 255 then 0 < a < 2^e, so rem must be 1. (1<<e)-1 is type(uint).max, so a & mask is a > 0.
+    * else a & mask is a % 2**e
+    */
+    const rem = a.and(BigNumber.from(1).shl(e.toNumber()).sub(1)).gt(0) ? 1 : 0;
+    return a.shr(e.toNumber()).add(rem);
   }
 
   export function getTickFromPrice(price: Bigish): BigNumber {
@@ -350,6 +420,12 @@ export namespace TickLib {
 
   export function priceFromTick(tick: BigNumber): Big {
     let { man, exp } = ratioFromTick(tick);
+    return priceFromRatio({ man, exp });
+  }
+
+  export function priceFromRatio(p: { man: BigNumber; exp: BigNumber }): Big {
+    let man = p.man;
+    let exp = p.exp;
     let numberAsBitsString = bigNumberToBits(man);
     if (numberAsBitsString.length < exp.toNumber()) {
       exp = BigNumber.from(numberAsBitsString.length).sub(exp);
@@ -371,58 +447,6 @@ export namespace TickLib {
     const result = integerNumber.add(decimalNumber);
     Big.DP = 40;
     return result;
-  }
-
-  // return price from tick, as a normalized float
-  // first return value is the mantissa, second value is -exp
-  export function ratioFromTick(tick: BigNumber): {
-    man: BigNumber;
-    exp: BigNumber;
-  } {
-    const { man, exp } = nonNormalizedRatioFromTick(tick);
-
-    const log_bp_2X232 =
-      47841652135324370225811382070797757678017615758549045118126590952295589692n;
-    // log_1.0001(price) * log_2(1.0001)
-    let log2price = (tick.toBigInt() << 232n) / log_bp_2X232;
-
-    if (tick.lt(0) && (tick.toBigInt() << 232n) % log_bp_2X232 != 0n) {
-      log2price = log2price - 1n;
-    }
-    // MANTISSA_BITS was chosen so that diff cannot be <0
-    const diff = MANTISSA_BITS_MINUS_ONE.sub(exp).sub(log2price);
-    return {
-      man: man.shl(diff.toNumber()),
-      exp: exp.add(diff),
-    };
-  }
-
-  // normalize a price float
-  // normalizes a representation of mantissa * 2^-exp
-  // examples:
-  // 1 ether:1 -> normalizePrice(1 ether, 0)
-  // 1: 1 ether -> normalizePrice(1,?)
-  // 1:1 -> normalizePrice(1,0)
-  // 1:2 -> normalizePrice(1,1)
-  export function normalizeRatio(
-    mantissa: BigNumber,
-    exp: BigNumber
-  ): { man: BigNumber; normalized_exp: BigNumber } {
-    if (mantissa.eq(0)) {
-      throw new Error("normalizePrice/mantissaIs0");
-    }
-    const log2price = BitLib.fls(mantissa);
-    const shift = MANTISSA_BITS_MINUS_ONE.sub(log2price);
-    if (shift.lt(0)) {
-      mantissa = mantissa.shr(shift.mul(-1).toNumber());
-    } else {
-      mantissa = mantissa.shl(shift.toNumber());
-    }
-    exp = exp.add(shift);
-    if (exp.lt(0)) {
-      throw new Error("mgv/normalizePrice/lowExp");
-    }
-    return { man: mantissa, normalized_exp: exp };
   }
 }
 
@@ -515,7 +539,7 @@ export function bigNumberToBits(bn: BigNumber): string {
 }
 
 function decimalBitsToNumber(decimalBits: string): Big {
-  Big.DP = 200;
+  Big.DP = 300;
   let result = Big(0);
   let num = Big(2);
   for (let i = 0; i < decimalBits.length; i++) {

@@ -74,8 +74,8 @@ class KandelSeeder {
       );
     }
     const rawSeed: OLKeyStruct = {
-      outbound: seed.market.base.address,
-      inbound: seed.market.quote.address,
+      outbound_tkn: seed.market.base.address,
+      inbound_tkn: seed.market.quote.address,
       tickSpacing: seed.market.tickSpacing,
     };
 

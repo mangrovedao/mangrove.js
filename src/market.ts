@@ -538,8 +538,8 @@ class Market {
     const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     const prov = await this.mgv.readerContract.getProvision(
       {
-        outbound: outbound_tkn.address,
-        inbound: inbound_tkn.address,
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
         tickSpacing: this.tickSpacing,
       },
       gasreq,

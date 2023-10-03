@@ -104,8 +104,8 @@ export const mochaHooks = {
     await mgv.contract
       .activate(
         {
-          outbound: tokenA.address,
-          inbound: tokenB.address,
+          outbound_tkn: tokenA.address,
+          inbound_tkn: tokenB.address,
           tickSpacing: 1,
         },
         250,
@@ -118,8 +118,8 @@ export const mochaHooks = {
     await mgv.contract
       .activate(
         {
-          outbound: tokenB.address,
-          inbound: tokenA.address,
+          outbound_tkn: tokenB.address,
+          inbound_tkn: tokenA.address,
           tickSpacing: 1,
         },
         250,

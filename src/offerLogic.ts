@@ -181,8 +181,8 @@ class OfferLogic {
     return this.mgv.fromUnits(
       await this.contract.provisionOf(
         {
-          outbound: outbound_tkn.address,
-          inbound: inbound_tkn.address,
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
           tickSpacing: market.tickSpacing,
         },
         offerId

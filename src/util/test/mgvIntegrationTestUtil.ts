@@ -403,8 +403,8 @@ export const postNewOffer = async ({
       "newOfferByTick((address,address,uint256),int256,uint256,uint256)"
     ](
       {
-        outbound: outboundToken.address,
-        inbound: inboundToken.address,
+        outbound_tkn: outboundToken.address,
+        inbound_tkn: inboundToken.address,
         tickSpacing: market.tickSpacing,
       },
       tick,

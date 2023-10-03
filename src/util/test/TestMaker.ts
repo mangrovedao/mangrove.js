@@ -84,8 +84,8 @@ class TestMaker {
     const contract = await new typechain.SimpleTestMaker__factory(
       p.mgv.signer
     ).deploy(p.mgv.address, {
-      outbound: baseAddress,
-      inbound: quoteAddress,
+      outbound_tkn: baseAddress,
+      inbound_tkn: quoteAddress,
       tickSpacing: p.tickSpacing,
     });
     await contract.deployTransaction.wait();
@@ -171,8 +171,8 @@ class TestMaker {
       "newOfferByTickWithFunding((address,address,uint256),int256,uint256,uint256,uint256,uint256,(bool,string))"
     ](
       {
-        outbound: outbound_tkn.address,
-        inbound: inbound_tkn.address,
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
         tickSpacing: this.market.tickSpacing,
       },
       tick,

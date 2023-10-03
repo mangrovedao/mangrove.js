@@ -348,8 +348,8 @@ class Mangrove {
     allMarkets.then((markets) => {
       markets.map((market) => {
         this.olKeyHashToOLKeyStrucMap.set(market.args.olKeyHash, {
-          outbound: market.args.outbound_tkn,
-          inbound: market.args.inbound_tkn,
+          outbound_tkn: market.args.outbound_tkn,
+          inbound_tkn: market.args.inbound_tkn,
           tickSpacing: market.args.tickSpacing,
         });
         this.olKeyStructToOlKeyHashMap.set(
@@ -649,7 +649,7 @@ class Mangrove {
    */
   calculateOfferProvision(gasprice: number, gasreq: number, gasbase: number) {
     return this.fromUnits(
-      this.toUnits(1, 9)
+      this.toUnits(1, 6)
         .mul(gasprice)
         .mul(gasreq + gasbase),
       18
@@ -699,8 +699,8 @@ class Mangrove {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async config(): Promise<Mangrove.GlobalConfig> {
     const config = await this.readerContract.configInfo({
-      outbound: ethers.constants.AddressZero,
-      inbound: ethers.constants.AddressZero,
+      outbound_tkn: ethers.constants.AddressZero,
+      inbound_tkn: ethers.constants.AddressZero,
       tickSpacing: 0,
     });
     return {

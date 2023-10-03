@@ -81,8 +81,8 @@ export const newOffer = async (
 
   return mgv.contract.newOfferByTick(
     {
-      outbound: outboundInfo.address,
-      inbound: inboundInfo.address,
+      outbound_tkn: outboundInfo.address,
+      inbound_tkn: inboundInfo.address,
       tickSpacing: 1,
     },
     tick,
