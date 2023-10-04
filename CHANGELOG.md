@@ -1,5 +1,7 @@
 # Next version
 
+- Bump: mangrove-core to v1.5.10
+
 # 1.4.24
 
 - fix: Restore ability to enableLogging in a browser-context (shimmed via esbuild)
