@@ -1,5 +1,7 @@
 # Next version
 
+# 1.4.25
+
 - Bump: mangrove-core to v1.5.10
 - fix: infiniteApproval checks for larger than 2^200, instead of 2^256
 
