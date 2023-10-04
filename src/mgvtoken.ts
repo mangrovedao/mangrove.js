@@ -93,6 +93,22 @@ class MgvToken {
     return new MgvToken(name, mgv, options);
   }
 
+  static async createTokenFromAddress(
+    address: string,
+    mgv: Mangrove
+  ): Promise<MgvToken> {
+    const contract = typechain.TestToken__factory.connect(
+      address,
+      mgv.provider
+    );
+
+    const name = await contract.callStatic.symbol();
+
+    return this.createToken(name, mgv, {
+      address,
+    });
+  }
+
   static #applyOptions(
     name: string,
     mgv: Mangrove,

@@ -29,6 +29,16 @@
 # 1.4.18
 
 - Bump: reliable-event-subscriber to v1.1.29
+
+# 1.4.18-1
+
+- fix: Use new mgvConfig for mangrove-core and mangrove-strats
+- Add: mangrove-strats v0.0.2-0
+- Bump: mangrove-core to v1.5.8-1
+
+# 1.4.18-0
+
+- feat: mgvtoken add tokenFromAddress function
 - feat: `LiquidityProvider` getter from an `OfferLogic` instance.
 
 # 1.4.17
