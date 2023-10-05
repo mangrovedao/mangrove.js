@@ -100,8 +100,7 @@ describe("TradeEventManagement unit tests suite", () => {
         fillVolume: Big(2),
         fillWants: true,
       };
-      const expectedOfferId = BigNumber.from(20);
-      const args: any = { restingOrderId: expectedOfferId };
+      const args: any = { offerId: BigNumber.from(20) };
 
       when(
         spyTradeEventManagement.createSummaryFromEvent(anything(), anything())
