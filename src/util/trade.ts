@@ -4,7 +4,9 @@ import Market from "../market";
 import MgvToken from "../mgvtoken";
 import { Bigish } from "../types";
 import logger from "./logger";
-import TradeEventManagement from "./tradeEventManagement";
+import TradeEventManagement, {
+  OrderResultWithOptionalSummary,
+} from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
 import { MAX_TICK, MIN_TICK } from "./coreCalcuations/Constants";
 import { TickLib } from "./coreCalcuations/TickLib";
@@ -561,7 +563,8 @@ class Trade {
           fillWants: orderType === "buy",
           restingOrder: postRestingOrder,
           expiryDate: expiryDate,
-          offerId: 0, //FIXME: Should be able to specify offerId
+          offerId:
+            restingParams?.offerId === undefined ? 0 : restingParams.offerId, //FIXME: Should be able to specify offerId
         },
         overrides_,
       ]
@@ -571,7 +574,8 @@ class Trade {
       orderType,
       fillWants,
       fillVolume,
-      market
+      market,
+      restingParams?.offerId
     );
     // if resting order was not posted, result.summary is still undefined.
     return { result, response };
@@ -582,7 +586,8 @@ class Trade {
     orderType: Market.BS,
     fillWants: boolean,
     fillVolume: ethers.BigNumber,
-    market: Market
+    market: Market,
+    offerId: number | undefined
   ) {
     const receipt = await (await response).wait();
 
@@ -591,7 +596,7 @@ class Trade {
       data: { receipt: receipt },
     });
 
-    const result = this.initialResult(receipt);
+    let result = this.initialResult(receipt);
 
     this.tradeEventManagement.processMangroveEvents(
       result,
@@ -606,9 +611,21 @@ class Trade {
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      fillVolume,
       market
     );
+
+    if (
+      result.summary?.restingOrderId !== undefined ||
+      result.restingOrderId !== undefined
+    )
+      result = {
+        ...result,
+        restingOrder: this.tradeEventManagement.createRestingOrderFromIdAndBA(
+          this.bsToBa(orderType),
+          result.summary?.restingOrderId ?? result.restingOrderId,
+          result.offerWrites
+        ),
+      };
 
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("mangrove order went wrong");
@@ -629,7 +646,9 @@ class Trade {
     }
   }
 
-  initialResult(receipt: ethers.ContractReceipt) {
+  initialResult(
+    receipt: ethers.ContractReceipt
+  ): OrderResultWithOptionalSummary {
     return {
       txReceipt: receipt,
       summary: undefined,

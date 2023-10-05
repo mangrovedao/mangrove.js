@@ -65,6 +65,7 @@ namespace Market {
     fillVolume: Big;
     fillWants: boolean;
     restingOrder?: boolean;
+    restingOrderId?: number;
     fee?: Big;
     totalGot?: Big;
     totalGave?: Big;
@@ -79,6 +80,7 @@ namespace Market {
     posthookFailures: Failure[];
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[];
     restingOrder?: Market.OfferSlim;
+    restingOrderId?: number;
   };
 
   export type BookSubscriptionEvent =
@@ -106,6 +108,7 @@ namespace Market {
 
   export type RestingOrderParams = {
     provision: Bigish;
+    offerId?: number;
   };
 
   export type CleanParams = {

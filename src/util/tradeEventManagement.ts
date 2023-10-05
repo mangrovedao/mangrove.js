@@ -1,10 +1,10 @@
 import Big from "big.js";
 import * as ethers from "ethers";
+import { BaseContract, BigNumber } from "ethers";
 import { LogDescription } from "ethers/lib/utils";
 import Market from "../market";
 import MgvToken from "../mgvtoken";
 import {
-  OLKeyStruct,
   OfferFailEvent,
   OfferFailWithPosthookDataEvent,
   OfferSuccessEvent,
@@ -14,13 +14,11 @@ import {
   OrderStartEvent,
 } from "../types/typechain/Mangrove";
 import {
-  NewOwnedOfferEvent,
   MangroveOrderStartEvent,
+  NewOwnedOfferEvent,
 } from "../types/typechain/MangroveOrder";
-import UnitCalculations from "./unitCalculations";
-import { BaseContract, BigNumber } from "ethers";
-import { logger } from "./logger";
 import { TickLib } from "./coreCalcuations/TickLib";
+import { logger } from "./logger";
 
 type RawOfferData = {
   id: BigNumber;
@@ -83,6 +81,7 @@ class TradeEventManagement {
         fillVolume: BigNumber;
         fillWants: boolean;
         restingOrder?: boolean;
+        restingOrderId?: number;
       };
     },
     fillToken: MgvToken
@@ -99,9 +98,9 @@ class TradeEventManagement {
       fillOrKill: event.args.fillOrKill,
       tick: event.args.tick?.toNumber() ?? event.args.maxTick?.toNumber() ?? 0,
       fillVolume: fillToken.fromUnits(event.args.fillVolume),
-
       fillWants: event.args.fillWants,
       restingOrder: event.args.restingOrder,
+      restingOrderId: event.args.restingOrderId,
     };
   }
 
@@ -197,27 +196,20 @@ class TradeEventManagement {
           fillVolume: evt.args.fillVolume,
           fillWants: evt.args.fillWants,
           restingOrder: evt.args.restingOrder,
+          restingOrderId: this.#rawIdToId(evt.args.offerId),
         },
       },
       fillToken
     );
   }
 
-  createRestingOrderFromEvent(
+  createRestingOrderFromIdAndBA(
     ba: Market.BA,
-    evt: NewOwnedOfferEvent,
-    taker: string,
-    currentRestingOrder: Market.OfferSlim | undefined,
+    offerId: number | undefined,
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[]
   ) {
-    if (evt.args.owner === taker) {
-      ba = ba === "bids" ? "asks" : "bids";
-      currentRestingOrder =
-        offerWrites.find(
-          (x) => x.ba == ba && x.offer.id === this.#rawIdToId(evt.args.offerId)
-        )?.offer ?? currentRestingOrder;
-    }
-    return currentRestingOrder;
+    ba = ba === "bids" ? "asks" : "bids";
+    return offerWrites.find((x) => x.ba == ba && x.offer.id === offerId)?.offer;
   }
 
   createPartialFillFunc(
@@ -368,6 +360,8 @@ class TradeEventManagement {
     }
   }
 
+  private numberOfMangroveOrderStart = 0;
+
   resultOfMangroveOrderEventCore(
     receipt: ethers.ContractReceipt,
     evt: ethers.Event | LogDescription,
@@ -382,7 +376,11 @@ class TradeEventManagement {
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
       case "MangroveOrderStart": {
-        //last MangroveOrderStart is ours so it overrides previous summaries if any
+        this.numberOfMangroveOrderStart++;
+        if (this.numberOfMangroveOrderStart > 1) {
+          break;
+        }
+        //first MangroveOrderStart is ours so we make sure only to write that
         result.summary = {
           ...result.summary,
           ...this.createSummaryFromOrderSummaryEvent(
@@ -393,13 +391,12 @@ class TradeEventManagement {
         break;
       }
       case "NewOwnedOffer": {
-        result.restingOrder = this.createRestingOrderFromEvent(
-          ba,
-          evt as NewOwnedOfferEvent,
-          receipt.from,
-          result.restingOrder,
-          result.offerWrites
-        );
+        // last NewOwnedOffer is ours if MangroveOrderStart did not have an offerId
+        if (result.summary?.restingOrderId === undefined) {
+          result.restingOrderId = this.#rawIdToId(
+            (evt as NewOwnedOfferEvent).args.offerId
+          );
+        }
         break;
       }
       default: {
@@ -452,7 +449,6 @@ class TradeEventManagement {
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
-    fillVolume: ethers.BigNumber,
     market: Market
   ) {
     for (const evt of this.getContractEventsFromReceipt(
@@ -468,6 +464,7 @@ class TradeEventManagement {
         market
       );
     }
+    this.numberOfMangroveOrderStart = 0;
   }
 
   isOrderResult(

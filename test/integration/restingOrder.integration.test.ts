@@ -339,5 +339,128 @@ describe("RestingOrder", () => {
       const result_ = await sellPromises_.result;
       assert(result_.summary.bounty!.gt(0), "Order should have reneged");
     });
+
+    it("no resting order params, with forceRoutingToMangroveOrder:true", async () => {
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
+
+      const buyPromises = await orderLP.market.buy({
+        forceRoutingToMangroveOrder: true,
+        price: 1, // tokenA
+        volume: 5, // tokenB
+      });
+      const orderResult = await buyPromises.result;
+      assert(
+        // 2,5% fee configured in mochaHooks.js
+        orderResult.summary.totalGot!.eq(5 * 0.975),
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+      );
+      assert(
+        orderResult.summary.totalGave!.sub(5).abs().lt(0.001),
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+      );
+      assert(!orderResult.restingOrder?.id, "Resting order was posted");
+      assert(
+        !orderResult.summary.partialFill,
+        "Order should have been fully filled"
+      );
+      assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
+    });
+
+    it("resting order, using existing offer", async () => {
+      const provision = await orderLP.computeBidProvision();
+
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
+
+      const market: Market = orderLP.market;
+
+      const buyPromises = await market.buy({
+        price: 1, // tokenA
+        volume: 20, // tokenB
+        restingOrder: {
+          provision: provision,
+        },
+      });
+      const orderResult = await buyPromises.result;
+      const tx = await waitForTransaction(buyPromises.response);
+      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        "Resting order was not posted"
+      );
+      assert(
+        orderResult.restingOrder
+          ? orderResult.restingOrder.gives.sub(10).abs().lt(0.001)
+          : false,
+        `orderResutl.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
+      );
+      assert(
+        orderResult.restingOrder
+          ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
+          : false,
+        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toFixed()}`
+      );
+
+      // taking resting offer
+
+      await w(tokenB.approveMangrove());
+      await w(tokenA.approveMangrove());
+
+      const sellPromises = await market.sell({
+        tick: orderResult.restingOrder!.tick.toNumber(),
+        fillVolume: 10,
+        fillWants: true,
+      });
+      const result = await sellPromises.result;
+      const tx2 = await waitForTransaction(sellPromises.response);
+
+      await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
+
+      // 2,5% fee configured in mochaHooks.js
+      assert(
+        result.summary
+          .totalGot!.minus(10 * 0.975)
+          .abs()
+          .lt(0.001),
+        `Taker received an incorrect amount ${result.summary.totalGot}`
+      );
+      assert(
+        !(await orderLP.market.isLive(
+          "bids",
+          orderResult.restingOrder ? orderResult.restingOrder.id : 0
+        )),
+        "Residual should not still be in the book"
+      );
+
+      const buyAgainPromises = await market.buy({
+        price: 1, // tokenA
+        volume: 20, // tokenB
+        restingOrder: {
+          provision: provision,
+          offerId: orderResult.restingOrder!.id,
+        },
+      });
+      const orderAgainResult = await buyAgainPromises.result;
+      const tx3 = await waitForTransaction(buyAgainPromises.response);
+      await mgvTestUtil.waitForBlock(market.mgv, tx3.blockNumber);
+
+      assert(
+        await orderLP.market.isLive("bids", orderResult.restingOrder!.id),
+        "Residual should be in the book again, on same offerId"
+      );
+
+      assert.deepStrictEqual(
+        orderAgainResult.restingOrder!.id,
+        orderResult.restingOrder!.id,
+        "OfferId should be the same"
+      );
+
+      assert.deepStrictEqual(
+        orderAgainResult.restingOrder,
+        orderAgainResult.offerWrites[0].offer,
+        "Resting order was not correct"
+      );
+    });
   });
 });
