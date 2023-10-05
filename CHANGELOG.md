@@ -1,5 +1,9 @@
 # Next version
 
+# 1.4.26
+
+- fix: missing multicall2 address for abitrum network
+
 # 1.4.25
 
 - Bump: mangrove-core to v1.5.10
