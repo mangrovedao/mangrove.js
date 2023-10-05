@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, it } from "mocha";
 import assert from "assert";
+import { afterEach, beforeEach, describe, it } from "mocha";
 import { Mangrove, ethers } from "../../src";
 
 import { Big } from "big.js";
@@ -46,6 +46,27 @@ describe("MGV Token integration tests suite", () => {
     assert.ok(!(await usdc.allowanceInfinite()));
     await waitForTransaction(usdc.approveMangrove());
     assert.ok(await usdc.allowanceInfinite());
+  });
+
+  it("allowanceInfinite is true if allowance is 2^200 + 1 ", async function () {
+    const usdc = await mgv.token("USDC");
+    assert.ok(!(await usdc.allowanceInfinite()));
+    await waitForTransaction(
+      usdc.approve(
+        mgv.address,
+        Big(2).pow(200).add(1).div(Big(10).pow(usdc.decimals))
+      )
+    );
+    assert.ok(await usdc.allowanceInfinite());
+  });
+
+  it("allowanceInfinite is false if allowance is 2^200 ", async function () {
+    const usdc = await mgv.token("USDC");
+    assert.ok(!(await usdc.allowanceInfinite()));
+    await waitForTransaction(
+      usdc.approve(mgv.address, Big(2).pow(200).div(Big(10).pow(usdc.decimals)))
+    );
+    assert.ok(!(await usdc.allowanceInfinite()));
   });
 
   it("approve sets approved amount", async function () {
