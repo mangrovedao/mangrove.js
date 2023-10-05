@@ -92,7 +92,7 @@ export const mochaHooks = {
       mgv.address,
       offerMakerSigner.signer
     );
-    mgv.setAddress("OfferMaker", mkr_address);
+    Mangrove.setAddress("OfferMaker", mkr_address, "local");
 
     const tokenA = await mgv.token("TokenA");
     const tokenB = await mgv.token("TokenB");

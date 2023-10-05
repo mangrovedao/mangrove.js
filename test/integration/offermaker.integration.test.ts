@@ -1,7 +1,7 @@
 import assert from "assert";
 import { ethers } from "ethers";
 
-import { LiquidityProvider, Mangrove, OfferLogic, OfferMaker } from "../../src";
+import { LiquidityProvider, Mangrove, OfferLogic } from "../../src";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { approxEq } from "../util/helpers";
 
