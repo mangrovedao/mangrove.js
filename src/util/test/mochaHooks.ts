@@ -1,6 +1,6 @@
 // TODO do not distribute in browser version
 import { BigNumber, ethers } from "ethers";
-import { Mangrove } from "../../";
+import { Mangrove, OfferMaker, eth } from "../../";
 import node, { inputServerParamsType, serverType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
@@ -84,6 +84,15 @@ export const mochaHooks = {
       provider,
       privateKey: hook.accounts.deployer.key,
     });
+    const offerMakerSigner = await eth._createSigner({
+      provider: provider,
+      privateKey: hook.accounts.tester.key,
+    });
+    const mkr_address = await OfferMaker.deploy(
+      mgv.address,
+      offerMakerSigner.signer
+    );
+    mgv.setAddress("OfferMaker", mkr_address);
 
     const tokenA = await mgv.token("TokenA");
     const tokenB = await mgv.token("TokenB");

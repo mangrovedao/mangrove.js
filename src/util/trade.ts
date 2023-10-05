@@ -564,7 +564,7 @@ class Trade {
           restingOrder: postRestingOrder,
           expiryDate: expiryDate,
           offerId:
-            restingParams?.offerId === undefined ? 0 : restingParams.offerId, //FIXME: Should be able to specify offerId
+            restingParams?.offerId === undefined ? 0 : restingParams.offerId,
         },
         overrides_,
       ]

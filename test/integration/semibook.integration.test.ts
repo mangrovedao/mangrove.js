@@ -1253,7 +1253,11 @@ describe("Semibook integration tests suite", function () {
       const semibook = market.getSemibook("asks");
 
       // Should be same as what reader calculates
-      const makerAddress = await OfferMaker.deploy(mgv, 30000);
+      const makerAddress = await OfferMaker.deploy(
+        mgv.address,
+        mgv.signer,
+        30000
+      );
       const logic = mgv.offerLogic(makerAddress);
       const offerGasreq = await logic.offerGasreq();
 

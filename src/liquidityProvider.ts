@@ -220,36 +220,30 @@ class LiquidityProvider {
     gasprice?: number;
     fund?: Bigish;
   } {
-    let tick: ethers.BigNumber, gives, price: BigSource;
-    const trade = new Trade();
-    // deduce price from wants&gives, or deduce wants&gives from volume&price
+    let tick: ethers.BigNumber, gives: Big, price: Big;
+    // deduce price from tick & gives, or deduce tick & gives from volume & price
     if ("gives" in p) {
-      [tick, gives] = [ethers.BigNumber.from(p.tick), p.gives];
+      tick = ethers.BigNumber.from(p.tick);
       price = TickLib.priceFromTick(tick);
+      gives = Big(p.gives);
     } else {
-      price = p.price;
-      tick = TickLib.getTickFromPrice(price);
-      let wants = Big(0);
-      [wants, gives] = [Big(p.volume).mul(price), Big(p.volume)];
-      if (p.ba === "bids") {
-        [wants, gives] = [gives, wants];
-        tick = tick.mul(-1);
+      price = Big(p.price);
+      if (p.ba === "asks") {
+        const priceWithCorrectDecimals = Big(price).div(
+          Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
+        );
+        tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
+        gives = Big(p.volume);
+      } else {
+        const priceWithCorrectDecimals = Big(price).mul(
+          Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
+        );
+        tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
+        gives = Big(p.volume).mul(price);
       }
     }
-    const fund = p.fund;
-    if (p.ba === "asks") {
-      const priceWithCorrectDecimals = Big(price).div(
-        Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
-      );
-      tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
-    } else {
-      const priceWithCorrectDecimals = Big(price).mul(
-        Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
-      );
-      tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
-    }
 
-    return { tick: tick, gives: Big(gives), price: Big(price), fund };
+    return { tick: tick, gives: gives, price: price, fund: p.fund };
   }
 
   static optValueToPayableOverride(

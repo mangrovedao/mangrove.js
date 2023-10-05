@@ -30,10 +30,8 @@ describe("Market integration tests suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
   const rawMinGivesBase = BigNumber.from("90000000000000000");
-  let trade: Trade;
 
   beforeEach(async function () {
-    trade = new Trade();
     mgv = await Mangrove.connect({
       provider: this.server.url,
       privateKey: this.accounts.tester.key,
@@ -1044,7 +1042,7 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 125081;
+                expectedLimit = 125364;
               } else {
                 expectedLimit = 43475;
               }
