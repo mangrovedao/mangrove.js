@@ -89,12 +89,11 @@ export const mochaHooks = {
       provider: provider,
       privateKey: hook.accounts.tester.key,
     });
-    const mkr_address = await OfferMaker.deploy(
+    hook.offerMakerAddress = await OfferMaker.deploy(
+      // Saving the address for later use
       mgv.address,
       offerMakerSigner.signer
     );
-    Mangrove.setAddress("OfferMaker", mkr_address, "local");
-    hook.offerMakerAddress = mkr_address;
 
     const tokenA = await mgv.token("TokenA");
     const tokenB = await mgv.token("TokenB");
@@ -158,6 +157,8 @@ export const mochaHooks = {
   },
 
   async beforeEachImpl(hook: hookInfo) {
+    Mangrove.setAddress("OfferMaker", hook.offerMakerAddress!, "local"); //FIXME: have to set the address in beforeEach, instead of beforeAll, because mangrove configuration gets reset by other tests. (e.g. configuration unit tests)
+
     if (!hook.proxies) {
       hook.proxies = [];
     }

@@ -29,8 +29,7 @@ describe("OfferMaker integration test suite", async () => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     mgv.provider.pollingInterval = 10;
-    const mkr_address = this.offerMakerAddress; //FIXME: this is a workaround, mochaHooks deploy the contract, but fails to set the address in Mangrove.js
-    const logic = mgv.offerLogic(mkr_address);
+    const logic = mgv.offerLogic("OfferMaker");
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
