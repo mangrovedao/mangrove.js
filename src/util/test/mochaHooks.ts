@@ -35,6 +35,7 @@ export type hookInfo = {
     tester: account;
     arbitrager: account;
   };
+  offerMakerAddress?: string;
   server?: serverType;
   closeCurrentProxy?: () => Promise<void>;
 };
@@ -93,6 +94,7 @@ export const mochaHooks = {
       offerMakerSigner.signer
     );
     Mangrove.setAddress("OfferMaker", mkr_address, "local");
+    hook.offerMakerAddress = mkr_address;
 
     const tokenA = await mgv.token("TokenA");
     const tokenB = await mgv.token("TokenB");
