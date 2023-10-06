@@ -208,7 +208,6 @@ class LiquidityProvider {
   static normalizeOfferParams(
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     market: {
-      tickSpacing: BigNumber;
       base: { decimals: number };
       quote: { decimals: number };
     }
