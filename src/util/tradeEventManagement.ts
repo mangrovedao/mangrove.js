@@ -19,6 +19,7 @@ import {
 } from "../types/typechain/MangroveOrder";
 import { TickLib } from "./coreCalcuations/TickLib";
 import { logger } from "./logger";
+import { CleanStartEvent } from "../types/typechain/IMangrove";
 
 type RawOfferData = {
   id: BigNumber;
@@ -70,6 +71,14 @@ class TradeEventManagement {
     return id === 0 ? undefined : id;
   }
 
+  createCleanSummaryFromEvent(event: CleanStartEvent): Market.CleanSummary {
+    return {
+      olKeyHash: event.args.olKeyHash,
+      taker: event.args.taker,
+      offersToBeCleaned: event.args.offersToBeCleaned.toNumber(),
+    };
+  }
+
   createSummaryFromEvent(
     event: {
       args: {
@@ -85,7 +94,7 @@ class TradeEventManagement {
       };
     },
     fillToken: MgvToken
-  ): Market.Summary {
+  ): Market.OrderSummary {
     if (
       (!event.args.tick && !event.args.maxTick) ||
       (event.args.tick && event.args.maxTick)
@@ -185,7 +194,7 @@ class TradeEventManagement {
   createSummaryFromOrderSummaryEvent(
     evt: MangroveOrderStartEvent,
     fillToken: MgvToken
-  ): Market.Summary {
+  ): Market.OrderSummary {
     return this.createSummaryFromEvent(
       {
         args: {
@@ -236,6 +245,32 @@ class TradeEventManagement {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
+      case "CleanStart": {
+        if (this.numberOfOrderStart > 0) {
+          break;
+        }
+        result.summary = this.createCleanSummaryFromEvent(
+          evt as CleanStartEvent
+        );
+        break;
+      }
+      case "CleanComplete": {
+        if (this.numberOfOrderStart > 0) {
+          break;
+        }
+        //last CleanComplete is ours so it overrides previous summaries if any
+        if (
+          result.summary != undefined &&
+          "offersToBeCleaned" in result.summary
+        ) {
+          result.summary.offersCleaned = result.tradeFailures.length;
+          result.summary.bounty = result.tradeFailures.reduce(
+            (acc, current) => acc.add(current.penalty ?? 0),
+            BigNumber.from(0)
+          );
+        }
+        break;
+      }
       case "OrderStart": {
         this.numberOfOrderStart++;
         if (this.numberOfOrderStart > 1) {
@@ -254,7 +289,7 @@ class TradeEventManagement {
         }
         this.numberOfOrderStart--;
         //last OrderComplete is ours so it overrides previous summaries if any
-        if (result.summary != undefined) {
+        if (result.summary != undefined && "tick" in result.summary) {
           result.summary.fee = outbound_tkn.fromUnits(
             (evt as OrderCompleteEvent).args.fee
           );
@@ -392,7 +427,11 @@ class TradeEventManagement {
       }
       case "NewOwnedOffer": {
         // last NewOwnedOffer is ours if MangroveOrderStart did not have an offerId
-        if (result.summary?.restingOrderId === undefined) {
+        if (
+          result.summary !== undefined &&
+          "fee" in result.summary &&
+          result.summary?.restingOrderId === undefined
+        ) {
           result.restingOrderId = this.#rawIdToId(
             (evt as NewOwnedOfferEvent).args.offerId
           );

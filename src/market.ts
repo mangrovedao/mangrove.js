@@ -57,7 +57,7 @@ namespace Market {
     got: Big;
     gave: Big;
   };
-  export type Summary = {
+  export type OrderSummary = {
     olKeyHash: string;
     taker: string;
     fillOrKill?: boolean;
@@ -72,9 +72,17 @@ namespace Market {
     partialFill?: boolean;
     bounty?: BigNumber;
   };
+
+  export type CleanSummary = {
+    olKeyHash: string;
+    taker: string;
+    offersToBeCleaned: number;
+    bounty?: BigNumber;
+    offersCleaned?: number;
+  };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
-    summary: Summary;
+    summary: OrderSummary | CleanSummary;
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];
@@ -119,8 +127,7 @@ namespace Market {
       gasreq: number;
     }[];
     ba: Market.BA;
-    taker: string;
-    requireOffersToFail?: boolean;
+    taker?: string;
   };
 
   export type RawCleanParams = {
@@ -639,7 +646,7 @@ class Market {
    * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
+   * `restingOrder` or `offerId` can be supplied to create a resting order , e.g.,
    * to account for gas.
    *
    * Will stop if
@@ -671,7 +678,7 @@ class Market {
    * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
+   * `restingOrder` or `offerId` can be supplied to create a resting order, e.g.,
    * to account for gas.
    *
    * Will stop if
@@ -696,60 +703,53 @@ class Market {
   }
 
   /** Estimate amount of gas for buy. Can be passed as overrides.gasLimit or params.gasLowerBound of @see buy with same params. */
-  gasEstimateBuy(params: Market.TradeParams): Promise<BigNumber> {
-    return this.trade
-      .estimateGas("buy", params, this)
-      .then((v) => v ?? BigNumber.from(0));
+  async gasEstimateBuy(params: Market.TradeParams): Promise<BigNumber> {
+    const v = await this.trade.estimateGas("buy", params, this);
+    return v ?? BigNumber.from(0);
   }
 
   /** Estimate amount of gas for sell. Can be passed as overrides.gasLimit or params.gasLowerBound of @see sell with same params. */
-  gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
-    return this.trade
-      .estimateGas("sell", params, this)
-      .then((v) => v ?? BigNumber.from(0));
+  async gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
+    const v = await this.trade.estimateGas("sell", params, this);
+    return v ?? BigNumber.from(0);
   }
 
   /**
-   * Snipe specific offers.
+   * Clean specific offers.
    * Params are:
    * `targets`: an array of
-   *    `offerId`: the offer to snipe
+   *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: if true, then a successful offer will cause the call to fail without sniping anything.
-   *     Note: Setting `requireOffersToFail=true` uses the cleaner contract and the taker needs to approve spending, with
-   *     `await mgv.contract.approve(market.base.address, market.quote.address, mgv.cleanerContract.address, amount);`
+   *    `tick`: the of the offer to be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   * `ba`: whether to clean `asks` or `bids`
+   * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
-  snipe(
+  clean(
     params: Market.CleanParams,
     overrides: ethers.Overrides = {}
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    return this.trade.snipe(params, this, overrides);
+    return this.trade.clean(params, this, overrides);
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
+   * Gets parameters to send to functions `market.mgv.cleanerContract.cleanByImpersonation`.
    * Params are:
    * `targets`: an array of
-   *    `offerId`: the offer to snipe
+   *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   *    `tick`: the of the offer to be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   * `ba`: whether to clean `asks` or `bids`
+   * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
-  getRawSnipeParams(
-    params: Market.CleanParams,
-    overrides: ethers.Overrides = {}
+  getRawCleanParams(
+    params: Market.CleanParams
   ): Promise<Market.RawCleanParams> {
-    return this.trade.getRawCleanParams(params, this, overrides);
+    return this.trade.getRawCleanParams(params, this);
   }
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {

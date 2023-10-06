@@ -37,7 +37,7 @@ class PrettyPrint {
         kilo_offer_gasbase: obj.kilo_offer_gasbase,
         gasreq: obj.gasreq,
         gasprice: obj.gasprice,
-        price: obj.price.toFixed(4),
+        price: obj.price.toFixed(10),
         prev: obj.prev,
         next: obj.next,
       };

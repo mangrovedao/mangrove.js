@@ -136,6 +136,7 @@ describe("RestingOrder", () => {
       });
 
       const orderResult = await buyPromises.result;
+      orderResult.summary = orderResult.summary as Market.OrderSummary;
       assert(
         // 2.5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(10 * 0.975),
@@ -169,6 +170,7 @@ describe("RestingOrder", () => {
         restingOrder: { provision: provision },
       });
       const orderResult = await buyPromises.result;
+      orderResult.summary = orderResult.summary as Market.OrderSummary;
       assert(
         // 2.5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(10 * 0.975),
@@ -202,6 +204,7 @@ describe("RestingOrder", () => {
         restingOrder: { provision: provision },
       });
       const orderResult = await buyPromises.result;
+      orderResult.summary = orderResult.summary as Market.OrderSummary;
       assert(
         // 2.5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(10 * 0.975),
@@ -232,6 +235,7 @@ describe("RestingOrder", () => {
         volume: 5, // tokenB
       });
       const orderResult = await buyPromises.result;
+      orderResult.summary = orderResult.summary as Market.OrderSummary;
       assert(
         // 2,5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(5 * 0.975),
@@ -305,6 +309,7 @@ describe("RestingOrder", () => {
         fillWants: true,
       });
       const result = await sellPromises.result;
+      result.summary = result.summary as Market.OrderSummary;
       const tx2 = await waitForTransaction(sellPromises.response);
 
       await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
@@ -350,6 +355,7 @@ describe("RestingOrder", () => {
         volume: 5, // tokenB
       });
       const orderResult = await buyPromises.result;
+      orderResult.summary = orderResult.summary as Market.OrderSummary;
       assert(
         // 2,5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(5 * 0.975),
@@ -413,6 +419,7 @@ describe("RestingOrder", () => {
         fillWants: true,
       });
       const result = await sellPromises.result;
+      result.summary = result.summary as Market.OrderSummary;
       const tx2 = await waitForTransaction(sellPromises.response);
 
       await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);

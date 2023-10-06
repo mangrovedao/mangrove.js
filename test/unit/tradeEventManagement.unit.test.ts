@@ -93,7 +93,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const mockedToken = mock(MgvToken);
       const token = instance(mockedToken);
       const event = instance(mockedEvent);
-      const summary: Market.Summary = {
+      const summary: Market.OrderSummary = {
         olKeyHash: "olKeyHash",
         taker: "taker",
         tick: 1,

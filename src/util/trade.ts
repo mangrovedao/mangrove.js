@@ -223,7 +223,7 @@ class Trade {
    * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
    * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
+   * `restingOrder` or `offerId` can be supplied to create a resting order, e.g.,
    * to account for gas.
    *
    * Will stop if
@@ -282,18 +282,17 @@ class Trade {
   }
 
   /**
-   * Snipe specific offers.
+   * Clean specific offers.
    * Params are:
    * `targets`: an array of
-   *    `offerId`: the offer to snipe
+   *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   *    `tick`: the of the offer to be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   * `ba`: whether to clean `asks` or `bids`
+   * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
-  async snipe(
+  async clean(
     params: Market.CleanParams,
     market: Market,
     overrides: ethers.Overrides = {}
@@ -301,27 +300,25 @@ class Trade {
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    const raw = await this.getRawCleanParams(params, market, overrides);
+    const raw = await this.getRawCleanParams(params, market);
 
     return this.cleanWithRawParameters(raw, market, overrides);
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
+   * Gets parameters to send to functions `market.mgv.contract.cleanByImpersonation`.
    * Params are:
    * `targets`: an array of
-   *    `offerId`: the offer to snipe
+   *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   *    `tick`: the of the offer to be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   * `ba`: whether to clean `asks` or `bids`
+   * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
-  getRawCleanParams(
+  async getRawCleanParams(
     params: Market.CleanParams,
-    market: Market,
-    overrides: ethers.Overrides = {}
+    market: Market
   ): Promise<Market.RawCleanParams> {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(params.ba);
 
@@ -335,11 +332,13 @@ class Trade {
         };
       }
     );
-
     return this.getCleanRawParamsFromUnitParams(
-      { targets: _targets, ba: params.ba, taker: params.taker },
-      market,
-      overrides
+      {
+        targets: _targets,
+        ba: params.ba,
+        taker: params.taker ?? (await market.mgv.signer.getAddress()),
+      },
+      market
     );
   }
 
@@ -352,8 +351,6 @@ class Trade {
         return (await market.estimateGas(bs, fillVolume)).add(
           MANGROVE_ORDER_GAS_OVERHEAD
         );
-      case "snipe":
-        return undefined;
       case "marketOrder":
         return await market.estimateGas(bs, fillVolume);
       default:
@@ -375,8 +372,6 @@ class Trade {
         return (await market.simulateGas(ba, tick, fillVolume, fillWants)).add(
           MANGROVE_ORDER_GAS_OVERHEAD
         );
-      case "snipe":
-        return undefined;
       case "marketOrder":
         return await market.simulateGas(ba, tick, fillVolume, fillWants);
     }
@@ -613,19 +608,27 @@ class Trade {
       fillWants,
       market
     );
-
+    let restingOrderId: number | undefined;
     if (
-      result.summary?.restingOrderId !== undefined ||
-      result.restingOrderId !== undefined
-    )
+      result.summary !== undefined &&
+      "restingOrderId" in result.summary &&
+      result.summary?.restingOrderId !== undefined
+    ) {
+      restingOrderId = result.summary?.restingOrderId;
+    } else if (result.restingOrderId !== undefined) {
+      restingOrderId = result.restingOrderId;
+    }
+
+    if (restingOrderId !== undefined) {
       result = {
         ...result,
         restingOrder: this.tradeEventManagement.createRestingOrderFromIdAndBA(
           this.bsToBa(orderType),
-          result.summary?.restingOrderId ?? result.restingOrderId,
+          restingOrderId,
           result.offerWrites
         ),
       };
+    }
 
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("mangrove order went wrong");
@@ -668,20 +671,19 @@ class Trade {
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
+   * Gets parameters to send to functions `market.mgv.contract.cleanByImpersonation`.
    */
   async getCleanRawParamsFromUnitParams(
     unitParams: CleanUnitParams,
-    market: Market,
-    overrides: ethers.Overrides
+    market: Market
   ): Promise<Market.RawCleanParams> {
     const [outboundTkn, inboundTkn] =
       unitParams.ba === "asks"
         ? [market.base, market.quote]
         : [market.quote, market.base];
 
-    logger.debug("Creating snipes", {
-      contextInfo: "market.snipes",
+    logger.debug("Creating cleans", {
+      contextInfo: "market.clean",
       data: {
         outboundTkn: outboundTkn.name,
         inboundTkn: inboundTkn.name,
@@ -713,9 +715,7 @@ class Trade {
   /**
    * Low level sniping of `targets`.
    *
-   * `requireOffersToFail`: if true, then a successful offer will cause the call to fail without sniping anything.
-   *
-   * Returns a promise for snipes result after 1 confirmation.
+   * Returns a promise for clean result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
    */
   async cleanWithRawParameters(
@@ -768,32 +768,9 @@ class Trade {
       market
     );
     if (!this.tradeEventManagement.isOrderResult(result)) {
-      throw Error("snipes went wrong");
+      throw Error("clean went wrong");
     }
     return result;
-  }
-
-  /**
-   * Low level sniping of `targets`.
-   *
-   * Returns a promise for snipes result after 1 confirmation.
-   * Will throw on same conditions as ethers.js `transaction.wait`.
-   */
-  async clean(
-    unitParams: CleanUnitParams,
-    market: Market,
-    overrides: ethers.Overrides
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
-    const raw = await this.getCleanRawParamsFromUnitParams(
-      unitParams,
-      market,
-      overrides
-    );
-
-    return this.cleanWithRawParameters(raw, market, overrides);
   }
 }
 
