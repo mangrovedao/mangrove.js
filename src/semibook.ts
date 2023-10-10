@@ -703,48 +703,52 @@ class Semibook
   public async stateInitialize(
     block: BlockManager.BlockWithoutParentHash
   ): Promise<LogSubscriber.ErrorOrState<Semibook.State>> {
-    const localConfig = await this.getConfig(block.number); // TODO: make this reorg resistant too, but it's HIGHLY unlikely that we encounter an issue here
-    this.#offer_gasbase = localConfig.offer_gasbase;
+    try {
+      const localConfig = await this.getConfig(block.number); // TODO: make this reorg resistant too, but it's HIGHLY unlikely that we encounter an issue here
+      this.#offer_gasbase = localConfig.offer_gasbase;
 
-    /**
-     * To ensure consistency in this cache, everything is initially fetched from a specific block,
-     * we expect $fetchOfferListPrefix to return error if reorg is detected
-     */
-    const result = await this.#fetchOfferListPrefix(block);
+      /**
+       * To ensure consistency in this cache, everything is initially fetched from a specific block,
+       * we expect $fetchOfferListPrefix to return error if reorg is detected
+       */
+      const result = await this.#fetchOfferListPrefix(block);
 
-    if (result.error) {
-      return { error: result.error, ok: undefined };
-    }
+      if (result.error) {
+        return { error: result.error, ok: undefined };
+      }
 
-    const offers = result.ok;
+      const offers = result.ok;
 
-    if (offers.length > 0) {
+      if (offers.length > 0) {
+        const state: Semibook.State = {
+          bestInCache: offers[0].id,
+          worstInCache: offers[offers.length - 1].id,
+          offerCache: new Map(),
+        };
+
+        for (const offer of offers) {
+          this.#insertOffer(state, offer);
+        }
+
+        return {
+          error: undefined,
+          ok: state,
+        };
+      }
+
       const state: Semibook.State = {
-        bestInCache: offers[0].id,
-        worstInCache: offers[offers.length - 1].id,
+        bestInCache: undefined,
+        worstInCache: undefined,
         offerCache: new Map(),
       };
-
-      for (const offer of offers) {
-        this.#insertOffer(state, offer);
-      }
 
       return {
         error: undefined,
         ok: state,
       };
+    } catch (e) {
+      return { error: "FailedInitialize", ok: undefined };
     }
-
-    const state: Semibook.State = {
-      bestInCache: undefined,
-      worstInCache: undefined,
-      offerCache: new Map(),
-    };
-
-    return {
-      error: undefined,
-      ok: state,
-    };
   }
 
   public stateHandleLog(
