@@ -2,6 +2,8 @@
 
 # 1.4.27
 
+- fix: catch error in Semibook initialization
+
 # 1.4.26
 
 - fix: missing multicall2 address for abitrum network
