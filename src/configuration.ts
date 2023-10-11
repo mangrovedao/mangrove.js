@@ -364,7 +364,8 @@ export const tokensConfiguration = {
 /// RELIABLE EVENT SUBSCRIBER
 
 export const reliableEventSubscriberConfiguration = {
-  getLogsTimeout: (/*network: string*/): number => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getLogsTimeout: (network: string): number => {
     return 20_000; // 20 seconds
   },
   getBlockManagerOptions: (network: string): BlockManager.Options => {
