@@ -1,20 +1,20 @@
 // Integration tests for Semibook.ts
-import { describe, beforeEach, afterEach, it } from "mocha";
-import { expect } from "chai";
 import assert from "assert";
+import { expect } from "chai";
+import { afterEach, beforeEach, describe, it } from "mocha";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-const waitForTransaction = mgvTestUtil.waitForTransaction;
 import { newOffer, toWei } from "../util/helpers";
+const waitForTransaction = mgvTestUtil.waitForTransaction;
 
-import { Mangrove, OfferMaker, Semibook } from "../../src";
+import { Mangrove, Semibook } from "../../src";
 
+import { TransactionReceipt } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
-import { TransactionReceipt } from "@ethersproject/providers";
+import { MAX_TICK } from "../../src/util/coreCalcuations/Constants";
 import { Density } from "../../src/util/coreCalcuations/Density";
 import { TickLib } from "../../src/util/coreCalcuations/TickLib";
-import { MAX_TICK } from "../../src/util/coreCalcuations/Constants";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -1252,14 +1252,7 @@ describe("Semibook integration tests suite", function () {
       });
       const semibook = market.getSemibook("asks");
 
-      // Should be same as what reader calculates
-      const makerAddress = await OfferMaker.deploy(
-        mgv.address,
-        mgv.signer,
-        30000
-      );
-      const logic = mgv.offerLogic(makerAddress);
-      const offerGasreq = await logic.offerGasreq();
+      const offerGasreq = 30000;
 
       const readerMinVolume = await mgv.readerContract.minVolume(
         {
