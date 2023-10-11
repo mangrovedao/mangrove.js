@@ -364,7 +364,7 @@ export const tokensConfiguration = {
 /// RELIABLE EVENT SUBSCRIBER
 
 export const reliableEventSubscriberConfiguration = {
-  getLogsTimeout: (_network: string): number => {
+  getLogsTimeout: (/*network: string*/): number => {
     return 20_000; // 20 seconds
   },
   getBlockManagerOptions: (network: string): BlockManager.Options => {
