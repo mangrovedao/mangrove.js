@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - uses: dorny/paths-filter@v2
       id: changes
@@ -46,7 +46,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Yarn setup (caching yarn dependencies)
       uses: actions/setup-node@v3
@@ -72,7 +72,7 @@ jobs:
         FOUNDRY_OUT: "~/.foundry/build-out"
       run: yarn run test:coverage
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       if: ${{ steps.build.conclusion == 'success' && (success() || failure())}}
       with:
         name: test-results

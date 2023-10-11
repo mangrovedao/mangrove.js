@@ -8,9 +8,9 @@ import os from "os";
 import { runTypeChain, glob } from "typechain";
 
 /* This script gathers all relevant .json artifacts and runs typechain on them.
-    Since the .json file come from multiple places, it is not as easy as doing input -> typechain -> outpout
+    Since the .json file come from multiple places, it is not as easy as doing input -> typechain -> output
   2 methods were tried but did not work.
-    1) Running typechains with artifacts = glob(cwd,[dir1/*.json,dir2/*.json]) will generate .ts files with their directory hierarchy up to the lowest common ancestor of all globbed files. We want to flatten the file hierarchies so this does not work.
+    1) Running typechain with artifacts = glob(cwd,[dir1/*.json,dir2/*.json]) will generate .ts files with their directory hierarchy up to the lowest common ancestor of all globbed files. We want to flatten the file hierarchies so this does not work.
     2) Running typechain twice (ie. runTypeChain(...); runTypeChain(...);) will fail because the second invocation will erase the typechain/index.ts file generated at the first invocation.
   The current method is to copy everything to a temp directory, then run typechain.
 */
@@ -19,7 +19,6 @@ async function main() {
   const outDir = path.join(process.cwd(), "src/types/typechain");
   shelljs.rm("-rf", outDir);
   shelljs.mkdir("-p", outDir);
-  const pwd = shelljs.pwd();
 
   // Generate temp directory to place artifacts
   const tempDir = await fs.mkdtempSync(`${os.tmpdir()}/`);
@@ -64,7 +63,7 @@ async function main() {
 }
 
 main()
-  .catch(console.error)
-  .then((result) => {
+  .then(() => {
     process.exit(0);
-  });
+  })
+  .catch(console.error);

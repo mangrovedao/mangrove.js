@@ -7,7 +7,6 @@ import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
 import KandelPriceCalculation from "./kandel/kandelPriceCalculation";
 import KandelConfiguration from "./kandel/kandelConfiguration";
-import { BigNumber } from "ethers";
 import { Bigish } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace

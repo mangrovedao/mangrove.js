@@ -53,8 +53,6 @@ namespace Semibook {
     given: Bigish;
     /** Whether `given` is base to be bought or quote to be sold. */
     to: Market.BS;
-    /** Optional: induce a max avg. price after which to stop buying/selling. */
-    boundary?: Bigish;
   };
 
   /**
@@ -398,12 +396,6 @@ class Semibook
     // normalize params, if no limit given then:
     // if 'buying N units' set max sell to max(uint256),
     // if 'selling N units' set buy desire to 0
-    const boundary =
-      "boundary" in params && params["boundary"] !== undefined
-        ? params.boundary
-        : buying
-        ? Big(ethers.constants.MaxUint256.toString())
-        : 0;
     const initialGives = Big(params.given);
     const maxTick = MAX_TICK;
 
@@ -710,53 +702,57 @@ class Semibook
   public async stateInitialize(
     block: BlockManager.BlockWithoutParentHash
   ): Promise<LogSubscriber.ErrorOrState<Semibook.State>> {
-    const localConfig = await this.getConfig(block.number); // TODO: make this reorg resistant too, but it's HIGHLY unlikely that we encounter an issue here
-    this.#kilo_offer_gasbase = localConfig.kilo_offer_gasbase;
+    try {
+      const localConfig = await this.getConfig(block.number); // TODO: make this reorg resistant too, but it's HIGHLY unlikely that we encounter an issue here
+      this.#kilo_offer_gasbase = localConfig.kilo_offer_gasbase;
 
-    /**
-     * To ensure consistency in this cache, everything is initially fetched from a specific block,
-     * we expect $fetchOfferListPrefix to return error if reorg is detected
-     */
-    const result = await this.#fetchOfferListPrefix(block);
+      /**
+       * To ensure consistency in this cache, everything is initially fetched from a specific block,
+       * we expect $fetchOfferListPrefix to return error if reorg is detected
+       */
+      const result = await this.#fetchOfferListPrefix(block);
 
-    if (result.error) {
-      return { error: result.error, ok: undefined };
-    }
+      if (result.error) {
+        return { error: result.error, ok: undefined };
+      }
 
-    const offers = result.ok;
+      const offers = result.ok;
 
-    if (offers.length > 0) {
+      if (offers.length > 0) {
+        const state: Semibook.State = {
+          bestInCache: undefined,
+          binCache: new Map(),
+          worstInCache: undefined,
+          offerCache: new Map(),
+        };
+
+        for (const offer of offers) {
+          this.cahceOperations.insertOffer(state, offer, {
+            maxOffers:
+              "maxOffers" in this.options ? this.options.maxOffers : undefined,
+          });
+        }
+
+        return {
+          error: undefined,
+          ok: state,
+        };
+      }
+
       const state: Semibook.State = {
         bestInCache: undefined,
-        binCache: new Map(),
         worstInCache: undefined,
+        binCache: new Map(),
         offerCache: new Map(),
       };
-
-      for (const offer of offers) {
-        this.cahceOperations.insertOffer(state, offer, {
-          maxOffers:
-            "maxOffers" in this.options ? this.options.maxOffers : undefined,
-        });
-      }
 
       return {
         error: undefined,
         ok: state,
       };
+    } catch (e) {
+      return { error: "FailedInitialize", ok: undefined };
     }
-
-    const state: Semibook.State = {
-      bestInCache: undefined,
-      worstInCache: undefined,
-      binCache: new Map(),
-      offerCache: new Map(),
-    };
-
-    return {
-      error: undefined,
-      ok: state,
-    };
   }
 
   public stateHandleLog(

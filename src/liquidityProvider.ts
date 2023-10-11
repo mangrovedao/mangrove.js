@@ -14,11 +14,10 @@ big.js handles arbitrary precision decimals, which is what we want
 for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigNumber):
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
-import Big, { BigSource } from "big.js";
+import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
-import { BigNumber } from "@ethersproject/bignumber";
 import { TickLib } from "./util/coreCalcuations/TickLib";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -290,7 +289,7 @@ class LiquidityProvider {
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     overrides: ethers.Overrides = {}
   ): Promise<{ id: number; event: ethers.providers.Log }> {
-    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+    const { tick, gives, fund } = LiquidityProvider.normalizeOfferParams(
       p,
       this.market
     );
@@ -422,7 +421,7 @@ class LiquidityProvider {
         `The offer is owned by a different address ${offerMakerAddress}, not the expected address ${thisMaker}.`
       );
     }
-    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+    const { tick, gives, fund } = LiquidityProvider.normalizeOfferParams(
       p,
       this.market
     );

@@ -10,5 +10,8 @@
   "local": {},
   "matic": {
     "Multicall2": "0x275617327c958bD06b5D6b871E7f491D76113dd8"
+  },
+  "arbitrum": {
+    "Multicall2": "0x842eC2c7D803033Edf55E478F461FC547Bc54EB2"
   }
 }

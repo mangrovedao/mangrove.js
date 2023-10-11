@@ -1,5 +1,22 @@
 # Next version
 
+# 1.4.27
+
+- fix: catch error in Semibook initialization
+
+# 1.4.26
+
+- fix: missing multicall2 address for abitrum network
+
+# 1.4.25
+
+- Bump: mangrove-core to v1.5.10
+- fix: infiniteApproval checks for larger than 2^200, instead of 2^256
+
+# 1.4.24
+
+- fix: Restore ability to enableLogging in a browser-context (shimmed via esbuild)
+
 # 1.4.23
 
 - fix: Disable esbuild minification of identifiers

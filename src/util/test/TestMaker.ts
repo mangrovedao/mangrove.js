@@ -6,7 +6,7 @@ import Mangrove from "../../mangrove";
 
 import PrettyPrint, { prettyPrintFilter } from "../prettyPrint";
 import { LiquidityProvider } from "../..";
-import * as typechain from "../../types/typechain";
+import { typechain } from "../../types";
 import { waitForTransaction } from "./mgvIntegrationTestUtil";
 import { node } from "../../util/node";
 import { Log } from "@ethersproject/providers";

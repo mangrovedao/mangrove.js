@@ -788,7 +788,6 @@ class Market {
     fillWants: boolean
   ): Promise<BigNumber> {
     const semibook = this.getSemibook(ba);
-    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
 
     // Overestimate by 50% because market can have changed between estimation and execution and some offers may be failing.
     const estimation = (

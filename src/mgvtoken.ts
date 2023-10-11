@@ -2,7 +2,7 @@ import Big from "big.js";
 import * as ethers from "ethers";
 import Mangrove from "./mangrove";
 import { Bigish, Provider } from "./types";
-import * as typechain from "./types/typechain";
+import { typechain } from "./types";
 import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";
 
@@ -200,7 +200,7 @@ class MgvToken {
   }
 
   /**
-   * Returns whether allowance of `owner` given to `spender` is infinite.
+   * Returns whether allowance of `owner` given to `spender` is more than 2^200.
    * If `owner` is not specified, defaults to current signer.
    * If `spender` is not specified, defaults to Mangrove instance.
    */
@@ -208,7 +208,7 @@ class MgvToken {
     const rawAllowance = await this.getRawAllowance({
       spender: params.spender,
     });
-    return rawAllowance.eq(ethers.constants.MaxUint256);
+    return rawAllowance.gt(ethers.BigNumber.from(2).pow(200));
   }
 
   private async getRawAllowance(

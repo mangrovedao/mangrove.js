@@ -364,6 +364,7 @@ export const tokensConfiguration = {
 /// RELIABLE EVENT SUBSCRIBER
 
 export const reliableEventSubscriberConfiguration = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getLogsTimeout: (network: string): number => {
     return 20_000; // 20 seconds
   },
