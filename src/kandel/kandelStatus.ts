@@ -120,7 +120,6 @@ class KandelStatus {
    * @throws If no offers are live. At least one live offer is required to determine the status.
    * @remarks The expected prices are determined by extrapolating from a live offer closest to the mid price.
    * @remarks Offers are expected to be live bids below the mid price and asks above.
-   * @remarks This may not hold if an offer deep in the book has been sniped in which case a dual offer will exist on the wrong side of mid price but quickly be taken due to a good price (Kandel still earns on the spread).
    * @remarks Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
    */
   public getOfferStatuses(

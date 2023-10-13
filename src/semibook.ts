@@ -185,8 +185,8 @@ class Semibook
   readonly ba: Market.BA;
   readonly market: Market;
   readonly options: Semibook.ResolvedOptions; // complete and validated
-  private readonly cahceOperations: SemibookCacheOperatoins =
-    new SemibookCacheOperatoins();
+  private readonly cacheOperations: SemibookCacheOperations =
+    new SemibookCacheOperations();
 
   // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
   #kilo_offer_gasbase = 0; // initialized in stateInitialize
@@ -597,7 +597,7 @@ class Semibook
     // Are we certain to be at the end of the book?
     const isCacheCertainlyComplete =
       state.worstInCache !== undefined &&
-      this.cahceOperations.getOfferFromCacheOrFail(state, state.worstInCache)
+      this.cacheOperations.getOfferFromCacheOrFail(state, state.worstInCache)
         .next === undefined;
     if (isCacheCertainlyComplete) {
       return accumulator;
@@ -622,7 +622,7 @@ class Semibook
       // Are we certain to be at the end of the book?
       const isCacheCertainlyComplete =
         state.worstInCache !== undefined &&
-        this.cahceOperations.getOfferFromCacheOrFail(state, state.worstInCache)
+        this.cacheOperations.getOfferFromCacheOrFail(state, state.worstInCache)
           .next === undefined;
       if (isCacheCertainlyComplete) {
         return accumulator;
@@ -633,7 +633,7 @@ class Semibook
       const nextId =
         state.worstInCache === undefined
           ? undefined
-          : this.cahceOperations.getOfferFromCacheOrFail(
+          : this.cacheOperations.getOfferFromCacheOrFail(
               state,
               state.worstInCache
             ).next;
@@ -645,7 +645,7 @@ class Semibook
         (chunk: Market.Offer[]) => {
           for (const offer of chunk) {
             // We try to insert all the fetched offers in case the cache is not at max size
-            this.cahceOperations.insertOffer(state, offer, {
+            this.cacheOperations.insertOffer(state, offer, {
               maxOffers:
                 "maxOffers" in this.options
                   ? this.options.maxOffers
@@ -727,7 +727,7 @@ class Semibook
         };
 
         for (const offer of offers) {
-          this.cahceOperations.insertOffer(state, offer, {
+          this.cacheOperations.insertOffer(state, offer, {
             maxOffers:
               "maxOffers" in this.options ? this.options.maxOffers : undefined,
           });
@@ -780,7 +780,7 @@ class Semibook
         if (id === undefined)
           throw new Error("Received OfferWrite event with id = 0");
         let expectOfferInsertionInCache = true;
-        this.cahceOperations.removeOffer(state, id);
+        this.cacheOperations.removeOffer(state, id);
 
         /* After removing the offer (a noop if the offer was not in local cache), we reinsert it.
          * The offer comes with id of its prev. If prev does not exist in cache, we skip
@@ -801,7 +801,7 @@ class Semibook
         };
 
         if (
-          !this.cahceOperations.insertOffer(state, offer, {
+          !this.cacheOperations.insertOffer(state, offer, {
             maxOffers:
               "maxOffers" in this.options ? this.options.maxOffers : undefined,
           })
@@ -878,7 +878,7 @@ class Semibook
         const id = Semibook.rawIdToId(event.args.id);
         if (id === undefined)
           throw new Error("Received OfferRetract event with id = 0");
-        removedOffer = this.cahceOperations.removeOffer(state, id);
+        removedOffer = this.cacheOperations.removeOffer(state, id);
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
@@ -929,7 +929,7 @@ class Semibook
     const id = Semibook.rawIdToId(event.args.id);
     if (id === undefined)
       throw new Error("Received OfferFail event with id = 0");
-    removedOffer = this.cahceOperations.removeOffer(state, id);
+    removedOffer = this.cacheOperations.removeOffer(state, id);
     Array.from(this.#eventListeners.keys()).forEach(
       (listener) =>
         void listener({
@@ -963,7 +963,7 @@ class Semibook
     const id = Semibook.rawIdToId(event.args.id);
     if (id === undefined)
       throw new Error("Received OfferSuccess event with id = 0");
-    removedOffer = this.cahceOperations.removeOffer(state, id);
+    removedOffer = this.cacheOperations.removeOffer(state, id);
     Array.from(this.#eventListeners.keys()).forEach(
       (listener) =>
         void listener({
@@ -1302,7 +1302,7 @@ class CacheIterator implements Semibook.CacheIterator {
   }
 }
 
-export class SemibookCacheOperatoins {
+export class SemibookCacheOperations {
   // Assumes id is not already in the cache
   // Returns `true` if the offer was inserted into the cache; Otherwise, `false`.
   // This modifies the cache so must be called in a context where #cacheLock is acquired

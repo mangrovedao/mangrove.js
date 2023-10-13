@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Semibook, Market } from "../../src";
-import { SemibookCacheOperatoins } from "../../src/semibook";
+import { SemibookCacheOperations } from "../../src/semibook";
 import Big from "big.js";
 import { BigNumber } from "ethers";
 import { TickLib } from "../../src/util/coreCalcuations/TickLib";
@@ -151,7 +151,7 @@ describe("Semibook unit test suite", () => {
   describe("insertOffer", () => {
     it("inserts offer in empty book", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
@@ -183,7 +183,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserts offer in non empty book, offer is worse", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -244,7 +244,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserts offer in non empty book, offer is better", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -294,7 +294,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserts offer in non empty book, offer is in the middle", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -363,7 +363,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserts offer in non empty book, offer is in the middle at an already existing tick", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -441,7 +441,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserts offer in non empty book, offer is at worse tick, tick already exist", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -505,7 +505,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserts offer in non empty book, offer is at a better tick, tick already exist", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -570,7 +570,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserting offer exeeds maxOffer size, offer is not worst offer", () => {
       ///Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -613,7 +613,7 @@ describe("Semibook unit test suite", () => {
 
     it("inserting offer exeeds maxOffer size, offer is worst offer", () => {
       ///Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -659,7 +659,7 @@ describe("Semibook unit test suite", () => {
   describe("removeOffer", () => {
     it("removes offer from empty book", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
@@ -677,7 +677,7 @@ describe("Semibook unit test suite", () => {
 
     it("removes offer from non empty book, offer is best offer, has others at same tick", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -741,7 +741,7 @@ describe("Semibook unit test suite", () => {
 
     it("removes offer from non empty book, offer is best offer, does not have others at same tick", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -803,7 +803,7 @@ describe("Semibook unit test suite", () => {
 
     it("removes offer from non empty book, offer is worst offer, has others at same tick", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -867,7 +867,7 @@ describe("Semibook unit test suite", () => {
 
     it("removes offer from non empty book, offer is worst offer, has others at same tick", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -929,7 +929,7 @@ describe("Semibook unit test suite", () => {
 
     it("removes last offer in book", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer: Market.Offer = {
         id: 1,
         maker: "0x1",
@@ -965,7 +965,7 @@ describe("Semibook unit test suite", () => {
   describe("getOfferFromCacheOrFail", () => {
     it("throws error when offer is not in cache", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
@@ -983,7 +983,7 @@ describe("Semibook unit test suite", () => {
 
     it("returns offer when offer is in cache", () => {
       //Arrange
-      const book = new SemibookCacheOperatoins();
+      const book = new SemibookCacheOperations();
       const offer: Market.Offer = {
         id: 1,
         maker: "0x1",
