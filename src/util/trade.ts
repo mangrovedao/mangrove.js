@@ -66,7 +66,7 @@ class Trade {
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
         // if slippage is 0, we don't need to do anything
-        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differenes
+        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differences
         const priceWithSlippage = price.mul(100 + slippage).div(100);
         tick = TickLib.getTickFromPrice(priceWithSlippage);
       } else {
@@ -119,7 +119,7 @@ class Trade {
       fillWants = params.fillWants ?? false;
       if (slippage > 0) {
         // if slippage is 0, we don't need to do anything
-        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differenes
+        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differences
         const priceWithSlippage = price.mul(100 - slippage).div(100);
         tick = TickLib.getTickFromPrice(priceWithSlippage);
       } else {
@@ -288,7 +288,7 @@ class Trade {
    *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
    *    `tick`: the of the offer to be cleaned
-   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned
    * `ba`: whether to clean `asks` or `bids`
    * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
@@ -312,7 +312,7 @@ class Trade {
    *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
    *    `tick`: the of the offer to be cleaned
-   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned
    * `ba`: whether to clean `asks` or `bids`
    * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
@@ -320,7 +320,7 @@ class Trade {
     params: Market.CleanParams,
     market: Market
   ): Promise<Market.RawCleanParams> {
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(params.ba);
+    const { outbound_tkn } = market.getOutboundInbound(params.ba);
 
     const _targets = params.targets.map<CleanUnitParams["targets"][number]>(
       (t) => {

@@ -717,7 +717,7 @@ class Market {
    *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
    *    `tick`: the of the offer to be cleaned
-   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned
    * `ba`: whether to clean `asks` or `bids`
    * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
@@ -738,7 +738,7 @@ class Market {
    *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
    *    `tick`: the of the offer to be cleaned
-   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be atleast the same as the gasreq of the offer in order for it be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned
    * `ba`: whether to clean `asks` or `bids`
    * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */

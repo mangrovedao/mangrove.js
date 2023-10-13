@@ -1,7 +1,6 @@
 import * as yargs from "yargs";
 import chalk from "chalk";
 import { Mangrove, Semibook, Market } from "../..";
-import { BigNumber } from "ethers";
 
 export const command = "print <base> <quote>";
 export const aliases = [];

@@ -127,7 +127,7 @@ class TestMaker {
 
     p = { ...defaults, ...p };
 
-    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+    const { tick, gives, fund } = LiquidityProvider.normalizeOfferParams(
       p,
       this.market
     );
@@ -186,7 +186,7 @@ class TestMaker {
 
     return this.#constructPromise(
       this.market,
-      (_cbArg, _bookEevnt, _ethersLog) => ({
+      (_cbArg, _bookEvent, _ethersLog) => ({
         id: _cbArg.offerId as number,
         event: _ethersLog as Log,
       }),

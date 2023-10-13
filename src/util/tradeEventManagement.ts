@@ -157,7 +157,7 @@ class TradeEventManagement {
   ): { ba: Market.BA; offer: Market.OfferSlim } | undefined {
     // ba can be both since we get offer writes both from updated orders and from posting a resting order, where the outbound is what taker gives
     let ba: Market.BA = "asks";
-    let { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     // If no match, try flipping
     let olKeyHash = market.mgv.getOlKeyHash(
       outbound_tkn.address,

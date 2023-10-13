@@ -46,7 +46,7 @@ export const builder = (yargs: yargs.Argv) => {
 
 export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
   const argv = await argvOrPromiseArgv;
-  const { spawnEndedPromise, deal } = await (
+  const { deal } = await (
     await node({
       spawn: false,
       deploy: false,

@@ -8,12 +8,7 @@ import { Bigish } from "./types";
 import Mangrove from "./mangrove";
 import { typechain } from "./types";
 
-/* Note on big.js:
-ethers.js's BigNumber (actually BN.js) only handles integers
-big.js handles arbitrary precision decimals, which is what we want
-for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigNumber):
-  github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
-*/
+/* See market.ts for note on big.js */
 import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";

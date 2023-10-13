@@ -39,7 +39,7 @@ export class Density {
     if (density96X32.lte(MANTISSA_MASK)) {
       return new Density(density96X32, outbound_decimals);
     }
-    let exp = BitLib.fls(density96X32);
+    const exp = BitLib.fls(density96X32);
     return Density.make(
       density96X32.shr(exp.sub(MANTISSA_BITS).toNumber()),
       exp,
@@ -51,7 +51,7 @@ export class Density {
     if (this.#value.lte(SUBNORMAL_LIMIT)) {
       return this.#value.and(MANTISSA_MASK);
     }
-    let shift = this.#value
+    const shift = this.#value
       .shr(BigNumber.from(MANTISSA_BITS).toNumber())
       .sub(MANTISSA_BITS);
     return this.#value
@@ -86,7 +86,7 @@ export class Density {
   }
 
   multiplyUp(m: BigNumber): BigNumber {
-    let part = m.mul(this.to96X32());
+    const part = m.mul(this.to96X32());
     return part.shr(32).add(part.mod(BigNumber.from(2).shl(32)).eq(0) ? 0 : 1);
   }
 
@@ -110,7 +110,7 @@ export class Density {
     ) {
       throw new Error("DensityLib/fixedFromParams1/decimals/wrong");
     }
-    let num = cover_factor
+    const num = cover_factor
       .mul(gasprice_in_gwei)
       .mul(BigNumber.from(10).pow(outbound_decimals))
       .mul(eth_in_usdx100);
@@ -132,7 +132,7 @@ export class Density {
     ) {
       throw new Error("DensityLib/fixedFromParams2/decimals/wrong");
     }
-    let num = cover_factor
+    const num = cover_factor
       .mul(gasprice_in_gwei)
       .mul(Math.pow(10, outbound_decimals));
     return num.mul(BigNumber.from(1).shl(32)).div(outbound_display_in_gwei);

@@ -121,7 +121,7 @@ class Mangrove {
   reliableProvider: ReliableProvider;
   mangroveEventSubscriber: MangroveEventSubscriber;
   shouldNotListenToNewEvents: boolean;
-  olKeyHashToOLKeyStrucMap: Map<string, OLKeyStruct> = new Map();
+  olKeyHashToOLKeyStructMap: Map<string, OLKeyStruct> = new Map();
   olKeyStructToOlKeyHashMap: Map<string, string> = new Map();
 
   public eventEmitter: EventEmitter;
@@ -347,7 +347,7 @@ class Mangrove {
     );
     allMarkets.then((markets) => {
       markets.map((market) => {
-        this.olKeyHashToOLKeyStrucMap.set(market.args.olKeyHash, {
+        this.olKeyHashToOLKeyStructMap.set(market.args.olKeyHash, {
           outbound_tkn: market.args.outbound_tkn,
           inbound_tkn: market.args.inbound_tkn,
           tickSpacing: market.args.tickSpacing,
@@ -370,7 +370,7 @@ class Mangrove {
     );
   }
   getOlKeyStruct(olKeyHash: string): OLKeyStruct | undefined {
-    return this.olKeyHashToOLKeyStrucMap.get(olKeyHash);
+    return this.olKeyHashToOLKeyStructMap.get(olKeyHash);
   }
 
   /** Update the configuration by providing a partial configuration containing only the values that should be changed/added.
@@ -410,7 +410,7 @@ class Mangrove {
       return;
     }
 
-    logger.info(`Start listenning to new events`);
+    logger.info(`Start listening to new events`);
     logger.debug(`Initialize reliable provider`);
     const block = await this.provider.getBlock("latest");
 

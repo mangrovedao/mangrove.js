@@ -221,7 +221,7 @@ class OfferLogic {
 
   /** Returns a LiquidityProvider with `this` as an underlying offer logic
    * Note that if `this.contract` is fully compliant with the `ILiquidityProvider` interface, some functions offered by the returned `LiquidityProvider` instance might throw.
-   * @param market the market on which the liqudityProvider will manage offers
+   * @param market the market on which the liquidityProvider will manage offers
    */
 
   public async liquidityProvider(market: Market): Promise<LiquidityProvider> {

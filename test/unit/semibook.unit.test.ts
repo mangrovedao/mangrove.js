@@ -3,8 +3,6 @@ import { Semibook, Market } from "../../src";
 import { SemibookCacheOperations } from "../../src/semibook";
 import Big from "big.js";
 import { BigNumber } from "ethers";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
-import { nextTick, off } from "process";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
     it("returns false, when desiredVolume is undefined", async function () {
@@ -568,7 +566,7 @@ describe("Semibook unit test suite", () => {
       });
     });
 
-    it("inserting offer exeeds maxOffer size, offer is not worst offer", () => {
+    it("inserting offer exceeds maxOffer size, offer is not worst offer", () => {
       ///Arrange
       const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {
@@ -611,7 +609,7 @@ describe("Semibook unit test suite", () => {
       assert.equal(isInserted, true);
     });
 
-    it("inserting offer exeeds maxOffer size, offer is worst offer", () => {
+    it("inserting offer exceeds maxOffer size, offer is worst offer", () => {
       ///Arrange
       const book = new SemibookCacheOperations();
       const offer1: Market.Offer = {

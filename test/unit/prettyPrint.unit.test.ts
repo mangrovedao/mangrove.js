@@ -72,7 +72,7 @@ describe("PrettyPrint Unit test suite", () => {
     });
   });
 
-  describe("prettypPrint", () => {
+  describe("prettyPrint", () => {
     it("prints the offers using the given filter", async function () {
       //Arrange
       const prettyPrint = new PrettyPrint();

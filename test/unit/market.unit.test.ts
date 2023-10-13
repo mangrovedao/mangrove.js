@@ -4,7 +4,6 @@ import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
-import { BigNumber } from "ethers/lib/ethers";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("Market unit tests suite", () => {

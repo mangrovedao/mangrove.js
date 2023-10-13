@@ -11,11 +11,10 @@ import { Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { BigNumber, ethers, utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
-import Trade from "../../src/util/trade";
 import { Density } from "../../src/util/coreCalculations/Density";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";

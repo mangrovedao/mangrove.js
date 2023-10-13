@@ -179,8 +179,8 @@ describe("Cleaner integration tests suite", () => {
 
     // Act
     // Approve mangrove to spend for taker (otherwise the orders fail due to lowAllowance)
-    market.quote.approveMangrove(100000000);
-    market.base.approveMangrove(100000000);
+    await market.quote.approveMangrove(100000000);
+    await market.base.approveMangrove(100000000);
 
     // Actual Clean
     const cleanPromises = await market.clean(
@@ -202,7 +202,7 @@ describe("Cleaner integration tests suite", () => {
     result.summary = result.summary as Market.CleanSummary;
 
     assert.deepStrictEqual(result.tradeFailures.length, 0);
-    assert.deepStrictEqual(result.successes.length, 0); // the "OfferSucces" event is not emitted, because the contract reverts that part
+    assert.deepStrictEqual(result.successes.length, 0); // the "OfferSuccess" event is not emitted, because the contract reverts that part
 
     assert.deepStrictEqual(
       result.summary.offersCleaned,
@@ -281,7 +281,7 @@ describe("Cleaner integration tests suite", () => {
     result.summary = result.summary as Market.CleanSummary;
 
     assert.deepStrictEqual(result.tradeFailures.length, 1);
-    assert.deepStrictEqual(result.successes.length, 0); // the "OfferSucces" event is not emitted, because the contract reverts that part
+    assert.deepStrictEqual(result.successes.length, 0); // the "OfferSuccess" event is not emitted, because the contract reverts that part
 
     assert.deepStrictEqual(
       result.summary.offersCleaned,

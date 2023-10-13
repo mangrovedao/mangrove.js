@@ -5,7 +5,7 @@ import { LiquidityProvider, Mangrove, OfferLogic } from "../../src";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { approxEq } from "../util/helpers";
 
-describe("OfferMaker integration test suite", async () => {
+describe("OfferMaker integration test suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
 
@@ -219,11 +219,11 @@ describe("OfferMaker integration test suite", async () => {
       const oldBal = await getBal();
       tx = await logic.withdrawFromMangrove(10);
       const receipt = await tx.wait();
-      const txcost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
-      const diff = mgv.fromUnits((await getBal()).sub(oldBal).add(txcost), 18);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      //const diff = mgv.fromUnits((await getBal()).sub(oldBal).add(txCost), 18);
 
       /* FIXME the effectiveGasPrice returned by anvil is incorrect, so for now we do an approx estimate. */
-      const diff2 = (await getBal()).sub(oldBal).add(txcost);
+      const diff2 = (await getBal()).sub(oldBal).add(txCost);
       assert(approxEq(diff2, mgv.toUnits(10, 18), "0.001"), "wrong balance");
     });
 
@@ -322,12 +322,12 @@ describe("OfferMaker integration test suite", async () => {
     it("fails, when trying to create an offer on a closed market", async () => {
       const base = onchain_lp.market.base.address;
       const quote = onchain_lp.market.quote.address;
-      const closetx = await mgvAdmin.contract.deactivate({
+      const closeTx = await mgvAdmin.contract.deactivate({
         outbound_tkn: base,
         inbound_tkn: quote,
         tickSpacing: 1,
       });
-      await closetx.wait();
+      await closeTx.wait();
 
       const prov = await onchain_lp.computeBidProvision();
 
@@ -353,9 +353,9 @@ describe("OfferMaker integration test suite", async () => {
       assert.strictEqual(
         provision.toNumber(),
         0,
-        `There should be no need to reprovision`
+        `There should be no need to re-provision`
       );
-      const tx = await onchain_lp.updateAsk(ofrId, { tick: 12, gives: 10 });
+      await onchain_lp.updateAsk(ofrId, { tick: 12, gives: 10 });
 
       const asks = onchain_lp.asks();
       assert.deepStrictEqual(
@@ -381,12 +381,12 @@ describe("OfferMaker integration test suite", async () => {
 
       const base = onchain_lp.market.base.address;
       const quote = onchain_lp.market.quote.address;
-      const closetx = await mgvAdmin.contract.deactivate({
+      const closeTx = await mgvAdmin.contract.deactivate({
         outbound_tkn: base,
         inbound_tkn: quote,
         tickSpacing: 1,
       });
-      await closetx.wait();
+      await closeTx.wait();
 
       const updatePromise = onchain_lp.updateAsk(ofrId, {
         tick: 12,

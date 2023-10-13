@@ -17,7 +17,6 @@ import { AbstractRouter } from "../../src/types/typechain";
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
-import Trade from "../../src/util/trade";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -31,7 +30,6 @@ describe("RestingOrder", () => {
   let orderLogic: OfferLogic;
   let orderLP: LiquidityProvider;
   let router: AbstractRouter;
-  let trade = new Trade();
 
   afterEach(async () => {
     mgv.disconnect();
@@ -289,7 +287,7 @@ describe("RestingOrder", () => {
         orderResult.restingOrder
           ? orderResult.restingOrder.gives.sub(10).abs().lt(0.001)
           : false,
-        `orderResutl.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
+        `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
       );
       assert(
         orderResult.restingOrder
@@ -399,7 +397,7 @@ describe("RestingOrder", () => {
         orderResult.restingOrder
           ? orderResult.restingOrder.gives.sub(10).abs().lt(0.001)
           : false,
-        `orderResutl.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
+        `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
       );
       assert(
         orderResult.restingOrder
