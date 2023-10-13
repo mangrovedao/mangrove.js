@@ -302,17 +302,12 @@ class Semibook
    * fee *remains* in basis points of the token being bought
    */
   async getConfig(blockNumber?: number): Promise<Mangrove.LocalConfig> {
-    const rawConfig = await this.getRawConfig(blockNumber);
-    return this.#rawLocalConfigToLocalConfig(rawConfig._local);
-  }
-
-  async getRawConfig(blockNumber?: number): Promise<Mangrove.RawConfig> {
     const { outbound_tkn, inbound_tkn } = Market.getOutboundInbound(
       this.ba,
       this.market.base,
       this.market.quote
     );
-    return await this.market.mgv.readerContract.configInfo(
+    const local = await this.market.mgv.readerContract.localUnpacked(
       {
         outbound_tkn: outbound_tkn.address,
         inbound_tkn: inbound_tkn.address,
@@ -320,6 +315,8 @@ class Semibook
       },
       { blockTag: blockNumber }
     );
+
+    return this.#rawLocalConfigToLocalConfig(local);
   }
 
   /** Sign permit data for buying outbound_tkn with spender's inbound_tkn
@@ -501,15 +498,13 @@ class Semibook
 
     Big.RM = previousBigRm;
 
-    const {
-      _local: { kilo_offer_gasbase },
-    } = await this.getRawConfig();
+    const { kilo_offer_gasbase } = await this.getConfig();
 
     // Assume up to offer_gasbase is used also for the bad price call, and
     // the last offer (which could be first, if taking little) needs up to gasreq*64/63 for makerPosthook
     const gas = res.totalGasreq
       .add(BigNumber.from(res.lastGasreq).div(63))
-      .add(kilo_offer_gasbase.mul(Math.max(res.offersConsidered, 1)));
+      .add(1000 * kilo_offer_gasbase * Math.max(res.offersConsidered, 1));
 
     return { ...res, gas };
   }

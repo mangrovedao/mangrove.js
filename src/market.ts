@@ -754,17 +754,15 @@ class Market {
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = this.getSemibook(this.trade.bsToBa(bs));
-    const {
-      _local: { density, kilo_offer_gasbase },
-    } = await semibook.getRawConfig();
+    const { density, kilo_offer_gasbase } = await semibook.getConfig();
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
     const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
     // boosting estimates of 10% to be on the safe side
-    const estimation = density.isZero()
+    const estimation = density.multiply(BigNumber.from(1)).isZero()
       ? maxMarketOrderGas
-      : kilo_offer_gasbase
-          .add(volume.div(density))
+      : BigNumber.from(kilo_offer_gasbase * 1000)
+          .add(volume.div(density.multiply(BigNumber.from(1))))
           .add(maxGasreqOffer)
           .add(BigNumber.from(maxGasreqOffer).mul(64).div(63))
           .mul(11)

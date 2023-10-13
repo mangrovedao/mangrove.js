@@ -698,18 +698,14 @@ class Mangrove {
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async config(): Promise<Mangrove.GlobalConfig> {
-    const config = await this.readerContract.configInfo({
-      outbound_tkn: ethers.constants.AddressZero,
-      inbound_tkn: ethers.constants.AddressZero,
-      tickSpacing: 0,
-    });
+    const config = await this.readerContract.globalUnpacked();
     return {
-      monitor: config._global.monitor,
-      useOracle: config._global.useOracle,
-      notify: config._global.notify,
-      gasprice: config._global.gasprice.toNumber(),
-      gasmax: config._global.gasmax.toNumber(),
-      dead: config._global.dead,
+      monitor: config.monitor,
+      useOracle: config.useOracle,
+      notify: config.notify,
+      gasprice: config.gasprice.toNumber(),
+      gasmax: config.gasmax.toNumber(),
+      dead: config.dead,
     };
   }
 

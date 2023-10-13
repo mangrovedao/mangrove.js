@@ -253,8 +253,8 @@ describe("Semibook integration tests suite", function () {
     });
   });
 
-  describe("getRawConfig", () => {
-    it("returns the config of a block as Mangrove.RawConfig, when given blocknumber", async function () {
+  describe("getConfig", () => {
+    it("returns the config of a block, when given blocknumber", async function () {
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
@@ -294,24 +294,20 @@ describe("Semibook integration tests suite", function () {
           1
         )
       );
-      const config = await semibook.getRawConfig(active.blockNumber);
+      const config = await semibook.getConfig(active.blockNumber);
 
-      expect(config._local.fee.toNumber()).to.be.eq(
+      expect(config.fee).to.be.eq(
         fee,
-        `fee should be ${fee}, but is ${config._local.fee.toNumber()}`
+        `fee should be ${fee}, but is ${config.fee}`
       );
       const densityFrom96X32 = Density.from96X32(density, market.base.decimals);
-      expect(
-        densityFrom96X32.eq(
-          new Density(config._local.density, market.base.decimals)
-        )
-      ).to.be.eq(
+      expect(densityFrom96X32.eq(config.density)).to.be.eq(
         true,
-        `density should be ${densityFrom96X32}, but is ${config._local.density.toString()}`
+        `density should be ${densityFrom96X32}, but is ${config.density.toString()}`
       );
-      expect(config._local.kilo_offer_gasbase.toNumber()).to.be.eq(
+      expect(config.kilo_offer_gasbase).to.be.eq(
         gasbase / 1e3,
-        `kilo_offer_gasbase should be ${gasbase}/1e3, but is ${config._local.kilo_offer_gasbase.toNumber()}`
+        `kilo_offer_gasbase should be ${gasbase}/1e3, but is ${config.kilo_offer_gasbase}`
       );
     });
 
