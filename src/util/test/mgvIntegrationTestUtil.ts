@@ -370,7 +370,7 @@ export const postNewOffer = async ({
   maker,
   tick = 1,
   gives = "90000000000000000",
-  gasreq = 10e4, // FIXME: what is the correct gasreq?
+  gasreq = 1e5,
   shouldFail = false,
   shouldRevert = false,
 }: NewOffer) => {
