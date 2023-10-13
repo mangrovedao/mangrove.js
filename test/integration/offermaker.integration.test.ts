@@ -193,7 +193,7 @@ describe("OfferMaker integration test suite", async () => {
       const expectedInitialProvision = mgv.calculateOfferProvision(
         mgvGasprice,
         lp.gasreq,
-        (await lp.market.getSemibook("asks").getConfig()).kilo_offer_gasbase
+        (await lp.market.getSemibook("asks").getConfig()).offer_gasbase
       );
       assert.equal(provision.toNumber(), expectedInitialProvision.toNumber());
       assert.equal(

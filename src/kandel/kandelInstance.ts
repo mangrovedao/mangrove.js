@@ -685,7 +685,7 @@ class KandelInstance {
     return (await this.getOffers()).map((x) => ({
       gasprice: x.offer.gasprice,
       gasreq: x.offer.gasreq,
-      gasbase: x.offer.kilo_offer_gasbase,
+      gasbase: x.offer.offer_gasbase,
     }));
   }
 

@@ -168,7 +168,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       //Act
       book.insertOffer(state, offer);
@@ -194,7 +194,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         id: 2,
@@ -206,7 +206,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(1),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const state: Semibook.State = {
         offerCache: new Map(),
@@ -255,7 +255,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(1),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2 = { ...offer1, id: 2, tick: BigNumber.from(0) };
       const state: Semibook.State = {
@@ -305,7 +305,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -374,7 +374,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -452,7 +452,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -516,7 +516,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -581,7 +581,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
 
       const state: Semibook.State = {
@@ -624,7 +624,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
 
       const state: Semibook.State = {
@@ -688,7 +688,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -752,7 +752,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(0),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -814,7 +814,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(1),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -878,7 +878,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(1),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const offer2: Market.Offer = {
         ...offer1,
@@ -940,7 +940,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(2),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const state: Semibook.State = {
         offerCache: new Map(),
@@ -994,7 +994,7 @@ describe("Semibook unit test suite", () => {
         next: undefined,
         prev: undefined,
         tick: BigNumber.from(2),
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
       };
       const state: Semibook.State = {
         offerCache: new Map(),

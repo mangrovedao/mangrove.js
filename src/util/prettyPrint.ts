@@ -8,7 +8,7 @@ export type prettyPrintFilter = Array<
   | "gasprice"
   | "maker"
   | "gasreq"
-  | "kilo_offer_gasbase"
+  | "offer_gasbase"
   | "gives"
   | "price"
   | "tick"
@@ -34,7 +34,7 @@ class PrettyPrint {
         maker: obj.maker,
         tick: obj.tick.toNumber(),
         gives: obj.gives.toString(),
-        kilo_offer_gasbase: obj.kilo_offer_gasbase,
+        offer_gasbase: obj.offer_gasbase,
         gasreq: obj.gasreq,
         gasprice: obj.gasprice,
         price: obj.price.toFixed(10),

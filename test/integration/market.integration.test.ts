@@ -170,7 +170,7 @@ describe("Market integration tests suite", () => {
         active: true,
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -183,7 +183,7 @@ describe("Market integration tests suite", () => {
         active: true,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -212,7 +212,7 @@ describe("Market integration tests suite", () => {
         active: false,
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -225,7 +225,7 @@ describe("Market integration tests suite", () => {
         active: false,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -254,7 +254,7 @@ describe("Market integration tests suite", () => {
         active: true,
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -267,7 +267,7 @@ describe("Market integration tests suite", () => {
         active: false,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -296,7 +296,7 @@ describe("Market integration tests suite", () => {
         active: false,
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -309,7 +309,7 @@ describe("Market integration tests suite", () => {
         active: true,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         lock: false,
         last: undefined,
         binPosInLeaf: 1,
@@ -346,7 +346,7 @@ describe("Market integration tests suite", () => {
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         gives: new Big(23),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
@@ -379,7 +379,7 @@ describe("Market integration tests suite", () => {
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         gives: new Big(-12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
@@ -407,8 +407,8 @@ describe("Market integration tests suite", () => {
         });
         const gasreq = 10000;
         const config = await market.config();
-        const gasbase =
-          (ba == "asks" ? config.asks : config.bids).kilo_offer_gasbase * 1000;
+        const gasbase = (ba == "asks" ? config.asks : config.bids)
+          .offer_gasbase;
 
         const mgvProvision = mgv.calculateOfferProvision(
           gasprice ?? (await mgv.config()).gasprice,
@@ -493,7 +493,7 @@ describe("Market integration tests suite", () => {
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         gives: new Big(-12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
@@ -523,7 +523,7 @@ describe("Market integration tests suite", () => {
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         gives: new Big(-12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
@@ -555,7 +555,7 @@ describe("Market integration tests suite", () => {
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        kilo_offer_gasbase: 0,
+        offer_gasbase: 0,
         gives: new Big(-12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
@@ -729,7 +729,7 @@ describe("Market integration tests suite", () => {
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      kilo_offer_gasbase: (await market.config()).asks.kilo_offer_gasbase,
+      offer_gasbase: (await market.config()).asks.offer_gasbase,
       tick: BigNumber.from(1),
       gives: Big("1.2"),
       price: TickLib.priceFromTick(BigNumber.from(1)).mul(
@@ -744,7 +744,7 @@ describe("Market integration tests suite", () => {
       gasprice: 1,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      kilo_offer_gasbase: (await market.config()).bids.kilo_offer_gasbase,
+      offer_gasbase: (await market.config()).bids.offer_gasbase,
       tick: BigNumber.from(1),
       gives: Big("1.1"),
       price: TickLib.priceFromTick(BigNumber.from(1)).div(
@@ -1357,7 +1357,7 @@ describe("Market integration tests suite", () => {
               ? (ary[i + 1]?.id as number | undefined)
               : undefined,
           maker: selfAddress,
-          kilo_offer_gasbase: _config.kilo_offer_gasbase,
+          offer_gasbase: _config.offer_gasbase,
         };
       });
     };

@@ -1168,7 +1168,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 //         const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
 //           gasreq: offer.gasreq,
 //           gasprice: offer.gasprice,
-//           gasbase: offer.kilo_offer_gasbase,
+//           gasbase: offer.offer_gasbase,
 //         }));
 
 //         // Act
@@ -1202,7 +1202,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 //         const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
 //           gasreq: offer.gasreq,
 //           gasprice: offer.gasprice,
-//           gasbase: offer.kilo_offer_gasbase,
+//           gasbase: offer.offer_gasbase,
 //         }));
 
 //         // Act
@@ -1236,7 +1236,7 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 //         const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
 //           gasreq: offer.gasreq,
 //           gasprice: offer.gasprice,
-//           gasbase: offer.kilo_offer_gasbase,
+//           gasbase: offer.offer_gasbase,
 //         }));
 //         const oldGasprice = (await kandel.getParameters()).gasprice;
 

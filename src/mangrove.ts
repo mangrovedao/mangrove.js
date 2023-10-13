@@ -49,7 +49,7 @@ namespace Mangrove {
     active: boolean;
     fee: number;
     density: Density;
-    kilo_offer_gasbase: number;
+    offer_gasbase: number;
     lock: boolean;
     last: number | undefined;
     binPosInLeaf: number;

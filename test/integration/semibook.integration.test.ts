@@ -147,7 +147,7 @@ describe("Semibook integration tests suite", function () {
         true,
         `Expected ${config.density.toString()} to be equal to ${densityFrom96X32.toString()}`
       );
-      expect(config.kilo_offer_gasbase).to.be.eq(gasbase / 1e3);
+      expect(config.offer_gasbase).to.be.eq(gasbase);
       mgv.disconnect();
     });
 
@@ -178,7 +178,7 @@ describe("Semibook integration tests suite", function () {
           },
           3,
           density,
-          1000
+          1
         )
       );
       const newDensity = Density.paramsTo96X32(
@@ -211,7 +211,7 @@ describe("Semibook integration tests suite", function () {
         true,
         `Expected ${config.density.toString()} to be equal to ${densityFrom96X32.toString()}`
       );
-      expect(config.kilo_offer_gasbase).to.be.eq(gasbase / 1e3);
+      expect(config.offer_gasbase).to.be.eq(gasbase);
       mgv.disconnect();
     });
   });
@@ -305,9 +305,9 @@ describe("Semibook integration tests suite", function () {
         true,
         `density should be ${densityFrom96X32}, but is ${config.density.toString()}`
       );
-      expect(config.kilo_offer_gasbase).to.be.eq(
-        gasbase / 1e3,
-        `kilo_offer_gasbase should be ${gasbase}/1e3, but is ${config.kilo_offer_gasbase}`
+      expect(config.offer_gasbase).to.be.eq(
+        gasbase,
+        `offer_gasbase should be ${gasbase}, but is ${config.offer_gasbase}`
       );
     });
 
@@ -359,7 +359,7 @@ describe("Semibook integration tests suite", function () {
         true,
         `Expected ${config.density.toString()} to be equal to ${densityFrom96X32.toString()}`
       );
-      expect(config.kilo_offer_gasbase).to.be.eq(gasbase / 1e3);
+      expect(config.offer_gasbase).to.be.eq(gasbase);
     });
   });
 

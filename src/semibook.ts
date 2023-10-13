@@ -188,8 +188,8 @@ class Semibook
   private readonly cacheOperations: SemibookCacheOperations =
     new SemibookCacheOperations();
 
-  // TODO: Why is only the gasbase stored as part of the semibook? Why not the rest of the local configuration?
-  #kilo_offer_gasbase = 0; // initialized in stateInitialize
+  // offer gasbase is stored as part of the semibook since it is used each time an offer is written to be able to calculate locked provision for that offer
+  #offer_gasbase = 0; // initialized in stateInitialize
 
   #eventListeners: Map<Semibook.EventListener, boolean> = new Map();
 
@@ -280,7 +280,7 @@ class Semibook
     );
     return {
       next: Semibook.rawIdToId(offer.next),
-      kilo_offer_gasbase: details.kilo_offer_gasbase.toNumber(),
+      offer_gasbase: details.kilo_offer_gasbase.toNumber() * 1000,
       prev: offer.prev.toNumber(),
       ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
         this.market,
@@ -498,13 +498,13 @@ class Semibook
 
     Big.RM = previousBigRm;
 
-    const { kilo_offer_gasbase } = await this.getConfig();
+    const { offer_gasbase } = await this.getConfig();
 
     // Assume up to offer_gasbase is used also for the bad price call, and
     // the last offer (which could be first, if taking little) needs up to gasreq*64/63 for makerPosthook
     const gas = res.totalGasreq
       .add(BigNumber.from(res.lastGasreq).div(63))
-      .add(1000 * kilo_offer_gasbase * Math.max(res.offersConsidered, 1));
+      .add(offer_gasbase * Math.max(res.offersConsidered, 1));
 
     return { ...res, gas };
   }
@@ -699,7 +699,7 @@ class Semibook
   ): Promise<LogSubscriber.ErrorOrState<Semibook.State>> {
     try {
       const localConfig = await this.getConfig(block.number); // TODO: make this reorg resistant too, but it's HIGHLY unlikely that we encounter an issue here
-      this.#kilo_offer_gasbase = localConfig.kilo_offer_gasbase;
+      this.#offer_gasbase = localConfig.offer_gasbase;
 
       /**
        * To ensure consistency in this cache, everything is initially fetched from a specific block,
@@ -785,7 +785,7 @@ class Semibook
          */
 
         offer = {
-          kilo_offer_gasbase: this.#kilo_offer_gasbase,
+          offer_gasbase: this.#offer_gasbase,
           next: next,
           prev: undefined,
           ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
@@ -891,7 +891,7 @@ class Semibook
       }
 
       case "SetGasbase":
-        this.#kilo_offer_gasbase = event.args.offer_gasbase.toNumber();
+        this.#offer_gasbase = event.args.offer_gasbase.toNumber();
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
@@ -1074,7 +1074,7 @@ class Semibook
           const detail = details[index];
           return {
             next: Semibook.rawIdToId(offer.next),
-            kilo_offer_gasbase: detail.kilo_offer_gasbase.toNumber(),
+            offer_gasbase: detail.kilo_offer_gasbase.toNumber() * 1000,
             prev: Semibook.rawIdToId(offer.prev),
             ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
               this.market,
@@ -1117,7 +1117,7 @@ class Semibook
       active: local.active,
       fee: local.fee.toNumber(),
       density: new Density(local.density, outboundDecimals),
-      kilo_offer_gasbase: local.kilo_offer_gasbase.toNumber(),
+      offer_gasbase: local.kilo_offer_gasbase.toNumber() * 1000,
       lock: local.lock,
       last: Semibook.rawIdToId(local.last),
       binPosInLeaf: local.binPosInLeaf.toNumber(),
@@ -1135,9 +1135,7 @@ class Semibook
   public async getMinimumVolume(gasreq: number) {
     const config = await this.getConfig();
     const min = config.density.multiplyUpReadable(
-      BigNumber.from(gasreq).add(
-        BigNumber.from(config.kilo_offer_gasbase).mul(1000)
-      )
+      BigNumber.from(gasreq).add(BigNumber.from(config.offer_gasbase))
     );
     return min.gt(0)
       ? min

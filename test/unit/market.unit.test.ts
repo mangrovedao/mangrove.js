@@ -146,7 +146,7 @@ describe("Market unit tests suite", () => {
         gasprice: 1,
         maker: "",
         gasreq: 1,
-        kilo_offer_gasbase: 1,
+        offer_gasbase: 1000,
         gives: Big(1),
         tick: TickLib.getTickFromPrice(price),
         price: Big(price),

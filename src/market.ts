@@ -207,7 +207,7 @@ namespace Market {
   export type Offer = OfferSlim & {
     next: number | undefined;
     prev: number | undefined;
-    kilo_offer_gasbase: number;
+    offer_gasbase: number;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -333,14 +333,10 @@ class Market {
     const config = await market.config();
     const gasreq = await params.mgv.orderContract.callStatic["offerGasreq()"]();
     market.minVolumeAsk = config.asks.density.multiplyUpReadable(
-      BigNumber.from(config.asks.kilo_offer_gasbase)
-        .mul(1000)
-        .add(gasreq.toString())
+      BigNumber.from(config.asks.offer_gasbase).add(gasreq.toString())
     );
     market.minVolumeBid = config.bids.density.multiplyUpReadable(
-      BigNumber.from(config.bids.kilo_offer_gasbase)
-        .mul(1000)
-        .add(gasreq.toString())
+      BigNumber.from(config.bids.offer_gasbase).add(gasreq.toString())
     );
     return market;
   }
@@ -754,14 +750,14 @@ class Market {
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = this.getSemibook(this.trade.bsToBa(bs));
-    const { density, kilo_offer_gasbase } = await semibook.getConfig();
+    const { density, offer_gasbase } = await semibook.getConfig();
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
     const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
     // boosting estimates of 10% to be on the safe side
     const estimation = density.multiply(BigNumber.from(1)).isZero()
       ? maxMarketOrderGas
-      : BigNumber.from(kilo_offer_gasbase * 1000)
+      : BigNumber.from(offer_gasbase)
           .add(volume.div(density.multiply(BigNumber.from(1))))
           .add(maxGasreqOffer)
           .add(BigNumber.from(maxGasreqOffer).mul(64).div(63))
