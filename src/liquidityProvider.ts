@@ -18,7 +18,7 @@ import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
-import { TickLib } from "./util/coreCalcuations/TickLib";
+import { TickLib } from "./util/coreCalculations/TickLib";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {

@@ -4,7 +4,7 @@ import {
   TickLib,
   bigNumberToBits,
   priceToRatio,
-} from "../../src/util/coreCalcuations/TickLib";
+} from "../../src/util/coreCalculations/TickLib";
 import {
   MAX_TICK,
   MAX_RATIO_EXP,
@@ -15,7 +15,7 @@ import {
   MIN_RATIO_MANTISSA,
   MANTISSA_BITS_MINUS_ONE,
   MANTISSA_BITS,
-} from "../../src/util/coreCalcuations/Constants";
+} from "../../src/util/coreCalculations/Constants";
 import assert from "assert";
 import Big from "big.js";
 

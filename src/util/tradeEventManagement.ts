@@ -17,7 +17,7 @@ import {
   MangroveOrderStartEvent,
   NewOwnedOfferEvent,
 } from "../types/typechain/MangroveOrder";
-import { TickLib } from "./coreCalcuations/TickLib";
+import { TickLib } from "./coreCalculations/TickLib";
 import { logger } from "./logger";
 import { CleanStartEvent } from "../types/typechain/IMangrove";
 

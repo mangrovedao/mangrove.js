@@ -1,6 +1,6 @@
 import { BigNumber, ethers } from "ethers";
 import { expect } from "chai";
-import { TickLib, priceToRatio } from "../../src/util/coreCalcuations/TickLib";
+import { TickLib, priceToRatio } from "../../src/util/coreCalculations/TickLib";
 import {
   MAX_TICK,
   MAX_RATIO_EXP,
@@ -9,10 +9,10 @@ import {
   MIN_TICK,
   MIN_RATIO_EXP,
   MIN_RATIO_MANTISSA,
-} from "../../src/util/coreCalcuations/Constants";
+} from "../../src/util/coreCalculations/Constants";
 import assert from "assert";
 import Big from "big.js";
-import { Density } from "../../src/util/coreCalcuations/Density";
+import { Density } from "../../src/util/coreCalculations/Density";
 
 describe("Density unit test suite", () => {
   it("test_density_manual", () => {

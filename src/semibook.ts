@@ -15,9 +15,9 @@ import {
   OfferDetailUnpackedStructOutput,
   OfferUnpackedStructOutput,
 } from "./types/typechain/MgvReader";
-import { MAX_TICK, MIN_TICK } from "./util/coreCalcuations/Constants";
-import { Density } from "./util/coreCalcuations/Density";
-import { TickLib } from "./util/coreCalcuations/TickLib";
+import { MAX_TICK, MIN_TICK } from "./util/coreCalculations/Constants";
+import { Density } from "./util/coreCalculations/Density";
+import { TickLib } from "./util/coreCalculations/TickLib";
 import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";

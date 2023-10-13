@@ -8,8 +8,8 @@ import TradeEventManagement, {
   OrderResultWithOptionalSummary,
 } from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
-import { MAX_TICK, MIN_TICK } from "./coreCalcuations/Constants";
-import { TickLib } from "./coreCalcuations/TickLib";
+import { MAX_TICK, MIN_TICK } from "./coreCalculations/Constants";
+import { TickLib } from "./coreCalculations/TickLib";
 
 const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
 

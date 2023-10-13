@@ -5,7 +5,7 @@ import { capture, spy } from "ts-mockito";
 import { Market } from "../../src";
 import Big from "big.js";
 import { BigNumber } from "ethers";
-import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("PrettyPrint Unit test suite", () => {
   describe("consoleOffers", () => {

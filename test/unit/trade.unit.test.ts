@@ -15,7 +15,7 @@ import {
 import { Market, MgvToken } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
-import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {

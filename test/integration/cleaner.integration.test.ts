@@ -10,7 +10,7 @@ import Mangrove, { Market } from "../../src";
 import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
 import assert from "assert";
-import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { OLKeyStruct } from "../../src/types/typechain/Mangrove";
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {

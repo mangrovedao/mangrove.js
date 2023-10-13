@@ -12,9 +12,9 @@ import { Mangrove, Semibook } from "../../src";
 import { TransactionReceipt } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
-import { MAX_TICK } from "../../src/util/coreCalcuations/Constants";
-import { Density } from "../../src/util/coreCalcuations/Density";
-import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
+import { Density } from "../../src/util/coreCalculations/Density";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {

@@ -16,9 +16,9 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
 import Trade from "../../src/util/trade";
-import { Density } from "../../src/util/coreCalcuations/Density";
-import { MAX_TICK } from "../../src/util/coreCalcuations/Constants";
-import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { Density } from "../../src/util/coreCalculations/Density";
+import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { OLKeyStruct } from "../../src/types/typechain/MgvReader";
 
 //pretty-print when using console.log

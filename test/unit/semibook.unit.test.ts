@@ -3,7 +3,7 @@ import { Semibook, Market } from "../../src";
 import { SemibookCacheOperations } from "../../src/semibook";
 import Big from "big.js";
 import { BigNumber } from "ethers";
-import { TickLib } from "../../src/util/coreCalcuations/TickLib";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { nextTick, off } from "process";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
