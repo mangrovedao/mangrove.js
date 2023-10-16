@@ -106,7 +106,7 @@
     "eslint": "^8.31.0",
     "eslint-config-prettier": "^8.8.0",
     "husky": "^8.0.3",
-    "lint-staged": "^13.2.0",
+    "lint-staged": "^15.0.1",
     "mkdirp": "^3.0.1",
     "mocha": "^10.2.0",
     "mocha-multi-reporters": "^1.5.1",
