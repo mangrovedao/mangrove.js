@@ -427,6 +427,9 @@ class TradeEventManagement {
       }
       case "NewOwnedOffer": {
         // last NewOwnedOffer is ours if MangroveOrderStart did not have an offerId
+        if (this.numberOfMangroveOrderStart > 1) {
+          break;
+        }
         if (
           result.summary !== undefined &&
           "fee" in result.summary &&
@@ -436,6 +439,10 @@ class TradeEventManagement {
             (evt as NewOwnedOfferEvent).args.offerId
           );
         }
+        break;
+      }
+      case "MangroveOrderComplete": {
+        this.numberOfMangroveOrderStart--;
         break;
       }
       default: {
@@ -503,7 +510,6 @@ class TradeEventManagement {
         market
       );
     }
-    this.numberOfMangroveOrderStart = 0;
   }
 
   isOrderResult(
