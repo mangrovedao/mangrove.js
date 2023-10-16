@@ -213,4 +213,12 @@ describe("MGV Token integration tests suite", () => {
     assert.ok(wethAddress);
     assert.notEqual(wethAddress, wethAddress.toLowerCase());
   });
+
+  it("get token from address", async () => {
+    const usdc = await mgv.token("USDC");
+    const usdc2 = await mgv.tokenFromAddress(usdc.address);
+
+    assert.equal(usdc.name, usdc2.name);
+    assert.equal(usdc.decimals, usdc2.decimals);
+  });
 });

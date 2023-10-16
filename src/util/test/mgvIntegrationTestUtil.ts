@@ -2,7 +2,8 @@
 // Utility functions for writing integration tests against Mangrove.
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import { Market, MgvToken, Mangrove } from "../..";
-import * as typechain from "../../types/typechain";
+import { typechain } from "../../types";
+
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Deferred } from "../../util";
 import { PromiseOrValue } from "../../types/typechain/common";

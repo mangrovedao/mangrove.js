@@ -14,6 +14,7 @@ import {
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish, Provider, typechain } from "./types";
 import mgvCore from "@mangrovedao/mangrove-core";
+import mgvStrats from "@mangrovedao/mangrove-strats";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
@@ -363,6 +364,7 @@ export const tokensConfiguration = {
 /// RELIABLE EVENT SUBSCRIBER
 
 export const reliableEventSubscriberConfiguration = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getLogsTimeout: (network: string): number => {
     return 20_000; // 20 seconds
   },
@@ -455,6 +457,7 @@ export function resetConfiguration(): void {
   // Load addresses in the following order:
   // 1. loaded addresses
   // 2. mangrove-core addresses
+  // 3. mangrove-strats addresses
   // Last loaded address is used
 
   for (const [network, networkAddresses] of Object.entries(
@@ -467,22 +470,27 @@ export function resetConfiguration(): void {
     }
   }
 
-  let mgvCoreAddresses: any[] = [];
+  readAddresses(mgvCore.addresses);
+  readAddresses(mgvStrats.addresses);
+}
 
-  if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
-    if (mgvCore.addresses.deployed) {
-      mgvCoreAddresses.push(mgvCore.addresses.deployed);
+function readAddresses(addresses: any) {
+  let mgvAddresses: any[] = [];
+
+  if (addresses.deployed || addresses.context) {
+    if (addresses.deployed) {
+      mgvAddresses.push(addresses.deployed);
     }
-    if (mgvCore.addresses.context) {
-      mgvCoreAddresses.push(mgvCore.addresses.context);
+    if (addresses.context) {
+      mgvAddresses.push(addresses.context);
     }
   } else {
-    mgvCoreAddresses.push(mgvCore.addresses);
+    mgvAddresses.push(addresses);
   }
 
-  mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
+  mgvAddresses = mgvAddresses.flatMap((o) => Object.entries(o));
 
-  for (const [network, networkAddresses] of mgvCoreAddresses) {
+  for (const [network, networkAddresses] of mgvAddresses) {
     for (const { name, address } of networkAddresses as any) {
       addressesConfiguration.setAddress(name, address, network);
     }
