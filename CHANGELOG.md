@@ -1,5 +1,9 @@
 # Next version
 
+# 1.4.29
+
+- fix: mumbai config
+
 # 1.4.28
 
 - bump: mangrove-core to v1.5.11
