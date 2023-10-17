@@ -79,6 +79,8 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
           { base: "DAI", quote: "USDC" },
           { base: "WMATIC", quote: "USDT" },
           { base: "WBTC", quote: "USDT" },
+          { base: "WBTC", quote: "DAI" },
+          { base: "CRV", quote: "WBTC" },
         ]);
       });
 
