@@ -112,6 +112,7 @@ namespace Market {
       | { volume: Bigish; price: Bigish }
       | { total: Bigish; price: Bigish }
       | { tick: Bigish; fillVolume: Bigish; fillWants?: boolean }
+      | { gives: Bigish; wants: Bigish; fillWants?: boolean }
     );
 
   export type RestingOrderParams = {

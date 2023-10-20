@@ -14,6 +14,7 @@ import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
 import { TickLib } from "./util/coreCalculations/TickLib";
+import { BigNumber } from "ethers/lib/ethers";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -33,7 +34,8 @@ namespace LiquidityProvider {
 
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
-    | ({ tick: Bigish; gives: Bigish } & OptParams);
+    | ({ tick: Bigish; gives: Bigish } & OptParams)
+    | ({ wants: Bigish; gives: Bigish } & OptParams);
 
   export type OfferActionResult = {
     offerType: Market.BA;
@@ -215,11 +217,11 @@ class LiquidityProvider {
   } {
     let tick: ethers.BigNumber, gives: Big, price: Big;
     // deduce price from tick & gives, or deduce tick & gives from volume & price
-    if ("gives" in p) {
+    if ("tick" in p) {
       tick = ethers.BigNumber.from(p.tick);
       price = TickLib.priceFromTick(tick);
       gives = Big(p.gives);
-    } else {
+    } else if ("price" in p) {
       price = Big(p.price);
       if (p.ba === "asks") {
         const priceWithCorrectDecimals = Big(price).div(
@@ -234,6 +236,21 @@ class LiquidityProvider {
         tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         gives = Big(p.volume).mul(price);
       }
+    } else {
+      gives = Big(p.gives);
+      let [base_amt, quote_amt] = [gives, Big(p.wants)];
+      if (p.ba === "bids") {
+        [base_amt, quote_amt] = [quote_amt, base_amt];
+      }
+      price = Big(quote_amt).div(base_amt);
+      tick = TickLib.tickFromVolumes(
+        BigNumber.from(
+          base_amt.mul(Big(10).pow(market.base.decimals)).toString()
+        ),
+        BigNumber.from(
+          quote_amt.mul(Big(10).pow(market.quote.decimals)).toString()
+        )
+      );
     }
 
     return { tick: tick, gives: gives, price: price, fund: p.fund };
