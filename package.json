@@ -62,7 +62,7 @@
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/mangrove-core": "^2.0.0-3",
-    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#commit=a9b8e569fddffef0a589adf999ccc0379df677db",
+    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#commit=01a783f5591f1dd0fcc17f6d0370e1752a02af67",
     "@mangrovedao/reliable-event-subscriber": "1.1.29",
     "@types/object-inspect": "^1.8.1",
     "@types/triple-beam": "^1.3.2",
