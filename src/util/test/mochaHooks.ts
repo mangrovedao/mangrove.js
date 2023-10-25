@@ -120,7 +120,7 @@ export const mochaHooks = {
         },
         250,
         localConfig.asks.density.to96X32(),
-        localConfig.asks.offer_gasbase / 1000
+        localConfig.asks.offer_gasbase
       )
       .then((tx) => tx.wait());
 
@@ -136,7 +136,7 @@ export const mochaHooks = {
         localConfig.bids.density.multiplyUp(BigNumber.from(1)).eq(0)
           ? localConfig.bids.density.to96X32()
           : 1,
-        localConfig.bids.offer_gasbase / 1000
+        localConfig.bids.offer_gasbase
       )
       .then((tx) => tx.wait());
 

@@ -225,6 +225,22 @@ class Mangrove {
       shouldNotListenToNewEvents: options.shouldNotListenToNewEvents,
     });
 
+    // Read all setActive events to populate olKeyHashMap
+    const markets = await mgv.contract.queryFilter(
+      mgv.contract.filters.SetActive(null, null)
+    );
+    markets.map((market) => {
+      mgv.olKeyHashToOLKeyStructMap.set(market.args.olKeyHash, {
+        outbound_tkn: market.args.outbound_tkn,
+        inbound_tkn: market.args.inbound_tkn,
+        tickSpacing: market.args.tickSpacing,
+      });
+      mgv.olKeyStructToOlKeyHashMap.set(
+        `${market.args.outbound_tkn.toLowerCase()}_${market.args.inbound_tkn.toLowerCase()}_${market.args.tickSpacing.toNumber()}`,
+        market.args.olKeyHash
+      );
+    });
+
     await mgv.initializeProvider();
 
     canConstructMangrove = false;
@@ -340,24 +356,6 @@ class Mangrove {
       this.contract,
       this.reliableProvider.blockManager
     );
-
-    // Read all setActive events to populate olKeyHashMap
-    const allMarkets = this.contract.queryFilter(
-      this.contract.filters.SetActive(null, null)
-    );
-    allMarkets.then((markets) => {
-      markets.map((market) => {
-        this.olKeyHashToOLKeyStructMap.set(market.args.olKeyHash, {
-          outbound_tkn: market.args.outbound_tkn,
-          inbound_tkn: market.args.inbound_tkn,
-          tickSpacing: market.args.tickSpacing,
-        });
-        this.olKeyStructToOlKeyHashMap.set(
-          ` ${market.args.outbound_tkn.toLowerCase()}_${market.args.inbound_tkn.toLowerCase()}_${market.args.tickSpacing.toNumber()}`,
-          market.args.olKeyHash
-        );
-      });
-    });
   }
 
   getOlKeyHash(
@@ -366,7 +364,7 @@ class Mangrove {
     tickSpacing: number
   ): string | undefined {
     return this.olKeyStructToOlKeyHashMap.get(
-      ` ${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickSpacing}`
+      `${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickSpacing}`
     );
   }
   getOlKeyStruct(olKeyHash: string): OLKeyStruct | undefined {

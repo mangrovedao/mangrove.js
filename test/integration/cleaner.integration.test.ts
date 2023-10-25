@@ -4,6 +4,7 @@ import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
+import { rawMinGivesBase } from "../../src/util/test/mgvIntegrationTestUtil";
 
 import Mangrove, { Market } from "../../src";
 
@@ -23,7 +24,6 @@ describe("Cleaner integration tests suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
   let mgvCleaner: Mangrove;
-  const rawMinGivesBase = BigNumber.from("90000000000000000");
 
   beforeEach(async function () {
     mgv = await Mangrove.connect({
