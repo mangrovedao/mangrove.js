@@ -11,7 +11,7 @@ import { Bigish } from "../types";
 export type PriceDistributionParams = {
   minPrice?: Bigish;
   maxPrice?: Bigish;
-  stepSize?: number;
+  ratio?: Bigish;
   pricePoints?: number;
   midPrice?: Bigish;
 };
@@ -38,37 +38,39 @@ class KandelPriceCalculation {
    * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
    */
   public calculatePrices(params: PriceDistributionParams) {
-    let { minPrice, maxPrice, stepSize } = params;
+    let { minPrice, maxPrice, ratio } = params;
     const { pricePoints, midPrice } = params;
-    if (minPrice && maxPrice && stepSize && !pricePoints) {
+    if (minPrice && maxPrice && ratio && !pricePoints) {
       // we have all we need
     } else {
       if (!pricePoints || pricePoints < 2) {
         throw Error("There must be at least 2 price points");
-      } else if (minPrice && maxPrice && !stepSize && pricePoints) {
-        stepSize = Math.pow(
-          Big(maxPrice).div(minPrice).toNumber(),
-          1 / (pricePoints - 1)
+      } else if (minPrice && maxPrice && !ratio && pricePoints) {
+        ratio = Big(
+          Math.pow(
+            Big(maxPrice).div(minPrice).toNumber(),
+            1 / (pricePoints - 1)
+          )
         );
-      } else if (minPrice && !maxPrice && stepSize && pricePoints) {
-        maxPrice = Big(minPrice).mul(Big(stepSize).pow(pricePoints - 1));
-      } else if (!minPrice && maxPrice && stepSize && pricePoints) {
-        minPrice = Big(maxPrice).div(Big(stepSize).pow(pricePoints - 1));
+      } else if (minPrice && !maxPrice && ratio && pricePoints) {
+        maxPrice = Big(minPrice).mul(Big(ratio).pow(pricePoints - 1));
+      } else if (!minPrice && maxPrice && ratio && pricePoints) {
+        minPrice = Big(maxPrice).div(Big(ratio).pow(pricePoints - 1));
       } else {
         throw Error(
-          "Exactly three of minPrice, maxPrice, tickOffset, and pricePoints must be given"
+          "Exactly three of minPrice, maxPrice, ratio, and pricePoints must be given"
         );
       }
     }
 
     // We round down, so that we end up below maxPrice if desired pricePoints are given.
-    stepSize = Big(stepSize).round(this.precision, Big.roundDown).toNumber();
+    ratio = Big(ratio).round(this.precision, Big.roundDown);
 
     return {
-      tickOffset: stepSize,
+      ratio,
       prices: this.calculatePricesFromMinMaxRatio(
         Big(minPrice),
-        stepSize,
+        ratio,
         pricePoints ? undefined : Big(maxPrice),
         pricePoints,
         midPrice ? Big(midPrice) : undefined
@@ -78,22 +80,22 @@ class KandelPriceCalculation {
 
   /** Gets the prices for the geometric distribution based on a single known price at an index.
    * @param index The index of the known price.
-   * @param tickAtIndex The known price.
+   * @param priceAtIndex The known price.
    * @param ratio The ratio between each price point.
    * @param pricePoints The number of price points in the distribution.
    * @returns The prices in the distribution.
    */
   public getPricesFromPrice(
     index: number,
-    tickAtIndex: Big,
-    tickOffset: number,
+    priceAtIndex: Big,
+    ratio: Big,
     pricePoints: number
   ) {
-    const priceOfIndex0 = tickAtIndex.div(Big(tickOffset).pow(index));
+    const priceOfIndex0 = priceAtIndex.div(ratio.pow(index));
 
     const prices = this.calculatePrices({
       minPrice: priceOfIndex0,
-      stepSize: tickOffset,
+      ratio,
       pricePoints,
     });
     if (prices.prices.some((x) => !x)) {
@@ -105,14 +107,14 @@ class KandelPriceCalculation {
   /** Calculates the resulting number of price points from a min price, max price, and a ratio.
    * @param minPrice The minimum price in the distribution.
    * @param maxPrice The maximum price in the distribution. Optional, if not provided will be derived based on pricePoints.
-   * @param tickOffset The ratio between each price point. Should already be rounded to this.precision decimals.
+   * @param ratio The ratio between each price point. Should already be rounded to this.precision decimals.
    * @param pricePoints The number of price points in the distribution. Optional, if not provided will be derived based on maxPrice.
    * @param midPrice The midPrice of the market, if provided, the price distribution will be generated from this point and outwards with no offer at the midPrice, if not provided, then the price distribution will be generated from the minPrice and upwards.
    * @returns The prices in the distribution. A price will be undefined if a hole is expected at that index.
    */
   public calculatePricesFromMinMaxRatio(
     minPrice: Big,
-    tickOffset: number,
+    ratio: Big,
     maxPrice?: Big,
     pricePoints?: number,
     midPrice?: Big
@@ -120,10 +122,10 @@ class KandelPriceCalculation {
     if (minPrice.lte(0)) {
       throw Error("minPrice must be positive");
     }
-    if (tickOffset <= 1) {
+    if (ratio.lte(Big(1))) {
       throw Error("ratio must be larger than 1");
     }
-    if (tickOffset > 2) {
+    if (ratio.gt(2)) {
       throw Error("ratio must be less than or equal to 2");
     }
     if ((!pricePoints && !maxPrice) || (pricePoints && maxPrice)) {
@@ -142,16 +144,16 @@ class KandelPriceCalculation {
 
     let price = minPrice;
     if (midPrice) {
-      price = midPrice.div(tickOffset);
+      price = midPrice.div(ratio);
       while (price.gte(minPrice)) {
         prices.push(price);
         checkPricesLength();
-        price = price.div(tickOffset);
+        price = price.div(ratio);
       }
       prices.reverse();
       // A hole
       prices.push(undefined);
-      price = midPrice.mul(tickOffset);
+      price = midPrice.mul(ratio);
     }
 
     while (
@@ -160,7 +162,7 @@ class KandelPriceCalculation {
     ) {
       prices.push(price);
       checkPricesLength();
-      price = price.mul(tickOffset);
+      price = price.mul(ratio);
     }
 
     if (prices.length < 2) {

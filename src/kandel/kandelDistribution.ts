@@ -20,7 +20,7 @@ class KandelDistribution {
   offers: OfferDistribution;
   baseDecimals: number;
   quoteDecimals: number;
-  stepSize: number;
+  ratio: Big;
   pricePoints: number;
   helper: KandelDistributionHelper;
 
@@ -32,7 +32,7 @@ class KandelDistribution {
    * @param quoteDecimals The number of decimals for the quote token.
    */
   public constructor(
-    stepSize: number,
+    ratio: Big,
     pricePoints: number,
     offers: OfferDistribution,
     baseDecimals: number,
@@ -40,7 +40,7 @@ class KandelDistribution {
   ) {
     this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
     this.helper.sortByIndex(offers);
-    this.stepSize = stepSize;
+    this.ratio = ratio;
     this.pricePoints = pricePoints;
     this.offers = offers;
     this.baseDecimals = baseDecimals;
@@ -131,9 +131,7 @@ class KandelDistribution {
    * @returns The chunks.
    */
   public chunkDistribution(maxOffersInChunk: number) {
-    const chunks: {
-      distribution: OfferDistribution;
-    }[] = [];
+    const chunks: OfferDistribution[] = [];
 
     const offerMiddle = this.getOffersIndexOfFirstAskIndex();
     let distributionChunk: OfferDistribution = [];
@@ -147,16 +145,12 @@ class KandelDistribution {
         distributionChunk.push(this.offers[indexHigh]);
       }
       if (distributionChunk.length >= maxOffersInChunk) {
-        chunks.push({
-          distribution: distributionChunk,
-        });
+        chunks.push(distributionChunk);
         distributionChunk = [];
       }
     }
     if (distributionChunk.length) {
-      chunks.push({
-        distribution: distributionChunk,
-      });
+      chunks.push(distributionChunk);
     }
     return chunks;
   }

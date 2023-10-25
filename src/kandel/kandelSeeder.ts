@@ -73,15 +73,16 @@ class KandelSeeder {
         "Liquidity sharing is only supported for AaveKandel instances."
       );
     }
-    const rawSeed: OLKeyStruct = {
-      outbound_tkn: seed.market.base.address,
-      inbound_tkn: seed.market.quote.address,
-      tickSpacing: seed.market.tickSpacing,
+    const rawSeed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
+      base: seed.market.base.address,
+      quote: seed.market.quote.address,
+      gasprice: UnitCalculations.toUnits(gasprice, 0),
+      liquiditySharing: seed.liquiditySharing,
     };
 
     const response = seed.onAave
-      ? this.aaveKandelSeeder.sow(rawSeed, seed.liquiditySharing, overrides)
-      : this.kandelSeeder.sow(rawSeed, seed.liquiditySharing, overrides);
+      ? this.aaveKandelSeeder.sow(rawSeed, overrides)
+      : this.kandelSeeder.sow(rawSeed, overrides);
 
     const func = async (
       response: Promise<ethers.ethers.ContractTransaction>
@@ -146,16 +147,15 @@ class KandelSeeder {
    */
   public async getDefaultGasreq(onAave: boolean) {
     return (
-      // onAave
-      //   ? (await this.aaveKandelSeeder.KANDEL_GASREQ()).add(
-      //       await typechain.AbstractRouter__factory.connect(
-      //         await this.aaveKandelSeeder.AAVE_ROUTER(),
-      //         this.mgv.signer
-      //       ).routerGasreq() // FIXME:
-      //     )
-      //   :
-      (await this.kandelSeeder.KANDEL_GASREQ()).toNumber()
-    );
+      onAave
+        ? (await this.aaveKandelSeeder.KANDEL_GASREQ()).add(
+            await typechain.AbstractRouter__factory.connect(
+              await this.aaveKandelSeeder.AAVE_ROUTER(),
+              this.mgv.signer
+            ).routerGasreq()
+          )
+        : await this.kandelSeeder.KANDEL_GASREQ()
+    ).toNumber();
   }
 
   /** Retrieves the gasprice for the Kandel type multiplied by the buffer factor.

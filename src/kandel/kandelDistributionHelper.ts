@@ -82,7 +82,7 @@ class KandelDistributionHelper {
    * @returns The distribution of bids and asks and their base and quote.
    */
   public calculateDistributionConstantGives(
-    tickOffset: number,
+    ratio: Big,
     prices: (undefined | Big)[],
     askGives: Big,
     bidGives: Big,
@@ -107,7 +107,7 @@ class KandelDistributionHelper {
     );
 
     return new KandelDistribution(
-      tickOffset,
+      ratio,
       offers.length,
       offers.filter((o) => o) as OfferDistribution,
       this.baseDecimals,
@@ -116,14 +116,14 @@ class KandelDistributionHelper {
   }
 
   /** Calculates distribution of bids and asks with constant base and a matching quote given the price distribution.
-   * @param tickOffset The ratio used when calculating the price distribution.
+   * @param ratio The ratio used when calculating the price distribution.
    * @param prices The price distribution.
    * @param constantBase The constant base for the distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
    * @returns The distribution of bids and asks and their base and quote.
    */
   public calculateDistributionConstantBase(
-    tickOffset: number,
+    ratio: Big,
     prices: (undefined | Big)[],
     constantBase: Big,
     firstAskIndex: number
@@ -140,7 +140,7 @@ class KandelDistributionHelper {
           }
     );
     return new KandelDistribution(
-      tickOffset,
+      ratio,
       offers.length,
       offers.filter((o) => o) as OfferDistribution,
       this.baseDecimals,
@@ -149,14 +149,14 @@ class KandelDistributionHelper {
   }
 
   /** Calculates distribution of bids and asks with constant quote and a matching base given the price distribution.
-   * @param tickOffset The ratio used when calculating the price distribution.
+   * @param ratio The ratio used when calculating the price distribution.
    * @param prices The price distribution.
    * @param constantQuote The constant quote for the distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
    * @returns The distribution of bids and asks and their base and quote.
    */
   public calculateDistributionConstantQuote(
-    tickOffset: number,
+    ratio: Big,
     prices: (undefined | Big)[],
     constantQuote: Big,
     firstAskIndex: number
@@ -173,7 +173,7 @@ class KandelDistributionHelper {
           }
     );
     return new KandelDistribution(
-      tickOffset,
+      ratio,
       offers.length,
       offers.filter((o) => o) as OfferDistribution,
       this.baseDecimals,
@@ -182,7 +182,7 @@ class KandelDistributionHelper {
   }
 
   /** Calculates distribution of bids and asks and their base and quote amounts to match the price distribution.
-   * @param tickOffset The ratio used when calculating the price distribution.
+   * @param ratio The ratio used when calculating the price distribution.
    * @param prices The price distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
    * @param initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
@@ -190,7 +190,7 @@ class KandelDistributionHelper {
    * @returns The distribution of bids and asks and their base and quote.
    */
   public calculateDistributionFromPrices(
-    tickOffset: number,
+    ratio: Big,
     prices: (Big | undefined)[],
     firstAskIndex: number,
     initialAskGives?: Big,
@@ -199,7 +199,7 @@ class KandelDistributionHelper {
     if (initialBidGives) {
       if (initialAskGives) {
         return this.calculateDistributionConstantGives(
-          tickOffset,
+          ratio,
           prices,
           initialAskGives,
           initialBidGives,
@@ -207,7 +207,7 @@ class KandelDistributionHelper {
         );
       } else {
         return this.calculateDistributionConstantQuote(
-          tickOffset,
+          ratio,
           prices,
           initialBidGives,
           firstAskIndex
@@ -216,7 +216,7 @@ class KandelDistributionHelper {
     } else {
       if (initialAskGives) {
         return this.calculateDistributionConstantBase(
-          tickOffset,
+          ratio,
           prices,
           initialAskGives,
           firstAskIndex
@@ -282,7 +282,7 @@ class KandelDistributionHelper {
       );
 
     const distribution = new KandelDistribution(
-      params.distribution.stepSize,
+      params.distribution.ratio,
       params.distribution.pricePoints,
       bids
         .map((o, i) => ({
@@ -450,7 +450,7 @@ class KandelDistributionHelper {
     explicitOffers: OffersWithGives,
     distribution:
       | {
-          stepSize: number;
+          ratio: Big;
           pricePoints?: number;
         }
       | KandelDistribution
@@ -469,7 +469,7 @@ class KandelDistributionHelper {
     }));
 
     return new KandelDistribution(
-      distribution.stepSize,
+      distribution.ratio,
       distribution.pricePoints ?? offers.length,
       offers,
       this.baseDecimals,

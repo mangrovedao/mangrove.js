@@ -44,21 +44,20 @@ class KandelFarm {
    * Gets all Kandels matching a given filter.
    * @param filter The filter to apply.
    * @param filter.owner The Kandel instance owner - the one who invoked sow.
-   * @param filter.base The base token for the Kandel instance.
-   * @param filter.quote The quote token for the Kandel instance.
+   * @param filter.baseQuoteOlKeyStruct The identifier of the market for the Kandel instance.
    * @param filter.onAave Whether the Kandel instance uses the Aave router.
    * @returns All kandels matching the filter.
    */
   public async getKandels(filter?: {
     owner?: PromiseOrValue<string> | null;
-    olKeyStruct?: PromiseOrValue<{
+    baseQuoteOlKeyStruct?: PromiseOrValue<{
       base: PromiseOrValue<string>;
       quote: PromiseOrValue<string>;
       tickSpacing: PromiseOrValue<number>;
     }> | null;
     onAave?: boolean;
   }) {
-    const olKeyStruct = await filter?.olKeyStruct;
+    const olKeyStruct = await filter?.baseQuoteOlKeyStruct;
     const baseAddress = olKeyStruct?.base
       ? this.mgv.getAddress(await olKeyStruct.base)
       : null;
