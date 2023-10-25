@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 
 import { toWei } from "../util/helpers";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-const waitForTransaction = mgvTestUtil.waitForTransaction;
+import {
+  rawMinGivesBase,
+  waitForTransaction,
+} from "../../src/util/test/mgvIntegrationTestUtil";
 
 import assert from "assert";
 import { Mangrove, Market, Semibook } from "../../src";
@@ -28,7 +31,6 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 describe("Market integration tests suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
-  const rawMinGivesBase = BigNumber.from("90000000000000000");
 
   beforeEach(async function () {
     mgv = await Mangrove.connect({
