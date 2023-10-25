@@ -173,7 +173,6 @@ namespace Market {
     | {
         /** The price that is expected to be used in calls to the market.
          * The cache will initially contain all offers with this price or better.
-         * This can be useful in order to ensure a good pivot is readily available.
          */
         desiredPrice: Bigish;
       }

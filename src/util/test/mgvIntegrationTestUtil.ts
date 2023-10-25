@@ -415,7 +415,7 @@ export const postNewOffer = async ({
       gives,
       gasreq
     )
-  ); // (base address, quote address, wants, gives, gasreq, pivotId)
+  ); // (base address, quote address, wants, gives, gasreq)
 };
 
 export const postNewRevertingOffer = async (

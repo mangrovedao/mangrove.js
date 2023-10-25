@@ -125,8 +125,7 @@ class KandelDistribution {
     }
   }
 
-  /** Split a distribution and its pivots into chunks according to the maximum number of offers in a single chunk.
-   * @param pivots The pivots for the distribution.
+  /** Split a distribution into chunks according to the maximum number of offers in a single chunk.
    * @param maxOffersInChunk The maximum number of offers in a single chunk.
    * @returns The chunks.
    */

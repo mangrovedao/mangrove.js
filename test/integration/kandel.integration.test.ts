@@ -412,55 +412,6 @@ describe("Kandel integration tests suite", function () {
         kandel = await createKandel(false);
       });
 
-      it("getPivots returns pivots for current market", async function () {
-        // Arrange
-        const market = kandel.market;
-        const ratio = new Big(1.08);
-        const firstBase = Big(1);
-        const firstQuote = Big(1000);
-        const pricePoints = 6;
-        const distribution = kandelStrategies
-          .generator(market)
-          .calculateDistribution({
-            priceParams: {
-              minPrice: firstQuote.div(firstBase),
-              ratio,
-              pricePoints,
-            },
-            midPrice: Big(1200),
-            initialAskGives: firstBase,
-          });
-
-        // Distribution is bids at prices [1000, 1080, 1166.4], asks at prices [1259.712, 1360.48896, 1469.3280768].
-        // prettier-ignore
-        // some bids with id 1 and 2
-        await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1050", }));
-        await waitForTransaction(
-          helpers.newOffer(mgv, market.quote, market.base, {
-            wants: "1",
-            gives: "1100",
-          })
-        );
-        // some asks with id 1 and 2
-        await waitForTransaction(
-          helpers.newOffer(mgv, market.base, market.quote, {
-            wants: "1300",
-            gives: "1",
-          })
-        );
-        const tx = await waitForTransaction(
-          helpers.newOffer(mgv, market.base, market.quote, {
-            wants: "1400",
-            gives: "1",
-          })
-        );
-
-        await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-
-        const pivots = await kandel.getPivots(distribution);
-        assert.deepStrictEqual(pivots, [1, 2, 0, 0, 1, 2]);
-      });
-
       [true, false].forEach((inChunks) => {
         it(`populate populates a market, deposits and sets parameters inChunks=${inChunks}`, async function () {
           // Arrange

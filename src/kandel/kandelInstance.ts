@@ -629,15 +629,9 @@ class KandelInstance {
         this.getMostSpecificConfig().maxOffersInPopulateChunk
     );
 
-    const firstAskIndex = params.distribution.getFirstAskIndex();
-
-    return {
-      rawDistributions: distributions.map((distribution) => ({
-        pivots,
-        rawDistribution: this.getRawDistribution(distribution),
-      })),
-      firstAskIndex,
-    };
+    return distributions.map((distribution) =>
+      this.getRawDistribution(distribution)
+    );
   }
 
   async getGasreqAndGasprice(gasreq?: number, gasprice?: number) {
@@ -817,25 +811,19 @@ class KandelInstance {
         gasprice: rawParameters.gasprice,
       }));
 
-    const { firstAskIndex, rawDistributions } =
-      await this.getRawDistributionChunks({
-        distribution,
-        maxOffersInChunk: params.maxOffersInChunk,
-      });
+    const rawDistributions = await this.getRawDistributionChunks({
+      distribution,
+      maxOffersInChunk: params.maxOffersInChunk,
+    });
 
     const firstDistribution =
       rawDistributions.length > 0
         ? rawDistributions[0]
-        : {
-            rawDistribution: { indices: [], quoteDist: [], baseDist: [] },
-            pivots: [],
-          };
+        : { indices: [], quoteDist: [], baseDist: [] };
 
     const txs = [
       await this.kandel.populate(
-        firstDistribution.rawDistribution,
-        firstDistribution.pivots,
-        firstAskIndex,
+        firstDistribution,
         rawParameters,
         this.market.base.toUnits(params.depositBaseAmount ?? 0),
         this.market.quote.toUnits(params.depositQuoteAmount ?? 0),
@@ -844,11 +832,7 @@ class KandelInstance {
     ];
 
     return txs.concat(
-      await this.populateChunks(
-        firstAskIndex,
-        rawDistributions.slice(1),
-        overrides
-      )
+      await this.populateChunks(rawDistributions.slice(1), overrides)
     );
   }
 
@@ -863,41 +847,24 @@ class KandelInstance {
     params: { distribution: KandelDistribution; maxOffersInChunk?: number },
     overrides: ethers.Overrides = {}
   ) {
-    const { firstAskIndex, rawDistributions } =
-      await this.getRawDistributionChunks(params);
+    const rawDistributions = await this.getRawDistributionChunks(params);
 
-    return await this.populateChunks(
-      firstAskIndex,
-      rawDistributions,
-      overrides
-    );
+    return await this.populateChunks(rawDistributions, overrides);
   }
 
   /** Populates the offers in the distribution for the Kandel instance.
-   * @param firstAskIndex The index of the first ask in the distribution.
    * @param rawDistributions The raw chunked distributions in internal representation to populate.
    * @param overrides The ethers overrides to use when calling the populateChunk function.
    * @returns The transaction(s) used to populate the offers.
    */
   async populateChunks(
-    firstAskIndex: number,
-    rawDistributions: {
-      pivots: number[];
-      rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct;
-    }[],
+    rawDistributions: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct[],
     overrides: ethers.Overrides = {}
   ) {
     const txs: ethers.ethers.ContractTransaction[] = [];
 
     for (let i = 0; i < rawDistributions.length; i++) {
-      txs.push(
-        await this.kandel.populateChunk(
-          rawDistributions[i].rawDistribution,
-          rawDistributions[i].pivots,
-          firstAskIndex,
-          overrides
-        )
-      );
+      txs.push(await this.kandel.populateChunk(rawDistributions[i], overrides));
     }
 
     return txs;
