@@ -241,6 +241,7 @@ const deploy = async (params: deployParams) => {
       url: params.url,
       pipe: params.pipe,
       script: params.script,
+      root: params.root,
       provider: params.provider,
       targetContract: params.targetContract,
       mnemonic,
