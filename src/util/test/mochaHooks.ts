@@ -157,7 +157,9 @@ export const mochaHooks = {
   },
 
   async beforeEachImpl(hook: hookInfo) {
-    Mangrove.setAddress("OfferMaker", hook.offerMakerAddress!, "local"); //FIXME: have to set the address in beforeEach, instead of beforeAll, because mangrove configuration gets reset by other tests. (e.g. configuration unit tests)
+    if (hook.offerMakerAddress) {
+      Mangrove.setAddress("OfferMaker", hook.offerMakerAddress, "local"); //FIXME: have to set the address in beforeEach, instead of beforeAll, because mangrove configuration gets reset by other tests. (e.g. configuration unit tests)
+    }
 
     if (!hook.proxies) {
       hook.proxies = [];
