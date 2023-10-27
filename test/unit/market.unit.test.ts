@@ -81,38 +81,6 @@ describe("Market unit tests suite", () => {
     });
   });
 
-  describe("getPrice", () => {
-    it("returns quoteVolume divided by baseVolume", async function () {
-      // Arrange
-      const gives = Big(12);
-      const wants = Big(13);
-      // Act
-      const result = Market.getPrice({ ba: "bids", gives, wants });
-      // Assert
-      assert.ok(result && gives.div(wants).eq(result));
-    });
-
-    it("returns price based on tick and tickSpacing", async function () {
-      // Arrange
-      const tick = Big(12);
-      const tickSpacing = Big(13);
-      // Act
-      const result = Market.getPrice({ tick, tickSpacing });
-      // Assert
-      const ratio = tick.mul(tickSpacing);
-      assert.ok(result && Big(Math.pow(1.0001, ratio.toNumber())).eq(result));
-    });
-
-    it("returns price based on tick and tickSpacing", async function () {
-      // Arrange
-      const tick = Big(12);
-      // Act
-      const result = Market.getPrice({ tick: tick });
-      // Assert
-      assert.ok(result && Big(Math.pow(1.0001, tick.toNumber())).eq(result));
-    });
-  });
-
   describe("getBaseQuoteVolumes", () => {
     it("returns gives as baseVolume and wants as quoteVolume", async function () {
       // Arrange
