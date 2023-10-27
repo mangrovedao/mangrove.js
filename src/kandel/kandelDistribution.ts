@@ -1,18 +1,19 @@
 import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
+import { BigNumber } from "ethers";
 
 /** Distribution of bids and asks and their base and quote amounts.
  * @param offerType Whether the offer is a bid or an ask.
  * @param index The index of the price point in Kandel.
- * @param base The amount of base tokens for the offer.
- * @param quote The amount of quote tokens for the offer.
+ * @param gives The amount of tokens (base for ask, quote for bid) the offer should give.
+ * @param tick The tick for the offer.
  */
 export type OfferDistribution = {
   offerType: Market.BA;
   index: number;
-  base: Big;
-  quote: Big;
+  gives: Big;
+  tick: BigNumber;
 }[];
 
 /** @title A distribution of bids and ask for Kandel. */
@@ -154,16 +155,18 @@ class KandelDistribution {
     return chunks;
   }
 
-  /** Gets the prices for the distribution, with undefined for prices not represented by offers in the distribution.
-   * @returns The prices in the distribution.
+  /** Gets the ticks for the distribution, with undefined for ticks not represented by offers in the distribution.
+   * @returns The ticks in the distribution.
    */
-  public getPricesForDistribution() {
-    const prices: (Big | undefined)[] = Array(this.pricePoints).fill(undefined);
+  public getTicksForDistribution() {
+    const ticks: (BigNumber | undefined)[] = Array(this.pricePoints).fill(
+      undefined
+    );
 
     this.offers.forEach((o) => {
-      prices[o.index] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
+      ticks[o.index] = o.tick;
     });
-    return prices;
+    return ticks;
   }
 
   /** Gets the required volume of base and quote for the distribution to be fully provisioned.
@@ -175,10 +178,10 @@ class KandelDistribution {
         return x.offerType == "bids"
           ? {
               requiredBase: a.requiredBase,
-              requiredQuote: a.requiredQuote.add(x.quote),
+              requiredQuote: a.requiredQuote.add(x.gives),
             }
           : {
-              requiredBase: a.requiredBase.add(x.base),
+              requiredBase: a.requiredBase.add(x.gives),
               requiredQuote: a.requiredQuote,
             };
       },

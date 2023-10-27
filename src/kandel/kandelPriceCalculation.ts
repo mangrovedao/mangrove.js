@@ -1,5 +1,6 @@
 import Big from "big.js";
 import { Bigish } from "../types";
+import { BigNumber } from "ethers";
 
 /** Parameters for calculating a geometric price distribution. Exactly three of minPrice, maxPrice, ratio, and pricePoints must be provided.
  * @param minPrice The minimum price in the distribution.
@@ -18,15 +19,6 @@ export type PriceDistributionParams = {
 
 /** @title Helper for calculating details about about a Kandel instance. */
 class KandelPriceCalculation {
-  private precision: number;
-
-  /** Constructor.
-   *  @param precision The precision used for Kandel instances.
-   */
-  public constructor(precision: number) {
-    this.precision = precision;
-  }
-
   /** Calculates prices to match the geometric price distribution given by parameters.
    * @param params Parameters for calculating a geometric price distribution. Exactly three of minPrice, maxPrice, ratio, and pricePoints must be provided.
    * @param params.minPrice The minimum price in the distribution.
@@ -102,6 +94,25 @@ class KandelPriceCalculation {
       throw new Error("Unexpected undefined price");
     }
     return prices.prices as Big[];
+  }
+
+  /** Gets the ticks for the geometric distribution based on a single known tick at an index.
+   * @param index The index of the known price.
+   * @param tickAtIndex The known tick.
+   * @param baseQuoteTickOffset The offset in ticks between two price points of the geometric distribution.
+   * @param pricePoints The number of price points in the distribution.
+   * @returns The ticks in the distribution.
+   */
+  public getTicksFromTick(
+    index: number,
+    tickAtIndex: BigNumber,
+    baseQuoteTickOffset: BigNumber,
+    pricePoints: number
+  ) {
+    const tickAtIndex0 = tickAtIndex.sub(baseQuoteTickOffset.mul(index));
+    return Array.from({ length: pricePoints }, (_, index) =>
+      tickAtIndex0.add(baseQuoteTickOffset.mul(index))
+    );
   }
 
   /** Calculates the resulting number of price points from a min price, max price, and a ratio.

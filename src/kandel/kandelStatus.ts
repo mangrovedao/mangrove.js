@@ -3,17 +3,20 @@ import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
 import KandelPriceCalculation from "./kandelPriceCalculation";
 import { Bigish } from "../types";
+import { BigNumber, BigNumberish } from "ethers";
+import { TickLib } from "../util/coreCalculations/TickLib";
 
 /** Offers with their price, liveness, and Kandel index.
  * @param offerType Whether the offer is a bid or an ask.
  * @param price The price of the offer.
+ * @param tick The tick of the offer.
  * @param index The index of the price point in Kandel.
  * @param offerId The Mangrove offer id of the offer.
- * @param live Whether the offer is live.
  */
 export type OffersWithPrices = {
   offerType: Market.BA;
-  price: Bigish | undefined;
+  price: Bigish;
+  tick: BigNumberish;
   index: number;
   offerId: number;
   live: boolean;
@@ -35,20 +38,23 @@ export type OffersWithPrices = {
 export type OfferStatus = {
   expectedLiveBid: boolean;
   expectedLiveAsk: boolean;
+  expectedTick: BigNumber;
   expectedPrice: Big;
   asks:
     | undefined
     | {
         live: boolean;
         offerId: number;
-        price: Big | undefined;
+        tick: BigNumber;
+        price: Big;
       };
   bids:
     | undefined
     | {
         live: boolean;
         offerId: number;
-        price: Big | undefined;
+        tick: BigNumber;
+        price: Big;
       };
 };
 
@@ -112,76 +118,70 @@ class KandelStatus {
 
   /** Determines the status of the Kandel instance based on the passed in offers.
    * @param midPrice The current mid price of the market used to discern expected bids from asks.
-   * @param ratio The ratio of the geometric distribution.
+   * @param baseQuoteTickOffset The offset in ticks between two price points of the geometric distribution.
    * @param pricePoints The number of price points in the Kandel instance.
-   * @param spread The spread used when transporting funds from an offer to its dual.
+   * @param stepSize The step size used when transporting funds from an offer to its dual.
    * @param offers The offers to determine the status of.
    * @returns The status of the Kandel instance.
-   * @throws If no offers are live. At least one live offer is required to determine the status.
-   * @remarks The expected prices are determined by extrapolating from a live offer closest to the mid price.
+   * @remarks The expected prices are determined by extrapolating from an offer closest to the mid price.
    * @remarks Offers are expected to be live bids below the mid price and asks above.
-   * @remarks This may not hold if an offer deep in the book has been sniped in which case a dual offer will exist on the wrong side of mid price but quickly be taken due to a good price (Kandel still earns on the spread).
-   * @remarks Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
+   * @remarks Offers are expected to be dead near the mid price due to the step size between the live bid and ask.
    */
   public getOfferStatuses(
     midPrice: Big,
-    ratio: Big,
+    baseQuoteTickOffset: BigNumber,
     pricePoints: number,
-    spread: number,
+    stepSize: number,
     offers: OffersWithPrices
   ): Statuses {
-    const liveOffers = offers
-      .filter((x) => x.live && x.index < pricePoints && x.price)
-      .map((x) => ({ ...x, price: Big(x.price as Bigish) }));
-    if (!liveOffers.length) {
-      throw Error(
-        "Unable to determine distribution: no offers in range are live"
-      );
-    }
-
-    // We select an offer close to mid to base calculations on since precision is more important there.
+    // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
     const offer =
-      liveOffers[
+      offers[
         this.getIndexOfPriceClosestToMid(
           midPrice,
-          liveOffers.map((x) => x.price)
+          offers.map((x) => Big(x.price))
         )
       ];
 
     // We can now calculate expected prices of all indices, but it may not entirely match live offer's prices
     // due to rounding and due to slight drift of prices during order execution.
-    const expectedPrices = this.priceCalculation.getPricesFromPrice(
+    const expectedTicks = this.priceCalculation.getTicksFromTick(
       offer.index,
-      offer.price,
-      ratio,
+      BigNumber.from(offer.tick),
+      baseQuoteTickOffset,
       pricePoints
     );
 
+    //TODO market.gettickfrompice-agtig
+    const midTick = TickLib.getTickFromPrice(midPrice);
+
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
     // then both offers can be expected live.
-    // Note - this first pass does not consider spread, see further down.
-    const statuses = expectedPrices.map((p) => {
+    // Note - this first pass does not consider step size, see further down.
+    const statuses = expectedTicks.map((tick) => {
       return {
-        expectedLiveBid: p.lte(midPrice),
-        expectedLiveAsk: p.gte(midPrice),
-        expectedPrice: p,
+        expectedLiveBid: tick.lte(midTick),
+        expectedLiveAsk: tick.gte(midTick),
+        expectedTick: tick,
+        expectedPrice: TickLib.priceFromTick(tick), // TODO use market-function
         asks: undefined as
           | undefined
-          | { live: boolean; offerId: number; price: Big | undefined },
+          | { live: boolean; offerId: number; tick: BigNumber; price: Big },
         bids: undefined as
           | undefined
-          | { live: boolean; offerId: number; price: Big | undefined },
+          | { live: boolean; offerId: number; tick: BigNumber; price: Big },
       };
     });
 
     // Merge with actual statuses
     offers
       .filter((x) => x.index < pricePoints)
-      .forEach(({ offerType, index, live, offerId, price }) => {
+      .forEach(({ offerType, index, live, offerId, price, tick }) => {
         statuses[index][offerType] = {
           live,
           offerId,
-          price: price ? Big(price) : undefined,
+          price: Big(price),
+          tick: BigNumber.from(tick),
         };
       });
 
@@ -192,7 +192,7 @@ class KandelStatus {
           "bids",
           index,
           pricePoints,
-          spread
+          stepSize
         );
         if (statuses[dualIndex].bids?.live) {
           s.expectedLiveAsk = false;
@@ -203,7 +203,7 @@ class KandelStatus {
           "asks",
           index,
           pricePoints,
-          spread
+          stepSize
         );
         if (statuses[dualIndex].asks?.live) {
           s.expectedLiveBid = false;

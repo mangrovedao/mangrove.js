@@ -136,7 +136,7 @@ describe("Kandel integration tests suite", function () {
             onAave,
             "router should only be there for aave"
           );
-          assert.equal(params.spread, 0, "spread should be default");
+          assert.equal(params.stepSize, 0, "spread should be default");
           assert.equal(params.ratio.toNumber(), 0, "ratio should be default");
           assert.equal(params.pricePoints, 0, "pricePoints should be default");
           assert.equal(
@@ -487,7 +487,7 @@ describe("Kandel integration tests suite", function () {
             ratio.toString(),
             "ratio should have been updated"
           );
-          assert.equal(params.spread, 1, "spread should have been updated");
+          assert.equal(params.stepSize, 1, "spread should have been updated");
 
           // assert expected offer writes
           const allEvents = receipts
@@ -590,7 +590,7 @@ describe("Kandel integration tests suite", function () {
 
         // Assert
         const params = await kandel.getParameters();
-        assert.equal(params.spread, 4, "spread should have been updated");
+        assert.equal(params.stepSize, 4, "spread should have been updated");
       });
 
       it("populate can be with new distribution", async () => {
