@@ -640,7 +640,7 @@ class Mangrove {
   }
 
   /** Calculates the provision required or locked for an offer based on the given parameters
-   * @param gasprice the gas price for the offer in gwei.
+   * @param gasprice the gas price for the offer in Mwei.
    * @param gasreq the gas requirement for the offer
    * @param gasbase the offer list's offer_gasbase.
    * @returns the required provision, in ethers.
@@ -656,7 +656,7 @@ class Mangrove {
 
   /** Calculates the provision required or locked for offers based on the given parameters
    * @param offers[] the offers to calculate provision for.
-   * @param offers[].gasprice the gas price for the offer in gwei.
+   * @param offers[].gasprice the gas price for the offer in Mwei.
    * @param offers[].gasreq the gas requirement for the offer
    * @param offers[].gasbase the offer list's offer_gasbase.
    * @returns the required provision, in ethers.

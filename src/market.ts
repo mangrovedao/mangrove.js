@@ -26,6 +26,7 @@ import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib } from "./types/typechain/Mangrove";
+import { OLKeyStruct } from "./types/typechain/AaveKandel";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -290,6 +291,8 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   tickSpacing: BigNumber;
+  olKeyBaseQuote: OLKeyStruct;
+  olKeyQuoteBase: OLKeyStruct;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook | undefined;
   #bidsSemibook: Semibook | undefined;
@@ -363,6 +366,16 @@ class Market {
     this.base = params.base;
     this.quote = params.quote;
     this.tickSpacing = params.tickSpacing;
+    this.olKeyBaseQuote = {
+      outbound_tkn: this.base.address,
+      inbound_tkn: this.quote.address,
+      tickSpacing: this.tickSpacing,
+    };
+    this.olKeyQuoteBase = {
+      outbound_tkn: this.quote.address,
+      inbound_tkn: this.base.address,
+      tickSpacing: this.tickSpacing,
+    };
   }
 
   public close() {

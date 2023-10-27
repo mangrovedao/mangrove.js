@@ -711,7 +711,7 @@ class KandelInstance {
 
   /** Calculates the provision locked for a set of offers based on the given parameters
    * @param existingOffers[] the offers to calculate provision for.
-   * @param existingOffers[].gasprice the gas price for the offer in gwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
    * @param existingOffers[].gasreq the gas requirement for the offer.
    * @param existingOffers[].gasbase the offer list's offer_gasbase.
    * @returns the locked provision, in ethers.
@@ -748,7 +748,7 @@ class KandelInstance {
    * @param params.distribution The distribution to calculate the provision for. Optional.
    * @param params.offerCount The number of offers to calculate the provision for. Optional.
    * @param existingOffers[] the offers with potential locked provision.
-   * @param existingOffers[].gasprice the gas price for the offer in gwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
    * @param existingOffers[].gasreq the gas requirement for the offer.
    * @param existingOffers[].gasbase the offer list's offer_gasbase.
    * @returns the additional required provision, in ethers.
