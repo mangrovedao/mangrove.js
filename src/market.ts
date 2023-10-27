@@ -976,23 +976,6 @@ class Market {
     };
   }
 
-  /** Determine the price from dividing offer gives with wants depending on whether you're working with bids or asks. */
-  static getPrice(params: Market.getPriceParams): Big | undefined {
-    if ("gives" in params) {
-      const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
-        params.ba,
-        params.gives,
-        params.wants
-      );
-      return baseVolume.gt(0) ? quoteVolume.div(baseVolume) : undefined;
-    } else if ("tickSpacing" in params) {
-      const tick = params.tick.mul(params.tickSpacing);
-      return Big(Math.pow(1.0001, tick.toNumber()));
-    } else {
-      return Big(Math.pow(1.0001, params.tick.toNumber()));
-    }
-  }
-
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
   static getWantsForPrice(ba: Market.BA, gives: Big, price: Big): Big {
     return ba === "asks" ? gives.mul(price) : gives.div(price);
