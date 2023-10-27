@@ -3,8 +3,8 @@ import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
 import KandelPriceCalculation from "./kandelPriceCalculation";
 import { Bigish } from "../types";
-import { BigNumber, BigNumberish } from "ethers";
 import { TickLib } from "../util/coreCalculations/TickLib";
+import { BigNumber } from "ethers";
 
 /** Offers with their price, liveness, and Kandel index.
  * @param offerType Whether the offer is a bid or an ask.
@@ -16,7 +16,7 @@ import { TickLib } from "../util/coreCalculations/TickLib";
 export type OffersWithPrices = {
   offerType: Market.BA;
   price: Bigish;
-  tick: BigNumberish;
+  tick: number;
   index: number;
   offerId: number;
   live: boolean;
@@ -38,14 +38,14 @@ export type OffersWithPrices = {
 export type OfferStatus = {
   expectedLiveBid: boolean;
   expectedLiveAsk: boolean;
-  expectedTick: BigNumber;
+  expectedTick: number;
   expectedPrice: Big;
   asks:
     | undefined
     | {
         live: boolean;
         offerId: number;
-        tick: BigNumber;
+        tick: number;
         price: Big;
       };
   bids:
@@ -53,7 +53,7 @@ export type OfferStatus = {
     | {
         live: boolean;
         offerId: number;
-        tick: BigNumber;
+        tick: number;
         price: Big;
       };
 };
@@ -79,6 +79,8 @@ export type Statuses = {
   };
   minPrice: Big;
   maxPrice: Big;
+  minTick: number;
+  maxTick: number;
 };
 
 /** @title Helper for getting status about a Kandel instance. */
@@ -129,7 +131,7 @@ class KandelStatus {
    */
   public getOfferStatuses(
     midPrice: Big,
-    baseQuoteTickOffset: BigNumber,
+    baseQuoteTickOffset: number,
     pricePoints: number,
     stepSize: number,
     offers: OffersWithPrices
@@ -147,29 +149,29 @@ class KandelStatus {
     // due to rounding and due to slight drift of prices during order execution.
     const expectedTicks = this.priceCalculation.getTicksFromTick(
       offer.index,
-      BigNumber.from(offer.tick),
+      offer.tick,
       baseQuoteTickOffset,
       pricePoints
     );
 
     //TODO market.gettickfrompice-agtig
-    const midTick = TickLib.getTickFromPrice(midPrice);
+    const midTick = TickLib.getTickFromPrice(midPrice).toNumber();
 
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
     // then both offers can be expected live.
     // Note - this first pass does not consider step size, see further down.
     const statuses = expectedTicks.map((tick) => {
       return {
-        expectedLiveBid: tick.lte(midTick),
-        expectedLiveAsk: tick.gte(midTick),
+        expectedLiveBid: tick <= midTick,
+        expectedLiveAsk: tick >= midTick,
         expectedTick: tick,
-        expectedPrice: TickLib.priceFromTick(tick), // TODO use market-function
+        expectedPrice: TickLib.priceFromTick(BigNumber.from(tick)), // TODO use market-function
         asks: undefined as
           | undefined
-          | { live: boolean; offerId: number; tick: BigNumber; price: Big },
+          | { live: boolean; offerId: number; tick: number; price: Big },
         bids: undefined as
           | undefined
-          | { live: boolean; offerId: number; tick: BigNumber; price: Big },
+          | { live: boolean; offerId: number; tick: number; price: Big },
       };
     });
 
@@ -181,7 +183,7 @@ class KandelStatus {
           live,
           offerId,
           price: Big(price),
-          tick: BigNumber.from(tick),
+          tick,
         };
       });
 
@@ -220,12 +222,8 @@ class KandelStatus {
         return { offerType, offerId, index };
       });
 
-    const getPrice = (index: number) =>
-      statuses[index].asks?.live
-        ? (statuses[index].asks?.price as Big) // live ask has price
-        : statuses[index].bids?.live
-        ? (statuses[index].bids?.price as Big) // live bid has price
-        : statuses[index].expectedPrice;
+    const minTick = expectedTicks[0];
+    const maxTick = expectedTicks[statuses.length - 1];
 
     return {
       statuses,
@@ -235,8 +233,10 @@ class KandelStatus {
         index: offer.index,
         offerId: offer.offerId,
       },
-      minPrice: getPrice(0),
-      maxPrice: getPrice(statuses.length - 1),
+      minPrice: TickLib.priceFromTick(BigNumber.from(minTick)),
+      maxPrice: TickLib.priceFromTick(BigNumber.from(maxTick)),
+      minTick,
+      maxTick,
     };
   }
 }

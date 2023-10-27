@@ -1,6 +1,5 @@
 import Big from "big.js";
 import { Bigish } from "../types";
-import { BigNumber } from "ethers";
 
 /** Parameters for calculating a geometric price distribution. Exactly three of minPrice, maxPrice, ratio, and pricePoints must be provided.
  * @param minPrice The minimum price in the distribution.
@@ -105,13 +104,14 @@ class KandelPriceCalculation {
    */
   public getTicksFromTick(
     index: number,
-    tickAtIndex: BigNumber,
-    baseQuoteTickOffset: BigNumber,
+    tickAtIndex: number,
+    baseQuoteTickOffset: number,
     pricePoints: number
   ) {
-    const tickAtIndex0 = tickAtIndex.sub(baseQuoteTickOffset.mul(index));
-    return Array.from({ length: pricePoints }, (_, index) =>
-      tickAtIndex0.add(baseQuoteTickOffset.mul(index))
+    const tickAtIndex0 = tickAtIndex - baseQuoteTickOffset * index;
+    return Array.from(
+      { length: pricePoints },
+      (_, index) => tickAtIndex0 + baseQuoteTickOffset * index
     );
   }
 

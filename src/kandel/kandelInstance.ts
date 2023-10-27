@@ -23,28 +23,28 @@ import KandelSeeder from "./kandelSeeder";
  * @notice Parameters for a Kandel instance.
  * @param gasprice The gas price used when provisioning offers.
  * @param gasreq The gas required to execute a trade.
- * @param ratio The ratio of the geometric progression of prices. Should be >1 and <=2 with KandelInstance.precision decimals.
- * @param spread The spread used when transporting funds from an offer to its dual. Should be >1 and <=8 .
- * @param pricePoints The number of price points. Should be >=2 and <=255.
+ * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
+ * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
+ * @param pricePoints The number of price points. Should be >=2.
  */
 export type KandelParameters = {
   gasprice: number;
   gasreq: number;
-  ratio: Big;
-  spread: number;
+  baseQuoteTickOffset: number;
+  stepSize: number;
   pricePoints: number;
 };
 
 /**
- * @notice Parameters for a Kandel instance where provided properties override current values. Note that ratio and pricePoints are normally provided via the KandelDistribution.
+ * @notice Parameters for a Kandel instance where provided properties override current values. Note that baseQuoteTickOffset and pricePoints are normally provided via the KandelDistribution.
  * @see KandelParameters for more information.
  * @remarks Cannot simply be Partial<KandelParameters> due to Big vs Bigish.
  */
 export type KandelParameterOverrides = {
   gasprice?: number;
   gasreq?: number;
-  ratio?: Bigish;
-  spread?: number;
+  baseQuoteTickOffset?: number;
+  stepSize?: number;
   pricePoints?: number;
 };
 
@@ -52,7 +52,6 @@ export type KandelParameterOverrides = {
 class KandelInstance {
   kandel: typechain.GeometricKandel;
   address: string;
-  precision: number;
   market: Market;
   generator: KandelDistributionGenerator;
   status: KandelStatus;
@@ -86,8 +85,6 @@ class KandelInstance {
       params.signer
     );
 
-    const precision = (await kandel.PRECISION()).toNumber();
-
     const market =
       typeof params.market === "function"
         ? await params.market(
@@ -103,7 +100,7 @@ class KandelInstance {
       params.signer
     );
 
-    const priceCalculation = new KandelPriceCalculation(precision);
+    const priceCalculation = new KandelPriceCalculation();
     const distributionHelper = new KandelDistributionHelper(
       market.base.decimals,
       market.quote.decimals
@@ -114,7 +111,6 @@ class KandelInstance {
     );
     return new KandelInstance({
       address: params.address,
-      precision,
       market,
       kandel,
       kandelStatus: new KandelStatus(distributionHelper, priceCalculation),
@@ -130,7 +126,6 @@ class KandelInstance {
     address: string;
     kandel: typechain.GeometricKandel;
     market: Market;
-    precision: number;
     kandelStatus: KandelStatus;
     generator: KandelDistributionGenerator;
     offerLogic: OfferLogic;
@@ -140,7 +135,6 @@ class KandelInstance {
     this.address = params.address;
     this.kandel = params.kandel;
     this.market = params.market;
-    this.precision = params.precision;
     this.status = params.kandelStatus;
     this.generator = params.generator;
     this.offerLogic = params.offerLogic;
@@ -156,6 +150,11 @@ class KandelInstance {
   /** Gets the quote of the market Kandel is making  */
   public getQuote() {
     return this.market.quote;
+  }
+
+  /** Gets the tick spacing of the market Kandel is making  */
+  public getTickSpacing() {
+    return this.market.tickSpacing;
   }
 
   /** Retrieves the identifier of this contract's reserve when using a router */
@@ -195,12 +194,13 @@ class KandelInstance {
   /** Retrieves the current Kandel parameters */
   public async getParameters(): Promise<KandelParameters> {
     const params = await this.kandel.params();
+    const baseQuoteTickOffset = await this.kandel.baseQuoteTickOffset();
     return {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
-      ratio: UnitCalculations.fromUnits(params.ratio, this.precision),
-      spread: params.spread,
-      pricePoints: params.pricePoints,
+      baseQuoteTickOffset: baseQuoteTickOffset.toNumber(),
+      stepSize: params.stepSize.toNumber(),
+      pricePoints: params.pricePoints.toNumber(),
     };
   }
 
@@ -212,10 +212,8 @@ class KandelInstance {
     return {
       gasprice: parameters.gasprice,
       gasreq: parameters.gasreq,
-      ratio: UnitCalculations.toUnits(parameters.ratio, this.precision),
-      compoundRateBase: UnitCalculations.toUnits(1, this.precision),
-      compoundRateQuote: UnitCalculations.toUnits(1, this.precision),
-      spread: parameters.spread,
+      baseQuoteTickOffset: parameters.baseQuoteTickOffset,
+      stepSize: parameters.stepSize,
       pricePoints: parameters.pricePoints,
     };
   }
@@ -229,23 +227,29 @@ class KandelInstance {
    */
   public async getParametersWithOverrides(
     parameters: KandelParameterOverrides,
-    distributionRatio?: Bigish,
+    distributionBaseQuoteTickOffset?: number,
     distributionPricePoints?: number
   ): Promise<KandelParameters> {
     const current = await this.getParameters();
-    if (parameters.ratio != null || distributionRatio != null) {
+    if (
+      parameters.baseQuoteTickOffset != null ||
+      distributionBaseQuoteTickOffset != null
+    ) {
       if (
-        parameters.ratio != null &&
-        distributionRatio != null &&
-        !Big(parameters.ratio).eq(distributionRatio)
+        parameters.baseQuoteTickOffset != null &&
+        distributionBaseQuoteTickOffset != null &&
+        !ethers.BigNumber.from(parameters.baseQuoteTickOffset).eq(
+          distributionBaseQuoteTickOffset
+        )
       ) {
         throw Error(
           "ratio in parameter overrides does not match the ratio of the distribution."
         );
       }
-      current.ratio = Big(
-        parameters.ratio ?? distributionRatio ?? current.ratio
-      );
+      current.baseQuoteTickOffset =
+        parameters.baseQuoteTickOffset ??
+        distributionBaseQuoteTickOffset ??
+        current.baseQuoteTickOffset;
     }
     if (parameters.gasprice) {
       current.gasprice = parameters.gasprice;
@@ -253,8 +257,8 @@ class KandelInstance {
     if (parameters.gasreq) {
       current.gasreq = parameters.gasreq;
     }
-    if (parameters.spread) {
-      current.spread = parameters.spread;
+    if (parameters.stepSize) {
+      current.stepSize = parameters.stepSize;
     }
     if (parameters.pricePoints != null || distributionPricePoints != null) {
       if (
@@ -328,14 +332,23 @@ class KandelInstance {
   public getRawDistribution(distribution: OfferDistribution) {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
       {
-        baseDist: Array(distribution.length),
-        quoteDist: Array(distribution.length),
-        indices: Array(distribution.length),
+        asks: [],
+        bids: [],
       };
-    distribution.forEach((o, i) => {
-      rawDistribution.baseDist[i] = this.market.base.toUnits(o.base);
-      rawDistribution.quoteDist[i] = this.market.quote.toUnits(o.quote);
-      rawDistribution.indices[i] = o.index;
+    distribution.forEach((o) => {
+      if (o.offerType == "asks") {
+        rawDistribution.asks.push({
+          gives: this.market.base.toUnits(o.gives),
+          index: o.index,
+          tick: o.tick,
+        });
+      } else {
+        rawDistribution.bids.push({
+          gives: this.market.quote.toUnits(o.gives),
+          index: o.index,
+          tick: o.tick,
+        });
+      }
     });
     return rawDistribution;
   }
@@ -380,6 +393,7 @@ class KandelInstance {
         index,
         live: this.market.isLiveOffer(offer),
         price: offer.price,
+        tick: offer.tick.toNumber(),
       })
     );
 
@@ -391,7 +405,6 @@ class KandelInstance {
    * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
    * @param params.offers The offers used as a basis for determining the status. This should include all live and dead offers.
    * @returns The status of the Kandel instance.
-   * @throws If no offers are live. At least one live offer is required to determine the status.
    * @remarks The expected prices is determined by extrapolating from a live offer closest to the mid price.
    * Offers are expected to be live bids below the mid price and asks above.
    * Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
@@ -404,9 +417,9 @@ class KandelInstance {
 
     return this.status.getOfferStatuses(
       Big(params.midPrice),
-      parameters.ratio,
+      parameters.baseQuoteTickOffset,
       parameters.pricePoints,
-      parameters.spread,
+      parameters.stepSize,
       params.offers
     );
   }
@@ -466,7 +479,7 @@ class KandelInstance {
       price: Big(params.price),
       ratio: parameters.ratio,
       pricePoints: parameters.pricePoints,
-      spread: parameters.spread,
+      spread: parameters.stepSize,
       minimumBasePerOffer: mins.minimumBasePerOffer,
       minimumQuotePerOffer: mins.minimumQuotePerOffer,
     });
