@@ -1,7 +1,6 @@
 import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
-import { BigNumber } from "ethers";
 
 /** Distribution of bids and asks and their base and quote amounts.
  * @param offerType Whether the offer is a bid or an ask.
@@ -13,7 +12,7 @@ export type OfferDistribution = {
   offerType: Market.BA;
   index: number;
   gives: Big;
-  tick: BigNumber;
+  tick: number;
 }[];
 
 /** @title A distribution of bids and ask for Kandel. */
@@ -21,19 +20,19 @@ class KandelDistribution {
   offers: OfferDistribution;
   baseDecimals: number;
   quoteDecimals: number;
-  ratio: Big;
+  baseQuoteTickOffset: number;
   pricePoints: number;
   helper: KandelDistributionHelper;
 
   /** Constructor
    * @param offers The distribution of bids and asks.
-   * @param ratio The ratio used when calculating the price distribution.
+   * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
    * @param pricePoints The number of price points in the distribution. Can be more than the number of offers if a subset is considered.
    * @param baseDecimals The number of decimals for the base token.
    * @param quoteDecimals The number of decimals for the quote token.
    */
   public constructor(
-    ratio: Big,
+    baseQuoteTickOffset: number,
     pricePoints: number,
     offers: OfferDistribution,
     baseDecimals: number,
@@ -41,7 +40,7 @@ class KandelDistribution {
   ) {
     this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
     this.helper.sortByIndex(offers);
-    this.ratio = ratio;
+    this.baseQuoteTickOffset = baseQuoteTickOffset;
     this.pricePoints = pricePoints;
     this.offers = offers;
     this.baseDecimals = baseDecimals;
@@ -159,7 +158,7 @@ class KandelDistribution {
    * @returns The ticks in the distribution.
    */
   public getTicksForDistribution() {
-    const ticks: (BigNumber | undefined)[] = Array(this.pricePoints).fill(
+    const ticks: (number | undefined)[] = Array(this.pricePoints).fill(
       undefined
     );
 

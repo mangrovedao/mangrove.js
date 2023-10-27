@@ -4,15 +4,15 @@ import Market from "../market";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import { Bigish } from "../types";
 
-/** Offers with their price, Kandel index, and gives amount.
+/** Offers with their tick, Kandel index, and gives amount.
  * @param offerType Whether the offer is a bid or an ask.
- * @param price The price of the offer.
+ * @param tick The tick of the offer.
  * @param index The index of the price point in Kandel.
  * @param gives The amount of base or quote that the offer gives.
  */
 export type OffersWithGives = {
   offerType: Market.BA;
-  price: Bigish;
+  tick: number;
   index: number;
   gives: Bigish;
 }[];
@@ -450,26 +450,20 @@ class KandelDistributionHelper {
     explicitOffers: OffersWithGives,
     distribution:
       | {
-          ratio: Big;
+          baseQuoteTickOffset: number;
           pricePoints?: number;
         }
       | KandelDistribution
   ) {
-    const offers = explicitOffers.map(({ index, offerType, price, gives }) => ({
+    const offers = explicitOffers.map(({ index, offerType, tick, gives }) => ({
       index,
       offerType,
-      base:
-        offerType == "asks"
-          ? Big(gives)
-          : this.baseFromQuoteAndPrice(Big(gives), Big(price)),
-      quote:
-        offerType == "bids"
-          ? Big(gives)
-          : this.quoteFromBaseAndPrice(Big(gives), Big(price)),
+      tick,
+      gives,
     }));
 
     return new KandelDistribution(
-      distribution.ratio,
+      distribution.baseQuoteTickOffset,
       distribution.pricePoints ?? offers.length,
       offers,
       this.baseDecimals,

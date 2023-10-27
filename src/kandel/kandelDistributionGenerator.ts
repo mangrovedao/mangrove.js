@@ -166,7 +166,7 @@ class KandelDistributionGenerator {
     explicitOffers: OffersWithGives;
     distribution:
       | {
-          ratio: Bigish;
+          baseQuoteTickOffset: number;
           pricePoints: number;
         }
       | KandelDistribution;
@@ -175,7 +175,7 @@ class KandelDistributionGenerator {
       params.distribution instanceof KandelDistribution
         ? params.distribution
         : {
-            ratio: Big(params.distribution.ratio),
+            baseQuoteTickOffset: params.distribution.baseQuoteTickOffset,
             pricePoints: params.distribution.pricePoints,
           };
     return this.distributionHelper.createDistributionWithOffers(

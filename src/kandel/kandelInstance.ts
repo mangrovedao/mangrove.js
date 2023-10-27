@@ -436,7 +436,7 @@ class KandelInstance {
     return this.generator.createDistributionWithOffers({
       explicitOffers: params.explicitOffers,
       distribution: {
-        ratio: parameters.ratio,
+        baseQuoteTickOffset: parameters.baseQuoteTickOffset,
         pricePoints: parameters.pricePoints,
       },
     });
@@ -458,7 +458,7 @@ class KandelInstance {
    * @param params The parameters for the minimum volume.
    * @param params.offerType The offer type to get the minimum volume for.
    * @param params.index The Kandel index.
-   * @param params.price The price at the index.
+   * @param params.tick The tick at the index.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
    * @returns The minimum volume for the given offer type.
@@ -466,7 +466,7 @@ class KandelInstance {
   public async getMinimumVolumeForIndex(params: {
     offerType: Market.BA;
     index: number;
-    price: Bigish;
+    tick: number;
     minimumBasePerOffer?: Bigish;
     minimumQuotePerOffer?: Bigish;
   }) {
@@ -476,8 +476,8 @@ class KandelInstance {
     return this.generator.getMinimumVolumeForIndex({
       offerType: params.offerType,
       index: params.index,
-      price: Big(params.price),
-      ratio: parameters.ratio,
+      tick,
+      baseQuoteTickOffset: parameters.baseQuoteTickOffset,
       pricePoints: parameters.pricePoints,
       spread: parameters.stepSize,
       minimumBasePerOffer: mins.minimumBasePerOffer,
@@ -564,7 +564,7 @@ class KandelInstance {
     const distribution = this.generator.calculateMinimumDistribution({
       priceParams: {
         minPrice: params.minPrice,
-        ratio: parameters.ratio,
+        baseQuoteTickOffset: parameters.baseQuoteTickOffset,
         pricePoints: parameters.pricePoints,
       },
       midPrice: params.midPrice,
@@ -804,7 +804,7 @@ class KandelInstance {
     const parameterOverrides = params.parameters ?? {};
     const parameters = await this.getParametersWithOverrides(
       parameterOverrides,
-      params.distribution?.ratio,
+      params.distribution?.baseQuoteTickOffset,
       params.distribution?.pricePoints
     );
     // If no distribution is provided, then create an empty distribution to pass information around.
@@ -832,7 +832,7 @@ class KandelInstance {
     const firstDistribution =
       rawDistributions.length > 0
         ? rawDistributions[0]
-        : { indices: [], quoteDist: [], baseDist: [] };
+        : { asks: [], bids: [] };
 
     const txs = [
       await this.kandel.populate(
