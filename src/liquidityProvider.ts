@@ -238,21 +238,25 @@ class LiquidityProvider {
       }
     } else {
       gives = Big(p.gives);
-      const [base_amt, quote_amt] = [gives, Big(p.wants)];
+      const wants = Big(p.wants);
 
       tick = TickLib.tickFromVolumes(
         BigNumber.from(
-          base_amt.mul(Big(10).pow(market.base.decimals)).toFixed()
+          p.ba === "asks"
+            ? wants.mul(Big(10).pow(market.quote.decimals)).toFixed()
+            : wants.mul(Big(10).pow(market.base.decimals)).toFixed()
         ),
         BigNumber.from(
-          quote_amt.mul(Big(10).pow(market.quote.decimals)).toFixed()
+          p.ba === "asks"
+            ? gives.mul(Big(10).pow(market.base.decimals)).toFixed()
+            : gives.mul(Big(10).pow(market.quote.decimals)).toFixed()
         )
       );
 
       if (p.ba === "bids") {
-        price = Big(base_amt).div(quote_amt);
+        price = Big(gives).div(wants);
       } else {
-        price = Big(quote_amt).div(base_amt);
+        price = Big(wants).div(gives);
       }
     }
 

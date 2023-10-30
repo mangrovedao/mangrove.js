@@ -2,6 +2,7 @@ import assert from "assert";
 import { LiquidityProvider } from "../../src";
 import { BigNumber } from "ethers/lib/ethers";
 import Big from "big.js";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("Liquidity provider unit tests suite", () => {
   it("normalizeOfferParams, with gives, tick, asks and funding", async function () {
@@ -111,7 +112,7 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toFixed(4), "0.6667");
     assert.deepStrictEqual(gives, Big(20));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), 272269);
+    assert.deepStrictEqual(tick.toNumber(), 280378);
   });
   it("normalizeOfferParams, with gives and wants, as asks", async function () {
     const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
@@ -132,7 +133,7 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toFixed(4), "1.5000");
     assert.deepStrictEqual(gives, Big(20));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), 272269);
+    assert.deepStrictEqual(tick.toNumber(), -272270);
   });
   it("normalizeOfferParams, with big gives and wants, as asks", async function () {
     const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
@@ -150,9 +151,33 @@ describe("Liquidity provider unit tests suite", () => {
         },
       }
     );
+
     assert.equal(price.toFixed(4), "1.5000");
     assert.deepStrictEqual(gives, Big(20000));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), 272269);
+    assert.deepStrictEqual(tick.toNumber(), -272270);
+  });
+
+  it("normalizeOfferParams, with big gives and wants, as asks", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        gives: 1,
+        wants: 1,
+      },
+      {
+        base: {
+          decimals: 6,
+        },
+        quote: {
+          decimals: 6,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "1.0000");
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 0);
   });
 });
