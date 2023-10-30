@@ -111,7 +111,7 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toFixed(4), "0.6667");
     assert.deepStrictEqual(gives, Big(20));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), 280378);
+    assert.deepStrictEqual(tick.toNumber(), 272269);
   });
   it("normalizeOfferParams, with gives and wants, as asks", async function () {
     const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(

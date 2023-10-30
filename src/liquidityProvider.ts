@@ -239,10 +239,7 @@ class LiquidityProvider {
     } else {
       gives = Big(p.gives);
       let [base_amt, quote_amt] = [gives, Big(p.wants)];
-      if (p.ba === "bids") {
-        [base_amt, quote_amt] = [quote_amt, base_amt];
-      }
-      price = Big(quote_amt).div(base_amt);
+
       tick = TickLib.tickFromVolumes(
         BigNumber.from(
           base_amt.mul(Big(10).pow(market.base.decimals)).toFixed()
@@ -251,6 +248,12 @@ class LiquidityProvider {
           quote_amt.mul(Big(10).pow(market.quote.decimals)).toFixed()
         )
       );
+
+      if (p.ba === "bids") {
+        price = Big(base_amt).div(quote_amt);
+      } else {
+        price = Big(quote_amt).div(base_amt);
+      }
     }
 
     return { tick: tick, gives: gives, price: price, fund: p.fund };
