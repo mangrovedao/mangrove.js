@@ -238,7 +238,7 @@ class LiquidityProvider {
       }
     } else {
       gives = Big(p.gives);
-      let [base_amt, quote_amt] = [gives, Big(p.wants)];
+      const [base_amt, quote_amt] = [gives, Big(p.wants)];
 
       tick = TickLib.tickFromVolumes(
         BigNumber.from(
