@@ -245,10 +245,10 @@ class LiquidityProvider {
       price = Big(quote_amt).div(base_amt);
       tick = TickLib.tickFromVolumes(
         BigNumber.from(
-          base_amt.mul(Big(10).pow(market.base.decimals)).toString()
+          base_amt.mul(Big(10).pow(market.base.decimals)).toFixed()
         ),
         BigNumber.from(
-          quote_amt.mul(Big(10).pow(market.quote.decimals)).toString()
+          quote_amt.mul(Big(10).pow(market.quote.decimals)).toFixed()
         )
       );
     }
