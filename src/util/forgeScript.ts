@@ -10,11 +10,6 @@ export function execForgeCmd(
   pipe?: any,
   handler?: any
 ) {
-  // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
-  env = {
-    ...env,
-  };
-
   if (typeof pipe === "undefined") {
     pipe = true;
   }
