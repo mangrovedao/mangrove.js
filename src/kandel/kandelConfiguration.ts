@@ -63,7 +63,7 @@ class KandelConfiguration {
         : undefined,
       stepSize: config.stepSize ? Number(config.stepSize) : undefined,
       baseQuoteTickOffset: config.baseQuoteTickOffset
-        ? new Big(config.baseQuoteTickOffset)
+        ? config.baseQuoteTickOffset
         : undefined,
     };
   }
