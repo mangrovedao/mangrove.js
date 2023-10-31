@@ -113,7 +113,7 @@ class KandelDistributionGenerator {
       params.availableQuote ? Big(params.availableQuote) : undefined
     );
 
-    const ticks = params.distribution.getTicksForDistribution();
+    const ticks = params.distribution.getBaseQuoteTicksForDistribution();
     return this.distributionHelper.calculateDistributionFromTicks(
       params.distribution.baseQuoteTickOffset,
       ticks,
@@ -140,7 +140,7 @@ class KandelDistributionGenerator {
     minimumBasePerOffer: Bigish;
     minimumQuotePerOffer: Bigish;
   }) {
-    const ticks = params.distribution.getTicksForDistribution();
+    const ticks = params.distribution.getBaseQuoteTicksForDistribution();
 
     // Minimums are increased based on prices of current distribution
     const { askGives, bidGives } =
@@ -193,7 +193,7 @@ class KandelDistributionGenerator {
    * @param params The parameters for the minimum volume.
    * @param params.offerType The offer type to get the minimum volume for.
    * @param params.index The Kandel index.
-   * @param params.tick The tick at the index.
+   * @param params.tick The tick at the index (the tick price of base per quote for bids and quote per base for asks).
    * @param params.baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression.
    * @param params.stepSize The step size used when transporting funds from an offer to its dual.
    * @param params.pricePoints The number of price points.
@@ -211,7 +211,8 @@ class KandelDistributionGenerator {
     minimumBasePerOffer: Bigish;
     minimumQuotePerOffer: Bigish;
   }) {
-    const ticks = this.priceCalculation.getTicksFromTick(
+    const baseQuoteTicks = this.priceCalculation.getBaseQuoteTicksFromTick(
+      params.offerType,
       params.index,
       params.tick,
       params.baseQuoteTickOffset,
@@ -226,7 +227,10 @@ class KandelDistributionGenerator {
     );
 
     // tickAndDualTick don't have to be sorted
-    const tickAndDualTick = [ticks[params.index], ticks[dualIndex]];
+    const tickAndDualTick = [
+      baseQuoteTicks[params.index],
+      baseQuoteTicks[dualIndex],
+    ];
 
     const { askGives, bidGives } =
       this.distributionHelper.calculateMinimumInitialGives(

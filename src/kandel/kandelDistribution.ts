@@ -5,7 +5,7 @@ import KandelDistributionHelper from "./kandelDistributionHelper";
 /** A list of bids or asks with their index, tick, and gives.
  * @param index The index of the price point in Kandel.
  * @param gives The amount of tokens (base for ask, quote for bid) the offer should give.
- * @param tick The tick for the offer.
+ * @param tick The tick for the offer (the tick price of base per quote for bids and quote per base for asks)
  */
 export type OfferList = {
   index: number;
@@ -157,13 +157,13 @@ class KandelDistribution {
   /** Gets the ticks for the distribution, with undefined for ticks not represented by offers in the distribution.
    * @returns The ticks in the distribution.
    */
-  public getTicksForDistribution() {
+  public getBaseQuoteTicksForDistribution() {
     const ticks: (number | undefined)[] = Array(this.pricePoints).fill(
       undefined
     );
 
     this.offers.bids.forEach((o) => {
-      ticks[o.index] = o.tick;
+      ticks[o.index] = -o.tick;
     });
 
     this.offers.asks.forEach((o) => {

@@ -2,6 +2,7 @@ import Big from "big.js";
 import { Bigish } from "../types";
 import { TickLib } from "../util/coreCalculations/TickLib";
 import { BigNumber, ethers } from "ethers";
+import Market from "../market";
 
 /** Parameters for calculating a geometric price distribution. Exactly three of minPrice, maxPrice, ratio, and pricePoints must be provided.
  * @param minPrice The minimum price in the distribution.
@@ -91,18 +92,23 @@ class KandelPriceCalculation {
   }
 
   /** Gets the ticks for the geometric distribution based on a single known tick at an index.
+   * @param offerType The offer type.
    * @param index The index of the known price.
-   * @param tickAtIndex The known tick.
+   * @param tickAtIndex The known tick (the tick price of base per quote for bids and quote per base for asks).
    * @param baseQuoteTickOffset The offset in ticks between two price points of the geometric distribution.
    * @param pricePoints The number of price points in the distribution.
-   * @returns The ticks in the distribution.
+   * @returns The quote per base ticks in the distribution.
    */
-  public getTicksFromTick(
+  public getBaseQuoteTicksFromTick(
+    offerType: Market.BA,
     index: number,
     tickAtIndex: number,
     baseQuoteTickOffset: number,
     pricePoints: number
   ) {
+    if (offerType === "bids") {
+      tickAtIndex = -tickAtIndex;
+    }
     const tickAtIndex0 = tickAtIndex - baseQuoteTickOffset * index;
     return Array.from(
       { length: pricePoints },

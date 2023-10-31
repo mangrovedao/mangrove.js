@@ -147,7 +147,7 @@ class KandelStatus {
 
     // We can now calculate expected prices of all indices, but it may not entirely match live offer's prices
     // due to rounding and due to slight drift of prices during order execution.
-    const expectedTicks = this.priceCalculation.getTicksFromTick(
+    const expectedTicks = this.priceCalculation.getBaseQuoteTicksFromTick(
       offer.index,
       offer.tick,
       baseQuoteTickOffset,

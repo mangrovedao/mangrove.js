@@ -2,7 +2,6 @@ import Big from "big.js";
 import Market from "../market";
 import KandelDistribution, { OfferList } from "./kandelDistribution";
 import { Bigish } from "../types";
-import { MAX_TICK, MIN_TICK } from "../util/coreCalculations/Constants";
 import { TickLib } from "../util/coreCalculations/TickLib";
 
 /** Offers with their tick, Kandel index, and gives amount.
@@ -396,44 +395,37 @@ class KandelDistributionHelper {
   }
 
   /** Calculates the minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
-   * @param ticks The tick distribution.
+   * @param baseQuoteTicks The quote per base tick distribution.
    * @param minimumBasePerOffer The minimum base to give for each offer.
    * @param minimumQuotePerOffer The minimum quote to give for each offer.
    * @returns The minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
    */
   calculateMinimumInitialGives(
-    ticks: (number | undefined)[],
+    baseQuoteTicks: number[],
     minimumBasePerOffer: Big,
     minimumQuotePerOffer: Big
   ) {
-    if (ticks.length == 0)
+    if (baseQuoteTicks.length == 0)
       return { askGives: minimumBasePerOffer, bidGives: minimumQuotePerOffer };
 
-    let minTick = ticks[0];
-    let maxTick = ticks[0];
-    ticks.forEach((p) => {
-      if (p && p < (minTick ?? MAX_TICK.toNumber())) {
-        minTick = p;
+    let minTick = baseQuoteTicks[0];
+    let maxTick = baseQuoteTicks[0];
+    baseQuoteTicks.forEach((t) => {
+      if (t < minTick) {
+        minTick = t;
       }
-      if (p && p > (maxTick ?? MIN_TICK.toNumber())) {
-        maxTick = p;
+      if (t > maxTick) {
+        maxTick = t;
       }
     });
 
     //FIXME: translate to/from units ot have a TickLib that works on real bigs with decimals.
-    const minimumBaseFromQuote = minTick
-      ? Big(
-          TickLib.outboundFromInboundUp(
-            minimumQuotePerOffer,
-            minTick
-          ).toString()
-        )
-      : minimumBasePerOffer;
-    const minimumQuoteFromBase = maxTick
-      ? Big(
-          TickLib.inboundFromOutboundUp(minimumBasePerOffer, maxTick).toString()
-        )
-      : minimumQuotePerOffer;
+    const minimumBaseFromQuote = Big(
+      TickLib.outboundFromInboundUp(minimumQuotePerOffer, -minTick).toString()
+    );
+    const minimumQuoteFromBase = Big(
+      TickLib.inboundFromOutboundUp(minimumBasePerOffer, maxTick).toString()
+    );
     const askGives = minimumBaseFromQuote.gt(minimumBasePerOffer)
       ? minimumBaseFromQuote
       : minimumBasePerOffer;
