@@ -132,7 +132,7 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toFixed(4), "1.5000");
     assert.deepStrictEqual(gives, Big(20));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), 272269);
+    assert.deepStrictEqual(tick.toNumber(), -272270);
   });
   it("normalizeOfferParams, with big gives and wants, as asks", async function () {
     const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
@@ -150,9 +150,332 @@ describe("Liquidity provider unit tests suite", () => {
         },
       }
     );
+
     assert.equal(price.toFixed(4), "1.5000");
     assert.deepStrictEqual(gives, Big(20000));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), 272269);
+    assert.deepStrictEqual(tick.toNumber(), -272270);
+  });
+
+  it("normalizeOfferParams, ask tick = 0 same decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        gives: 1,
+        wants: 1,
+      },
+      {
+        base: {
+          decimals: 6,
+        },
+        quote: {
+          decimals: 6,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "1.0000");
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 0);
+  });
+
+  it("normalizeOfferParams, ask tick = 0 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        gives: 1, // base
+        wants: 10, // quote
+      },
+      {
+        base: {
+          decimals: 2,
+        },
+        quote: {
+          decimals: 1,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "10.0000");
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 0);
+  });
+
+  it("normalizeOfferParams, ask tick = 0 price = 10 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        gives: 1, // base
+        wants: 10, // quote
+      },
+      {
+        base: {
+          decimals: 2,
+        },
+        quote: {
+          decimals: 1,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "10.0000");
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 0);
+  });
+
+  it("normalizeOfferParams, ask with tick = 1 same decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        gives: 1, // base
+        wants: 1.0001, // quote
+      },
+      {
+        base: {
+          decimals: 4,
+        },
+        quote: {
+          decimals: 4,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "1.0001");
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 1);
+  });
+
+  it("normalizeOfferParams, ask with tick = 1 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        gives: 100, // base
+        wants: 1.0001, // quote
+      },
+      {
+        base: {
+          decimals: 2,
+        },
+        quote: {
+          decimals: 4,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "0.0100");
+    assert.deepStrictEqual(gives, Big(100));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 1);
+  });
+
+  it("normalizeOfferParams, ask with tick = -1 same decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        wants: 1,
+        gives: 1.0001,
+      },
+      {
+        base: {
+          decimals: 4,
+        },
+        quote: {
+          decimals: 4,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "0.9999");
+    assert.deepStrictEqual(gives, Big(1.0001));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), -1);
+  });
+
+  it("normalizeOfferParams, ask with tick = -1 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        gives: 1.0001,
+        wants: 100,
+      },
+      {
+        base: {
+          decimals: 4,
+        },
+        quote: {
+          decimals: 2,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "99.9900");
+    assert.deepStrictEqual(gives, Big(1.0001));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), -1);
+  });
+
+  it("normalizeOfferParams, bid tick = 0 same decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        wants: 1,
+        gives: 1,
+      },
+      {
+        base: {
+          decimals: 6,
+        },
+        quote: {
+          decimals: 6,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "1.0000");
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 0);
+  });
+
+  it("normalizeOfferParams, bid tick = 0 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        wants: 1, // base
+        gives: 10, // quote
+      },
+      {
+        base: {
+          decimals: 2,
+        },
+        quote: {
+          decimals: 1,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "10.0000");
+    assert.deepStrictEqual(gives, Big(10));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 0);
+  });
+
+  it("normalizeOfferParams, ask tick = 0 price = 10 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        wants: 1, // base
+        gives: 10, // quote
+      },
+      {
+        base: {
+          decimals: 2,
+        },
+        quote: {
+          decimals: 1,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "10.0000");
+    assert.deepStrictEqual(gives, Big(10));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 0);
+  });
+
+  it("normalizeOfferParams, ask with tick = -1 same decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        wants: 1, // base
+        gives: 1.0001, // quote
+      },
+      {
+        base: {
+          decimals: 4,
+        },
+        quote: {
+          decimals: 4,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "1.0001");
+    assert.deepStrictEqual(gives, Big(1.0001));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), -1);
+  });
+
+  it("normalizeOfferParams, ask with tick = -1 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        wants: 100, // base
+        gives: 1.0001, // quote
+      },
+      {
+        base: {
+          decimals: 2,
+        },
+        quote: {
+          decimals: 4,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "0.0100");
+    assert.deepStrictEqual(gives, Big(1.0001));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), -1);
+  });
+
+  it("normalizeOfferParams, ask with tick = 1 same decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        gives: 1,
+        wants: 1.0001,
+      },
+      {
+        base: {
+          decimals: 4,
+        },
+        quote: {
+          decimals: 4,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "0.9999");
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 1);
+  });
+
+  it("normalizeOfferParams, ask with tick = 1 different decimals", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        wants: 1.0001,
+        gives: 100,
+      },
+      {
+        base: {
+          decimals: 4,
+        },
+        quote: {
+          decimals: 2,
+        },
+      }
+    );
+
+    assert.equal(price.toFixed(4), "99.9900");
+    assert.deepStrictEqual(gives, Big(100));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 1);
   });
 });
