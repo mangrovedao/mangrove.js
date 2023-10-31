@@ -70,7 +70,11 @@ describe("Kandel integration tests suite", function () {
       seeder = new KandelStrategies(mgv).seeder;
       market = await mgv.market({ base: "TokenA", quote: "TokenB" });
       distribution = strategies.generator(market).calculateDistribution({
-        priceParams: { minPrice: 900, ratio: 1.01, pricePoints: 6 },
+        priceParams: {
+          minPrice: 900,
+          baseQuoteTickOffset: 1.01,
+          pricePoints: 6,
+        },
         midPrice: 1000,
         initialAskGives: 1,
       });

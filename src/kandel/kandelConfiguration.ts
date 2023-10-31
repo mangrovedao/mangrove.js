@@ -62,7 +62,9 @@ class KandelConfiguration {
         ? new Big(config.minimumQuotePerOfferFactor)
         : undefined,
       stepSize: config.stepSize ? Number(config.stepSize) : undefined,
-      ratio: config.ratio ? new Big(config.ratio) : undefined,
+      baseQuoteTickOffset: config.baseQuoteTickOffset
+        ? new Big(config.baseQuoteTickOffset)
+        : undefined,
     };
   }
 
@@ -101,7 +103,9 @@ class KandelConfiguration {
         config.minimumQuotePerOfferFactor ??
         thrower(`minimumQuotePerOfferFactor is not configured`),
       stepSize: config.stepSize ?? thrower(`stepSize is not configured`),
-      ratio: config.ratio ?? thrower(`ratio is not configured`),
+      baseQuoteTickOffset:
+        config.baseQuoteTickOffset ??
+        thrower(`baseQuoteTickOffset is not configured`),
     };
   }
 

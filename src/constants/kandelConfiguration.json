@@ -4,7 +4,7 @@
   "maxOffersInRetractChunk": 50,
   "aaveEnabled": false,
   "stepSize": 1,
-  "ratio": 1.01,
+  "baseQuoteTickOffset": 99,
   "networks": {
     "maticmum": {
       "gasPriceFactor": 10,

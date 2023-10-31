@@ -39,12 +39,12 @@ const minQuotePerOffer = await kandelStrategies.seeder.getMinimumVolume({
   onAave: false,
 });
 
-// Calculate a candidate distribution with the recommended minimum volumes given the price range and the default ratio
+// Calculate a candidate distribution with the recommended minimum volumes given the price range and the default tick offset
 const minDistribution = distributionGenerator.calculateMinimumDistribution({
   priceParams: {
     minPrice: 900,
     maxPrice: 1100,
-    ratio: config.ratio,
+    baseQuoteTickOffset: config.baseQuoteTickOffset,
   },
   midPrice: 1000,
   minimumBasePerOffer: minBasePerOffer,

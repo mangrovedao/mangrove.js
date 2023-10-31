@@ -220,10 +220,10 @@ class KandelInstance {
 
   /** Gets new Kandel parameters based on current and some overrides.
    * @param parameters The Kandel parameters to override, those left out will keep their current value.
-   * @param distributionRatio The ratio of the Kandel distribution.
+   * @param distributionBaseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression.
    * @param distributionPricePoints The number of price points of the Kandel distribution.
    * @returns The new Kandel parameters.
-   * @remarks Ratio and price points provided in the parameters must match a provided distribution.
+   * @remarks tick offset and price points provided in the parameters must match a provided distribution.
    */
   public async getParametersWithOverrides(
     parameters: KandelParameterOverrides,
@@ -243,7 +243,7 @@ class KandelInstance {
         )
       ) {
         throw Error(
-          "ratio in parameter overrides does not match the ratio of the distribution."
+          "baseQuoteTickOffset in parameter overrides does not match the baseQuoteTickOffset of the distribution."
         );
       }
       current.baseQuoteTickOffset =
@@ -786,7 +786,7 @@ class KandelInstance {
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.
-   * @remarks If this function is invoked with new ratio, pricePoints, or stepSize, then first retract all offers; otherwise, Kandel will enter an inconsistent state.
+   * @remarks If this function is invoked with new baseQuoteTickOffset, pricePoints, or stepSize, then first retract all offers; otherwise, Kandel will enter an inconsistent state.
    */
   public async populate(
     params: {
@@ -909,7 +909,7 @@ class KandelInstance {
    * @param params.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
    * @param overrides The ethers overrides to use when calling the retractAndWithdraw, and retractOffers functions.
    * @returns The transaction(s) used to retract the offers.
-   * @remarks This function or retractOffers should be used to retract all offers before changing the ratio, pricePoints, or stepSize using populate.
+   * @remarks This function or retractOffers should be used to retract all offers before changing the baseQuoteTickOffset, pricePoints, or stepSize using populate.
    * If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
    */
   public async retractAndWithdraw(
@@ -964,7 +964,7 @@ class KandelInstance {
    * @param params.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
-   * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the ratio, pricePoints, or stepSize using populate.
+   * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the baseQuoteTickOffset, pricePoints, or stepSize using populate.
    * If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
    */
   public async retractOffers(

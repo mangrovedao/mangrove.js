@@ -13,7 +13,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       maxOffersInRetractChunk: 50,
       aaveEnabled: false,
       stepSize: 1,
-      ratio: 1.01,
+      baseQuoteTickOffset: 99,
       networks: {
         configTest: {
           stepSize: 2,
@@ -22,7 +22,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
               TokenB: {
                 minimumBasePerOfferFactor: 2,
                 minimumQuotePerOfferFactor: "3",
-                ratio: 1.001,
+                baseQuoteTickOffset: 1,
                 aaveEnabled: true,
               },
               FailingConfig0: {
@@ -30,7 +30,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
                 minimumBasePerOfferFactor: 1,
                 minimumQuotePerOfferFactor: 1,
                 stepSize: undefined,
-                ratio: undefined,
+                baseQuoteTickOffset: undefined,
               },
               FailingConfig1: {},
               FailingConfig2: { minimumBasePerOfferFactor: 1 },
@@ -42,7 +42,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
               FailingConfig4: {
                 minimumBasePerOfferFactor: 1,
                 minimumQuotePerOfferFactor: 1,
-                ratio: undefined,
+                baseQuoteTickOffset: undefined,
               },
             },
           },
@@ -104,7 +104,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
 
       // Assert
       assert.equal(config.stepSize, 2, "overriden for network");
-      assert.equal(config.ratio.toNumber(), 1.001, "overridden for market");
+      assert.equal(config.baseQuoteTickOffset, 1, "overridden for market");
       assert.equal(
         config.maxOffersInPopulateChunk,
         50,
@@ -123,7 +123,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       "minimumBasePerOfferFactor is not configured for pair TokenA/FailingConfig1 on network configTest.",
       "minimumQuotePerOfferFactor is not configured for pair TokenA/FailingConfig2 on network configTest.",
       "stepSize is not configured for pair TokenA/FailingConfig3 on network configTest.",
-      "ratio is not configured for pair TokenA/FailingConfig4 on network configTest.",
+      "baseQuoteTickOffset is not configured for pair TokenA/FailingConfig4 on network configTest.",
     ].forEach((message, index) => {
       it(`throws on missing config ${index} - ${message}`, () => {
         // Act/Assert
