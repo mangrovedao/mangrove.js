@@ -420,7 +420,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             offerType: offerType as Market.BA,
             index: 2,
             price: 4000,
-            spread: 1,
+            stepSize: 1,
             pricePoints: 10,
             ratio: 2,
             minimumBasePerOffer,

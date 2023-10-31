@@ -12,11 +12,11 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       maxOffersInPopulateChunk: 50,
       maxOffersInRetractChunk: 50,
       aaveEnabled: false,
-      spread: 1,
+      stepSize: 1,
       ratio: 1.01,
       networks: {
         configTest: {
-          spread: 2,
+          stepSize: 2,
           markets: {
             TokenA: {
               TokenB: {
@@ -29,7 +29,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
                 aaveEnabled: undefined,
                 minimumBasePerOfferFactor: 1,
                 minimumQuotePerOfferFactor: 1,
-                spread: undefined,
+                stepSize: undefined,
                 ratio: undefined,
               },
               FailingConfig1: {},
@@ -37,7 +37,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
               FailingConfig3: {
                 minimumBasePerOfferFactor: 1,
                 minimumQuotePerOfferFactor: 1,
-                spread: undefined,
+                stepSize: undefined,
               },
               FailingConfig4: {
                 minimumBasePerOfferFactor: 1,
@@ -103,7 +103,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       );
 
       // Assert
-      assert.equal(config.spread, 2, "overriden for network");
+      assert.equal(config.stepSize, 2, "overriden for network");
       assert.equal(config.ratio.toNumber(), 1.001, "overridden for market");
       assert.equal(
         config.maxOffersInPopulateChunk,
@@ -122,7 +122,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       "aaveEnabled is not configured for pair TokenA/FailingConfig0 on network configTest.",
       "minimumBasePerOfferFactor is not configured for pair TokenA/FailingConfig1 on network configTest.",
       "minimumQuotePerOfferFactor is not configured for pair TokenA/FailingConfig2 on network configTest.",
-      "spread is not configured for pair TokenA/FailingConfig3 on network configTest.",
+      "stepSize is not configured for pair TokenA/FailingConfig3 on network configTest.",
       "ratio is not configured for pair TokenA/FailingConfig4 on network configTest.",
     ].forEach((message, index) => {
       it(`throws on missing config ${index} - ${message}`, () => {
@@ -156,7 +156,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "unknown",
         "unknown"
       );
-      assert.equal(config.spread, 1);
+      assert.equal(config.stepSize, 1);
     });
 
     it("does not fail on missing base", () => {
@@ -165,7 +165,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "unknown",
         "unknown"
       );
-      assert.equal(config.spread, 2);
+      assert.equal(config.stepSize, 2);
     });
 
     it("does not fail on missing quote", () => {
@@ -174,7 +174,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "TokenA",
         "unknown"
       );
-      assert.equal(config.spread, 2);
+      assert.equal(config.stepSize, 2);
     });
 
     it("does not fail on missing properties", () => {
@@ -183,7 +183,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "TokenA",
         "FailingConfig0"
       );
-      assert.equal(config.spread, undefined);
+      assert.equal(config.stepSize, undefined);
       assert.equal(config.minimumBasePerOfferFactor, 1);
     });
   });

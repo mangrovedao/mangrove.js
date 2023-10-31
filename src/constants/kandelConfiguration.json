@@ -3,7 +3,7 @@
   "maxOffersInPopulateChunk": 50,
   "maxOffersInRetractChunk": 50,
   "aaveEnabled": false,
-  "spread": 1,
+  "stepSize": 1,
   "ratio": 1.01,
   "networks": {
     "maticmum": {

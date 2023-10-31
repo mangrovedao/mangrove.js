@@ -61,7 +61,7 @@ class KandelConfiguration {
       minimumQuotePerOfferFactor: config.minimumQuotePerOfferFactor
         ? new Big(config.minimumQuotePerOfferFactor)
         : undefined,
-      spread: config.spread ? Number(config.spread) : undefined,
+      stepSize: config.stepSize ? Number(config.stepSize) : undefined,
       ratio: config.ratio ? new Big(config.ratio) : undefined,
     };
   }
@@ -100,7 +100,7 @@ class KandelConfiguration {
       minimumQuotePerOfferFactor:
         config.minimumQuotePerOfferFactor ??
         thrower(`minimumQuotePerOfferFactor is not configured`),
-      spread: config.spread ?? thrower(`spread is not configured`),
+      stepSize: config.stepSize ?? thrower(`stepSize is not configured`),
       ratio: config.ratio ?? thrower(`ratio is not configured`),
     };
   }

@@ -83,14 +83,14 @@ export type KandelNetworkConfiguration = {
  * @param aaveEnabled Whether AaveKandel should be allowed to be used.
  * @param minimumBasePerOfferFactor Additional factor for the minimum amount of base token that should be offered per offer to stay above density requirements.
  * @param minimumQuotePerOfferFactor Additional factor for the minimum amount of quote token that should be offered per offer to stay above density requirements.
- * @param spread The default spread used when transporting funds from an offer to its dual.
+ * @param stepSize The default step size used when transporting funds from an offer to its dual.
  * @param ratio The default ratio of the geometric progression of prices.
  */
 export type KandelMarketConfiguration = {
   aaveEnabled: boolean;
   minimumBasePerOfferFactor: Big;
   minimumQuotePerOfferFactor: Big;
-  spread: number;
+  stepSize: number;
   ratio: Big;
 };
 

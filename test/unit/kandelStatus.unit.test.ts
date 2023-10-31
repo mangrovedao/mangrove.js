@@ -298,36 +298,36 @@ describe("KandelStatus unit tests suite", () => {
 
     [
       {
-        spread: 1,
+        stepSize: 1,
         dead: 1,
         unexpectedDeadBid: [],
         unexpectedDeadAsk: [],
         reason: "dual is not dead",
       },
       {
-        spread: 1,
+        stepSize: 1,
         dead: 2,
         unexpectedDeadBid: [2],
         unexpectedDeadAsk: [3],
         reason: "dual is dead",
       },
       {
-        spread: 2,
+        stepSize: 2,
         dead: 3,
         unexpectedDeadBid: [1],
         unexpectedDeadAsk: [3],
         reason: "dual is dead for some",
       },
       {
-        spread: 2,
+        stepSize: 2,
         dead: 4,
         unexpectedDeadBid: [1, 2],
         unexpectedDeadAsk: [3, 4],
         reason: "dual is dead",
       },
     ].forEach(
-      ({ spread, dead, unexpectedDeadBid, unexpectedDeadAsk, reason }) => {
-        it(`gets status with ${dead} dead near mid with spread=${spread} where ${reason}`, () => {
+      ({ stepSize, dead, unexpectedDeadBid, unexpectedDeadAsk, reason }) => {
+        it(`gets status with ${dead} dead near mid with stepSize=${stepSize} where ${reason}`, () => {
           // Arrange
           const ratio = Big(2);
           const pricePoints = 6;
@@ -338,7 +338,7 @@ describe("KandelStatus unit tests suite", () => {
             midPrice,
             ratio,
             pricePoints,
-            spread,
+            stepSize,
             [
               {
                 offerType: "bids",

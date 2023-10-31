@@ -88,11 +88,11 @@ const approvalTxs = await kandelInstance.approveIfHigher();
 const approvalReceipts = await Promise.all(approvalTxs.map((x) => x?.wait()));
 
 // Populate the Kandel instance according to our desired distribution (can be multiple transactions if there are many price points)
-// This is with the default spread for the market.
+// This is with the default step size for the market.
 const populateTxs = await kandelInstance.populate({
   distribution: finalDistribution,
   parameters: {
-    spread: config.spread,
+    stepSize: config.stepSize,
   },
   depositBaseAmount: offeredVolumes.requiredBase,
   depositQuoteAmount: offeredVolumes.requiredQuote,

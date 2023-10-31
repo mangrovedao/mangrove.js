@@ -136,7 +136,7 @@ describe("Kandel integration tests suite", function () {
             onAave,
             "router should only be there for aave"
           );
-          assert.equal(params.stepSize, 0, "spread should be default");
+          assert.equal(params.stepSize, 0, "stepSize should be default");
           assert.equal(params.ratio.toNumber(), 0, "ratio should be default");
           assert.equal(params.pricePoints, 0, "pricePoints should be default");
           assert.equal(
@@ -382,7 +382,7 @@ describe("Kandel integration tests suite", function () {
         kandel.populate({
           distribution,
           parameters: {
-            spread: 1,
+            stepSize: 1,
           },
           depositBaseAmount: params.deposit ? requiredBase : Big(0),
           depositQuoteAmount: params.deposit ? requiredQuote : Big(0),
@@ -444,7 +444,7 @@ describe("Kandel integration tests suite", function () {
             await kandel.populate({
               distribution,
               parameters: {
-                spread: 1,
+                stepSize: 1,
               },
               depositBaseAmount: requiredBase,
               depositQuoteAmount: requiredQuote,
@@ -487,7 +487,7 @@ describe("Kandel integration tests suite", function () {
             ratio.toString(),
             "ratio should have been updated"
           );
-          assert.equal(params.stepSize, 1, "spread should have been updated");
+          assert.equal(params.stepSize, 1, "stepSize should have been updated");
 
           // assert expected offer writes
           const allEvents = receipts
@@ -579,18 +579,18 @@ describe("Kandel integration tests suite", function () {
         });
       });
 
-      it("populate can be called to set spread", async () => {
+      it("populate can be called to set stepSize", async () => {
         // Arrange
         await populateKandel({ approve: true, deposit: true });
 
         // Act
         await waitForTransactions(
-          kandel.populate({ parameters: { spread: 4 } })
+          kandel.populate({ parameters: { stepSize: 4 } })
         );
 
         // Assert
         const params = await kandel.getParameters();
-        assert.equal(params.stepSize, 4, "spread should have been updated");
+        assert.equal(params.stepSize, 4, "stepSize should have been updated");
       });
 
       it("populate can be with new distribution", async () => {
@@ -1380,7 +1380,7 @@ describe("Kandel integration tests suite", function () {
             distribution,
             parameters: {
               ratio,
-              spread: 1,
+              stepSize: 1,
               pricePoints: distribution.pricePoints,
             },
             depositBaseAmount: 7,
