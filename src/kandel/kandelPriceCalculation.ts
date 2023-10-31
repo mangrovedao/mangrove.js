@@ -1,5 +1,7 @@
 import Big from "big.js";
 import { Bigish } from "../types";
+import { TickLib } from "../util/coreCalculations/TickLib";
+import { BigNumber, ethers } from "ethers";
 
 /** Parameters for calculating a geometric price distribution. Exactly three of minPrice, maxPrice, ratio, and pricePoints must be provided.
  * @param minPrice The minimum price in the distribution.
@@ -18,6 +20,27 @@ export type PriceDistributionParams = {
 
 /** @title Helper for calculating details about about a Kandel instance. */
 class KandelPriceCalculation {
+  //FIXME remove
+  public pricesToTicks(params: { ratio: Big; prices: (Big | undefined)[] }) {
+    //FIXME all ticks in Kandel are baseQuoteTicks, so use that.
+    const baseQuoteTickOffset = this.calculateBaseQuoteTickOffset(params.ratio);
+    const ticks = params.prices.map((price) =>
+      price ? TickLib.getTickFromPrice(price).toNumber() : undefined
+    );
+    return { baseQuoteTickOffset, ticks };
+  }
+  calculateBaseQuoteTickOffset(ratio: Big) {
+    return TickLib.tickFromVolumes(
+      BigNumber.from(
+        Big(ethers.constants.WeiPerEther.toString())
+          .mul(ratio)
+          .div(100000)
+          .toFixed()
+      ),
+      ethers.constants.WeiPerEther
+    ).toNumber();
+  }
+
   /** Calculates prices to match the geometric price distribution given by parameters.
    * @param params Parameters for calculating a geometric price distribution. Exactly three of minPrice, maxPrice, ratio, and pricePoints must be provided.
    * @param params.minPrice The minimum price in the distribution.
@@ -54,45 +77,17 @@ class KandelPriceCalculation {
       }
     }
 
-    // We round down, so that we end up below maxPrice if desired pricePoints are given.
-    ratio = Big(ratio).round(this.precision, Big.roundDown);
-
+    //TODO convert to ticks but use this for now...
     return {
-      ratio,
+      ratio: Big(ratio),
       prices: this.calculatePricesFromMinMaxRatio(
         Big(minPrice),
-        ratio,
+        Big(ratio),
         pricePoints ? undefined : Big(maxPrice),
         pricePoints,
         midPrice ? Big(midPrice) : undefined
       ),
     };
-  }
-
-  /** Gets the prices for the geometric distribution based on a single known price at an index.
-   * @param index The index of the known price.
-   * @param priceAtIndex The known price.
-   * @param ratio The ratio between each price point.
-   * @param pricePoints The number of price points in the distribution.
-   * @returns The prices in the distribution.
-   */
-  public getPricesFromPrice(
-    index: number,
-    priceAtIndex: Big,
-    ratio: Big,
-    pricePoints: number
-  ) {
-    const priceOfIndex0 = priceAtIndex.div(ratio.pow(index));
-
-    const prices = this.calculatePrices({
-      minPrice: priceOfIndex0,
-      ratio,
-      pricePoints,
-    });
-    if (prices.prices.some((x) => !x)) {
-      throw new Error("Unexpected undefined price");
-    }
-    return prices.prices as Big[];
   }
 
   /** Gets the ticks for the geometric distribution based on a single known tick at an index.
@@ -185,17 +180,20 @@ class KandelPriceCalculation {
     return prices;
   }
 
-  /** Calculates the index of the first ask given the mid price.
-   * @param midPrice The mid price.
-   * @param prices The prices in the distribution.
+  /** Calculates the index of the first ask given the mid price as a tick.
+   * @param midTick The mid tick.
+   * @param ticks The ticks in the distribution.
    * @returns The index of the first ask.
    */
-  public calculateFirstAskIndex(midPrice: Big, prices: (Big | undefined)[]) {
+  public calculateFirstAskIndex(
+    midTick: number,
+    ticks: (number | undefined)[]
+  ) {
     // First ask should be after mid price - leave hole at mid price
-    const firstAskIndex = prices.findIndex((x) => x?.gt(midPrice));
+    const firstAskIndex = ticks.findIndex((x) => x && x > midTick);
 
     // Index beyond max index if no index found.
-    return firstAskIndex == -1 ? prices.length : firstAskIndex;
+    return firstAskIndex == -1 ? ticks.length : firstAskIndex;
   }
 }
 

@@ -154,7 +154,7 @@ class KandelStatus {
       pricePoints
     );
 
-    //TODO market.gettickfrompice-agtig
+    //FIXME TickLib.getTickFromPRice and TickLib.priceFromTick should always be used decimals aware via similar market functions!
     const midTick = TickLib.getTickFromPrice(midPrice).toNumber();
 
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
@@ -165,7 +165,7 @@ class KandelStatus {
         expectedLiveBid: tick <= midTick,
         expectedLiveAsk: tick >= midTick,
         expectedTick: tick,
-        expectedPrice: TickLib.priceFromTick(BigNumber.from(tick)), // TODO use market-function
+        expectedPrice: TickLib.priceFromTick(BigNumber.from(tick)),
         asks: undefined as
           | undefined
           | { live: boolean; offerId: number; tick: number; price: Big },

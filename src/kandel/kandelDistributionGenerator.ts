@@ -8,6 +8,7 @@ import KandelDistributionHelper, {
 import KandelPriceCalculation, {
   PriceDistributionParams,
 } from "./kandelPriceCalculation";
+import { TickLib } from "../util/coreCalculations/TickLib";
 
 /** @title Helper for generating Kandel distributions. */
 class KandelDistributionGenerator {
@@ -47,7 +48,9 @@ class KandelDistributionGenerator {
 
     const { askGives, bidGives } =
       this.distributionHelper.calculateMinimumInitialGives(
-        this.priceCalculation.calculatePrices(params.priceParams).prices,
+        this.priceCalculation.pricesToTicks(
+          this.priceCalculation.calculatePrices(params.priceParams)
+        ).ticks,
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer)
       );
@@ -75,16 +78,16 @@ class KandelDistributionGenerator {
     initialAskGives?: Bigish;
     initialBidGives?: Bigish;
   }) {
-    const pricesAndRatio = this.priceCalculation.calculatePrices(
-      params.priceParams
+    const ticksAndOffset = this.priceCalculation.pricesToTicks(
+      this.priceCalculation.calculatePrices(params.priceParams)
     );
     const firstAskIndex = this.priceCalculation.calculateFirstAskIndex(
-      Big(params.midPrice),
-      pricesAndRatio.prices
+      TickLib.getTickFromPrice(params.midPrice).toNumber(),
+      ticksAndOffset.ticks
     );
-    return this.distributionHelper.calculateDistributionFromPrices(
-      pricesAndRatio.ratio,
-      pricesAndRatio.prices,
+    return this.distributionHelper.calculateDistributionFromTicks(
+      ticksAndOffset.baseQuoteTickOffset,
+      ticksAndOffset.ticks,
       firstAskIndex,
       params.initialAskGives ? Big(params.initialAskGives) : undefined,
       params.initialBidGives ? Big(params.initialBidGives) : undefined
@@ -110,10 +113,10 @@ class KandelDistributionGenerator {
       params.availableQuote ? Big(params.availableQuote) : undefined
     );
 
-    const prices = params.distribution.getPricesForDistribution();
-    return this.distributionHelper.calculateDistributionFromPrices(
-      params.distribution.ratio,
-      prices,
+    const ticks = params.distribution.getTicksForDistribution();
+    return this.distributionHelper.calculateDistributionFromTicks(
+      params.distribution.baseQuoteTickOffset,
+      ticks,
       params.distribution.getFirstAskIndex(),
       initialGives.askGives,
       initialGives.bidGives
@@ -137,12 +140,12 @@ class KandelDistributionGenerator {
     minimumBasePerOffer: Bigish;
     minimumQuotePerOffer: Bigish;
   }) {
-    const prices = params.distribution.getPricesForDistribution();
+    const ticks = params.distribution.getTicksForDistribution();
 
     // Minimums are increased based on prices of current distribution
     const { askGives, bidGives } =
       this.distributionHelper.calculateMinimumInitialGives(
-        prices,
+        ticks,
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer)
       );
@@ -159,11 +162,13 @@ class KandelDistributionGenerator {
   /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
+   * @param params.explicitOffers.bids The explicit bids to use.
+   * @param params.explicitOffers.asks The explicit asks to use.
    * @param params.distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
    * @returns The new distribution.
    */
   public createDistributionWithOffers(params: {
-    explicitOffers: OffersWithGives;
+    explicitOffers: { bids: OffersWithGives; asks: OffersWithGives };
     distribution:
       | {
           baseQuoteTickOffset: number;
@@ -188,9 +193,9 @@ class KandelDistributionGenerator {
    * @param params The parameters for the minimum volume.
    * @param params.offerType The offer type to get the minimum volume for.
    * @param params.index The Kandel index.
-   * @param params.price The price at the index.
-   * @param params.ratio The ratio of the geometric progression of prices.
-   * @param params.spread The spread used when transporting funds from an offer to its dual.
+   * @param params.tick The tick at the index.
+   * @param params.baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression.
+   * @param params.stepSize The step size used when transporting funds from an offer to its dual.
    * @param params.pricePoints The number of price points.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
@@ -199,17 +204,17 @@ class KandelDistributionGenerator {
   public getMinimumVolumeForIndex(params: {
     offerType: Market.BA;
     index: number;
-    price: Bigish;
-    ratio: Bigish;
-    spread: number;
+    tick: number;
+    baseQuoteTickOffset: number;
+    stepSize: number;
     pricePoints: number;
     minimumBasePerOffer: Bigish;
     minimumQuotePerOffer: Bigish;
   }) {
-    const prices = this.priceCalculation.getPricesFromPrice(
+    const ticks = this.priceCalculation.getTicksFromTick(
       params.index,
-      Big(params.price),
-      Big(params.ratio),
+      params.tick,
+      params.baseQuoteTickOffset,
       params.pricePoints
     );
 
@@ -217,15 +222,15 @@ class KandelDistributionGenerator {
       params.offerType,
       params.index,
       params.pricePoints,
-      params.spread
+      params.stepSize
     );
 
-    // Prices don't have to be sorted
-    const priceAndDualPrice = [prices[params.index], prices[dualIndex]];
+    // tickAndDualTick don't have to be sorted
+    const tickAndDualTick = [ticks[params.index], ticks[dualIndex]];
 
     const { askGives, bidGives } =
       this.distributionHelper.calculateMinimumInitialGives(
-        priceAndDualPrice,
+        tickAndDualTick,
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer)
       );

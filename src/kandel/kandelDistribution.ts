@@ -2,18 +2,25 @@ import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
 
-/** Distribution of bids and asks and their base and quote amounts.
- * @param offerType Whether the offer is a bid or an ask.
+/** A list of bids or asks with their index, tick, and gives.
  * @param index The index of the price point in Kandel.
  * @param gives The amount of tokens (base for ask, quote for bid) the offer should give.
  * @param tick The tick for the offer.
  */
-export type OfferDistribution = {
-  offerType: Market.BA;
+export type OfferList = {
   index: number;
   gives: Big;
   tick: number;
 }[];
+
+/** Distribution of bids and asks and their base and quote amounts.
+ * @param bids The bids in the distribution.
+ * @param asks The asks in the distribution.
+ */
+export type OfferDistribution = {
+  bids: OfferList;
+  asks: OfferList;
+};
 
 /** @title A distribution of bids and ask for Kandel. */
 class KandelDistribution {
@@ -39,7 +46,8 @@ class KandelDistribution {
     quoteDecimals: number
   ) {
     this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
-    this.helper.sortByIndex(offers);
+    this.helper.sortByIndex(offers.asks);
+    this.helper.sortByIndex(offers.bids);
     this.baseQuoteTickOffset = baseQuoteTickOffset;
     this.pricePoints = pricePoints;
     this.offers = offers;
@@ -51,7 +59,7 @@ class KandelDistribution {
    * @returns The number of offers in the distribution.
    */
   public getOfferCount() {
-    return this.offers.length;
+    return this.offers.bids.length + this.offers.asks.length;
   }
 
   /** Calculates the gives for a single offer of the given type given the total available volume and the count of offers of that type.
@@ -91,15 +99,20 @@ class KandelDistribution {
     availableBase?: Big,
     availableQuote?: Big
   ) {
-    const bids = this.offers.filter((x) => x.offerType == "bids").length;
-    const asks = this.offers.filter((x) => x.offerType == "asks").length;
-
     return {
       askGives: availableBase
-        ? this.calculateOfferGives("asks", asks, availableBase)
+        ? this.calculateOfferGives(
+            "asks",
+            this.offers.asks.length,
+            availableBase
+          )
         : undefined,
       bidGives: availableQuote
-        ? this.calculateOfferGives("bids", bids, availableQuote)
+        ? this.calculateOfferGives(
+            "bids",
+            this.offers.bids.length,
+            availableQuote
+          )
         : undefined,
     };
   }
@@ -108,21 +121,9 @@ class KandelDistribution {
    * @returns The index of the first ask in the distribution; or the length of the distribution if there are no asks.
    */
   public getFirstAskIndex() {
-    return (
-      this.offers.find((x) => x.offerType == "asks")?.index ?? this.pricePoints
-    );
-  }
-
-  /** Gets the index of the first ask in the subset of offers in offers for the distribution. If there are no asks, then the length of offers is returned.
-   * @returns The index of the first ask in the subset of offers in offers for the distribution. If there are no asks, then the length of offers is returned.
-   */
-  public getOffersIndexOfFirstAskIndex() {
-    const firstAskIndex = this.getFirstAskIndex();
-    if (firstAskIndex == this.pricePoints) {
-      return this.offers.length;
-    } else {
-      return this.offers.findIndex((x) => x.index == firstAskIndex);
-    }
+    return this.offers.asks.length > 0
+      ? this.offers.asks[0].index
+      : this.pricePoints;
   }
 
   /** Split a distribution into chunks according to the maximum number of offers in a single chunk.
@@ -132,7 +133,6 @@ class KandelDistribution {
   public chunkDistribution(maxOffersInChunk: number) {
     const chunks: OfferDistribution[] = [];
 
-    const offerMiddle = this.getOffersIndexOfFirstAskIndex();
     let distributionChunk: OfferDistribution = [];
     for (let i = 0; i < this.offers.length; i++) {
       const indexLow = offerMiddle - i - 1;
@@ -162,7 +162,11 @@ class KandelDistribution {
       undefined
     );
 
-    this.offers.forEach((o) => {
+    this.offers.bids.forEach((o) => {
+      ticks[o.index] = o.tick;
+    });
+
+    this.offers.asks.forEach((o) => {
       ticks[o.index] = o.tick;
     });
     return ticks;
@@ -172,44 +176,42 @@ class KandelDistribution {
    * @returns The offered volume of base and quote for the distribution to be fully provisioned.
    */
   public getOfferedVolumeForDistribution() {
-    return this.offers.reduce(
-      (a, x) => {
-        return x.offerType == "bids"
-          ? {
-              requiredBase: a.requiredBase,
-              requiredQuote: a.requiredQuote.add(x.gives),
-            }
-          : {
-              requiredBase: a.requiredBase.add(x.gives),
-              requiredQuote: a.requiredQuote,
-            };
-      },
-      { requiredBase: new Big(0), requiredQuote: new Big(0) }
-    );
+    return {
+      requiredBase: this.offers.asks.reduce((a, x) => a.add(x.gives), Big(0)),
+      requiredQuote: this.offers.bids.reduce((a, x) => a.add(x.gives), Big(0)),
+    };
   }
 
   /** Verifies the distribution is valid.
    * @remarks Throws if the distribution is invalid.
    * The verification checks that indices are ascending and bids come before asks.
-   * The price distribution is not verified.
+   * The distribution is not verified.
    */
   public verifyDistribution() {
-    if (this.offers.length == 0) {
+    if (this.getOfferCount() == 0) {
       return;
     }
-    if (this.offers.length > this.pricePoints) {
+    if (this.getOfferCount() > this.pricePoints) {
       throw new Error("Invalid distribution: more offers than price points");
     }
-    let lastOfferType = this.offers[0].offerType;
-    for (let i = 1; i < this.offers.length; i++) {
-      if (this.offers[i].index <= this.offers[i - 1].index) {
-        throw new Error("Invalid distribution: indices are not ascending");
+    for (let i = 1; i < this.offers.bids.length; i++) {
+      if (this.offers.bids[i].index <= this.offers.bids[i - 1].index) {
+        throw new Error("Invalid distribution: bid indices are not ascending");
       }
-      if (this.offers[i].offerType != lastOfferType) {
-        if (this.offers[i].offerType == "bids") {
-          throw new Error("Invalid distribution: bids should come before asks");
-        }
-        lastOfferType = this.offers[i].offerType;
+    }
+
+    for (let i = 1; i < this.offers.asks.length; i++) {
+      if (this.offers.asks[i].index <= this.offers.asks[i - 1].index) {
+        throw new Error("Invalid distribution: ask indices are not ascending");
+      }
+    }
+
+    if (this.offers.asks.length > 0 && this.offers.bids.length > 0) {
+      if (
+        this.offers.bids[this.offers.bids.length - 1].index >=
+        this.offers.asks[0].index
+      ) {
+        throw new Error("Invalid distribution: bids should come before asks");
       }
     }
   }

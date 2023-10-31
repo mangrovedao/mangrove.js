@@ -332,24 +332,18 @@ class KandelInstance {
   public getRawDistribution(distribution: OfferDistribution) {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
       {
-        asks: [],
-        bids: [],
-      };
-    distribution.forEach((o) => {
-      if (o.offerType == "asks") {
-        rawDistribution.asks.push({
-          gives: this.market.base.toUnits(o.gives),
-          index: o.index,
-          tick: o.tick,
-        });
-      } else {
-        rawDistribution.bids.push({
+        bids: distribution.bids.map((o) => ({
           gives: this.market.quote.toUnits(o.gives),
           index: o.index,
           tick: o.tick,
-        });
-      }
-    });
+        })),
+        asks: distribution.asks.map((o) => ({
+          gives: this.market.base.toUnits(o.gives),
+          index: o.index,
+          tick: o.tick,
+        })),
+      };
+
     return rawDistribution;
   }
 
@@ -427,10 +421,12 @@ class KandelInstance {
   /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
+   * @param params.explicitOffers.bids The explicit bids to use.
+   * @param params.explicitOffers.asks The explicit asks to use.
    * @returns The new distribution.
    */
   public async createDistributionWithOffers(params: {
-    explicitOffers: OffersWithGives;
+    explicitOffers: { bids: OffersWithGives; asks: OffersWithGives };
   }) {
     const parameters = await this.getParameters();
     return this.generator.createDistributionWithOffers({
@@ -476,10 +472,10 @@ class KandelInstance {
     return this.generator.getMinimumVolumeForIndex({
       offerType: params.offerType,
       index: params.index,
-      tick,
+      tick: params.tick,
       baseQuoteTickOffset: parameters.baseQuoteTickOffset,
       pricePoints: parameters.pricePoints,
-      spread: parameters.stepSize,
+      stepSize: parameters.stepSize,
       minimumBasePerOffer: mins.minimumBasePerOffer,
       minimumQuotePerOffer: mins.minimumQuotePerOffer,
     });
@@ -512,6 +508,8 @@ class KandelInstance {
   /** Calculates a new distribution based on the provided live offers and deltas.
    * @param params The parameters for the new distribution.
    * @param params.liveOffers The live offers to use.
+   * @param params.liveOffers.bids The explicit bids to use.
+   * @param params.liveOffers.asks The explicit asks to use.
    * @param params.baseDelta The delta to apply to the base token volume. If not provided, then the base token volume is unchanged.
    * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
@@ -520,7 +518,7 @@ class KandelInstance {
    * @remarks The base and quote deltas are applied uniformly to all offers, except during decrease where offers are kept above their minimum volume.
    */
   public async calculateDistributionWithUniformlyChangedVolume(params: {
-    liveOffers: OffersWithGives;
+    liveOffers: { bids: OffersWithGives; asks: OffersWithGives };
     baseDelta?: Bigish;
     quoteDelta?: Bigish;
     minimumBasePerOffer?: Bigish;
@@ -811,7 +809,7 @@ class KandelInstance {
     const distribution =
       params.distribution ??
       this.generator.createDistributionWithOffers({
-        explicitOffers: [],
+        explicitOffers: { bids: [], asks: [] },
         distribution: parameters,
       });
 
