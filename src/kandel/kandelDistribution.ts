@@ -2,6 +2,8 @@ import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
 
+//FIXME: consider removing index as offerlist is always complete
+
 /** A list of bids or asks with their index, tick, and gives.
  * @param index The index of the price point in Kandel.
  * @param gives The amount of tokens (base for ask, quote for bid) the offer should give.
@@ -34,7 +36,7 @@ class KandelDistribution {
   /** Constructor
    * @param offers The distribution of bids and asks.
    * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
-   * @param pricePoints The number of price points in the distribution. Can be more than the number of offers if a subset is considered.
+   * @param pricePoints The number of price points in the distribution.
    * @param baseDecimals The number of decimals for the base token.
    * @param quoteDecimals The number of decimals for the quote token.
    */
@@ -53,13 +55,7 @@ class KandelDistribution {
     this.offers = offers;
     this.baseDecimals = baseDecimals;
     this.quoteDecimals = quoteDecimals;
-  }
-
-  /** Gets the number of offers in the distribution. This can be lower than the number of price points when a subset is considered.
-   * @returns The number of offers in the distribution.
-   */
-  public getOfferCount() {
-    return this.offers.bids.length + this.offers.asks.length;
+    this.verifyDistribution();
   }
 
   /** Calculates the gives for a single offer of the given type given the total available volume and the count of offers of that type.
@@ -90,6 +86,12 @@ class KandelDistribution {
     return Big(0);
   }
 
+  public getLiveOffers(offerType: Market.BA) {
+    return (offerType == "bids" ? this.offers.bids : this.offers.asks).filter(
+      (x) => x.gives.gt(0)
+    );
+  }
+
   /** Calculates the gives for bids and asks based on the available volume for the distribution.
    * @param availableBase The available base to consume.
    * @param availableQuote The available quote to consume.
@@ -103,27 +105,29 @@ class KandelDistribution {
       askGives: availableBase
         ? this.calculateOfferGives(
             "asks",
-            this.offers.asks.length,
+            this.getLiveOffers("asks").length,
             availableBase
           )
         : undefined,
       bidGives: availableQuote
         ? this.calculateOfferGives(
             "bids",
-            this.offers.bids.length,
+            this.getLiveOffers("bids").length,
             availableQuote
           )
         : undefined,
     };
   }
 
-  /** Gets the index of the first ask in the distribution. If there are no asks, then the length of the distribution is returned.
-   * @returns The index of the first ask in the distribution; or the length of the distribution if there are no asks.
+  /** Gets the index of the first offer in the distribution of the offer type. If there are no live offers, then the length of the distribution is returned.
+   * @param ba The type of offer.
+   * @returns The index of the first offer in the distribution of the offer type. If there are no live offers, then the length of the distribution is returned.
    */
-  public getFirstAskIndex() {
-    return this.offers.asks.length > 0
-      ? this.offers.asks[0].index
-      : this.pricePoints;
+  public getFirstLiveIndex(ba: Market.BA) {
+    return (
+      this.getLiveOffers(ba).find((o) => o.gives.gt(0))?.index ??
+      this.pricePoints
+    );
   }
 
   /** Split a distribution into chunks according to the maximum number of offers in a single chunk.
@@ -154,22 +158,11 @@ class KandelDistribution {
     return chunks;
   }
 
-  /** Gets the ticks for the distribution, with undefined for ticks not represented by offers in the distribution.
-   * @returns The ticks in the distribution.
+  /** Gets the ticks for the distribution.
+   * @returns The base quote ticks in the distribution.
    */
   public getBaseQuoteTicksForDistribution() {
-    const ticks: (number | undefined)[] = Array(this.pricePoints).fill(
-      undefined
-    );
-
-    this.offers.bids.forEach((o) => {
-      ticks[o.index] = -o.tick;
-    });
-
-    this.offers.asks.forEach((o) => {
-      ticks[o.index] = o.tick;
-    });
-    return ticks;
+    return this.offers.asks.map((x) => x.tick);
   }
 
   /** Gets the required volume of base and quote for the distribution to be fully provisioned.
@@ -188,35 +181,35 @@ class KandelDistribution {
    * The distribution is not verified.
    */
   public verifyDistribution() {
-    if (this.getOfferCount() == 0) {
+    if (this.pricePoints == 0) {
       return;
     }
-    if (this.getOfferCount() > this.pricePoints) {
-      throw new Error("Invalid distribution: more offers than price points");
+    if (this.offers.bids.length == this.pricePoints) {
+      throw new Error(
+        "Invalid distribution: number of bids does not match number of price points"
+      );
     }
-    for (let i = 1; i < this.offers.bids.length; i++) {
-      if (this.offers.bids[i].index <= this.offers.bids[i - 1].index) {
-        throw new Error("Invalid distribution: bid indices are not ascending");
+    if (this.offers.asks.length == this.pricePoints) {
+      throw new Error(
+        "Invalid distribution: number of asks does not match number of price points"
+      );
+    }
+    for (let i = 0; i < this.pricePoints; i++) {
+      if (this.offers.bids[i].index != i) {
+        throw new Error("Invalid distribution: bid indices are invalid");
+      }
+      if (this.offers.asks[i].index != i) {
+        throw new Error("Invalid distribution: ask indices are invalid");
       }
     }
-
-    for (let i = 1; i < this.offers.asks.length; i++) {
-      if (this.offers.asks[i].index <= this.offers.asks[i - 1].index) {
-        throw new Error("Invalid distribution: ask indices are not ascending");
-      }
-    }
-
-    if (this.offers.asks.length > 0 && this.offers.bids.length > 0) {
-      if (
-        this.offers.bids[this.offers.bids.length - 1].index >=
-        this.offers.asks[0].index
-      ) {
-        throw new Error("Invalid distribution: bids should come before asks");
-      }
+    if (this.getFirstLiveIndex("asks") < this.getFirstLiveIndex("bids")) {
+      throw new Error(
+        "Invalid distribution: live bids should come before asks"
+      );
     }
   }
 
-  /** Determines the required provision for the listed offers in the distribution (disregarding the number of price points).
+  /** Determines the required provision for the price points in the distribution.
    * @param params The parameters used to calculate the provision.
    * @param params.market The market to get provisions for bids and asks from.
    * @param params.gasreq The gas required to execute a trade.
@@ -231,7 +224,7 @@ class KandelDistribution {
   }) {
     return this.helper.getRequiredProvision({
       ...params,
-      offerCount: this.getOfferCount(),
+      offerCount: this.pricePoints,
     });
   }
 }

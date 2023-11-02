@@ -13,11 +13,11 @@ import KandelDistributionHelper, {
   OffersWithGives,
 } from "./kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandelDistributionGenerator";
-import KandelPriceCalculation from "./kandelPriceCalculation";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import OfferLogic from "../offerLogic";
 import KandelConfiguration from "./kandelConfiguration";
 import KandelSeeder from "./kandelSeeder";
+import KandelLib from "./kandelLib";
 
 /**
  * @notice Parameters for a Kandel instance.
@@ -100,20 +100,26 @@ class KandelInstance {
       params.signer
     );
 
-    const priceCalculation = new KandelPriceCalculation();
     const distributionHelper = new KandelDistributionHelper(
       market.base.decimals,
       market.quote.decimals
     );
+
+    const kandelLib = new KandelLib({
+      address: market.mgv.getAddress("KandelLib"),
+      signer: params.signer,
+      baseDecimals: market.base.decimals,
+      quoteDecimals: market.quote.decimals,
+    });
     const generator = new KandelDistributionGenerator(
       distributionHelper,
-      priceCalculation
+      kandelLib
     );
     return new KandelInstance({
       address: params.address,
       market,
       kandel,
-      kandelStatus: new KandelStatus(distributionHelper, priceCalculation),
+      kandelStatus: new KandelStatus(distributionHelper),
       generator,
       offerLogic,
       configuration: new KandelConfiguration(),
@@ -223,7 +229,7 @@ class KandelInstance {
    * @param distributionBaseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression.
    * @param distributionPricePoints The number of price points of the Kandel distribution.
    * @returns The new Kandel parameters.
-   * @remarks tick offset and price points provided in the parameters must match a provided distribution.
+   * @remarks base quote tick offset and price points provided in the parameters must match a provided distribution.
    */
   public async getParametersWithOverrides(
     parameters: KandelParameterOverrides,
@@ -505,11 +511,11 @@ class KandelInstance {
     };
   }
 
-  /** Calculates a new distribution based on the provided live offers and deltas.
+  /** Calculates a new distribution based on the provided offers and deltas.
    * @param params The parameters for the new distribution.
-   * @param params.liveOffers The live offers to use.
-   * @param params.liveOffers.bids The explicit bids to use.
-   * @param params.liveOffers.asks The explicit asks to use.
+   * @param params.explicitOffers The offers to use.
+   * @param params.explicitOffers.bids The explicit bids to use.
+   * @param params.explicitOffers.asks The explicit asks to use.
    * @param params.baseDelta The delta to apply to the base token volume. If not provided, then the base token volume is unchanged.
    * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
@@ -518,14 +524,14 @@ class KandelInstance {
    * @remarks The base and quote deltas are applied uniformly to all offers, except during decrease where offers are kept above their minimum volume.
    */
   public async calculateDistributionWithUniformlyChangedVolume(params: {
-    liveOffers: { bids: OffersWithGives; asks: OffersWithGives };
+    explicitOffers: { bids: OffersWithGives; asks: OffersWithGives };
     baseDelta?: Bigish;
     quoteDelta?: Bigish;
     minimumBasePerOffer?: Bigish;
     minimumQuotePerOffer?: Bigish;
   }) {
     const distribution = await this.createDistributionWithOffers({
-      explicitOffers: params.liveOffers,
+      explicitOffers: params.explicitOffers,
     });
 
     const { minimumBasePerOffer, minimumQuotePerOffer } =
@@ -544,6 +550,7 @@ class KandelInstance {
    * @param params The parameters for the new distribution.
    * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
    * @param params.minPrice The minimum price to generate the distribution from; can be retrieved from the status from @see getOfferStatus or @see getOfferStatusFromOffers .
+   * @param params.generateFromMid Whether to generate the distribution outwards from the midPrice or upwards from the minPrice.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
    * @returns The new distribution, which can be used to re-populate the Kandel instance with this exact distribution.
@@ -551,6 +558,7 @@ class KandelInstance {
   public async calculateUniformDistributionFromMinPrice(params: {
     midPrice: Bigish;
     minPrice: Bigish;
+    generateFromMid: boolean;
     minimumBasePerOffer?: Bigish;
     minimumQuotePerOffer?: Bigish;
   }) {
@@ -559,13 +567,14 @@ class KandelInstance {
     const { minimumBasePerOffer, minimumQuotePerOffer } =
       await this.getMinimumOrOverrides(params);
 
-    const distribution = this.generator.calculateMinimumDistribution({
-      priceParams: {
+    const distribution = await this.generator.calculateMinimumDistribution({
+      distributionParams: {
         minPrice: params.minPrice,
         baseQuoteTickOffset: parameters.baseQuoteTickOffset,
         pricePoints: parameters.pricePoints,
+        midPrice: params.midPrice,
       },
-      midPrice: params.midPrice,
+      stepSize: parameters.stepSize,
       minimumBasePerOffer,
       minimumQuotePerOffer,
     });

@@ -1,6 +1,6 @@
 import Big from "big.js";
 import Market from "../market";
-import KandelDistribution, { OfferList } from "./kandelDistribution";
+import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import { Bigish } from "../types";
 import { TickLib } from "../util/coreCalculations/TickLib";
 
@@ -78,113 +78,89 @@ class KandelDistributionHelper {
   //
 
   /** Calculates distribution of bids and asks with constant gives given the tick distribution.
-   * @param ticks The tick distribution.
+   * @param baseQuoteTicks The tick distribution.
    * @param askGives The constant gives for asks.
    * @param bidGives The constant gives for bids.
    * @param firstAskIndex The index of the first ask in the distribution.
    * @returns The distribution of bids and asks and their gives and tick.
    */
   public calculateDistributionConstantGives(
-    ticks: (undefined | number)[],
+    baseQuoteTicks: number[],
     askGives: Big,
     bidGives: Big,
     firstAskIndex: number
   ) {
     return {
-      bids: ticks.slice(0, firstAskIndex).map((t, index) =>
-        !t
-          ? undefined
-          : {
-              index,
-              tick: t,
-              gives: bidGives,
-            }
-      ),
-      asks: ticks.slice(firstAskIndex).map((t, index) =>
-        !t
-          ? undefined
-          : {
-              index: index + firstAskIndex,
-              tick: t,
-              gives: askGives,
-            }
-      ),
+      bids: baseQuoteTicks.slice(0, firstAskIndex).map((t, index) => ({
+        index,
+        tick: -t,
+        gives: bidGives,
+      })),
+      asks: baseQuoteTicks.slice(firstAskIndex).map((t, index) => ({
+        index: index + firstAskIndex,
+        tick: t,
+        gives: askGives,
+      })),
     };
   }
 
   /** Calculates distribution of bids and asks with constant base and a matching quote given the tick distribution.
-   * @param ticks The tick distribution.
+   * @param baseQuoteTicks The tick distribution.
    * @param constantBase The constant base for the distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
    * @returns The distribution of bids and asks and their gives and tick.
    */
   public calculateDistributionConstantBase(
-    ticks: (undefined | number)[],
+    baseQuoteTicks: number[],
     constantBase: Big,
     firstAskIndex: number
   ) {
     const base = this.roundBase(constantBase);
 
     return {
-      bids: ticks.slice(0, firstAskIndex).map((t, index) =>
-        !t
-          ? undefined
-          : {
-              index,
-              tick: t,
-              gives: base,
-            }
-      ),
-      asks: ticks.slice(firstAskIndex).map((t, index) =>
-        !t
-          ? undefined
-          : {
-              index: index + firstAskIndex,
-              tick: t,
-              gives: this.quoteFromBaseAndTick(base, t),
-            }
-      ),
+      bids: baseQuoteTicks.slice(0, firstAskIndex).map((t, index) => ({
+        index,
+        tick: -t,
+        gives: base,
+      })),
+      asks: baseQuoteTicks.slice(firstAskIndex).map((t, index) => ({
+        index: index + firstAskIndex,
+        tick: t,
+        gives: this.quoteFromBaseAndTick(base, t),
+      })),
     };
   }
 
   /** Calculates distribution of bids and asks with constant quote and a matching base given the tick distribution.
-   * @param ticks The tick distribution.
+   * @param baseQuoteTicks The tick distribution.
    * @param constantQuote The constant quote for the distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
    * @returns The distribution of bids and asks and their gives and tick.
    */
   public calculateDistributionConstantQuote(
-    ticks: (undefined | number)[],
+    baseQuoteTicks: number[],
     constantQuote: Big,
     firstAskIndex: number
   ) {
     const quote = this.roundQuote(constantQuote);
 
     return {
-      bids: ticks.slice(0, firstAskIndex).map((t, index) =>
-        !t
-          ? undefined
-          : {
-              index,
-              tick: t,
-              gives: this.baseFromQuoteAndTick(quote, t),
-            }
-      ),
-      asks: ticks.slice(firstAskIndex).map((t, index) =>
-        !t
-          ? undefined
-          : {
-              index: index + firstAskIndex,
-              tick: t,
-              gives: quote,
-            }
-      ),
+      bids: baseQuoteTicks.slice(0, firstAskIndex).map((t, index) => ({
+        index,
+        tick: -t,
+        gives: this.baseFromQuoteAndTick(quote, t),
+      })),
+      asks: baseQuoteTicks.slice(firstAskIndex).map((t, index) => ({
+        index: index + firstAskIndex,
+        tick: t,
+        gives: quote,
+      })),
     };
   }
 
   /** Calculates distribution of bids and asks and their base and quote amounts to match the distribution.
    * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression.
-   * @param ticks The distribution.
+   * @param baseQuoteTicks The distribution.
    * @param firstAskIndex The index of the first ask in the distribution.
    * @param initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
    * @param initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
@@ -192,27 +168,24 @@ class KandelDistributionHelper {
    */
   public calculateDistributionFromTicks(
     baseQuoteTickOffset: number,
-    ticks: (number | undefined)[],
+    baseQuoteTicks: number[],
     firstAskIndex: number,
     initialAskGives?: Big,
     initialBidGives?: Big
   ) {
-    let offers: {
-      bids: ({ index: number; tick: number; gives: Big } | undefined)[];
-      asks: ({ index: number; tick: number; gives: Big } | undefined)[];
-    };
+    let offers: OfferDistribution;
 
     if (initialBidGives) {
       if (initialAskGives) {
         offers = this.calculateDistributionConstantGives(
-          ticks,
+          baseQuoteTicks,
           initialAskGives,
           initialBidGives,
           firstAskIndex
         );
       } else {
         offers = this.calculateDistributionConstantQuote(
-          ticks,
+          baseQuoteTicks,
           initialBidGives,
           firstAskIndex
         );
@@ -220,7 +193,7 @@ class KandelDistributionHelper {
     } else {
       if (initialAskGives) {
         offers = this.calculateDistributionConstantBase(
-          ticks,
+          baseQuoteTicks,
           initialAskGives,
           firstAskIndex
         );
@@ -232,11 +205,8 @@ class KandelDistributionHelper {
     }
     return new KandelDistribution(
       baseQuoteTickOffset,
-      ticks.length,
-      {
-        bids: offers.bids.filter((o) => o) as OfferList,
-        asks: offers.asks.filter((o) => o) as OfferList,
-      },
+      baseQuoteTicks.length,
+      offers,
       this.baseDecimals,
       this.quoteDecimals
     );
@@ -339,17 +309,22 @@ class KandelDistributionHelper {
     totalDelta: Big,
     round: (value: Big) => Big
   ) {
-    let elementsToChange = values.length;
+    // Only increase those already giving something
+    let elementsToChange = values.filter((x) => x.gt(0)).length;
     let totalChange = Big(0);
     const newValues = Array(values.length);
 
     for (let i = 0; i < values.length; i++) {
       const value = values[i];
-      const actualChange = round(totalDelta.div(elementsToChange));
-      newValues[i] = value.add(actualChange);
-      totalChange = totalChange.add(actualChange);
-      totalDelta = totalDelta.sub(actualChange);
-      elementsToChange--;
+      if (value.gt(0)) {
+        const actualChange = round(totalDelta.div(elementsToChange));
+        newValues[i] = value.add(actualChange);
+        totalChange = totalChange.add(actualChange);
+        totalDelta = totalDelta.sub(actualChange);
+        elementsToChange--;
+      } else {
+        newValues[i] = value;
+      }
     }
 
     return { newValues, totalChange };
@@ -470,7 +445,7 @@ class KandelDistributionHelper {
 
     return new KandelDistribution(
       distribution.baseQuoteTickOffset,
-      distribution.pricePoints ?? offers.asks.length + offers.bids.length,
+      distribution.pricePoints ?? offers.asks.length,
       offers,
       this.baseDecimals,
       this.quoteDecimals
@@ -597,6 +572,31 @@ class KandelDistributionHelper {
       params.gasprice
     );
     return provisionBid.add(provisionAsk).mul(params.offerCount);
+  }
+
+  /** Gets the ticks for the geometric distribution based on a single known tick at an index.
+   * @param offerType The offer type.
+   * @param index The index of the known price.
+   * @param tickAtIndex The known tick (the tick price of base per quote for bids and quote per base for asks).
+   * @param baseQuoteTickOffset The offset in ticks between two price points of the geometric distribution.
+   * @param pricePoints The number of price points in the distribution.
+   * @returns The quote per base ticks in the distribution.
+   */
+  public getBaseQuoteTicksFromTick(
+    offerType: Market.BA,
+    index: number,
+    tickAtIndex: number,
+    baseQuoteTickOffset: number,
+    pricePoints: number
+  ) {
+    if (offerType === "bids") {
+      tickAtIndex = -tickAtIndex;
+    }
+    const tickAtIndex0 = tickAtIndex - baseQuoteTickOffset * index;
+    return Array.from(
+      { length: pricePoints },
+      (_, index) => tickAtIndex0 + baseQuoteTickOffset * index
+    );
   }
 }
 

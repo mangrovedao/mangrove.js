@@ -1799,4 +1799,10 @@ describe("Kandel integration tests suite", function () {
       })
     );
   });
+
+  describe("lib", function () {
+    it("TODO", async function () {
+      assert.fail("TODO - both through anvil and through a mock");
+    });
+  });
 });
