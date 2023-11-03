@@ -440,6 +440,7 @@ class KandelInstance {
       distribution: {
         baseQuoteTickOffset: parameters.baseQuoteTickOffset,
         pricePoints: parameters.pricePoints,
+        stepSize: parameters.stepSize,
       },
     });
   }
@@ -573,8 +574,9 @@ class KandelInstance {
         baseQuoteTickOffset: parameters.baseQuoteTickOffset,
         pricePoints: parameters.pricePoints,
         midPrice: params.midPrice,
+        stepSize: parameters.stepSize,
+        generateFromMid: params.generateFromMid,
       },
-      stepSize: parameters.stepSize,
       minimumBasePerOffer,
       minimumQuotePerOffer,
     });
@@ -667,16 +669,18 @@ class KandelInstance {
 
   /** Determines the required provision for the offers in the distribution or the supplied offer count.
    * @param params The parameters used to calculate the provision.
-   * @param params.distribution The distribution to calculate the provision for. Optional if offerCount is provided.
-   * @param params.offerCount The number of offers to calculate the provision for. Optional if distribution is provided.
+   * @param params.distribution The distribution to calculate the provision for. Optional if askCount and bidCount are provided.
+   * @param params.bidCount The number of bids to calculate the provision for. Optional if distribution is provided.
+   * @param params.askCount The number of asks to calculate the provision for. Optional if distribution is provided.
    * @param params.gasreq The gas required to execute a trade. Default is retrieved from Kandel parameters.
    * @param params.gasprice The gas price to calculate provision for. Default is retrieved from Kandel parameters.
    * @returns The provision required for the number of offers.
-   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision. Existing locked provision or balance on Mangrove is not accounted for.
+   * @remarks Existing locked provision or balance on Mangrove is not accounted for.
    */
   public async getRequiredProvision(params: {
     distribution?: KandelDistribution;
-    offerCount?: number;
+    bidCount?: number;
+    askCount?: number;
     gasreq?: number;
     gasprice?: number;
   }) {
@@ -693,7 +697,8 @@ class KandelInstance {
     return (
       (await params.distribution?.getRequiredProvision(provisionParams)) ??
       (await this.generator.distributionHelper.getRequiredProvision({
-        offerCount: params.offerCount ?? 0,
+        bidCount: params.bidCount ?? 0,
+        askCount: params.askCount ?? 0,
         ...provisionParams,
       }))
     );
@@ -975,6 +980,7 @@ class KandelInstance {
    * @returns The transaction(s) used to retract the offers.
    * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the baseQuoteTickOffset, pricePoints, or stepSize using populate.
    * If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
+   * Note that when retracting an offer the dual should also be retracted, else it can be resurrected.
    */
   public async retractOffers(
     params: {
@@ -1003,6 +1009,7 @@ class KandelInstance {
    * @param params.skipLast Whether to skip the last chunk. This is used to allow the last chunk to be retracted while withdrawing funds.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
+   * @dev
    */
   async retractOfferChunks(
     params: {

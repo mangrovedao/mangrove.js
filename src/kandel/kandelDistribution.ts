@@ -2,8 +2,6 @@ import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
 
-//FIXME: consider removing index as offerlist is always complete
-
 /** A list of bids or asks with their index, tick, and gives.
  * @param index The index of the price point in Kandel.
  * @param gives The amount of tokens (base for ask, quote for bid) the offer should give.
@@ -31,18 +29,21 @@ class KandelDistribution {
   quoteDecimals: number;
   baseQuoteTickOffset: number;
   pricePoints: number;
+  stepSize: number;
   helper: KandelDistributionHelper;
 
   /** Constructor
    * @param offers The distribution of bids and asks.
    * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
    * @param pricePoints The number of price points in the distribution.
+   * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
    * @param baseDecimals The number of decimals for the base token.
    * @param quoteDecimals The number of decimals for the quote token.
    */
   public constructor(
     baseQuoteTickOffset: number,
     pricePoints: number,
+    stepSize: number,
     offers: OfferDistribution,
     baseDecimals: number,
     quoteDecimals: number
@@ -52,6 +53,7 @@ class KandelDistribution {
     this.helper.sortByIndex(offers.bids);
     this.baseQuoteTickOffset = baseQuoteTickOffset;
     this.pricePoints = pricePoints;
+    this.stepSize = stepSize;
     this.offers = offers;
     this.baseDecimals = baseDecimals;
     this.quoteDecimals = quoteDecimals;
@@ -89,6 +91,12 @@ class KandelDistribution {
   public getLiveOffers(offerType: Market.BA) {
     return (offerType == "bids" ? this.offers.bids : this.offers.asks).filter(
       (x) => x.gives.gt(0)
+    );
+  }
+
+  public getDeadOffers(offerType: Market.BA) {
+    return (offerType == "bids" ? this.offers.bids : this.offers.asks).filter(
+      (x) => !x.gives.gt(0)
     );
   }
 
@@ -130,39 +138,104 @@ class KandelDistribution {
     );
   }
 
+  /** Adds offers from lists to a chunk, including its dual; only adds each offer once.
+   * @param offerType The type of offer to add.
+   * @param offerLists The lists of offers to add (a structure for bids and for asks)
+   * @param chunks The chunks to add the offers to.
+   */
+  private addOfferToChunk(
+    offerType: Market.BA,
+    offerLists: {
+      asks: { current: number; included: boolean[]; offers: OfferList };
+      bids: { current: number; included: boolean[]; offers: OfferList };
+    },
+    chunks: OfferDistribution[]
+  ) {
+    const dualOfferType = offerType == "asks" ? "bids" : "asks";
+    const offers = offerLists[offerType];
+    const dualOffers = offerLists[dualOfferType];
+    if (offers.current < offers.offers.length) {
+      const offer = offers.offers[offers.current];
+      if (!offers.included[offer.index]) {
+        offers.included[offer.index] = true;
+        chunks[chunks.length - 1][offerType].push(offer);
+        const dualIndex = this.helper.getDualIndex(
+          offerType,
+          offer.index,
+          this.pricePoints,
+          this.stepSize
+        );
+        if (!dualOffers.included[dualIndex]) {
+          dualOffers.included[dualIndex] = true;
+          const dual = this.offers[dualOfferType].find(
+            (x) => x.index == dualIndex
+          );
+          if (!dual) {
+            throw Error(
+              `Invalid distribution, missing ${dualOfferType} at ${dualIndex}`
+            );
+          }
+          chunks[chunks.length - 1][dualOfferType].push(dual);
+        }
+      }
+      offers.current++;
+    }
+  }
+
   /** Split a distribution into chunks according to the maximum number of offers in a single chunk.
    * @param maxOffersInChunk The maximum number of offers in a single chunk.
    * @returns The chunks.
    */
   public chunkDistribution(maxOffersInChunk: number) {
-    const chunks: OfferDistribution[] = [];
+    const chunks: OfferDistribution[] = [{ bids: [], asks: [] }];
+    // In case both offer and dual are live they could be included twice, and due to holes at edges, some will be pointed to as dual multiple times.
+    // The `included` is used to ensure they are added only once.
+    // All offers are included, but live offers are included first, starting at the middle and going outwards (upwards through asks, downwards through bids)
+    const offerLists = {
+      asks: {
+        current: 0,
+        included: Array(this.pricePoints).fill(false),
+        offers: this.getLiveOffers("asks").concat(this.getDeadOffers("asks")),
+      },
+      bids: {
+        current: 0,
+        included: Array(this.pricePoints).fill(false),
+        offers: this.getLiveOffers("bids")
+          .reverse()
+          .concat(this.getDeadOffers("bids").reverse()),
+      },
+    };
+    while (
+      offerLists.asks.current < offerLists.asks.offers.length ||
+      offerLists.bids.current < offerLists.bids.offers.length
+    ) {
+      this.addOfferToChunk("asks", offerLists, chunks);
+      if (
+        chunks[chunks.length - 1].asks.length +
+          chunks[chunks.length - 1].bids.length >=
+        maxOffersInChunk
+      ) {
+        chunks.push({ bids: [], asks: [] });
+      }
+      this.addOfferToChunk("bids", offerLists, chunks);
+      if (
+        chunks[chunks.length - 1].asks.length +
+          chunks[chunks.length - 1].bids.length >=
+        maxOffersInChunk
+      ) {
+        chunks.push({ bids: [], asks: [] });
+      }
+    }
+    // Final chunk can be empty, so remove it
+    if (
+      chunks[chunks.length - 1].asks.length +
+        chunks[chunks.length - 1].bids.length ==
+      0
+    ) {
+      chunks.pop();
+    }
 
-    let distributionChunk: OfferDistribution = [];
-    for (let i = 0; i < this.offers.length; i++) {
-      const indexLow = offerMiddle - i - 1;
-      const indexHigh = offerMiddle + i;
-      if (indexLow >= 0 && indexLow < this.offers.length) {
-        distributionChunk.unshift(this.offers[indexLow]);
-      }
-      if (indexHigh < this.offers.length) {
-        distributionChunk.push(this.offers[indexHigh]);
-      }
-      if (distributionChunk.length >= maxOffersInChunk) {
-        chunks.push(distributionChunk);
-        distributionChunk = [];
-      }
-    }
-    if (distributionChunk.length) {
-      chunks.push(distributionChunk);
-    }
     return chunks;
-  }
-
-  /** Gets the ticks for the distribution.
-   * @returns The base quote ticks in the distribution.
-   */
-  public getBaseQuoteTicksForDistribution() {
-    return this.offers.asks.map((x) => x.tick);
   }
 
   /** Gets the required volume of base and quote for the distribution to be fully provisioned.
@@ -175,36 +248,53 @@ class KandelDistribution {
     };
   }
 
+  /** Gets the geometric parameters defining the distribution. */
+  public getGeometricParams() {
+    const someAsk = this.offers.asks[0];
+    const baseQuoteTickIndex0 = this.helper.getBaseQuoteTicksFromTick(
+      "asks",
+      someAsk.index,
+      someAsk.tick,
+      this.baseQuoteTickOffset,
+      this.pricePoints
+    )[0];
+
+    return {
+      baseQuoteTickOffset: this.baseQuoteTickOffset,
+      pricePoints: this.pricePoints,
+      firstAskIndex: this.getFirstLiveIndex("asks"),
+      baseQuoteTickIndex0: baseQuoteTickIndex0,
+      stepSize: this.stepSize,
+    };
+  }
+
   /** Verifies the distribution is valid.
    * @remarks Throws if the distribution is invalid.
    * The verification checks that indices are ascending and bids come before asks.
-   * The distribution is not verified.
+   * The price distribution is not verified.
    */
   public verifyDistribution() {
-    if (this.pricePoints == 0) {
-      return;
-    }
-    if (this.offers.bids.length == this.pricePoints) {
+    if (this.offers.bids.length == this.pricePoints - this.stepSize) {
       throw new Error(
-        "Invalid distribution: number of bids does not match number of price points"
+        "Invalid distribution: number of bids does not match number of price points and step size"
       );
     }
-    if (this.offers.asks.length == this.pricePoints) {
+    if (this.offers.asks.length == this.pricePoints - this.stepSize) {
       throw new Error(
-        "Invalid distribution: number of asks does not match number of price points"
+        "Invalid distribution: number of asks does not match number of price points and step size"
       );
     }
-    for (let i = 0; i < this.pricePoints; i++) {
-      if (this.offers.bids[i].index != i) {
-        throw new Error("Invalid distribution: bid indices are invalid");
+    for (let i = 1; i < this.pricePoints - this.stepSize; i++) {
+      if (this.offers.bids[i].index <= this.offers.bids[i - 1].index) {
+        throw new Error("Invalid distribution: bid indices are not ascending");
       }
-      if (this.offers.asks[i].index != i) {
-        throw new Error("Invalid distribution: ask indices are invalid");
+      if (this.offers.asks[i].index <= this.offers.asks[i - 1].index) {
+        throw new Error("Invalid distribution: ask indices are not ascending");
       }
     }
     if (this.getFirstLiveIndex("asks") < this.getFirstLiveIndex("bids")) {
       throw new Error(
-        "Invalid distribution: live bids should come before asks"
+        "Invalid distribution: live bids should come before live asks"
       );
     }
   }
@@ -224,8 +314,26 @@ class KandelDistribution {
   }) {
     return this.helper.getRequiredProvision({
       ...params,
-      offerCount: this.pricePoints,
+      bidCount: this.offers.bids.length,
+      askCount: this.offers.asks.length,
     });
+  }
+
+  /** Calculates the minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
+   * @param minimumBasePerOffer The minimum base to give for each offer.
+   * @param minimumQuotePerOffer The minimum quote to give for each offer.
+   * @returns The minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
+   */
+  calculateMinimumInitialGives(
+    minimumBasePerOffer: Big,
+    minimumQuotePerOffer: Big
+  ) {
+    return this.helper.calculateMinimumInitialGives(
+      minimumBasePerOffer,
+      minimumQuotePerOffer,
+      this.offers.bids.map((x) => x.tick),
+      this.offers.asks.map((x) => x.tick)
+    );
   }
 }
 

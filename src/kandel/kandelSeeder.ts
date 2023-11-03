@@ -172,11 +172,10 @@ class KandelSeeder {
     gasprice?: number
   ) {
     const gasreq = await this.getDefaultGasreq(seed.onAave);
-    return distribution.helper.getRequiredProvision({
+    return distribution.getRequiredProvision({
       market: seed.market,
       gasprice: await this.getBufferedGasprice(gaspriceFactor, gasprice),
       gasreq,
-      offerCount: distribution.pricePoints,
     });
   }
 

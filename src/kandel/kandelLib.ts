@@ -66,6 +66,7 @@ class KandelLib {
     return new KandelDistribution(
       params.baseQuoteTickOffset,
       params.pricePoints,
+      params.stepSize,
       {
         bids: distribution.bids.map((o) => ({
           index: o.index.toNumber(),
