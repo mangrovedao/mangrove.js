@@ -223,7 +223,7 @@ class LiquidityProvider {
     // deduce price from tick & gives, or deduce tick & gives from volume & price
     if ("tick" in p) {
       tick = ethers.BigNumber.from(p.tick);
-      price = TickLib.priceFromTick(tick);
+      price = tickPriceHelper.priceFromTick(p.ba, market, tick);
       gives = Big(p.gives);
     } else if ("price" in p) {
       price = Big(p.price);
