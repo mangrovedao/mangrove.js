@@ -17,9 +17,9 @@ import {
   MangroveOrderStartEvent,
   NewOwnedOfferEvent,
 } from "../types/typechain/MangroveOrder";
-import { TickLib } from "./coreCalculations/TickLib";
 import { logger } from "./logger";
 import { CleanStartEvent } from "../types/typechain/IMangrove";
+import TickPriceHelper from "./tickPriceHelper";
 
 type RawOfferData = {
   id: BigNumber;
@@ -38,6 +38,8 @@ export type OrderResultWithOptionalSummary = Optional<
 >;
 
 class TradeEventManagement {
+  tickPriceHelper: TickPriceHelper = new TickPriceHelper();
+
   rawOfferToOffer(
     market: Market,
     ba: Market.BA,
@@ -46,12 +48,8 @@ class TradeEventManagement {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
 
     const gives = outbound_tkn.fromUnits(raw.gives);
-    const diffInDecimals = Math.abs(
-      outbound_tkn.decimals - inbound_tkn.decimals
-    );
-    const divOrMul = ba == "bids" ? "div" : "mul";
-
     const id = this.#rawIdToId(raw.id);
+
     if (id === undefined) throw new Error("Offer ID is 0");
     return {
       id,
@@ -60,9 +58,7 @@ class TradeEventManagement {
       gasreq: raw.gasreq.toNumber(),
       tick: raw.tick,
       gives: gives,
-      price: TickLib.priceFromTick(raw.tick)[divOrMul](
-        Big(10).pow(diffInDecimals)
-      ),
+      price: this.tickPriceHelper.priceFromTick(ba, market, raw.tick),
     };
   }
 

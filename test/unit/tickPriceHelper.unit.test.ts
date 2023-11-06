@@ -3,7 +3,6 @@ import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { BigNumber } from "ethers";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
