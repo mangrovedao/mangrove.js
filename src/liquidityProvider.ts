@@ -13,6 +13,7 @@ import Big from "big.js";
 import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
+import TickPriceHelper from "./util/tickPriceHelper";
 import { TickLib } from "./util/coreCalculations/TickLib";
 import { BigNumber } from "ethers/lib/ethers";
 
@@ -61,6 +62,7 @@ class LiquidityProvider {
   prettyP = new PrettyPrint();
   gasreq: number;
   trade: Trade = new Trade();
+  tickPriceHelper = new TickPriceHelper();
 
   constructor(p: LiquidityProvider.ConstructionParams) {
     if (p.eoa || p.logic) {
@@ -216,6 +218,7 @@ class LiquidityProvider {
     gasprice?: number;
     fund?: Bigish;
   } {
+    const tickPriceHelper = new TickPriceHelper();
     let tick: ethers.BigNumber, gives: Big, price: Big;
     // deduce price from tick & gives, or deduce tick & gives from volume & price
     if ("tick" in p) {
@@ -224,17 +227,10 @@ class LiquidityProvider {
       gives = Big(p.gives);
     } else if ("price" in p) {
       price = Big(p.price);
+      tick = tickPriceHelper.tickFromPrice(p.ba, market, price);
       if (p.ba === "asks") {
-        const priceWithCorrectDecimals = Big(price).div(
-          Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
-        );
-        tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         gives = Big(p.volume);
       } else {
-        const priceWithCorrectDecimals = Big(price).mul(
-          Big(10).pow(Math.abs(market.base.decimals - market.quote.decimals))
-        );
-        tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         gives = Big(p.volume).mul(price);
       }
     } else {
