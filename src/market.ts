@@ -1024,7 +1024,7 @@ class Market {
       absPriceDiffs[i] =
         prevPrice === undefined || o.price === undefined
           ? undefined
-          : Big(prevPrice.toNumber()).sub(o.price.toNumber()).abs();
+          : prevPrice.sub(o.price).abs();
       return o.price;
     }, offers[0].price);
 
