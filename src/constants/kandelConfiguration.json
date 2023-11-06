@@ -15,12 +15,12 @@
       "markets": {
         "WETH": {
           "DAI": {
-            "aaveEnabled": true
+            "aaveEnabled": false
           },
           "USDC": {
             "minimumBasePerOfferFactor": 6,
             "minimumQuotePerOfferFactor": 6,
-            "aaveEnabled": true
+            "aaveEnabled": false
           }
         },
         "DAI": {
@@ -35,7 +35,15 @@
           }
         },
         "WBTC": {
-          "USDT": {}
+          "USDT": {},
+          "DAI": {
+            "aaveEnabled": true
+          }
+        },
+        "CRV": {
+          "WBTC": {
+            "aaveEnabled": true
+          }
         }
       }
     },
