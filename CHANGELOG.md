@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-1
+
 - feat: Upgrade to new mangrove-core and mangrove-strats. Details to be added for production release.
 - issue: Kandel is disabled for now.
 
