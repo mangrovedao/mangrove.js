@@ -84,11 +84,13 @@ class LiquidityProvider {
 
   /** Connects the logic to a Market in order to pass market orders. This assumes the underlying contract of offer logic is an ILiquidityProvider.
    * @param offerLogic The offer logic.
+   * @param offerGasreq The gas required for the offer execution on the offer logic.
    * @param p The market to connect to. Can be a Market object or a market descriptor.
    * @returns A LiquidityProvider.
    */
   static async connect(
     offerLogic: OfferLogic,
+    offerGasreq: number,
     p:
       | Market
       | {
@@ -103,14 +105,14 @@ class LiquidityProvider {
         mgv: offerLogic.mgv,
         logic: offerLogic,
         market: p,
-        gasreq: await offerLogic.offerGasreq(),
+        gasreq: offerGasreq,
       });
     } else {
       return new LiquidityProvider({
         mgv: offerLogic.mgv,
         logic: offerLogic,
         market: await offerLogic.mgv.market(p),
-        gasreq: await offerLogic.offerGasreq(),
+        gasreq: offerGasreq,
       });
     }
   }
@@ -129,9 +131,8 @@ class LiquidityProvider {
   ): Promise<Big> {
     const gasreq = opts.gasreq ? opts.gasreq : this.gasreq;
     if (this.logic) {
-      return this.logic.getMissingProvision(this.market, ba, {
+      return this.logic.getMissingProvision(this.market, ba, gasreq, {
         ...opts,
-        gasreq,
       });
     } else {
       const offerInfo = opts.id

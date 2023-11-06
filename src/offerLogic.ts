@@ -2,7 +2,7 @@ import * as ethers from "ethers";
 import { Bigish } from "./types";
 import { typechain } from "./types";
 
-import { LiquidityProvider, Mangrove, Market } from ".";
+import { Mangrove, Market } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import Big from "big.js";
 
@@ -83,12 +83,6 @@ class OfferLogic {
    */
   connect(signerOrProvider: SignerOrProvider): OfferLogic {
     return new OfferLogic(this.mgv, this.contract.address, signerOrProvider);
-  }
-
-  /** Retrieves the gasreq necessary for offers of this OfferLogic to execute a trade. */
-  async offerGasreq(): Promise<number> {
-    const offerGasreq = await this.contract["offerGasreq()"]();
-    return offerGasreq.toNumber();
   }
 
   /** Sets the admin of the contract if the Contract implements the AccessControlled interface.
@@ -194,18 +188,18 @@ class OfferLogic {
   /** Gets the missing provision in ethers for an offer to be posted or updated on the offer logic with the given parameters, while taking already locked provision into account.
    * @param ba bids or asks
    * @param market the market for the offer.
+   * @param gasreq gas required for the offer execution.
    * @param opts optional parameters for the calculation.
    * @param opts.id the id of the offer to update. If undefined, then the offer is a new offer and nothing is locked.
-   * @param opts.gasreq gas required for the offer execution. If undefined, the offer logic's gasreq.
    * @param opts.gasprice gas price to use for the calculation. If undefined, then Mangrove's current gas price is used.
    * @returns the additional required provision, in ethers.
    */
   async getMissingProvision(
     market: Market,
     ba: Market.BA,
-    opts: { id?: number; gasreq?: number; gasprice?: number } = {}
+    gasreq: number,
+    opts: { id?: number; gasprice?: number } = {}
   ) {
-    const gasreq = opts.gasreq ? opts.gasreq : await this.offerGasreq();
     const lockedProvision = await this.retrieveLockedProvisionForOffer(
       market,
       ba,
@@ -217,20 +211,6 @@ class OfferLogic {
       gasreq,
       opts.gasprice
     );
-  }
-
-  /** Returns a LiquidityProvider with `this` as an underlying offer logic
-   * Note that if `this.contract` is fully compliant with the `ILiquidityProvider` interface, some functions offered by the returned `LiquidityProvider` instance might throw.
-   * @param market the market on which the liquidityProvider will manage offers
-   */
-
-  public async liquidityProvider(market: Market): Promise<LiquidityProvider> {
-    return new LiquidityProvider({
-      mgv: this.mgv,
-      logic: this,
-      gasreq: await this.offerGasreq(),
-      market: market,
-    });
   }
 }
 
