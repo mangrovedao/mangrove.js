@@ -1,0 +1,10 @@
+{
+  "takeGasOverhead": 200000,
+  "restingOrderGasreq": 152000,
+  "networks": {
+    "maticmum": {
+      "restingOrderGasreq": 152001,
+      "takeGasOverhead": 200001
+    }
+  }
+}

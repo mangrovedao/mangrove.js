@@ -11,9 +11,12 @@ import logger from "./util/logger";
 const BookSubscriptionEventsSet = new Set([
   "OfferWrite",
   "OfferFail",
+  "OfferFailWithPosthookData",
   "OfferSuccess",
+  "OfferSuccessWithPosthookData",
   "OfferRetract",
   "SetGasbase",
+  "SetActive",
 ]);
 
 class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent> {
@@ -48,8 +51,20 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
 
   public computeBookIdentifier(market: Market, ba: Market.BA): string {
     return ba === "asks"
-      ? `${market.base.address}_${market.quote.address}`.toLowerCase()
-      : `${market.quote.address}_${market.base.address}`.toLowerCase();
+      ? market.mgv
+          .getOlKeyHash(
+            market.base.address,
+            market.quote.address,
+            market.tickSpacing.toNumber()
+          )!
+          .toLowerCase()
+      : market.mgv
+          .getOlKeyHash(
+            market.quote.address,
+            market.base.address,
+            market.tickSpacing.toNumber()
+          )!
+          .toLowerCase();
   }
 
   public getSemibook(
@@ -142,7 +157,8 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
   public async handleLog(log: Log): Promise<void> {
     const event: Market.BookSubscriptionEvent =
       this.contract.interface.parseLog(log) as any; // wrap this in try catch
-    const identifier = `${event.args[0]}_${event.args[1]}`.toLowerCase(); // outbound_tkn_inbound_tkn
+
+    const identifier = `${event.args[0]}`.toLowerCase(); // olKeyHash
 
     if (!BookSubscriptionEventsSet.has(event.name)) {
       return; // ignore events

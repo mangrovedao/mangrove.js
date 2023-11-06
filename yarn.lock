@@ -1236,19 +1236,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@npm:^1.5.8-1":
-  version: 1.5.8-1
-  resolution: "@mangrovedao/mangrove-core@npm:1.5.8-1"
-  checksum: 84a6e8c435267bdbda85000298723c7e20c4dfab93dc1fbcf8ac9b83f27c2ad35da36810311bce3f64904559b3aad3fe95e4f995de93228908acd19dec3e706c
+"@mangrovedao/mangrove-core@npm:^2.0.0-3":
+  version: 2.0.0-3
+  resolution: "@mangrovedao/mangrove-core@npm:2.0.0-3"
+  checksum: 7072e48bd78e9e784d4b07d50eb86ae459e63a884c3999ed6d5c0567c95ab6c00d60ba50800feb117c15641eb207026ca59076f15005c0e2ba44ef20b4bbdacb
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@npm:^0.0.2-0":
-  version: 0.0.2-0
-  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-0"
+"@mangrovedao/mangrove-core@npm:next":
+  version: 1.5.11-0
+  resolution: "@mangrovedao/mangrove-core@npm:1.5.11-0"
+  checksum: 79550c7ccfa11ed398125cd36faf2115d80faedb8caed340565a2da07fe54fd683962f355a959b8cb5f0183f4581f84361dd269fc8857969d6de170842911d45
+  languageName: node
+  linkType: hard
+
+"@mangrovedao/mangrove-strats@npm:next":
+  version: 0.0.2-3
+  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-3"
   dependencies:
-    "@mangrovedao/mangrove-core": ^1.5.8-1
-  checksum: 2eca98d7f087a01480ae85b1bf1905495f5f64efd11d3f0fbb10d7118e40bf8fd5fbdd063a80100903d9e46581d2448cf2b81a5fde11d1cd3b61a3f783174fcc
+    "@mangrovedao/mangrove-core": next
+  checksum: 32abe70d58d8fc649004ab56c5e717384f091865af2e148f3e1d702604839be45cbf2b203c6dffada006eb8c1df17abb52fbcaf894a9ff76fca2e7087b06b116
   languageName: node
   linkType: hard
 
@@ -1262,8 +1269,8 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/mangrove-core": ^1.5.8-1
-    "@mangrovedao/mangrove-strats": ^0.0.2-0
+    "@mangrovedao/mangrove-core": ^2.0.0-3
+    "@mangrovedao/mangrove-strats": next
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6

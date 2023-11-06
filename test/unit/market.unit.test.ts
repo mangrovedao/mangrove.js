@@ -4,6 +4,7 @@ import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -80,18 +81,6 @@ describe("Market unit tests suite", () => {
     });
   });
 
-  describe("getPrice", () => {
-    it("returns quoteVolume divided by baseVolume", async function () {
-      // Arrange
-      const gives = Big(12);
-      const wants = Big(13);
-      // Act
-      const result = Market.getPrice("bids", gives, wants);
-      // Assert
-      assert.ok(result && gives.div(wants).eq(result));
-    });
-  });
-
   describe("getBaseQuoteVolumes", () => {
     it("returns gives as baseVolume and wants as quoteVolume", async function () {
       // Arrange
@@ -124,10 +113,9 @@ describe("Market unit tests suite", () => {
         gasprice: 1,
         maker: "",
         gasreq: 1,
-        offer_gasbase: 1,
-        wants: Big(1),
+        offer_gasbase: 1000,
         gives: Big(1),
-        volume: Big(1),
+        tick: TickLib.getTickFromPrice(price),
         price: Big(price),
       };
     }

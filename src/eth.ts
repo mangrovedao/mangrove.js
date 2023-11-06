@@ -163,7 +163,7 @@ class LoggingProvider extends providers.JsonRpcProvider {
  * - empty, if `options.signer` is a signer and `options.signer.provider` is a provider.
  *
  * Signing info can be provided by
- * - `options.signer`, if you want to contruct the Signer yourself
+ * - `options.signer`, if you want to construct the Signer yourself
  * - `options.provider`, then you can specify `options.signerIndex` to get the nth account, or
  * - `options.privateKey`, or
  * - `options.mnemonic`, then you can specify the BIP44 derivation path with `options.path`.

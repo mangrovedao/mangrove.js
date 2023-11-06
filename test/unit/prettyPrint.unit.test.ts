@@ -4,6 +4,8 @@ import PrettyPrint from "../../src/util/prettyPrint";
 import { capture, spy } from "ts-mockito";
 import { Market } from "../../src";
 import Big from "big.js";
+import { BigNumber } from "ethers";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("PrettyPrint Unit test suite", () => {
   describe("consoleOffers", () => {
@@ -19,10 +21,9 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        wants: new Big(21),
         gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        tick: BigNumber.from(31),
+        price: TickLib.priceFromTick(BigNumber.from(31)),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -36,7 +37,7 @@ describe("PrettyPrint Unit test suite", () => {
       assert.equal(4, secArg.length);
       assert.equal(secArg[0], "id");
       assert.equal(secArg[1], "maker");
-      assert.equal(secArg[2], "volume");
+      assert.equal(secArg[2], "gives");
       assert.equal(secArg[3], "price");
     });
 
@@ -52,10 +53,9 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        wants: new Big(21),
         gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        tick: BigNumber.from(31),
+        price: TickLib.priceFromTick(BigNumber.from(31)),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -72,7 +72,7 @@ describe("PrettyPrint Unit test suite", () => {
     });
   });
 
-  describe("prettypPrint", () => {
+  describe("prettyPrint", () => {
     it("prints the offers using the given filter", async function () {
       //Arrange
       const prettyPrint = new PrettyPrint();
@@ -84,15 +84,14 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        wants: new Big(21),
         gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        tick: BigNumber.from(31),
+        price: TickLib.priceFromTick(BigNumber.from(31)),
       };
       const offers: Iterable<Market.Offer> = [offer, offer];
 
       //Act
-      prettyPrint.prettyPrint(offers, ["id", "next", "wants"]);
+      prettyPrint.prettyPrint(offers, ["id", "next", "gives"]);
       //Assert
     });
   });

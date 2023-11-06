@@ -20,7 +20,7 @@ class KandelDistribution {
   offers: OfferDistribution;
   baseDecimals: number;
   quoteDecimals: number;
-  ratio: Big;
+  stepSize: number;
   pricePoints: number;
   helper: KandelDistributionHelper;
 
@@ -32,7 +32,7 @@ class KandelDistribution {
    * @param quoteDecimals The number of decimals for the quote token.
    */
   public constructor(
-    ratio: Big,
+    stepSize: number,
     pricePoints: number,
     offers: OfferDistribution,
     baseDecimals: number,
@@ -40,7 +40,7 @@ class KandelDistribution {
   ) {
     this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
     this.helper.sortByIndex(offers);
-    this.ratio = ratio;
+    this.stepSize = stepSize;
     this.pricePoints = pricePoints;
     this.offers = offers;
     this.baseDecimals = baseDecimals;
@@ -130,38 +130,31 @@ class KandelDistribution {
    * @param maxOffersInChunk The maximum number of offers in a single chunk.
    * @returns The chunks.
    */
-  public chunkDistribution(pivots: number[], maxOffersInChunk: number) {
+  public chunkDistribution(maxOffersInChunk: number) {
     const chunks: {
-      pivots: number[];
       distribution: OfferDistribution;
     }[] = [];
 
     const offerMiddle = this.getOffersIndexOfFirstAskIndex();
-    let pivotsChunk: number[] = [];
     let distributionChunk: OfferDistribution = [];
     for (let i = 0; i < this.offers.length; i++) {
       const indexLow = offerMiddle - i - 1;
       const indexHigh = offerMiddle + i;
       if (indexLow >= 0 && indexLow < this.offers.length) {
-        pivotsChunk.unshift(pivots[indexLow]);
         distributionChunk.unshift(this.offers[indexLow]);
       }
       if (indexHigh < this.offers.length) {
-        pivotsChunk.push(pivots[indexHigh]);
         distributionChunk.push(this.offers[indexHigh]);
       }
-      if (pivotsChunk.length >= maxOffersInChunk) {
+      if (distributionChunk.length >= maxOffersInChunk) {
         chunks.push({
-          pivots: pivotsChunk,
           distribution: distributionChunk,
         });
-        pivotsChunk = [];
         distributionChunk = [];
       }
     }
-    if (pivotsChunk.length) {
+    if (distributionChunk.length) {
       chunks.push({
-        pivots: pivotsChunk,
         distribution: distributionChunk,
       });
     }
