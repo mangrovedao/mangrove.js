@@ -27,6 +27,7 @@ import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib } from "./types/typechain/Mangrove";
 import { OLKeyStruct } from "./types/typechain/AaveKandel";
+import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -113,11 +114,13 @@ namespace Market {
       | { volume: Bigish; price: Bigish }
       | { total: Bigish; price: Bigish }
       | { tick: Bigish; fillVolume: Bigish; fillWants?: boolean }
+      | { gives: Bigish; wants: Bigish; fillWants?: boolean }
     );
 
   export type RestingOrderParams = {
     provision: Bigish;
     offerId?: number;
+    restingOrderGasreq?: number;
   };
 
   export type CleanParams = {
@@ -333,7 +336,9 @@ class Market {
       await market.#initialize(params.bookOptions);
     }
     const config = await market.config();
-    const gasreq = await params.mgv.orderContract.callStatic["offerGasreq()"]();
+    const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
+      market.mgv.network.name
+    );
     market.minVolumeAsk = config.asks.density.multiplyUpReadable(
       BigNumber.from(config.asks.offer_gasbase).add(gasreq.toString())
     );
@@ -985,23 +990,6 @@ class Market {
       baseVolume: ba === "asks" ? gives : wants,
       quoteVolume: ba === "asks" ? wants : gives,
     };
-  }
-
-  /** Determine the price from dividing offer gives with wants depending on whether you're working with bids or asks. */
-  static getPrice(params: Market.getPriceParams): Big | undefined {
-    if ("gives" in params) {
-      const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
-        params.ba,
-        params.gives,
-        params.wants
-      );
-      return baseVolume.gt(0) ? quoteVolume.div(baseVolume) : undefined;
-    } else if ("tickSpacing" in params) {
-      const tick = params.tick.mul(params.tickSpacing);
-      return Big(Math.pow(1.0001, tick.toNumber()));
-    } else {
-      return Big(Math.pow(1.0001, params.tick.toNumber()));
-    }
   }
 
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */

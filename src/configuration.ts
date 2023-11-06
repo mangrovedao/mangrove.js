@@ -4,6 +4,7 @@ import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsB
 import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
 import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSocketOptionsByNetwork.json";
 import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
+import loadedMangroveOrderConfiguration from "./constants/mangroveOrder.json";
 
 import { ethers } from "ethers";
 import Big from "big.js";
@@ -119,10 +120,25 @@ export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
   networks?: Record<network, PartialNetworkConfig>;
 };
 
+/** Mangrove order configuration for a specific chain.
+ * @param restingOrderGasreq The gasreq for a resting order using the MangroveOrder contract.
+ * @param takeGasOverhead The overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove.
+ */
+export type MangroveOrderNetworkConfiguration = {
+  restingOrderGasreq: number;
+  takeGasOverhead: number;
+};
+
+export type PartialMangroveOrderConfiguration =
+  Partial<MangroveOrderNetworkConfiguration> & {
+    networks?: Record<network, Partial<MangroveOrderNetworkConfiguration>>;
+  };
+
 export type Configuration = {
   addressesByNetwork: AddressesConfig;
   tokenDefaults: TokenDefaults;
   tokens: Record<tokenSymbol, TokenConfig>;
+  mangroveOrder: PartialMangroveOrderConfiguration;
   reliableEventSubscriber: ReliableEventSubscriberConfig;
   kandel: PartialKandelConfiguration;
 };
@@ -398,6 +414,32 @@ export const reliableEventSubscriberConfiguration = {
   },
 };
 
+/// MANGROVE ORDER
+
+export const mangroveOrderConfiguration = {
+  /** Gets the gasreq for a resting order using the MangroveOrder contract. */
+  getRestingOrderGasreq: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.restingOrderGasreq ??
+      config.mangroveOrder.restingOrderGasreq;
+    if (!value) {
+      throw Error("No restingOrderGasreq configured");
+    }
+    return value;
+  },
+
+  /** Gets the overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove. */
+  getTakeGasOverhead: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.takeGasOverhead ??
+      config.mangroveOrder.takeGasOverhead;
+    if (!value) {
+      throw Error("No takeGasOverhead configured");
+    }
+    return value;
+  },
+};
+
 /// KANDEL
 
 export const kandelConfiguration = {
@@ -453,6 +495,9 @@ export function resetConfiguration(): void {
         >
       ),
     },
+    mangroveOrder: clone(
+      loadedMangroveOrderConfiguration as PartialMangroveOrderConfiguration
+    ),
     kandel: clone(loadedKandelConfiguration as PartialKandelConfiguration),
   };
 
@@ -517,6 +562,7 @@ export const configuration = {
   tokens: tokensConfiguration,
   reliableEventSubscriber: reliableEventSubscriberConfiguration,
   kandel: kandelConfiguration,
+  mangroveOrder: mangroveOrderConfiguration,
   resetConfiguration,
   updateConfiguration,
 };

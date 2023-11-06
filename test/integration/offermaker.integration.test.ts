@@ -36,7 +36,7 @@ describe("OfferMaker integration test suite", () => {
       tickSpacing: 1,
       bookOptions: { maxOffers: 30 },
     });
-    onchain_lp = await logic.liquidityProvider(market);
+    onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
     eoa_lp = await mgv.liquidityProvider(market);
     mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });

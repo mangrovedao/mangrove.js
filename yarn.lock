@@ -1157,7 +1157,7 @@ __metadata:
   linkType: hard
 
 "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=6bbe15d51a578b50bef7a0e499b641ee1d10b772":
-  version: 0.0.2-0
+  version: 0.0.2-3
   resolution: "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=6bbe15d51a578b50bef7a0e499b641ee1d10b772"
   dependencies:
     "@mangrovedao/mangrove-core": next

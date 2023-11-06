@@ -17,6 +17,7 @@ import { AbstractRouter } from "../../src/types/typechain";
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
+import configuration from "../../src/configuration";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -46,7 +47,10 @@ describe("RestingOrder", () => {
 
       // interpreting mangroveOrder as a maker contract
       orderLogic = mgv.offerLogic(mgv.orderContract.address);
-      orderLP = await LiquidityProvider.connect(orderLogic, {
+      const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
+        mgv.network.name
+      );
+      orderLP = await LiquidityProvider.connect(orderLogic, gasreq, {
         base: "TokenA",
         quote: "TokenB",
         tickSpacing: 1,
@@ -54,8 +58,6 @@ describe("RestingOrder", () => {
       });
 
       //check that contract responds
-      const gasreq = await orderLogic.offerGasreq();
-      assert(gasreq == orderLP.gasreq, "Cannot talk to resting order contract");
       assert(orderLP.computeAskProvision({ gasreq: gasreq }));
     });
   });
@@ -87,7 +89,10 @@ describe("RestingOrder", () => {
         bookOptions: { maxOffers: 30 },
       });
 
-      orderLP = await LiquidityProvider.connect(orderLogic, market);
+      const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
+        mgv.network.name
+      );
+      orderLP = await LiquidityProvider.connect(orderLogic, gasreq, market);
       router = (await orderLogic.router()) as AbstractRouter;
 
       await w(orderLogic.activate(["TokenA", "TokenB"]));
@@ -251,14 +256,16 @@ describe("RestingOrder", () => {
       assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
 
-    it("resting order with deadline", async () => {
-      const provision = await orderLP.computeBidProvision();
-
+    it("resting order with deadline and custom gasreq", async () => {
       await w(tokenB.approve(router.address));
       await w(tokenA.approve(router.address));
 
       const market: Market = orderLP.market;
 
+      const restingOrderGasreqOverride = 1000000;
+      const provisionWithOverride = (
+        await market.getBidProvision(restingOrderGasreqOverride)
+      ).toString();
       const buyPromises = await market.buy({
         price: 1, // tokenA
         volume: 20, // tokenB
@@ -267,20 +274,41 @@ describe("RestingOrder", () => {
             await mgv.provider.getBlock(mgv.provider.getBlockNumber())
           ).timestamp + 5,
         restingOrder: {
-          provision: provision,
+          provision: provisionWithOverride,
+          restingOrderGasreq: restingOrderGasreqOverride,
         },
       });
       const orderResult = await buyPromises.result;
       const tx = await waitForTransaction(buyPromises.response);
       await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+      const restingOrderId = orderResult.restingOrder?.id;
       assert(
-        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        restingOrderId && restingOrderId > 0,
         "Resting order was not posted"
       );
       const olKeyHash = mgv.getOlKeyHash(tokenB.address, tokenA.address, 1);
       const ttl = await mgv.orderContract.expiring(
         olKeyHash!,
         orderResult.restingOrder ? orderResult.restingOrder.id : 0
+      );
+
+      const actualProvision =
+        await orderLP.logic?.retrieveLockedProvisionForOffer(
+          market,
+          "bids",
+          restingOrderId
+        );
+
+      const defaultProvision = await orderLP.computeBidProvision();
+      assert.notEqual(
+        defaultProvision.toString(),
+        provisionWithOverride.toString(),
+        "Default provision is same as override - use different override gasreq"
+      );
+      assert.equal(
+        actualProvision?.toString(),
+        provisionWithOverride.toString(),
+        "Provision did not use overridden gasreq"
       );
 
       assert(

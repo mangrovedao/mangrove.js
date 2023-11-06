@@ -217,6 +217,49 @@ describe("Trade unit tests suite", () => {
       );
       assert.equal(result.fillWants, params.fillWants);
     });
+
+    it("returns fillVolume as gives, tick as TickLib.fromVolume(gives,wants) and fillWants as fillWants, when params has gives, wants and fillWants ", async function () {
+      //Arrange
+      const trade = new Trade();
+      const spyTrade = spy(trade);
+      const slippage = 3;
+      const params: Market.TradeParams = {
+        wants: 20,
+        gives: 30,
+        fillWants: false,
+        slippage: slippage,
+      };
+      const baseToken = {
+        decimals: 18,
+        toUnits: (v: Bigish) =>
+          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
+      };
+      const quoteToken = {
+        decimals: 18,
+        toUnits: (v: Bigish) =>
+          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
+        fromUnits: (v: BigNumber) => Big(v.toString()).div(Big(10).pow(18)),
+      };
+      when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
+
+      //Act
+      const result = trade.getParamsForBuy(params, baseToken, quoteToken);
+
+      //Assert
+      const givesWithSlippage = quoteToken.toUnits(
+        Big(params.gives)
+          .mul(100 + slippage)
+          .div(100)
+      );
+      const expectedTick = TickLib.tickFromVolumes(
+        givesWithSlippage,
+        baseToken.toUnits(params.wants)
+      );
+
+      assert.equal(result.fillVolume.toString(), givesWithSlippage.toString());
+      assert.deepStrictEqual(result.tick.toString(), expectedTick.toString());
+      assert.equal(result.fillWants, params.fillWants);
+    });
   });
 
   describe("getParamsForSell", () => {
@@ -401,6 +444,51 @@ describe("Trade unit tests suite", () => {
       );
       assert.equal(result.tick.toString(), expectedTickWithSlippage.toString());
       assert.equal(result.fillWants, true);
+    });
+    it("returns fillVolume as gives, tick as TickLib.fromVolume(gives,wants) and fillWants as fillWants, when params has gives, wants and fillWants ", async function () {
+      //Arrange
+      const trade = new Trade();
+      const spyTrade = spy(trade);
+      const slippage = 3;
+      const params: Market.TradeParams = {
+        wants: 20,
+        gives: 30,
+        fillWants: false,
+        slippage: slippage,
+      };
+      const baseToken = {
+        decimals: 18,
+        toUnits: (v: Bigish) =>
+          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
+      };
+      const quoteToken = {
+        decimals: 18,
+        toUnits: (v: Bigish) =>
+          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
+        fromUnits: (v: BigNumber) => Big(v.toString()).div(Big(10).pow(18)),
+      };
+      when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
+
+      //Act
+      const result = trade.getParamsForSell(params, baseToken, quoteToken);
+
+      //Assert
+      const wantsWithSlippage = quoteToken.toUnits(
+        Big(params.wants)
+          .mul(100 - slippage)
+          .div(100)
+      );
+      const expectedTick = TickLib.tickFromVolumes(
+        baseToken.toUnits(params.gives),
+        wantsWithSlippage
+      );
+
+      assert.equal(
+        result.fillVolume.toString(),
+        quoteToken.toUnits(params.gives).toString()
+      );
+      assert.deepStrictEqual(result.tick.toString(), expectedTick.toString());
+      assert.equal(result.fillWants, params.fillWants);
     });
   });
 

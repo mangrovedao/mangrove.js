@@ -1,7 +1,6 @@
 import Big from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import Market from "../market";
-import MgvToken from "../mgvtoken";
 import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement, {
@@ -10,8 +9,7 @@ import TradeEventManagement, {
 import UnitCalculations from "./unitCalculations";
 import { MAX_TICK, MIN_TICK } from "./coreCalculations/Constants";
 import { TickLib } from "./coreCalculations/TickLib";
-
-const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
+import configuration from "../configuration";
 
 type CleanUnitParams = {
   ba: Market.BA;
@@ -31,8 +29,15 @@ class Trade {
 
   getParamsForBuy(
     params: Market.TradeParams,
-    baseToken: MgvToken,
-    quoteToken: MgvToken
+    baseToken: {
+      decimals: number;
+      toUnits: (amount: Bigish) => ethers.BigNumber;
+    },
+    quoteToken: {
+      decimals: number;
+      toUnits: (amount: Bigish) => ethers.BigNumber;
+      fromUnits: (amount: ethers.BigNumber) => Big;
+    }
   ) {
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
@@ -61,7 +66,7 @@ class Trade {
         }
         fillWants = false;
       }
-    } else {
+    } else if ("tick" in params) {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
@@ -72,6 +77,21 @@ class Trade {
       } else {
         tick = BigNumber.from(params.tick);
       }
+    } else {
+      const slippage = this.validateSlippage(params.slippage);
+      const givesWithSlippage = quoteToken.toUnits(
+        Big(params.gives)
+          .mul(100 + slippage)
+          .div(100)
+      );
+      fillWants = params.fillWants ?? true;
+      fillVolume = fillWants
+        ? Big(params.wants)
+        : quoteToken.fromUnits(givesWithSlippage);
+      tick = TickLib.tickFromVolumes(
+        givesWithSlippage,
+        baseToken.toUnits(params.wants)
+      );
     }
 
     return {
@@ -85,8 +105,15 @@ class Trade {
 
   getParamsForSell(
     params: Market.TradeParams,
-    baseToken: MgvToken,
-    quoteToken: MgvToken
+    baseToken: {
+      decimals: number;
+      toUnits: (amount: Bigish) => ethers.BigNumber;
+    },
+    quoteToken: {
+      decimals: number;
+      toUnits: (amount: Bigish) => ethers.BigNumber;
+      fromUnits: (amount: ethers.BigNumber) => Big;
+    }
   ) {
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
@@ -114,7 +141,7 @@ class Trade {
         }
         fillWants = true;
       }
-    } else {
+    } else if ("tick" in params) {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
       if (slippage > 0) {
@@ -125,6 +152,21 @@ class Trade {
       } else {
         tick = BigNumber.from(params.tick);
       }
+    } else {
+      const slippage = this.validateSlippage(params.slippage);
+      const wantsWithSlippage = quoteToken.toUnits(
+        Big(params.wants)
+          .mul(100 - slippage)
+          .div(100)
+      );
+      fillWants = params.fillWants ?? false;
+      fillVolume = fillWants
+        ? quoteToken.fromUnits(wantsWithSlippage)
+        : Big(params.gives);
+      tick = TickLib.tickFromVolumes(
+        baseToken.toUnits(params.gives),
+        wantsWithSlippage
+      );
     }
 
     return {
@@ -349,7 +391,9 @@ class Trade {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.estimateGas(bs, fillVolume)).add(
-          MANGROVE_ORDER_GAS_OVERHEAD
+          configuration.mangroveOrder.getTakeGasOverhead(
+            market.mgv.network.name
+          )
         );
       case "marketOrder":
         return await market.estimateGas(bs, fillVolume);
@@ -370,7 +414,9 @@ class Trade {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.simulateGas(ba, tick, fillVolume, fillWants)).add(
-          MANGROVE_ORDER_GAS_OVERHEAD
+          configuration.mangroveOrder.getTakeGasOverhead(
+            market.mgv.network.name
+          )
         );
       case "marketOrder":
         return await market.simulateGas(ba, tick, fillVolume, fillWants);
@@ -560,6 +606,11 @@ class Trade {
           expiryDate: expiryDate,
           offerId:
             restingParams?.offerId === undefined ? 0 : restingParams.offerId,
+          restingOrderGasreq:
+            restingParams?.restingOrderGasreq ??
+            configuration.mangroveOrder.getRestingOrderGasreq(
+              market.mgv.network.name
+            ),
         },
         overrides_,
       ]

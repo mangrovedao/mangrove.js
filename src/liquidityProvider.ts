@@ -14,6 +14,7 @@ import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
 import { TickLib } from "./util/coreCalculations/TickLib";
+import { BigNumber } from "ethers/lib/ethers";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -33,7 +34,8 @@ namespace LiquidityProvider {
 
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
-    | ({ tick: Bigish; gives: Bigish } & OptParams);
+    | ({ tick: Bigish; gives: Bigish } & OptParams)
+    | ({ wants: Bigish; gives: Bigish } & OptParams);
 
   export type OfferActionResult = {
     offerType: Market.BA;
@@ -82,11 +84,13 @@ class LiquidityProvider {
 
   /** Connects the logic to a Market in order to pass market orders. This assumes the underlying contract of offer logic is an ILiquidityProvider.
    * @param offerLogic The offer logic.
+   * @param offerGasreq The gas required for the offer execution on the offer logic.
    * @param p The market to connect to. Can be a Market object or a market descriptor.
    * @returns A LiquidityProvider.
    */
   static async connect(
     offerLogic: OfferLogic,
+    offerGasreq: number,
     p:
       | Market
       | {
@@ -101,14 +105,14 @@ class LiquidityProvider {
         mgv: offerLogic.mgv,
         logic: offerLogic,
         market: p,
-        gasreq: await offerLogic.offerGasreq(),
+        gasreq: offerGasreq,
       });
     } else {
       return new LiquidityProvider({
         mgv: offerLogic.mgv,
         logic: offerLogic,
         market: await offerLogic.mgv.market(p),
-        gasreq: await offerLogic.offerGasreq(),
+        gasreq: offerGasreq,
       });
     }
   }
@@ -127,9 +131,8 @@ class LiquidityProvider {
   ): Promise<Big> {
     const gasreq = opts.gasreq ? opts.gasreq : this.gasreq;
     if (this.logic) {
-      return this.logic.getMissingProvision(this.market, ba, {
+      return this.logic.getMissingProvision(this.market, ba, gasreq, {
         ...opts,
-        gasreq,
       });
     } else {
       const offerInfo = opts.id
@@ -215,11 +218,11 @@ class LiquidityProvider {
   } {
     let tick: ethers.BigNumber, gives: Big, price: Big;
     // deduce price from tick & gives, or deduce tick & gives from volume & price
-    if ("gives" in p) {
+    if ("tick" in p) {
       tick = ethers.BigNumber.from(p.tick);
       price = TickLib.priceFromTick(tick);
       gives = Big(p.gives);
-    } else {
+    } else if ("price" in p) {
       price = Big(p.price);
       if (p.ba === "asks") {
         const priceWithCorrectDecimals = Big(price).div(
@@ -233,6 +236,28 @@ class LiquidityProvider {
         );
         tick = TickLib.getTickFromPrice(priceWithCorrectDecimals);
         gives = Big(p.volume).mul(price);
+      }
+    } else {
+      gives = Big(p.gives);
+      const wants = Big(p.wants);
+
+      tick = TickLib.tickFromVolumes(
+        BigNumber.from(
+          p.ba === "asks"
+            ? wants.mul(Big(10).pow(market.quote.decimals)).toFixed()
+            : wants.mul(Big(10).pow(market.base.decimals)).toFixed()
+        ),
+        BigNumber.from(
+          p.ba === "asks"
+            ? gives.mul(Big(10).pow(market.base.decimals)).toFixed()
+            : gives.mul(Big(10).pow(market.quote.decimals)).toFixed()
+        )
+      );
+
+      if (p.ba === "bids") {
+        price = Big(gives).div(wants);
+      } else {
+        price = Big(wants).div(gives);
       }
     }
 

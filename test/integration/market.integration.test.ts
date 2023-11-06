@@ -1045,7 +1045,7 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 126132;
+                expectedLimit = 126278;
               } else {
                 expectedLimit = 43475;
               }
@@ -1500,7 +1500,8 @@ describe("Market integration tests suite", () => {
       inbound_tkn: market.base.address,
       tickSpacing: market.tickSpacing,
     };
-    const gasreq = await mgv.orderContract.callStatic["offerGasreq()"]();
+    // see mangroveOrder.json -> restingOrderGasreq
+    const gasreq = 152000;
     const baseAsOutbound = await mgv.readerContract.minVolume(
       olKeyBaseAsOutbound,
       gasreq
