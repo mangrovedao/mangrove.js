@@ -26,6 +26,7 @@ import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib } from "./types/typechain/Mangrove";
+import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -118,6 +119,7 @@ namespace Market {
   export type RestingOrderParams = {
     provision: Bigish;
     offerId?: number;
+    restingOrderGasreq?: number;
   };
 
   export type CleanParams = {
@@ -332,7 +334,9 @@ class Market {
       await market.#initialize(params.bookOptions);
     }
     const config = await market.config();
-    const gasreq = await params.mgv.orderContract.callStatic["offerGasreq()"]();
+    const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
+      market.mgv.network.name
+    );
     market.minVolumeAsk = config.asks.density.multiplyUpReadable(
       BigNumber.from(config.asks.offer_gasbase).add(gasreq.toString())
     );

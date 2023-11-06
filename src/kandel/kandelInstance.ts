@@ -199,9 +199,8 @@ class KandelInstance {
     return {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
-      stepSize: params.stepSize.toNumber(),
-      // spread: params.,
-      pricePoints: params.pricePoints.toNumber(),
+      stepSize: params.stepSize,
+      pricePoints: params.pricePoints,
     };
   }
 

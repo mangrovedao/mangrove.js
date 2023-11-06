@@ -70,4 +70,23 @@ describe("Configuration unit tests suite", () => {
     assert.equal(configuration.tokens.getDecimals("TokenA"), 18);
     assert.equal(configuration.tokens.getDecimals("UnknownToken"), undefined);
   });
+
+  it("can read mangroveOrder config", () => {
+    assert.equal(
+      configuration.mangroveOrder.getRestingOrderGasreq("local"),
+      152000
+    );
+    assert.equal(
+      configuration.mangroveOrder.getRestingOrderGasreq("maticmum"),
+      152001
+    );
+    assert.equal(
+      configuration.mangroveOrder.getTakeGasOverhead("local"),
+      200000
+    );
+    assert.equal(
+      configuration.mangroveOrder.getTakeGasOverhead("maticmum"),
+      200001
+    );
+  });
 });
