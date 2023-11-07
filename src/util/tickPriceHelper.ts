@@ -5,27 +5,34 @@ import Market from "../market";
 import Big from "big.js";
 
 class TickPriceHelper {
+  ba: Market.BA;
+  market: {
+    base: { decimals: number };
+    quote: { decimals: number };
+  };
+
+  constructor(
+    ba: Market.BA,
+    market: { base: { decimals: number }; quote: { decimals: number } }
+  ) {
+    this.ba = ba;
+    this.market = market;
+  }
+
   /**
    * Calculate the price at a given tick.
    * @param ba bids or asks
    * @param tick tick to calculate price for
    * @returns price at tick
    */
-  priceFromTick(
-    ba: Market.BA,
-    market: {
-      base: { decimals: number };
-      quote: { decimals: number };
-    },
-    tick: BigNumber
-  ): Big {
+  priceFromTick(tick: BigNumber): Big {
     const priceFromTick = TickLib.priceFromTick(tick);
     const p = Big(10).pow(
-      Math.abs(market.base.decimals - market.quote.decimals)
+      Math.abs(this.market.base.decimals - this.market.quote.decimals)
     );
 
     let priceWithCorrectDecimals: Big;
-    if (ba === "bids") {
+    if (this.ba === "bids") {
       priceWithCorrectDecimals = priceFromTick.div(p);
     } else {
       priceWithCorrectDecimals = priceFromTick.mul(p);
@@ -39,20 +46,13 @@ class TickPriceHelper {
    * @param price price to calculate tick for
    * @returns tick for price
    */
-  tickFromPrice(
-    ba: Market.BA,
-    market: {
-      base: { decimals: number };
-      quote: { decimals: number };
-    },
-    price: Big
-  ): BigNumber {
+  tickFromPrice(price: Big): BigNumber {
     const p = Big(10).pow(
-      Math.abs(market.base.decimals - market.quote.decimals)
+      Math.abs(this.market.base.decimals - this.market.quote.decimals)
     );
 
     let priceAdjustedForDecimals: Big;
-    if (ba === "bids") {
+    if (this.ba === "bids") {
       priceAdjustedForDecimals = price.mul(p);
     } else {
       priceAdjustedForDecimals = price.div(p);
