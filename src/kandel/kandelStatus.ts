@@ -1,20 +1,18 @@
 import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
-import { Bigish } from "../types";
 import { TickLib } from "../util/coreCalculations/TickLib";
 import { BigNumber } from "ethers";
 
 /** Offers with their price, liveness, and Kandel index.
  * @param offerType Whether the offer is a bid or an ask.
- * @param price The price of the offer.
  * @param tick The tick of the offer.
  * @param index The index of the price point in Kandel.
  * @param offerId The Mangrove offer id of the offer.
+ * @param live Whether the offer is live.
  */
-export type OffersWithPrices = {
+export type OffersWithLiveness = {
   offerType: Market.BA;
-  price: Bigish;
   tick: number;
   index: number;
   offerId: number;
@@ -95,18 +93,21 @@ class KandelStatus {
   }
 
   /** Gets the index of the offer with a price closest to the mid price (since precision matters most there since it is used to distinguish expected dead from live.)
-   * @param midPrice The mid price.
-   * @param prices The prices of the offers.
+   * @param midBaseQuoteTick The mid tick.
+   * @param baseQuoteTicks The ticks of the offers.
    * @returns The index of the offer with a price closest to the mid price.
    */
-  public getIndexOfPriceClosestToMid(midPrice: Big, prices: Big[]) {
+  public getIndexOfPriceClosestToMid(
+    midBaseQuoteTick: number,
+    baseQuoteTicks: number[]
+  ) {
     // We need any live offer to extrapolate prices from, we take one closest to mid price since precision matters most there
     // since it is used to distinguish expected dead from live.
-    const diffs = prices.map((x, i) => {
-      return { i, diff: midPrice.minus(x).abs() };
+    const diffs = baseQuoteTicks.map((x, i) => {
+      return { i, diff: Math.abs(midBaseQuoteTick - x) };
     });
-    diffs.sort((a: { diff: Big }, b: { diff: Big }) =>
-      a.diff.gt(b.diff) ? 1 : b.diff.gt(a.diff) ? -1 : 0
+    diffs.sort((a: { diff: number }, b: { diff: number }) =>
+      a.diff > b.diff ? 1 : b.diff > a.diff ? -1 : 0
     );
 
     return diffs[0].i;
@@ -128,14 +129,17 @@ class KandelStatus {
     baseQuoteTickOffset: number,
     pricePoints: number,
     stepSize: number,
-    offers: OffersWithPrices
+    offers: OffersWithLiveness
   ): Statuses {
+    //FIXME TickLib.getTickFromPRice and TickLib.priceFromTick should always be used decimals aware via similar market functions!
+    const midBaseQuoteTick = TickLib.getTickFromPrice(midPrice).toNumber();
+
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
     const offer =
       offers[
         this.getIndexOfPriceClosestToMid(
-          midPrice,
-          offers.map((x) => Big(x.price))
+          midBaseQuoteTick,
+          offers.map((x) => (x.offerType == "bids" ? -x.tick : x.tick))
         )
       ];
 
@@ -150,16 +154,13 @@ class KandelStatus {
         pricePoints
       );
 
-    //FIXME TickLib.getTickFromPRice and TickLib.priceFromTick should always be used decimals aware via similar market functions!
-    const midTick = TickLib.getTickFromPrice(midPrice).toNumber();
-
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
     // then both offers can be expected live.
     // Note - this first pass does not consider step size, see further down.
     const statuses = expectedBaseQuoteTicks.map((baseQuoteTick) => {
       return {
-        expectedLiveBid: baseQuoteTick <= midTick,
-        expectedLiveAsk: baseQuoteTick >= midTick,
+        expectedLiveBid: baseQuoteTick <= midBaseQuoteTick,
+        expectedLiveAsk: baseQuoteTick >= midBaseQuoteTick,
         expectedBaseQuoteTick: baseQuoteTick,
         expectedPrice: TickLib.priceFromTick(BigNumber.from(baseQuoteTick)),
         asks: undefined as
@@ -174,11 +175,11 @@ class KandelStatus {
     // Merge with actual statuses
     offers
       .filter((x) => x.index < pricePoints)
-      .forEach(({ offerType, index, live, offerId, price, tick }) => {
+      .forEach(({ offerType, index, live, offerId, tick }) => {
         statuses[index][offerType] = {
           live,
           offerId,
-          price: Big(price),
+          price: TickLib.priceFromTick(BigNumber.from(tick)),
           tick,
         };
       });

@@ -8,7 +8,7 @@ import Market from "../market";
 import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
-import KandelStatus, { OffersWithPrices } from "./kandelStatus";
+import KandelStatus, { OffersWithLiveness } from "./kandelStatus";
 import KandelDistributionHelper, {
   OffersWithGives,
 } from "./kandelDistributionHelper";
@@ -411,7 +411,7 @@ class KandelInstance {
    */
   public async getOfferStatusFromOffers(params: {
     midPrice: Bigish;
-    offers: OffersWithPrices;
+    offers: OffersWithLiveness;
   }) {
     const parameters = await this.getParameters();
 

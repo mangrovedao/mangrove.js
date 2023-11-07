@@ -26,7 +26,7 @@ enum OfferType {
   Bid,
 }
 
-class KandelLibStub {
+export class KandelLibStub {
   transportDestination(
     ba: OfferType,
     index: number,
@@ -182,6 +182,20 @@ class KandelLibStub {
       })),
     };
   }
+}
+
+export function createGeneratorStub() {
+  return new KandelDistributionGenerator(
+    new KandelDistributionHelper(4, 6),
+    new KandelLib({
+      address: "0x0",
+      signer: {} as ethers.Signer,
+      kandelLibInstance:
+        new KandelLibStub() as unknown as typechain.GeometricKandel,
+      baseDecimals: 4,
+      quoteDecimals: 6,
+    })
+  );
 }
 
 describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
@@ -736,7 +750,8 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             tick: TickLib.getTickFromPrice(4000).toNumber(),
             stepSize: 1,
             pricePoints: 10,
-            baseQuoteTickOffset: sut.calculateBaseQuoteTickOffset(Big(2)),
+            baseQuoteTickOffset:
+              sut.distributionHelper.calculateBaseQuoteTickOffset(Big(2)),
             minimumBasePerOffer,
             minimumQuotePerOffer,
           });

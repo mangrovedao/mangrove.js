@@ -3,7 +3,8 @@ import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
 import { Bigish } from "../types";
 import { TickLib } from "../util/coreCalculations/TickLib";
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
+import { MIN_TICK, MAX_TICK } from "../util/coreCalculations/Constants";
 
 /** Offers with their tick, Kandel index, and gives amount.
  * @param offerType Whether the offer is a bid or an ask.
@@ -17,6 +18,46 @@ export type OffersWithGives = {
   index: number;
   gives: Bigish;
 }[];
+
+/** Price and price ratio parameters for calculating a geometric price distribution.
+ * @param minPrice The minimum price in the distribution (used to derive minTick).
+ * @param maxPrice The maximum price in the distribution.
+ * @param priceRatio The ratio between each price point (used to derive baseQuoteTickOffset).
+ * @param midPrice The mid-price used to determine when to switch from bids to asks. (used to derive midTick).
+ * @param stepSize The step size used when transporting funds from an offer to its dual.
+ * @param generateFromMid Whether to generate the distribution outwards from the midPrice or upwards from the minPrice.
+ */
+export type PriceDistributionParams = {
+  minPrice?: Bigish;
+  maxPrice?: Bigish;
+  priceRatio?: Bigish;
+  midPrice?: Bigish;
+  stepSize: number;
+  generateFromMid: boolean;
+};
+
+/** Tick and offset parameters for calculating a geometric price distribution.
+ * @param minBaseQuoteTick The minimum base quote tick in the distribution.
+ * @param maxBaseQuoteTick The maximum base quote tick in the distribution (used to derive minTick).
+ * @param baseQuoteTickOffset The number of ticks to jump between two price points.
+ * @param pricePoints The number of price points in the distribution.
+ * @param midBaseQuoteTick The mid-price as base quote tick used to determine when to switch from bids to asks.
+ * @param stepSize The step size used when transporting funds from an offer to its dual.
+ * @param generateFromMid Whether to generate the distribution outwards from the midPrice or upwards from the minPrice.
+ */
+export type TickDistributionParams = {
+  minBaseQuoteTick: number;
+  maxBaseQuoteTick: number;
+  baseQuoteTickOffset: number;
+  midBaseQuoteTick: number;
+  pricePoints: number;
+  stepSize: number;
+  generateFromMid: boolean;
+};
+
+/** Parameters for calculating a geometric price distribution. Exactly three of minPrice (or minTick), maxPrice (or maxTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be provided. */
+export type DistributionParams = PriceDistributionParams &
+  Partial<TickDistributionParams>;
 
 /** @title Helper for handling Kandel offer distributions. */
 class KandelDistributionHelper {
@@ -448,6 +489,132 @@ class KandelDistributionHelper {
       { length: pricePoints },
       (_, index) => tickAtIndex0 + baseQuoteTickOffset * index
     );
+  }
+
+  public calculateBaseQuoteTickOffset(priceRatio: Big) {
+    if (priceRatio.lte(Big(1))) {
+      throw Error("priceRatio must be larger than 1");
+    }
+    return TickLib.tickFromVolumes(
+      BigNumber.from(
+        Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed()
+      ),
+      ethers.constants.WeiPerEther
+    ).toNumber();
+  }
+
+  public getTickDistributionParams(
+    params: DistributionParams
+  ): TickDistributionParams {
+    let {
+      minBaseQuoteTick,
+      maxBaseQuoteTick,
+      midBaseQuoteTick,
+      baseQuoteTickOffset,
+      pricePoints,
+    } = params;
+    const { minPrice, maxPrice, priceRatio, midPrice } = params;
+    if (minBaseQuoteTick == undefined) {
+      if (minPrice == undefined) {
+        throw Error("minPrice or minTick must be provided.");
+      }
+      minBaseQuoteTick = TickLib.getTickFromPrice(Big(minPrice)).toNumber();
+    }
+    if (maxBaseQuoteTick == undefined) {
+      if (maxPrice == undefined) {
+        throw Error("maxPrice or maxTick must be provided.");
+      }
+      maxBaseQuoteTick = TickLib.getTickFromPrice(Big(maxPrice)).toNumber();
+    }
+    if (midBaseQuoteTick == undefined) {
+      if (midPrice == undefined) {
+        throw Error("midPrice or midTick must be provided.");
+      }
+      midBaseQuoteTick = TickLib.getTickFromPrice(Big(midPrice)).toNumber();
+    }
+    if (baseQuoteTickOffset == undefined) {
+      if (priceRatio == undefined) {
+        throw Error("priceRatio or baseQuoteTickOffset must be provided.");
+      }
+      baseQuoteTickOffset = this.calculateBaseQuoteTickOffset(Big(priceRatio));
+    }
+    if (
+      minBaseQuoteTick != undefined &&
+      maxBaseQuoteTick != undefined &&
+      baseQuoteTickOffset != undefined &&
+      pricePoints == undefined
+    ) {
+      pricePoints =
+        Math.floor(
+          (maxBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
+        ) + 1;
+    } else {
+      if (pricePoints == undefined || pricePoints < 2) {
+        throw Error("There must be at least 2 price points");
+      } else if (
+        minBaseQuoteTick != undefined &&
+        maxBaseQuoteTick != undefined &&
+        baseQuoteTickOffset == undefined &&
+        pricePoints != undefined
+      ) {
+        baseQuoteTickOffset =
+          (maxBaseQuoteTick - minBaseQuoteTick) / (pricePoints - 1);
+      } else if (
+        minBaseQuoteTick != undefined &&
+        maxBaseQuoteTick == undefined &&
+        baseQuoteTickOffset != undefined &&
+        pricePoints != undefined
+      ) {
+        maxBaseQuoteTick =
+          minBaseQuoteTick + baseQuoteTickOffset * (pricePoints - 1);
+      } else if (
+        minBaseQuoteTick == undefined &&
+        maxBaseQuoteTick != undefined &&
+        baseQuoteTickOffset != undefined &&
+        pricePoints != undefined
+      ) {
+        minBaseQuoteTick =
+          maxBaseQuoteTick - baseQuoteTickOffset * (pricePoints - 1);
+      } else {
+        throw Error(
+          "Exactly three of minPrice (or minTick), maxPrice (or maxTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given"
+        );
+      }
+    }
+
+    if (minBaseQuoteTick < MIN_TICK.toNumber()) {
+      throw Error("minTick too low.");
+    }
+    if (maxBaseQuoteTick < MAX_TICK.toNumber()) {
+      throw Error("maxTick too high.");
+    }
+
+    if (
+      midBaseQuoteTick < minBaseQuoteTick ||
+      midBaseQuoteTick > maxBaseQuoteTick
+    ) {
+      throw Error("midTick must be between minTick and maxTick");
+    }
+
+    if (pricePoints < 2) {
+      throw Error(
+        "minTick and maxTick are too close. There must be room for at least two price points"
+      );
+    }
+
+    if (!params.stepSize) {
+      throw Error("stepSize must be provided");
+    }
+
+    return {
+      minBaseQuoteTick: minBaseQuoteTick,
+      maxBaseQuoteTick: maxBaseQuoteTick,
+      baseQuoteTickOffset,
+      midBaseQuoteTick: midBaseQuoteTick,
+      pricePoints,
+      generateFromMid: params.generateFromMid ? params.generateFromMid : false,
+      stepSize: params.stepSize,
+    };
   }
 }
 
