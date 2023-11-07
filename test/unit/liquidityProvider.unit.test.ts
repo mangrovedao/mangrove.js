@@ -48,6 +48,28 @@ describe("Liquidity provider unit tests suite", () => {
     assert.deepStrictEqual(tick, BigNumber.from(1));
   });
 
+  it("normalizeOfferParams, with non-equal decimals gives, tick, bids and no funding", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        tick: 1,
+        gives: 1,
+      },
+      {
+        base: {
+          decimals: 16,
+        },
+        quote: {
+          decimals: 18,
+        },
+      }
+    );
+    assert.equal(price.toNumber(), Big(0.010001).toNumber());
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick, BigNumber.from(1));
+  });
+
   it("normalizeOfferParams, with volume and price, as asks", async function () {
     const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
       {
