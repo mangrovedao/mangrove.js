@@ -16,7 +16,6 @@
     "build": "npm-run-all -pn --aggregate-output typechain lint && npm-run-all -pn --aggregate-output tscbuild esbuild && yarn make-cli-executable",
     "make-cli-executable": "shx chmod u+x ./dist/nodejs/cli/mgv.js",
     "clean": "rimraf dist",
-    "test-with-dependencies": "yarn workspaces foreach -vpiR --topological-dev --from $npm_package_name run test",
     "test": "npm-run-all --parallel test:unit test:integration",
     "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --parallel --config test/mocha/config/integration-tests.json --exit",
     "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --parallel --config test/mocha/config/unit-tests.json --exit",
