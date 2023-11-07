@@ -514,29 +514,28 @@ class KandelDistributionHelper {
       pricePoints,
     } = params;
     const { minPrice, maxPrice, priceRatio, midPrice } = params;
-    if (minBaseQuoteTick == undefined) {
-      if (minPrice == undefined) {
-        throw Error("minPrice or minTick must be provided.");
-      }
-      minBaseQuoteTick = TickLib.getTickFromPrice(Big(minPrice)).toNumber();
-    }
-    if (maxBaseQuoteTick == undefined) {
-      if (maxPrice == undefined) {
-        throw Error("maxPrice or maxTick must be provided.");
-      }
-      maxBaseQuoteTick = TickLib.getTickFromPrice(Big(maxPrice)).toNumber();
-    }
     if (midBaseQuoteTick == undefined) {
       if (midPrice == undefined) {
-        throw Error("midPrice or midTick must be provided.");
+        throw Error("midPrice or midBaseQuoteTick must be provided.");
       }
       midBaseQuoteTick = TickLib.getTickFromPrice(Big(midPrice)).toNumber();
     }
-    if (baseQuoteTickOffset == undefined) {
-      if (priceRatio == undefined) {
-        throw Error("priceRatio or baseQuoteTickOffset must be provided.");
+    if (minBaseQuoteTick == undefined) {
+      if (minPrice != undefined) {
+        minBaseQuoteTick = TickLib.getTickFromPrice(Big(minPrice)).toNumber();
       }
-      baseQuoteTickOffset = this.calculateBaseQuoteTickOffset(Big(priceRatio));
+    }
+    if (maxBaseQuoteTick == undefined) {
+      if (maxPrice != undefined) {
+        maxBaseQuoteTick = TickLib.getTickFromPrice(Big(maxPrice)).toNumber();
+      }
+    }
+    if (baseQuoteTickOffset == undefined) {
+      if (priceRatio != undefined) {
+        baseQuoteTickOffset = this.calculateBaseQuoteTickOffset(
+          Big(priceRatio)
+        );
+      }
     }
     if (
       minBaseQuoteTick != undefined &&
@@ -577,33 +576,22 @@ class KandelDistributionHelper {
           maxBaseQuoteTick - baseQuoteTickOffset * (pricePoints - 1);
       } else {
         throw Error(
-          "Exactly three of minPrice (or minTick), maxPrice (or maxTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given"
+          "Exactly three of minPrice (or minBaseQuoteTick), maxPrice (or maxBaseQuoteTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given"
         );
       }
     }
 
     if (minBaseQuoteTick < MIN_TICK.toNumber()) {
-      throw Error("minTick too low.");
+      throw Error("minBaseQuoteTick too low.");
     }
     if (maxBaseQuoteTick < MAX_TICK.toNumber()) {
-      throw Error("maxTick too high.");
-    }
-
-    if (
-      midBaseQuoteTick < minBaseQuoteTick ||
-      midBaseQuoteTick > maxBaseQuoteTick
-    ) {
-      throw Error("midTick must be between minTick and maxTick");
+      throw Error("maxBaseQuoteTick too high.");
     }
 
     if (pricePoints < 2) {
       throw Error(
-        "minTick and maxTick are too close. There must be room for at least two price points"
+        "minBaseQuoteTick and maxBaseQuoteTick are too close. There must be room for at least two price points"
       );
-    }
-
-    if (!params.stepSize) {
-      throw Error("stepSize must be provided");
     }
 
     return {
@@ -612,7 +600,7 @@ class KandelDistributionHelper {
       baseQuoteTickOffset,
       midBaseQuoteTick: midBaseQuoteTick,
       pricePoints,
-      generateFromMid: params.generateFromMid ? params.generateFromMid : false,
+      generateFromMid: params.generateFromMid,
       stepSize: params.stepSize,
     };
   }

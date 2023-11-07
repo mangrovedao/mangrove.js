@@ -534,6 +534,38 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           });
       });
 
+      [true, false].forEach((generateFromMid) => {
+        it(`calculates expected price points when generating generateFromMid=${generateFromMid}`, async () => {
+          // Arrange/act
+          const distribution = await sut.calculateDistribution({
+            distributionParams: {
+              minPrice: Big(1000),
+              maxPrice: Big(32000),
+              priceRatio: Big(2),
+              stepSize: 1,
+              generateFromMid,
+              midPrice: Big(4000),
+            },
+            initialAskGives: Big(1),
+          });
+
+          const prices = distribution.offers.asks
+            .map((x) =>
+              TickLib.priceFromTick(BigNumber.from(x.tick)).toNumber()
+            )
+            .concat(
+              distribution.offers.bids.map((x) =>
+                TickLib.priceFromTick(BigNumber.from(-x.tick)).toNumber()
+              )
+            );
+          // Assert
+          assert.deepStrictEqual(
+            [...new Set(prices)].sort(),
+            [1000, 2000, 4000, 8000, 16000, 32000]
+          );
+        });
+      });
+
       it("throws on missing initials", () => {
         // Act/assert
         assert.throws(
