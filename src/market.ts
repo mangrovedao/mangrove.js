@@ -5,7 +5,6 @@ import MgvToken from "./mgvtoken";
 import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
 import Trade from "./util/trade";
-import TickPriceHelper from "./util/tickPriceHelper";
 
 let canConstructMarket = false;
 
@@ -300,7 +299,6 @@ class Market {
   #bidsSemibook: Semibook | undefined;
   #initClosure?: () => Promise<void>;
   trade: Trade = new Trade();
-  tickPriceHelper: TickPriceHelper = new TickPriceHelper();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
@@ -953,26 +951,6 @@ class Market {
     inbound_tkn: MgvToken;
   } {
     return Market.getOutboundInbound(ba, this.base, this.quote);
-  }
-
-  /**
-   * Calculate the price at a given tick.
-   * @param ba bids or asks
-   * @param tick tick to calculate price for
-   * @returns price at tick
-   */
-  priceFromTick(ba: Market.BA, tick: BigNumber): Big {
-    return this.tickPriceHelper.priceFromTick(ba, this, tick);
-  }
-
-  /**
-   * Calculate the tick at a given price.
-   * @param ba bids or asks
-   * @param price price to calculate tick for
-   * @returns tick for price
-   */
-  tickFromPrice(ba: Market.BA, price: Big): BigNumber {
-    return this.tickPriceHelper.tickFromPrice(ba, this, price);
   }
 
   /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
