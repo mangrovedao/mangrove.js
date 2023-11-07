@@ -7,7 +7,6 @@ import KandelDistribution from "./kandelDistribution";
 /** @title Management of a single Kandel instance. */
 class KandelLib {
   kandelLib: typechain.GeometricKandel;
-  address: string;
   baseDecimals: number;
   quoteDecimals: number;
 
@@ -31,7 +30,6 @@ class KandelLib {
       params.kandelLibInstance ??
       typechain.GeometricKandel__factory.connect(params.address, params.signer);
 
-    this.address = params.address;
     this.baseDecimals = params.baseDecimals;
     this.quoteDecimals = params.quoteDecimals;
   }

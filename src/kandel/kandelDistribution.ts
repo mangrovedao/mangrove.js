@@ -191,18 +191,21 @@ class KandelDistribution {
     // In case both offer and dual are live they could be included twice, and due to holes at edges, some will be pointed to as dual multiple times.
     // The `included` is used to ensure they are added only once.
     // All offers are included, but live offers are included first, starting at the middle and going outwards (upwards through asks, downwards through bids)
+    // Dead offers are reversed to get potential live offers of the opposite type closest to the middle first.
     const offerLists = {
       asks: {
         current: 0,
         included: Array(this.pricePoints).fill(false),
-        offers: this.getLiveOffers("asks").concat(this.getDeadOffers("asks")),
+        offers: this.getLiveOffers("asks").concat(
+          this.getDeadOffers("asks").reverse()
+        ),
       },
       bids: {
         current: 0,
         included: Array(this.pricePoints).fill(false),
         offers: this.getLiveOffers("bids")
           .reverse()
-          .concat(this.getDeadOffers("bids").reverse()),
+          .concat(this.getDeadOffers("bids")),
       },
     };
     while (
