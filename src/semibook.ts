@@ -23,6 +23,7 @@ import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
 import { OfferFailEvent, OfferSuccessEvent } from "./types/typechain/IMangrove";
+import TickPriceHelper from "./util/tickPriceHelper";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -184,6 +185,7 @@ class Semibook
 
   readonly ba: Market.BA;
   readonly market: Market;
+  readonly tickPriceHelper: TickPriceHelper;
   readonly options: Semibook.ResolvedOptions; // complete and validated
   private readonly cacheOperations: SemibookCacheOperations =
     new SemibookCacheOperations();
@@ -690,6 +692,7 @@ class Semibook
 
     this.market = market;
     this.ba = ba;
+    this.tickPriceHelper = new TickPriceHelper(ba, market);
 
     this.#eventListeners.set(eventListener, true);
   }
