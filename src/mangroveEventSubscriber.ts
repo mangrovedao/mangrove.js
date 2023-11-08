@@ -98,7 +98,9 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
 
     const error = await semibook.initialize(block);
     if (error) {
-      logger.debug(`[MangroveEventSubscriber] found error initialization`);
+      logger.debug(
+        `[MangroveEventSubscriber] found error initialization for ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
+      );
       /* detected reorg during initialization */
       return new Promise((resolve, reject) => {
         /* retry when next block is handled */
