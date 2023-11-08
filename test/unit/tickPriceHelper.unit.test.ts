@@ -133,14 +133,10 @@ describe("TickPriceHelper unit tests suite", () => {
     priceAndTickPairs.forEach(({ args, tick, price }) => {
       it(`returns price=${price} for tick ${tick} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} (${args.ba} semibook)`, async function () {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper();
+        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
 
         // Act
-        const result = tickPriceHelper.priceFromTick(
-          args.ba,
-          args.market,
-          BigNumber.from(tick)
-        );
+        const result = tickPriceHelper.priceFromTick(BigNumber.from(tick));
         // Assert
         assert.ok(
           result
@@ -156,14 +152,10 @@ describe("TickPriceHelper unit tests suite", () => {
     priceAndTickPairs.forEach(({ args, tick, price }) => {
       it(`returns tick=${tick} for price ${price} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} (${args.ba} semibook)) `, async function () {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper();
+        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
 
         // Act
-        const result = tickPriceHelper.tickFromPrice(
-          args.ba,
-          args.market,
-          price
-        );
+        const result = tickPriceHelper.tickFromPrice(price);
         // Assert
         assert.ok(result.eq(tick), `expected ${tick} but got ${result}`);
       });
@@ -174,17 +166,11 @@ describe("TickPriceHelper unit tests suite", () => {
     priceAndTickPairs.forEach(({ args, tick }) => {
       it(`returns tick=${tick} for priceFromTick(..., priceFromTick(..., ${tick}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} for ${args.ba} semibook`, async function () {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper();
+        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
 
         // Act
         const result = tickPriceHelper.tickFromPrice(
-          args.ba,
-          args.market,
-          tickPriceHelper.priceFromTick(
-            args.ba,
-            args.market,
-            BigNumber.from(tick)
-          )
+          tickPriceHelper.priceFromTick(BigNumber.from(tick))
         );
 
         // Assert
@@ -200,25 +186,19 @@ describe("TickPriceHelper unit tests suite", () => {
     priceAndTickPairs.forEach(({ args, price }) => {
       it(`returns price=${price} for tickFromPrice(..., tickFromPrice(..., ${price}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} for ${args.ba} semibook`, async function () {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper();
+        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
 
         // Act
         const resultPrice = tickPriceHelper.priceFromTick(
-          args.ba,
-          args.market,
-          tickPriceHelper.tickFromPrice(args.ba, args.market, price)
+          tickPriceHelper.tickFromPrice(price)
         );
 
         const resultPriceTickPlusOne = tickPriceHelper.priceFromTick(
-          args.ba,
-          args.market,
-          tickPriceHelper.tickFromPrice(args.ba, args.market, price).add(1)
+          tickPriceHelper.tickFromPrice(price).add(1)
         );
 
         const resultPriceTickMinusOne = tickPriceHelper.priceFromTick(
-          args.ba,
-          args.market,
-          tickPriceHelper.tickFromPrice(args.ba, args.market, price).sub(1)
+          tickPriceHelper.tickFromPrice(price).sub(1)
         );
 
         const roundedPrice = price.round(comparisonPrecision);

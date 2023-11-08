@@ -62,7 +62,6 @@ class LiquidityProvider {
   prettyP = new PrettyPrint();
   gasreq: number;
   trade: Trade = new Trade();
-  tickPriceHelper = new TickPriceHelper();
 
   constructor(p: LiquidityProvider.ConstructionParams) {
     if (p.eoa || p.logic) {
@@ -218,16 +217,16 @@ class LiquidityProvider {
     gasprice?: number;
     fund?: Bigish;
   } {
-    const tickPriceHelper = new TickPriceHelper();
+    const tickPriceHelper = new TickPriceHelper(p.ba, market);
     let tick: ethers.BigNumber, gives: Big, price: Big;
     // deduce price from tick & gives, or deduce tick & gives from volume & price
     if ("tick" in p) {
       tick = ethers.BigNumber.from(p.tick);
-      price = tickPriceHelper.priceFromTick(p.ba, market, tick);
+      price = tickPriceHelper.priceFromTick(tick);
       gives = Big(p.gives);
     } else if ("price" in p) {
       price = Big(p.price);
-      tick = tickPriceHelper.tickFromPrice(p.ba, market, price);
+      tick = tickPriceHelper.tickFromPrice(price);
       if (p.ba === "asks") {
         gives = Big(p.volume);
       } else {
