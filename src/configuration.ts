@@ -567,15 +567,6 @@ function readMangroveDeploymentAddresses() {
   readVersionDeploymentsAddresses(testErc20ContractsDeployments);
 }
 
-// FIXME: This is a hack to get the network names because the addresses in this package use non-canonical network names
-const networkNames = {
-  "1": "mainnet",
-  "5": "goerli",
-  "137": "matic",
-  "42161": "arbitrum",
-  "80001": "maticmum",
-} as Record<string, string>;
-
 function readVersionDeploymentsAddresses(
   contractsDeployments: mgvDeployments.VersionDeployments[]
 ) {
@@ -583,7 +574,7 @@ function readVersionDeploymentsAddresses(
     for (const [networkId, networkDeployments] of Object.entries(
       contractDeployments.networkAddresses
     )) {
-      const networkName = networkNames[networkId];
+      const networkName = eth.getNetworkName(+networkId);
       addressesConfiguration.setAddress(
         contractDeployments.deploymentName ?? contractDeployments.contractName,
         networkDeployments.primaryAddress,
