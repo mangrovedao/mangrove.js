@@ -3,6 +3,7 @@ import * as ethers from "ethers";
 import { BaseContract, BigNumber } from "ethers";
 import { LogDescription } from "ethers/lib/utils";
 import Market from "../market";
+import Semibook from "../semibook";
 import MgvToken from "../mgvtoken";
 import {
   OfferFailEvent,
@@ -19,7 +20,6 @@ import {
 } from "../types/typechain/MangroveOrder";
 import { logger } from "./logger";
 import { CleanStartEvent } from "../types/typechain/IMangrove";
-import TickPriceHelper from "./tickPriceHelper";
 
 type RawOfferData = {
   id: BigNumber;
@@ -38,18 +38,14 @@ export type OrderResultWithOptionalSummary = Optional<
 >;
 
 class TradeEventManagement {
-  rawOfferToOffer(
-    market: Market,
-    ba: Market.BA,
-    raw: RawOfferData
-  ): Market.OfferSlim {
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
-
+  rawOfferToOffer(semibook: Semibook, raw: RawOfferData): Market.OfferSlim {
+    const { outbound_tkn, inbound_tkn } = semibook.market.getOutboundInbound(
+      semibook.ba
+    );
     const gives = outbound_tkn.fromUnits(raw.gives);
     const id = this.#rawIdToId(raw.id);
 
     if (id === undefined) throw new Error("Offer ID is 0");
-    const tickPriceHelper: TickPriceHelper = new TickPriceHelper(ba, market);
     return {
       id,
       gasprice: raw.gasprice.toNumber(),
@@ -57,7 +53,7 @@ class TradeEventManagement {
       gasreq: raw.gasreq.toNumber(),
       tick: raw.tick,
       gives: gives,
-      price: tickPriceHelper.priceFromTick(raw.tick),
+      price: semibook.tickPriceHelper.priceFromTick(raw.tick),
     };
   }
 
@@ -183,7 +179,10 @@ class TradeEventManagement {
       return undefined;
     }
 
-    return { ba, offer: this.rawOfferToOffer(market, ba, evt.args) };
+    return {
+      ba,
+      offer: this.rawOfferToOffer(market.getSemibook(ba), evt.args),
+    };
   }
 
   createSummaryFromOrderSummaryEvent(
