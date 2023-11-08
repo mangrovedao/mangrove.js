@@ -41,9 +41,9 @@ class TickPriceHelper {
 
     let priceWithCorrectDecimals: Big;
     if (this.ba === "bids") {
-      priceWithCorrectDecimals = priceFromTick.mul(p);
-    } else {
       priceWithCorrectDecimals = priceFromTick.div(p);
+    } else {
+      priceWithCorrectDecimals = priceFromTick.mul(p);
     }
     return priceWithCorrectDecimals;
   }
