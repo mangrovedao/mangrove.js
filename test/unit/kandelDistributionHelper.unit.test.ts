@@ -4,8 +4,14 @@ import { describe, it } from "mocha";
 import KandelDistributionHelper, {
   TickDistributionParams,
 } from "../../src/kandel/kandelDistributionHelper";
-import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import { KandelDistribution } from "../../src";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import {
+  assertIsRounded,
+  assertSameTicks,
+  createGeneratorStub,
+} from "./kandelDistributionGenerator.unit.test";
+import { BigNumber } from "ethers";
 
 describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price generation unit tests suite`, () => {
   describe(
@@ -194,22 +200,21 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price
       });
 
       it("can get 2 pricePoints from minPrice and maxPrice", () => {
-        const sut = new KandelPriceCalculation(5);
+        const sut = new KandelDistributionHelper(4, 6);
 
         // Arrange/Act
-        const pricesAndRatio = sut.calculatePrices({
+        const params = sut.getTickDistributionParams({
           minPrice: "1455.3443267746625",
           maxPrice: "2183.0164901619937",
           pricePoints: 2,
+          stepSize: 1,
+          generateFromMid: false,
         });
 
         // Assert
         assert.equal(
-          pricesAndRatio.tickOffset.toString(),
-          UnitCalculations.fromUnits(
-            UnitCalculations.toUnits(pricesAndRatio.tickOffset, 5),
-            5
-          ).toString()
+          params.baseQuoteTickOffset.toString(),
+          params.baseQuoteTickOffset.toFixed(0)
         );
       });
 
@@ -300,247 +305,19 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price
 });
 
 describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suite`, () => {
-  function assertIsRounded(distribution: KandelDistribution) {
-    distribution.offers.forEach((e) => {
-      assert.equal(
-        e.base.round(distribution.baseDecimals).toString(),
-        e.base.toString(),
-        "base should be rounded"
-      );
-      assert.equal(
-        e.quote.round(distribution.quoteDecimals).toString(),
-        e.quote.toString(),
-        "quote should be rounded"
-      );
-    });
-  }
-
-  describe(
-    KandelDistributionHelper.prototype.calculateDistributionConstantGives.name,
-    () => {
-      it("can calculate distribution with fixed base volume and fixed quote volume which follows geometric price distribution", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(4, 6);
-        const prices = [1000, 2000, 4000, undefined, 8000, 16000, 32000];
-        const firstAskIndex = 3;
-
-        // Act
-        const distribution = sut.calculateDistributionConstantGives(
-          2,
-          prices.map((x) => (x ? Big(x) : undefined)),
-          Big(1),
-          Big(1000),
-          firstAskIndex
-        );
-
-        // Assert
-        const calculatedPrices = distribution
-          .getPricesForDistribution()
-          .map((x) => x?.toNumber());
-        assert.deepStrictEqual(
-          prices,
-          calculatedPrices,
-          "re-calculated prices do not match original prices"
-        );
-        distribution.offers
-          .filter((x) => x.index < firstAskIndex)
-          .forEach((x) => {
-            assert.equal(x.quote.toNumber(), 1000);
-          });
-        distribution.offers
-          .filter((x) => x.index >= firstAskIndex)
-          .forEach((x) => {
-            assert.equal(x.base.toNumber(), 1);
-          });
-      });
-
-      bidsAsks.forEach((offerType) => {
-        it(`can calculate distribution with only ${offerType}`, () => {
-          // Arrange
-          const sut = new KandelDistributionHelper(4, 6);
-          const prices = [1000, 2000, undefined];
-          const firstAskIndex = offerType == "bids" ? 10 : 0;
-
-          // Act
-          const distribution = sut.calculateDistributionConstantGives(
-            2,
-            prices.map((x) => (x ? Big(x) : undefined)),
-            Big(1),
-            Big(1000),
-            firstAskIndex
-          );
-
-          // Assert
-          assert.equal(distribution.ratio, 2);
-          assert.equal(
-            distribution.getFirstAskIndex(),
-            offerType == "asks" ? 0 : distribution.pricePoints
-          );
-          const calculatedPrices = distribution
-            .getPricesForDistribution()
-            .map((x) => x?.toNumber());
-          assert.deepStrictEqual(
-            prices,
-            calculatedPrices,
-            "re-calculated prices do not match original prices"
-          );
-          if (offerType == "bids") {
-            distribution.offers.forEach((x) => {
-              assert.equal(x.quote.toNumber(), 1000);
-            });
-          } else {
-            distribution.offers.forEach((x) => {
-              assert.equal(x.base.toNumber(), 1);
-            });
-          }
-        });
-      });
-
-      it("rounds off base and gives according to decimals", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(4, 6);
-        const tickOffset = 1.01;
-        const prices = [
-          1000,
-          1000 * tickOffset,
-          1000 * tickOffset ** 2,
-          1000 * tickOffset ** 3,
-          1000 * tickOffset ** 4,
-          1000 * tickOffset ** 5,
-        ];
-        const firstAskIndex = 3;
-        const desiredBaseVolume = Big(3);
-        const desiredQuoteVolume = Big(3000);
-
-        // Act
-        const distribution = sut.calculateDistributionConstantGives(
-          tickOffset,
-          prices.map((x) => Big(x)),
-          Big(1),
-          Big(1000),
-          firstAskIndex
-        );
-
-        // Assert
-        assert.equal(distribution.ratio, tickOffset);
-        assertIsRounded(distribution);
-
-        const { requiredBase, requiredQuote } =
-          distribution.getOfferedVolumeForDistribution();
-        assert.equal(requiredBase.lte(desiredBaseVolume), true);
-        assert.equal(requiredQuote.lte(desiredQuoteVolume), true);
-      });
-    }
-  );
-
-  [
-    KandelDistributionHelper.prototype.calculateDistributionConstantBase.name,
-    KandelDistributionHelper.prototype.calculateDistributionConstantQuote.name,
-  ].forEach((methodName) => {
-    const ratio = 1.08;
-    const firstBase = Big(2);
-    const firstQuote = Big(3000);
-    const pricePoints = 10;
-    const firstAskIndex = 5;
-    const constantBase =
-      methodName ===
-      KandelDistributionHelper.prototype.calculateDistributionConstantBase.name;
-    describe(methodName, () => {
-      it(`can calculate distribution with fixed base/quote constantBase=${constantBase} volume which follows geometric distribution`, () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(12, 12);
-        const pricesAndRatio = new KandelPriceCalculation(5).calculatePrices({
-          minPrice: firstQuote.div(firstBase),
-          ratio,
-          pricePoints,
-        });
-
-        // Act
-        const distribution = constantBase
-          ? sut.calculateDistributionConstantBase(
-              pricesAndRatio.tickOffset,
-              pricesAndRatio.prices,
-              firstBase,
-              firstAskIndex
-            )
-          : sut.calculateDistributionConstantQuote(
-              pricesAndRatio.tickOffset,
-              pricesAndRatio.prices,
-              firstQuote,
-              firstAskIndex
-            );
-
-        // Assert
-        let price = firstQuote.div(firstBase);
-        distribution.offers.forEach((e, i) => {
-          assert.equal(e.offerType, i < firstAskIndex ? "bids" : "asks");
-          assert.equal(
-            e.quote.div(e.base).toPrecision(6),
-            price.toPrecision(6),
-            `Price is not as expected at ${i}`
-          );
-          if (constantBase) {
-            assert.equal(firstBase.toNumber(), e.base.toNumber());
-          } else {
-            assert.equal(firstQuote.toNumber(), e.quote.toNumber());
-          }
-          price = price.mul(ratio);
-        });
-      });
-      it(`rounds off base and gives according to decimals for fixed base/quote constantBase=${constantBase}`, () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(4, 6);
-        const pricesAndRatio = new KandelPriceCalculation(5).calculatePrices({
-          minPrice: firstQuote.div(firstBase),
-          ratio,
-          pricePoints,
-          midPrice: firstQuote.div(firstBase).mul(ratio),
-        });
-
-        // Act
-        const distribution = constantBase
-          ? sut.calculateDistributionConstantBase(
-              pricesAndRatio.tickOffset,
-              pricesAndRatio.prices,
-              firstBase,
-              firstAskIndex
-            )
-          : sut.calculateDistributionConstantQuote(
-              pricesAndRatio.tickOffset,
-              pricesAndRatio.prices,
-              firstQuote,
-              firstAskIndex
-            );
-
-        // Assert
-        distribution.offers.forEach((e) => {
-          assert.equal(
-            e.base.round(4).toString(),
-            e.base.toString(),
-            "base should be rounded"
-          );
-          assert.equal(
-            e.quote.round(6).toString(),
-            e.quote.toString(),
-            "quote should be rounded"
-          );
-        });
-      });
-    });
-  });
-
   describe(
     KandelDistributionHelper.prototype.calculateMinimumInitialGives.name,
     () => {
-      it("returns minimum on empty list", () => {
+      it("returns minimum on empty lists", () => {
         // Arrange
         const sut = new KandelDistributionHelper(0, 0);
 
         // Act
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
-          [],
           Big(1),
-          Big(2)
+          Big(2),
+          [],
+          []
         );
 
         // Assert
@@ -554,9 +331,10 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
         // Act
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
-          [undefined, undefined, Big(1000)],
           Big(0.1),
-          Big(100)
+          Big(100),
+          [-TickLib.getTickFromPrice(1000).toNumber()],
+          [TickLib.getTickFromPrice(1000).toNumber()]
         );
 
         // Assert
@@ -568,11 +346,16 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         // Arrange
         const sut = new KandelDistributionHelper(0, 0);
 
+        const baseQuoteTicks = [Big(2000), Big(1000), Big(500), Big(4000)].map(
+          (x) => TickLib.getTickFromPrice(x).toNumber()
+        );
+
         // Act
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
-          [Big(2000), Big(1000), Big(500), Big(4000)],
           Big(1),
-          Big(1000)
+          Big(1000),
+          baseQuoteTicks.map((x) => -x),
+          baseQuoteTicks
         );
 
         // Assert
@@ -728,18 +511,22 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
     KandelDistributionHelper.prototype.uniformlyChangeVolume.name,
     () => {
       let distribution: KandelDistribution;
-      let prices: (number | undefined)[];
       let sut: KandelDistributionHelper;
-      beforeEach(() => {
-        sut = new KandelDistributionHelper(4, 6);
-        prices = [1000, 2000, 4000, undefined, 8000, 16000, 32000];
-        distribution = sut.calculateDistributionConstantGives(
-          2,
-          prices.map((x) => (x ? Big(x) : undefined)),
-          Big(10),
-          Big(10000),
-          3
-        );
+      beforeEach(async () => {
+        const generator = createGeneratorStub();
+        sut = generator.distributionHelper;
+        distribution = await generator.calculateDistribution({
+          distributionParams: {
+            minPrice: Big(1000),
+            maxPrice: Big(32000),
+            midPrice: Big(5000),
+            priceRatio: 2,
+            stepSize: 1,
+            generateFromMid: true,
+          },
+          initialAskGives: Big(10),
+          initialBidGives: Big(10000),
+        });
       });
 
       it("can decrease uniformly, respects limits, prices, and rounding", () => {
@@ -757,12 +544,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         });
 
         // Assert
-        const newPrices = result.distribution.getPricesForDistribution();
-        assert.deepStrictEqual(
-          newPrices.map((x) => x?.toNumber()),
-          prices,
-          "prices should be left unchanged"
-        );
+        assertSameTicks(result.distribution, distribution);
 
         const oldVolume = distribution.getOfferedVolumeForDistribution();
         const newVolume = result.distribution.getOfferedVolumeForDistribution();
@@ -779,9 +561,32 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         assert.equal(result.totalBaseChange.toNumber(), baseDelta.toNumber());
         assert.equal(result.totalQuoteChange.toNumber(), quoteDelta.toNumber());
 
-        result.distribution.offers.forEach((o) => {
-          assert.ok(o.base.gte(Big(1)), "base should be above minimum");
-          assert.ok(o.quote.gte(Big(9000)), "quote should be above minimum");
+        result.distribution.offers.asks.forEach((o) => {
+          assert.ok(o.gives.gte(Big(1)), "ask base should be above minimum");
+          assert.ok(
+            Big(
+              TickLib.inboundFromOutbound(
+                BigNumber.from(o.tick),
+                BigNumber.from(o.gives.toString())
+              ).toString()
+            ).gte(Big(9000)),
+            "ask quote should be above minimum"
+          );
+        });
+        result.distribution.offers.bids.forEach((o) => {
+          assert.ok(
+            o.gives.gte(Big(9000)),
+            "bid quote should be above minimum"
+          );
+          assert.ok(
+            Big(
+              TickLib.inboundFromOutbound(
+                BigNumber.from(o.tick),
+                BigNumber.from(o.gives.toString())
+              ).toString()
+            ).gte(Big(1)),
+            "bid base should be above minimum"
+          );
         });
       });
 

@@ -9,6 +9,7 @@ import { PromiseOrValue } from "../../src/types/typechain/common";
 import { BigNumber, BigNumberish } from "ethers";
 import { DirectWithBidsAndAsksDistribution } from "../../src/types/typechain/Kandel";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 
 interface DistributionOffer {
   index: number;
@@ -24,6 +25,39 @@ interface Distribution {
 enum OfferType {
   Ask,
   Bid,
+}
+
+export function assertIsRounded(distribution: KandelDistribution) {
+  distribution.offers.asks.forEach((e) => {
+    assert.equal(
+      e.gives.round(distribution.baseDecimals).toString(),
+      e.gives.toString(),
+      "base should be rounded"
+    );
+  });
+  distribution.offers.bids.forEach((e) => {
+    assert.equal(
+      e.gives.round(distribution.quoteDecimals).toString(),
+      e.gives.toString(),
+      "quote should be rounded"
+    );
+  });
+}
+
+export function assertSameTicks(
+  oldDist: KandelDistribution,
+  newDist: KandelDistribution
+) {
+  assert.deepStrictEqual(
+    oldDist.offers.asks.map((x) => x.tick),
+    newDist.offers.asks.map((x) => x.tick),
+    "asks ticks should be the same"
+  );
+  assert.deepStrictEqual(
+    oldDist.offers.bids.map((x) => x.tick),
+    newDist.offers.bids.map((x) => x.tick),
+    "bids ticks should be the same"
+  );
 }
 
 export class KandelLibStub {
@@ -199,22 +233,6 @@ export function createGeneratorStub() {
 }
 
 describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
-  const assertSameTicks = (
-    oldDist: KandelDistribution,
-    newDist: KandelDistribution
-  ) => {
-    assert.deepStrictEqual(
-      oldDist.offers.asks.map((x) => x.tick),
-      newDist.offers.asks.map((x) => x.tick),
-      "asks ticks should be the same"
-    );
-    assert.deepStrictEqual(
-      oldDist.offers.bids.map((x) => x.tick),
-      newDist.offers.bids.map((x) => x.tick),
-      "bids ticks should be the same"
-    );
-  };
-
   let sut: KandelDistributionGenerator;
   beforeEach(() => {
     sut = new KandelDistributionGenerator(
@@ -563,6 +581,159 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             [...new Set(prices)].sort(),
             [1000, 2000, 4000, 8000, 16000, 32000]
           );
+        });
+      });
+
+      describe(
+        KandelDistributionGenerator.prototype.calculateDistribution.name,
+        () => {
+          it("can calculate distribution with fixed base volume and fixed quote volume which follows geometric price distribution", async () => {
+            // Arrange
+            //FIXME price is not undefined , but what is it? it should be 8k right?
+            const prices = [1000, 2000, 4000, undefined, 8000, 16000, 32000];
+
+            // Act
+            const distribution = await sut.calculateDistribution({
+              distributionParams: {
+                minPrice: Big(1000),
+                maxPrice: Big(32000),
+                priceRatio: Big(2),
+                midPrice: Big(4000),
+                stepSize: 1,
+                generateFromMid: true,
+              },
+              initialAskGives: Big(1),
+            });
+
+            // Assert
+            const calculatedPrices = distribution.offers.asks
+              .map((x) =>
+                TickLib.priceFromTick(BigNumber.from(x.tick)).toNumber()
+              )
+              .concat(
+                distribution.offers.bids.map((x) =>
+                  TickLib.priceFromTick(BigNumber.from(-x.tick)).toNumber()
+                )
+              );
+            assert.deepStrictEqual(
+              prices,
+              calculatedPrices,
+              "re-calculated prices do not match original prices"
+            );
+            distribution.offers.bids.forEach((x) => {
+              assert.equal(x.gives.toNumber(), 1000);
+            });
+            distribution.offers.asks.forEach((x) => {
+              assert.equal(x.gives.toNumber(), 1);
+            });
+          });
+
+          bidsAsks.forEach((offerType) => {
+            it(`can calculate distribution with only ${offerType}`, async () => {
+              // Arrange
+
+              // Act
+              const distribution = await sut.calculateDistribution({
+                distributionParams: {
+                  minPrice: Big(1000),
+                  maxPrice: Big(32000),
+                  midPrice: offerType == "bids" ? Big(64000) : Big(1),
+                  stepSize: 1,
+                  generateFromMid: true,
+                },
+                initialAskGives: 1,
+                initialBidGives: 1000,
+              });
+              // Assert
+              assert.equal(
+                distribution.getFirstLiveIndex("asks"),
+                offerType == "asks" ? 0 : distribution.pricePoints
+              );
+              distribution.offers.bids.forEach((x) => {
+                assert.equal(x.gives.toNumber(), 1000);
+              });
+              distribution.offers.asks.forEach((x) => {
+                assert.equal(x.gives.toNumber(), 1);
+              });
+            });
+          });
+
+          it("rounds off base and gives according to decimals", async () => {
+            // Arrange
+            const priceRatio = 1.01;
+
+            // Act
+            const distribution = await sut.calculateDistribution({
+              distributionParams: {
+                minPrice: Big(1000),
+                maxPrice: Big(1000 * priceRatio ** 5),
+                midPrice: Big(1000 * priceRatio ** 2),
+                priceRatio,
+                stepSize: 1,
+                generateFromMid: true,
+              },
+              initialAskGives: Big(1),
+            });
+
+            // Assert
+            assertIsRounded(distribution);
+          });
+        }
+      );
+
+      [true, false].forEach((constantBase) => {
+        it(`can calculate distribution with fixed base/quote constantBase=${constantBase} volume which follows geometric distribution`, async () => {
+          // Arrange
+          const ratio = 1.08;
+          const firstBase = Big(2);
+          const firstQuote = Big(3000);
+          const pricePoints = 10;
+
+          // Act
+          const distribution = await sut.calculateDistribution({
+            distributionParams: {
+              priceRatio: ratio,
+              minPrice: firstQuote.div(firstBase),
+              pricePoints,
+              stepSize: 1,
+              generateFromMid: false,
+            },
+            initialAskGives: constantBase ? firstBase : undefined,
+            initialBidGives: constantBase ? undefined : firstQuote,
+          });
+
+          // Assert
+          assertIsRounded(distribution);
+          const price = firstQuote.div(firstBase);
+          for (let i = 0; i < pricePoints; ++i) {
+            const ask = distribution.offers.asks.find((x) => x.index === i);
+            const bid = distribution.offers.bids.find((x) => x.index === i);
+
+            if (ask) {
+              assert.equal(
+                TickLib.priceFromTick(BigNumber.from(ask.tick)).toPrecision(6),
+                price.toPrecision(6),
+                `Price is not as expected at ${i}`
+              );
+              if (constantBase) {
+                if (ask.gives.gt(0)) {
+                  assert.equal(firstBase.toNumber(), ask.gives.toNumber());
+                }
+              }
+            }
+            if (bid) {
+              assert.equal(
+                TickLib.priceFromTick(BigNumber.from(-bid.tick)).toPrecision(6),
+                price.toPrecision(6),
+                `Price is not as expected at ${i}`
+              );
+              if (constantBase) {
+                if (bid.gives.gt(0)) {
+                  assert.equal(firstQuote.toNumber(), bid.gives.toNumber());
+                }
+              }
+            }
+          }
         });
       });
 
