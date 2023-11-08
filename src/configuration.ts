@@ -5,6 +5,7 @@ import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttp
 import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSocketOptionsByNetwork.json";
 import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
 import loadedMangroveOrderConfiguration from "./constants/mangroveOrder.json";
+import contractPackageVersions from "./constants/contractPackageVersions.json";
 
 import { ethers } from "ethers";
 import Big from "big.js";
@@ -534,10 +535,9 @@ function readContractPackageContextAddresses(
 
 function readMangroveDeploymentAddresses() {
   // FIXME: Consider how to expose other deployments than the primary
-  // FIXME: Construct the Mangrove and Strats version patterns to use in the queries. First stab could be simply be the version number from the package.json, if available?
 
-  const mgvCoreVersionPattern = undefined;
-  // FIXME: Make this configurable
+  const mgvCoreVersionPattern = `^${contractPackageVersions["mangrove-core"]}`;
+  // FIXME: Make this configurable?
   const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvCoreContractsDeployments =
     mgvDeployments.getCoreContractsVersionDeployments({
@@ -546,8 +546,8 @@ function readMangroveDeploymentAddresses() {
     });
   readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
 
-  const mgvStratsVersionPattern = undefined;
-  // FIXME: Make this configurable
+  const mgvStratsVersionPattern = `^${contractPackageVersions["mangrove-strats"]}`;
+  // FIXME: Make this configurable?
   const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvStratsContractsDeployments =
     mgvDeployments.getStratsContractsVersionDeployments({
@@ -556,9 +556,9 @@ function readMangroveDeploymentAddresses() {
     });
   readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
 
+  // For ERC20s we do not care about the versions nor whether they are released or not
   const testErc20VersionPattern = undefined;
-  // FIXME: Make this configurable
-  const testErc20ReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const testErc20ReleasedFilter = undefined; // undefined => released & unreleased
   const testErc20ContractsDeployments =
     mgvDeployments.getAllTestErc20VersionDeployments({
       version: testErc20VersionPattern,
