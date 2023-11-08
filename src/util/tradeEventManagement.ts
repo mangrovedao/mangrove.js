@@ -19,6 +19,7 @@ import {
 } from "../types/typechain/MangroveOrder";
 import { logger } from "./logger";
 import { CleanStartEvent } from "../types/typechain/IMangrove";
+import TickPriceHelper from "./tickPriceHelper";
 
 type RawOfferData = {
   id: BigNumber;
@@ -48,6 +49,7 @@ class TradeEventManagement {
     const id = this.#rawIdToId(raw.id);
 
     if (id === undefined) throw new Error("Offer ID is 0");
+    const tickPriceHelper: TickPriceHelper = new TickPriceHelper(ba, market);
     return {
       id,
       gasprice: raw.gasprice.toNumber(),
@@ -55,7 +57,7 @@ class TradeEventManagement {
       gasreq: raw.gasreq.toNumber(),
       tick: raw.tick,
       gives: gives,
-      price: market.getSemibook(ba).tickPriceHelper.priceFromTick(raw.tick),
+      price: tickPriceHelper.priceFromTick(raw.tick),
     };
   }
 
