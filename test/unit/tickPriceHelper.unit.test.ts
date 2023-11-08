@@ -47,7 +47,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: "1e-12",
+      price: Big("1e12"),
     },
     {
       args: {
@@ -58,7 +58,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: Big("1e12"),
+      price: "1e-12",
     },
     {
       args: {
@@ -69,7 +69,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: Big("0.01"),
+      price: Big("100"),
     },
     {
       args: {
@@ -80,7 +80,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: Big("100"),
+      price: Big("0.01"),
     },
     {
       args: {
