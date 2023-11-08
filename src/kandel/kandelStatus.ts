@@ -131,8 +131,9 @@ class KandelStatus {
     stepSize: number,
     offers: OffersWithLiveness
   ): Statuses {
-    //FIXME TickLib.getTickFromPRice and TickLib.priceFromTick should always be used decimals aware via similar market functions!
-    const midBaseQuoteTick = TickLib.getTickFromPrice(midPrice).toNumber();
+    const midBaseQuoteTick = this.distributionHelper.askTickPriceHelper
+      .tickFromPrice(midPrice)
+      .toNumber();
 
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
     const offer =
@@ -162,7 +163,10 @@ class KandelStatus {
         expectedLiveBid: baseQuoteTick <= midBaseQuoteTick,
         expectedLiveAsk: baseQuoteTick >= midBaseQuoteTick,
         expectedBaseQuoteTick: baseQuoteTick,
-        expectedPrice: TickLib.priceFromTick(BigNumber.from(baseQuoteTick)),
+        expectedPrice:
+          this.distributionHelper.askTickPriceHelper.priceFromTick(
+            baseQuoteTick
+          ),
         asks: undefined as
           | undefined
           | { live: boolean; offerId: number; tick: number; price: Big },
@@ -179,7 +183,10 @@ class KandelStatus {
         statuses[index][offerType] = {
           live,
           offerId,
-          price: TickLib.priceFromTick(BigNumber.from(tick)),
+          price: (offerType == "asks"
+            ? this.distributionHelper.askTickPriceHelper
+            : this.distributionHelper.bidTickPriceHelper
+          ).priceFromTick(tick),
           tick,
         };
       });
@@ -230,8 +237,14 @@ class KandelStatus {
         index: offer.index,
         offerId: offer.offerId,
       },
-      minPrice: TickLib.priceFromTick(BigNumber.from(minBaseQuoteTick)),
-      maxPrice: TickLib.priceFromTick(BigNumber.from(maxBaseQuoteTick)),
+      minPrice:
+        this.distributionHelper.askTickPriceHelper.priceFromTick(
+          minBaseQuoteTick
+        ),
+      maxPrice:
+        this.distributionHelper.askTickPriceHelper.priceFromTick(
+          maxBaseQuoteTick
+        ),
       minBaseQuoteTick,
       maxBaseQuoteTick,
     };

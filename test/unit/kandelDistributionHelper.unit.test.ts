@@ -333,8 +333,8 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
           Big(0.1),
           Big(100),
-          [-TickLib.getTickFromPrice(1000).toNumber()],
-          [TickLib.getTickFromPrice(1000).toNumber()]
+          [sut.bidTickPriceHelper.tickFromPrice(1000).toNumber()],
+          [sut.askTickPriceHelper.tickFromPrice(1000).toNumber()]
         );
 
         // Assert
@@ -347,7 +347,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         const sut = new KandelDistributionHelper(0, 0);
 
         const baseQuoteTicks = [Big(2000), Big(1000), Big(500), Big(4000)].map(
-          (x) => TickLib.getTickFromPrice(x).toNumber()
+          (x) => sut.askTickPriceHelper.tickFromPrice(x).toNumber()
         );
 
         // Act

@@ -1,10 +1,10 @@
 import assert from "assert";
 import { Big } from "big.js";
-import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
 import { BigNumber } from "ethers";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
+import { Bigish } from "../../src/types";
 
 describe("TickPriceHelper unit tests suite", () => {
   const priceAndTickPairs: {
@@ -13,7 +13,7 @@ describe("TickPriceHelper unit tests suite", () => {
       market: { base: { decimals: number }; quote: { decimals: number } };
     };
     tick: number;
-    price: Big;
+    price: Bigish;
   }[] = [
     {
       args: {
@@ -35,7 +35,7 @@ describe("TickPriceHelper unit tests suite", () => {
         },
       },
       tick: 0,
-      price: Big(1),
+      price: 1,
     },
     {
       args: {
@@ -46,7 +46,7 @@ describe("TickPriceHelper unit tests suite", () => {
         },
       },
       tick: 0,
-      price: Big("1e-12"),
+      price: "1e-12",
     },
     {
       args: {
@@ -141,7 +141,7 @@ describe("TickPriceHelper unit tests suite", () => {
         assert.ok(
           result
             .round(comparisonPrecision)
-            .eq(price.round(comparisonPrecision)),
+            .eq(Big(price).round(comparisonPrecision)),
           `expected ${price} but got ${result}`
         );
       });
@@ -201,7 +201,7 @@ describe("TickPriceHelper unit tests suite", () => {
           tickPriceHelper.tickFromPrice(price).sub(1)
         );
 
-        const roundedPrice = price.round(comparisonPrecision);
+        const roundedPrice = Big(price).round(comparisonPrecision);
 
         // Assert
         assert.ok(

@@ -5,6 +5,7 @@ import { Bigish } from "../types";
 import { TickLib } from "../util/coreCalculations/TickLib";
 import { BigNumber, ethers } from "ethers";
 import { MIN_TICK, MAX_TICK } from "../util/coreCalculations/Constants";
+import TickPriceHelper from "../util/tickPriceHelper";
 
 /** Offers with their tick, Kandel index, and gives amount.
  * @param offerType Whether the offer is a bid or an ask.
@@ -61,6 +62,8 @@ export type DistributionParams = PriceDistributionParams &
 
 /** @title Helper for handling Kandel offer distributions. */
 class KandelDistributionHelper {
+  askTickPriceHelper: TickPriceHelper;
+  bidTickPriceHelper: TickPriceHelper;
   baseDecimals: number;
   quoteDecimals: number;
 
@@ -69,6 +72,14 @@ class KandelDistributionHelper {
    * @param quoteDecimals The number of decimals for the quote token.
    */
   public constructor(baseDecimals: number, quoteDecimals: number) {
+    this.askTickPriceHelper = new TickPriceHelper("asks", {
+      base: { decimals: baseDecimals },
+      quote: { decimals: quoteDecimals },
+    });
+    this.bidTickPriceHelper = new TickPriceHelper("bids", {
+      base: { decimals: baseDecimals },
+      quote: { decimals: quoteDecimals },
+    });
     this.baseDecimals = baseDecimals;
     this.quoteDecimals = quoteDecimals;
   }
@@ -518,16 +529,22 @@ class KandelDistributionHelper {
       if (midPrice == undefined) {
         throw Error("midPrice or midBaseQuoteTick must be provided.");
       }
-      midBaseQuoteTick = TickLib.getTickFromPrice(Big(midPrice)).toNumber();
+      midBaseQuoteTick = this.askTickPriceHelper
+        .tickFromPrice(midPrice)
+        .toNumber();
     }
     if (minBaseQuoteTick == undefined) {
       if (minPrice != undefined) {
-        minBaseQuoteTick = TickLib.getTickFromPrice(Big(minPrice)).toNumber();
+        minBaseQuoteTick = this.askTickPriceHelper
+          .tickFromPrice(minPrice)
+          .toNumber();
       }
     }
     if (maxBaseQuoteTick == undefined) {
       if (maxPrice != undefined) {
-        maxBaseQuoteTick = TickLib.getTickFromPrice(Big(maxPrice)).toNumber();
+        maxBaseQuoteTick = this.askTickPriceHelper
+          .tickFromPrice(maxPrice)
+          .toNumber();
       }
     }
     if (baseQuoteTickOffset == undefined) {

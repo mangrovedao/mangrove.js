@@ -10,6 +10,7 @@ import { BigNumber, BigNumberish } from "ethers";
 import { DirectWithBidsAndAsksDistribution } from "../../src/types/typechain/Kandel";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 interface DistributionOffer {
   index: number;
@@ -58,6 +59,26 @@ export function assertSameTicks(
     newDist.offers.bids.map((x) => x.tick),
     "bids ticks should be the same"
   );
+}
+
+export function getOffersWithPrices(distribution: KandelDistribution) {
+  return {
+    asks: distribution.offers.asks.map((x) => ({
+      ...x,
+      price: distribution.helper.askTickPriceHelper.priceFromTick(x.tick),
+    })),
+    bids: distribution.offers.bids.map((x) => ({
+      ...x,
+      price: distribution.helper.bidTickPriceHelper.priceFromTick(x.tick),
+    })),
+  };
+}
+
+export function getUniquePrices(distribution: KandelDistribution) {
+  const offersWithPrices = getOffersWithPrices(distribution);
+  return [
+    ...new Set(offersWithPrices.asks.map((x) => x.price.toNumber())),
+  ].sort();
 }
 
 export class KandelLibStub {
@@ -234,6 +255,14 @@ export function createGeneratorStub() {
 
 describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
   let sut: KandelDistributionGenerator;
+  const askTickPriceHelper = new TickPriceHelper("asks", {
+    base: { decimals: 4 },
+    quote: { decimals: 6 },
+  });
+  const bidTickPriceHelper = new TickPriceHelper("asks", {
+    base: { decimals: 4 },
+    quote: { decimals: 6 },
+  });
   beforeEach(() => {
     sut = new KandelDistributionGenerator(
       new KandelDistributionHelper(4, 6),
@@ -571,18 +600,10 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             initialAskGives: Big(1),
           });
 
-          const prices = distribution.offers.asks
-            .map((x) =>
-              TickLib.priceFromTick(BigNumber.from(x.tick)).toNumber()
-            )
-            .concat(
-              distribution.offers.bids.map((x) =>
-                TickLib.priceFromTick(BigNumber.from(-x.tick)).toNumber()
-              )
-            );
+          const prices = getUniquePrices(distribution);
           // Assert
           assert.deepStrictEqual(
-            [...new Set(prices)].sort(),
+            prices,
             [1000, 2000, 4000, 8000, 16000, 32000]
           );
         });
@@ -610,15 +631,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             });
 
             // Assert
-            const calculatedPrices = distribution.offers.asks
-              .map((x) =>
-                TickLib.priceFromTick(BigNumber.from(x.tick)).toNumber()
-              )
-              .concat(
-                distribution.offers.bids.map((x) =>
-                  TickLib.priceFromTick(BigNumber.from(-x.tick)).toNumber()
-                )
-              );
+            const calculatedPrices = getUniquePrices(distribution);
             assert.deepStrictEqual(
               prices,
               calculatedPrices,
@@ -715,7 +728,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
 
             if (ask) {
               assert.equal(
-                TickLib.priceFromTick(BigNumber.from(ask.tick)).toPrecision(6),
+                askTickPriceHelper.priceFromTick(ask.tick).toPrecision(6),
                 price.toPrecision(6),
                 `Price is not as expected at ${i}`
               );
@@ -727,7 +740,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             }
             if (bid) {
               assert.equal(
-                TickLib.priceFromTick(BigNumber.from(-bid.tick)).toPrecision(6),
+                bidTickPriceHelper.priceFromTick(bid.tick).toPrecision(6),
                 price.toPrecision(6),
                 `Price is not as expected at ${i}`
               );
@@ -954,7 +967,12 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           const min = sut.getMinimumVolumeForIndex({
             offerType: offerType as Market.BA,
             index: 2,
-            tick: TickLib.getTickFromPrice(4000).toNumber(),
+            tick: (offerType == "asks"
+              ? sut.distributionHelper.askTickPriceHelper
+              : sut.distributionHelper.bidTickPriceHelper
+            )
+              .tickFromPrice(4000)
+              .toNumber(),
             stepSize: 1,
             pricePoints: 10,
             baseQuoteTickOffset:
