@@ -535,24 +535,36 @@ function readContractPackageContextAddresses(
 function readMangroveDeploymentAddresses() {
   // FIXME: Consider how to expose other deployments than the primary
   // FIXME: Construct the Mangrove and Strats version patterns to use in the queries. First stab could be simply be the version number from the package.json, if available?
+
   const mgvCoreVersionPattern = undefined;
   // FIXME: Make this configurable
   const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
-  const mgvStratsVersionPattern = undefined;
-  // FIXME: Make this configurable
-  const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvCoreContractsDeployments =
     mgvDeployments.getCoreContractsVersionDeployments({
       version: mgvCoreVersionPattern,
       released: mgvCoreReleasedFilter,
     });
   readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
+
+  const mgvStratsVersionPattern = undefined;
+  // FIXME: Make this configurable
+  const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvStratsContractsDeployments =
     mgvDeployments.getStratsContractsVersionDeployments({
       version: mgvStratsVersionPattern,
       released: mgvStratsReleasedFilter,
     });
   readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
+
+  const testErc20VersionPattern = undefined;
+  // FIXME: Make this configurable
+  const testErc20ReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const testErc20ContractsDeployments =
+    mgvDeployments.getAllTestErc20VersionDeployments({
+      version: testErc20VersionPattern,
+      released: testErc20ReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(testErc20ContractsDeployments);
 }
 
 // FIXME: This is a hack to get the network names because the addresses in this package use non-canonical network names
