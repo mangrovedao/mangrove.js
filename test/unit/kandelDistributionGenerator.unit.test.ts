@@ -258,6 +258,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             minPrice: Big(1000),
             priceRatio: Big(2),
             pricePoints: 7,
+            midPrice: Big(4000),
             stepSize: 1,
             generateFromMid: true,
           },
@@ -307,6 +308,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
             minPrice: Big(1000),
             priceRatio: Big(2),
             pricePoints: 7,
+            midPrice: Big(4000),
             stepSize: 1,
             generateFromMid: true,
           },
@@ -356,6 +358,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           distributionParams: {
             minPrice: Big(1000),
             priceRatio: Big(2),
+            midPrice: Big(4000),
             pricePoints: 7,
             stepSize: 1,
             generateFromMid: true,
@@ -407,6 +410,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         minPrice,
         priceRatio,
         pricePoints,
+        midPrice: Big(4000),
         stepSize: 1,
         generateFromMid: true,
       };

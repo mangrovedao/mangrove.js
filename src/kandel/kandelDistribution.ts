@@ -277,12 +277,12 @@ class KandelDistribution {
    * The price distribution is not verified.
    */
   public verifyDistribution() {
-    if (this.offers.bids.length == this.pricePoints - this.stepSize) {
+    if (this.offers.bids.length != this.pricePoints - this.stepSize) {
       throw new Error(
         "Invalid distribution: number of bids does not match number of price points and step size"
       );
     }
-    if (this.offers.asks.length == this.pricePoints - this.stepSize) {
+    if (this.offers.asks.length != this.pricePoints - this.stepSize) {
       throw new Error(
         "Invalid distribution: number of asks does not match number of price points and step size"
       );
