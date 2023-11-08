@@ -16,6 +16,7 @@ import {
 import { Bigish, Provider, typechain } from "./types";
 import mgvCore from "@mangrovedao/mangrove-core";
 import mgvStrats from "@mangrovedao/mangrove-strats";
+import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
@@ -501,8 +502,9 @@ export function resetConfiguration(): void {
 
   // Load addresses in the following order:
   // 1. loaded addresses
-  // 2. mangrove-core addresses
-  // 3. mangrove-strats addresses
+  // 2. mangrove-core context addresses
+  // 3. mangrove-strats context addresses
+  // 4. mangrove-deployments addresses
   // Last loaded address is used
 
   for (const [network, networkAddresses] of Object.entries(
@@ -515,29 +517,66 @@ export function resetConfiguration(): void {
     }
   }
 
-  readAddresses(mgvCore.addresses);
-  readAddresses(mgvStrats.addresses);
+  readContractPackageContextAddresses(mgvCore.addresses.context);
+  readContractPackageContextAddresses(mgvStrats.addresses.context);
+  readMangroveDeploymentAddresses();
 }
 
-function readAddresses(addresses: any) {
-  let mgvAddresses: any[] = [];
-
-  if (addresses.deployed || addresses.context) {
-    if (addresses.deployed) {
-      mgvAddresses.push(addresses.deployed);
-    }
-    if (addresses.context) {
-      mgvAddresses.push(addresses.context);
-    }
-  } else {
-    mgvAddresses.push(addresses);
-  }
-
-  mgvAddresses = mgvAddresses.flatMap((o) => Object.entries(o));
-
-  for (const [network, networkAddresses] of mgvAddresses) {
+function readContractPackageContextAddresses(
+  contextAddresses: Record<network, { name: string; address: string }[]>
+) {
+  for (const [network, networkAddresses] of Object.entries(contextAddresses)) {
     for (const { name, address } of networkAddresses as any) {
       addressesConfiguration.setAddress(name, address, network);
+    }
+  }
+}
+
+function readMangroveDeploymentAddresses() {
+  // FIXME: Consider how to expose other deployments than the primary
+  // FIXME: Construct the Mangrove and Strats version patterns to use in the queries. First stab could be simply be the version number from the package.json, if available?
+  const mgvCoreVersionPattern = undefined;
+  // FIXME: Make this configurable
+  const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvStratsVersionPattern = undefined;
+  // FIXME: Make this configurable
+  const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvCoreContractsDeployments =
+    mgvDeployments.getCoreContractsVersionDeployments({
+      version: mgvCoreVersionPattern,
+      released: mgvCoreReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
+  const mgvStratsContractsDeployments =
+    mgvDeployments.getStratsContractsVersionDeployments({
+      version: mgvStratsVersionPattern,
+      released: mgvStratsReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
+}
+
+// FIXME: This is a hack to get the network names because the addresses in this package use non-canonical network names
+const networkNames = {
+  "1": "mainnet",
+  "5": "goerli",
+  "137": "matic",
+  "42161": "arbitrum",
+  "80001": "maticmum",
+} as Record<string, string>;
+
+function readVersionDeploymentsAddresses(
+  contractsDeployments: mgvDeployments.VersionDeployments[]
+) {
+  for (const contractDeployments of contractsDeployments) {
+    for (const [networkId, networkDeployments] of Object.entries(
+      contractDeployments.networkAddresses
+    )) {
+      const networkName = networkNames[networkId];
+      addressesConfiguration.setAddress(
+        contractDeployments.deploymentName ?? contractDeployments.contractName,
+        networkDeployments.primaryAddress,
+        networkName
+      );
     }
   }
 }
