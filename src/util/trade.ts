@@ -10,6 +10,7 @@ import UnitCalculations from "./unitCalculations";
 import { MAX_TICK, MIN_TICK } from "./coreCalculations/Constants";
 import { TickLib } from "./coreCalculations/TickLib";
 import configuration from "../configuration";
+import TickPriceHelper from "./tickPriceHelper";
 
 type CleanUnitParams = {
   ba: Market.BA;
@@ -41,11 +42,12 @@ class Trade {
   ) {
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
+    const tickPriceHelper = new TickPriceHelper("asks", {
+      base: baseToken,
+      quote: quoteToken,
+    });
     if ("price" in params) {
-      const priceWithCorrectDecimals = Big(params.price).mul(
-        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
-      );
-      const priceWithSlippage = priceWithCorrectDecimals
+      const priceWithSlippage = Big(params.price)
         .mul(100 + slippage)
         .div(100);
       if ("volume" in params) {
@@ -53,7 +55,7 @@ class Trade {
         if (params.price == 0) {
           tick = BigNumber.from(MIN_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(Big(1).div(priceWithSlippage));
+          tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
         }
 
         fillWants = true;
@@ -62,7 +64,7 @@ class Trade {
         if (params.price == 0) {
           tick = BigNumber.from(MAX_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(priceWithSlippage);
+          tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
         }
         fillWants = false;
       }
@@ -71,9 +73,11 @@ class Trade {
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
         // if slippage is 0, we don't need to do anything
-        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differences
+        const price = tickPriceHelper.priceFromTick(
+          BigNumber.from(params.tick)
+        ); // This can result in small rounding differences
         const priceWithSlippage = price.mul(100 + slippage).div(100);
-        tick = TickLib.getTickFromPrice(priceWithSlippage);
+        tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       } else {
         tick = BigNumber.from(params.tick);
       }

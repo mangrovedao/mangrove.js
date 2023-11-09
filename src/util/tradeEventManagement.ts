@@ -168,7 +168,6 @@ class TradeEventManagement {
         market.tickSpacing.toNumber()
       );
     }
-
     if (olKeyHash != evt.args.olKeyHash) {
       logger.debug("OfferWrite for unknown market!", {
         contextInfo: "tradeEventManagement",
@@ -183,7 +182,8 @@ class TradeEventManagement {
       return undefined;
     }
 
-    return { ba, offer: this.rawOfferToOffer(market, ba, evt.args) };
+    const offer = this.rawOfferToOffer(market, ba, evt.args);
+    return { ba, offer };
   }
 
   createSummaryFromOrderSummaryEvent(

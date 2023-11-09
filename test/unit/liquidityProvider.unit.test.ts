@@ -30,7 +30,7 @@ describe("Liquidity provider unit tests suite", () => {
     const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
       {
         ba: "bids",
-        tick: 1,
+        tick: -1,
         gives: 1,
       },
       {
@@ -45,14 +45,14 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toNumber(), 1.0001);
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, BigNumber.from(1));
+    assert.deepStrictEqual(tick.toNumber(), -1);
   });
 
   it("normalizeOfferParams, with non-equal decimals gives, tick, bids and no funding", async function () {
     const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
       {
         ba: "bids",
-        tick: 1,
+        tick: -1,
         gives: 1,
       },
       {
@@ -67,7 +67,7 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toNumber(), Big(0.010001).toNumber());
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, BigNumber.from(1));
+    assert.deepStrictEqual(tick.toNumber(), -1);
   });
 
   it("normalizeOfferParams, with volume and price 1, as asks", async function () {
@@ -156,6 +156,50 @@ describe("Liquidity provider unit tests suite", () => {
     assert.deepStrictEqual(gives, Big(2));
     assert.deepStrictEqual(fund, undefined);
     assert.deepStrictEqual(tick.toNumber(), -6931);
+  });
+
+  it("normalizeOfferParams, with volume and price 2, as asks", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "asks",
+        volume: 1, // base
+        price: 2,
+      },
+      {
+        base: {
+          decimals: 6,
+        },
+        quote: {
+          decimals: 6,
+        },
+      }
+    );
+    assert.equal(price.toNumber(), 2);
+    assert.deepStrictEqual(gives, Big(1));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), 6931);
+  });
+
+  it("normalizeOfferParams, with volume and price 2, as bids", async function () {
+    const { tick, gives, price, fund } = LiquidityProvider.normalizeOfferParams(
+      {
+        ba: "bids",
+        volume: 1, //base
+        price: 2,
+      },
+      {
+        base: {
+          decimals: 6,
+        },
+        quote: {
+          decimals: 6,
+        },
+      }
+    );
+    assert.equal(price.toNumber(), 2);
+    assert.deepStrictEqual(gives, Big(2));
+    assert.deepStrictEqual(fund, undefined);
+    assert.deepStrictEqual(tick.toNumber(), -6932);
   });
 
   it("normalizeOfferParams, with gives and wants, as bids", async function () {
