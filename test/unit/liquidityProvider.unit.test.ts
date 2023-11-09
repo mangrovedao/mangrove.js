@@ -64,7 +64,7 @@ describe("Liquidity provider unit tests suite", () => {
         },
       }
     );
-    assert.equal(price.toNumber(), Big(100.01).toNumber());
+    assert.equal(price.toNumber(), Big(0.010001).toNumber());
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
     assert.deepStrictEqual(tick.toNumber(), -1);

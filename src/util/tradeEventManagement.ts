@@ -181,7 +181,6 @@ class TradeEventManagement {
 
       return undefined;
     }
-    console.log(`LOG ${ba} AND offerId ${evt.args.id.toNumber()}`);
 
     const offer = this.rawOfferToOffer(market, ba, evt.args);
     return { ba, offer };

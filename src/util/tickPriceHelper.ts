@@ -34,7 +34,7 @@ class TickPriceHelper {
   priceFromTick(tick: BigNumberish): Big {
     const offerListPriceFromTick = TickLib.priceFromTick(BigNumber.from(tick));
     const p = Big(10).pow(
-      Math.abs(this.market.base.decimals - this.market.quote.decimals)
+      this.market.base.decimals - this.market.quote.decimals
     );
 
     const dp = Big.DP;
@@ -49,27 +49,28 @@ class TickPriceHelper {
   }
 
   /**
-   * Calculates the tick at a given price.
+   * Calculates the tick at a given order book price (not to be confused with offer list ratio).
    * @param price price to calculate tick for
    * @returns tick for price
    */
   tickFromPrice(price: Bigish): BigNumber {
     const p = Big(10).pow(
-      Math.abs(this.market.base.decimals - this.market.quote.decimals)
+      this.market.base.decimals - this.market.quote.decimals
     );
 
     // TickLib ratio is inbound / outbound.
     // The SDK price is quote / base.
     // For asks the quote is the inbound and the base is the outbound.
-    // So for asks the ratio and price coincide. For bids the ratio is the inverse of the price.
+    // For bids the base is the inbound and the quote is the outbound, so we need to invert the ratio.
+    // That is, for asks the ratio and price coincide. For bids the ratio is the inverse of the price.
     const dp = Big.DP;
     Big.DP = 300;
     const priceAdjustedForDecimals = Big(price).div(p);
-    const offerListPrice =
+    const offerListRatio =
       this.ba === "bids"
         ? Big(1).div(priceAdjustedForDecimals)
         : priceAdjustedForDecimals;
-    const tick = TickLib.getTickFromPrice(offerListPrice);
+    const tick = TickLib.getTickFromPrice(offerListRatio);
     Big.DP = dp;
     return tick;
   }
@@ -86,7 +87,6 @@ class TickPriceHelper {
     outboundAmount: Bigish,
     roundUp?: boolean
   ) {
-    //  outbound_tkn: ba === "asks" ? base : quote,
     const rawOutbound = UnitCalculations.toUnits(
       outboundAmount,
       this.ba === "asks"

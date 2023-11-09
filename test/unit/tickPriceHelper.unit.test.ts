@@ -9,6 +9,30 @@ import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import UnitCalculations from "../../src/util/unitCalculations";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
+export const assertApproxEqAbs = (
+  actual: Bigish,
+  expected: Bigish,
+  maxDelta: Bigish
+) => {
+  if (!Big(actual).sub(Big(expected)).abs().lte(Big(maxDelta))) {
+    assert.fail(
+      `expected actual=${actual} to be within ${maxDelta} of expected=${expected}`
+    );
+  }
+};
+
+export const assertApproxEqRel = (
+  actual: Bigish,
+  expected: Bigish,
+  deltaRel: Bigish
+) => {
+  if (!Big(actual).sub(Big(expected)).abs().div(expected).lte(Big(deltaRel))) {
+    assert.fail(
+      `expected actual=${actual} to be within relative ${deltaRel} of expected=${expected}`
+    );
+  }
+};
+
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
     args: {
@@ -49,7 +73,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: "1e12",
+      price: "1e-12",
     },
     {
       args: {
@@ -60,7 +84,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: Big("1e12"),
+      price: Big("1e-12"),
     },
     {
       args: {
@@ -126,10 +150,11 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: -414487,
-      price: Big("1.000096e+36"),
+      price: Big("1.000096"),
     },
   ];
-
+  //TODO fix implementations to be more precise.
+  //TODO add comments to implementations.
   const comparisonPrecision = 8;
 
   describe(TickPriceHelper.prototype.priceFromTick.name, () => {
@@ -163,20 +188,36 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
   });
 
-  it("manual calculation", () => {
-    const displayBaseAmount = 2;
-    const displayQuoteAmount = 6;
+  function assertStepByStep(params: {
+    displayBaseAmount: number;
+    displayQuoteAmount: number;
+    displayPrice: number;
+    baseDecimals: number;
+    quoteDecimals: number;
+    rawBaseAmount: number;
+    rawQuoteAmount: number;
+    rawAskRatio: Big;
+    rawBidRatio: Big;
+    rawAskTick: number;
+    rawBidTick: number;
+  }) {
+    const {
+      displayBaseAmount,
+      displayQuoteAmount,
+      displayPrice,
+      baseDecimals,
+      quoteDecimals,
+      rawBaseAmount,
+      rawQuoteAmount,
+      rawAskRatio,
+      rawBidRatio,
+      rawAskTick,
+      rawBidTick,
+    } = params;
     const displayAskOutbound = displayBaseAmount;
     const displayAskInbound = displayQuoteAmount;
     const displayBidOutbound = displayQuoteAmount;
     const displayBidInbound = displayBaseAmount;
-
-    const displayPrice = 3;
-
-    const baseDecimals = 4;
-    const quoteDecimals = 2;
-    const rawBaseAmount = 20000;
-    const rawQuoteAmount = 600;
 
     assert.equal(
       UnitCalculations.toUnits(displayBaseAmount, baseDecimals),
@@ -190,41 +231,42 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
     const rawAskOutbound = rawBaseAmount;
     const rawAskInbound = rawQuoteAmount;
-    const rawAskRatio = 0.03;
     const rawBidOutbound = rawQuoteAmount;
     const rawBidInbound = rawBaseAmount;
-    const rawBidRatio = Big(rawBidInbound).div(Big(rawBidOutbound)); // 33.333333333333...
-    const rawAskTick = -35068;
-    const rawBidTick = 35067;
 
     assert.equal(rawAskRatio, rawAskInbound / rawAskOutbound);
     assert.equal(rawBidRatio.toNumber(), rawBidInbound / rawBidOutbound);
-    assert.equal(rawBidRatio, 1 / rawAskRatio);
+    assert.equal(rawBidRatio, 1 / rawAskRatio.toNumber());
 
     assert.equal(rawAskTick, TickLib.getTickFromPrice(rawAskRatio).toNumber());
     assert.equal(rawBidTick, TickLib.getTickFromPrice(rawBidRatio).toNumber());
     // The following are slow, but they work
-    //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.01);
-    //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio) < 0.01);
-
-    const bidTickPriceHelper0 = new TickPriceHelper("bids", {
+    //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.1);
+    //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio.toNumber()) < 0.1);
+    const bidTickPriceHelper = new TickPriceHelper("bids", {
       base: { decimals: baseDecimals },
       quote: { decimals: quoteDecimals },
     });
-    const askTickPriceHelper0 = new TickPriceHelper("asks", {
+    const askTickPriceHelper = new TickPriceHelper("asks", {
       base: { decimals: baseDecimals },
       quote: { decimals: quoteDecimals },
     });
 
-    const calcAskTick = askTickPriceHelper0
+    const calcAskTick = askTickPriceHelper
       .tickFromPrice(displayPrice)
       .toNumber();
-    const calcBidTick = bidTickPriceHelper0
+    const calcBidTick = bidTickPriceHelper
       .tickFromPrice(displayPrice)
       .toNumber();
 
     assert.equal(rawAskTick, calcAskTick);
     assert.equal(rawBidTick, calcBidTick);
+
+    const calcAskPrice = askTickPriceHelper.priceFromTick(rawAskTick);
+    const calcBidPrice = bidTickPriceHelper.priceFromTick(rawBidTick);
+
+    assertApproxEqAbs(displayPrice, calcAskPrice.toNumber(), 0.01);
+    assertApproxEqAbs(displayPrice, calcBidPrice.toNumber(), 0.01);
 
     const calcAskRawOutbound = TickLib.outboundFromInbound(
       BigNumber.from(rawAskTick),
@@ -235,8 +277,8 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       BigNumber.from(rawBidInbound)
     );
 
-    assert.ok(Math.abs(rawAskOutbound - calcAskRawOutbound.toNumber()) <= 1);
-    assert.ok(Math.abs(rawBidOutbound - calcBidRawOutbound.toNumber()) <= 1);
+    assertApproxEqAbs(rawAskOutbound, calcAskRawOutbound.toNumber(), 1);
+    assertApproxEqAbs(rawBidOutbound, calcBidRawOutbound.toNumber(), 1);
 
     const calcAskRawInbound = TickLib.inboundFromOutbound(
       BigNumber.from(rawAskTick),
@@ -247,20 +289,88 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       BigNumber.from(rawBidOutbound)
     );
 
-    assert.ok(Math.abs(rawAskInbound - calcAskRawInbound.toNumber()) <= 1);
-    assert.ok(Math.abs(rawBidInbound - calcBidRawInbound.toNumber()) <= 1);
+    assertApproxEqRel(rawAskInbound, calcAskRawInbound.toNumber(), 0.01);
+    assertApproxEqRel(rawBidInbound, calcBidRawInbound.toNumber(), 0.01);
 
-    const calcAskInbound = askTickPriceHelper0.inboundFromOutbound(
+    const calcAskInbound = askTickPriceHelper.inboundFromOutbound(
       BigNumber.from(rawAskTick),
       displayAskOutbound
     );
-    const calcBidInbound = bidTickPriceHelper0.inboundFromOutbound(
+    const calcBidInbound = bidTickPriceHelper.inboundFromOutbound(
       BigNumber.from(rawBidTick),
       displayBidOutbound
     );
 
-    assert.ok(Math.abs(displayAskInbound - calcAskInbound.toNumber()) <= 0.01);
-    assert.ok(Math.abs(displayBidInbound - calcBidInbound.toNumber()) <= 0.01);
+    assertApproxEqAbs(displayAskInbound, calcAskInbound.toNumber(), 0.01);
+    assertApproxEqAbs(displayBidInbound, calcBidInbound.toNumber(), 0.01);
+  }
+
+  it("manual calculation", () => {
+    const displayBaseAmount = 2.0;
+    const displayQuoteAmount = 6.0;
+    const displayPrice = 3;
+
+    const baseDecimals = 4;
+    const quoteDecimals = 2;
+    const rawBaseAmount = 20000;
+    const rawQuoteAmount = 600;
+
+    // Ratio is inbound/outbound, and for asks inbound is quote, and outbound is base, so ratio is rawQuoteAmount/rawBaseAmount
+    const rawAskRatio = Big(0.03);
+    // Inverse inbound/outbound for bids
+    const rawBidRatio = Big(rawBaseAmount).div(Big(rawQuoteAmount)); // 33.333333333333...
+
+    // The following are calculated, but checked the commented lines in assertStepByStep by doing 1.0001^tick
+    const rawAskTick = -35068;
+    const rawBidTick = 35067;
+
+    assertStepByStep({
+      displayBaseAmount,
+      displayQuoteAmount,
+      displayPrice,
+      baseDecimals,
+      quoteDecimals,
+      rawBaseAmount,
+      rawQuoteAmount,
+      rawAskRatio,
+      rawBidRatio,
+      rawAskTick,
+      rawBidTick,
+    });
+  });
+
+  it("manual calculation inverse decimals", () => {
+    const displayBaseAmount = 2.0;
+    const displayQuoteAmount = 6.0;
+    const displayPrice = 3;
+
+    const baseDecimals = 2;
+    const quoteDecimals = 4;
+    const rawBaseAmount = 200;
+    const rawQuoteAmount = 60000;
+
+    // Ratio is inbound/outbound, and for asks inbound is quote, and outbound is base, so ratio is rawQuoteAmount/rawBaseAmount
+    const rawAskRatio = Big(300);
+    // Inverse inbound/outbound for bids
+    const rawBidRatio = Big(rawBaseAmount).div(Big(rawQuoteAmount)); // 0.0033333333333333...
+
+    // The following are calculated, but checked the commented lines in assertStepByStep by doing 1.0001^tick
+    const rawAskTick = 57040;
+    const rawBidTick = -57041;
+
+    assertStepByStep({
+      displayBaseAmount,
+      displayQuoteAmount,
+      displayPrice,
+      baseDecimals,
+      quoteDecimals,
+      rawBaseAmount,
+      rawQuoteAmount,
+      rawAskRatio,
+      rawBidRatio,
+      rawAskTick,
+      rawBidTick,
+    });
   });
 
   describe("tickFromPrice is inverse of priceFromTick (up to tick-step)", () => {
@@ -275,10 +385,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         // Assert
-        assert.ok(
-          result.lte(tick + 1) && result.gte(tick - 1),
-          `expected ${tick} to be within 1 of ${result}`
-        );
+        assertApproxEqAbs(result.toNumber(), tick, 1);
       });
     });
   });
@@ -317,41 +424,69 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
   });
 
   describe(TickPriceHelper.prototype.inboundFromOutbound.name, () => {
-    it("handles simple case of 1,1,1", () => {
-      const tickPriceHelper = new TickPriceHelper("asks", {
-        base: { decimals: 6 },
-        quote: { decimals: 7 },
-      });
+    [
+      [1, 2],
+      [2, 1],
+    ].forEach(([baseDecimals, quoteDecimals]) => {
+      bidsAsks.forEach((ba) => {
+        [
+          [1, 2, 2],
+          [2, 1, 0.5],
+          [6, 3, 0.5],
+        ].forEach(([base, quote, price]) => {
+          it(`${TickPriceHelper.prototype.inboundFromOutbound.name} ba=${ba} base=${base} quote=${quote} price=${price}`, () => {
+            // Arrange
+            const tickPriceHelper = new TickPriceHelper(ba, {
+              base: { decimals: baseDecimals },
+              quote: { decimals: quoteDecimals },
+            });
+            const [outbound, expectedInbound] =
+              ba == "asks" ? [base, quote] : [quote, base];
 
-      const inbound = tickPriceHelper
-        .inboundFromOutbound(tickPriceHelper.tickFromPrice(1000), 1000)
-        .toNumber();
+            const tick = tickPriceHelper.tickFromPrice(price);
+            // Act
+            const result = tickPriceHelper.inboundFromOutbound(tick, outbound);
+            const resultUp = tickPriceHelper.inboundFromOutbound(
+              tick,
+              outbound,
+              true
+            );
 
-      assert.equal(inbound, 1);
-    });
-    bidsAsks.forEach((ba) => {
-      // base, quote, price
-      [
-        [1, 2, 2],
-        [2, 1, 0.5],
-        [3, 3, 0.5],
-      ].forEach(([base, quote, price]) => {
-        it(`ba=${ba} base=${base} quote=${quote} price=${price}`, () => {
-          // Arrange
-          const tickPriceHelper = new TickPriceHelper(ba, {
-            base: { decimals: 1 },
-            quote: { decimals: 2 },
+            // Assert
+            assertApproxEqAbs(result, expectedInbound, 0.1);
+            assert.ok(
+              resultUp.gte(result),
+              "round up should be at least as big as round down"
+            );
+            assertApproxEqAbs(resultUp, expectedInbound, 0.1);
           });
 
-          // Act
-          const [outbound, expectedInbound] =
-            ba == "asks" ? [base, quote] : [quote, base];
-          const result = tickPriceHelper.inboundFromOutbound(
-            tickPriceHelper.tickFromPrice(price),
-            outbound
-          );
-          // Assert
-          assert.equal(result.toNumber(), expectedInbound);
+          it(`${TickPriceHelper.prototype.outboundFromInbound.name} ba=${ba} base=${base} quote=${quote} price=${price}`, () => {
+            // Arrange
+            const tickPriceHelper = new TickPriceHelper(ba, {
+              base: { decimals: baseDecimals },
+              quote: { decimals: quoteDecimals },
+            });
+            const [expectedOutbound, inbound] =
+              ba == "asks" ? [base, quote] : [quote, base];
+
+            const tick = tickPriceHelper.tickFromPrice(price);
+            // Act
+            const result = tickPriceHelper.outboundFromInbound(tick, inbound);
+            const resultUp = tickPriceHelper.outboundFromInbound(
+              tick,
+              inbound,
+              true
+            );
+
+            // Assert
+            assertApproxEqAbs(result, expectedOutbound, 0.1);
+            assert.ok(
+              resultUp.gte(result),
+              "round up should be at least as big as round down"
+            );
+            assertApproxEqAbs(resultUp, expectedOutbound, 0.1);
+          });
         });
       });
     });

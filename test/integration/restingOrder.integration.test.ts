@@ -427,7 +427,6 @@ describe("RestingOrder", () => {
           : false,
         `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
       );
-      console.log(`GOT ${orderResult.restingOrder?.id}`);
       assert(
         orderResult.restingOrder
           ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
