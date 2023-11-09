@@ -320,10 +320,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           [
             ...new Set(
               newDistribution.offers.bids.map((x) =>
-                TickLib.inboundFromOutbound(
-                  BigNumber.from(x.tick),
-                  BigNumber.from(x.gives.toNumber())
-                )
+                bidTickPriceHelper.inboundFromOutbound(x.tick, x.gives)
               )
             ),
           ].length
@@ -371,10 +368,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           [
             ...new Set(
               newDistribution.offers.asks.map((x) =>
-                TickLib.inboundFromOutbound(
-                  BigNumber.from(x.tick),
-                  BigNumber.from(x.gives.toNumber())
-                )
+                askTickPriceHelper.inboundFromOutbound(x.tick, x.gives)
               )
             ),
           ].length
@@ -461,10 +455,9 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           .forEach((d, i) => {
             assert.equal(d.gives.toNumber(), 1, `wrong base at ${i}`);
             assert.equal(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(d.tick),
-                BigNumber.from(d.gives.toNumber())
-              ),
+              askTickPriceHelper
+                .inboundFromOutbound(d.tick, d.gives)
+                .toNumber(),
               minPrice.mul(priceRatio.pow(d.index)).toNumber(),
               `wrong quote at ${d.index}`
             );
@@ -473,10 +466,9 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           .filter((x) => x.gives.gt(0))
           .forEach((d, i) => {
             assert.equal(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(d.tick),
-                BigNumber.from(d.gives.toNumber())
-              ).toNumber(),
+              bidTickPriceHelper
+                .inboundFromOutbound(d.tick, d.gives)
+                .toNumber(),
               1,
               `wrong base at ${i}`
             );
@@ -510,10 +502,9 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           .forEach((d, i) => {
             assert.equal(d.gives.toNumber(), 1, `wrong base at ${i}`);
             assert.equal(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(d.tick),
-                BigNumber.from(d.gives.toNumber())
-              ),
+              askTickPriceHelper
+                .inboundFromOutbound(d.tick, d.gives)
+                .toNumber(),
               minPrice.mul(priceRatio.pow(d.index)).toNumber(),
               `wrong quote at ${d.index}`
             );
@@ -522,10 +513,9 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           .filter((x) => x.gives.gt(0))
           .forEach((d, i) => {
             assert.equal(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(d.tick),
-                BigNumber.from(d.gives.toNumber())
-              ).toNumber(),
+              bidTickPriceHelper
+                .inboundFromOutbound(d.tick, d.gives)
+                .toNumber(),
               1,
               `wrong base at ${i}`
             );
@@ -555,10 +545,9 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           .forEach((d, i) => {
             assert.equal(d.gives.toNumber(), 1, `wrong quote at ${i}`);
             assert.equal(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(d.tick),
-                BigNumber.from(d.gives.toNumber())
-              ),
+              bidTickPriceHelper
+                .inboundFromOutbound(d.tick, d.gives)
+                .toNumber(),
               minPrice.mul(priceRatio.pow(d.index)).toNumber(),
               `wrong base at ${d.index}`
             );
@@ -567,19 +556,17 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           .filter((x) => x.gives.gt(0))
           .forEach((d, i) => {
             assert.equal(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(d.tick),
-                BigNumber.from(d.gives.toNumber())
-              ).toNumber(),
+              askTickPriceHelper
+                .inboundFromOutbound(d.tick, d.gives)
+                .toNumber(),
               1,
               `wrong quote at ${i}`
             );
             assert.equal(
               d.gives.toNumber(),
-              TickLib.inboundFromOutbound(
-                BigNumber.from(d.tick),
-                BigNumber.from(d.gives.toNumber())
-              ).div(minPrice.mul(priceRatio.pow(i)).toNumber()),
+              askTickPriceHelper
+                .inboundFromOutbound(d.tick, d.gives)
+                .div(minPrice.mul(priceRatio.pow(i)).toNumber()),
               `wrong base at ${d.index}`
             );
           });
@@ -845,10 +832,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           [
             ...new Set(
               distribution.offers.bids.map((x) =>
-                TickLib.inboundFromOutbound(
-                  BigNumber.from(x.tick),
-                  BigNumber.from(x.gives.toNumber())
-                )
+                bidTickPriceHelper.inboundFromOutbound(x.tick, x.gives)
               )
             ),
           ].length
@@ -875,10 +859,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           [
             ...new Set(
               distribution.offers.asks.map((x) =>
-                TickLib.inboundFromOutbound(
-                  BigNumber.from(x.tick),
-                  BigNumber.from(x.gives.toNumber())
-                )
+                askTickPriceHelper.inboundFromOutbound(x.tick, x.gives)
               )
             ),
           ].length

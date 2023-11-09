@@ -284,11 +284,10 @@ class KandelDistributionHelper {
     let bidGives = minimumQuotePerOffer;
     if (bidTicks.length > 0) {
       const maxBidTick = Math.max(...bidTicks);
-      const minimumBaseFromQuote = Big(
-        TickLib.outboundFromInboundUp(
-          BigNumber.from(minimumQuotePerOffer.toFixed()),
-          BigNumber.from(maxBidTick)
-        ).toString()
+      const minimumBaseFromQuote = this.askTickPriceHelper.outboundFromInbound(
+        maxBidTick,
+        minimumQuotePerOffer,
+        true
       );
       askGives = minimumBaseFromQuote.gt(minimumBasePerOffer)
         ? minimumBaseFromQuote
@@ -296,11 +295,10 @@ class KandelDistributionHelper {
     }
     if (askTicks.length == 0) {
       const maxAskTick = Math.max(...askTicks);
-      const minimumQuoteFromBase = Big(
-        TickLib.inboundFromOutboundUp(
-          BigNumber.from(minimumBasePerOffer.toFixed()),
-          BigNumber.from(maxAskTick)
-        ).toString()
+      const minimumQuoteFromBase = this.askTickPriceHelper.inboundFromOutbound(
+        maxAskTick,
+        minimumBasePerOffer,
+        true
       );
       bidGives = minimumQuoteFromBase.gt(minimumQuotePerOffer)
         ? minimumQuoteFromBase

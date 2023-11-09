@@ -12,6 +12,7 @@ import {
   createGeneratorStub,
 } from "./kandelDistributionGenerator.unit.test";
 import { BigNumber } from "ethers";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price generation unit tests suite`, () => {
   describe(
@@ -533,6 +534,14 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         // Arrange
         const baseDelta = Big(-2);
         const quoteDelta = Big(-3000);
+        const askTickPriceHelper = new TickPriceHelper("asks", {
+          base: { decimals: 4 },
+          quote: { decimals: 6 },
+        });
+        const bidTickPriceHelper = new TickPriceHelper("asks", {
+          base: { decimals: 4 },
+          quote: { decimals: 6 },
+        });
 
         // Act
         const result = sut.uniformlyChangeVolume({
@@ -564,12 +573,9 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         result.distribution.offers.asks.forEach((o) => {
           assert.ok(o.gives.gte(Big(1)), "ask base should be above minimum");
           assert.ok(
-            Big(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(o.tick),
-                BigNumber.from(o.gives.toString())
-              ).toString()
-            ).gte(Big(9000)),
+            Big(askTickPriceHelper.inboundFromOutbound(o.tick, o.gives)).gte(
+              Big(9000)
+            ),
             "ask quote should be above minimum"
           );
         });
@@ -579,12 +585,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
             "bid quote should be above minimum"
           );
           assert.ok(
-            Big(
-              TickLib.inboundFromOutbound(
-                BigNumber.from(o.tick),
-                BigNumber.from(o.gives.toString())
-              ).toString()
-            ).gte(Big(1)),
+            bidTickPriceHelper.inboundFromOutbound(o.tick, o.gives).gte(Big(1)),
             "bid base should be above minimum"
           );
         });
