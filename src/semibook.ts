@@ -23,6 +23,7 @@ import Trade from "./util/trade";
 import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
 import { OfferFailEvent, OfferSuccessEvent } from "./types/typechain/IMangrove";
+import TickPriceHelper from "./util/tickPriceHelper";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -184,6 +185,7 @@ class Semibook
 
   readonly ba: Market.BA;
   readonly market: Market;
+  readonly tickPriceHelper: TickPriceHelper;
   readonly options: Semibook.ResolvedOptions; // complete and validated
   private readonly cacheOperations: SemibookCacheOperations =
     new SemibookCacheOperations();
@@ -282,15 +284,11 @@ class Semibook
       next: Semibook.rawIdToId(offer.next),
       offer_gasbase: details.kilo_offer_gasbase.toNumber() * 1000,
       prev: offer.prev.toNumber(),
-      ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
-        this.market,
-        this.ba,
-        {
-          id: this.#idToRawId(offerId),
-          ...offer,
-          ...details,
-        }
-      ),
+      ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(this, {
+        id: this.#idToRawId(offerId),
+        ...offer,
+        ...details,
+      }),
     };
   }
 
@@ -690,6 +688,7 @@ class Semibook
 
     this.market = market;
     this.ba = ba;
+    this.tickPriceHelper = new TickPriceHelper(ba, market);
 
     this.#eventListeners.set(eventListener, true);
   }
@@ -789,8 +788,7 @@ class Semibook
           next: next,
           prev: undefined,
           ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
-            this.market,
-            this.ba,
+            this,
             event.args
           ),
         };
@@ -1076,15 +1074,11 @@ class Semibook
             next: Semibook.rawIdToId(offer.next),
             offer_gasbase: detail.kilo_offer_gasbase.toNumber() * 1000,
             prev: Semibook.rawIdToId(offer.prev),
-            ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
-              this.market,
-              this.ba,
-              {
-                id: offerId,
-                ...offer,
-                ...detail,
-              }
-            ),
+            ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(this, {
+              id: offerId,
+              ...offer,
+              ...detail,
+            }),
           };
         });
 
