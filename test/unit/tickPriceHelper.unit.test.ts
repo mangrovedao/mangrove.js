@@ -153,8 +153,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       price: Big("1.000096"),
     },
   ];
-  //TODO fix implementations to be more precise.
-  //TODO add comments to implementations.
+
   const comparisonPrecision = 8;
 
   describe(TickPriceHelper.prototype.priceFromTick.name, () => {
