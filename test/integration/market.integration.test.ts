@@ -22,6 +22,7 @@ import { Density } from "../../src/util/coreCalculations/Density";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { OLKeyStruct } from "../../src/types/typechain/MgvReader";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -712,16 +713,15 @@ describe("Market integration tests suite", () => {
       .newOffer(mgv, market.base, market.quote, { tick: "1", gives: "1.2" })
       .then((tx) => tx.wait());
 
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
+    const bidTickPriceHelper = new TickPriceHelper("bids", market);
+
     await helpers
       .newOffer(mgv, market.quote, market.base, {
         tick: "1",
         gives: "1.1",
       })
       .then((tx) => tx.wait());
-
-    const diffInDecimals = Math.abs(
-      market.quote.decimals - market.base.decimals
-    );
 
     const offer1 = {
       id: 1,
@@ -733,9 +733,7 @@ describe("Market integration tests suite", () => {
       offer_gasbase: (await market.config()).asks.offer_gasbase,
       tick: BigNumber.from(1),
       gives: Big("1.2"),
-      price: TickLib.priceFromTick(BigNumber.from(1)).mul(
-        Big(10).pow(diffInDecimals)
-      ),
+      price: askTickPriceHelper.priceFromTick(BigNumber.from(1)),
     };
 
     const offer2 = {
@@ -748,9 +746,7 @@ describe("Market integration tests suite", () => {
       offer_gasbase: (await market.config()).bids.offer_gasbase,
       tick: BigNumber.from(1),
       gives: Big("1.1"),
-      price: TickLib.priceFromTick(BigNumber.from(1)).div(
-        Big(10).pow(diffInDecimals)
-      ),
+      price: bidTickPriceHelper.priceFromTick(BigNumber.from(1)),
     };
 
     // Events may be received in different order
@@ -775,6 +771,18 @@ describe("Market integration tests suite", () => {
     const events2 = [await queue2.get(), await queue2.get()];
     expect(events2).to.have.deep.members(expectedEvents);
 
+    assert.equal(
+      offer1.price.toNumber(),
+      latestAsks[0].price.toNumber(),
+      "ask price is incorrect"
+    );
+    assert.equal(
+      offer2.price.toNumber(),
+      latestBids[0].price.toNumber(),
+      "ask price is incorrect"
+    );
+    offer1.price = latestAsks[0].price;
+    offer2.price = latestBids[0].price;
     assert.deepStrictEqual(latestAsks, [offer1], "asks semibook not correct");
     assert.deepStrictEqual(latestBids, [offer2], "bids semibook not correct");
 
@@ -1183,19 +1191,15 @@ describe("Market integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
-
-    const diffInDecimals = Math.abs(
-      market.base.decimals - market.quote.decimals
-    );
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
+    const bidTickPriceHelper = new TickPriceHelper("bids", market);
 
     /* create bids and asks */
     let asks = [
       {
         id: 1,
         tick: "1",
-        price: TickLib.priceFromTick(BigNumber.from(1)).mul(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: askTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
@@ -1203,9 +1207,7 @@ describe("Market integration tests suite", () => {
       {
         id: 2,
         tick: "2",
-        price: TickLib.priceFromTick(BigNumber.from(2)).mul(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: askTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
@@ -1213,9 +1215,7 @@ describe("Market integration tests suite", () => {
       {
         id: 3,
         tick: "1",
-        price: TickLib.priceFromTick(BigNumber.from(1)).mul(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: askTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
@@ -1223,9 +1223,7 @@ describe("Market integration tests suite", () => {
       {
         id: 4,
         tick: "2",
-        price: TickLib.priceFromTick(BigNumber.from(2)).mul(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: askTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
@@ -1233,9 +1231,7 @@ describe("Market integration tests suite", () => {
       {
         id: 5,
         tick: "1",
-        price: TickLib.priceFromTick(BigNumber.from(1)).mul(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: askTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
@@ -1243,9 +1239,7 @@ describe("Market integration tests suite", () => {
       {
         id: 6,
         tick: "3",
-        price: TickLib.priceFromTick(BigNumber.from(3)).mul(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: askTickPriceHelper.priceFromTick(3),
         gives: "1",
         gasreq: 9999,
         gasprice: 21,
@@ -1256,9 +1250,7 @@ describe("Market integration tests suite", () => {
       {
         id: 1,
         tick: "2",
-        price: TickLib.priceFromTick(BigNumber.from(2)).div(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: bidTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
@@ -1266,9 +1258,7 @@ describe("Market integration tests suite", () => {
       {
         id: 2,
         tick: "1",
-        price: TickLib.priceFromTick(BigNumber.from(1)).div(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: bidTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
@@ -1276,9 +1266,7 @@ describe("Market integration tests suite", () => {
       {
         id: 3,
         tick: "2",
-        price: TickLib.priceFromTick(BigNumber.from(2)).div(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: bidTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
@@ -1286,9 +1274,7 @@ describe("Market integration tests suite", () => {
       {
         id: 4,
         tick: "1",
-        price: TickLib.priceFromTick(BigNumber.from(1)).div(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: bidTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
@@ -1296,9 +1282,7 @@ describe("Market integration tests suite", () => {
       {
         id: 5,
         tick: "3",
-        price: TickLib.priceFromTick(BigNumber.from(3)).div(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: bidTickPriceHelper.priceFromTick(3),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,
@@ -1306,9 +1290,7 @@ describe("Market integration tests suite", () => {
       {
         id: 6,
         tick: "1",
-        price: TickLib.priceFromTick(BigNumber.from(1)).div(
-          Big(10).pow(diffInDecimals)
-        ),
+        price: bidTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30,

@@ -16,6 +16,7 @@ import { Market, MgvToken } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {
@@ -43,6 +44,10 @@ describe("Trade unit tests suite", () => {
         });
       when(quoteToken.decimals).thenReturn(12);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
+      const tickPriceHelper = new TickPriceHelper("asks", {
+        base: { decimals: 18 },
+        quote: { decimals: 12 },
+      });
 
       //Act
       const result = trade.getParamsForBuy(
@@ -57,17 +62,11 @@ describe("Trade unit tests suite", () => {
         result.fillVolume.toString(),
         BigNumber.from(params.volume).toString()
       );
-      const priceWithCorrectDecimals = Big(params.price).mul(
-        Big(10).pow(
-          Math.abs(instance(baseToken).decimals - instance(quoteToken).decimals)
-        )
-      );
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
-        Big(1).div(
-          Big(priceWithCorrectDecimals)
-            .mul(100 + slippage)
-            .div(100)
-        )
+
+      const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
+        Big(params.price)
+          .mul(100 + slippage)
+          .div(100)
       );
 
       assert.equal(
@@ -100,6 +99,10 @@ describe("Trade unit tests suite", () => {
       );
       when(quoteToken.decimals).thenReturn(12);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
+      const tickPriceHelper = new TickPriceHelper("asks", {
+        base: { decimals: 18 },
+        quote: { decimals: 12 },
+      });
 
       //Act
       const result = trade.getParamsForBuy(
@@ -109,13 +112,8 @@ describe("Trade unit tests suite", () => {
       );
       //Assert
 
-      const priceWithCorrectDecimals = Big(params.price).mul(
-        Big(10).pow(
-          Math.abs(instance(baseToken).decimals - instance(quoteToken).decimals)
-        )
-      );
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
-        Big(priceWithCorrectDecimals)
+      const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
+        Big(params.price)
           .mul(100 + slippage)
           .div(100)
       );
