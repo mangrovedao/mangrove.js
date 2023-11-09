@@ -32,19 +32,19 @@ class TickPriceHelper {
    * @returns price at tick
    */
   priceFromTick(tick: BigNumberish): Big {
-    const priceFromTick = TickLib.priceFromTick(
-      BigNumber.from(this.ba === "bids" ? -tick : tick)
-    );
+    const offerListPriceFromTick = TickLib.priceFromTick(BigNumber.from(tick));
     const p = Big(10).pow(
       Math.abs(this.market.base.decimals - this.market.quote.decimals)
     );
 
-    let priceWithCorrectDecimals: Big;
-    if (this.ba === "bids") {
-      priceWithCorrectDecimals = priceFromTick.div(p);
-    } else {
-      priceWithCorrectDecimals = priceFromTick.mul(p);
-    }
+    const dp = Big.DP;
+    Big.DP = 300;
+    const priceWithCorrectDecimals =
+      this.ba === "bids"
+        ? Big(1).mul(p).div(offerListPriceFromTick)
+        : offerListPriceFromTick.mul(p);
+    Big.DP = dp;
+
     return priceWithCorrectDecimals;
   }
 
@@ -58,17 +58,20 @@ class TickPriceHelper {
       Math.abs(this.market.base.decimals - this.market.quote.decimals)
     );
 
-    let priceAdjustedForDecimals: Big;
-    if (this.ba === "bids") {
-      priceAdjustedForDecimals = Big(price).mul(p);
-    } else {
-      priceAdjustedForDecimals = Big(price).div(p);
-    }
-    const askTick = TickLib.getTickFromPrice(priceAdjustedForDecimals);
-    if (this.ba === "bids") {
-      return askTick.mul(-1);
-    }
-    return askTick;
+    // TickLib ratio is inbound / outbound.
+    // The SDK price is quote / base.
+    // For asks the quote is the inbound and the base is the outbound.
+    // So for asks the ratio and price coincide. For bids the ratio is the inverse of the price.
+    const dp = Big.DP;
+    Big.DP = 300;
+    const priceAdjustedForDecimals = Big(price).div(p);
+    const offerListPrice =
+      this.ba === "bids"
+        ? Big(1).div(priceAdjustedForDecimals)
+        : priceAdjustedForDecimals;
+    const tick = TickLib.getTickFromPrice(offerListPrice);
+    Big.DP = dp;
+    return tick;
   }
 
   /**
@@ -83,16 +86,21 @@ class TickPriceHelper {
     outboundAmount: Bigish,
     roundUp?: boolean
   ) {
+    //  outbound_tkn: ba === "asks" ? base : quote,
     const rawOutbound = UnitCalculations.toUnits(
       outboundAmount,
-      this.ba == "asks" ? this.market.base.decimals : this.market.quote.decimals
+      this.ba === "asks"
+        ? this.market.base.decimals
+        : this.market.quote.decimals
     );
     const rawInbound = (
       roundUp ? TickLib.inboundFromOutboundUp : TickLib.inboundFromOutbound
     )(BigNumber.from(tick), rawOutbound);
     return UnitCalculations.fromUnits(
       rawInbound,
-      this.ba == "asks" ? this.market.quote.decimals : this.market.base.decimals
+      this.ba === "asks"
+        ? this.market.quote.decimals
+        : this.market.base.decimals
     );
   }
 

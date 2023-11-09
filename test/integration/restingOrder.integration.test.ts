@@ -427,11 +427,12 @@ describe("RestingOrder", () => {
           : false,
         `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
       );
+      console.log(`GOT ${orderResult.restingOrder?.id}`);
       assert(
         orderResult.restingOrder
           ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
           : false,
-        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toFixed()}`
+        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toNumber()}`
       );
 
       // taking resting offer

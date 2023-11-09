@@ -6,6 +6,8 @@ import { BigNumber } from "ethers";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 import { Bigish } from "../../src/types";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
+import UnitCalculations from "../../src/util/unitCalculations";
+import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
@@ -47,7 +49,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: "1e-12",
+      price: "1e12",
     },
     {
       args: {
@@ -69,7 +71,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: 0,
-      price: Big("0.01"),
+      price: Big("100"),
     },
     {
       args: {
@@ -101,8 +103,19 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
           quote: { decimals: 18 },
         },
       },
-      tick: -75170,
-      price: Big("1838.350856476"),
+      tick: -75171,
+      price: Big("1838.53469156"),
+    },
+    {
+      args: {
+        ba: "bids",
+        market: {
+          base: { decimals: 18 },
+          quote: { decimals: 0 },
+        },
+      },
+      tick: 414486,
+      price: Big("1.00000396574"),
     },
     {
       args: {
@@ -113,18 +126,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         },
       },
       tick: -414487,
-      price: Big("1.000096034"),
-    },
-    {
-      args: {
-        ba: "bids",
-        market: {
-          base: { decimals: 18 },
-          quote: { decimals: 0 },
-        },
-      },
-      tick: 414487,
-      price: Big("1e-36"),
+      price: Big("1.000096e+36"),
     },
   ];
 
@@ -140,8 +142,8 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         const result = tickPriceHelper.priceFromTick(BigNumber.from(tick));
         // Assert
         assert.equal(
-          result.round(comparisonPrecision).toString(),
-          Big(price).round(comparisonPrecision).toString()
+          result.toPrecision(comparisonPrecision).toString(),
+          Big(price).toPrecision(comparisonPrecision).toString()
         );
       });
     });
@@ -159,6 +161,106 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         assert.equal(tick, result.toNumber());
       });
     });
+  });
+
+  it("manual calculation", () => {
+    const displayBaseAmount = 2;
+    const displayQuoteAmount = 6;
+    const displayAskOutbound = displayBaseAmount;
+    const displayAskInbound = displayQuoteAmount;
+    const displayBidOutbound = displayQuoteAmount;
+    const displayBidInbound = displayBaseAmount;
+
+    const displayPrice = 3;
+
+    const baseDecimals = 4;
+    const quoteDecimals = 2;
+    const rawBaseAmount = 20000;
+    const rawQuoteAmount = 600;
+
+    assert.equal(
+      UnitCalculations.toUnits(displayBaseAmount, baseDecimals),
+      rawBaseAmount
+    );
+    assert.equal(
+      UnitCalculations.toUnits(displayQuoteAmount, quoteDecimals),
+      rawQuoteAmount
+    );
+    assert.equal(displayPrice, displayQuoteAmount / displayBaseAmount);
+
+    const rawAskOutbound = rawBaseAmount;
+    const rawAskInbound = rawQuoteAmount;
+    const rawAskRatio = 0.03;
+    const rawBidOutbound = rawQuoteAmount;
+    const rawBidInbound = rawBaseAmount;
+    const rawBidRatio = Big(rawBidInbound).div(Big(rawBidOutbound)); // 33.333333333333...
+    const rawAskTick = -35068;
+    const rawBidTick = 35067;
+
+    assert.equal(rawAskRatio, rawAskInbound / rawAskOutbound);
+    assert.equal(rawBidRatio.toNumber(), rawBidInbound / rawBidOutbound);
+    assert.equal(rawBidRatio, 1 / rawAskRatio);
+
+    assert.equal(rawAskTick, TickLib.getTickFromPrice(rawAskRatio).toNumber());
+    assert.equal(rawBidTick, TickLib.getTickFromPrice(rawBidRatio).toNumber());
+    // The following are slow, but they work
+    //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.01);
+    //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio) < 0.01);
+
+    const bidTickPriceHelper0 = new TickPriceHelper("bids", {
+      base: { decimals: baseDecimals },
+      quote: { decimals: quoteDecimals },
+    });
+    const askTickPriceHelper0 = new TickPriceHelper("asks", {
+      base: { decimals: baseDecimals },
+      quote: { decimals: quoteDecimals },
+    });
+
+    const calcAskTick = askTickPriceHelper0
+      .tickFromPrice(displayPrice)
+      .toNumber();
+    const calcBidTick = bidTickPriceHelper0
+      .tickFromPrice(displayPrice)
+      .toNumber();
+
+    assert.equal(rawAskTick, calcAskTick);
+    assert.equal(rawBidTick, calcBidTick);
+
+    const calcAskRawOutbound = TickLib.outboundFromInbound(
+      BigNumber.from(rawAskTick),
+      BigNumber.from(rawAskInbound)
+    );
+    const calcBidRawOutbound = TickLib.outboundFromInbound(
+      BigNumber.from(rawBidTick),
+      BigNumber.from(rawBidInbound)
+    );
+
+    assert.ok(Math.abs(rawAskOutbound - calcAskRawOutbound.toNumber()) <= 1);
+    assert.ok(Math.abs(rawBidOutbound - calcBidRawOutbound.toNumber()) <= 1);
+
+    const calcAskRawInbound = TickLib.inboundFromOutbound(
+      BigNumber.from(rawAskTick),
+      BigNumber.from(rawAskOutbound)
+    );
+    const calcBidRawInbound = TickLib.inboundFromOutbound(
+      BigNumber.from(rawBidTick),
+      BigNumber.from(rawBidOutbound)
+    );
+
+    assert.ok(Math.abs(rawAskInbound - calcAskRawInbound.toNumber()) <= 1);
+    assert.ok(Math.abs(rawBidInbound - calcBidRawInbound.toNumber()) <= 1);
+
+    const calcAskInbound = askTickPriceHelper0.inboundFromOutbound(
+      BigNumber.from(rawAskTick),
+      displayAskOutbound
+    );
+    const calcBidInbound = bidTickPriceHelper0.inboundFromOutbound(
+      BigNumber.from(rawBidTick),
+      displayBidOutbound
+    );
+
+    assert.ok(Math.abs(displayAskInbound - calcAskInbound.toNumber()) <= 0.01);
+    assert.ok(Math.abs(displayBidInbound - calcBidInbound.toNumber()) <= 0.01);
   });
 
   describe("tickFromPrice is inverse of priceFromTick (up to tick-step)", () => {
@@ -215,32 +317,17 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
   });
 
   describe(TickPriceHelper.prototype.inboundFromOutbound.name, () => {
-    it("sdkprice", () => {
-      const bidTickPriceHelper = new TickPriceHelper("bids", {
-        base: { decimals: 6 },
-        quote: { decimals: 6 },
-      });
-      const askTickPriceHelper = new TickPriceHelper("asks", {
-        base: { decimals: 6 },
-        quote: { decimals: 6 },
-      });
-      const b = bidTickPriceHelper.tickFromPrice(2);
-      const a = askTickPriceHelper.tickFromPrice(2);
-
-      console.log(a.toString(), b.toString());
-    });
-
     it("handles simple case of 1,1,1", () => {
-      const tickPriceHelper = new TickPriceHelper("bids", {
+      const tickPriceHelper = new TickPriceHelper("asks", {
         base: { decimals: 6 },
-        quote: { decimals: 6 },
+        quote: { decimals: 7 },
       });
 
       const inbound = tickPriceHelper
-        .inboundFromOutbound(tickPriceHelper.tickFromPrice(2), 10)
+        .inboundFromOutbound(tickPriceHelper.tickFromPrice(1000), 1000)
         .toNumber();
 
-      assert.equal(inbound, 20);
+      assert.equal(inbound, 1);
     });
     bidsAsks.forEach((ba) => {
       // base, quote, price
