@@ -36,17 +36,26 @@ class KandelDistributionGenerator {
     } = tickDistributionParams;
     let baseQuoteTickIndex0: number;
     let firstAskIndex: number;
-    if (generateFromMid) {
-      const bidCount = Math.floor(
-        (midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
-      );
-      baseQuoteTickIndex0 = midBaseQuoteTick - baseQuoteTickOffset * bidCount;
-      firstAskIndex = bidCount + 1;
-    } else {
+    if (midBaseQuoteTick < minBaseQuoteTick) {
       baseQuoteTickIndex0 = minBaseQuoteTick;
-      firstAskIndex = Math.ceil(
-        (midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
-      );
+      firstAskIndex = 0;
+    } else {
+      if (generateFromMid) {
+        const bidCount = Math.floor(
+          (midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
+        );
+        baseQuoteTickIndex0 = midBaseQuoteTick - baseQuoteTickOffset * bidCount;
+        firstAskIndex = Math.min(
+          tickDistributionParams.pricePoints,
+          bidCount + 1
+        );
+      } else {
+        baseQuoteTickIndex0 = minBaseQuoteTick;
+        firstAskIndex = Math.min(
+          tickDistributionParams.pricePoints,
+          Math.ceil((midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset)
+        );
+      }
     }
 
     return {
@@ -281,7 +290,7 @@ class KandelDistributionGenerator {
     );
 
     const dualIndex = this.distributionHelper.getDualIndex(
-      params.offerType,
+      params.offerType === "bids" ? "asks" : "bids",
       params.index,
       params.pricePoints,
       params.stepSize

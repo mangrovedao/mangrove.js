@@ -11,7 +11,7 @@ import {
   createGeneratorStub,
 } from "./kandelDistributionGenerator.unit.test";
 
-describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price generation unit tests suite`, () => {
+describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suite`, () => {
   describe(
     KandelDistributionHelper.prototype.getBaseQuoteTicksFromTick.name,
     () => {
@@ -20,16 +20,27 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price
         const sut = new KandelDistributionHelper(4, 6);
 
         // Act
-        const baseQuoteTicks = sut.getBaseQuoteTicksFromTick(
+        const baseQuoteTicksForAsk = sut.getBaseQuoteTicksFromTick(
           "asks",
           2,
           1000,
           100,
           5
         );
+        const baseQuoteTicksForBid = sut.getBaseQuoteTicksFromTick(
+          "bids",
+          2,
+          -1000,
+          100,
+          5
+        );
 
         // Assert
-        assert.deepStrictEqual(baseQuoteTicks, [800, 900, 1000, 1100, 1200]);
+        assert.deepStrictEqual(
+          baseQuoteTicksForAsk,
+          [800, 900, 1000, 1100, 1200]
+        );
+        assert.deepStrictEqual(baseQuoteTicksForAsk, baseQuoteTicksForBid);
       });
     }
   );
@@ -525,31 +536,27 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         assert.equal(result.totalBaseChange.toNumber(), baseDelta.toNumber());
         assert.equal(result.totalQuoteChange.toNumber(), quoteDelta.toNumber());
 
-        result.distribution.offers.asks
-          .filter((x) => x.gives.gt(0))
-          .forEach((o) => {
-            assert.ok(o.gives.gte(Big(1)), "ask base should be above minimum");
-            assert.ok(
-              Big(
-                sut.askTickPriceHelper.inboundFromOutbound(o.tick, o.gives)
-              ).gte(Big(9000)),
-              "ask quote should be above minimum"
-            );
-          });
-        result.distribution.offers.bids
-          .filter((x) => x.gives.gt(0))
-          .forEach((o) => {
-            assert.ok(
-              o.gives.gte(Big(9000)),
-              "bid quote should be above minimum"
-            );
-            assert.ok(
-              sut.bidTickPriceHelper
-                .inboundFromOutbound(o.tick, o.gives)
-                .gte(Big(1)),
-              "bid base should be above minimum"
-            );
-          });
+        result.distribution.getLiveOffers("asks").forEach((o) => {
+          assert.ok(o.gives.gte(Big(1)), "ask base should be above minimum");
+          assert.ok(
+            Big(
+              sut.askTickPriceHelper.inboundFromOutbound(o.tick, o.gives)
+            ).gte(Big(9000)),
+            "ask quote should be above minimum"
+          );
+        });
+        result.distribution.getLiveOffers("bids").forEach((o) => {
+          assert.ok(
+            o.gives.gte(Big(9000)),
+            "bid quote should be above minimum"
+          );
+          assert.ok(
+            sut.bidTickPriceHelper
+              .inboundFromOutbound(o.tick, o.gives)
+              .gte(Big(1)),
+            "bid base should be above minimum"
+          );
+        });
       });
 
       [

@@ -322,7 +322,7 @@ describe("TickLib unit test suite", () => {
       assert.deepStrictEqual(
         result.minus(Big("1.0001")).abs().gt(0) && result.lt(1.0001),
         true,
-        `price should be sligtly less than 1.0001 but is ${result}, do to man and exp cannot express 1.0001`
+        `price should be slightly less than 1.0001 but is ${result}, do to man and exp cannot express 1.0001`
       );
     });
   });

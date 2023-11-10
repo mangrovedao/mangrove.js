@@ -45,6 +45,11 @@ class KandelLib {
     pricePoints: number;
     stepSize: number;
   }) {
+    if (params.bidGives == undefined && params.askGives == undefined) {
+      throw Error(
+        "Either initialAskGives or initialBidGives must be provided."
+      );
+    }
     const distribution = await this.kandelLib.createDistribution(
       params.from,
       params.to,
