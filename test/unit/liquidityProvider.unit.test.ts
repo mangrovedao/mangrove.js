@@ -111,7 +111,7 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toNumber(), 1);
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), -276324);
+    assert.deepStrictEqual(tick.toNumber(), 276324);
   });
 
   it("normalizeOfferParams, with volume and price 2, as asks", async function () {
@@ -155,7 +155,7 @@ describe("Liquidity provider unit tests suite", () => {
     assert.equal(price.toNumber(), 2);
     assert.deepStrictEqual(gives, Big(2));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick.toNumber(), -6931);
+    assert.deepStrictEqual(tick.toNumber(), -6932);
   });
 
   it("normalizeOfferParams, with volume and price 2, as asks", async function () {

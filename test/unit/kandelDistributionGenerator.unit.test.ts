@@ -146,7 +146,8 @@ export class KandelLibStub {
         tick,
         gives:
           bidGives === ethers.constants.MaxUint256
-            ? TickLib.outboundFromInbound(BigNumber.from(tick), askGives)
+            ? // Intentionally use raw TickLib as these are raw values
+              TickLib.outboundFromInbound(BigNumber.from(tick), askGives)
             : bidGives,
       };
 
@@ -177,7 +178,8 @@ export class KandelLibStub {
         tick,
         gives:
           askGives === ethers.constants.MaxUint256
-            ? TickLib.outboundFromInbound(BigNumber.from(tick), bidGives)
+            ? // Intentionally use raw TickLib as these are raw values
+              TickLib.outboundFromInbound(BigNumber.from(tick), bidGives)
             : askGives,
       };
 

@@ -504,6 +504,7 @@ class KandelDistributionHelper {
     if (priceRatio.lte(Big(1))) {
       throw Error("priceRatio must be larger than 1");
     }
+    // Intentionally use raw TickLib as these are raw values
     return TickLib.tickFromVolumes(
       BigNumber.from(
         Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed()
