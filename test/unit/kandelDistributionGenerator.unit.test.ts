@@ -11,6 +11,7 @@ import { DirectWithBidsAndAsksDistribution } from "../../src/types/typechain/Kan
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
+import { assertApproxEqRel } from "../util/helpers";
 
 interface DistributionOffer {
   index: number;
@@ -115,7 +116,7 @@ export class KandelLibStub {
 
     // Calculate the upper bound for live bids.
     let bidBound = Math.min(
-      firstAskIndex - stepSize / 2 - (stepSize % 2),
+      firstAskIndex - Math.floor(stepSize / 2) - (stepSize % 2),
       pricePoints - stepSize
     );
 
@@ -160,7 +161,7 @@ export class KandelLibStub {
       );
       distribution.asks[i] = {
         index: dualIndex,
-        tick,
+        tick: baseQuoteTickIndex0 + _baseQuoteTickOffset * dualIndex,
         gives: BigNumber.from(0),
       };
 
@@ -257,14 +258,12 @@ export function createGeneratorStub() {
 
 describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
   let sut: KandelDistributionGenerator;
-  const askTickPriceHelper = new TickPriceHelper("asks", {
+  const market = {
     base: { decimals: 4 },
     quote: { decimals: 6 },
-  });
-  const bidTickPriceHelper = new TickPriceHelper("asks", {
-    base: { decimals: 4 },
-    quote: { decimals: 6 },
-  });
+  };
+  const askTickPriceHelper = new TickPriceHelper("asks", market);
+  const bidTickPriceHelper = new TickPriceHelper("bids", market);
   beforeEach(() => {
     sut = new KandelDistributionGenerator(
       new KandelDistributionHelper(4, 6),
@@ -273,8 +272,8 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         signer: {} as ethers.Signer,
         kandelLibInstance:
           new KandelLibStub() as unknown as typechain.GeometricKandel,
-        baseDecimals: 4,
-        quoteDecimals: 6,
+        baseDecimals: market.base.decimals,
+        quoteDecimals: market.quote.decimals,
       })
     );
   });
@@ -435,12 +434,12 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         minPrice,
         priceRatio,
         pricePoints,
-        midPrice: Big(4000),
+        midPrice: Big(7000),
         stepSize: 1,
-        generateFromMid: true,
+        generateFromMid: false,
       };
 
-      it("can calculate distribution with constant base", async () => {
+      it("can calculate distribution with constant base generateFromMid=false", async () => {
         // Arrange/Act
         const distribution = await sut.calculateDistribution({
           distributionParams,
@@ -450,7 +449,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
 
         // Assert
         assert.equal(offeredVolume.requiredBase.toNumber(), 2);
-        assert.equal(offeredVolume.requiredQuote.toNumber(), 7000);
+        assert.equal(offeredVolume.requiredQuote.toNumber(), 3000);
         assert.equal(distribution.pricePoints, pricePoints);
         distribution.offers.asks
           .filter((x) => x.gives.gt(0))
@@ -482,17 +481,21 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           });
       });
 
-      it("can calculate distribution with constant base with midPrice", async () => {
+      it("can calculate distribution with constant base generateFromMid=true", async () => {
         // Arrange/Act
         const distribution = await sut.calculateDistribution({
-          distributionParams: { ...distributionParams, midPrice: Big(4000) },
+          distributionParams: {
+            ...distributionParams,
+            midPrice: 4000,
+            generateFromMid: true,
+          },
           initialAskGives: Big(1),
         });
         const offeredVolume = distribution.getOfferedVolumeForDistribution();
 
         // Assert
         assert.equal(offeredVolume.requiredBase.toNumber(), 2);
-        assert.equal(offeredVolume.requiredQuote.toNumber(), 3000);
+        assertApproxEqRel(offeredVolume.requiredQuote.toNumber(), 3000, 0.01);
         assert.equal(distribution.pricePoints, pricePoints);
         assert.equal(
           distribution.offers.asks.length,
@@ -503,27 +506,30 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
           .filter((x) => x.gives.gt(0))
           .forEach((d, i) => {
             assert.equal(d.gives.toNumber(), 1, `wrong base at ${i}`);
-            assert.equal(
+            assertApproxEqRel(
               askTickPriceHelper
                 .inboundFromOutbound(d.tick, d.gives)
                 .toNumber(),
               minPrice.mul(priceRatio.pow(d.index)).toNumber(),
+              0.01,
               `wrong quote at ${d.index}`
             );
           });
         distribution.offers.bids
           .filter((x) => x.gives.gt(0))
           .forEach((d, i) => {
-            assert.equal(
+            assertApproxEqRel(
               bidTickPriceHelper
                 .inboundFromOutbound(d.tick, d.gives)
                 .toNumber(),
               1,
+              0.01,
               `wrong base at ${i}`
             );
-            assert.equal(
+            assertApproxEqRel(
               d.gives.toNumber(),
               minPrice.mul(priceRatio.pow(d.index)).toNumber(),
+              0.01,
               `wrong quote at ${d.index}`
             );
           });

@@ -279,12 +279,11 @@ class KandelDistributionHelper {
     bidTicks: number[],
     askTicks: number[]
   ) {
-    //FIXME: translate to/from units ot have a TickLib that works on real bigs with decimals.
     let askGives = minimumBasePerOffer;
     let bidGives = minimumQuotePerOffer;
     if (bidTicks.length > 0) {
       const maxBidTick = Math.max(...bidTicks);
-      const minimumBaseFromQuote = this.askTickPriceHelper.outboundFromInbound(
+      const minimumBaseFromQuote = this.bidTickPriceHelper.inboundFromOutbound(
         maxBidTick,
         minimumQuotePerOffer,
         true
@@ -293,7 +292,7 @@ class KandelDistributionHelper {
         ? minimumBaseFromQuote
         : minimumBasePerOffer;
     }
-    if (askTicks.length == 0) {
+    if (askTicks.length > 0) {
       const maxAskTick = Math.max(...askTicks);
       const minimumQuoteFromBase = this.askTickPriceHelper.inboundFromOutbound(
         maxAskTick,
@@ -572,8 +571,9 @@ class KandelDistributionHelper {
         baseQuoteTickOffset == undefined &&
         pricePoints != undefined
       ) {
-        baseQuoteTickOffset =
-          (maxBaseQuoteTick - minBaseQuoteTick) / (pricePoints - 1);
+        baseQuoteTickOffset = Math.floor(
+          (maxBaseQuoteTick - minBaseQuoteTick) / (pricePoints - 1)
+        );
       } else if (
         minBaseQuoteTick != undefined &&
         maxBaseQuoteTick == undefined &&
@@ -600,7 +600,7 @@ class KandelDistributionHelper {
     if (minBaseQuoteTick < MIN_TICK.toNumber()) {
       throw Error("minBaseQuoteTick too low.");
     }
-    if (maxBaseQuoteTick < MAX_TICK.toNumber()) {
+    if (maxBaseQuoteTick > MAX_TICK.toNumber()) {
       throw Error("maxBaseQuoteTick too high.");
     }
 

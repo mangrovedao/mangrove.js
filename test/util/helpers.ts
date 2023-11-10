@@ -1,5 +1,8 @@
 import { BigNumber, BigNumberish, ContractTransaction, utils } from "ethers";
 import Mangrove, { MgvToken } from "../../src";
+import { Bigish } from "../../src/types";
+import Big from "big.js";
+import assert from "assert";
 
 export const sleep = (ms?: number): Promise<void> => {
   return new Promise((cb) => setTimeout(cb, ms));
@@ -52,6 +55,36 @@ export const approxEq = (
   //   return bb.sub(aa).lte(toWei(delta));
   // }
   return BigNumber.from(a).sub(b).abs().lte(toWei(delta));
+};
+
+export const assertApproxEqAbs = (
+  actual: Bigish,
+  expected: Bigish,
+  maxDelta: Bigish,
+  message?: string
+) => {
+  if (!Big(actual).sub(Big(expected)).abs().lte(Big(maxDelta))) {
+    assert.fail(
+      `${
+        message ? message + ": " : ""
+      }expected actual=${actual} to be within ${maxDelta} of expected=${expected}`
+    );
+  }
+};
+
+export const assertApproxEqRel = (
+  actual: Bigish,
+  expected: Bigish,
+  deltaRel: Bigish,
+  message?: string
+) => {
+  if (!Big(actual).sub(Big(expected)).abs().div(expected).lte(Big(deltaRel))) {
+    assert.fail(
+      `${
+        message ? message + ": " : ""
+      }expected actual=${actual} to be within relative ${deltaRel} of expected=${expected}`
+    );
+  }
 };
 
 export type OfferData = {

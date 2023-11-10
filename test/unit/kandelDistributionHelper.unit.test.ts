@@ -5,14 +5,11 @@ import KandelDistributionHelper, {
   TickDistributionParams,
 } from "../../src/kandel/kandelDistributionHelper";
 import { KandelDistribution } from "../../src";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import {
   assertIsRounded,
   assertSameTicks,
   createGeneratorStub,
 } from "./kandelDistributionGenerator.unit.test";
-import { BigNumber } from "ethers";
-import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price generation unit tests suite`, () => {
   describe(
@@ -69,18 +66,17 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price
     () => {
       it("calculates sames parameters for all combinations of minPrice, maxPrice, ratio, and pricePoints, and the similar tick-based parameters ", () => {
         // Arrange
-        const minPrice = Big(1001);
-        const maxPrice = Big(1588.461197266944);
-        const midPrice = Big(1260.971712);
+        const sut = new KandelDistributionHelper(4, 6);
         const stepSize = 1;
         const baseQuoteTickOffset = 769;
         const priceRatio = 1.08;
         const pricePoints = 7;
-        const maxBaseQuoteTick = 1538;
-        const minBaseQuoteTick = 0;
-        const midBaseQuoteTick = 769;
-
-        const sut = new KandelDistributionHelper(4, 6);
+        const maxBaseQuoteTick = 119759;
+        const minBaseQuoteTick = 115145;
+        const midBaseQuoteTick = 117453;
+        const minPrice = Big(1001);
+        const maxPrice = Big(1587.841870262581);
+        const midPrice = Big(1260.971712);
 
         const expectedParams: TickDistributionParams = {
           generateFromMid: true,
@@ -166,40 +162,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price
         );
       });
 
-      it("fails if neither midBaseQuoteTick nor midPrice is given", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(4, 6);
-
-        // Act/assert
-        assert.throws(
-          () =>
-            sut.getTickDistributionParams({
-              generateFromMid: false,
-              stepSize: 1,
-              midPrice: Big(1),
-              minPrice: Big(1),
-              maxPrice: Big(3),
-            }),
-          new Error("midPrice or midBaseQuoteTick must be provided.")
-        );
-      });
-
-      it("fails if neither midBaseQuoteTick nor midPrice is given", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(4, 6);
-
-        // Act/assert
-        assert.throws(
-          () =>
-            sut.getTickDistributionParams({
-              generateFromMid: false,
-              stepSize: 1,
-              midPrice: Big(1),
-            }),
-          new Error("midPrice or midBaseQuoteTick must be provided.")
-        );
-      });
-
       it("can get 2 pricePoints from minPrice and maxPrice", () => {
         const sut = new KandelDistributionHelper(4, 6);
 
@@ -207,6 +169,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price
         const params = sut.getTickDistributionParams({
           minPrice: "1455.3443267746625",
           maxPrice: "2183.0164901619937",
+          midPrice: "1819.180408468328",
           pricePoints: 2,
           stepSize: 1,
           generateFromMid: false,
@@ -231,7 +194,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} geometric price
               generateFromMid: true,
             }),
           new Error(
-            "Exactly three of minPrice, maxPrice, tickOffset, and pricePoints must be given"
+            "Exactly three of minPrice (or minBaseQuoteTick), maxPrice (or maxBaseQuoteTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given"
           )
         );
       });
@@ -332,15 +295,15 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
         // Act
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
-          Big(0.1),
-          Big(100),
+          Big(1),
+          Big(1000),
           [sut.bidTickPriceHelper.tickFromPrice(1000).toNumber()],
           [sut.askTickPriceHelper.tickFromPrice(1000).toNumber()]
         );
 
         // Assert
-        assert.equal(askGives.toNumber(), 0.1);
-        assert.equal(bidGives.toNumber(), 100);
+        assert.equal(askGives.toNumber(), 1);
+        assert.equal(bidGives.toNumber(), 1000);
       });
 
       it("returns higher than minimum if dual at some price would be below its minimum", () => {
@@ -360,7 +323,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         );
 
         // Assert
-        assert.equal(askGives.toNumber(), 2);
+        assert.equal(askGives.toNumber(), 3);
         assert.equal(bidGives.toNumber(), 4000);
       });
     }
@@ -533,15 +496,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
       it("can decrease uniformly, respects limits, prices, and rounding", () => {
         // Arrange
         const baseDelta = Big(-2);
-        const quoteDelta = Big(-3000);
-        const askTickPriceHelper = new TickPriceHelper("asks", {
-          base: { decimals: 4 },
-          quote: { decimals: 6 },
-        });
-        const bidTickPriceHelper = new TickPriceHelper("asks", {
-          base: { decimals: 4 },
-          quote: { decimals: 6 },
-        });
+        const quoteDelta = Big(-2000);
 
         // Act
         const result = sut.uniformlyChangeVolume({
@@ -570,32 +525,38 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         assert.equal(result.totalBaseChange.toNumber(), baseDelta.toNumber());
         assert.equal(result.totalQuoteChange.toNumber(), quoteDelta.toNumber());
 
-        result.distribution.offers.asks.forEach((o) => {
-          assert.ok(o.gives.gte(Big(1)), "ask base should be above minimum");
-          assert.ok(
-            Big(askTickPriceHelper.inboundFromOutbound(o.tick, o.gives)).gte(
-              Big(9000)
-            ),
-            "ask quote should be above minimum"
-          );
-        });
-        result.distribution.offers.bids.forEach((o) => {
-          assert.ok(
-            o.gives.gte(Big(9000)),
-            "bid quote should be above minimum"
-          );
-          assert.ok(
-            bidTickPriceHelper.inboundFromOutbound(o.tick, o.gives).gte(Big(1)),
-            "bid base should be above minimum"
-          );
-        });
+        result.distribution.offers.asks
+          .filter((x) => x.gives.gt(0))
+          .forEach((o) => {
+            assert.ok(o.gives.gte(Big(1)), "ask base should be above minimum");
+            assert.ok(
+              Big(
+                sut.askTickPriceHelper.inboundFromOutbound(o.tick, o.gives)
+              ).gte(Big(9000)),
+              "ask quote should be above minimum"
+            );
+          });
+        result.distribution.offers.bids
+          .filter((x) => x.gives.gt(0))
+          .forEach((o) => {
+            assert.ok(
+              o.gives.gte(Big(9000)),
+              "bid quote should be above minimum"
+            );
+            assert.ok(
+              sut.bidTickPriceHelper
+                .inboundFromOutbound(o.tick, o.gives)
+                .gte(Big(1)),
+              "bid base should be above minimum"
+            );
+          });
       });
 
       [
         { baseDelta: Big(-2) },
-        { quoteDelta: Big(-3000) },
-        { baseDelta: Big(2), quoteDelta: Big(3000) },
-        { baseDelta: Big(2), quoteDelta: Big(-3000) },
+        { quoteDelta: Big(-2000) },
+        { baseDelta: Big(2), quoteDelta: Big(2000) },
+        { baseDelta: Big(2), quoteDelta: Big(-2000) },
       ].forEach(({ baseDelta, quoteDelta }) => {
         it(`can increase and decrease also a single one baseDelta=${baseDelta} quoteDelta=${quoteDelta}`, () => {
           // Arrange

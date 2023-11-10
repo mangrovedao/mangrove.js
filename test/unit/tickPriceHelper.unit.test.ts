@@ -8,30 +8,7 @@ import { Bigish } from "../../src/types";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import UnitCalculations from "../../src/util/unitCalculations";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
-
-export const assertApproxEqAbs = (
-  actual: Bigish,
-  expected: Bigish,
-  maxDelta: Bigish
-) => {
-  if (!Big(actual).sub(Big(expected)).abs().lte(Big(maxDelta))) {
-    assert.fail(
-      `expected actual=${actual} to be within ${maxDelta} of expected=${expected}`
-    );
-  }
-};
-
-export const assertApproxEqRel = (
-  actual: Bigish,
-  expected: Bigish,
-  deltaRel: Bigish
-) => {
-  if (!Big(actual).sub(Big(expected)).abs().div(expected).lte(Big(deltaRel))) {
-    assert.fail(
-      `expected actual=${actual} to be within relative ${deltaRel} of expected=${expected}`
-    );
-  }
-};
+import { assertApproxEqAbs, assertApproxEqRel } from "../util/helpers";
 
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
