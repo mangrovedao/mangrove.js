@@ -350,8 +350,8 @@ class KandelDistributionHelper {
   }
 
   /** Gets the dual index for an offer in the same manner as the solidity implementation.
-   * @param offerType The offer type to get the dual index for.
-   * @param index The index of the offer.
+   * @param offerType The offer type to get the index for.
+   * @param index The index of the originating offer.
    * @param pricePoints The number of price points in the distribution.
    * @param stepSize The step size to use.
    * @returns The dual index.

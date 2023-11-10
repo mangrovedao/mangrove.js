@@ -69,7 +69,7 @@ describe("KandelDistribution unit tests suite", () => {
     }
   );
 
-  describe(KandelDistribution.prototype.getFirstLiveIndex.name, () => {
+  describe(KandelDistribution.prototype.getFirstLiveAskIndex.name, () => {
     it("is correct when no live asks", () => {
       // Arrange
       sut = new KandelDistribution(
@@ -85,14 +85,12 @@ describe("KandelDistribution unit tests suite", () => {
       );
 
       // Act/Assert
-      assert.equal(sut.getFirstLiveIndex("asks"), sut.pricePoints);
-      assert.equal(sut.getFirstLiveIndex("bids"), 0);
+      assert.equal(sut.getFirstLiveAskIndex(), sut.pricePoints);
     });
 
     it("is correct when some live asks", () => {
       // Act/Assert
-      assert.equal(sut.getFirstLiveIndex("asks"), 3);
-      assert.equal(sut.getFirstLiveIndex("bids"), 0);
+      assert.equal(sut.getFirstLiveAskIndex(), 3);
     });
   });
 
@@ -172,7 +170,7 @@ describe("KandelDistribution unit tests suite", () => {
       assert.equal(chunks[1].asks[0].index, 4);
       assert.equal(chunks[1].bids[0].index, 3);
       assert.equal(chunks[1].asks[1].index, 1);
-      assert.equal(chunks[1].bids[1].index, 2);
+      assert.equal(chunks[1].bids[1].index, 0);
     });
 
     it("can have one extra offer due to boundary", () => {
@@ -216,7 +214,7 @@ describe("KandelDistribution unit tests suite", () => {
         );
 
         // Act
-        const chunks = sut.chunkDistribution(2);
+        const chunks = sut.chunkDistribution(4);
 
         // Assert
         assert.equal(chunks.length, 2);

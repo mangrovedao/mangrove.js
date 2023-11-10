@@ -658,7 +658,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
               });
               // Assert
               assert.equal(
-                distribution.getFirstLiveIndex("asks"),
+                distribution.getFirstLiveAskIndex(),
                 offerType == "asks" ? 0 : distribution.pricePoints
               );
               distribution.offers.bids.forEach((x) => {
@@ -827,7 +827,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         // Assert
         assert.equal(
           distribution.offers.asks[
-            distribution.getFirstLiveIndex("asks")
+            distribution.getFirstLiveAskIndex()
           ].gives.toNumber(),
           1
         );

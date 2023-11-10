@@ -127,13 +127,12 @@ class KandelDistribution {
     };
   }
 
-  /** Gets the index of the first offer in the distribution of the offer type. If there are no live offers, then the length of the distribution is returned.
-   * @param ba The type of offer.
-   * @returns The index of the first offer in the distribution of the offer type. If there are no live offers, then the length of the distribution is returned.
+  /** Gets the index of the first ask in the distribution. If there are no live asks, then the length of the distribution is returned.
+   * @returns The index of the first ask in the distribution. If there are no live asks, then the length of the distribution is returned.
    */
-  public getFirstLiveIndex(ba: Market.BA) {
+  public getFirstLiveAskIndex() {
     return (
-      this.getLiveOffers(ba).find((o) => o.gives.gt(0))?.index ??
+      this.getLiveOffers("asks").find((o) => o.gives.gt(0))?.index ??
       this.pricePoints
     );
   }
@@ -160,7 +159,7 @@ class KandelDistribution {
         offers.included[offer.index] = true;
         chunks[chunks.length - 1][offerType].push(offer);
         const dualIndex = this.helper.getDualIndex(
-          offerType,
+          dualOfferType,
           offer.index,
           this.pricePoints,
           this.stepSize
@@ -265,7 +264,7 @@ class KandelDistribution {
     return {
       baseQuoteTickOffset: this.baseQuoteTickOffset,
       pricePoints: this.pricePoints,
-      firstAskIndex: this.getFirstLiveIndex("asks"),
+      firstAskIndex: this.getFirstLiveAskIndex(),
       baseQuoteTickIndex0: baseQuoteTickIndex0,
       stepSize: this.stepSize,
     };
@@ -295,7 +294,11 @@ class KandelDistribution {
         throw new Error("Invalid distribution: ask indices are not ascending");
       }
     }
-    if (this.getFirstLiveIndex("asks") < this.getFirstLiveIndex("bids")) {
+    const lastLiveBidIndex =
+      this.getLiveOffers("bids")
+        .reverse()
+        .find((o) => o.gives.gt(0))?.index ?? 0;
+    if (this.getFirstLiveAskIndex() < lastLiveBidIndex) {
       throw new Error(
         "Invalid distribution: live bids should come before live asks"
       );
