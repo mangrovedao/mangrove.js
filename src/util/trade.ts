@@ -40,6 +40,7 @@ class Trade {
       fromUnits: (amount: ethers.BigNumber) => Big;
     }
   ) {
+    // validate parameters and setup tickPriceHelper
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
     const tickPriceHelper = new TickPriceHelper("asks", {
@@ -47,9 +48,11 @@ class Trade {
       quote: quoteToken,
     });
     if ("price" in params) {
-      const priceWithSlippage = Big(params.price)
-        .mul(100 + slippage)
-        .div(100);
+      const priceWithSlippage = this.adjustPriceForSlippage(
+        Big(params.price),
+        slippage,
+        "buy"
+      );
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
@@ -57,7 +60,6 @@ class Trade {
         } else {
           tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
         }
-
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
@@ -69,6 +71,7 @@ class Trade {
         fillWants = false;
       }
     } else if ("tick" in params) {
+      // in this case, we're merely asking to get the tick adjusted for slippage
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
@@ -76,17 +79,18 @@ class Trade {
         const price = tickPriceHelper.priceFromTick(
           BigNumber.from(params.tick)
         ); // This can result in small rounding differences
-        const priceWithSlippage = price.mul(100 + slippage).div(100);
+        const priceWithSlippage = this.adjustPriceForSlippage(
+          price,
+          slippage,
+          "buy"
+        );
         tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       } else {
         tick = BigNumber.from(params.tick);
       }
     } else {
-      const slippage = this.validateSlippage(params.slippage);
       const givesWithSlippage = quoteToken.toUnits(
-        Big(params.gives)
-          .mul(100 + slippage)
-          .div(100)
+        this.adjustPriceForSlippage(Big(params.gives), slippage, "buy")
       );
       fillWants = params.fillWants ?? true;
       fillVolume = fillWants
@@ -107,6 +111,15 @@ class Trade {
     };
   }
 
+  private adjustPriceForSlippage(
+    price: Big,
+    slippage: number,
+    orderType: Market.BS
+  ): Big {
+    const adjustment = orderType === "buy" ? slippage : -slippage;
+    return price.mul(100 + adjustment).div(100);
+  }
+
   getParamsForSell(
     params: Market.TradeParams,
     baseToken: {
@@ -125,9 +138,11 @@ class Trade {
       const priceWithCorrectDecimals = Big(params.price).mul(
         Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
       );
-      const priceWithSlippage = priceWithCorrectDecimals
-        .mul(100 - slippage)
-        .div(100);
+      const priceWithSlippage = this.adjustPriceForSlippage(
+        priceWithCorrectDecimals,
+        slippage,
+        "sell"
+      );
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         if (params.price == 0) {
@@ -151,17 +166,18 @@ class Trade {
       if (slippage > 0) {
         // if slippage is 0, we don't need to do anything
         const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differences
-        const priceWithSlippage = price.mul(100 - slippage).div(100);
+        const priceWithSlippage = this.adjustPriceForSlippage(
+          price,
+          slippage,
+          "sell"
+        );
         tick = TickLib.getTickFromPrice(priceWithSlippage);
       } else {
         tick = BigNumber.from(params.tick);
       }
     } else {
-      const slippage = this.validateSlippage(params.slippage);
       const wantsWithSlippage = quoteToken.toUnits(
-        Big(params.wants)
-          .mul(100 - slippage)
-          .div(100)
+        this.adjustPriceForSlippage(Big(params.wants), slippage, "sell")
       );
       fillWants = params.fillWants ?? false;
       fillVolume = fillWants
