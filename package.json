@@ -61,6 +61,7 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.7.0",
+    "@mangrovedao/context-addresses": "next",
     "@mangrovedao/mangrove-core": "^2.0.0-3",
     "@mangrovedao/mangrove-deployments": "next",
     "@mangrovedao/mangrove-strats": "next",

@@ -18,6 +18,7 @@ import { Bigish, Provider, typechain } from "./types";
 import mgvCore from "@mangrovedao/mangrove-core";
 import mgvStrats from "@mangrovedao/mangrove-strats";
 import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
+import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
@@ -521,6 +522,7 @@ export function resetConfiguration(): void {
   readContractPackageContextAddresses(mgvCore.addresses.context);
   readContractPackageContextAddresses(mgvStrats.addresses.context);
   readMangroveDeploymentAddresses();
+  readContextAddresses();
 }
 
 function readContractPackageContextAddresses(
@@ -555,16 +557,6 @@ function readMangroveDeploymentAddresses() {
       released: mgvStratsReleasedFilter,
     });
   readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
-
-  // For ERC20s we do not care about the versions nor whether they are released or not
-  const testErc20VersionPattern = undefined;
-  const testErc20ReleasedFilter = undefined; // undefined => released & unreleased
-  const testErc20ContractsDeployments =
-    mgvDeployments.getAllTestErc20VersionDeployments({
-      version: testErc20VersionPattern,
-      released: testErc20ReleasedFilter,
-    });
-  readVersionDeploymentsAddresses(testErc20ContractsDeployments);
 }
 
 function readVersionDeploymentsAddresses(
@@ -580,6 +572,49 @@ function readVersionDeploymentsAddresses(
         networkDeployments.primaryAddress,
         networkName
       );
+    }
+  }
+}
+
+function readContextAddresses() {
+  readContextErc20Addresses();
+  readContextAaveAddresses();
+}
+
+function readContextErc20Addresses() {
+  for (const [, /*tokenId*/ erc20] of Object.entries(
+    contextAddresses.getAllErc20s()
+  )) {
+    for (const [networkId, networkInstances] of Object.entries(
+      erc20.networkInstances
+    )) {
+      const networkName = eth.getNetworkName(+networkId);
+      for (const [, /*erc20InstanceId*/ erc20Instance] of Object.entries(
+        networkInstances
+      )) {
+        // FIXME: All instances should be available, not just the default.
+        //        This requires regisering the address ID instead of the token symbol
+        //        + changes to configuration, but probably not more than that?
+        if (!erc20Instance.default) {
+          continue;
+        }
+        addressesConfiguration.setAddress(
+          erc20.symbol,
+          erc20Instance.address,
+          networkName
+        );
+        break;
+      }
+    }
+  }
+}
+
+function readContextAaveAddresses() {
+  const allAaveV3Addresses = contextAddresses.getAllAaveV3Addresses();
+  for (const [addressId, role] of Object.entries(allAaveV3Addresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
     }
   }
 }
