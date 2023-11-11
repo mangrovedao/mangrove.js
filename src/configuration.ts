@@ -15,8 +15,6 @@ import {
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish, Provider, typechain } from "./types";
-import mgvCore from "@mangrovedao/mangrove-core";
-import mgvStrats from "@mangrovedao/mangrove-strats";
 import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
 import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
@@ -504,9 +502,8 @@ export function resetConfiguration(): void {
 
   // Load addresses in the following order:
   // 1. loaded addresses
-  // 2. mangrove-core context addresses
-  // 3. mangrove-strats context addresses
-  // 4. mangrove-deployments addresses
+  // 2. mangrove-deployments addresses
+  // 3. context-addresses addresses
   // Last loaded address is used
 
   for (const [network, networkAddresses] of Object.entries(
@@ -519,20 +516,8 @@ export function resetConfiguration(): void {
     }
   }
 
-  readContractPackageContextAddresses(mgvCore.addresses.context);
-  readContractPackageContextAddresses(mgvStrats.addresses.context);
   readMangroveDeploymentAddresses();
   readContextAddresses();
-}
-
-function readContractPackageContextAddresses(
-  contextAddresses: Record<network, { name: string; address: string }[]>
-) {
-  for (const [network, networkAddresses] of Object.entries(contextAddresses)) {
-    for (const { name, address } of networkAddresses as any) {
-      addressesConfiguration.setAddress(name, address, network);
-    }
-  }
 }
 
 function readMangroveDeploymentAddresses() {
@@ -589,21 +574,22 @@ function readContextErc20Addresses() {
       erc20.networkInstances
     )) {
       const networkName = eth.getNetworkName(+networkId);
-      for (const [, /*erc20InstanceId*/ erc20Instance] of Object.entries(
+      for (const [erc20InstanceId, erc20Instance] of Object.entries(
         networkInstances
       )) {
-        // FIXME: All instances should be available, not just the default.
-        //        This requires regisering the address ID instead of the token symbol
-        //        + changes to configuration, but probably not more than that?
-        if (!erc20Instance.default) {
-          continue;
-        }
         addressesConfiguration.setAddress(
-          erc20.symbol,
+          erc20InstanceId,
           erc20Instance.address,
           networkName
         );
-        break;
+        // Also register the default instance as the token symbol for convenience
+        if (erc20Instance.default) {
+          addressesConfiguration.setAddress(
+            erc20.symbol,
+            erc20Instance.address,
+            networkName
+          );
+        }
       }
     }
   }
