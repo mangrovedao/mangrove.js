@@ -963,7 +963,6 @@ class Market {
     outbound_tkn: MgvToken;
     inbound_tkn: MgvToken;
   } {
-    console.log("Market.getOutboundInbound", ba, base, quote);
     return {
       outbound_tkn: ba === "asks" ? base : quote,
       inbound_tkn: ba === "asks" ? quote : base,
@@ -1007,7 +1006,6 @@ class Market {
   }
 
   getVolumeForGivesAndPrice(ba: Market.BA, gives: Big, price: Big): Big {
-    console.log("getVolumeForGivesAndPrice", ba, gives, price);
     return ba === "asks" ? gives : gives.div(price);
   }
 
