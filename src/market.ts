@@ -205,6 +205,7 @@ namespace Market {
     tick: BigNumber;
     price: Big;
     gives: Big;
+    volume: Big;
   };
 
   export type Offer = OfferSlim & {
@@ -962,6 +963,7 @@ class Market {
     outbound_tkn: MgvToken;
     inbound_tkn: MgvToken;
   } {
+    console.log("Market.getOutboundInbound", ba, base, quote);
     return {
       outbound_tkn: ba === "asks" ? base : quote,
       inbound_tkn: ba === "asks" ? quote : base,
@@ -1002,6 +1004,11 @@ class Market {
       gives,
       wants,
     };
+  }
+
+  getVolumeForGivesAndPrice(ba: Market.BA, gives: Big, price: Big): Big {
+    console.log("getVolumeForGivesAndPrice", ba, gives, price);
+    return ba === "asks" ? gives : gives.div(price);
   }
 
   /** Determine the first decimal place where the smallest price difference between neighboring offers in the order book cache is visible. */
