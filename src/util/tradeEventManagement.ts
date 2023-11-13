@@ -40,7 +40,6 @@ export type OrderResultWithOptionalSummary = Optional<
 class TradeEventManagement {
   rawOfferToOffer(semibook: Semibook, raw: RawOfferData): Market.OfferSlim {
     const { outbound_tkn } = semibook.market.getOutboundInbound(semibook.ba);
-
     const gives = outbound_tkn.fromUnits(raw.gives);
     const id = this.#rawIdToId(raw.id);
     const price = semibook.tickPriceHelper.priceFromTick(raw.tick);
