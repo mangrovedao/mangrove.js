@@ -330,9 +330,167 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
     KandelDistributionGenerator.prototype.calculateGeometricDistributionParams
       .name,
     () => {
-      it("TODO", () => {
-        //FIXME
-        assert.fail("TODO");
+      it("passes on TickDistributionParams and calculated values", () => {
+        // Arrange
+        const distributionParams = {
+          generateFromMid: false,
+          stepSize: 1,
+          minBaseQuoteTick: 10,
+          maxBaseQuoteTick: 20,
+          baseQuoteTickOffset: 1,
+          midBaseQuoteTick: 15,
+        };
+        // Arrange/act
+        const params =
+          sut.calculateGeometricDistributionParams(distributionParams);
+
+        // Assert
+        assert.equal(
+          params.baseQuoteTickOffset,
+          distributionParams.baseQuoteTickOffset
+        );
+        assert.equal(params.pricePoints, 11);
+        assert.equal(params.firstAskIndex, 6);
+        assert.equal(
+          params.baseQuoteTickIndex0,
+          distributionParams.minBaseQuoteTick
+        );
+        assert.equal(params.stepSize, distributionParams.stepSize);
+      });
+    }
+  );
+  describe(
+    KandelDistributionGenerator.prototype.calculateBaseQuoteTickIndex0.name,
+    () => {
+      [
+        [0, 0, -10, 100, 0],
+        [1, 0, -10, 100, 0],
+        [0, 0, 10, 100, 0],
+        [1, 0, 10, 1, 0],
+        [1, 0, 10, 2, 0],
+        [1, 0, 10, 3, 1],
+      ].forEach(
+        ([
+          generateFromMid,
+          minBaseQuoteTick,
+          midBaseQuoteTick,
+          baseQuoteTickOffset,
+          expected,
+        ]) => {
+          it(`calculates the right value for generateFromMid=${generateFromMid} min=${minBaseQuoteTick} mid=${midBaseQuoteTick} offset=${baseQuoteTickOffset}`, () => {
+            // Act
+            const result = sut.calculateBaseQuoteTickIndex0(
+              !!generateFromMid,
+              minBaseQuoteTick,
+              midBaseQuoteTick,
+              baseQuoteTickOffset
+            );
+
+            // Assert
+            assert.equal(result, expected);
+          });
+        }
+      );
+    }
+  );
+
+  describe(
+    KandelDistributionGenerator.prototype.calculateFirstAskIndex.name,
+    () => {
+      [
+        [0, -1, 1, 10, 0],
+        [0, 0, 1, 10, 1],
+        [0, 1, 1, 10, 2],
+        [0, 100, 1, 10, 10],
+      ].forEach(
+        ([
+          baseQuoteTickIndex0,
+          midBaseQuoteTick,
+          baseQuoteTickOffset,
+          pricePoints,
+          expected,
+        ]) => {
+          it(`calculates the right value for index0=${baseQuoteTickIndex0} mid=${midBaseQuoteTick} offset=${baseQuoteTickOffset} pricePoints=${pricePoints}`, () => {
+            // Act
+            const result = sut.calculateFirstAskIndex(
+              baseQuoteTickIndex0,
+              baseQuoteTickOffset,
+              pricePoints,
+              midBaseQuoteTick
+            );
+
+            // Assert
+            assert.equal(result, expected);
+          });
+        }
+      );
+
+      it("midPrice higher than max has no asks", () => {
+        // Arrange
+        const distributionParams = {
+          generateFromMid: false,
+          stepSize: 1,
+          minBaseQuoteTick: 10,
+          maxBaseQuoteTick: 20,
+          baseQuoteTickOffset: 1,
+          midBaseQuoteTick: 100,
+        };
+        // Act
+        const params =
+          sut.calculateGeometricDistributionParams(distributionParams);
+
+        // Assert
+        assert.equal(params.firstAskIndex, params.pricePoints);
+        assert.equal(
+          params.baseQuoteTickIndex0,
+          distributionParams.minBaseQuoteTick
+        );
+      });
+
+      [true, false].forEach((generateFromMid) => {
+        it(`midPrice higher than max has no asks generateFromMid=${generateFromMid}`, () => {
+          // Arrange
+          const distributionParams = {
+            generateFromMid: false,
+            stepSize: 1,
+            minBaseQuoteTick: 10,
+            maxBaseQuoteTick: 20,
+            baseQuoteTickOffset: 1,
+            midBaseQuoteTick: 100,
+          };
+          // Act
+          const params =
+            sut.calculateGeometricDistributionParams(distributionParams);
+
+          // Assert
+          assert.equal(params.firstAskIndex, params.pricePoints);
+          assert.equal(
+            params.baseQuoteTickIndex0,
+            distributionParams.minBaseQuoteTick
+          );
+        });
+
+        it("generateFromMid=false has firstAskIndex higher than max has no asks", () => {
+          // Arrange
+          const distributionParams = {
+            generateFromMid: false,
+            stepSize: 1,
+            minBaseQuoteTick: 10,
+            maxBaseQuoteTick: 20,
+            baseQuoteTickOffset: 1,
+            midBaseQuoteTick: 100,
+          };
+          // Act
+          const params =
+            sut.calculateGeometricDistributionParams(distributionParams);
+
+          // Assert
+          assert.equal(params.firstAskIndex, params.pricePoints);
+          assert.equal(
+            params.baseQuoteTickIndex0,
+            distributionParams.minBaseQuoteTick
+          );
+        });
       });
     }
   );
@@ -481,7 +639,7 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
         assertApproxEqRel(offeredVolume.requiredQuote.toNumber(), 3000, 0.01);
         assert.equal(distribution.pricePoints, pricePoints);
         assertConstantGives(distribution, "asks", 1);
-        distribution.getLiveOffers("asks").forEach((d, i) => {
+        distribution.getLiveOffers("asks").forEach((d) => {
           assertApproxEqRel(
             askTickPriceHelper.inboundFromOutbound(d.tick, d.gives).toNumber(),
             minPrice.mul(priceRatio.pow(d.index)).toNumber(),

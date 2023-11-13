@@ -34,29 +34,20 @@ class KandelDistributionGenerator {
       pricePoints,
       generateFromMid,
     } = tickDistributionParams;
-    let baseQuoteTickIndex0: number;
-    let firstAskIndex: number;
-    if (midBaseQuoteTick < minBaseQuoteTick) {
-      baseQuoteTickIndex0 = minBaseQuoteTick;
-      firstAskIndex = 0;
-    } else {
-      if (generateFromMid) {
-        const bidCount = Math.floor(
-          (midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
-        );
-        baseQuoteTickIndex0 = midBaseQuoteTick - baseQuoteTickOffset * bidCount;
-        firstAskIndex = Math.min(
-          tickDistributionParams.pricePoints,
-          bidCount + 1
-        );
-      } else {
-        baseQuoteTickIndex0 = minBaseQuoteTick;
-        firstAskIndex = Math.min(
-          tickDistributionParams.pricePoints,
-          Math.ceil((midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset)
-        );
-      }
-    }
+
+    const baseQuoteTickIndex0 = this.calculateBaseQuoteTickIndex0(
+      generateFromMid,
+      minBaseQuoteTick,
+      midBaseQuoteTick,
+      baseQuoteTickOffset
+    );
+
+    const firstAskIndex = this.calculateFirstAskIndex(
+      baseQuoteTickIndex0,
+      baseQuoteTickOffset,
+      pricePoints,
+      midBaseQuoteTick
+    );
 
     return {
       baseQuoteTickOffset,
@@ -65,6 +56,73 @@ class KandelDistributionGenerator {
       baseQuoteTickIndex0,
       stepSize: tickDistributionParams.stepSize,
     };
+  }
+
+  /** Calculates the index of the first ask. It is assumed the parameters are sensible based on, e.g., a call to getTickDistributionParams.
+   * @param baseQuoteTickIndex0 The tick of the lowest priced price point.
+   * @param baseQuoteTickOffset The number of ticks to jump between two price points.
+   * @param pricePoints The number of price points in the distribution.
+   * @param midBaseQuoteTick The mid-price as base quote tick used to determine when to switch from bids to asks.
+   * @returns the index of the first ask.
+   */
+  calculateFirstAskIndex(
+    baseQuoteTickIndex0: number,
+    baseQuoteTickOffset: number,
+    pricePoints: number,
+    midBaseQuoteTick: number
+  ) {
+    if (midBaseQuoteTick < baseQuoteTickIndex0) {
+      return 0;
+    }
+    return Math.min(
+      this.calculateBidCount(
+        baseQuoteTickIndex0,
+        midBaseQuoteTick,
+        baseQuoteTickOffset
+      ) + 1,
+      pricePoints
+    );
+  }
+
+  /** Calculates the number of bids. It is assumed the parameters are sensible based on, e.g., a call to getTickDistributionParams.
+   * @param minBaseQuoteTick The minimum base quote tick in the distribution.
+   * @param baseQuoteTickOffset The number of ticks to jump between two price points.
+   * @param midBaseQuoteTick The mid-price as base quote tick used to determine when to switch from bids to asks.
+   * @returns The tick of the lowest priced price point.
+   */
+  calculateBidCount(
+    minBaseQuoteTick: number,
+    midBaseQuoteTick: number,
+    baseQuoteTickOffset: number
+  ) {
+    return Math.floor(
+      (midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
+    );
+  }
+
+  /** Calculates the tick of the lowest priced price point. It is assumed the parameters are sensible based on, e.g., a call to getTickDistributionParams.
+   * @param generateFromMid Whether to generate the distribution outwards from the midPrice or upwards from the minPrice.
+   * @param minBaseQuoteTick The minimum base quote tick in the distribution.
+   * @param baseQuoteTickOffset The number of ticks to jump between two price points.
+   * @param midBaseQuoteTick The mid-price as base quote tick used to determine when to switch from bids to asks.
+   * @returns The tick of the lowest priced price point.
+   */
+  calculateBaseQuoteTickIndex0(
+    generateFromMid: boolean,
+    minBaseQuoteTick: number,
+    midBaseQuoteTick: number,
+    baseQuoteTickOffset: number
+  ) {
+    if (midBaseQuoteTick < minBaseQuoteTick || !generateFromMid) {
+      return minBaseQuoteTick;
+    } else {
+      const bidCount = this.calculateBidCount(
+        minBaseQuoteTick,
+        midBaseQuoteTick,
+        baseQuoteTickOffset
+      );
+      return midBaseQuoteTick - baseQuoteTickOffset * bidCount;
+    }
   }
 
   /** Calculates a minimal recommended volume distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
