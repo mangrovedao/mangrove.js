@@ -136,11 +136,12 @@ class KandelStatus {
       .toNumber();
 
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
+    const offersInRange = offers.filter((x) => x.index < pricePoints);
     const offer =
-      offers[
+      offersInRange[
         this.getIndexOfPriceClosestToMid(
           midBaseQuoteTick,
-          offers.map((x) => (x.offerType == "bids" ? -x.tick : x.tick))
+          offersInRange.map((x) => (x.offerType == "bids" ? -x.tick : x.tick))
         )
       ];
 
@@ -177,19 +178,17 @@ class KandelStatus {
     });
 
     // Merge with actual statuses
-    offers
-      .filter((x) => x.index < pricePoints)
-      .forEach(({ offerType, index, live, offerId, tick }) => {
-        statuses[index][offerType] = {
-          live,
-          offerId,
-          price: (offerType == "asks"
-            ? this.distributionHelper.askTickPriceHelper
-            : this.distributionHelper.bidTickPriceHelper
-          ).priceFromTick(tick),
-          tick,
-        };
-      });
+    offersInRange.forEach(({ offerType, index, live, offerId, tick }) => {
+      statuses[index][offerType] = {
+        live,
+        offerId,
+        price: (offerType == "asks"
+          ? this.distributionHelper.askTickPriceHelper
+          : this.distributionHelper.bidTickPriceHelper
+        ).priceFromTick(tick),
+        tick,
+      };
+    });
 
     // Offers are allowed to be dead if their dual offer is live
     statuses.forEach((s, index) => {
@@ -221,7 +220,7 @@ class KandelStatus {
     // be outside range. But this will not happen with correct usage of the contract.
     // Dead offers outside range can happen if range is shrunk and is not an issue and not reported.
     const liveOutOfRange = offers
-      .filter((x) => x.index > pricePoints && x.live)
+      .filter((x) => x.index >= pricePoints && x.live)
       .map(({ offerType, offerId, index }) => {
         return { offerType, offerId, index };
       });

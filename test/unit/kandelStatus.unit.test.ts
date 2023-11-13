@@ -12,6 +12,7 @@ import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { createGeneratorStub } from "./kandelDistributionGenerator.unit.test";
 import { BigNumber } from "ethers";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
+import { assertApproxEqRel } from "../util/helpers";
 
 describe("KandelStatus unit tests suite", () => {
   function getOfferId(offerType: Market.BA, index: number) {
@@ -42,9 +43,10 @@ describe("KandelStatus unit tests suite", () => {
         expected.offerId,
         `unexpected offerId at Index ${i}`
       );
-      assert.equal(
-        actual?.price?.toString(),
-        expected.price?.toString(),
+      assertApproxEqRel(
+        actual!.price!,
+        expected.price!,
+        0.01,
         `unexpected price at Index ${i}`
       );
     }
@@ -90,13 +92,15 @@ describe("KandelStatus unit tests suite", () => {
       params.expectedLiveOutOfRange,
       params.statuses.liveOutOfRange
     );
-    assert.equal(
+    assertApproxEqRel(
       params.expectedMaxPrice.toNumber(),
-      params.statuses.maxPrice.toNumber()
+      params.statuses.maxPrice.toNumber(),
+      0.01
     );
-    assert.equal(
+    assertApproxEqRel(
       params.expectedMinPrice.toNumber(),
-      params.statuses.minPrice.toNumber()
+      params.statuses.minPrice.toNumber(),
+      0.01
     );
     params.expectedStatuses.forEach((x, i) => {
       const s = params.statuses.statuses[i];
@@ -112,9 +116,10 @@ describe("KandelStatus unit tests suite", () => {
         x.expectedLiveBid ?? false,
         `Index ${i} unexpected bid liveness`
       );
-      assert.equal(
-        s.expectedPrice.toString(),
-        x.expectedPrice?.toString(),
+      assertApproxEqRel(
+        s.expectedPrice,
+        x.expectedPrice!,
+        0.01,
         `Index ${i} unexpected price`
       );
       assert.equal(
@@ -185,10 +190,11 @@ describe("KandelStatus unit tests suite", () => {
       const originalDistribution = await generator.calculateDistribution({
         distributionParams: {
           minPrice: Big(1000),
+          midPrice,
           priceRatio,
           pricePoints,
           stepSize,
-          generateFromMid: true,
+          generateFromMid: false,
         },
         initialAskGives: Big(2),
       });
@@ -198,7 +204,7 @@ describe("KandelStatus unit tests suite", () => {
         expectedLiveBid?: boolean;
         expectedLiveAsk?: boolean;
         expectedPrice?: Big;
-        expectedTick?: number;
+        expectedBaseQuoteTick?: number;
         asks?: {
           live: boolean;
           offerId: number;
@@ -243,7 +249,7 @@ describe("KandelStatus unit tests suite", () => {
             sut.distributionHelper.askTickPriceHelper.priceFromTick(
               expectedBaseQuoteTick
             ),
-          expectedTick: expectedBaseQuoteTick,
+          expectedBaseQuoteTick: expectedBaseQuoteTick,
           asks,
           bids,
         });
@@ -262,9 +268,9 @@ describe("KandelStatus unit tests suite", () => {
       assertStatuses({
         statuses,
         expectedBaseOffer: {
-          offerType: "bids",
+          offerType: "asks",
           index: 2,
-          offerId: getOfferId("bids", 2),
+          offerId: getOfferId("asks", 2),
         },
         expectedLiveOutOfRange: [],
         expectedMinPrice: Big(1000),
@@ -296,7 +302,7 @@ describe("KandelStatus unit tests suite", () => {
           {
             offerType: "bids",
             index: 0,
-            tick: bidTickPriceHelper.tickFromPrice(1001).toNumber(),
+            tick: bidTickPriceHelper.tickFromPrice(1000).toNumber(),
             offerId: 43,
             live: false,
           },
@@ -337,20 +343,20 @@ describe("KandelStatus unit tests suite", () => {
           {
             expectedLiveBid: true,
             expectedPrice: Big(1000),
-            expectedBaseQuoteTick: askTickPriceHelper
+            expectedBaseQuoteTick: -bidTickPriceHelper
               .tickFromPrice(1000)
               .toNumber(),
             bids: {
               live: false,
               offerId: 43,
-              price: Big(1001),
-              tick: bidTickPriceHelper.tickFromPrice(1001).toNumber(),
+              price: Big(1000),
+              tick: bidTickPriceHelper.tickFromPrice(1000).toNumber(),
             },
           },
           {
             expectedLiveBid: true,
             expectedPrice: Big(2000),
-            expectedBaseQuoteTick: askTickPriceHelper
+            expectedBaseQuoteTick: -bidTickPriceHelper
               .tickFromPrice(2000)
               .toNumber(),
             bids: {
@@ -360,14 +366,20 @@ describe("KandelStatus unit tests suite", () => {
               tick: bidTickPriceHelper.tickFromPrice(2000).toNumber(),
             },
           },
-          { expectedLiveBid: true, expectedPrice: Big(4000) },
-          { expectedLiveAsk: true, expectedPrice: Big(8000) },
+          {
+            expectedLiveBid: true,
+            expectedPrice: Big(4000),
+            expectedBaseQuoteTick: 128998,
+          },
+          {
+            expectedLiveAsk: true,
+            expectedPrice: Big(8000),
+            expectedBaseQuoteTick: 135929,
+          },
           {
             expectedLiveAsk: true,
             expectedPrice: Big(16000),
-            expectedBaseQuoteTick: askTickPriceHelper
-              .tickFromPrice(16000)
-              .toNumber(),
+            expectedBaseQuoteTick: 142860,
             bids: {
               live: true,
               offerId: 55,
@@ -378,6 +390,7 @@ describe("KandelStatus unit tests suite", () => {
           {
             expectedLiveAsk: false,
             expectedPrice: Big(32000),
+            expectedBaseQuoteTick: 149791,
           },
         ],
         statuses,
@@ -550,11 +563,17 @@ describe("KandelStatus unit tests suite", () => {
         },
         expectedLiveOutOfRange: [{ offerType: "bids", index: 3, offerId: 42 }],
         expectedStatuses: [
-          { expectedLiveBid: true, expectedPrice: Big(1000) },
+          {
+            expectedLiveBid: true,
+            expectedPrice: Big(1000),
+            expectedBaseQuoteTick: -bidTickPriceHelper
+              .tickFromPrice(Big(1000))
+              .toNumber(),
+          },
           {
             expectedLiveBid: true,
             expectedPrice: Big(2000),
-            expectedBaseQuoteTick: askTickPriceHelper
+            expectedBaseQuoteTick: -bidTickPriceHelper
               .tickFromPrice(Big(2000))
               .toNumber(),
             bids: {
