@@ -1237,11 +1237,11 @@ __metadata:
   linkType: hard
 
 "@mangrovedao/context-addresses@npm:next":
-  version: 0.0.2-2
-  resolution: "@mangrovedao/context-addresses@npm:0.0.2-2"
+  version: 0.0.2-4
+  resolution: "@mangrovedao/context-addresses@npm:0.0.2-4"
   dependencies:
     semver: ^7.5.4
-  checksum: 1f9389c1533da92d6032d26cab4edb483a5608096933e8a70c733a26dea0f39208e514fd43006c6d5ad5a08c984f47dff5b5d252a85664854114b8b7d51b12b0
+  checksum: 02630967bfd99b05253054410c733a1647a1974f0a95105123ac4487665a89395ad54bcc6fd241a0530c45a4a71aa1c7b7845f1f4e07596b21981d64ceb08576
   languageName: node
   linkType: hard
 

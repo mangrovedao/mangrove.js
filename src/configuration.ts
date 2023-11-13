@@ -1,4 +1,3 @@
-import loadedAddressesByNetwork from "./constants/addresses.json";
 import loadedTokens from "./constants/tokens.json";
 import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsByNetwork.json";
 import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
@@ -501,23 +500,11 @@ export function resetConfiguration(): void {
   };
 
   // Load addresses in the following order:
-  // 1. loaded addresses
+  // 1. context-addresses addresses
   // 2. mangrove-deployments addresses
-  // 3. context-addresses addresses
   // Last loaded address is used
-
-  for (const [network, networkAddresses] of Object.entries(
-    loadedAddressesByNetwork
-  )) {
-    for (const [name, address] of Object.entries(networkAddresses) as any) {
-      if (address) {
-        addressesConfiguration.setAddress(name, address, network);
-      }
-    }
-  }
-
-  readMangroveDeploymentAddresses();
   readContextAddresses();
+  readMangroveDeploymentAddresses();
 }
 
 function readMangroveDeploymentAddresses() {
@@ -562,8 +549,19 @@ function readVersionDeploymentsAddresses(
 }
 
 function readContextAddresses() {
+  readContextMulticallAddresses();
   readContextErc20Addresses();
   readContextAaveAddresses();
+}
+
+function readContextMulticallAddresses() {
+  const allMulticallAddresses = contextAddresses.getAllMulticallAddresses();
+  for (const [addressId, role] of Object.entries(allMulticallAddresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
+    }
+  }
 }
 
 function readContextErc20Addresses() {
