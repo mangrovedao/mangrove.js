@@ -117,6 +117,7 @@ describe("Market unit tests suite", () => {
         gives: Big(1),
         tick: TickLib.getTickFromPrice(price),
         price: Big(price),
+        volume: Big(42),
       };
     }
 

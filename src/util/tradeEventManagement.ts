@@ -39,11 +39,10 @@ export type OrderResultWithOptionalSummary = Optional<
 
 class TradeEventManagement {
   rawOfferToOffer(semibook: Semibook, raw: RawOfferData): Market.OfferSlim {
-    const { outbound_tkn, inbound_tkn } = semibook.market.getOutboundInbound(
-      semibook.ba
-    );
+    const { outbound_tkn } = semibook.market.getOutboundInbound(semibook.ba);
     const gives = outbound_tkn.fromUnits(raw.gives);
     const id = this.#rawIdToId(raw.id);
+    const price = semibook.tickPriceHelper.priceFromTick(raw.tick);
 
     if (id === undefined) throw new Error("Offer ID is 0");
     return {
@@ -53,7 +52,12 @@ class TradeEventManagement {
       gasreq: raw.gasreq.toNumber(),
       tick: raw.tick,
       gives: gives,
-      price: semibook.tickPriceHelper.priceFromTick(raw.tick),
+      price: price,
+      volume: semibook.market.getVolumeForGivesAndPrice(
+        semibook.ba,
+        gives,
+        price
+      ),
     };
   }
 
