@@ -104,7 +104,12 @@ jobs:
   # see https://github.com/re-actors/alls-green
 
   check:
-    if: always()
+    # NB: We're experimenting with using `!cancelled()` instead of `always()` in an attempt to avoid
+    #     cancelled workflow runs blocking dependabot PR's from merging.
+    #     Workflow runs are often cancelled automatically when a newer run is triggered.
+    #     The problem appears to be that the `check` job runs and fails if the workflow is cancelled.
+    # if: always()
+    if: ${{ !cancelled() }}
 
     needs:
     - file-guard
