@@ -365,7 +365,7 @@ describe("Market integration tests suite", () => {
       expect(result).to.be.equal(true);
     });
 
-    it("returns false, when gives is negative", async function () {
+    it("returns false, when gives is less than 1", async function () {
       // Arrange
       const market = await mgv.market({
         base: "TokenB",
@@ -376,7 +376,7 @@ describe("Market integration tests suite", () => {
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
       const offerId = 23;
-      const expectedGives = new Big(-12);
+      const expectedGives = new Big(0);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -500,7 +500,7 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(-12),
+        gives: new Big(12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
         volume: new Big(42),
@@ -531,7 +531,7 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(-12),
+        gives: new Big(12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
         volume: new Big(42),
@@ -556,7 +556,7 @@ describe("Market integration tests suite", () => {
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
-      const expectedGives = new Big(-12);
+      const expectedGives = new Big(12);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,

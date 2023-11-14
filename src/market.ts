@@ -528,9 +528,6 @@ class Market {
   }
 
   isLiveOffer(offer: Market.Offer): boolean {
-    if (!offer.gives.gt) {
-      console.log(offer);
-    }
     return offer.gives.gt(0);
   }
 
