@@ -68,14 +68,20 @@ describe("Kandel integration tests suite", function () {
     beforeEach(async () => {
       const strategies = new KandelStrategies(mgv);
       seeder = new KandelStrategies(mgv).seeder;
-      market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      distribution = strategies.generator(market).calculateDistribution({
-        priceParams: {
+      market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
+      distribution = await strategies.generator(market).calculateDistribution({
+        distributionParams: {
           minPrice: 900,
+          midPrice: 1000,
           baseQuoteTickOffset: 1.01,
           pricePoints: 6,
+          stepSize: 1,
+          generateFromMid: false,
         },
-        midPrice: 1000,
         initialAskGives: 1,
       });
     });
@@ -93,7 +99,9 @@ describe("Kandel integration tests suite", function () {
           // Act
           const preSowRequiredProvision = await seeder.getRequiredProvision(
             seed,
-            distribution
+            distribution,
+            2,
+            undefined
           );
           if (!onAave && liquiditySharing) {
             await assert.rejects(
@@ -109,22 +117,6 @@ describe("Kandel integration tests suite", function () {
 
           // Assert
           const params = await kandel.getParameters();
-          assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateBase,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compound rate should be set during seed"
-          );
-          assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateQuote,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compound rate should be set during seed"
-          );
           assert.equal("TokenA", kandel.getBase().name, "wrong base");
           assert.equal("TokenB", kandel.getQuote().name, "wrong base");
           assert.equal(market, kandel.market, "wrong market");
@@ -141,7 +133,11 @@ describe("Kandel integration tests suite", function () {
             "router should only be there for aave"
           );
           assert.equal(params.stepSize, 0, "stepSize should be default");
-          assert.equal(params.ratio.toNumber(), 0, "ratio should be default");
+          assert.equal(
+            params.baseQuoteTickOffset,
+            0,
+            "ratio should be default"
+          );
           assert.equal(params.pricePoints, 0, "pricePoints should be default");
           assert.equal(
             params.gasprice,

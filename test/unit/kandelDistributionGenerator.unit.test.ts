@@ -359,35 +359,64 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
       });
     }
   );
+
   describe(
-    KandelDistributionGenerator.prototype.calculateBaseQuoteTickIndex0.name,
+    KandelDistributionGenerator.prototype
+      .calculateFirstOfferIndexAndFirstAskIndex.name,
     () => {
       [
-        [0, 0, -10, 100, 0],
-        [1, 0, -10, 100, 0],
-        [0, 0, 10, 100, 0],
-        [1, 0, 10, 1, 0],
-        [1, 0, 10, 2, 0],
-        [1, 0, 10, 3, 1],
+        // do not generate from mid...
+
+        // mid before min should yield no bids
+        [0, 1, -10, 1, 10, 1, 0],
+        // mid at min should yield a bid
+        [0, 2, 2, 1, 10, 2, 1],
+        // mid above min with room for bids should yield bids and shift asks
+        [0, 2, 6, 1, 10, 2, 5],
+        // mid above min with room for bids should yield bids and shift asks, except for too few price points
+        [0, 2, 6, 1, 4, 2, 4],
+        [0, 2, 6, 1, 3, 2, 3],
+        // mid above min with too much room for bids should yield all bids and no asks
+        [0, 2, 10, 1, 2, 2, 2],
+
+        // mid above min with room for bids but odd offset should yield bids and shift asks
+        [0, 2, 7, 3, 10, 2, 2],
+
+        // generate from mid...
+        // mid before min should yield no bids
+        [1, 1, -10, 1, 10, 1, 0],
+        // mid at min should yield a bids
+        [1, 2, 2, 1, 10, 2, 1],
+        // mid above min with room for bids should yield bids and shift asks
+        [1, 2, 6, 1, 10, 2, 5],
+        // mid above min with room for bids should yield bids and shift asks, except for too few price points
+        [1, 2, 6, 1, 4, 3, 4],
+        [1, 2, 6, 1, 3, 4, 3],
+        // mid above min with room for bids but odd offset should yield bids and shift asks
+        [1, 2, 7, 3, 10, 4, 2],
       ].forEach(
         ([
           generateFromMid,
           minBaseQuoteTick,
           midBaseQuoteTick,
           baseQuoteTickOffset,
-          expected,
+          pricePoints,
+          expectedIndex0,
+          expectedFirstAskIndex,
         ]) => {
-          it(`calculates the right value for generateFromMid=${generateFromMid} min=${minBaseQuoteTick} mid=${midBaseQuoteTick} offset=${baseQuoteTickOffset}`, () => {
+          it(`calculates the right value for fromMid=${generateFromMid} min=${minBaseQuoteTick} mid=${midBaseQuoteTick} offset=${baseQuoteTickOffset} pricePoints=${pricePoints}`, () => {
             // Act
-            const result = sut.calculateBaseQuoteTickIndex0(
+            const result = sut.calculateFirstOfferIndexAndFirstAskIndex(
               !!generateFromMid,
               minBaseQuoteTick,
               midBaseQuoteTick,
-              baseQuoteTickOffset
+              baseQuoteTickOffset,
+              pricePoints
             );
 
             // Assert
-            assert.equal(result, expected);
+            assert.equal(result.baseQuoteTickIndex0, expectedIndex0);
+            assert.equal(result.firstAskIndex, expectedFirstAskIndex);
           });
         }
       );
@@ -395,36 +424,9 @@ describe(`${KandelDistributionGenerator.prototype.constructor.name} unit tests s
   );
 
   describe(
-    KandelDistributionGenerator.prototype.calculateFirstAskIndex.name,
+    KandelDistributionGenerator.prototype.calculateGeometricDistributionParams
+      .name,
     () => {
-      [
-        [0, -1, 1, 10, 0],
-        [0, 0, 1, 10, 1],
-        [0, 1, 1, 10, 2],
-        [0, 100, 1, 10, 10],
-      ].forEach(
-        ([
-          baseQuoteTickIndex0,
-          midBaseQuoteTick,
-          baseQuoteTickOffset,
-          pricePoints,
-          expected,
-        ]) => {
-          it(`calculates the right value for index0=${baseQuoteTickIndex0} mid=${midBaseQuoteTick} offset=${baseQuoteTickOffset} pricePoints=${pricePoints}`, () => {
-            // Act
-            const result = sut.calculateFirstAskIndex(
-              baseQuoteTickIndex0,
-              baseQuoteTickOffset,
-              pricePoints,
-              midBaseQuoteTick
-            );
-
-            // Assert
-            assert.equal(result, expected);
-          });
-        }
-      );
-
       it("midPrice higher than max has no asks", () => {
         // Arrange
         const distributionParams = {
