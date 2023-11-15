@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-2
+
 - feat: Use addresses from mangrove-deployments and context-addresses
 - bump: mangrove-core to 2.0.0-4
 - bump: mangrove-strats to 0.0.2-4
