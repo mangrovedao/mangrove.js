@@ -508,10 +508,10 @@ export function resetConfiguration(): void {
 }
 
 function readMangroveDeploymentAddresses() {
-  // FIXME: Consider how to expose other deployments than the primary
+  // Note: Consider how to expose other deployments than the primary
 
   const mgvCoreVersionPattern = `^${contractPackageVersions["mangrove-core"]}`;
-  // FIXME: Make this configurable?
+  // Note: Make this configurable?
   const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvCoreContractsDeployments =
     mgvDeployments.getCoreContractsVersionDeployments({
@@ -521,7 +521,7 @@ function readMangroveDeploymentAddresses() {
   readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
 
   const mgvStratsVersionPattern = `^${contractPackageVersions["mangrove-strats"]}`;
-  // FIXME: Make this configurable?
+  // Note: Make this configurable?
   const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvStratsContractsDeployments =
     mgvDeployments.getStratsContractsVersionDeployments({
