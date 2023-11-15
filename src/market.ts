@@ -294,7 +294,9 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   tickSpacing: BigNumber;
+  /** The OLKey for the base, quote offer list */
   olKeyBaseQuote: OLKeyStruct;
+  /** The OLKey for the quote, base offer list */
   olKeyQuoteBase: OLKeyStruct;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook | undefined;
@@ -454,6 +456,10 @@ class Market {
     );
     this.#asksSemibook = await asksPromise;
     this.#bidsSemibook = await bidsPromise;
+  }
+
+  getOLKey(ba: Market.BA): OLKeyStruct {
+    return ba === "asks" ? this.olKeyBaseQuote : this.olKeyQuoteBase;
   }
 
   async #semibookEventCallback({

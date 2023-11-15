@@ -17,13 +17,16 @@ import {
   Market,
 } from "../../src";
 import { Mangrove } from "../../src";
-import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
 import KandelFarm from "../../src/kandel/kandelFarm";
 import KandelInstance from "../../src/kandel/kandelInstance";
 import TradeEventManagement from "../../src/util/tradeEventManagement";
 import UnitCalculations from "../../src/util/unitCalculations";
+import {
+  assertPricesApproxEq,
+  getUniquePrices,
+} from "../unit/kandelDistributionGenerator.unit.test";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -164,12 +167,12 @@ describe("Kandel integration tests suite", function () {
         liquiditySharing: false,
         onAave: false,
         gasprice: 10000,
-        gaspriceFactor: 2,
       };
       // Act
       const preSowRequiredProvision = await seeder.getRequiredProvision(
         seed,
-        distribution
+        distribution,
+        2
       );
       const { kandelPromise } = await seeder.sow(seed);
       const kandel = await kandelPromise;
@@ -198,11 +201,9 @@ describe("Kandel integration tests suite", function () {
         it(`minimumVolume uses config and calculates correct value offerType=${offerType} onAave=${onAave}`, async () => {
           // Arrange
           const offerGasreq = await seeder.getDefaultGasreq(onAave);
-          const { outbound_tkn, inbound_tkn } =
-            market.getOutboundInbound(offerType);
+          const { outbound_tkn } = market.getOutboundInbound(offerType);
           const readerMinVolume = await mgv.readerContract.minVolume(
-            outbound_tkn.address,
-            inbound_tkn.address,
+            market.getOLKey(offerType),
             offerGasreq
           );
           const factor =
@@ -231,39 +232,50 @@ describe("Kandel integration tests suite", function () {
   describe("farm", function () {
     let farm: KandelFarm;
     let defaultOwner: string;
+    let abMarket: Market;
+    let wethDaiMarket: Market;
+    let wethUsdcMarket: Market;
 
     beforeEach(async function () {
       farm = new KandelStrategies(mgv).farm;
       defaultOwner = await mgv.signer.getAddress();
       const seeder = new KandelStrategies(mgv).seeder;
 
-      const abMarket = await mgv.market({ base: "TokenA", quote: "TokenB" });
-      const wethDaiMarket = await mgv.market({ base: "WETH", quote: "DAI" });
-      const wethUsdcMarket = await mgv.market({ base: "WETH", quote: "USDC" });
+      abMarket = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
+      wethDaiMarket = await mgv.market({
+        base: "WETH",
+        quote: "DAI",
+        tickSpacing: 1,
+      });
+      wethUsdcMarket = await mgv.market({
+        base: "WETH",
+        quote: "USDC",
+        tickSpacing: 1,
+      });
       await (await seeder.sow({
           market: abMarket,
-          gaspriceFactor: 10,
           liquiditySharing: false,
           onAave: false,
         })).kandelPromise;
 
       await (await seeder.sow({
           market: wethDaiMarket,
-          gaspriceFactor: 10,
           liquiditySharing: false,
           onAave: false,
         })).kandelPromise;
 
       await (await seeder.sow({
           market: wethUsdcMarket,
-          gaspriceFactor: 10,
           liquiditySharing: false,
           onAave: false,
         })).kandelPromise;
 
       await (await seeder.sow({
           market: wethUsdcMarket,
-          gaspriceFactor: 10,
           liquiditySharing: false,
           onAave: true,
         })).kandelPromise;
@@ -272,7 +284,6 @@ describe("Kandel integration tests suite", function () {
       const otherSeeder = new KandelStrategies(mgvAdmin).seeder;
       await (await otherSeeder.sow({
           market: wethUsdcMarket,
-          gaspriceFactor: 10,
           liquiditySharing: false,
           onAave: true,
         })).kandelPromise;
@@ -320,13 +331,17 @@ describe("Kandel integration tests suite", function () {
       assert.equal(kandels.length, 3, "count wrong");
     });
 
-    it("getKandels retrieves all market kandel instances", async function () {
-      const kandels = await farm.getKandels({ base: "WETH", quote: "USDC" });
+    it("getKandels retrieves all market kandel instances using offerList", async function () {
+      const kandels = await farm.getKandels({
+        baseQuoteOfferList: { base: "WETH", quote: "USDC", tickSpacing: 1 },
+      });
       assert.equal(kandels.length, 3, "count wrong");
     });
-    it("getKandels retrieves all base kandel instances", async function () {
-      const kandels = await farm.getKandels({ base: "WETH" });
-      assert.equal(kandels.length, 4, "count wrong");
+    it("getKandels retrieves all base kandel instances using olKey", async function () {
+      const kandels = await farm.getKandels({
+        baseQuoteOlKey: wethUsdcMarket.getOLKey("asks"),
+      });
+      assert.equal(kandels.length, 3, "count wrong");
     });
   });
 
@@ -337,12 +352,15 @@ describe("Kandel integration tests suite", function () {
     async function createKandel(onAave: boolean) {
       kandelStrategies = new KandelStrategies(mgv);
       const seeder = new KandelStrategies(mgv).seeder;
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
       const kandelAddress = (
         await (
           await seeder.sow({
             market: market,
-            gaspriceFactor: 10,
             liquiditySharing: false,
             onAave: onAave,
           })
@@ -356,17 +374,19 @@ describe("Kandel integration tests suite", function () {
       deposit: boolean;
       syncBooks?: boolean;
     }) {
-      const ratio = new Big(1.08);
+      const priceRatio = new Big(1.08);
       const firstBase = Big(1);
       const firstQuote = Big(1000);
       const pricePoints = 6;
-      const distribution = kandel.generator.calculateDistribution({
-        priceParams: {
+      const distribution = await kandel.generator.calculateDistribution({
+        distributionParams: {
           minPrice: firstQuote.div(firstBase),
-          ratio,
+          priceRatio,
           pricePoints,
+          midPrice: Big(1200),
+          generateFromMid: false,
+          stepSize: 1,
         },
-        midPrice: Big(1200),
         initialAskGives: firstBase,
       });
 
@@ -397,7 +417,7 @@ describe("Kandel integration tests suite", function () {
       }
 
       return {
-        ratio,
+        priceRatio,
         firstBase,
         firstQuote,
         pricePoints,
@@ -416,19 +436,20 @@ describe("Kandel integration tests suite", function () {
         it(`populate populates a market, deposits and sets parameters inChunks=${inChunks}`, async function () {
           // Arrange
           const market = kandel.market;
-          const ratio = new Big(1.08);
+          const priceRatio = new Big(1.08);
           const firstBase = Big(1);
           const firstQuote = Big(1000);
           const pricePoints = 6;
           const midPrice = Big(1200);
-          const distribution = kandel.generator.calculateDistribution({
-            priceParams: {
+          const distribution = await kandel.generator.calculateDistribution({
+            distributionParams: {
               minPrice: firstQuote.div(firstBase),
-              ratio,
+              priceRatio,
               pricePoints,
               midPrice,
+              generateFromMid: true,
+              stepSize: 1,
             },
-            midPrice,
             initialAskGives: firstBase,
           });
 
@@ -462,29 +483,15 @@ describe("Kandel integration tests suite", function () {
           const params = await kandel.getParameters();
 
           assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateQuote,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compoundRateQuote should have been left unchanged"
-          );
-          assert.equal(
-            UnitCalculations.fromUnits(
-              (await kandel.kandel.params()).compoundRateBase,
-              kandel.precision
-            ).toNumber(),
-            1,
-            "compoundRateBase should have been left unchanged"
-          );
-          assert.equal(
             params.pricePoints,
             pricePoints,
             "pricePoints should have been updated"
           );
           assert.equal(
-            params.ratio.toString(),
-            ratio.toString(),
+            params.baseQuoteTickOffset,
+            kandel.generator.distributionHelper.calculateBaseQuoteTickOffset(
+              priceRatio
+            ),
             "ratio should have been updated"
           );
           assert.equal(params.stepSize, 1, "stepSize should have been updated");
@@ -518,16 +525,16 @@ describe("Kandel integration tests suite", function () {
           assert.equal(asks.length, 3, "3 asks should be populated");
           for (let i = 0; i < asks.length; i++) {
             const offer = asks[i];
-            const d = distribution.offers[bids.length + i];
+            const d = distribution.offers.asks[i];
             assert.equal(
               offer.gives.toString(),
-              d.base.toString(),
+              d.gives.toString(),
               "gives should be base for ask"
             );
             assert.equal(
-              offer.wants.toString(),
-              d.quote.toString(),
-              "wants should be quote for ask"
+              offer.tick.toString(),
+              d.tick.toString(),
+              "tick should be correct for ask"
             );
             assert.equal(
               offer.id,
@@ -542,16 +549,16 @@ describe("Kandel integration tests suite", function () {
           assert.equal(bids.length, 2, "2 bids should be populated, 1 hole");
           for (let i = 0; i < bids.length; i++) {
             const offer = bids[bids.length - 1 - i];
-            const d = distribution.offers[i];
+            const d = distribution.offers.bids[i];
             assert.equal(
               offer.gives.toString(),
-              d.quote.toString(),
+              d.gives.toString(),
               "gives should be quote for bid"
             );
             assert.equal(
-              offer.wants.toString(),
-              d.base.toString(),
-              "wants should be base for bid"
+              offer.tick.toString(),
+              d.tick.toString(),
+              "tick should be correct for bid"
             );
             assert.equal(
               offer.id,
@@ -597,9 +604,15 @@ describe("Kandel integration tests suite", function () {
         // Arrange
         await populateKandel({ approve: true, deposit: true });
 
-        const distribution = kandel.generator.calculateDistribution({
-          priceParams: { minPrice: 900, ratio: 1.01, pricePoints: 6 },
-          midPrice: 1000,
+        const distribution = await kandel.generator.calculateDistribution({
+          distributionParams: {
+            minPrice: 900,
+            priceRatio: 1.01,
+            pricePoints: 6,
+            generateFromMid: false,
+            midPrice: 1000,
+            stepSize: 1,
+          },
           initialAskGives: 1,
         });
 
@@ -628,15 +641,35 @@ describe("Kandel integration tests suite", function () {
         // Act/Assert
         await assert.rejects(
           kandel.populate({
-            parameters: { ratio: 2 },
+            parameters: { priceRatio: 2 },
             distribution:
               kandel.generator.distributionHelper.createDistributionWithOffers(
-                [],
-                { ratio: Big(1), pricePoints: 5 }
+                { asks: [], bids: [] },
+                { priceRatio: Big(1), pricePoints: 5, stepSize: 1 }
               ),
           }),
           new Error(
-            "ratio in parameter overrides does not match the ratio of the distribution."
+            "baseQuoteTickOffset in parameter overrides (possibly derived from priceRatio does not match the baseQuoteTickOffset of the distribution."
+          )
+        );
+      });
+
+      it("populate throws if offset parameters do not match", async () => {
+        // Arrange
+        await populateKandel({ approve: true, deposit: true });
+
+        // Act/Assert
+        await assert.rejects(
+          kandel.populate({
+            parameters: { baseQuoteTickOffset: 6931 },
+            distribution:
+              kandel.generator.distributionHelper.createDistributionWithOffers(
+                { asks: [], bids: [] },
+                { baseQuoteTickOffset: 6930, pricePoints: 5, stepSize: 1 }
+              ),
+          }),
+          new Error(
+            "baseQuoteTickOffset in parameter overrides (possibly derived from priceRatio does not match the baseQuoteTickOffset of the distribution."
           )
         );
       });
@@ -651,8 +684,8 @@ describe("Kandel integration tests suite", function () {
             parameters: { pricePoints: 2 },
             distribution:
               kandel.generator.distributionHelper.createDistributionWithOffers(
-                [],
-                { ratio: Big(1), pricePoints: 5 }
+                { asks: [], bids: [] },
+                { priceRatio: Big(1), pricePoints: 5, stepSize: 1 }
               ),
           }),
           new Error(
@@ -951,14 +984,17 @@ describe("Kandel integration tests suite", function () {
         // Act
         const singleOfferDistribution =
           await kandel.createDistributionWithOffers({
-            explicitOffers: [
-              {
-                index: 0,
-                offerType: "bids",
-                price: statuses.statuses[0].expectedPrice,
-                gives: 1000,
-              },
-            ],
+            explicitOffers: {
+              bids: [
+                {
+                  index: 0,
+                  offerType: "bids",
+                  tick: -statuses.statuses[0].expectedBaseQuoteTick,
+                  gives: 1000,
+                },
+              ],
+              asks: [],
+            },
           });
         receipts = await waitForTransactions(
           kandel.populateChunk({ distribution: singleOfferDistribution })
@@ -972,8 +1008,8 @@ describe("Kandel integration tests suite", function () {
         const statusesPost = await kandel.getOfferStatuses(Big(1170));
         assert.equal(statusesPost.statuses[0].bids?.live, true);
         assert.equal(
-          singleOfferDistribution.ratio.toNumber(),
-          parameters.ratio.toNumber()
+          singleOfferDistribution.baseQuoteTickOffset,
+          parameters.baseQuoteTickOffset
         );
         assert.equal(
           singleOfferDistribution.pricePoints,
@@ -1006,24 +1042,21 @@ describe("Kandel integration tests suite", function () {
           await kandel.calculateUniformDistributionFromMinPrice({
             minPrice: statuses.minPrice,
             midPrice,
+            generateFromMid: false,
           });
 
         // Assert
         assert.equal(
-          distribution.ratio.toNumber(),
-          originalDistribution.ratio.toNumber()
+          distribution.getPriceRatio().toNumber(),
+          originalDistribution.getPriceRatio().toNumber()
         );
         assert.equal(
           distribution.pricePoints,
           originalDistribution.pricePoints
         );
-        assert.deepEqual(
-          distribution
-            .getPricesForDistribution()
-            .map((x) => x?.round(4).toNumber()),
-          originalDistribution
-            .getPricesForDistribution()
-            .map((x) => x?.round(4).toNumber())
+        assertPricesApproxEq(
+          distribution,
+          getUniquePrices(originalDistribution)
         );
         const volume = distribution.getOfferedVolumeForDistribution();
         const originalVolume =
@@ -1037,14 +1070,12 @@ describe("Kandel integration tests suite", function () {
           originalVolume.requiredQuote.round(4).toNumber()
         );
         assert.equal(
-          distribution.offers.filter((x) => x.offerType == "bids").length,
-          originalDistribution.offers.filter((x) => x.offerType == "bids")
-            .length
+          distribution.offers.bids.length,
+          originalDistribution.offers.bids.length
         );
         assert.equal(
-          distribution.offers.filter((x) => x.offerType == "asks").length,
-          originalDistribution.offers.filter((x) => x.offerType == "asks")
-            .length
+          distribution.offers.asks.length,
+          originalDistribution.offers.asks.length
         );
       });
 
@@ -1070,6 +1101,7 @@ describe("Kandel integration tests suite", function () {
           kandel.calculateUniformDistributionFromMinPrice({
             minPrice: statuses.minPrice,
             midPrice,
+            generateFromMid: false,
           }),
           new Error(
             "Too low volume for the given number of offers. Would result in 0 gives."
@@ -1086,16 +1118,17 @@ describe("Kandel integration tests suite", function () {
         const expectedProvision = kandelStrategies.seeder.getRequiredProvision(
           {
             market: kandel.market,
-            gaspriceFactor: 10,
             liquiditySharing: false,
             onAave: false,
           },
-          distribution
+          distribution,
+          10
         );
 
         // Act
         const requiredProvisionOfferCount = await kandel.getRequiredProvision({
-          offerCount: distribution.getOfferCount(),
+          askCount: distribution.offers.asks.length,
+          bidCount: distribution.offers.bids.length,
         });
         const requiredProvisionDistribution = await kandel.getRequiredProvision(
           {
@@ -1130,7 +1163,8 @@ describe("Kandel integration tests suite", function () {
 
         // Act
         const requiredProvisionOfferCount = await kandel.getRequiredProvision({
-          offerCount: distribution.getOfferCount(),
+          askCount: distribution.offers.asks.length,
+          bidCount: distribution.offers.bids.length,
           gasreq,
           gasprice,
         });
@@ -1205,7 +1239,10 @@ describe("Kandel integration tests suite", function () {
         }));
 
         // Act
-        const params = { offerCount: distribution.getOfferCount() * 3 };
+        const params = {
+          askCount: distribution.offers.asks.length * 3,
+          bidCount: distribution.offers.bids.length * 3,
+        };
         const missingProvisionFromOffers =
           await kandel.getMissingProvisionFromOffers(params, indexerOffers);
         const missingProvision = await kandel.getMissingProvision(params);
@@ -1292,12 +1329,16 @@ describe("Kandel integration tests suite", function () {
         const minBase = await kandel.getMinimumVolumeForIndex({
           offerType: "asks",
           index: 0,
-          price: 1000,
+          tick: kandel.generator.distributionHelper.askTickPriceHelper
+            .tickFromPrice(1000)
+            .toNumber(),
         });
         const minQuote = await kandel.getMinimumVolumeForIndex({
           offerType: "bids",
           index: 0,
-          price: 1000,
+          tick: kandel.generator.distributionHelper.bidTickPriceHelper
+            .tickFromPrice(1000)
+            .toNumber(),
         });
 
         // Assert
@@ -1321,18 +1362,34 @@ describe("Kandel integration tests suite", function () {
         );
 
         // Create a distribution for the live offers
-        const liveOffers = (await kandel.getOffers())
-          .filter((x) => kandel.market.isLiveOffer(x.offer))
-          .map(({ offer, offerId, index, offerType }) => ({
-            offerType,
-            offerId,
-            index,
-            price: offer.price as Big,
-            gives: offer.gives,
-          }));
+        const liveOffers = (await kandel.getOffers()).filter((x) =>
+          kandel.market.isLiveOffer(x.offer)
+        );
+        const explicitOffers = {
+          bids: liveOffers
+            .filter((x) => x.offerType == "bids")
+            .map(({ offer, offerId, index, offerType }) => ({
+              offerType,
+              offerId,
+              index,
+              price: offer.price,
+              tick: offer.tick.toNumber(),
+              gives: offer.gives,
+            })),
+          asks: liveOffers
+            .filter((x) => x.offerType == "bids")
+            .map(({ offer, offerId, index, offerType }) => ({
+              offerType,
+              offerId,
+              index,
+              price: offer.price,
+              tick: offer.tick.toNumber(),
+              gives: offer.gives,
+            })),
+        };
 
         const existingDistribution = await kandel.createDistributionWithOffers({
-          explicitOffers: liveOffers,
+          explicitOffers,
         });
         const offeredVolume =
           existingDistribution.getOfferedVolumeForDistribution();
@@ -1340,19 +1397,16 @@ describe("Kandel integration tests suite", function () {
         // Act
         const result =
           await kandel.calculateDistributionWithUniformlyChangedVolume({
-            liveOffers,
+            explicitOffers,
             baseDelta: offeredVolume.requiredBase.neg(),
             quoteDelta: offeredVolume.requiredQuote.neg(),
           });
 
         // Assert
-        const oldPrices = existingDistribution
-          .getPricesForDistribution()
-          .map((x) => x?.round(4).toNumber());
-        const newPrices = result.distribution
-          .getPricesForDistribution()
-          .map((x) => x?.round(4).toNumber());
-        assert.deepStrictEqual(newPrices, oldPrices);
+        assertPricesApproxEq(
+          result.distribution,
+          getUniquePrices(existingDistribution)
+        );
         assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
         assert.ok(
           result.totalQuoteChange.neg().lt(offeredVolume.requiredQuote)
@@ -1361,12 +1415,18 @@ describe("Kandel integration tests suite", function () {
 
       it("can go through life-cycle with numbers as Bigish", async function () {
         // Arrange
-        const ratio = 1.08;
+        const priceRatio = 1.08;
         const initialAskGives = 1;
         const pricePoints = 6;
-        const distribution = kandel.generator.calculateDistribution({
-          priceParams: { minPrice: 1000, ratio, pricePoints },
-          midPrice: 1200,
+        const distribution = await kandel.generator.calculateDistribution({
+          distributionParams: {
+            minPrice: 1000,
+            priceRatio,
+            pricePoints,
+            midPrice: 1200,
+            stepSize: 1,
+            generateFromMid: false,
+          },
           initialAskGives,
         });
 
@@ -1379,7 +1439,7 @@ describe("Kandel integration tests suite", function () {
           kandel.populate({
             distribution,
             parameters: {
-              ratio,
+              priceRatio,
               stepSize: 1,
               pricePoints: distribution.pricePoints,
             },
@@ -1593,7 +1653,8 @@ describe("Kandel integration tests suite", function () {
               market: kandel.market,
               gasreq,
               gasprice,
-              offerCount: 1,
+              askCount: 1,
+              bidCount: 1,
             });
           const withdrawnFunds = Big(0.001);
 
@@ -1651,24 +1712,31 @@ describe("Kandel integration tests suite", function () {
 
         it("calculateMinimumDistribution can be deployed with a factor of 1", async () => {
           // Arrange
-          const distribution = kandel.generator.calculateMinimumDistribution({
-            priceParams: {
-              minPrice: 900,
-              ratio: 1.08,
-              maxPrice: 1100,
-            },
-            midPrice: 1000,
-            minimumBasePerOffer: await kandelStrategies.seeder.getMinimumVolume(
-              { market: kandel.market, offerType: "asks", onAave, factor: 1 }
-            ),
-            minimumQuotePerOffer:
-              await kandelStrategies.seeder.getMinimumVolume({
-                market: kandel.market,
-                offerType: "bids",
-                onAave,
-                factor: 1,
-              }),
-          });
+          const distribution =
+            await kandel.generator.calculateMinimumDistribution({
+              distributionParams: {
+                minPrice: 900,
+                priceRatio: 1.08,
+                maxPrice: 1100,
+                midPrice: 1000,
+                generateFromMid: false,
+                stepSize: 1,
+              },
+              minimumBasePerOffer:
+                await kandelStrategies.seeder.getMinimumVolume({
+                  market: kandel.market,
+                  offerType: "asks",
+                  onAave,
+                  factor: 1,
+                }),
+              minimumQuotePerOffer:
+                await kandelStrategies.seeder.getMinimumVolume({
+                  market: kandel.market,
+                  offerType: "bids",
+                  onAave,
+                  factor: 1,
+                }),
+            });
 
           // Act/assert
           await waitForTransactions(kandel.populate({ distribution }));
@@ -1686,34 +1754,37 @@ describe("Kandel integration tests suite", function () {
               gasreq,
               onAave,
             };
-            const distribution = kandel.generator.calculateMinimumDistribution({
-              priceParams: {
-                minPrice: 900,
-                ratio: 1.08,
-                maxPrice: 1100,
-              },
-              midPrice: 1000,
-              minimumBasePerOffer: gasreq
-                ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
-                    ...minParams,
-                    gasreq,
-                    offerType: "asks",
-                  })
-                : await kandelStrategies.seeder.getMinimumVolume({
-                    ...minParams,
-                    offerType: "asks",
-                  }),
-              minimumQuotePerOffer: gasreq
-                ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
-                    ...minParams,
-                    gasreq,
-                    offerType: "bids",
-                  })
-                : await kandelStrategies.seeder.getMinimumVolume({
-                    ...minParams,
-                    offerType: "bids",
-                  }),
-            });
+            const distribution =
+              await kandel.generator.calculateMinimumDistribution({
+                distributionParams: {
+                  minPrice: 900,
+                  priceRatio: 1.08,
+                  maxPrice: 1100,
+                  midPrice: 1000,
+                  generateFromMid: false,
+                  stepSize: 1,
+                },
+                minimumBasePerOffer: gasreq
+                  ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
+                      ...minParams,
+                      gasreq,
+                      offerType: "asks",
+                    })
+                  : await kandelStrategies.seeder.getMinimumVolume({
+                      ...minParams,
+                      offerType: "asks",
+                    }),
+                minimumQuotePerOffer: gasreq
+                  ? await kandelStrategies.seeder.getMinimumVolumeForGasreq({
+                      ...minParams,
+                      gasreq,
+                      offerType: "bids",
+                    })
+                  : await kandelStrategies.seeder.getMinimumVolume({
+                      ...minParams,
+                      offerType: "bids",
+                    }),
+              });
 
             // Act/assert
             await assert.rejects(

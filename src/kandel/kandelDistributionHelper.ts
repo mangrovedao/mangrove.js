@@ -311,14 +311,15 @@ class KandelDistributionHelper {
    * @param explicitOffers.bids The explicit bids to use.
    * @param explicitOffers.asks The explicit asks to use.
    * @param explicitAsks The explicit asks to use.
-   * @param distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
+   * @param distribution The original distribution or parameters for one (baseQuoteTickOffset takes precedence over priceRatio). If pricePoints is not provided, then the number of offers is used.
    * @returns The new distribution.
    */
   public createDistributionWithOffers(
     explicitOffers: { bids: OffersWithGives; asks: OffersWithGives },
     distribution:
       | {
-          baseQuoteTickOffset: number;
+          baseQuoteTickOffset?: number;
+          priceRatio?: Bigish;
           pricePoints: number;
           stepSize: number;
         }
@@ -339,8 +340,21 @@ class KandelDistributionHelper {
       })),
     };
 
+    let baseQuoteTickOffset = distribution.baseQuoteTickOffset;
+    if (baseQuoteTickOffset == undefined) {
+      if ("priceRatio" in distribution && distribution.priceRatio) {
+        baseQuoteTickOffset = this.calculateBaseQuoteTickOffset(
+          Big(distribution.priceRatio)
+        );
+      } else {
+        throw Error(
+          "Either distribution.baseQuoteTickOffset or distribution.priceRatio must be provided."
+        );
+      }
+    }
+
     return new KandelDistribution(
-      distribution.baseQuoteTickOffset,
+      baseQuoteTickOffset,
       distribution.pricePoints,
       distribution.stepSize,
       offers,
@@ -506,7 +520,7 @@ class KandelDistributionHelper {
     // Intentionally use raw TickLib as these are raw values
     return TickLib.tickFromVolumes(
       BigNumber.from(
-        Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed()
+        Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed(0)
       ),
       ethers.constants.WeiPerEther
     ).toNumber();

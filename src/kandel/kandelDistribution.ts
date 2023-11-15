@@ -1,6 +1,8 @@
 import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
+import { TickLib } from "../util/coreCalculations/TickLib";
+import { BigNumber } from "ethers";
 
 /** A list of bids or asks with their index, tick, and gives.
  * @param index The index of the price point in Kandel.
@@ -58,6 +60,12 @@ class KandelDistribution {
     this.baseDecimals = baseDecimals;
     this.quoteDecimals = quoteDecimals;
     this.verifyDistribution();
+  }
+
+  /** Gets the price ratio given by the baseQuoteTickOffset. */
+  public getPriceRatio() {
+    // This simply calculates 1.001^offset which will be the difference between prices.
+    return TickLib.priceFromTick(BigNumber.from(this.baseQuoteTickOffset));
   }
 
   /** Calculates the gives for a single offer of the given type given the total available volume and the count of offers of that type.

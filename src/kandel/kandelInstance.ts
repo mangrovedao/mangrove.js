@@ -24,6 +24,7 @@ import KandelLib from "./kandelLib";
  * @param gasprice The gas price used when provisioning offers.
  * @param gasreq The gas required to execute a trade.
  * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
+ * @param priceRatio The ratio between two price points - this gives the geometric progression. Should be >1.
  * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
  * @param pricePoints The number of price points. Should be >=2.
  */
@@ -31,12 +32,13 @@ export type KandelParameters = {
   gasprice: number;
   gasreq: number;
   baseQuoteTickOffset: number;
+  priceRatio: Big;
   stepSize: number;
   pricePoints: number;
 };
 
 /**
- * @notice Parameters for a Kandel instance where provided properties override current values. Note that baseQuoteTickOffset and pricePoints are normally provided via the KandelDistribution.
+ * @notice Parameters for a Kandel instance where provided properties override current values. baseQuoteTickOffset takes precedence over priceRatio. Note that baseQuoteTickOffset and pricePoints are normally provided via the KandelDistribution.
  * @see KandelParameters for more information.
  * @remarks Cannot simply be Partial<KandelParameters> due to Big vs Bigish.
  */
@@ -44,6 +46,7 @@ export type KandelParameterOverrides = {
   gasprice?: number;
   gasreq?: number;
   baseQuoteTickOffset?: number;
+  priceRatio?: Bigish;
   stepSize?: number;
   pricePoints?: number;
 };
@@ -205,6 +208,10 @@ class KandelInstance {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
       baseQuoteTickOffset: baseQuoteTickOffset.toNumber(),
+      priceRatio:
+        this.generator.distributionHelper.askTickPriceHelper.priceFromTick(
+          baseQuoteTickOffset.toNumber()
+        ),
       stepSize: params.stepSize,
       pricePoints: params.pricePoints,
     };
@@ -237,23 +244,30 @@ class KandelInstance {
     distributionPricePoints?: number
   ): Promise<KandelParameters> {
     const current = await this.getParameters();
+    const baseQuoteTickOffset =
+      parameters.baseQuoteTickOffset ??
+      (parameters.priceRatio
+        ? this.generator.distributionHelper.calculateBaseQuoteTickOffset(
+            Big(parameters.priceRatio)
+          )
+        : undefined);
     if (
-      parameters.baseQuoteTickOffset != null ||
+      baseQuoteTickOffset != null ||
       distributionBaseQuoteTickOffset != null
     ) {
       if (
-        parameters.baseQuoteTickOffset != null &&
+        baseQuoteTickOffset != null &&
         distributionBaseQuoteTickOffset != null &&
-        !ethers.BigNumber.from(parameters.baseQuoteTickOffset).eq(
+        !ethers.BigNumber.from(baseQuoteTickOffset).eq(
           distributionBaseQuoteTickOffset
         )
       ) {
         throw Error(
-          "baseQuoteTickOffset in parameter overrides does not match the baseQuoteTickOffset of the distribution."
+          "baseQuoteTickOffset in parameter overrides (possibly derived from priceRatio does not match the baseQuoteTickOffset of the distribution."
         );
       }
       current.baseQuoteTickOffset =
-        parameters.baseQuoteTickOffset ??
+        baseQuoteTickOffset ??
         distributionBaseQuoteTickOffset ??
         current.baseQuoteTickOffset;
     }
@@ -739,7 +753,8 @@ class KandelInstance {
    * @param params.gasreq An optional new gas required to execute a trade. Default is retrieved from Kandel parameters.
    * @param params.gasprice An optional new gas price to calculate provision for. Default is retrieved from Kandel parameters.
    * @param params.distribution The distribution to calculate the provision for. Optional.
-   * @param params.offerCount The number of offers to calculate the provision for. Optional.
+   * @param params.bidCount The number of bids to calculate the provision for. Optional.
+   * @param params.askCount The number of asks to calculate the provision for. Optional.
    * @returns the additional required provision, in ethers.
    * @remarks If neither params.distribution nor params.offerCount is provided, then the current number of price points is used.
    */
@@ -747,7 +762,8 @@ class KandelInstance {
     gasreq?: number;
     gasprice?: number;
     distribution?: KandelDistribution;
-    offerCount?: number;
+    bidCount?: number;
+    askCount?: number;
   }) {
     const existingOffers = await this.getOffersProvisionParams();
     return this.getMissingProvisionFromOffers(params, existingOffers);
@@ -758,29 +774,44 @@ class KandelInstance {
    * @param params.gasreq An optional new gas required to execute a trade. Default is retrieved from Kandel parameters.
    * @param params.gasprice An optional new gas price to calculate provision for. Default is retrieved from Kandel parameters.
    * @param params.distribution The distribution to calculate the provision for. Optional.
-   * @param params.offerCount The number of offers to calculate the provision for. Optional.
+   * @param params.bidCount The number of bids to calculate the provision for. Optional.
+   * @param params.askCount The number of asks to calculate the provision for. Optional.
    * @param existingOffers[] the offers with potential locked provision.
    * @param existingOffers[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
    * @param existingOffers[].gasreq the gas requirement for the offer.
    * @param existingOffers[].gasbase the offer list's offer_gasbase.
    * @returns the additional required provision, in ethers.
-   * @remarks If neither distribution nor offerCount is provided, then the current number of price points is used.
+   * @remarks If neither distribution nor askCount or bidCount is provided, then the current number of price points less the stepSize is used.
    */
   async getMissingProvisionFromOffers(
     params: {
       gasreq?: number;
       gasprice?: number;
       distribution?: KandelDistribution;
-      offerCount?: number;
+      bidCount?: number;
+      askCount?: number;
     },
     existingOffers: { gasprice: number; gasreq: number; gasbase: number }[]
   ) {
     const lockedProvision = this.getLockedProvisionFromOffers(existingOffers);
     const availableBalance = await this.offerLogic.getMangroveBalance();
-    if (!params.distribution && !params.offerCount) {
+    if (
+      !params.distribution &&
+      (params.askCount == undefined || params.bidCount == undefined)
+    ) {
+      const parameters = await this.getParameters();
+      const askCount =
+        params.askCount == undefined
+          ? parameters.pricePoints - parameters.stepSize
+          : params.askCount;
+      const bidCount =
+        params.bidCount == undefined
+          ? parameters.pricePoints - parameters.stepSize
+          : params.bidCount;
       params = {
         ...params,
-        offerCount: (await this.getParameters()).pricePoints,
+        askCount,
+        bidCount,
       };
     }
     const requiredProvision = await this.getRequiredProvision(params);

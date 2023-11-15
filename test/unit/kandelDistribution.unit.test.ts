@@ -3,6 +3,7 @@ import { Big } from "big.js";
 import { describe, it } from "mocha";
 import KandelDistribution from "../../src/kandel/kandelDistribution";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
+import { assertApproxEqAbs } from "../util/helpers";
 
 describe("KandelDistribution unit tests suite", () => {
   let sut: KandelDistribution;
@@ -248,6 +249,23 @@ describe("KandelDistribution unit tests suite", () => {
       assert.equal(params.firstAskIndex, 3);
       assert.equal(params.pricePoints, 4);
       assert.equal(params.stepSize, 1);
+    });
+  });
+
+  describe(KandelDistribution.prototype.getPriceRatio.name, () => {
+    [6931, 1, 789].forEach((baseQuoteTickOffset) => {
+      it(`agrees with helper's calculator for baseQuoteTickOffset=${baseQuoteTickOffset}`, () => {
+        // Arrange
+        sut.baseQuoteTickOffset = baseQuoteTickOffset;
+        const priceRatio = sut.getPriceRatio();
+
+        // Act
+        const actualOffset =
+          sut.helper.calculateBaseQuoteTickOffset(priceRatio);
+
+        // Assert
+        assertApproxEqAbs(actualOffset, baseQuoteTickOffset, 1);
+      });
     });
   });
 });

@@ -21,7 +21,6 @@ import { Deferred } from "../../src/util";
 import { Density } from "../../src/util/coreCalculations/Density";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
-import { OLKeyStruct } from "../../src/types/typechain/MgvReader";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 //pretty-print when using console.log
@@ -1472,24 +1471,14 @@ describe("Market integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
-    const olKeyBaseAsOutbound: OLKeyStruct = {
-      outbound_tkn: market.base.address,
-      inbound_tkn: market.quote.address,
-      tickSpacing: market.tickSpacing,
-    };
-    const olKeyQuoteAsOutbound: OLKeyStruct = {
-      outbound_tkn: market.quote.address,
-      inbound_tkn: market.base.address,
-      tickSpacing: market.tickSpacing,
-    };
     // see mangroveOrder.json -> restingOrderGasreq
     const gasreq = 152000;
     const baseAsOutbound = await mgv.readerContract.minVolume(
-      olKeyBaseAsOutbound,
+      market.olKeyBaseQuote,
       gasreq
     );
     const quoteAsOutbound = await mgv.readerContract.minVolume(
-      olKeyQuoteAsOutbound,
+      market.olKeyQuoteBase,
       gasreq
     );
 
