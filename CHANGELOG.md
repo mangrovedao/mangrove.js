@@ -11,6 +11,10 @@
 - feat: Upgrade to new mangrove-core and mangrove-strats. Details to be added for production release.
 - issue: Kandel is disabled for now.
 
+# 1.4.30
+
+- bump: mangrove-core to v1.5.13
+
 # 1.4.29
 
 - fix: mumbai config
