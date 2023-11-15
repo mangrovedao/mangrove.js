@@ -21,7 +21,7 @@ async function main() {
   shelljs.mkdir("-p", outDir);
 
   // Generate temp directory to place artifacts
-  const tempDir = await fs.mkdtempSync(`${os.tmpdir()}/`);
+  const tempDir = fs.mkdtempSync(`${os.tmpdir()}/`);
 
   try {
     // Get directory for mangrove-core module's abis

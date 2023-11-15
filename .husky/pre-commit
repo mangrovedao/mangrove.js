@@ -8,4 +8,4 @@ if [ "$branch" = "master" ] || [ "$branch" = "develop" ]; then
   exit 1
 fi
 
-yarn workspaces foreach run precommit
+yarn precommit
