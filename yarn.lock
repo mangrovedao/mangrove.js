@@ -1541,17 +1541,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
-  version: 20.2.4
-  resolution: "@types/node@npm:20.2.4"
-  checksum: 6bc45fdc1c1c0c0e03ca9aded926a5ce0f5e8154ae476a996f22832c530a8c909cfa2979b0b08c506477e836910f8b888bbe6eb9ebb698c4cd6f1f602456a9d4
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^20.3.1":
-  version: 20.3.1
-  resolution: "@types/node@npm:20.3.1"
-  checksum: 63a393ab6d947be17320817b35d7277ef03728e231558166ed07ee30b09fd7c08861be4d746f10fdc63ca7912e8cd023939d4eab887ff6580ff704ff24ed810c
+"@types/node@npm:*, @types/node@npm:^20.3.1":
+  version: 20.9.0
+  resolution: "@types/node@npm:20.9.0"
+  dependencies:
+    undici-types: ~5.26.4
+  checksum: bfd927da6bff8a32051fa44bb47ca32a56d2c8bc8ba0170770f181cc1fa3c0b05863c9b930f0ba8604a48d5eb0d319166601709ca53bf2deae0025d8b6c6b8a3
   languageName: node
   linkType: hard
 
@@ -6933,6 +6928,13 @@ __metadata:
     has-symbols: ^1.0.3
     which-boxed-primitive: ^1.0.2
   checksum: b7a1cf5862b5e4b5deb091672ffa579aa274f648410009c81cca63fed3b62b610c4f3b773f912ce545bb4e31edc3138975b5bc777fc6e4817dca51affb6380e9
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~5.26.4":
+  version: 5.26.5
+  resolution: "undici-types@npm:5.26.5"
+  checksum: 3192ef6f3fd5df652f2dc1cd782b49d6ff14dc98e5dced492aa8a8c65425227da5da6aafe22523c67f035a272c599bb89cfe803c1db6311e44bed3042fc25487
   languageName: node
   linkType: hard
 
