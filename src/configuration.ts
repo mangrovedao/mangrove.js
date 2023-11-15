@@ -1,10 +1,10 @@
-import loadedAddressesByNetwork from "./constants/addresses.json";
 import loadedTokens from "./constants/tokens.json";
 import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsByNetwork.json";
 import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
 import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSocketOptionsByNetwork.json";
 import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
 import loadedMangroveOrderConfiguration from "./constants/mangroveOrder.json";
+import contractPackageVersions from "./constants/contractPackageVersions.json";
 
 import { ethers } from "ethers";
 import Big from "big.js";
@@ -14,8 +14,8 @@ import {
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish, Provider, typechain } from "./types";
-import mgvCore from "@mangrovedao/mangrove-core";
-import mgvStrats from "@mangrovedao/mangrove-strats";
+import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
+import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
@@ -500,44 +500,105 @@ export function resetConfiguration(): void {
   };
 
   // Load addresses in the following order:
-  // 1. loaded addresses
-  // 2. mangrove-core addresses
-  // 3. mangrove-strats addresses
+  // 1. context-addresses addresses
+  // 2. mangrove-deployments addresses
   // Last loaded address is used
+  readContextAddresses();
+  readMangroveDeploymentAddresses();
+}
 
-  for (const [network, networkAddresses] of Object.entries(
-    loadedAddressesByNetwork
+function readMangroveDeploymentAddresses() {
+  // Note: Consider how to expose other deployments than the primary
+
+  const mgvCoreVersionPattern = `^${contractPackageVersions["mangrove-core"]}`;
+  // Note: Make this configurable?
+  const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvCoreContractsDeployments =
+    mgvDeployments.getCoreContractsVersionDeployments({
+      version: mgvCoreVersionPattern,
+      released: mgvCoreReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
+
+  const mgvStratsVersionPattern = `^${contractPackageVersions["mangrove-strats"]}`;
+  // Note: Make this configurable?
+  const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvStratsContractsDeployments =
+    mgvDeployments.getStratsContractsVersionDeployments({
+      version: mgvStratsVersionPattern,
+      released: mgvStratsReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
+}
+
+function readVersionDeploymentsAddresses(
+  contractsDeployments: mgvDeployments.VersionDeployments[]
+) {
+  for (const contractDeployments of contractsDeployments) {
+    for (const [networkId, networkDeployments] of Object.entries(
+      contractDeployments.networkAddresses
+    )) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(
+        contractDeployments.deploymentName ?? contractDeployments.contractName,
+        networkDeployments.primaryAddress,
+        networkName
+      );
+    }
+  }
+}
+
+function readContextAddresses() {
+  readContextMulticallAddresses();
+  readContextErc20Addresses();
+  readContextAaveAddresses();
+}
+
+function readContextMulticallAddresses() {
+  const allMulticallAddresses = contextAddresses.getAllMulticallAddresses();
+  for (const [addressId, role] of Object.entries(allMulticallAddresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
+    }
+  }
+}
+
+function readContextErc20Addresses() {
+  for (const [, /*tokenId*/ erc20] of Object.entries(
+    contextAddresses.getAllErc20s()
   )) {
-    for (const [name, address] of Object.entries(networkAddresses) as any) {
-      if (address) {
-        addressesConfiguration.setAddress(name, address, network);
+    for (const [networkId, networkInstances] of Object.entries(
+      erc20.networkInstances
+    )) {
+      const networkName = eth.getNetworkName(+networkId);
+      for (const [erc20InstanceId, erc20Instance] of Object.entries(
+        networkInstances
+      )) {
+        addressesConfiguration.setAddress(
+          erc20InstanceId,
+          erc20Instance.address,
+          networkName
+        );
+        // Also register the default instance as the token symbol for convenience
+        if (erc20Instance.default) {
+          addressesConfiguration.setAddress(
+            erc20.symbol,
+            erc20Instance.address,
+            networkName
+          );
+        }
       }
     }
   }
-
-  readAddresses(mgvCore.addresses);
-  readAddresses(mgvStrats.addresses);
 }
 
-function readAddresses(addresses: any) {
-  let mgvAddresses: any[] = [];
-
-  if (addresses.deployed || addresses.context) {
-    if (addresses.deployed) {
-      mgvAddresses.push(addresses.deployed);
-    }
-    if (addresses.context) {
-      mgvAddresses.push(addresses.context);
-    }
-  } else {
-    mgvAddresses.push(addresses);
-  }
-
-  mgvAddresses = mgvAddresses.flatMap((o) => Object.entries(o));
-
-  for (const [network, networkAddresses] of mgvAddresses) {
-    for (const { name, address } of networkAddresses as any) {
-      addressesConfiguration.setAddress(name, address, network);
+function readContextAaveAddresses() {
+  const allAaveV3Addresses = contextAddresses.getAllAaveV3Addresses();
+  for (const [addressId, role] of Object.entries(allAaveV3Addresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
     }
   }
 }

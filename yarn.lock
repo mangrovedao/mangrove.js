@@ -1236,6 +1236,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mangrovedao/context-addresses@npm:next":
+  version: 0.0.2-5
+  resolution: "@mangrovedao/context-addresses@npm:0.0.2-5"
+  dependencies:
+    semver: ^7.5.4
+  checksum: 4b926524f80b3886dad893d2415fb5d8f2a5b23e6d900112765cdad1b6cc90d017b025a59d0451da4aee50d4970ce6768f53d92d837808c7eb304da81d8343b7
+  languageName: node
+  linkType: hard
+
 "@mangrovedao/mangrove-core@npm:^2.0.0-3":
   version: 2.0.0-3
   resolution: "@mangrovedao/mangrove-core@npm:2.0.0-3"
@@ -1247,6 +1256,15 @@ __metadata:
   version: 1.5.11-0
   resolution: "@mangrovedao/mangrove-core@npm:1.5.11-0"
   checksum: 79550c7ccfa11ed398125cd36faf2115d80faedb8caed340565a2da07fe54fd683962f355a959b8cb5f0183f4581f84361dd269fc8857969d6de170842911d45
+  languageName: node
+  linkType: hard
+
+"@mangrovedao/mangrove-deployments@npm:next":
+  version: 0.0.2-1
+  resolution: "@mangrovedao/mangrove-deployments@npm:0.0.2-1"
+  dependencies:
+    semver: ^7.5.4
+  checksum: b6c53d3c5339a2e5cc45b1b53e359e85fd46f657286b9bf4255a319b6c72211e1c5a9a25f14ab7ae895d38d1e7923ab0f5e5398618b238eeef782aa34bd703e3
   languageName: node
   linkType: hard
 
@@ -1269,7 +1287,9 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
+    "@mangrovedao/context-addresses": next
     "@mangrovedao/mangrove-core": ^2.0.0-3
+    "@mangrovedao/mangrove-deployments": next
     "@mangrovedao/mangrove-strats": next
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^10.2.0
