@@ -105,18 +105,19 @@ export async function getProviderNetwork(
 
   networkId = isNaN(networkId) ? 0 : +networkId;
 
-  let networkName;
-
-  if (networkId === 31337) {
-    networkName = "local";
-  } else {
-    networkName = ethers.providers.getNetwork(networkId).name;
-  }
-
   return {
     id: networkId,
-    name: networkName === "homestead" ? "mainnet" : networkName,
+    name: getNetworkName(networkId),
   };
+}
+
+export function getNetworkName(networkId: number): string {
+  if (networkId === 31337) {
+    return "local";
+  } else {
+    const networkName = ethers.providers.getNetwork(networkId).name;
+    return networkName === "homestead" ? "mainnet" : networkName;
+  }
 }
 
 /** Debug class */
@@ -163,7 +164,7 @@ class LoggingProvider extends providers.JsonRpcProvider {
  * - empty, if `options.signer` is a signer and `options.signer.provider` is a provider.
  *
  * Signing info can be provided by
- * - `options.signer`, if you want to contruct the Signer yourself
+ * - `options.signer`, if you want to construct the Signer yourself
  * - `options.provider`, then you can specify `options.signerIndex` to get the nth account, or
  * - `options.privateKey`, or
  * - `options.mnemonic`, then you can specify the BIP44 derivation path with `options.path`.

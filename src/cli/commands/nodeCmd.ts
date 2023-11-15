@@ -1,4 +1,3 @@
-import * as yargs from "yargs";
 import { builder, nodeWithComputedArgv } from "../../util/node";
 
 export const command = "node";

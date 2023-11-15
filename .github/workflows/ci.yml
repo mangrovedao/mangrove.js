@@ -19,45 +19,23 @@ env:
   NODE_ENV: test
 
 jobs:
-  file-guard:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - uses: dorny/paths-filter@v2
-      id: changes
-      with:
-        filters: |
-          addresses:
-            - 'src/constants/addresses.json'
-
-    - name: Fail if addresses changed unless PR has 'update address' label
-      if: >
-          (    github.event_name == 'pull_request'
-           &&  !contains(github.event.pull_request.labels.*.name,'update address') 
-           &&  steps.changes.outputs.addresses == 'true')
-      uses: actions/github-script@v6
-      with:
-        script: core.setFailed('You have changed an address in mangrove.js (addresses.json). PR must be marked \'update address\' for CI to run')
-
   mangrove-js:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Yarn setup (caching yarn dependencies)
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: 18.x
         cache: 'yarn'
 
-    - run: yarn install --immutable
-
     - name: Foundry Setup
-      uses: ./.github/actions/foundry-setup
+      uses: mangrovedao/.github/.github/actions/foundry-setup@master
+
+    - run: yarn install --immutable
 
     - name: Build
       id: build
@@ -72,7 +50,7 @@ jobs:
         FOUNDRY_OUT: "~/.foundry/build-out"
       run: yarn run test:coverage
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       if: ${{ steps.build.conclusion == 'success' && (success() || failure())}}
       with:
         name: test-results
@@ -104,10 +82,14 @@ jobs:
   # see https://github.com/re-actors/alls-green
 
   check:
-    if: always()
+    # NB: We're experimenting with using `!cancelled()` instead of `always()` in an attempt to avoid
+    #     cancelled workflow runs blocking dependabot PR's from merging.
+    #     Workflow runs are often cancelled automatically when a newer run is triggered.
+    #     The problem appears to be that the `check` job runs and fails if the workflow is cancelled.
+    # if: always()
+    if: ${{ !cancelled() }}
 
     needs:
-    - file-guard
     - mangrove-js
 
     runs-on: ubuntu-latest

@@ -1,6 +1,19 @@
 # Next version
 
-- bump: mangrove-core to v1.5.12
+# 2.0.0-2
+
+- feat: Use addresses from mangrove-deployments and context-addresses
+- bump: mangrove-core to 2.0.0-4
+- bump: mangrove-strats to 0.0.2-4
+
+# 2.0.0-1
+
+- feat: Upgrade to new mangrove-core and mangrove-strats. Details to be added for production release.
+- issue: Kandel is disabled for now.
+
+# 1.4.30
+
+- bump: mangrove-core to v1.5.13
 
 # 1.4.29
 
@@ -50,6 +63,16 @@
 # 1.4.18
 
 - Bump: reliable-event-subscriber to v1.1.29
+
+# 1.4.18-1
+
+- fix: Use new mgvConfig for mangrove-core and mangrove-strats
+- Add: mangrove-strats v0.0.2-0
+- Bump: mangrove-core to v1.5.8-1
+
+# 1.4.18-0
+
+- feat: mgvtoken add tokenFromAddress function
 - feat: `LiquidityProvider` getter from an `OfferLogic` instance.
 
 # 1.4.17

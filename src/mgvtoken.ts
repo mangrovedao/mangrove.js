@@ -2,7 +2,7 @@ import Big from "big.js";
 import * as ethers from "ethers";
 import Mangrove from "./mangrove";
 import { Bigish, Provider } from "./types";
-import * as typechain from "./types/typechain";
+import { typechain } from "./types";
 import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";
 
@@ -91,6 +91,22 @@ class MgvToken {
     await MgvToken.getOrFetchDecimals(name, mgv.provider);
 
     return new MgvToken(name, mgv, options);
+  }
+
+  static async createTokenFromAddress(
+    address: string,
+    mgv: Mangrove
+  ): Promise<MgvToken> {
+    const contract = typechain.TestToken__factory.connect(
+      address,
+      mgv.provider
+    );
+
+    const name = await contract.callStatic.symbol();
+
+    return this.createToken(name, mgv, {
+      address,
+    });
   }
 
   static #applyOptions(

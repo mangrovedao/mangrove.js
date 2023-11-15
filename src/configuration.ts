@@ -1,9 +1,10 @@
-import loadedAddressesByNetwork from "./constants/addresses.json";
 import loadedTokens from "./constants/tokens.json";
 import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsByNetwork.json";
 import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
 import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSocketOptionsByNetwork.json";
 import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
+import loadedMangroveOrderConfiguration from "./constants/mangroveOrder.json";
+import contractPackageVersions from "./constants/contractPackageVersions.json";
 
 import { ethers } from "ethers";
 import Big from "big.js";
@@ -13,7 +14,8 @@ import {
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish, Provider, typechain } from "./types";
-import mgvCore from "@mangrovedao/mangrove-core";
+import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
+import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
@@ -116,10 +118,25 @@ export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
   networks?: Record<network, PartialNetworkConfig>;
 };
 
+/** Mangrove order configuration for a specific chain.
+ * @param restingOrderGasreq The gasreq for a resting order using the MangroveOrder contract.
+ * @param takeGasOverhead The overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove.
+ */
+export type MangroveOrderNetworkConfiguration = {
+  restingOrderGasreq: number;
+  takeGasOverhead: number;
+};
+
+export type PartialMangroveOrderConfiguration =
+  Partial<MangroveOrderNetworkConfiguration> & {
+    networks?: Record<network, Partial<MangroveOrderNetworkConfiguration>>;
+  };
+
 export type Configuration = {
   addressesByNetwork: AddressesConfig;
   tokenDefaults: TokenDefaults;
   tokens: Record<tokenSymbol, TokenConfig>;
+  mangroveOrder: PartialMangroveOrderConfiguration;
   reliableEventSubscriber: ReliableEventSubscriberConfig;
   kandel: PartialKandelConfiguration;
 };
@@ -363,6 +380,7 @@ export const tokensConfiguration = {
 /// RELIABLE EVENT SUBSCRIBER
 
 export const reliableEventSubscriberConfiguration = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getLogsTimeout: (network: string): number => {
     return 20_000; // 20 seconds
   },
@@ -391,6 +409,32 @@ export const reliableEventSubscriberConfiguration = {
         network
       ] ?? config.reliableEventSubscriber.defaultReliableWebSocketOptions
     );
+  },
+};
+
+/// MANGROVE ORDER
+
+export const mangroveOrderConfiguration = {
+  /** Gets the gasreq for a resting order using the MangroveOrder contract. */
+  getRestingOrderGasreq: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.restingOrderGasreq ??
+      config.mangroveOrder.restingOrderGasreq;
+    if (!value) {
+      throw Error("No restingOrderGasreq configured");
+    }
+    return value;
+  },
+
+  /** Gets the overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove. */
+  getTakeGasOverhead: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.takeGasOverhead ??
+      config.mangroveOrder.takeGasOverhead;
+    if (!value) {
+      throw Error("No takeGasOverhead configured");
+    }
+    return value;
   },
 };
 
@@ -449,42 +493,112 @@ export function resetConfiguration(): void {
         >
       ),
     },
+    mangroveOrder: clone(
+      loadedMangroveOrderConfiguration as PartialMangroveOrderConfiguration
+    ),
     kandel: clone(loadedKandelConfiguration as PartialKandelConfiguration),
   };
 
   // Load addresses in the following order:
-  // 1. loaded addresses
-  // 2. mangrove-core addresses
+  // 1. context-addresses addresses
+  // 2. mangrove-deployments addresses
   // Last loaded address is used
+  readContextAddresses();
+  readMangroveDeploymentAddresses();
+}
 
-  for (const [network, networkAddresses] of Object.entries(
-    loadedAddressesByNetwork
+function readMangroveDeploymentAddresses() {
+  // Note: Consider how to expose other deployments than the primary
+
+  const mgvCoreVersionPattern = `^${contractPackageVersions["mangrove-core"]}`;
+  // Note: Make this configurable?
+  const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvCoreContractsDeployments =
+    mgvDeployments.getCoreContractsVersionDeployments({
+      version: mgvCoreVersionPattern,
+      released: mgvCoreReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
+
+  const mgvStratsVersionPattern = `^${contractPackageVersions["mangrove-strats"]}`;
+  // Note: Make this configurable?
+  const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvStratsContractsDeployments =
+    mgvDeployments.getStratsContractsVersionDeployments({
+      version: mgvStratsVersionPattern,
+      released: mgvStratsReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
+}
+
+function readVersionDeploymentsAddresses(
+  contractsDeployments: mgvDeployments.VersionDeployments[]
+) {
+  for (const contractDeployments of contractsDeployments) {
+    for (const [networkId, networkDeployments] of Object.entries(
+      contractDeployments.networkAddresses
+    )) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(
+        contractDeployments.deploymentName ?? contractDeployments.contractName,
+        networkDeployments.primaryAddress,
+        networkName
+      );
+    }
+  }
+}
+
+function readContextAddresses() {
+  readContextMulticallAddresses();
+  readContextErc20Addresses();
+  readContextAaveAddresses();
+}
+
+function readContextMulticallAddresses() {
+  const allMulticallAddresses = contextAddresses.getAllMulticallAddresses();
+  for (const [addressId, role] of Object.entries(allMulticallAddresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
+    }
+  }
+}
+
+function readContextErc20Addresses() {
+  for (const [, /*tokenId*/ erc20] of Object.entries(
+    contextAddresses.getAllErc20s()
   )) {
-    for (const [name, address] of Object.entries(networkAddresses) as any) {
-      if (address) {
-        addressesConfiguration.setAddress(name, address, network);
+    for (const [networkId, networkInstances] of Object.entries(
+      erc20.networkInstances
+    )) {
+      const networkName = eth.getNetworkName(+networkId);
+      for (const [erc20InstanceId, erc20Instance] of Object.entries(
+        networkInstances
+      )) {
+        addressesConfiguration.setAddress(
+          erc20InstanceId,
+          erc20Instance.address,
+          networkName
+        );
+        // Also register the default instance as the token symbol for convenience
+        if (erc20Instance.default) {
+          addressesConfiguration.setAddress(
+            erc20.symbol,
+            erc20Instance.address,
+            networkName
+          );
+        }
       }
     }
   }
+}
 
-  let mgvCoreAddresses: any[] = [];
-
-  if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
-    if (mgvCore.addresses.deployed) {
-      mgvCoreAddresses.push(mgvCore.addresses.deployed);
-    }
-    if (mgvCore.addresses.context) {
-      mgvCoreAddresses.push(mgvCore.addresses.context);
-    }
-  } else {
-    mgvCoreAddresses.push(mgvCore.addresses);
-  }
-
-  mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
-
-  for (const [network, networkAddresses] of mgvCoreAddresses) {
-    for (const { name, address } of networkAddresses as any) {
-      addressesConfiguration.setAddress(name, address, network);
+function readContextAaveAddresses() {
+  const allAaveV3Addresses = contextAddresses.getAllAaveV3Addresses();
+  for (const [addressId, role] of Object.entries(allAaveV3Addresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
     }
   }
 }
@@ -507,6 +621,7 @@ export const configuration = {
   tokens: tokensConfiguration,
   reliableEventSubscriber: reliableEventSubscriberConfiguration,
   kandel: kandelConfiguration,
+  mangroveOrder: mangroveOrderConfiguration,
   resetConfiguration,
   updateConfiguration,
 };

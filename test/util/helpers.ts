@@ -55,8 +55,8 @@ export const approxEq = (
 };
 
 export type OfferData = {
-  wants: string;
   gives: string;
+  tick: BigNumberish;
   gasreq?: BigNumberish;
   gasprice?: BigNumberish;
 };
@@ -66,7 +66,7 @@ async function getAmountAndAddress(
   token: string | MgvToken,
   amount: string
 ) {
-  const mgvToken = typeof token === "string" ? await mgv.token(token) : token;
+  const mgvToken = await getAddress(token, mgv);
   return { address: mgvToken.address, value: mgvToken.toUnits(amount) };
 }
 
@@ -74,18 +74,23 @@ export const newOffer = async (
   mgv: Mangrove,
   outbound_tkn: string | MgvToken,
   inbound_tkn: string | MgvToken,
-  { wants, gives, gasreq, gasprice }: OfferData
+  { gives, gasreq, gasprice, tick }: OfferData
 ): Promise<ContractTransaction> => {
   const outboundInfo = await getAmountAndAddress(mgv, outbound_tkn, gives);
-  const inboundInfo = await getAmountAndAddress(mgv, inbound_tkn, wants);
+  const inboundInfo = await getAddress(inbound_tkn, mgv);
 
-  return mgv.contract.newOffer(
-    outboundInfo.address,
-    inboundInfo.address,
-    inboundInfo.value,
+  return mgv.contract.newOfferByTick(
+    {
+      outbound_tkn: outboundInfo.address,
+      inbound_tkn: inboundInfo.address,
+      tickSpacing: 1,
+    },
+    tick,
     outboundInfo.value,
     gasreq || 10000,
-    gasprice || 1,
-    0
+    gasprice || 1
   );
 };
+async function getAddress(token: string | MgvToken, mgv: Mangrove) {
+  return typeof token === "string" ? await mgv.token(token) : token;
+}

@@ -49,30 +49,37 @@ describe("Mangrove integration tests suite", function () {
 
   describe("getMarkets", function () {
     it("updates with mgvReader", async function () {
-      await mgvAdmin.contract.deactivate(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
-      await mgvAdmin.contract.deactivate(
-        mgv.getAddress("TokenB"),
-        mgv.getAddress("TokenA")
-      );
-      await mgv.readerContract.updateMarket(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
+      await mgvAdmin.contract.deactivate({
+        outbound_tkn: mgv.getAddress("TokenA"),
+        inbound_tkn: mgv.getAddress("TokenB"),
+        tickSpacing: 1,
+      });
+      await mgvAdmin.contract.deactivate({
+        outbound_tkn: mgv.getAddress("TokenB"),
+        inbound_tkn: mgv.getAddress("TokenA"),
+        tickSpacing: 1,
+      });
+      await mgv.readerContract.updateMarket({
+        tkn0: mgv.getAddress("TokenA"),
+        tkn1: mgv.getAddress("TokenB"),
+        tickSpacing: 1,
+      });
       const marketsBefore = await mgv.openMarkets();
       await mgvAdmin.contract.activate(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB"),
+        {
+          outbound_tkn: mgv.getAddress("TokenA"),
+          inbound_tkn: mgv.getAddress("TokenB"),
+          tickSpacing: 1,
+        },
         1,
         1,
         1
       );
-      await mgv.readerContract.updateMarket(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
+      await mgv.readerContract.updateMarket({
+        tkn0: mgv.getAddress("TokenA"),
+        tkn1: mgv.getAddress("TokenB"),
+        tickSpacing: 1,
+      });
       const markets = await mgv.openMarkets();
       assert.equal(
         markets.length - marketsBefore.length,
@@ -91,10 +98,11 @@ describe("Mangrove integration tests suite", function () {
     });
 
     it("gets correct market info and updates with cashness", async function () {
-      await mgv.readerContract.updateMarket(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
+      await mgv.readerContract.updateMarket({
+        tkn0: mgv.getAddress("TokenA"),
+        tkn1: mgv.getAddress("TokenB"),
+        tickSpacing: 1,
+      });
       let marketData = await mgv.openMarketsData();
       const tokenAData = {
         address: mgv.getAddress("TokenA"),

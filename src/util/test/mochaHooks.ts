@@ -1,6 +1,6 @@
 // TODO do not distribute in browser version
-import { ethers } from "ethers";
-import { Mangrove } from "../../";
+import { BigNumber, ethers } from "ethers";
+import { Mangrove, OfferMaker, eth } from "../../";
 import node, { inputServerParamsType, serverType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
@@ -35,6 +35,7 @@ export type hookInfo = {
     tester: account;
     arbitrager: account;
   };
+  offerMakerAddress?: string;
   server?: serverType;
   closeCurrentProxy?: () => Promise<void>;
 };
@@ -84,6 +85,15 @@ export const mochaHooks = {
       provider,
       privateKey: hook.accounts.deployer.key,
     });
+    const offerMakerSigner = await eth._createSigner({
+      provider: provider,
+      privateKey: hook.accounts.tester.key,
+    });
+    hook.offerMakerAddress = await OfferMaker.deploy(
+      // Saving the address for later use
+      mgv.address,
+      offerMakerSigner.signer
+    );
 
     const tokenA = await mgv.token("TokenA");
     const tokenB = await mgv.token("TokenB");
@@ -92,33 +102,6 @@ export const mochaHooks = {
     // @ts-ignore
     mgv.provider.pollingInterval = 10;
     await mgv.fundMangrove(10, hook.accounts.deployer.address);
-    // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
-
-    const localConfig = await (
-      await mgv.market({ base: tokenA.name, quote: tokenB.name })
-    ).config();
-    await mgv.contract
-      .activate(
-        tokenA.address,
-        tokenB.address,
-        500,
-        tokenA.toUnits(localConfig.asks.density),
-        localConfig.asks.offer_gasbase
-      )
-      .then((tx) => tx.wait());
-
-    // Density should be >0, otherwise the tests will fail
-    await mgv.contract
-      .activate(
-        tokenB.address,
-        tokenA.address,
-        500,
-        localConfig.bids.density.gt(0)
-          ? tokenB.toUnits(localConfig.bids.density)
-          : 1,
-        localConfig.bids.offer_gasbase
-      )
-      .then((tx) => tx.wait());
 
     await tokenA.contract.mintTo(
       hook.accounts.tester.address,
@@ -137,6 +120,8 @@ export const mochaHooks = {
   },
 
   async beforeEachImpl(hook: hookInfo) {
+    Mangrove.setAddress("OfferMaker", hook.offerMakerAddress!, "local"); //FIXME: have to set the address in beforeEach, instead of beforeAll, because mangrove configuration gets reset by other tests. (e.g. configuration unit tests)
+
     if (!hook.proxies) {
       hook.proxies = [];
     }

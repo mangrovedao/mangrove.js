@@ -6,7 +6,7 @@ import Mangrove from "../../mangrove";
 
 import PrettyPrint, { prettyPrintFilter } from "../prettyPrint";
 import { LiquidityProvider } from "../..";
-import * as typechain from "../../types/typechain";
+import { typechain } from "../../types";
 import { waitForTransaction } from "./mgvIntegrationTestUtil";
 import { node } from "../../util/node";
 import { Log } from "@ethersproject/providers";
@@ -46,6 +46,7 @@ namespace TestMaker {
     mgv: Mangrove;
     base: string;
     quote: string;
+    tickSpacing: number;
   };
 }
 
@@ -82,7 +83,11 @@ class TestMaker {
     const quoteAddress = p.mgv.getAddress(p.quote);
     const contract = await new typechain.SimpleTestMaker__factory(
       p.mgv.signer
-    ).deploy(p.mgv.address, baseAddress, quoteAddress);
+    ).deploy(p.mgv.address, {
+      outbound_tkn: baseAddress,
+      inbound_tkn: quoteAddress,
+      tickSpacing: p.tickSpacing,
+    });
     await contract.deployTransaction.wait();
 
     const amount = Mangrove.toUnits(PROVISION_AMOUNT_IN_ETHERS, 18);
@@ -122,8 +127,10 @@ class TestMaker {
 
     p = { ...defaults, ...p };
 
-    const { wants, gives, price, fund } =
-      LiquidityProvider.normalizeOfferParams(p);
+    const { tick, gives, fund } = LiquidityProvider.normalizeOfferParams(
+      p,
+      this.market
+    );
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
 
@@ -160,18 +167,18 @@ class TestMaker {
       executeData: p.executeData as string,
     };
 
-    const pivot = (await this.market.getPivotId(p.ba, price)) ?? 0;
-
     const txPromise = this.contract[
-      "newOfferWithFunding(address,address,uint256,uint256,uint256,uint256,uint256,uint256,(bool,string))"
+      "newOfferByTickWithFunding((address,address,uint256),int256,uint256,uint256,uint256,uint256,(bool,string))"
     ](
-      this.market.base.address,
-      this.market.quote.address,
-      inbound_tkn.toUnits(wants),
+      {
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
+        tickSpacing: this.market.tickSpacing,
+      },
+      tick,
       outbound_tkn.toUnits(gives),
       p.gasreq as number,
       p.gasprice as number,
-      pivot,
       amount,
       offerData,
       payableOverrides
@@ -179,9 +186,8 @@ class TestMaker {
 
     return this.#constructPromise(
       this.market,
-      (_cbArg, _bookEevnt, _ethersLog) => ({
+      (_cbArg, _bookEvent, _ethersLog) => ({
         id: _cbArg.offerId as number,
-        pivot: pivot,
         event: _ethersLog as Log,
       }),
       txPromise,

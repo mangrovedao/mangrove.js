@@ -5,7 +5,7 @@ import type { BigSource } from "big.js";
 
 export type { Signer, Provider };
 
-import * as typechain from "./typechain";
+import * as typechain from "./typechain/index";
 export { typechain };
 
 /* Mangrove */

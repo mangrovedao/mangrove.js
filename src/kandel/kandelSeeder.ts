@@ -5,15 +5,13 @@ import { typechain } from "../types";
 import TradeEventManagement from "../util/tradeEventManagement";
 import UnitCalculations from "../util/unitCalculations";
 
-import {
-  NewKandelEvent,
-  NewAaveKandelEvent,
-} from "../types/typechain/AbstractKandelSeeder";
-
 import KandelInstance from "./kandelInstance";
 import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
 import KandelConfiguration from "./kandelConfiguration";
+import { OLKeyStruct } from "../types/typechain/AbstractKandelSeeder";
+import { NewKandelEvent } from "../types/typechain/KandelSeeder";
+import { NewAaveKandelEvent } from "../types/typechain/AaveKandelSeeder";
 
 /** The parameters for sowing the Kandel instance.
  * @param onAave Whether to create an AaveKandel which supplies liquidity on Aave to earn yield, or a standard Kandel.
@@ -75,16 +73,15 @@ class KandelSeeder {
         "Liquidity sharing is only supported for AaveKandel instances."
       );
     }
-    const rawSeed: typechain.AbstractKandelSeeder.KandelSeedStruct = {
-      base: seed.market.base.address,
-      quote: seed.market.quote.address,
-      gasprice: UnitCalculations.toUnits(gasprice, 0),
-      liquiditySharing: seed.liquiditySharing,
+    const rawSeed: OLKeyStruct = {
+      outbound_tkn: seed.market.base.address,
+      inbound_tkn: seed.market.quote.address,
+      tickSpacing: seed.market.tickSpacing,
     };
 
     const response = seed.onAave
-      ? this.aaveKandelSeeder.sow(rawSeed, overrides)
-      : this.kandelSeeder.sow(rawSeed, overrides);
+      ? this.aaveKandelSeeder.sow(rawSeed, seed.liquiditySharing, overrides)
+      : this.kandelSeeder.sow(rawSeed, seed.liquiditySharing, overrides);
 
     const func = async (
       response: Promise<ethers.ethers.ContractTransaction>
@@ -149,15 +146,16 @@ class KandelSeeder {
    */
   public async getDefaultGasreq(onAave: boolean) {
     return (
-      onAave
-        ? (await this.aaveKandelSeeder.KANDEL_GASREQ()).add(
-            await typechain.AbstractRouter__factory.connect(
-              await this.aaveKandelSeeder.AAVE_ROUTER(),
-              this.mgv.signer
-            ).routerGasreq()
-          )
-        : await this.kandelSeeder.KANDEL_GASREQ()
-    ).toNumber();
+      // onAave
+      //   ? (await this.aaveKandelSeeder.KANDEL_GASREQ()).add(
+      //       await typechain.AbstractRouter__factory.connect(
+      //         await this.aaveKandelSeeder.AAVE_ROUTER(),
+      //         this.mgv.signer
+      //       ).routerGasreq() // FIXME:
+      //     )
+      //   :
+      (await this.kandelSeeder.KANDEL_GASREQ()).toNumber()
+    );
   }
 
   /** Retrieves the gasprice for the Kandel type multiplied by the buffer factor.

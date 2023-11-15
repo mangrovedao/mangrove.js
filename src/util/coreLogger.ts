@@ -30,7 +30,7 @@ export const createLogger = (
   // generate fresh logger
   const logger = loglevel.getLogger(Symbol());
   // remember default log method generator
-  var originalFactory = logger.methodFactory;
+  const originalFactory = logger.methodFactory;
 
   // configure colorizer
   const opts = {
@@ -50,7 +50,7 @@ export const createLogger = (
   // generate new logging methods
   logger.methodFactory = function (methodName, logLevel, loggerName) {
     // remember default log method
-    var rawMethod = originalFactory(methodName, logLevel, loggerName);
+    const rawMethod = originalFactory(methodName, logLevel, loggerName);
 
     // create formatter with logform
     let thisFormat: Format;
