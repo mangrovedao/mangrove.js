@@ -105,18 +105,19 @@ export async function getProviderNetwork(
 
   networkId = isNaN(networkId) ? 0 : +networkId;
 
-  let networkName;
-
-  if (networkId === 31337) {
-    networkName = "local";
-  } else {
-    networkName = ethers.providers.getNetwork(networkId).name;
-  }
-
   return {
     id: networkId,
-    name: networkName === "homestead" ? "mainnet" : networkName,
+    name: getNetworkName(networkId),
   };
+}
+
+export function getNetworkName(networkId: number): string {
+  if (networkId === 31337) {
+    return "local";
+  } else {
+    const networkName = ethers.providers.getNetwork(networkId).name;
+    return networkName === "homestead" ? "mainnet" : networkName;
+  }
 }
 
 /** Debug class */

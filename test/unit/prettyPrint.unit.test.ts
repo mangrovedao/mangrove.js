@@ -24,6 +24,7 @@ describe("PrettyPrint Unit test suite", () => {
         gives: new Big(12),
         tick: BigNumber.from(31),
         price: TickLib.priceFromTick(BigNumber.from(31)),
+        volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -56,6 +57,7 @@ describe("PrettyPrint Unit test suite", () => {
         gives: new Big(12),
         tick: BigNumber.from(31),
         price: TickLib.priceFromTick(BigNumber.from(31)),
+        volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -87,6 +89,7 @@ describe("PrettyPrint Unit test suite", () => {
         gives: new Big(12),
         tick: BigNumber.from(31),
         price: TickLib.priceFromTick(BigNumber.from(31)),
+        volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer, offer];
 

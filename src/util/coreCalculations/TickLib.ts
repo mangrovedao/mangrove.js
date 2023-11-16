@@ -16,6 +16,7 @@ import Big from "big.js";
 import { BitLib } from "./BitLib";
 import { Bigish } from "../../types";
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace TickLib {
   export function inRange(tick: BigNumber): boolean {
     return tick.gte(MIN_TICK) && tick.lte(MAX_TICK);

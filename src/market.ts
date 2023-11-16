@@ -205,6 +205,7 @@ namespace Market {
     tick: BigNumber;
     price: Big;
     gives: Big;
+    volume: Big;
   };
 
   export type Offer = OfferSlim & {
@@ -545,9 +546,6 @@ class Market {
   }
 
   isLiveOffer(offer: Market.Offer): boolean {
-    if (!offer.gives.gt) {
-      console.log(offer);
-    }
     return offer.gives.gt(0);
   }
 
@@ -1020,6 +1018,10 @@ class Market {
       gives,
       wants,
     };
+  }
+
+  getVolumeForGivesAndPrice(ba: Market.BA, gives: Big, price: Big): Big {
+    return ba === "asks" ? gives : gives.div(price);
   }
 
   /** Determine the first decimal place where the smallest price difference between neighboring offers in the order book cache is visible. */

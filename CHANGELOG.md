@@ -1,9 +1,19 @@
 # Next version
 
+# 2.0.0-2
+
+- feat: Use addresses from mangrove-deployments and context-addresses
+- bump: mangrove-core to 2.0.0-4
+- bump: mangrove-strats to 0.0.2-4
+
 # 2.0.0-1
 
 - feat: Upgrade to new mangrove-core and mangrove-strats. Details to be added for production release.
 - issue: Kandel is disabled for now.
+
+# 1.4.30
+
+- bump: mangrove-core to v1.5.13
 
 # 1.4.29
 

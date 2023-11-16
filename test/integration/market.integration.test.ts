@@ -340,6 +340,7 @@ describe("Market integration tests suite", () => {
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
       const offerId = 23;
+      const expectedGives = new Big(23);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -348,9 +349,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(23),
+        gives: expectedGives,
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
+        volume: expectedGives,
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -362,7 +364,7 @@ describe("Market integration tests suite", () => {
       expect(result).to.be.equal(true);
     });
 
-    it("returns false, when gives is negative", async function () {
+    it("returns false, when gives is less than 1", async function () {
       // Arrange
       const market = await mgv.market({
         base: "TokenB",
@@ -373,6 +375,7 @@ describe("Market integration tests suite", () => {
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
       const offerId = 23;
+      const expectedGives = new Big(0);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -381,9 +384,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(-12),
+        gives: expectedGives,
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
+        volume: expectedGives,
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -495,9 +499,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(-12),
+        gives: new Big(12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
+        volume: new Big(42),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -525,9 +530,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(-12),
+        gives: new Big(12),
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
+        volume: new Big(42),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -549,6 +555,7 @@ describe("Market integration tests suite", () => {
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
+      const expectedGives = new Big(12);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -557,9 +564,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(-12),
+        gives: expectedGives,
         tick: BigNumber.from(23),
         price: TickLib.priceFromTick(BigNumber.from(23)),
+        volume: expectedGives,
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -722,6 +730,7 @@ describe("Market integration tests suite", () => {
       })
       .then((tx) => tx.wait());
 
+    const asksGives = Big("1.2");
     const offer1 = {
       id: 1,
       prev: undefined,
@@ -731,10 +740,13 @@ describe("Market integration tests suite", () => {
       maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).asks.offer_gasbase,
       tick: BigNumber.from(1),
-      gives: Big("1.2"),
+      gives: asksGives,
       price: askTickPriceHelper.priceFromTick(BigNumber.from(1)),
+      volume: asksGives,
     };
 
+    const bidsGives = Big("1.1");
+    const bidsPrice = bidTickPriceHelper.priceFromTick(BigNumber.from(1));
     const offer2 = {
       id: 1,
       prev: undefined,
@@ -744,8 +756,9 @@ describe("Market integration tests suite", () => {
       maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).bids.offer_gasbase,
       tick: BigNumber.from(1),
-      gives: Big("1.1"),
-      price: bidTickPriceHelper.priceFromTick(BigNumber.from(1)),
+      gives: bidsGives,
+      price: bidsPrice,
+      volume: bidsGives.div(bidsPrice),
     };
 
     // Events may be received in different order
@@ -1340,6 +1353,9 @@ describe("Market integration tests suite", () => {
               : undefined,
           maker: selfAddress,
           offer_gasbase: _config.offer_gasbase,
+          volume: isAsk
+            ? new Big(ofr.gives)
+            : new Big(ofr.gives).div(ofr.price),
         };
       });
     };
