@@ -54,6 +54,9 @@ namespace Semibook {
     given: Bigish;
     /** Whether `given` is base to be bought or quote to be sold. */
     to: Market.BS;
+    /** Optional: induce a max price after which to stop buying/selling.
+     * TODO: Non-functional at the moment. */
+    boundary?: Big;    
   };
 
   /**
