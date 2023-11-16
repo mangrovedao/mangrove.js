@@ -8,7 +8,6 @@ import { serverType } from "../../src/util/node";
 import { Mangrove } from "../../src";
 
 import { Big } from "big.js";
-import { BigNumber } from "ethers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -74,7 +73,7 @@ describe("Mangrove integration tests suite", function () {
         },
         1,
         1,
-        1
+        1,
       );
       await mgv.readerContract.updateMarket({
         tkn0: mgv.getAddress("TokenA"),
@@ -85,7 +84,7 @@ describe("Mangrove integration tests suite", function () {
       assert.equal(
         markets.length - marketsBefore.length,
         1,
-        "1 market should have opened"
+        "1 market should have opened",
       );
     });
 
@@ -94,7 +93,7 @@ describe("Mangrove integration tests suite", function () {
       assert.equal(mgv.getNameFromAddress(address), "TokenA");
       assert.equal(
         mgv.getNameFromAddress("0xdeaddeaddeaddaeddeaddeaddeaddeaddeaddead"),
-        null
+        null,
       );
     });
 
@@ -154,7 +153,7 @@ describe("Mangrove integration tests suite", function () {
       const hashFromEvent = mgv.getOlKeyHash(
         olKey.outbound_tkn,
         olKey.inbound_tkn,
-        olKey.tickSpacing
+        olKey.tickSpacing,
       );
 
       // Act

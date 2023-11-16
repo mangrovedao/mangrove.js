@@ -8,13 +8,11 @@ import { MIN_TICK, MAX_TICK } from "../util/coreCalculations/Constants";
 import TickPriceHelper from "../util/tickPriceHelper";
 
 /** Offers with their tick, Kandel index, and gives amount.
- * @param offerType Whether the offer is a bid or an ask.
  * @param tick The tick of the offer.
  * @param index The index of the price point in Kandel.
  * @param gives The amount of base or quote that the offer gives.
  */
 export type OffersWithGives = {
-  offerType: Market.BA;
   tick: number;
   index: number;
   gives: Bigish;
@@ -133,7 +131,7 @@ class KandelDistributionHelper {
         params.baseDelta,
         bases,
         params.minimumBasePerOffer,
-        this.roundBase.bind(this)
+        this.roundBase.bind(this),
       );
 
     const { newValues: newQuotes, totalChange: totalQuoteChange } =
@@ -141,7 +139,7 @@ class KandelDistributionHelper {
         params.quoteDelta,
         quotes,
         params.minimumQuotePerOffer,
-        this.roundQuote.bind(this)
+        this.roundQuote.bind(this),
       );
 
     const distribution = new KandelDistribution(
@@ -161,7 +159,7 @@ class KandelDistributionHelper {
         })),
       },
       params.distribution.baseDecimals,
-      params.distribution.quoteDecimals
+      params.distribution.quoteDecimals,
     );
     return { distribution, totalBaseChange, totalQuoteChange };
   }
@@ -177,7 +175,7 @@ class KandelDistributionHelper {
     delta: Big | undefined,
     values: Big[],
     minimumValue: Big,
-    round: (value: Big) => Big
+    round: (value: Big) => Big,
   ) {
     if (delta) {
       if (delta.gt(0)) {
@@ -187,7 +185,7 @@ class KandelDistributionHelper {
           values,
           delta.neg(),
           minimumValue,
-          round
+          round,
         );
         return { newValues, totalChange: totalChange.neg() };
       }
@@ -204,7 +202,7 @@ class KandelDistributionHelper {
   uniformlyIncrease(
     values: Big[],
     totalDelta: Big,
-    round: (value: Big) => Big
+    round: (value: Big) => Big,
   ) {
     // Only increase those already giving something
     let elementsToChange = values.filter((x) => x.gt(0)).length;
@@ -238,7 +236,7 @@ class KandelDistributionHelper {
     values: Big[],
     totalDelta: Big,
     minimumValue: Big,
-    round: (value: Big) => Big
+    round: (value: Big) => Big,
   ) {
     const sortedValues = values
       .map((value, index) => ({ value, index }))
@@ -277,7 +275,7 @@ class KandelDistributionHelper {
     minimumBasePerOffer: Big,
     minimumQuotePerOffer: Big,
     bidTicks: number[],
-    askTicks: number[]
+    askTicks: number[],
   ) {
     let askGives = minimumBasePerOffer;
     let bidGives = minimumQuotePerOffer;
@@ -286,7 +284,7 @@ class KandelDistributionHelper {
       const minimumBaseFromQuote = this.bidTickPriceHelper.inboundFromOutbound(
         maxBidTick,
         minimumQuotePerOffer,
-        true
+        true,
       );
       askGives = minimumBaseFromQuote.gt(minimumBasePerOffer)
         ? minimumBaseFromQuote
@@ -297,7 +295,7 @@ class KandelDistributionHelper {
       const minimumQuoteFromBase = this.askTickPriceHelper.inboundFromOutbound(
         maxAskTick,
         minimumBasePerOffer,
-        true
+        true,
       );
       bidGives = minimumQuoteFromBase.gt(minimumQuotePerOffer)
         ? minimumQuoteFromBase
@@ -323,18 +321,16 @@ class KandelDistributionHelper {
           pricePoints: number;
           stepSize: number;
         }
-      | KandelDistribution
+      | KandelDistribution,
   ) {
     const offers = {
-      bids: explicitOffers.bids.map(({ index, offerType, tick, gives }) => ({
+      bids: explicitOffers.bids.map(({ index, tick, gives }) => ({
         index,
-        offerType,
         tick,
         gives: Big(gives),
       })),
-      asks: explicitOffers.asks.map(({ index, offerType, tick, gives }) => ({
+      asks: explicitOffers.asks.map(({ index, tick, gives }) => ({
         index,
-        offerType,
         tick,
         gives: Big(gives),
       })),
@@ -344,11 +340,11 @@ class KandelDistributionHelper {
     if (baseQuoteTickOffset == undefined) {
       if ("priceRatio" in distribution && distribution.priceRatio) {
         baseQuoteTickOffset = this.calculateBaseQuoteTickOffset(
-          Big(distribution.priceRatio)
+          Big(distribution.priceRatio),
         );
       } else {
         throw Error(
-          "Either distribution.baseQuoteTickOffset or distribution.priceRatio must be provided."
+          "Either distribution.baseQuoteTickOffset or distribution.priceRatio must be provided.",
         );
       }
     }
@@ -359,7 +355,7 @@ class KandelDistributionHelper {
       distribution.stepSize,
       offers,
       this.baseDecimals,
-      this.quoteDecimals
+      this.quoteDecimals,
     );
   }
 
@@ -374,7 +370,7 @@ class KandelDistributionHelper {
     offerType: Market.BA,
     index: number,
     pricePoints: number,
-    stepSize: number
+    stepSize: number,
   ) {
     // From solidity: GeometricKandel.transportDestination
     let better = 0;
@@ -420,7 +416,7 @@ class KandelDistributionHelper {
     from: number,
     to: number,
     maxOffersInChunk: number,
-    middle?: number
+    middle?: number,
   ) {
     if (middle === undefined) {
       middle = from + Math.floor((to - from) / 2);
@@ -438,7 +434,7 @@ class KandelDistributionHelper {
     const lowChunks = this.chunkIndices(
       from,
       middleChunk.from,
-      maxOffersInChunk
+      maxOffersInChunk,
     );
     const highChunks = this.chunkIndices(middleChunk.to, to, maxOffersInChunk);
 
@@ -476,12 +472,12 @@ class KandelDistributionHelper {
     const provisionBid = await params.market.getOfferProvision(
       "bids",
       params.gasreq,
-      params.gasprice
+      params.gasprice,
     );
     const provisionAsk = await params.market.getOfferProvision(
       "asks",
       params.gasreq,
-      params.gasprice
+      params.gasprice,
     );
     return provisionBid
       .mul(params.bidCount)
@@ -501,7 +497,7 @@ class KandelDistributionHelper {
     index: number,
     tickAtIndex: number,
     baseQuoteTickOffset: number,
-    pricePoints: number
+    pricePoints: number,
   ) {
     if (offerType === "bids") {
       tickAtIndex = -tickAtIndex;
@@ -509,7 +505,7 @@ class KandelDistributionHelper {
     const tickAtIndex0 = tickAtIndex - baseQuoteTickOffset * index;
     return Array.from(
       { length: pricePoints },
-      (_, index) => tickAtIndex0 + baseQuoteTickOffset * index
+      (_, index) => tickAtIndex0 + baseQuoteTickOffset * index,
     );
   }
 
@@ -520,14 +516,14 @@ class KandelDistributionHelper {
     // Intentionally use raw TickLib as these are raw values
     return TickLib.tickFromVolumes(
       BigNumber.from(
-        Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed(0)
+        Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed(0),
       ),
-      ethers.constants.WeiPerEther
+      ethers.constants.WeiPerEther,
     ).toNumber();
   }
 
   public getTickDistributionParams(
-    params: DistributionParams
+    params: DistributionParams,
   ): TickDistributionParams {
     let {
       minBaseQuoteTick,
@@ -562,7 +558,7 @@ class KandelDistributionHelper {
     if (baseQuoteTickOffset == undefined) {
       if (priceRatio != undefined) {
         baseQuoteTickOffset = this.calculateBaseQuoteTickOffset(
-          Big(priceRatio)
+          Big(priceRatio),
         );
       }
     }
@@ -574,7 +570,7 @@ class KandelDistributionHelper {
     ) {
       pricePoints =
         Math.floor(
-          (maxBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
+          (maxBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset,
         ) + 1;
     } else {
       if (pricePoints == undefined || pricePoints < 2) {
@@ -586,7 +582,7 @@ class KandelDistributionHelper {
         pricePoints != undefined
       ) {
         baseQuoteTickOffset = Math.floor(
-          (maxBaseQuoteTick - minBaseQuoteTick) / (pricePoints - 1)
+          (maxBaseQuoteTick - minBaseQuoteTick) / (pricePoints - 1),
         );
       } else if (
         minBaseQuoteTick != undefined &&
@@ -606,7 +602,7 @@ class KandelDistributionHelper {
           maxBaseQuoteTick - baseQuoteTickOffset * (pricePoints - 1);
       } else {
         throw Error(
-          "Exactly three of minPrice (or minBaseQuoteTick), maxPrice (or maxBaseQuoteTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given"
+          "Exactly three of minPrice (or minBaseQuoteTick), maxPrice (or maxBaseQuoteTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given",
         );
       }
     }
@@ -620,7 +616,7 @@ class KandelDistributionHelper {
 
     if (pricePoints < 2) {
       throw Error(
-        "minBaseQuoteTick and maxBaseQuoteTick are too close. There must be room for at least two price points"
+        "minBaseQuoteTick and maxBaseQuoteTick are too close. There must be room for at least two price points",
       );
     }
 

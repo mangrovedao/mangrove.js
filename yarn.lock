@@ -1261,12 +1261,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@npm:next":
+"@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=d53c5133aaaeee27f0dbff83963ae810b817b034":
   version: 0.0.2-5
-  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-5"
+  resolution: "@mangrovedao/mangrove-strats@https://github.com/mangrovedao/mangrove-strats.git#commit=d53c5133aaaeee27f0dbff83963ae810b817b034"
   dependencies:
     "@mangrovedao/mangrove-core": next
-  checksum: 5292dd734262ec0642d6ac585f5d9adb8c162af4100865c31278f12fcc22aa65a4131e1ce9c3a53695735c72783a366991120ac63c8c3b55c604312292fedac5
+  checksum: 231df98b119cb7647aba671a90e789fe19d9dda941fd8cce493707dbbb254a0c0ed51bf14ed988183205e4978902d20e1b2c40f7a112af978b95753b7c3641bc
   languageName: node
   linkType: hard
 
@@ -1283,7 +1283,7 @@ __metadata:
     "@mangrovedao/context-addresses": next
     "@mangrovedao/mangrove-core": next
     "@mangrovedao/mangrove-deployments": next
-    "@mangrovedao/mangrove-strats": next
+    "@mangrovedao/mangrove-strats": "https://github.com/mangrovedao/mangrove-strats.git#commit=d53c5133aaaeee27f0dbff83963ae810b817b034"
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^10.2.0
     "@types/big.js": ^6.1.6

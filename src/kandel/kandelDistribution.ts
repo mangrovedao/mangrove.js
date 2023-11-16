@@ -48,7 +48,7 @@ class KandelDistribution {
     stepSize: number,
     offers: OfferDistribution,
     baseDecimals: number,
-    quoteDecimals: number
+    quoteDecimals: number,
   ) {
     this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
     this.helper.sortByIndex(offers.asks);
@@ -77,18 +77,18 @@ class KandelDistribution {
   public calculateOfferGives(
     offerType: Market.BA,
     offerCount: number,
-    totalVolume: Big
+    totalVolume: Big,
   ) {
     if (offerCount) {
       const gives = totalVolume
         .div(offerCount)
         .round(
           offerType == "asks" ? this.baseDecimals : this.quoteDecimals,
-          Big.roundDown
+          Big.roundDown,
         );
       if (gives.eq(0)) {
         throw Error(
-          "Too low volume for the given number of offers. Would result in 0 gives."
+          "Too low volume for the given number of offers. Would result in 0 gives.",
         );
       }
       return gives;
@@ -96,16 +96,22 @@ class KandelDistribution {
     return Big(0);
   }
 
+  public getOffers(offerType: Market.BA) {
+    return offerType == "bids" ? this.offers.bids : this.offers.asks;
+  }
+
   public getLiveOffers(offerType: Market.BA) {
-    return (offerType == "bids" ? this.offers.bids : this.offers.asks).filter(
-      (x) => x.gives.gt(0)
-    );
+    return this.getOffers(offerType).filter((x) => x.gives.gt(0));
   }
 
   public getDeadOffers(offerType: Market.BA) {
     return (offerType == "bids" ? this.offers.bids : this.offers.asks).filter(
-      (x) => !x.gives.gt(0)
+      (x) => !x.gives.gt(0),
     );
+  }
+
+  public getOfferAtIndex(offerType: Market.BA, index: number) {
+    return this.getOffers(offerType).find((x) => x.index == index);
   }
 
   /** Calculates the gives for bids and asks based on the available volume for the distribution.
@@ -115,21 +121,21 @@ class KandelDistribution {
    */
   public calculateConstantGivesPerOffer(
     availableBase?: Big,
-    availableQuote?: Big
+    availableQuote?: Big,
   ) {
     return {
       askGives: availableBase
         ? this.calculateOfferGives(
             "asks",
             this.getLiveOffers("asks").length,
-            availableBase
+            availableBase,
           )
         : undefined,
       bidGives: availableQuote
         ? this.calculateOfferGives(
             "bids",
             this.getLiveOffers("bids").length,
-            availableQuote
+            availableQuote,
           )
         : undefined,
     };
@@ -156,7 +162,7 @@ class KandelDistribution {
       asks: { current: number; included: boolean[]; offers: OfferList };
       bids: { current: number; included: boolean[]; offers: OfferList };
     },
-    chunks: OfferDistribution[]
+    chunks: OfferDistribution[],
   ) {
     const dualOfferType = offerType == "asks" ? "bids" : "asks";
     const offers = offerLists[offerType];
@@ -170,16 +176,16 @@ class KandelDistribution {
           dualOfferType,
           offer.index,
           this.pricePoints,
-          this.stepSize
+          this.stepSize,
         );
         if (!dualOffers.included[dualIndex]) {
           dualOffers.included[dualIndex] = true;
           const dual = this.offers[dualOfferType].find(
-            (x) => x.index == dualIndex
+            (x) => x.index == dualIndex,
           );
           if (!dual) {
             throw Error(
-              `Invalid distribution, missing ${dualOfferType} at ${dualIndex}`
+              `Invalid distribution, missing ${dualOfferType} at ${dualIndex}`,
             );
           }
           chunks[chunks.length - 1][dualOfferType].push(dual);
@@ -204,7 +210,7 @@ class KandelDistribution {
         current: 0,
         included: Array(this.pricePoints).fill(false),
         offers: this.getLiveOffers("asks").concat(
-          this.getDeadOffers("asks").reverse()
+          this.getDeadOffers("asks").reverse(),
         ),
       },
       bids: {
@@ -266,7 +272,7 @@ class KandelDistribution {
       someAsk.index,
       someAsk.tick,
       this.baseQuoteTickOffset,
-      this.pricePoints
+      this.pricePoints,
     )[0];
 
     return {
@@ -286,12 +292,12 @@ class KandelDistribution {
   public verifyDistribution() {
     if (this.offers.bids.length != this.pricePoints - this.stepSize) {
       throw new Error(
-        "Invalid distribution: number of bids does not match number of price points and step size"
+        "Invalid distribution: number of bids does not match number of price points and step size",
       );
     }
     if (this.offers.asks.length != this.pricePoints - this.stepSize) {
       throw new Error(
-        "Invalid distribution: number of asks does not match number of price points and step size"
+        "Invalid distribution: number of asks does not match number of price points and step size",
       );
     }
     for (let i = 1; i < this.pricePoints - this.stepSize; i++) {
@@ -308,7 +314,7 @@ class KandelDistribution {
         .find((o) => o.gives.gt(0))?.index ?? 0;
     if (this.getFirstLiveAskIndex() < lastLiveBidIndex) {
       throw new Error(
-        "Invalid distribution: live bids should come before live asks"
+        "Invalid distribution: live bids should come before live asks",
       );
     }
   }
@@ -340,13 +346,13 @@ class KandelDistribution {
    */
   calculateMinimumInitialGives(
     minimumBasePerOffer: Big,
-    minimumQuotePerOffer: Big
+    minimumQuotePerOffer: Big,
   ) {
     return this.helper.calculateMinimumInitialGives(
       minimumBasePerOffer,
       minimumQuotePerOffer,
       this.offers.bids.map((x) => x.tick),
-      this.offers.asks.map((x) => x.tick)
+      this.offers.asks.map((x) => x.tick),
     );
   }
 }
