@@ -371,6 +371,13 @@ class Mangrove {
     return this.olKeyHashToOLKeyStructMap.get(olKeyHash);
   }
 
+  calculateOLKeyHash(olKey: OLKeyStruct) {
+    const olKeyData = this.contract.interface.encodeFunctionResult("olKeys", [
+      olKey,
+    ]);
+    return ethers.utils.keccak256(olKeyData);
+  }
+
   /** Update the configuration by providing a partial configuration containing only the values that should be changed/added.
    *
    * @param {Mangrove.PartialConfiguration} [config] Partial configuration that should be merged into the existing configuration.

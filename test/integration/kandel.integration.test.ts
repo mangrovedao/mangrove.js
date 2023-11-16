@@ -15,6 +15,8 @@ import {
   KandelSeeder,
   KandelStrategies,
   Market,
+  ethers,
+  typechain,
 } from "../../src";
 import { Mangrove } from "../../src";
 
@@ -27,6 +29,7 @@ import {
   assertPricesApproxEq,
   getUniquePrices,
 } from "../unit/kandelDistributionGenerator.unit.test";
+import { BigNumber } from "ethers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -80,7 +83,7 @@ describe("Kandel integration tests suite", function () {
         distributionParams: {
           minPrice: 900,
           midPrice: 1000,
-          baseQuoteTickOffset: 1.01,
+          priceRatio: 1.01,
           pricePoints: 6,
           stepSize: 1,
           generateFromMid: false,
@@ -96,8 +99,6 @@ describe("Kandel integration tests suite", function () {
             market: market,
             liquiditySharing: liquiditySharing,
             onAave: onAave,
-            gasprice: undefined,
-            gaspriceFactor: 2,
           };
           // Act
           const preSowRequiredProvision = await seeder.getRequiredProvision(
@@ -142,18 +143,14 @@ describe("Kandel integration tests suite", function () {
             "ratio should be default"
           );
           assert.equal(params.pricePoints, 0, "pricePoints should be default");
-          assert.equal(
-            params.gasprice,
-            (await mgv.config()).gasprice * 2,
-            "should use Mangrove's gasprice and a multiplier."
-          );
+
           assert.equal(
             preSowRequiredProvision.toNumber(),
             (
               await distribution.getRequiredProvision({
                 market,
                 gasreq: params.gasreq,
-                gasprice: params.gasprice,
+                gasprice: (await mgv.config()).gasprice * 2,
               })
             ).toNumber()
           );
@@ -166,22 +163,23 @@ describe("Kandel integration tests suite", function () {
         market: market,
         liquiditySharing: false,
         onAave: false,
-        gasprice: 10000,
       };
       // Act
       const preSowRequiredProvision = await seeder.getRequiredProvision(
         seed,
         distribution,
-        2
+        2,
+        10000
       );
       const { kandelPromise } = await seeder.sow(seed);
       const kandel = await kandelPromise;
+      await kandel.setGasprice(20000);
 
       // Assert
       const params = await kandel.getParameters();
       assert.equal(
         params.gasprice,
-        20000,
+        2 * 10000,
         "should use specified gasprice and multiplier."
       );
       assert.equal(

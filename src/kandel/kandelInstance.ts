@@ -231,7 +231,7 @@ class KandelInstance {
     };
   }
 
-  /** Gets new Kandel parameters based on current and some overrides.
+  /** Gets new Kandel parameters based on current and some overrides. If gasprice is not set, the current gasprice and cover factor is used.
    * @param parameters The Kandel parameters to override, those left out will keep their current value.
    * @param distributionBaseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression.
    * @param distributionPricePoints The number of price points of the Kandel distribution.
@@ -273,6 +273,12 @@ class KandelInstance {
     }
     if (parameters.gasprice) {
       current.gasprice = parameters.gasprice;
+    }
+    if (!current.gasprice) {
+      const config = this.configuration.getConfig(this.market);
+      current.gasprice = await this.seeder.getBufferedGasprice(
+        config.gaspriceFactor
+      );
     }
     if (parameters.gasreq) {
       current.gasreq = parameters.gasreq;
@@ -824,7 +830,7 @@ class KandelInstance {
   /** Populates the offers in the distribution for the Kandel instance and sets parameters.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
-   * @param params.parameters The parameters to set leave out values to keep their current value.
+   * @param params.parameters The parameters to set leave out values to keep their current value. If gasprice is not set, the current gasprice and cover factor is used.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
    * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision.

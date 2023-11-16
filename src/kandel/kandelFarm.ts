@@ -45,7 +45,7 @@ class KandelFarm {
    * Gets all Kandels matching a given filter.
    * @param filter The filter to apply.
    * @param filter.owner The Kandel instance owner - the one who invoked sow.
-   * @param filter.baseQuoteOlKeyStruct The low-level identifier of the market for the Kandel instance. Takes precedence over baseQuoteOfferList if both are provided.
+   * @param filter.baseQuoteOlKey The low-level identifier of the market for the Kandel instance. Takes precedence over baseQuoteOfferList if both are provided.
    * @param filter.baseQuoteOfferList The identifier of the market for the Kandel instance using Mangrove token identifiers.
    * @param filter.onAave Whether the Kandel instance uses the Aave router.
    * @returns All kandels matching the filter.
@@ -60,14 +60,14 @@ class KandelFarm {
     }> | null;
     onAave?: boolean;
   }) {
-    let olKeyStruct = await filter?.baseQuoteOlKey;
-    if (!olKeyStruct) {
+    let olKey = await filter?.baseQuoteOlKey;
+    if (!olKey) {
       const offerList = await filter?.baseQuoteOfferList;
       if (offerList) {
         const baseAddress = this.mgv.getAddress(offerList.base);
         const quoteAddress = this.mgv.getAddress(offerList.quote);
-        const tickSpacing = offerList.quote ?? 0;
-        olKeyStruct = {
+        const tickSpacing = offerList.tickSpacing ?? 0;
+        olKey = {
           outbound_tkn: baseAddress,
           inbound_tkn: quoteAddress,
           tickSpacing,
@@ -75,16 +75,7 @@ class KandelFarm {
       }
     }
 
-    const olKeyHash = olKeyStruct
-      ? ethers.utils.solidityKeccak256(
-          ["address", "address", "uint256"],
-          [
-            olKeyStruct.outbound_tkn,
-            olKeyStruct.inbound_tkn,
-            olKeyStruct.tickSpacing,
-          ]
-        )
-      : undefined;
+    const olKeyHash = olKey ? this.mgv.calculateOLKeyHash(olKey) : undefined;
 
     const kandels =
       filter?.onAave == null || filter.onAave == false
