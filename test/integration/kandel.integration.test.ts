@@ -1631,6 +1631,9 @@ describe("Kandel integration tests suite", function () {
         it(`retractAndWithdraw can withdraw expected offers and amounts to other address`, async () => {
           // Arrange
           await populateKandel({ approve: true, deposit: true });
+          const deadOffersBefore = (await kandel.getOffers()).filter(
+            (x) => !kandel.market.isLiveOffer(x.offer),
+          ).length;
 
           const recipient = (
             await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker)
@@ -1652,8 +1655,9 @@ describe("Kandel integration tests suite", function () {
               market: kandel.market,
               gasreq,
               gasprice,
-              askCount: 1,
-              bidCount: 1,
+              // Some are retracted from being live, some are dead but then deprovisioned
+              askCount: 3,
+              bidCount: 3,
             });
           const withdrawnFunds = Big(0.001);
 
@@ -1661,7 +1665,7 @@ describe("Kandel integration tests suite", function () {
           const receipts = await waitForTransactions(
             await kandel.retractAndWithdraw({
               startIndex: 1,
-              endIndex: 3,
+              endIndex: 4,
               withdrawFunds: withdrawnFunds,
               withdrawBaseAmount: Big(1),
               withdrawQuoteAmount: Big(1000),
@@ -1685,7 +1689,7 @@ describe("Kandel integration tests suite", function () {
           const deadOffers = (await kandel.getOffers()).filter(
             (x) => !kandel.market.isLiveOffer(x.offer),
           ).length;
-          assert.equal(deadOffers, 2);
+          assert.equal(deadOffers, deadOffersBefore + 2);
           assert.equal(
             (await kandel.offerLogic.getMangroveBalance()).toNumber(),
             kandelMgvBalance
