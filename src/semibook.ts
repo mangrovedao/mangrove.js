@@ -56,7 +56,7 @@ namespace Semibook {
     to: Market.BS;
     /** Optional: induce a max price after which to stop buying/selling.
      * TODO: Non-functional at the moment. */
-    boundary?: Big;    
+    boundary?: Big;
   };
 
   /**
@@ -76,7 +76,6 @@ namespace Semibook {
     | {
         /** The price that is expected to be used in calls to the market.
          * The cache will initially contain all offers with this price or better.
-         * This can be useful in order to ensure a good pivot is readily available.
          */
         desiredPrice: Bigish;
       }
@@ -109,7 +108,6 @@ namespace Semibook {
     | {
         /** The price that is expected to be used in calls to the market.
          * The cache will initially contain all offers with this price or better.
-         * This can be useful in order to ensure a good pivot is readily available.
          */
         desiredPrice: Bigish;
       }

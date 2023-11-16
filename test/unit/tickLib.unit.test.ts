@@ -307,7 +307,7 @@ describe("TickLib unit test suite", () => {
       Big.DP = 42;
       assert.deepStrictEqual(
         result.toFixed(42),
-        Big(1).div(Big(2).pow(MANTISSA_BITS.toNumber())).toFixed(42) // because of ticks, we canoot hit the number exactly, so we only compare the first 42 digits
+        Big(1).div(Big(2).pow(MANTISSA_BITS.toNumber())).toFixed(42) // because of ticks, we cannot hit the number exactly, so we only compare the first 42 digits
       ); // lowest price
       Big.DP = 20;
     });
@@ -322,7 +322,7 @@ describe("TickLib unit test suite", () => {
       assert.deepStrictEqual(
         result.minus(Big("1.0001")).abs().gt(0) && result.lt(1.0001),
         true,
-        `price should be sligtly less than 1.0001 but is ${result}, do to man and exp cannot express 1.0001`
+        `price should be slightly less than 1.0001 but is ${result}, do to man and exp cannot express 1.0001`
       );
     });
   });

@@ -1251,11 +1251,7 @@ describe("Semibook integration tests suite", function () {
       const offerGasreq = 30000;
 
       const readerMinVolume = await mgv.readerContract.minVolume(
-        {
-          outbound_tkn: market.base.address,
-          inbound_tkn: market.quote.address,
-          tickSpacing: 1,
-        },
+        market.getOLKey("asks"),
         offerGasreq
       );
 
