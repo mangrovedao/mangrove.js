@@ -1,10 +1,5 @@
-import { BigNumber, BigNumberish } from "ethers";
-
-// Arbitrary integer precision is achieved by using BigNumber from ethers.js.
-// Care must be taken to match the number of bits used in the Solidity code.
-//
-// NB: Consider using the solidity-math library for easier, more direct, and type-safe
-//     translation of the Solidity code.
+import { BigNumber } from "ethers";
+import { add, and, byte, iszero, lt, mul, not, or, shl, shr } from "./yul";
 
 // Literal constants are precomputed for efficiency and readability.
 const _0xffffffff =
@@ -13,10 +8,6 @@ const _0xffffffffffffffff =
   BigNumber.from("0xffffffffffffffff");
 const _0xffffffffffffffffffffffffffffffff =
   BigNumber.from("0xffffffffffffffffffffffffffffffff");
-const _0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff =
-  BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // 2^256 - 1
-const _0x10000000000000000000000000000000000000000000000000000000000000000 =
-  BigNumber.from("0x10000000000000000000000000000000000000000000000000000000000000000"); // 2^256
 const _0x077cb531 =
   BigNumber.from("0x077cb531");
 const _0x07c4acdd =
@@ -25,71 +16,6 @@ const _0x00011c021d0e18031e16140f191104081f1b0d17151310071a0c12060b050a09 =
   BigNumber.from("0x00011c021d0e18031e16140f191104081f1b0d17151310071a0c12060b050a09");
 const _0x0009010a0d15021d0b0e10121619031e080c141c0f111807131b17061a05041f =
   BigNumber.from("0x0009010a0d15021d0b0e10121619031e080c141c0f111807131b17061a05041f");
-
-// Yul instruction implementations to allow 1:1 translation of BitLib code.
-
-// Implement 256 bit word overflow semantics.
-function handle256BitOverflow(a: BigNumber): BigNumber {
-  return a.mod(
-    _0x10000000000000000000000000000000000000000000000000000000000000000
-  );
-}
-
-function and(a: BigNumberish, b: BigNumberish): BigNumber {
-  return BigNumber.from(a).and(b);
-}
-
-function or(a: BigNumberish, b: BigNumberish): BigNumber {
-  return BigNumber.from(a).or(b);
-}
-
-// NB: Well-defined behavior only for 0 <= b <= 256.
-// NB: Yul is weird and uses shl(a, b) to mean b << a.
-function shl(a: BigNumberish, b: BigNumberish): BigNumber {
-  return (
-    BigNumber.from(b)
-      .shl(BigNumber.from(a).toNumber())
-      // Implement 256 bit word overflow semantics: Discard bits shifted off the left.
-      .and(_0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-  );
-}
-
-// NB: Well-defined behavior only for 0 <= b <= 256.
-// NB: Yul is weird and uses shr(a, b) to mean b >> a.
-function shr(a: BigNumberish, b: BigNumberish): BigNumber {
-  return BigNumber.from(b).shr(BigNumber.from(a).toNumber());
-}
-
-function iszero(a: BigNumberish): number {
-  return BigNumber.from(a).isZero() ? 1 : 0;
-}
-
-function lt(a: BigNumberish, b: BigNumberish): number {
-  return BigNumber.from(a).lt(b) ? 1 : 0;
-}
-
-function add(a: BigNumberish, b: BigNumberish): BigNumber {
-  return handle256BitOverflow(BigNumber.from(a).add(b));
-}
-
-function mul(a: BigNumberish, b: BigNumberish): BigNumber {
-  return handle256BitOverflow(BigNumber.from(a).mul(b));
-}
-
-// Returns the nth byte of x, where the most significant byte is the 0th byte
-// NB: Well-defined behavior only for 0 <= n <= 32 and x is 256 bits.
-function byte(n: BigNumberish, x: BigNumberish): BigNumber {
-  return BigNumber.from(x)
-    .shr(248 - 8 * BigNumber.from(n).toNumber())
-    .and(0xff);
-}
-
-// NB: Only works uint256.
-function not(a: BigNumber): BigNumber {
-  return a.xor(
-    _0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-  );
-}
 
 /**
  * This is a TypeScript implementation of Mangrove's BitLib library. It allows efficient and accurate simulation of Mangrove's bit operations without RPC calls.
