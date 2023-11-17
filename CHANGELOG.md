@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-3
+
 - feat: Re-enable Kandel
 - fix: Various fixes after initial upgrade.
 
