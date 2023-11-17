@@ -8,9 +8,7 @@ import {
 } from "../../src";
 import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
 import KandelStatus, { Statuses } from "../../src/kandel/kandelStatus";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { createGeneratorStub } from "./kandelDistributionGenerator.unit.test";
-import { BigNumber } from "ethers";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 import { assertApproxEqRel } from "../util/helpers";
 
