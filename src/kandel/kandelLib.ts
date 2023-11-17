@@ -2,7 +2,7 @@ import * as ethers from "ethers";
 import { Bigish, typechain } from "../types";
 
 import UnitCalculations from "../util/unitCalculations";
-import KandelDistribution from "./kandelDistribution";
+import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 
 /** @title Management of a single Kandel instance. */
 class KandelLib {
@@ -34,7 +34,7 @@ class KandelLib {
     this.quoteDecimals = params.quoteDecimals;
   }
 
-  public async createGeometricDistribution(params: {
+  public async createPartialGeometricDistribution(params: {
     from: number;
     to: number;
     baseQuoteTickIndex0: number;
@@ -44,10 +44,10 @@ class KandelLib {
     askGives: Bigish | undefined;
     pricePoints: number;
     stepSize: number;
-  }) {
+  }): Promise<OfferDistribution> {
     if (params.bidGives == undefined && params.askGives == undefined) {
       throw Error(
-        "Either initialAskGives or initialBidGives must be provided."
+        "Either initialAskGives or initialBidGives must be provided.",
       );
     }
     const distribution = await this.kandelLib.createDistribution(
@@ -63,27 +63,44 @@ class KandelLib {
         ? UnitCalculations.toUnits(params.askGives, this.baseDecimals)
         : ethers.constants.MaxUint256,
       params.pricePoints,
-      params.stepSize
+      params.stepSize,
     );
 
+    return {
+      bids: distribution.bids.map((o) => ({
+        index: o.index.toNumber(),
+        gives: UnitCalculations.fromUnits(o.gives, this.quoteDecimals),
+        tick: o.tick.toNumber(),
+      })),
+      asks: distribution.asks.map((o) => ({
+        index: o.index.toNumber(),
+        gives: UnitCalculations.fromUnits(o.gives, this.baseDecimals),
+        tick: o.tick.toNumber(),
+      })),
+    };
+  }
+
+  public async createFullGeometricDistribution(params: {
+    baseQuoteTickIndex0: number;
+    baseQuoteTickOffset: number;
+    firstAskIndex: number;
+    bidGives: Bigish | undefined;
+    askGives: Bigish | undefined;
+    pricePoints: number;
+    stepSize: number;
+  }) {
+    const offerDistribution = await this.createPartialGeometricDistribution({
+      ...params,
+      from: 0,
+      to: params.pricePoints,
+    });
     return new KandelDistribution(
       params.baseQuoteTickOffset,
       params.pricePoints,
       params.stepSize,
-      {
-        bids: distribution.bids.map((o) => ({
-          index: o.index.toNumber(),
-          gives: UnitCalculations.fromUnits(o.gives, this.quoteDecimals),
-          tick: o.tick.toNumber(),
-        })),
-        asks: distribution.asks.map((o) => ({
-          index: o.index.toNumber(),
-          gives: UnitCalculations.fromUnits(o.gives, this.baseDecimals),
-          tick: o.tick.toNumber(),
-        })),
-      },
+      offerDistribution,
       this.baseDecimals,
-      this.quoteDecimals
+      this.quoteDecimals,
     );
   }
 }

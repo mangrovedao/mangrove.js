@@ -1129,7 +1129,7 @@ describe("Kandel integration tests suite", function () {
             deposit: false,
           });
           const expectedProvision =
-            kandelStrategies.seeder.getRequiredProvision(
+            await kandelStrategies.seeder.getRequiredProvision(
               {
                 market: kandel.market,
                 liquiditySharing: false,
@@ -1164,11 +1164,11 @@ describe("Kandel integration tests suite", function () {
           // Assert
           assert.equal(
             requiredProvisionOfferCount.toNumber(),
-            (await expectedProvision).toNumber(),
+            expectedProvision.toNumber(),
           );
           assert.equal(
             requiredProvisionDistribution.toNumber(),
-            (await expectedProvision).toNumber(),
+            expectedProvision.toNumber(),
           );
         });
       });
@@ -1885,11 +1885,5 @@ describe("Kandel integration tests suite", function () {
         );
       }),
     );
-  });
-
-  describe("lib", function () {
-    it("TODO", async function () {
-      assert.fail("TODO - both through anvil and through a mock");
-    });
   });
 });
