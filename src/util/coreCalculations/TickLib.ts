@@ -27,14 +27,14 @@ export namespace TickLib {
     mantissa_a: BigNumber,
     exp_a: BigNumber,
     mantissa_b: BigNumber,
-    exp_b: BigNumber
+    exp_b: BigNumber,
   ): boolean {
     return exp_a.gt(exp_b) || (exp_a.eq(exp_b) && mantissa_a.lt(mantissa_b));
   }
 
   export function nearestBin(
     tick: BigNumber,
-    tickSpacing: BigNumber
+    tickSpacing: BigNumber,
   ): BigNumber {
     const bin = tick.div(tickSpacing);
     const remainder = tick.mod(tickSpacing);
@@ -46,7 +46,7 @@ export namespace TickLib {
   // rounds down
   export function inboundFromOutbound(
     tick: BigNumber,
-    outboundAmt: BigNumber
+    outboundAmt: BigNumber,
   ): BigNumber {
     const { man: sig, exp } = ratioFromTick(tick);
     return sig.mul(outboundAmt).shr(exp.toNumber());
@@ -56,7 +56,7 @@ export namespace TickLib {
   // rounds up
   export function inboundFromOutboundUp(
     tick: BigNumber,
-    outboundAmt: BigNumber
+    outboundAmt: BigNumber,
   ): BigNumber {
     const { man: sig, exp } = ratioFromTick(tick);
     return divExpUp(sig.mul(outboundAmt), exp);
@@ -67,7 +67,7 @@ export namespace TickLib {
   // rounds down
   export function outboundFromInbound(
     tick: BigNumber,
-    inboundAmt: BigNumber
+    inboundAmt: BigNumber,
   ): BigNumber {
     const { man: sig, exp } = ratioFromTick(tick.mul(-1));
     return sig.mul(inboundAmt).shr(exp.toNumber());
@@ -75,7 +75,7 @@ export namespace TickLib {
 
   export function outboundFromInboundUp(
     tick: BigNumber,
-    inboundAmt: BigNumber
+    inboundAmt: BigNumber,
   ): BigNumber {
     const { man: sig, exp } = ratioFromTick(tick.mul(-1));
     return divExpUp(sig.mul(inboundAmt), exp);
@@ -89,7 +89,7 @@ export namespace TickLib {
    */
   export function ratioFromVolumes(
     inboundAmt: BigNumber,
-    outboundAmt: BigNumber
+    outboundAmt: BigNumber,
   ): { mantissa: BigNumber; exp: BigNumber } {
     if (!inboundAmt.lte(MAX_SAFE_VOLUME)) {
       throw new Error("priceFromVolumes/inbound/tooBig");
@@ -126,7 +126,7 @@ export namespace TickLib {
   /* ### (outbound,inbound) → tick */
   export function tickFromVolumes(
     inboundAmt: BigNumber,
-    outboundAmt: BigNumber
+    outboundAmt: BigNumber,
   ): BigNumber {
     const { mantissa, exp } = ratioFromVolumes(inboundAmt, outboundAmt);
     return tickFromNormalizedRatio(mantissa, exp);
@@ -136,7 +136,7 @@ export namespace TickLib {
   /* Does not require a normalized ratio. */
   export function tickFromRatio(
     mantissa: BigNumber,
-    exp: BigNumber
+    exp: BigNumber,
   ): BigNumber {
     const { man, normalized_exp } = normalizeRatio(mantissa, exp);
     return tickFromNormalizedRatio(man, normalized_exp);
@@ -154,7 +154,7 @@ export namespace TickLib {
   */
   export function tickFromNormalizedRatio(
     mantissa: BigNumber,
-    exp: BigNumber
+    exp: BigNumber,
   ): BigNumber {
     if (floatLt(mantissa, exp, MIN_RATIO_MANTISSA, MIN_RATIO_EXP)) {
       throw new Error("mgv/tickFromRatio/tooLow");
@@ -243,11 +243,11 @@ export namespace TickLib {
 
     // tickLow is approx - maximum error
     const tickLow = BigNumber.from(
-      (log_bp_price - 1701496478404567508395759362389778998n) >> 128n
+      (log_bp_price - 1701496478404567508395759362389778998n) >> 128n,
     );
     // tickHigh is approx + minimum error
     const tickHigh = BigNumber.from(
-      (log_bp_price + 289637967442836606107396900709005211253n) >> 128n
+      (log_bp_price + 289637967442836606107396900709005211253n) >> 128n,
     );
 
     const { man: mantissaHigh, exp: expHigh } = ratioFromTick(tickHigh);
@@ -380,7 +380,7 @@ export namespace TickLib {
   /* Shift mantissa so it occupies exactly `MANTISSA_BITS` and adjust `exp` in consequence. */
   export function normalizeRatio(
     mantissa: BigNumber,
-    exp: BigNumber
+    exp: BigNumber,
   ): { man: BigNumber; normalized_exp: BigNumber } {
     if (mantissa.eq(0)) {
       throw new Error("mgv/normalizeRatio/mantissaIs0");
@@ -414,7 +414,7 @@ export namespace TickLib {
 
   export function getTickFromPrice(price: Bigish): BigNumber {
     const { man, exp } = priceToRatio(
-      price instanceof Big ? (price as Big) : new Big(price)
+      price instanceof Big ? (price as Big) : new Big(price),
     );
     return tickFromRatio(man, exp);
   }
@@ -436,11 +436,11 @@ export namespace TickLib {
     }
     const decimals = numberAsBitsString.slice(
       numberAsBitsString.length - exp.toNumber(),
-      numberAsBitsString.length
+      numberAsBitsString.length,
     );
     const integers = numberAsBitsString.slice(
       0,
-      numberAsBitsString.length - exp.toNumber()
+      numberAsBitsString.length - exp.toNumber(),
     );
     const decimalNumber = decimalBitsToNumber(decimals);
     const integerNumber = integerBitsToNumber(integers);
@@ -464,7 +464,7 @@ export function priceToRatio(price: Big): {
 
   // Step 2: Convert integer part to binary
   const integerBinary = bigNumberToBits(
-    BigNumber.from(integerPart.toFixed())
+    BigNumber.from(integerPart.toFixed()),
   ).slice(0, MANTISSA_BITS.toNumber());
 
   // Step 3: Convert decimal part to binary
@@ -502,8 +502,8 @@ export function priceToRatio(price: Big): {
 
   const man = BigNumber.from(
     integerBitsToNumber(
-      combinedBinary.padEnd(MANTISSA_BITS.toNumber(), "0")
-    ).toFixed()
+      combinedBinary.padEnd(MANTISSA_BITS.toNumber(), "0"),
+    ).toFixed(),
   );
 
   Big.DP = 40;

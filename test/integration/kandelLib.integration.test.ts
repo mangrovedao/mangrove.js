@@ -62,7 +62,7 @@ describe(`${KandelLib.prototype.constructor.name} integration test suite`, () =>
   cases.forEach((args) => {
     it(`stub agrees with static calls - test ${String(args.test).padStart(
       3,
-      "0"
+      "0",
     )}`, async function () {
       const argsBig = {
         ...args,
@@ -76,15 +76,12 @@ describe(`${KandelLib.prototype.constructor.name} integration test suite`, () =>
 
       const stubOfferDistribution =
         await stub.createPartialGeometricDistribution(argsBig);
-      const libOfferDistribution = await lib.createPartialGeometricDistribution(
-        argsBig
-      );
-      const stubFullDistribution = await stub.createFullGeometricDistribution(
-        argsBig
-      );
-      const libFullDistribution = await lib.createFullGeometricDistribution(
-        argsBig
-      );
+      const libOfferDistribution =
+        await lib.createPartialGeometricDistribution(argsBig);
+      const stubFullDistribution =
+        await stub.createFullGeometricDistribution(argsBig);
+      const libFullDistribution =
+        await lib.createFullGeometricDistribution(argsBig);
 
       assert.deepStrictEqual(libOfferDistribution, stubOfferDistribution);
       assert.deepStrictEqual(libFullDistribution, stubFullDistribution);
@@ -105,11 +102,11 @@ describe(`${KandelLib.prototype.constructor.name} integration test suite`, () =>
     };
     await assert.rejects(
       () => stub.createPartialGeometricDistribution(args),
-      Error("Either initialAskGives or initialBidGives must be provided.")
+      Error("Either initialAskGives or initialBidGives must be provided."),
     );
     await assert.rejects(
       () => lib.createPartialGeometricDistribution(args),
-      Error("Either initialAskGives or initialBidGives must be provided.")
+      Error("Either initialAskGives or initialBidGives must be provided."),
     );
   });
 });

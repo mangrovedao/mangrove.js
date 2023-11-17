@@ -21,6 +21,6 @@ void yargs
   .env(ENV_VAR_PREFIX) // Environment variables prefixed with 'MGV_' are parsed as arguments, see .env([prefix])
   .epilogue(
     `Arguments may be provided in env vars beginning with '${ENV_VAR_PREFIX}_'. ` +
-      "For example, MGV_NODE_URL=https://node.url can be used instead of --nodeUrl https://node.url"
+      "For example, MGV_NODE_URL=https://node.url can be used instead of --nodeUrl https://node.url",
   )
   .help().argv;

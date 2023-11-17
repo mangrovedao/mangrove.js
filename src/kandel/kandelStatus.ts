@@ -97,7 +97,7 @@ class KandelStatus {
    */
   public getIndexOfPriceClosestToMid(
     midBaseQuoteTick: number,
-    baseQuoteTicks: number[]
+    baseQuoteTicks: number[],
   ) {
     // We need any live offer to extrapolate prices from, we take one closest to mid price since precision matters most there
     // since it is used to distinguish expected dead from live.
@@ -105,7 +105,7 @@ class KandelStatus {
       return { i, diff: Math.abs(midBaseQuoteTick - x) };
     });
     diffs.sort((a: { diff: number }, b: { diff: number }) =>
-      a.diff > b.diff ? 1 : b.diff > a.diff ? -1 : 0
+      a.diff > b.diff ? 1 : b.diff > a.diff ? -1 : 0,
     );
 
     return diffs[0].i;
@@ -127,7 +127,7 @@ class KandelStatus {
     baseQuoteTickOffset: number,
     pricePoints: number,
     stepSize: number,
-    offers: OffersWithLiveness
+    offers: OffersWithLiveness,
   ): Statuses {
     const midBaseQuoteTick = this.distributionHelper.askTickPriceHelper
       .tickFromPrice(midPrice)
@@ -139,7 +139,7 @@ class KandelStatus {
       offersInRange[
         this.getIndexOfPriceClosestToMid(
           midBaseQuoteTick,
-          offersInRange.map((x) => (x.offerType == "bids" ? -x.tick : x.tick))
+          offersInRange.map((x) => (x.offerType == "bids" ? -x.tick : x.tick)),
         )
       ];
 
@@ -151,7 +151,7 @@ class KandelStatus {
         offer.index,
         offer.tick,
         baseQuoteTickOffset,
-        pricePoints
+        pricePoints,
       );
 
     // Offers can be expected live or dead, can be live or dead, and in the exceptionally unlikely case that midPrice is equal to the prices,
@@ -164,7 +164,7 @@ class KandelStatus {
         expectedBaseQuoteTick: baseQuoteTick,
         expectedPrice:
           this.distributionHelper.askTickPriceHelper.priceFromTick(
-            baseQuoteTick
+            baseQuoteTick,
           ),
         asks: undefined as
           | undefined
@@ -195,7 +195,7 @@ class KandelStatus {
           "bids",
           index,
           pricePoints,
-          stepSize
+          stepSize,
         );
         if (statuses[dualIndex].bids?.live) {
           s.expectedLiveAsk = false;
@@ -206,7 +206,7 @@ class KandelStatus {
           "asks",
           index,
           pricePoints,
-          stepSize
+          stepSize,
         );
         if (statuses[dualIndex].asks?.live) {
           s.expectedLiveBid = false;
@@ -236,11 +236,11 @@ class KandelStatus {
       },
       minPrice:
         this.distributionHelper.askTickPriceHelper.priceFromTick(
-          minBaseQuoteTick
+          minBaseQuoteTick,
         ),
       maxPrice:
         this.distributionHelper.askTickPriceHelper.priceFromTick(
-          maxBaseQuoteTick
+          maxBaseQuoteTick,
         ),
       minBaseQuoteTick,
       maxBaseQuoteTick,

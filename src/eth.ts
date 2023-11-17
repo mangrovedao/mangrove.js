@@ -49,7 +49,7 @@ export class Mnemonic {
   iterateOn: "account" | "change" | "index";
   static path(
     iterator: number,
-    iterateOn: "account" | "change" | "index"
+    iterateOn: "account" | "change" | "index",
   ): string {
     const params = { account: 0, change: 0, index: 0 };
     params[iterateOn] = iterator;
@@ -57,7 +57,7 @@ export class Mnemonic {
   }
   constructor(
     mnemonic: string,
-    iterateOn: "account" | "change" | "index" = "index"
+    iterateOn: "account" | "change" | "index" = "index",
   ) {
     this.mnemonic = mnemonic;
     this.iterateOn = iterateOn;
@@ -90,7 +90,7 @@ export class Mnemonic {
  *     name and ID.
  */
 export async function getProviderNetwork(
-  _provider: Provider
+  _provider: Provider,
 ): Promise<ProviderNetwork> {
   let networkId;
   if ("send" in _provider && _provider["send"]) {
@@ -99,7 +99,7 @@ export async function getProviderNetwork(
     networkId = (_provider as any)._network.chainId;
   } else {
     throw Error(
-      "Provider can neither make RPC requests nor has a known network."
+      "Provider can neither make RPC requests nor has a known network.",
     );
   }
 
@@ -124,7 +124,7 @@ export function getNetworkName(networkId: number): string {
 // providers.JsonRpcProvider.perform
 class LoggingProvider extends providers.JsonRpcProvider {
   sendTransaction(
-    transaction: any
+    transaction: any,
   ): Promise<ethers.providers.TransactionResponse> {
     console.log("--->>>", transaction);
     // throw new Error("wot");
@@ -188,7 +188,7 @@ class LoggingProvider extends providers.JsonRpcProvider {
  * @returns {object} Returns a valid Ethereum network signer object with an attached provider.
  */
 export async function _createSigner(
-  options: CreateSignerOptions = {}
+  options: CreateSignerOptions = {},
 ): Promise<{
   readOnly: boolean;
   signer: Signer;
@@ -267,7 +267,7 @@ export async function _createSigner(
       signer = options.signer.connect(provider);
     } catch (e) {
       console.warn(
-        "provided signer object is not able to reinstantiate on new provider info."
+        "provided signer object is not able to reinstantiate on new provider info.",
       );
       throw e;
     }
@@ -292,33 +292,33 @@ export async function _createSigner(
   } else if (options.mnemonic) {
     signer = new ethers.Wallet(
       ethers.Wallet.fromMnemonic(options.mnemonic, options.path),
-      provider
+      provider,
     );
     if (options.signerIndex) {
       logger.warn(
         "options.signerIndex not applicable to mnemonic, use options.path instead.",
         {
           contextInfo: "eth.signer",
-        }
+        },
       );
     }
   } else if (options.jsonWallet) {
     signer = await readJsonWallet(
       options.jsonWallet.path,
       options.jsonWallet.password,
-      provider
+      provider,
     );
   } else if (!signer) {
     logger.warn(
       "No signing info provided or forceReadOnly is true: only read methods will work.",
       {
         contextInfo: "eth.signer",
-      }
+      },
     );
     readOnly = true;
     signer = new ethers.VoidSigner(
       "0x0000000000000000000000000000000000000001",
-      provider
+      provider,
     );
   }
 

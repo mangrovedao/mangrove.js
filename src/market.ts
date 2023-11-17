@@ -257,7 +257,7 @@ namespace Market {
   export type MarketCallback<T> = (
     cbArg: BookSubscriptionCbArgument,
     event?: BookSubscriptionEvent,
-    ethersLog?: ethers.providers.Log
+    ethersLog?: ethers.providers.Log,
   ) => T | Promise<T>;
   export type StorableMarketCallback = MarketCallback<any>;
   export type MarketFilter = MarketCallback<boolean>;
@@ -318,7 +318,7 @@ class Market {
       base: string;
       quote: string;
       tickSpacing: Bigish;
-    } & Partial<Market.OptionalParams>
+    } & Partial<Market.OptionalParams>,
   ): Promise<Market> {
     const base = await params.mgv.token(params.base);
     const quote = await params.mgv.token(params.quote);
@@ -339,13 +339,13 @@ class Market {
     }
     const config = await market.config();
     const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
-      market.mgv.network.name
+      market.mgv.network.name,
     );
     market.minVolumeAsk = config.asks.density.multiplyUpReadable(
-      BigNumber.from(config.asks.offer_gasbase).add(gasreq.toString())
+      BigNumber.from(config.asks.offer_gasbase).add(gasreq.toString()),
     );
     market.minVolumeBid = config.bids.density.multiplyUpReadable(
-      BigNumber.from(config.bids.offer_gasbase).add(gasreq.toString())
+      BigNumber.from(config.bids.offer_gasbase).add(gasreq.toString()),
     );
     return market;
   }
@@ -363,7 +363,7 @@ class Market {
   }) {
     if (!canConstructMarket) {
       throw Error(
-        "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)"
+        "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)",
       );
     }
     this.#subscriptions = new Map();
@@ -445,14 +445,14 @@ class Market {
       this,
       "asks",
       this.asksCb,
-      getSemibookOpts("asks")
+      getSemibookOpts("asks"),
     );
     this.bidsCb = this.#semibookEventCallback.bind(this);
     const bidsPromise = Semibook.connect(
       this,
       "bids",
       this.bidsCb,
-      getSemibookOpts("bids")
+      getSemibookOpts("bids"),
     );
     this.#asksSemibook = await asksPromise;
     this.#bidsSemibook = await bidsPromise;
@@ -483,7 +483,7 @@ class Market {
           this.#subscriptions.delete(cb);
           Promise.resolve(cb(cbArg, event, ethersLog)).then(
             params.ok,
-            params.ko
+            params.ko,
           );
         }
       } else {
@@ -521,7 +521,7 @@ class Market {
   }
 
   async requestBook(
-    opts: Market.BookOptions = bookOptsDefault
+    opts: Market.BookOptions = bookOptsDefault,
   ): Promise<{ asks: Market.Offer[]; bids: Market.Offer[] }> {
     if (!this.#asksSemibook || !this.#bidsSemibook) {
       throw Error("Market is not initialized");
@@ -557,7 +557,7 @@ class Market {
   async getOfferProvision(
     ba: Market.BA,
     gasreq: number,
-    gasprice?: number
+    gasprice?: number,
   ): Promise<Big> {
     // 0 makes calculation use mgv gasprice
     gasprice ??= 0;
@@ -569,7 +569,7 @@ class Market {
         tickSpacing: this.tickSpacing,
       },
       gasreq,
-      gasprice
+      gasprice,
     );
     return this.mgv.fromUnits(prov, 18);
   }
@@ -603,16 +603,16 @@ class Market {
     ba: Market.BA,
     lockedProvision: Bigish,
     gasreq: number,
-    gasprice?: number
+    gasprice?: number,
   ) {
     const totalRequiredProvision = await this.getOfferProvision(
       ba,
       gasreq,
-      gasprice
+      gasprice,
     );
     return this.mgv.getMissingProvision(
       lockedProvision,
-      totalRequiredProvision
+      totalRequiredProvision,
     );
   }
 
@@ -634,7 +634,7 @@ class Market {
    * token. See mangrove.ts. */
   permit(
     action: "buy" | "sell",
-    data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">
+    data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">,
   ): Promise<ethers.ContractTransaction> {
     let outbound_tkn: MgvToken;
     let inbound_tkn: MgvToken;
@@ -678,7 +678,7 @@ class Market {
    */
   buy(
     params: Market.TradeParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -710,7 +710,7 @@ class Market {
    */
   sell(
     params: Market.TradeParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -743,7 +743,7 @@ class Market {
    */
   clean(
     params: Market.CleanParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -763,7 +763,7 @@ class Market {
    * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
   getRawCleanParams(
-    params: Market.CleanParams
+    params: Market.CleanParams,
   ): Promise<Market.RawCleanParams> {
     return this.trade.getRawCleanParams(params, this);
   }
@@ -799,7 +799,7 @@ class Market {
     ba: Market.BA,
     tick: BigNumber,
     fillVolume: BigNumber,
-    fillWants: boolean
+    fillWants: boolean,
   ): Promise<BigNumber> {
     const semibook = this.getSemibook(ba);
 
@@ -808,7 +808,7 @@ class Market {
       await semibook.simulateMarketOrder(
         tick,
         new Big(fillVolume.toNumber()),
-        fillWants
+        fillWants,
       )
     ).gas
       .mul(15)
@@ -835,7 +835,7 @@ class Market {
    * order to spend 10 quote tokens.
    * */
   async estimateVolume(
-    params: Market.VolumeParams
+    params: Market.VolumeParams,
   ): Promise<Market.VolumeEstimate> {
     if (
       (params.what === "base" && params.to === "buy") ||
@@ -849,14 +849,14 @@ class Market {
 
   /* Convenience method: estimate volume to be received given an amount of base/quote you are ready to spend. */
   async estimateVolumeToReceive(
-    params: Market.DirectionlessVolumeParams
+    params: Market.DirectionlessVolumeParams,
   ): Promise<Market.VolumeEstimate> {
     return this.estimateVolume({ ...params, to: "sell" });
   }
 
   /* Convenience method: estimate volume to be spent given an amount of base/quote you want to receive. */
   async estimateVolumeToSpend(
-    params: Market.DirectionlessVolumeParams
+    params: Market.DirectionlessVolumeParams,
   ): Promise<Market.VolumeEstimate> {
     return this.estimateVolume({ ...params, to: "buy" });
   }
@@ -944,7 +944,7 @@ class Market {
    */
   async once<T>(
     cb: Market.MarketCallback<T>,
-    filter?: Market.MarketFilter
+    filter?: Market.MarketFilter,
   ): Promise<T> {
     return new Promise((ok, ko) => {
       const params: Market.SubscriptionParam = { type: "once", ok, ko };
@@ -972,7 +972,7 @@ class Market {
   static getOutboundInbound(
     ba: Market.BA,
     base: MgvToken,
-    quote: MgvToken
+    quote: MgvToken,
   ): {
     outbound_tkn: MgvToken;
     inbound_tkn: MgvToken;
@@ -987,7 +987,7 @@ class Market {
   static getBaseQuoteVolumes(
     ba: Market.BA,
     gives: Big,
-    wants: Big
+    wants: Big,
   ): { baseVolume: Big; quoteVolume: Big } {
     return {
       baseVolume: ba === "asks" ? gives : wants,
@@ -1009,7 +1009,7 @@ class Market {
   static getGivesWantsForVolumeAtPrice(
     ba: Market.BA,
     volume: Big,
-    price: Big
+    price: Big,
   ): { gives: Big; wants: Big } {
     const gives = ba === "asks" ? volume : volume.mul(price);
     const wants = ba === "asks" ? volume.mul(price) : volume;
@@ -1049,7 +1049,7 @@ class Market {
 
     const minBig = (
       b1: Big | undefined,
-      b2: Big | undefined
+      b2: Big | undefined,
     ): Big | undefined => {
       if (b1 === undefined) {
         return b2;

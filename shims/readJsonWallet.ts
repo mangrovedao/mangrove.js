@@ -1,7 +1,7 @@
 export const readJsonWallet = async function (
   path: string,
   password: string,
-  provider: any
+  provider: any,
 ) {
   throw "Not supported in browser";
 };

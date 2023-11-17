@@ -111,7 +111,7 @@ console.log(
   "Kandel balance of base =",
   await kandelInstance.getBalance("asks"),
   "and quote =",
-  await kandelInstance.getBalance("bids")
+  await kandelInstance.getBalance("bids"),
 );
 
 // Retrieve deployed Kandels owned by the wallet via the farm which detects Kandels by inspecting events from the seeder.
@@ -138,5 +138,5 @@ console.log(
   "Kandel balance of base =",
   await kandelInstance.getBalance("asks"),
   "and quote =",
-  await kandelInstance.getBalance("bids")
+  await kandelInstance.getBalance("bids"),
 );

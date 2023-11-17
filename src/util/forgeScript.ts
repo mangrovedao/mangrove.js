@@ -8,7 +8,7 @@ export function execForgeCmd(
   command: string,
   env: any,
   pipe?: any,
-  handler?: any
+  handler?: any,
 ) {
   if (typeof pipe === "undefined") {
     pipe = true;
@@ -39,7 +39,7 @@ export function execForgeCmd(
         } else {
           ok(stdout);
         }
-      }
+      },
     );
   });
   return scriptPromise;

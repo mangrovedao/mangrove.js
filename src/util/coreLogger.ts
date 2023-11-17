@@ -24,7 +24,7 @@ const levels = {
 export const createLogger = (
   consoleFormatLogger: Format,
   logLevel: string,
-  noColor?: string
+  noColor?: string,
 ): CommonLogger => {
   /* Expose winston-style interface to the logger */
   // generate fresh logger
@@ -59,7 +59,7 @@ export const createLogger = (
         format.splat(),
         format.timestamp(),
         format.errors({ stack: true }),
-        consoleFormatLogger
+        consoleFormatLogger,
       );
     } else {
       thisFormat = format.combine(
@@ -67,7 +67,7 @@ export const createLogger = (
         format.splat(),
         format.timestamp(),
         format.errors({ stack: true }),
-        consoleFormatLogger
+        consoleFormatLogger,
       );
     }
 

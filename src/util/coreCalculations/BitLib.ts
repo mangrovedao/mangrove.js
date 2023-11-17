@@ -19,16 +19,16 @@ export class BitLib {
     c = c.or(BigNumber.from(5).shl(x.gt(BigNumber.from("0xffffffff")) ? 1 : 0));
     c = c.or(
       BigNumber.from(
-        "0x00011c021d0e18031e16140f191104081f1b0d17151310071a0c12060b050a09"
+        "0x00011c021d0e18031e16140f191104081f1b0d17151310071a0c12060b050a09",
       )
         .shr(
           x
             .shr(251)
             .mul(BigNumber.from("0x077cb531").shl(224))
             .shr(c.toNumber())
-            .toNumber()
+            .toNumber(),
         )
-        .and(BigNumber.from("0xff"))
+        .and(BigNumber.from("0xff")),
     );
     return c;
   }
@@ -37,18 +37,18 @@ export class BitLib {
     let r = BigNumber.from(x.isZero() ? 1 : 0).shl(8);
     r = r.or(
       BigNumber.from(
-        BigNumber.from("0xffffffffffffffffffffffffffffffff").lt(x) ? 1 : 0
-      ).shl(7)
+        BigNumber.from("0xffffffffffffffffffffffffffffffff").lt(x) ? 1 : 0,
+      ).shl(7),
     );
     r = r.or(
       BigNumber.from(
-        BigNumber.from("0xffffffffffffffff").lt(x.shr(r.toNumber())) ? 1 : 0
-      ).shl(6)
+        BigNumber.from("0xffffffffffffffff").lt(x.shr(r.toNumber())) ? 1 : 0,
+      ).shl(6),
     );
     r = r.or(
       BigNumber.from(
-        BigNumber.from("0xffffffff").lt(x.shr(r.toNumber())) ? 1 : 0
-      ).shl(5)
+        BigNumber.from("0xffffffff").lt(x.shr(r.toNumber())) ? 1 : 0,
+      ).shl(5),
     );
 
     x = x.shr(r.toNumber());
@@ -59,16 +59,16 @@ export class BitLib {
     x = x.or(x.shr(16));
 
     const bytesToTake = this.overflow(
-      x.mul(BigNumber.from("0x07c4acdd").shl(224))
+      x.mul(BigNumber.from("0x07c4acdd").shl(224)),
     ).shr(251);
 
     r = r.or(
       this.byte(
         bytesToTake.toNumber(),
         BigNumber.from(
-          "0x0009010a0d15021d0b0e10121619031e080c141c0f111807131b17061a05041f"
-        ).toBigInt()
-      )
+          "0x0009010a0d15021d0b0e10121619031e080c141c0f111807131b17061a05041f",
+        ).toBigInt(),
+      ),
     );
 
     return r;

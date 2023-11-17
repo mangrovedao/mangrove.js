@@ -151,7 +151,7 @@ class Mangrove {
    * @returns {Mangrove} Returns an instance mangrove.js
    */
   static async connect(
-    options?: Mangrove.CreateOptions | string
+    options?: Mangrove.CreateOptions | string,
   ): Promise<Mangrove> {
     if (typeof options === "undefined") {
       options = "http://localhost:8545";
@@ -178,7 +178,7 @@ class Mangrove {
     if (!options.blockManagerOptions) {
       options.blockManagerOptions =
         configuration.reliableEventSubscriber.getBlockManagerOptions(
-          network.name
+          network.name,
         );
     }
 
@@ -189,7 +189,7 @@ class Mangrove {
     if (!options.reliableWebsocketProviderOptions && options.providerWsUrl) {
       options.reliableWebsocketProviderOptions = {
         ...configuration.reliableEventSubscriber.getReliableWebSocketOptions(
-          network.name
+          network.name,
         ),
         wsUrl: options.providerWsUrl,
       };
@@ -199,7 +199,7 @@ class Mangrove {
     if (!options.reliableHttpProviderOptions) {
       options.reliableHttpProviderOptions = {
         ...configuration.reliableEventSubscriber.getReliableHttpProviderOptions(
-          network.name
+          network.name,
         ),
         onError: onEthersError(eventEmitter),
       };
@@ -213,7 +213,7 @@ class Mangrove {
       reliableHttpProvider: options.reliableHttpProviderOptions,
       eventEmitter,
       getLogsTimeout: configuration.reliableEventSubscriber.getLogsTimeout(
-        network.name
+        network.name,
       ),
       reliableWebSocketOptions: options.providerWsUrl
         ? {
@@ -227,7 +227,7 @@ class Mangrove {
 
     // Read all setActive events to populate olKeyHashMap
     const markets = await mgv.contract.queryFilter(
-      mgv.contract.filters.SetActive(null, null)
+      mgv.contract.filters.SetActive(null, null),
     );
     markets.map((market) => {
       mgv.olKeyHashToOLKeyStructMap.set(market.args.olKeyHash, {
@@ -237,7 +237,7 @@ class Mangrove {
       });
       mgv.olKeyStructToOlKeyHashMap.set(
         `${market.args.outbound_tkn.toLowerCase()}_${market.args.inbound_tkn.toLowerCase()}_${market.args.tickSpacing.toNumber()}`,
-        market.args.olKeyHash
+        market.args.olKeyHash,
       );
     });
 
@@ -285,7 +285,7 @@ class Mangrove {
   }) {
     if (!canConstructMangrove) {
       throw Error(
-        "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)"
+        "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)",
       );
     }
     this.eventEmitter = params.eventEmitter;
@@ -299,27 +299,27 @@ class Mangrove {
     this._readOnly = params.readOnly;
     this.multicallContract = typechain.Multicall2__factory.connect(
       Mangrove.getAddress("Multicall2", this.network.name),
-      this.signer
+      this.signer,
     );
     this.address = Mangrove.getAddress("Mangrove", this.network.name);
     this.contract = typechain.IMangrove__factory.connect(
       this.address,
-      this.signer
+      this.signer,
     );
     const readerAddress = Mangrove.getAddress("MgvReader", this.network.name);
     this.readerContract = typechain.MgvReader__factory.connect(
       readerAddress,
-      this.signer
+      this.signer,
     );
 
     const orderAddress = Mangrove.getAddress(
       "MangroveOrder",
-      this.network.name
+      this.network.name,
     );
     // this.orderContract = typechain.MangroveOrder__factory.connect(
     this.orderContract = typechain.MangroveOrder__factory.connect(
       orderAddress,
-      this.signer
+      this.signer,
     );
 
     this.shouldNotListenToNewEvents = false;
@@ -332,12 +332,12 @@ class Mangrove {
         {
           ...params.blockManagerOptions,
           provider: new WebSocketProvider(
-            params.reliableWebSocketOptions.wsUrl
+            params.reliableWebSocketOptions.wsUrl,
           ),
           multiv2Address: this.multicallContract.address,
           getLogsTimeout: params.getLogsTimeout,
         },
-        params.reliableWebSocketOptions.options
+        params.reliableWebSocketOptions.options,
       );
     } else {
       this.reliableProvider = new ReliableHttpProvider(
@@ -347,24 +347,24 @@ class Mangrove {
           multiv2Address: this.multicallContract.address,
           getLogsTimeout: params.getLogsTimeout,
         },
-        params.reliableHttpProvider
+        params.reliableHttpProvider,
       );
     }
 
     this.mangroveEventSubscriber = new MangroveEventSubscriber(
       this.provider,
       this.contract,
-      this.reliableProvider.blockManager
+      this.reliableProvider.blockManager,
     );
   }
 
   getOlKeyHash(
     outbound: string,
     inbound: string,
-    tickSpacing: number
+    tickSpacing: number,
   ): string | undefined {
     return this.olKeyStructToOlKeyHashMap.get(
-      `${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickSpacing}`
+      `${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickSpacing}`,
     );
   }
   getOlKeyStruct(olKeyHash: string): OLKeyStruct | undefined {
@@ -483,7 +483,7 @@ class Mangrove {
           quote: string;
           tickSpacing: Bigish;
           bookOptions?: Market.BookOptions;
-        }
+        },
   ): Promise<LiquidityProvider> {
     const EOA = await this.signer.getAddress();
     if (p instanceof Market) {
@@ -506,7 +506,7 @@ class Mangrove {
   /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
   async token(
     name: string,
-    options?: MgvToken.ConstructorOptions
+    options?: MgvToken.ConstructorOptions,
   ): Promise<MgvToken> {
     return MgvToken.createToken(name, this, options);
   }
@@ -518,7 +518,7 @@ class Mangrove {
   /** Return MgvToken instance reading only from configuration, not from chain. */
   tokenFromConfig(
     name: string,
-    options?: MgvToken.ConstructorOptions
+    options?: MgvToken.ConstructorOptions,
   ): MgvToken {
     return new MgvToken(name, this, options);
   }
@@ -531,7 +531,7 @@ class Mangrove {
   getAddress(name: string): string {
     return configuration.addresses.getAddress(
       name,
-      this.network.name || "mainnet"
+      this.network.name || "mainnet",
     );
   }
 
@@ -544,7 +544,7 @@ class Mangrove {
     configuration.addresses.setAddress(
       name,
       address,
-      this.network.name || "mainnet"
+      this.network.name || "mainnet",
     );
   }
 
@@ -556,14 +556,14 @@ class Mangrove {
   getNameFromAddress(address: string): string | undefined {
     return configuration.addresses.getNameFromAddress(
       address,
-      this.network.name || "mainnet"
+      this.network.name || "mainnet",
     );
   }
 
   /** Gets the token corresponding to the address if it is known; otherwise, undefined.
    */
   async getTokenAndAddress(
-    address: string
+    address: string,
   ): Promise<{ address: string; token?: MgvToken }> {
     const name = this.getNameFromAddress(address);
     return {
@@ -587,7 +587,7 @@ class Mangrove {
    */
   static toUnits(
     amount: Bigish,
-    nameOrDecimals: string | number
+    nameOrDecimals: string | number,
   ): ethers.BigNumber {
     return UnitCalculations.toUnits(amount, nameOrDecimals);
   }
@@ -608,7 +608,7 @@ class Mangrove {
    */
   fromUnits(
     amount: number | string | ethers.BigNumber,
-    nameOrDecimals: string | number
+    nameOrDecimals: string | number,
   ): Big {
     return UnitCalculations.fromUnits(amount, nameOrDecimals);
   }
@@ -616,7 +616,7 @@ class Mangrove {
   /** Provision available at mangrove for address given in argument, in ethers */
   async balanceOf(
     address: string,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<Big> {
     const bal = await this.contract.balanceOf(address, overrides);
     return this.fromUnits(bal, 18);
@@ -625,7 +625,7 @@ class Mangrove {
   fundMangrove(
     amount: Bigish,
     maker: string,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
     const _overrides = { value: this.toUnits(amount, 18), ...overrides };
     return this.contract["fund(address)"](maker, _overrides);
@@ -633,14 +633,14 @@ class Mangrove {
 
   withdraw(
     amount: Bigish,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
     return this.contract.withdraw(this.toUnits(amount, 18), overrides);
   }
 
   async approveMangrove(
     tokenName: string,
-    arg: ApproveArgs = {}
+    arg: ApproveArgs = {},
   ): Promise<ethers.ContractTransaction> {
     const token = await this.token(tokenName);
     return token.approveMangrove(arg);
@@ -657,7 +657,7 @@ class Mangrove {
       this.toUnits(1, 6)
         .mul(gasprice)
         .mul(gasreq + gasbase),
-      18
+      18,
     );
   }
 
@@ -669,7 +669,7 @@ class Mangrove {
    * @returns the required provision, in ethers.
    */
   public calculateOffersProvision(
-    offers: { gasprice: number; gasreq: number; gasbase: number }[]
+    offers: { gasprice: number; gasreq: number; gasbase: number }[],
   ) {
     return offers.reduce(
       (acc, offer) =>
@@ -677,10 +677,10 @@ class Mangrove {
           this.calculateOfferProvision(
             offer.gasprice,
             offer.gasreq,
-            offer.gasbase
-          )
+            offer.gasbase,
+          ),
         ),
-      Big(0)
+      Big(0),
     );
   }
 
@@ -719,7 +719,7 @@ class Mangrove {
    * num if needed.
    */
   async normalizePermitData(
-    params: Mangrove.SimplePermitData
+    params: Mangrove.SimplePermitData,
   ): Promise<Mangrove.PermitData> {
     const data = { ...params };
 
@@ -792,7 +792,7 @@ class Mangrove {
    * current owner nonce.
    */
   async permit(
-    params: Mangrove.SimplePermitData
+    params: Mangrove.SimplePermitData,
   ): Promise<ethers.ContractTransaction> {
     if (!params.deadline) {
       params.deadline = new Date();
@@ -801,7 +801,7 @@ class Mangrove {
 
     const data = await this.normalizePermitData(params);
     const { v, r, s } = ethers.utils.splitSignature(
-      await this.signPermitData(data)
+      await this.signPermitData(data),
     );
 
     return this.contract.permit(
@@ -813,7 +813,7 @@ class Mangrove {
       data.deadline,
       v,
       r,
-      s
+      s,
     );
   }
 
@@ -848,7 +848,7 @@ class Mangrove {
    */
   static getNameFromAddress(
     address: string,
-    network: string
+    network: string,
   ): string | undefined {
     return configuration.addresses.getNameFromAddress(address, network);
   }
@@ -875,7 +875,7 @@ class Mangrove {
    */
   static getOrFetchDecimals(
     tokenName: string,
-    provider: Provider
+    provider: Provider,
   ): Promise<number> {
     return configuration.tokens.getOrFetchDecimals(tokenName, provider);
   }
@@ -885,7 +885,7 @@ class Mangrove {
    */
   static async fetchDecimals(
     tokenName: string,
-    provider: Provider
+    provider: Provider,
   ): Promise<number> {
     return configuration.tokens.fetchDecimals(tokenName, provider);
   }
@@ -939,7 +939,7 @@ class Mangrove {
     configuration.addresses.setAddress(
       "Multicall2",
       devNode.multicallAddress,
-      network.name
+      network.name,
     );
     // get currently deployed contracts & listen for future ones
     const setAddress = (name: string, address: string, decimals?: number) => {
@@ -968,7 +968,7 @@ class Mangrove {
       maxLen?: number | ethers.BigNumber;
       configs?: boolean;
       tokenInfos?: boolean;
-    } = {}
+    } = {},
   ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
     params.from ??= 0;
@@ -979,7 +979,7 @@ class Mangrove {
     const raw = await this.readerContract["openMarkets(uint256,uint256,bool)"](
       params.from,
       params.maxLen,
-      params.configs
+      params.configs,
     );
 
     // structure data object as address => (symbol,decimals,address=>config)
@@ -1011,7 +1011,7 @@ class Mangrove {
         // will raise exception if call reverted
         data[addresses[i]][fnName] = ierc20.decodeFunctionResult(
           fnName as any,
-          returnData
+          returnData,
         )[0] as number;
       });
     };
@@ -1020,7 +1020,7 @@ class Mangrove {
         // will raise exception if call reverted
         data[addresses[i]][fnName] = ierc20.decodeFunctionResult(
           fnName as any,
-          returnData
+          returnData,
         )[0] as string;
       });
     };
@@ -1047,7 +1047,7 @@ class Mangrove {
 
       const { baseName, quoteName } = Mangrove.toBaseQuoteByCashness(
         tkn0Name,
-        tkn1Name
+        tkn1Name,
       );
       const [base, quote] = baseName === tkn0Name ? [tkn0, tkn1] : [tkn1, tkn0];
 
@@ -1068,13 +1068,13 @@ class Mangrove {
         asksConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
               data[base].configs[quote],
-              data[base].decimals
+              data[base].decimals,
             )
           : undefined,
         bidsConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
               data[quote].configs[base],
-              data[quote].decimals
+              data[quote].decimals,
             )
           : undefined,
       };
@@ -1095,7 +1095,7 @@ class Mangrove {
       maxLen?: number;
       noInit?: boolean;
       bookOptions?: Market.BookOptions;
-    } = {}
+    } = {},
   ): Promise<Market[]> {
     const noInit = params.noInit ?? false;
     delete params.noInit;
@@ -1125,7 +1125,7 @@ class Mangrove {
           bookOptions: bookOptions,
           noInit: noInit,
         });
-      })
+      }),
     );
   }
 

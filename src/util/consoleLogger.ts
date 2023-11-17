@@ -9,7 +9,7 @@ const stringifyData = (data: any) => {
 
 export function createConsoleLogger(
   loggingEnabled: () => boolean,
-  logLevel: string
+  logLevel: string,
 ): CommonLogger {
   const consoleLogFormat = format.combine(
     format((info: any) => loggingEnabled() && info)(),
@@ -26,7 +26,7 @@ export function createConsoleLogger(
         msg += `${os.EOL}${metadata.stack}`;
       }
       return msg;
-    })
+    }),
   );
 
   return createLogger(consoleLogFormat, logLevel, process.env["NO_COLOR"]);

@@ -38,7 +38,7 @@ class Trade {
       decimals: number;
       toUnits: (amount: Bigish) => ethers.BigNumber;
       fromUnits: (amount: ethers.BigNumber) => Big;
-    }
+    },
   ) {
     // validate parameters and setup tickPriceHelper
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
@@ -51,7 +51,7 @@ class Trade {
       const priceWithSlippage = this.adjustPriceForSlippage(
         Big(params.price),
         slippage,
-        "buy"
+        "buy",
       );
       if ("volume" in params) {
         fillVolume = Big(params.volume);
@@ -77,12 +77,12 @@ class Trade {
       if (slippage > 0) {
         // if slippage is 0, we don't need to do anything
         const price = tickPriceHelper.priceFromTick(
-          BigNumber.from(params.tick)
+          BigNumber.from(params.tick),
         ); // This can result in small rounding differences
         const priceWithSlippage = this.adjustPriceForSlippage(
           price,
           slippage,
-          "buy"
+          "buy",
         );
         tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       } else {
@@ -90,7 +90,7 @@ class Trade {
       }
     } else {
       const givesWithSlippage = quoteToken.toUnits(
-        this.adjustPriceForSlippage(Big(params.gives), slippage, "buy")
+        this.adjustPriceForSlippage(Big(params.gives), slippage, "buy"),
       );
       fillWants = params.fillWants ?? true;
       fillVolume = fillWants
@@ -98,7 +98,7 @@ class Trade {
         : quoteToken.fromUnits(givesWithSlippage);
       tick = TickLib.tickFromVolumes(
         givesWithSlippage,
-        baseToken.toUnits(params.wants)
+        baseToken.toUnits(params.wants),
       );
     }
 
@@ -114,7 +114,7 @@ class Trade {
   private adjustPriceForSlippage(
     price: Big,
     slippage: number,
-    orderType: Market.BS
+    orderType: Market.BS,
   ): Big {
     const adjustment = orderType === "buy" ? slippage : -slippage;
     return price.mul(100 + adjustment).div(100);
@@ -130,18 +130,18 @@ class Trade {
       decimals: number;
       toUnits: (amount: Bigish) => ethers.BigNumber;
       fromUnits: (amount: ethers.BigNumber) => Big;
-    }
+    },
   ) {
     let fillVolume: Big, tick: BigNumber, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
     if ("price" in params) {
       const priceWithCorrectDecimals = Big(params.price).mul(
-        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals))
+        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals)),
       );
       const priceWithSlippage = this.adjustPriceForSlippage(
         priceWithCorrectDecimals,
         slippage,
-        "sell"
+        "sell",
       );
       if ("volume" in params) {
         fillVolume = Big(params.volume);
@@ -169,7 +169,7 @@ class Trade {
         const priceWithSlippage = this.adjustPriceForSlippage(
           price,
           slippage,
-          "sell"
+          "sell",
         );
         tick = TickLib.getTickFromPrice(priceWithSlippage);
       } else {
@@ -177,7 +177,7 @@ class Trade {
       }
     } else {
       const wantsWithSlippage = quoteToken.toUnits(
-        this.adjustPriceForSlippage(Big(params.wants), slippage, "sell")
+        this.adjustPriceForSlippage(Big(params.wants), slippage, "sell"),
       );
       fillWants = params.fillWants ?? false;
       fillVolume = fillWants
@@ -185,7 +185,7 @@ class Trade {
         : Big(params.gives);
       tick = TickLib.tickFromVolumes(
         baseToken.toUnits(params.gives),
-        wantsWithSlippage
+        wantsWithSlippage,
       );
     }
 
@@ -210,7 +210,7 @@ class Trade {
   comparePrices(
     price: Bigish,
     priceComparison: "lt" | "gt",
-    referencePrice: Bigish
+    referencePrice: Bigish,
   ) {
     return Big(price)[priceComparison](Big(referencePrice));
   }
@@ -219,7 +219,7 @@ class Trade {
   isPriceBetter(
     price: Bigish | undefined,
     referencePrice: Bigish | undefined,
-    ba: Market.BA
+    ba: Market.BA,
   ) {
     if (price === undefined && referencePrice === undefined) {
       return false;
@@ -238,7 +238,7 @@ class Trade {
   isPriceWorse(
     price: Bigish | undefined,
     referencePrice: Bigish | undefined,
-    ba: Market.BA
+    ba: Market.BA,
   ) {
     if (price === undefined && referencePrice === undefined) {
       return false;
@@ -303,7 +303,7 @@ class Trade {
     bs: Market.BS,
     params: Market.TradeParams,
     market: Market,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -324,7 +324,7 @@ class Trade {
             fillOrKill: params.fillOrKill ? params.fillOrKill : false,
             gasLowerBound: params.gasLowerBound ?? 0,
           },
-          overrides
+          overrides,
         );
       case "marketOrder":
         return this.marketOrder(
@@ -336,7 +336,7 @@ class Trade {
             market,
             gasLowerBound: params.gasLowerBound ?? 0,
           },
-          overrides
+          overrides,
         );
       default:
         throw new Error(`Unknown order type ${orderType}`);
@@ -357,7 +357,7 @@ class Trade {
   async clean(
     params: Market.CleanParams,
     market: Market,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -380,7 +380,7 @@ class Trade {
    */
   async getRawCleanParams(
     params: Market.CleanParams,
-    market: Market
+    market: Market,
   ): Promise<Market.RawCleanParams> {
     const { outbound_tkn } = market.getOutboundInbound(params.ba);
 
@@ -392,7 +392,7 @@ class Trade {
           tick: BigNumber.from(t.tick),
           gasreq: BigNumber.from(t.gasreq),
         };
-      }
+      },
     );
     return this.getCleanRawParamsFromUnitParams(
       {
@@ -400,7 +400,7 @@ class Trade {
         ba: params.ba,
         taker: params.taker ?? (await market.mgv.signer.getAddress()),
       },
-      market
+      market,
     );
   }
 
@@ -412,8 +412,8 @@ class Trade {
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.estimateGas(bs, fillVolume)).add(
           configuration.mangroveOrder.getTakeGasOverhead(
-            market.mgv.network.name
-          )
+            market.mgv.network.name,
+          ),
         );
       case "marketOrder":
         return await market.estimateGas(bs, fillVolume);
@@ -426,7 +426,7 @@ class Trade {
     const { tick, fillVolume, fillWants, orderType } = this.getRawParams(
       bs,
       params,
-      market
+      market,
     );
     const ba = this.bsToBa(bs);
 
@@ -435,8 +435,8 @@ class Trade {
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.simulateGas(ba, tick, fillVolume, fillWants)).add(
           configuration.mangroveOrder.getTakeGasOverhead(
-            market.mgv.network.name
-          )
+            market.mgv.network.name,
+          ),
         );
       case "marketOrder":
         return await market.simulateGas(ba, tick, fillVolume, fillWants);
@@ -448,7 +448,7 @@ class Trade {
     estimateTx: (...args: T) => Promise<BigNumber>,
     gasLowerBound: ethers.BigNumberish,
     overrides: ethers.Overrides,
-    args: T
+    args: T,
   ) {
     // If not given an explicit gasLimit then we estimate it. Ethers does this automatically, but if we are given a lower bound,
     // (for instance from our own estimateGas function) then we need to invoke estimation manually and compare.
@@ -490,7 +490,7 @@ class Trade {
       market: Market;
       gasLowerBound: ethers.BigNumberish;
     },
-    overrides: ethers.Overrides
+    overrides: ethers.Overrides,
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -528,7 +528,7 @@ class Trade {
         fillVolume,
         fillWants,
         overrides,
-      ]
+      ],
     );
 
     const result = this.responseToMarketOrderResult(
@@ -536,7 +536,7 @@ class Trade {
       orderType,
       fillWants,
       fillVolume,
-      market
+      market,
     );
     return { result, response };
   }
@@ -546,7 +546,7 @@ class Trade {
     orderType: Market.BS,
     fillWants: boolean,
     fillVolume: ethers.BigNumber,
-    market: Market
+    market: Market,
   ) {
     const receipt = await (await response).wait();
 
@@ -561,7 +561,7 @@ class Trade {
       this.bsToBa(orderType),
       fillWants,
       fillVolume,
-      market
+      market,
     );
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("market order went wrong");
@@ -591,7 +591,7 @@ class Trade {
       market: Market;
       gasLowerBound: ethers.BigNumberish;
     },
-    overrides: ethers.Overrides
+    overrides: ethers.Overrides,
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -629,11 +629,11 @@ class Trade {
           restingOrderGasreq:
             restingParams?.restingOrderGasreq ??
             configuration.mangroveOrder.getRestingOrderGasreq(
-              market.mgv.network.name
+              market.mgv.network.name,
             ),
         },
         overrides_,
-      ]
+      ],
     );
     const result = this.responseToMangroveOrderResult(
       response,
@@ -641,7 +641,7 @@ class Trade {
       fillWants,
       fillVolume,
       market,
-      restingParams?.offerId
+      restingParams?.offerId,
     );
     // if resting order was not posted, result.summary is still undefined.
     return { result, response };
@@ -653,7 +653,7 @@ class Trade {
     fillWants: boolean,
     fillVolume: ethers.BigNumber,
     market: Market,
-    offerId: number | undefined
+    offerId: number | undefined,
   ) {
     const receipt = await (await response).wait();
 
@@ -670,14 +670,14 @@ class Trade {
       this.bsToBa(orderType),
       fillWants,
       fillVolume,
-      market
+      market,
     );
     this.tradeEventManagement.processMangroveOrderEvents(
       result,
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      market
+      market,
     );
     let restingOrderId: number | undefined;
     if (
@@ -696,7 +696,7 @@ class Trade {
         restingOrder: this.tradeEventManagement.createRestingOrderFromIdAndBA(
           this.bsToBa(orderType),
           restingOrderId,
-          result.offerWrites
+          result.offerWrites,
         ),
       };
     }
@@ -721,7 +721,7 @@ class Trade {
   }
 
   initialResult(
-    receipt: ethers.ContractReceipt
+    receipt: ethers.ContractReceipt,
   ): OrderResultWithOptionalSummary {
     return {
       txReceipt: receipt,
@@ -746,7 +746,7 @@ class Trade {
    */
   async getCleanRawParamsFromUnitParams(
     unitParams: CleanUnitParams,
-    market: Market
+    market: Market,
   ): Promise<Market.RawCleanParams> {
     const [outboundTkn, inboundTkn] =
       unitParams.ba === "asks"
@@ -792,7 +792,7 @@ class Trade {
   async cleanWithRawParameters(
     raw: Market.RawCleanParams,
     market: Market,
-    overrides: ethers.Overrides
+    overrides: ethers.Overrides,
   ): Promise<{
     result: Promise<Market.OrderResult>;
     response: Promise<ethers.ContractTransaction>;
@@ -808,7 +808,7 @@ class Trade {
       },
       raw.targets,
       raw.taker,
-      overrides
+      overrides,
     );
 
     const result = this.responseToCleanResult(response, raw, market);
@@ -818,7 +818,7 @@ class Trade {
   async responseToCleanResult(
     response: Promise<ethers.ContractTransaction>,
     raw: Market.RawCleanParams,
-    market: Market
+    market: Market,
   ) {
     const receipt = await (await response).wait();
 
@@ -836,7 +836,7 @@ class Trade {
       raw.ba,
       true,
       ethers.BigNumber.from(0),
-      market
+      market,
     );
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("clean went wrong");

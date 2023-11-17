@@ -34,7 +34,7 @@ export class Density {
 
   static from96X32(
     density96X32: BigNumber,
-    outbound_decimals: number
+    outbound_decimals: number,
   ): Density {
     if (density96X32.lte(MANTISSA_MASK)) {
       return new Density(density96X32, outbound_decimals);
@@ -43,7 +43,7 @@ export class Density {
     return Density.make(
       density96X32.shr(exp.sub(MANTISSA_BITS).toNumber()),
       exp,
-      outbound_decimals
+      outbound_decimals,
     );
   }
 
@@ -71,13 +71,13 @@ export class Density {
   static make(
     mantissa: BigNumber,
     exponent: BigNumber,
-    outbound_decimals: number
+    outbound_decimals: number,
   ): Density {
     return new Density(
       exponent
         .shl(BigNumber.from(MANTISSA_BITS).toNumber())
         .or(mantissa.and(MANTISSA_MASK)),
-      outbound_decimals
+      outbound_decimals,
     );
   }
 
@@ -92,7 +92,7 @@ export class Density {
 
   multiplyUpReadable(m: BigNumber): Big {
     return Big(this.multiplyUp(m).toString()).div(
-      Big(10).pow(this.outbound_decimals)
+      Big(10).pow(this.outbound_decimals),
     );
   }
 
@@ -101,7 +101,7 @@ export class Density {
     gasprice_in_gwei: BigNumber,
     eth_in_usdx100: BigNumber,
     outbound_display_in_usdx100: BigNumber,
-    cover_factor: BigNumber
+    cover_factor: BigNumber,
   ): BigNumber {
     if (
       outbound_decimals !== Math.floor(outbound_decimals) ||
@@ -123,7 +123,7 @@ export class Density {
     outbound_decimals: number,
     gasprice_in_gwei: BigNumber,
     outbound_display_in_gwei: BigNumber,
-    cover_factor: BigNumber
+    cover_factor: BigNumber,
   ): BigNumber {
     if (
       outbound_decimals !== Math.floor(outbound_decimals) ||
@@ -155,10 +155,10 @@ export class Density {
     const mant = mantissa.eq(0)
       ? "1"
       : mantissa.eq(1)
-      ? "1.25"
-      : mantissa.eq(2)
-      ? "1.5"
-      : "1.75";
+        ? "1.25"
+        : mantissa.eq(2)
+          ? "1.5"
+          : "1.75";
     return `${mant.toString()} * 2^${unbiasedExp.toString()}`;
   }
 }

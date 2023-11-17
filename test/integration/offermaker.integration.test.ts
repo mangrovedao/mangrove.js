@@ -62,7 +62,7 @@ describe("OfferMaker integration test suite", () => {
     assert.strictEqual(
       allowanceForLogic.toNumber(),
       0,
-      "allowance should be 0"
+      "allowance should be 0",
     );
 
     // test default approve amount
@@ -75,7 +75,7 @@ describe("OfferMaker integration test suite", () => {
     assert.strictEqual(
       mgv.toUnits(allowanceForLogic, 6).toString(),
       ethers.constants.MaxUint256.toString(),
-      "allowance should be 2^256-1"
+      "allowance should be 2^256-1",
     );
   });
 
@@ -91,7 +91,7 @@ describe("OfferMaker integration test suite", () => {
     const overridesTest = { gasLimit: 100000 };
     // test specified approve amount
     await w(
-      tokenB.approveMangrove({ amount: 10 ** 9, overrides: overridesTest })
+      tokenB.approveMangrove({ amount: 10 ** 9, overrides: overridesTest }),
     );
     allowanceForEOA = await tokenB.allowance({
       owner: eoa_lp.eoa,
@@ -101,7 +101,7 @@ describe("OfferMaker integration test suite", () => {
     assert.strictEqual(
       allowanceForEOA.toNumber(),
       10 ** 9,
-      "allowance should be 1 billion"
+      "allowance should be 1 billion",
     );
     // test default approve amount
     await w(tokenB.approveMangrove());
@@ -114,7 +114,7 @@ describe("OfferMaker integration test suite", () => {
     assert.strictEqual(
       mgv.toUnits(allowanceForEOA, 6).toString(),
       ethers.constants.MaxUint256.toString(),
-      "allowance should be 2^256-1"
+      "allowance should be 2^256-1",
     );
   });
 
@@ -155,17 +155,17 @@ describe("OfferMaker integration test suite", () => {
         inbound_tkn: inbound_tkn.address,
         tickSpacing: lp.market.tickSpacing,
       },
-      id
+      id,
     );
 
     const provisionOfOfferWithCorrectDecimals = mgv.fromUnits(
       provisionOfOffer!,
-      18
+      18,
     );
     assert.deepStrictEqual(
       provisionOfOfferWithCorrectDecimals.toNumber(),
       provision.toNumber(),
-      "wrong provision"
+      "wrong provision",
     );
   });
 
@@ -193,13 +193,13 @@ describe("OfferMaker integration test suite", () => {
       const expectedInitialProvision = mgv.calculateOfferProvision(
         mgvGasprice,
         lp.gasreq,
-        (await lp.market.getSemibook("asks").getConfig()).offer_gasbase
+        (await lp.market.getSemibook("asks").getConfig()).offer_gasbase,
       );
       assert.equal(provision.toNumber(), expectedInitialProvision.toNumber());
       assert.equal(
         missingProvisionDueToTripleGasprice.toNumber(),
         provision.mul(2).toNumber(),
-        "Lacks covering for gasprice*3"
+        "Lacks covering for gasprice*3",
       );
     });
   });
@@ -236,7 +236,7 @@ describe("OfferMaker integration test suite", () => {
       });
       assert(
         await onchain_lp.market.isLive("asks", ofrId),
-        "Offer should be live"
+        "Offer should be live",
       );
       // this does not work because newAsk is not synced with cache
       // const asks = onchain_lp.asks();
@@ -252,7 +252,7 @@ describe("OfferMaker integration test suite", () => {
       });
       assert(
         missingProvision.eq(0),
-        `there should be no missing provision for this offer (${missingProvision.toNumber()})`
+        `there should be no missing provision for this offer (${missingProvision.toNumber()})`,
       );
     });
 
@@ -265,7 +265,7 @@ describe("OfferMaker integration test suite", () => {
 
       await assert.rejects(
         newAskPromise,
-        "Posting a new offer without sufficient provision should fail."
+        "Posting a new offer without sufficient provision should fail.",
       );
     });
 
@@ -282,31 +282,31 @@ describe("OfferMaker integration test suite", () => {
         fund: prov,
       });
       const prov_before_cancel = await mgv.provider.getBalance(
-        await onchain_lp.mgv.signer.getAddress()
+        await onchain_lp.mgv.signer.getAddress(),
       );
 
       await onchain_lp.retractBid(ofrId, true); // with deprovision
       const prov_after_cancel = await mgv.provider.getBalance(
-        await onchain_lp.mgv.signer.getAddress()
+        await onchain_lp.mgv.signer.getAddress(),
       );
       assert(
         prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
         `Maker was not refunded, prov: ${mgv
           .toUnits(prov, 18)
-          .toString()} balance_before: ${prov_before_cancel}, balance_after: ${prov_after_cancel}`
+          .toString()} balance_before: ${prov_before_cancel}, balance_after: ${prov_after_cancel}`,
       );
       assert(
         onchain_lp.bids().length === 0,
-        "Bid was not removed from the book"
+        "Bid was not removed from the book",
       );
 
       await onchain_lp.retractBid(ofrId, true);
       const prov_after_cancel2 = await mgv.provider.getBalance(
-        await onchain_lp.mgv.signer.getAddress()
+        await onchain_lp.mgv.signer.getAddress(),
       );
       assert(
         prov_after_cancel2.lt(prov_after_cancel), // cannot do better because of gas cost
-        "Cancel twice should not provision maker"
+        "Cancel twice should not provision maker",
       );
     });
 
@@ -315,7 +315,7 @@ describe("OfferMaker integration test suite", () => {
 
       await assert.rejects(
         retractPromise,
-        "Retracting a non-existing offer should fail."
+        "Retracting a non-existing offer should fail.",
       );
     });
 
@@ -339,7 +339,7 @@ describe("OfferMaker integration test suite", () => {
 
       await assert.rejects(
         createPromise,
-        "Creating on a closed semibook should fail."
+        "Creating on a closed semibook should fail.",
       );
     });
 
@@ -353,7 +353,7 @@ describe("OfferMaker integration test suite", () => {
       assert.strictEqual(
         provision.toNumber(),
         0,
-        `There should be no need to re-provision`
+        `There should be no need to re-provision`,
       );
       await onchain_lp.updateAsk(ofrId, { tick: 12, gives: 10 });
 
@@ -361,12 +361,12 @@ describe("OfferMaker integration test suite", () => {
       assert.deepStrictEqual(
         asks[0].tick.toNumber(),
         12,
-        "offer should have updated tick"
+        "offer should have updated tick",
       );
       assert.strictEqual(
         asks[0].gives.toNumber(),
         10,
-        "offer should have updated gives"
+        "offer should have updated gives",
       );
     });
 
@@ -395,7 +395,7 @@ describe("OfferMaker integration test suite", () => {
 
       await assert.rejects(
         updatePromise,
-        "Updating on a closed market should fail."
+        "Updating on a closed market should fail.",
       );
     });
 

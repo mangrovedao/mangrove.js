@@ -16,10 +16,10 @@ BigNumber.prototype.not = function (): BigNumber {
 export const ONE = BigNumber.from(1); // useful to name it for drawing attention sometimes
 export const ONES = ethers.constants.MaxUint256;
 export const TOPBIT = BigNumber.from(
-  "0x8000000000000000000000000000000000000000000000000000000000000000"
+  "0x8000000000000000000000000000000000000000000000000000000000000000",
 );
 export const NOT_TOPBIT = BigNumber.from(
-  "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 );
 
 /* **sizes must match field sizes in `structs.ts` where relevant** */
@@ -67,11 +67,11 @@ export const MIN_TICK = BigNumber.from(-887272);
 export const MAX_TICK = BigNumber.from(887272);
 /* These are reference values for what the function `tickFromRatio` function will return, not the most possible accurate values for the min and max tick. */
 export const MIN_RATIO_MANTISSA = BigNumber.from(
-  "170153974464283981435225617938057077692"
+  "170153974464283981435225617938057077692",
 );
 export const MIN_RATIO_EXP = BigNumber.from(255);
 export const MAX_RATIO_MANTISSA = BigNumber.from(
-  "340256786836388094050805785052946541084"
+  "340256786836388094050805785052946541084",
 );
 export const MAX_RATIO_EXP = BigNumber.from(0);
 /* `MANTISSA_BITS` is the number of bits used in the mantissa of normalized floats that represent ratios. 128 means we can multiply all allowed volumes by the mantissa and not overflow. */
@@ -87,7 +87,7 @@ However the `*ByVolume` functions get a ratio by (abstractly) performing `outbou
 We thus pick a uniform, easy to remember constraint on volumes that works everywhere: `(1<<127)-1`
 */
 export const MAX_SAFE_VOLUME = BigNumber.from(
-  "170141183460469231731687303715884105727"
+  "170141183460469231731687303715884105727",
 );
 /* When a market order consumes offers, the implementation uses recursion consumes additional EVM stack space at each new offer. To avoid reverting du to stack overflow, Mangrove keeps a counter and stops the market order when it reaches a maximum recursion depth. `INITIAL_MAX_RECURSION_DEPTH` is the maximum recursion depth given at deployment time.
 
@@ -106,5 +106,5 @@ export const INITIAL_MAX_GASREQ_FOR_FAILING_OFFERS_MULTIPLIER =
 /* Those two constants are used in `TickLib.ratioFromTick` to convert a log base 1.0001 to a log base 2. */
 export const LOG_BP_SHIFT = BigNumber.from(235);
 export const LOG_BP_2X235 = BigNumber.from(
-  "382733217082594961806491056566382061424140926068392360945012727618364717537"
+  "382733217082594961806491056566382061424140926068392360945012727618364717537",
 );

@@ -92,7 +92,7 @@ export const mochaHooks = {
     hook.offerMakerAddress = await OfferMaker.deploy(
       // Saving the address for later use
       mgv.address,
-      offerMakerSigner.signer
+      offerMakerSigner.signer,
     );
 
     const tokenA = await mgv.token("TokenA");
@@ -105,11 +105,11 @@ export const mochaHooks = {
 
     await tokenA.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18)
+      mgv.toUnits(10, 18),
     );
     await tokenB.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18)
+      mgv.toUnits(10, 18),
     );
 
     const tx = await mgv.fundMangrove(10, mgv.getAddress("SimpleTestMaker"));

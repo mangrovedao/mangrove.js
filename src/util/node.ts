@@ -196,7 +196,7 @@ export const builder = (yargs: yargs.Argv<{}>) => {
 
 const computeArgv = async (
   params: inputServerParamsType,
-  ignoreCmdLineArgs = false
+  ignoreCmdLineArgs = false,
 ): Promise<partialComputeArgvType> => {
   // ignore command line if not main module, but still read from env vars
   // note: this changes yargs' default precedence, which is (high to low):
@@ -227,7 +227,7 @@ const deploy = async (params: deployParams) => {
   } catch (err: any) {
     throw new Error(
       "Could not get chain id, is the anvil node running?\nOriginal error: \n" +
-        err.toString()
+        err.toString(),
     );
   }
 
@@ -299,7 +299,7 @@ const connect = async (params: computeArgvType | serverParamsType) => {
       const blockNumberAfterRevert = await params.provider.getBlockNumber();
       if (blockNumberAfterRevert != snapshotBlockNumber) {
         throw Error(
-          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`
+          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`,
         );
       }
     },
@@ -323,14 +323,14 @@ export const node = async (argv: inputServerParamsType): Promise<nodeType> => {
 
 /* Return node actions from generated yargs parameters */
 export const nodeWithComputedArgv = async (
-  params: partialComputeArgvType
+  params: partialComputeArgvType,
 ): Promise<nodeType> => {
   // if node is initialized with a URL, host/port
   if (params.url === undefined) {
     params.url = `http://${params.host}:${params.port}`;
   } else if (params.spawn) {
     throw new Error(
-      "spawn and url params are incompatible. If you want to spawn a node, set host and port (not url); or keep url and set spawn to false."
+      "spawn and url params are incompatible. If you want to spawn a node, set host and port (not url); or keep url and set spawn to false.",
     );
   }
 

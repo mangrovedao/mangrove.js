@@ -23,29 +23,29 @@ describe("KandelStatus unit tests suite", () => {
     expected:
       | { live: boolean; offerId: number; price: Big | undefined }
       | undefined,
-    i: number
+    i: number,
   ) {
     assert.equal(
       actual === undefined,
       expected === undefined,
-      `unexpected at Index ${i}`
+      `unexpected at Index ${i}`,
     );
     if (expected) {
       assert.equal(
         actual?.live,
         expected.live,
-        `unexpected liveness at Index ${i}`
+        `unexpected liveness at Index ${i}`,
       );
       assert.equal(
         actual?.offerId,
         expected.offerId,
-        `unexpected offerId at Index ${i}`
+        `unexpected offerId at Index ${i}`,
       );
       assertApproxEqRel(
         actual!.price!,
         expected.price!,
         0.01,
-        `unexpected price at Index ${i}`
+        `unexpected price at Index ${i}`,
       );
     }
   }
@@ -84,21 +84,21 @@ describe("KandelStatus unit tests suite", () => {
     assert.deepStrictEqual(params.statuses.baseOffer, params.expectedBaseOffer);
     assert.equal(
       params.statuses.statuses.length,
-      params.expectedStatuses.length
+      params.expectedStatuses.length,
     );
     assert.deepStrictEqual(
       params.expectedLiveOutOfRange,
-      params.statuses.liveOutOfRange
+      params.statuses.liveOutOfRange,
     );
     assertApproxEqRel(
       params.expectedMaxPrice.toNumber(),
       params.statuses.maxPrice.toNumber(),
-      0.01
+      0.01,
     );
     assertApproxEqRel(
       params.expectedMinPrice.toNumber(),
       params.statuses.minPrice.toNumber(),
-      0.01
+      0.01,
     );
     params.expectedStatuses.forEach((x, i) => {
       const s = params.statuses.statuses[i];
@@ -107,23 +107,23 @@ describe("KandelStatus unit tests suite", () => {
       assert.equal(
         s.expectedLiveAsk,
         x.expectedLiveAsk ?? false,
-        `Index ${i} unexpected ask liveness`
+        `Index ${i} unexpected ask liveness`,
       );
       assert.equal(
         s.expectedLiveBid,
         x.expectedLiveBid ?? false,
-        `Index ${i} unexpected bid liveness`
+        `Index ${i} unexpected bid liveness`,
       );
       assertApproxEqRel(
         s.expectedPrice,
         x.expectedPrice!,
         0.01,
-        `Index ${i} unexpected price`
+        `Index ${i} unexpected price`,
       );
       assert.equal(
         s.expectedBaseQuoteTick.toString(),
         x.expectedBaseQuoteTick?.toString(),
-        `Index ${i} unexpected tick`
+        `Index ${i} unexpected tick`,
       );
     });
   }
@@ -174,7 +174,7 @@ describe("KandelStatus unit tests suite", () => {
           live: x.gives.gt(0),
           offerId: getOfferId("bids", x.index),
           tick: x.tick,
-        }))
+        })),
       );
   }
 
@@ -225,7 +225,7 @@ describe("KandelStatus unit tests suite", () => {
               live: ask?.gives.gt(0),
               offerId: getOfferId("asks", i),
               price: sut.distributionHelper.askTickPriceHelper.priceFromTick(
-                expectedBaseQuoteTick
+                expectedBaseQuoteTick,
               ),
               tick: expectedBaseQuoteTick,
             }
@@ -235,7 +235,7 @@ describe("KandelStatus unit tests suite", () => {
               live: bid?.gives.gt(0),
               offerId: getOfferId("bids", i),
               price: sut.distributionHelper.bidTickPriceHelper.priceFromTick(
-                -expectedBaseQuoteTick
+                -expectedBaseQuoteTick,
               ),
               tick: -expectedBaseQuoteTick,
             }
@@ -245,7 +245,7 @@ describe("KandelStatus unit tests suite", () => {
           expectedLiveAsk: ask?.gives.gt(0),
           expectedPrice:
             sut.distributionHelper.askTickPriceHelper.priceFromTick(
-              expectedBaseQuoteTick
+              expectedBaseQuoteTick,
             ),
           expectedBaseQuoteTick: expectedBaseQuoteTick,
           asks,
@@ -259,7 +259,7 @@ describe("KandelStatus unit tests suite", () => {
         originalDistribution.baseQuoteTickOffset,
         pricePoints,
         1,
-        offers
+        offers,
       );
 
       // Assert
@@ -318,7 +318,7 @@ describe("KandelStatus unit tests suite", () => {
             offerId: 55,
             live: true,
           },
-        ]
+        ],
       );
 
       // Assert
@@ -482,7 +482,7 @@ describe("KandelStatus unit tests suite", () => {
                 offerId: 47,
                 live: true,
               },
-            ]
+            ],
           );
 
           // Assert
@@ -509,7 +509,7 @@ describe("KandelStatus unit tests suite", () => {
             }
           }
         });
-      }
+      },
     );
 
     it("discards outliers even though price is near mid", () => {
@@ -541,7 +541,7 @@ describe("KandelStatus unit tests suite", () => {
             offerId: 43,
             live: true,
           },
-        ]
+        ],
       );
 
       // Assert
