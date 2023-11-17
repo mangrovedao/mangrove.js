@@ -5,9 +5,9 @@ import KandelInstance from "./kandel/kandelInstance";
 import Market from "./market";
 import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
-import KandelPriceCalculation from "./kandel/kandelPriceCalculation";
 import KandelConfiguration from "./kandel/kandelConfiguration";
 import { Bigish } from "./types";
+import KandelLib from "./kandel/kandelLib";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -80,15 +80,17 @@ class KandelStrategies {
 
   /** Creates a generator for generating Kandel distributions for the given market.
    * @param market The market to calculate for.
-   * @param precision The precision used for Kandel instances. Must match the deployed Kandel contract's PRECISION() value.
    * @returns A new KandelDistributionGenerator.
    */
-  public generator(market: Market, precision?: number) {
-    precision ??= 5; // TODO should be fetched from chain via seeder, but currently it requires at least 1 kandel instance.
-
+  public generator(market: Market) {
     return new KandelDistributionGenerator(
       new KandelDistributionHelper(market.base.decimals, market.quote.decimals),
-      new KandelPriceCalculation(precision)
+      new KandelLib({
+        address: market.mgv.getAddress("KandelLib"),
+        baseDecimals: market.base.decimals,
+        quoteDecimals: market.quote.decimals,
+        signer: market.mgv.signer,
+      })
     );
   }
 }

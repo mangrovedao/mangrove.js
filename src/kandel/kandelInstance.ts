@@ -8,44 +8,46 @@ import Market from "../market";
 import UnitCalculations from "../util/unitCalculations";
 import LiquidityProvider from "../liquidityProvider";
 import { ApproveArgs } from "../mgvtoken";
-import KandelStatus, { OffersWithPrices } from "./kandelStatus";
+import KandelStatus, { OffersWithLiveness } from "./kandelStatus";
 import KandelDistributionHelper, {
   OffersWithGives,
 } from "./kandelDistributionHelper";
 import KandelDistributionGenerator from "./kandelDistributionGenerator";
-import KandelPriceCalculation from "./kandelPriceCalculation";
 import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
 import OfferLogic from "../offerLogic";
 import KandelConfiguration from "./kandelConfiguration";
 import KandelSeeder from "./kandelSeeder";
-import { DirectWithBidsAndAsksDistribution } from "../types/typechain/GeometricKandel";
+import KandelLib from "./kandelLib";
 
 /**
  * @notice Parameters for a Kandel instance.
  * @param gasprice The gas price used when provisioning offers.
  * @param gasreq The gas required to execute a trade.
- * @param ratio The ratio of the geometric progression of prices. Should be >1 and <=2 with KandelInstance.precision decimals.
- * @param spread The spread used when transporting funds from an offer to its dual. Should be >1 and <=8 .
- * @param pricePoints The number of price points. Should be >=2 and <=255.
+ * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
+ * @param priceRatio The ratio between two price points - this gives the geometric progression. Should be >1.
+ * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
+ * @param pricePoints The number of price points. Should be >=2.
  */
 export type KandelParameters = {
   gasprice: number;
   gasreq: number;
+  baseQuoteTickOffset: number;
+  priceRatio: Big;
   stepSize: number;
-  // spread: number; //FIXME: is spread gone?
   pricePoints: number;
 };
 
 /**
- * @notice Parameters for a Kandel instance where provided properties override current values. Note that ratio and pricePoints are normally provided via the KandelDistribution.
+ * @notice Parameters for a Kandel instance where provided properties override current values. baseQuoteTickOffset takes precedence over priceRatio. Note that baseQuoteTickOffset and pricePoints are normally provided via the KandelDistribution.
  * @see KandelParameters for more information.
  * @remarks Cannot simply be Partial<KandelParameters> due to Big vs Bigish.
  */
 export type KandelParameterOverrides = {
   gasprice?: number;
   gasreq?: number;
+  baseQuoteTickOffset?: number;
+  priceRatio?: Bigish;
   stepSize?: number;
-  spread?: number;
   pricePoints?: number;
 };
 
@@ -53,7 +55,6 @@ export type KandelParameterOverrides = {
 class KandelInstance {
   kandel: typechain.GeometricKandel;
   address: string;
-  precision: number;
   market: Market;
   generator: KandelDistributionGenerator;
   status: KandelStatus;
@@ -87,8 +88,6 @@ class KandelInstance {
       params.signer
     );
 
-    const precision = 0; // (await kandel.PRECISION()).toNumber();
-
     const market =
       typeof params.market === "function"
         ? await params.market(
@@ -104,21 +103,26 @@ class KandelInstance {
       params.signer
     );
 
-    const priceCalculation = new KandelPriceCalculation(precision);
     const distributionHelper = new KandelDistributionHelper(
       market.base.decimals,
       market.quote.decimals
     );
+
+    const kandelLib = new KandelLib({
+      address: market.mgv.getAddress("KandelLib"),
+      signer: params.signer,
+      baseDecimals: market.base.decimals,
+      quoteDecimals: market.quote.decimals,
+    });
     const generator = new KandelDistributionGenerator(
       distributionHelper,
-      priceCalculation
+      kandelLib
     );
     return new KandelInstance({
       address: params.address,
-      precision,
       market,
       kandel,
-      kandelStatus: new KandelStatus(distributionHelper, priceCalculation),
+      kandelStatus: new KandelStatus(distributionHelper),
       generator,
       offerLogic,
       configuration: new KandelConfiguration(),
@@ -131,7 +135,6 @@ class KandelInstance {
     address: string;
     kandel: typechain.GeometricKandel;
     market: Market;
-    precision: number;
     kandelStatus: KandelStatus;
     generator: KandelDistributionGenerator;
     offerLogic: OfferLogic;
@@ -141,7 +144,6 @@ class KandelInstance {
     this.address = params.address;
     this.kandel = params.kandel;
     this.market = params.market;
-    this.precision = params.precision;
     this.status = params.kandelStatus;
     this.generator = params.generator;
     this.offerLogic = params.offerLogic;
@@ -157,6 +159,11 @@ class KandelInstance {
   /** Gets the quote of the market Kandel is making  */
   public getQuote() {
     return this.market.quote;
+  }
+
+  /** Gets the tick spacing of the market Kandel is making  */
+  public getTickSpacing() {
+    return this.market.tickSpacing;
   }
 
   /** Retrieves the identifier of this contract's reserve when using a router */
@@ -196,9 +203,15 @@ class KandelInstance {
   /** Retrieves the current Kandel parameters */
   public async getParameters(): Promise<KandelParameters> {
     const params = await this.kandel.params();
+    const baseQuoteTickOffset = await this.kandel.baseQuoteTickOffset();
     return {
       gasprice: params.gasprice,
       gasreq: params.gasreq,
+      baseQuoteTickOffset: baseQuoteTickOffset.toNumber(),
+      priceRatio:
+        this.generator.distributionHelper.askTickPriceHelper.priceFromTick(
+          baseQuoteTickOffset.toNumber()
+        ),
       stepSize: params.stepSize,
       pricePoints: params.pricePoints,
     };
@@ -212,49 +225,67 @@ class KandelInstance {
     return {
       gasprice: parameters.gasprice,
       gasreq: parameters.gasreq,
+      baseQuoteTickOffset: parameters.baseQuoteTickOffset,
       stepSize: parameters.stepSize,
-      compoundRateBase: UnitCalculations.toUnits(1, this.precision),
-      compoundRateQuote: UnitCalculations.toUnits(1, this.precision),
-      // spread: parameters.spread,
       pricePoints: parameters.pricePoints,
     };
   }
 
-  /** Gets new Kandel parameters based on current and some overrides.
+  /** Gets new Kandel parameters based on current and some overrides. If gasprice is not set, the current gasprice and cover factor is used.
    * @param parameters The Kandel parameters to override, those left out will keep their current value.
-   * @param distributionStepSize The ratio of the Kandel distribution.
+   * @param distributionBaseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression.
    * @param distributionPricePoints The number of price points of the Kandel distribution.
    * @returns The new Kandel parameters.
-   * @remarks Ratio and price points provided in the parameters must match a provided distribution.
+   * @remarks base quote tick offset and price points provided in the parameters must match a provided distribution.
    */
   public async getParametersWithOverrides(
     parameters: KandelParameterOverrides,
-    distributionStepSize?: number,
+    distributionBaseQuoteTickOffset?: number,
     distributionPricePoints?: number
   ): Promise<KandelParameters> {
     const current = await this.getParameters();
-    if (parameters.stepSize != null || distributionStepSize != null) {
+    const baseQuoteTickOffset =
+      parameters.baseQuoteTickOffset ??
+      (parameters.priceRatio
+        ? this.generator.distributionHelper.calculateBaseQuoteTickOffset(
+            Big(parameters.priceRatio)
+          )
+        : undefined);
+    if (
+      baseQuoteTickOffset != null ||
+      distributionBaseQuoteTickOffset != null
+    ) {
       if (
-        parameters.stepSize != null &&
-        distributionStepSize != null &&
-        !Big(parameters.stepSize).eq(distributionStepSize)
+        baseQuoteTickOffset != null &&
+        distributionBaseQuoteTickOffset != null &&
+        !ethers.BigNumber.from(baseQuoteTickOffset).eq(
+          distributionBaseQuoteTickOffset
+        )
       ) {
         throw Error(
-          "tickOffset in parameter overrides does not match the ratio of the distribution."
+          "baseQuoteTickOffset in parameter overrides (possibly derived from priceRatio does not match the baseQuoteTickOffset of the distribution."
         );
       }
-      current.stepSize =
-        parameters.stepSize ?? distributionStepSize ?? current.stepSize;
+      current.baseQuoteTickOffset =
+        baseQuoteTickOffset ??
+        distributionBaseQuoteTickOffset ??
+        current.baseQuoteTickOffset;
     }
     if (parameters.gasprice) {
       current.gasprice = parameters.gasprice;
     }
+    if (!current.gasprice) {
+      const config = this.configuration.getConfig(this.market);
+      current.gasprice = await this.seeder.getBufferedGasprice(
+        config.gaspriceFactor
+      );
+    }
     if (parameters.gasreq) {
       current.gasreq = parameters.gasreq;
     }
-    // if (parameters.spread) {
-    //   current.spread = parameters.spread;
-    // }
+    if (parameters.stepSize) {
+      current.stepSize = parameters.stepSize;
+    }
     if (parameters.pricePoints != null || distributionPricePoints != null) {
       if (
         parameters.pricePoints != null &&
@@ -325,13 +356,20 @@ class KandelInstance {
    * @returns The internal representation of the Kandel distribution.
    */
   public getRawDistribution(distribution: OfferDistribution) {
-    const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionOfferStruct[] =
-      Array(distribution.length);
-    distribution.forEach((o, i) => {
-      rawDistribution[i].tick = this.market.base.toUnits(o.base);
-      rawDistribution[i].gives = this.market.quote.toUnits(o.quote);
-      rawDistribution[i].index = o.index;
-    });
+    const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
+      {
+        bids: distribution.bids.map((o) => ({
+          gives: this.market.quote.toUnits(o.gives),
+          index: o.index,
+          tick: o.tick,
+        })),
+        asks: distribution.asks.map((o) => ({
+          gives: this.market.base.toUnits(o.gives),
+          index: o.index,
+          tick: o.tick,
+        })),
+      };
+
     return rawDistribution;
   }
 
@@ -374,6 +412,7 @@ class KandelInstance {
         offerId,
         index,
         live: this.market.isLiveOffer(offer),
+        price: offer.price,
         tick: offer.tick.toNumber(),
       })
     );
@@ -386,22 +425,21 @@ class KandelInstance {
    * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
    * @param params.offers The offers used as a basis for determining the status. This should include all live and dead offers.
    * @returns The status of the Kandel instance.
-   * @throws If no offers are live. At least one live offer is required to determine the status.
    * @remarks The expected prices is determined by extrapolating from a live offer closest to the mid price.
    * Offers are expected to be live bids below the mid price and asks above.
-   * Offers are expected to be dead near the mid price due to the spread (step size) between the live bid and ask.
+   * Offers are expected to be dead near the mid price due to the step size between the live bid and ask.
    */
   public async getOfferStatusFromOffers(params: {
     midPrice: Bigish;
-    offers: OffersWithPrices;
+    offers: OffersWithLiveness;
   }) {
     const parameters = await this.getParameters();
 
     return this.status.getOfferStatuses(
       Big(params.midPrice),
-      parameters.stepSize,
+      parameters.baseQuoteTickOffset,
       parameters.pricePoints,
-      // parameters.spread,
+      parameters.stepSize,
       params.offers
     );
   }
@@ -409,24 +447,29 @@ class KandelInstance {
   /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
+   * @param params.explicitOffers.bids The explicit bids to use.
+   * @param params.explicitOffers.asks The explicit asks to use.
    * @returns The new distribution.
    */
   public async createDistributionWithOffers(params: {
-    explicitOffers: OffersWithGives;
+    explicitOffers: { bids: OffersWithGives; asks: OffersWithGives };
   }) {
     const parameters = await this.getParameters();
     return this.generator.createDistributionWithOffers({
       explicitOffers: params.explicitOffers,
       distribution: {
-        stepSize: parameters.stepSize,
+        baseQuoteTickOffset: parameters.baseQuoteTickOffset,
         pricePoints: parameters.pricePoints,
+        stepSize: parameters.stepSize,
       },
     });
   }
 
   /** Retrieves the minimum volume for a given offer type.
    * @param offerType The offer type to get the minimum volume for.
+   * @param offerType The offer type to get the minimum volume for.
    * @returns The minimum volume for the given offer type.
+   * @dev @see seeder.getMinimumVolumeForGasreq for parameterized function.
    */
   public async getMinimumVolume(offerType: Market.BA) {
     return this.seeder.getMinimumVolumeForGasreq({
@@ -440,7 +483,7 @@ class KandelInstance {
    * @param params The parameters for the minimum volume.
    * @param params.offerType The offer type to get the minimum volume for.
    * @param params.index The Kandel index.
-   * @param params.price The price at the index.
+   * @param params.tick The tick at the index.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
    * @returns The minimum volume for the given offer type.
@@ -448,7 +491,7 @@ class KandelInstance {
   public async getMinimumVolumeForIndex(params: {
     offerType: Market.BA;
     index: number;
-    price: Bigish;
+    tick: number;
     minimumBasePerOffer?: Bigish;
     minimumQuotePerOffer?: Bigish;
   }) {
@@ -458,10 +501,10 @@ class KandelInstance {
     return this.generator.getMinimumVolumeForIndex({
       offerType: params.offerType,
       index: params.index,
-      price: Big(params.price),
-      stepSize: parameters.stepSize,
+      tick: params.tick,
+      baseQuoteTickOffset: parameters.baseQuoteTickOffset,
       pricePoints: parameters.pricePoints,
-      // spread: parameters.spread,
+      stepSize: parameters.stepSize,
       minimumBasePerOffer: mins.minimumBasePerOffer,
       minimumQuotePerOffer: mins.minimumQuotePerOffer,
     });
@@ -491,9 +534,11 @@ class KandelInstance {
     };
   }
 
-  /** Calculates a new distribution based on the provided live offers and deltas.
+  /** Calculates a new distribution based on the provided offers and deltas.
    * @param params The parameters for the new distribution.
-   * @param params.liveOffers The live offers to use.
+   * @param params.explicitOffers The offers to use.
+   * @param params.explicitOffers.bids The explicit bids to use.
+   * @param params.explicitOffers.asks The explicit asks to use.
    * @param params.baseDelta The delta to apply to the base token volume. If not provided, then the base token volume is unchanged.
    * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
@@ -502,14 +547,14 @@ class KandelInstance {
    * @remarks The base and quote deltas are applied uniformly to all offers, except during decrease where offers are kept above their minimum volume.
    */
   public async calculateDistributionWithUniformlyChangedVolume(params: {
-    liveOffers: OffersWithGives;
+    explicitOffers: { bids: OffersWithGives; asks: OffersWithGives };
     baseDelta?: Bigish;
     quoteDelta?: Bigish;
     minimumBasePerOffer?: Bigish;
     minimumQuotePerOffer?: Bigish;
   }) {
     const distribution = await this.createDistributionWithOffers({
-      explicitOffers: params.liveOffers,
+      explicitOffers: params.explicitOffers,
     });
 
     const { minimumBasePerOffer, minimumQuotePerOffer } =
@@ -528,6 +573,7 @@ class KandelInstance {
    * @param params The parameters for the new distribution.
    * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
    * @param params.minPrice The minimum price to generate the distribution from; can be retrieved from the status from @see getOfferStatus or @see getOfferStatusFromOffers .
+   * @param params.generateFromMid Whether to generate the distribution outwards from the midPrice or upwards from the minPrice.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
    * @returns The new distribution, which can be used to re-populate the Kandel instance with this exact distribution.
@@ -535,6 +581,7 @@ class KandelInstance {
   public async calculateUniformDistributionFromMinPrice(params: {
     midPrice: Bigish;
     minPrice: Bigish;
+    generateFromMid: boolean;
     minimumBasePerOffer?: Bigish;
     minimumQuotePerOffer?: Bigish;
   }) {
@@ -543,13 +590,15 @@ class KandelInstance {
     const { minimumBasePerOffer, minimumQuotePerOffer } =
       await this.getMinimumOrOverrides(params);
 
-    const distribution = this.generator.calculateMinimumDistribution({
-      priceParams: {
+    const distribution = await this.generator.calculateMinimumDistribution({
+      distributionParams: {
         minPrice: params.minPrice,
-        stepSize: parameters.stepSize,
+        baseQuoteTickOffset: parameters.baseQuoteTickOffset,
         pricePoints: parameters.pricePoints,
+        midPrice: params.midPrice,
+        stepSize: parameters.stepSize,
+        generateFromMid: params.generateFromMid,
       },
-      midPrice: params.midPrice,
       minimumBasePerOffer,
       minimumQuotePerOffer,
     });
@@ -607,31 +656,22 @@ class KandelInstance {
     );
   }
 
-  /** Splits the distribution into chunks and converts it to internal representation.
+  /** Splits the distribution into chunks
    * @param params The parameters.
    * @param params.distribution The distribution to split.
    * @param params.maxOffersInChunk The maximum number of offers in a chunk. If not provided, then KandelConfiguration is used.
-   * @returns The raw distributions in internal representation and the index of the first ask.
+   * @returns The distribution chunks.
    */
-  async getRawDistributionChunks(params: {
+  async getDistributionChunks(params: {
     distribution: KandelDistribution;
     maxOffersInChunk?: number;
   }) {
     params.distribution.verifyDistribution();
 
-    const distributions = params.distribution.chunkDistribution(
+    return params.distribution.chunkDistribution(
       params.maxOffersInChunk ??
         this.getMostSpecificConfig().maxOffersInPopulateChunk
     );
-
-    const firstAskIndex = params.distribution.getFirstAskIndex();
-
-    return {
-      rawDistributions: distributions.map(({ distribution }) => ({
-        rawDistribution: this.getRawDistribution(distribution),
-      })),
-      firstAskIndex,
-    };
   }
 
   async getGasreqAndGasprice(gasreq?: number, gasprice?: number) {
@@ -647,18 +687,20 @@ class KandelInstance {
 
   /** Determines the required provision for the offers in the distribution or the supplied offer count.
    * @param params The parameters used to calculate the provision.
-   * @param params.distribution The distribution to calculate the provision for. Optional if offerCount is provided.
-   * @param params.offerCount The number of offers to calculate the provision for. Optional if distribution is provided.
+   * @param params.distribution The distribution to calculate the provision for. Optional if askCount and bidCount are provided.
+   * @param params.bidCount The number of bids to calculate the provision for. Optional if distribution is provided.
+   * @param params.askCount The number of asks to calculate the provision for. Optional if distribution is provided.
+   * @param params.gasprice The gas price to calculate provision for. Default is retrieved from Kandel parameters. So the gaspriceFactor is should be accounted for in this value.
    * @param params.gasreq The gas required to execute a trade. Default is retrieved from Kandel parameters.
-   * @param params.gasprice The gas price to calculate provision for. Default is retrieved from Kandel parameters.
    * @returns The provision required for the number of offers.
-   * @remarks This takes into account that each price point can become both an ask and a bid which both require provision. Existing locked provision or balance on Mangrove is not accounted for.
+   * @remarks Existing locked provision or balance on Mangrove is not accounted for.
    */
   public async getRequiredProvision(params: {
     distribution?: KandelDistribution;
-    offerCount?: number;
-    gasreq?: number;
+    bidCount?: number;
+    askCount?: number;
     gasprice?: number;
+    gasreq?: number;
   }) {
     const { gasreq, gasprice } = await this.getGasreqAndGasprice(
       params.gasreq,
@@ -673,7 +715,8 @@ class KandelInstance {
     return (
       (await params.distribution?.getRequiredProvision(provisionParams)) ??
       (await this.generator.distributionHelper.getRequiredProvision({
-        offerCount: params.offerCount ?? 0,
+        bidCount: params.bidCount ?? 0,
+        askCount: params.askCount ?? 0,
         ...provisionParams,
       }))
     );
@@ -698,7 +741,7 @@ class KandelInstance {
 
   /** Calculates the provision locked for a set of offers based on the given parameters
    * @param existingOffers[] the offers to calculate provision for.
-   * @param existingOffers[].gasprice the gas price for the offer in gwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
    * @param existingOffers[].gasreq the gas requirement for the offer.
    * @param existingOffers[].gasbase the offer list's offer_gasbase.
    * @returns the locked provision, in ethers.
@@ -714,7 +757,8 @@ class KandelInstance {
    * @param params.gasreq An optional new gas required to execute a trade. Default is retrieved from Kandel parameters.
    * @param params.gasprice An optional new gas price to calculate provision for. Default is retrieved from Kandel parameters.
    * @param params.distribution The distribution to calculate the provision for. Optional.
-   * @param params.offerCount The number of offers to calculate the provision for. Optional.
+   * @param params.bidCount The number of bids to calculate the provision for. Optional.
+   * @param params.askCount The number of asks to calculate the provision for. Optional.
    * @returns the additional required provision, in ethers.
    * @remarks If neither params.distribution nor params.offerCount is provided, then the current number of price points is used.
    */
@@ -722,7 +766,8 @@ class KandelInstance {
     gasreq?: number;
     gasprice?: number;
     distribution?: KandelDistribution;
-    offerCount?: number;
+    bidCount?: number;
+    askCount?: number;
   }) {
     const existingOffers = await this.getOffersProvisionParams();
     return this.getMissingProvisionFromOffers(params, existingOffers);
@@ -733,29 +778,44 @@ class KandelInstance {
    * @param params.gasreq An optional new gas required to execute a trade. Default is retrieved from Kandel parameters.
    * @param params.gasprice An optional new gas price to calculate provision for. Default is retrieved from Kandel parameters.
    * @param params.distribution The distribution to calculate the provision for. Optional.
-   * @param params.offerCount The number of offers to calculate the provision for. Optional.
+   * @param params.bidCount The number of bids to calculate the provision for. Optional.
+   * @param params.askCount The number of asks to calculate the provision for. Optional.
    * @param existingOffers[] the offers with potential locked provision.
-   * @param existingOffers[].gasprice the gas price for the offer in gwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
    * @param existingOffers[].gasreq the gas requirement for the offer.
    * @param existingOffers[].gasbase the offer list's offer_gasbase.
    * @returns the additional required provision, in ethers.
-   * @remarks If neither distribution nor offerCount is provided, then the current number of price points is used.
+   * @remarks If neither distribution nor askCount or bidCount is provided, then the current number of price points less the stepSize is used.
    */
   async getMissingProvisionFromOffers(
     params: {
       gasreq?: number;
       gasprice?: number;
       distribution?: KandelDistribution;
-      offerCount?: number;
+      bidCount?: number;
+      askCount?: number;
     },
     existingOffers: { gasprice: number; gasreq: number; gasbase: number }[]
   ) {
     const lockedProvision = this.getLockedProvisionFromOffers(existingOffers);
     const availableBalance = await this.offerLogic.getMangroveBalance();
-    if (!params.distribution && !params.offerCount) {
+    if (
+      !params.distribution &&
+      (params.askCount == undefined || params.bidCount == undefined)
+    ) {
+      const parameters = await this.getParameters();
+      const askCount =
+        params.askCount == undefined
+          ? parameters.pricePoints - parameters.stepSize
+          : params.askCount;
+      const bidCount =
+        params.bidCount == undefined
+          ? parameters.pricePoints - parameters.stepSize
+          : params.bidCount;
       params = {
         ...params,
-        offerCount: (await this.getParameters()).pricePoints,
+        askCount,
+        bidCount,
       };
     }
     const requiredProvision = await this.getRequiredProvision(params);
@@ -768,14 +828,14 @@ class KandelInstance {
   /** Populates the offers in the distribution for the Kandel instance and sets parameters.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
-   * @param params.parameters The parameters to set leave out values to keep their current value.
+   * @param params.parameters The parameters to set leave out values to keep their current value. If gasprice is not set, the current gasprice and cover factor is used.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
    * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.
-   * @remarks If this function is invoked with new ratio, pricePoints, or spread, then first retract all offers; otherwise, Kandel will enter an inconsistent state.
+   * @remarks If this function is invoked with new baseQuoteTickOffset, pricePoints, or stepSize, then first retract all offers; otherwise, Kandel will enter an inconsistent state.
    */
   public async populate(
     params: {
@@ -786,19 +846,19 @@ class KandelInstance {
       funds?: Bigish;
       maxOffersInChunk?: number;
     },
-    overrides: ethers.Overrides = {} // : Promise<ethers.ethers.ContractTransaction[]>  // FIXME:
-  ) {
+    overrides: ethers.Overrides = {}
+  ): Promise<ethers.ethers.ContractTransaction[]> {
     const parameterOverrides = params.parameters ?? {};
     const parameters = await this.getParametersWithOverrides(
       parameterOverrides,
-      params.distribution?.stepSize,
+      params.distribution?.baseQuoteTickOffset,
       params.distribution?.pricePoints
     );
     // If no distribution is provided, then create an empty distribution to pass information around.
     const distribution =
       params.distribution ??
       this.generator.createDistributionWithOffers({
-        explicitOffers: [],
+        explicitOffers: { bids: [], asks: [] },
         distribution: parameters,
       });
 
@@ -811,81 +871,86 @@ class KandelInstance {
         gasprice: rawParameters.gasprice,
       }));
 
-    const { firstAskIndex, rawDistributions } =
-      await this.getRawDistributionChunks({
-        distribution,
-        maxOffersInChunk: params.maxOffersInChunk,
-      });
+    const distributionChunks = await this.getDistributionChunks({
+      distribution,
+      maxOffersInChunk: params.maxOffersInChunk,
+    });
+
+    const rawDistributions = distributionChunks.map((distribution) =>
+      this.getRawDistribution(distribution)
+    );
 
     const firstDistribution =
       rawDistributions.length > 0
         ? rawDistributions[0]
-        : {
-            asks: [] as DirectWithBidsAndAsksDistribution.DistributionOfferStruct[],
-            bids: [] as DirectWithBidsAndAsksDistribution.DistributionOfferStruct[],
-          };
+        : { asks: [], bids: [] };
 
-    //FIXME: distribution has change a lot
-    // const txs = [
-    //   await this.kandel.populate(
-    //     firstDistribution,
-    //     rawParameters,
-    //     this.market.base.toUnits(params.depositBaseAmount ?? 0),
-    //     this.market.quote.toUnits(params.depositQuoteAmount ?? 0),
-    //     LiquidityProvider.optValueToPayableOverride(overrides, funds)
-    //   ),
-    // ];
+    //FIXME use populateFromOffset instead to avoid the extra setBaseQuoteTickOffset tx.
+    const txs = [
+      await this.kandel.setBaseQuoteTickOffset(
+        rawParameters.baseQuoteTickOffset
+      ),
+      await this.kandel.populate(
+        firstDistribution,
+        rawParameters,
+        this.market.base.toUnits(params.depositBaseAmount ?? 0),
+        this.market.quote.toUnits(params.depositQuoteAmount ?? 0),
+        LiquidityProvider.optValueToPayableOverride(overrides, funds)
+      ),
+    ];
 
-    // return txs.concat(
-    //   await this.populateChunks(
-    //     firstAskIndex,
-    //     rawDistributions.slice(1),
-    //     overrides
-    //   )
-    // );
+    return txs.concat(
+      await this.populateChunks(rawDistributions.slice(1), overrides)
+    );
   }
 
   /** Populates the offers in the distribution for the Kandel instance. To set parameters or add funds, use populate.
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
+   * @param params.distributionChunks Home-grown distribution chunks to populate (can be used to populate, e.g., a single offer) - takes precedence over distribution. Take care to ensure duals are included or already populated with correct parameters.
    * @param overrides The ethers overrides to use when calling the populateChunk function.
    * @returns The transaction(s) used to populate the offers.
    */
   public async populateChunk(
-    params: { distribution: KandelDistribution; maxOffersInChunk?: number },
+    params: {
+      distribution?: KandelDistribution;
+      maxOffersInChunk?: number;
+      distributionChunks?: OfferDistribution[];
+    },
     overrides: ethers.Overrides = {}
   ) {
-    const { firstAskIndex, rawDistributions } =
-      await this.getRawDistributionChunks(params);
-
-    return await this.populateChunks(
-      [], //rawDistributions, //FIXME:
-      overrides
+    let distributionChunks = params.distributionChunks;
+    if (!distributionChunks) {
+      if (params.distribution) {
+        distributionChunks = await this.getDistributionChunks({
+          distribution: params.distribution,
+          maxOffersInChunk: params.maxOffersInChunk,
+        });
+      } else {
+        throw Error("distribution or distributionChunks must be provided");
+      }
+    }
+    const rawDistributions = distributionChunks.map((distribution) =>
+      this.getRawDistribution(distribution)
     );
+
+    return await this.populateChunks(rawDistributions, overrides);
   }
 
   /** Populates the offers in the distribution for the Kandel instance.
-   * @param firstAskIndex The index of the first ask in the distribution.
    * @param rawDistributions The raw chunked distributions in internal representation to populate.
    * @param overrides The ethers overrides to use when calling the populateChunk function.
    * @returns The transaction(s) used to populate the offers.
    */
   async populateChunks(
-    rawDistributions: {
-      rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct;
-    }[],
+    rawDistributions: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct[],
     overrides: ethers.Overrides = {}
   ) {
     const txs: ethers.ethers.ContractTransaction[] = [];
 
     for (let i = 0; i < rawDistributions.length; i++) {
-      txs.push(
-        await this.kandel.populateChunk(
-          rawDistributions[i].rawDistribution,
-          overrides
-        )
-      );
+      txs.push(await this.kandel.populateChunk(rawDistributions[i], overrides));
     }
 
     return txs;
@@ -919,7 +984,7 @@ class KandelInstance {
    * @param params.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
    * @param overrides The ethers overrides to use when calling the retractAndWithdraw, and retractOffers functions.
    * @returns The transaction(s) used to retract the offers.
-   * @remarks This function or retractOffers should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
+   * @remarks This function or retractOffers should be used to retract all offers before changing the baseQuoteTickOffset, pricePoints, or stepSize using populate.
    * If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
    */
   public async retractAndWithdraw(
@@ -974,8 +1039,9 @@ class KandelInstance {
    * @param params.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
-   * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the ratio, pricePoints, or spread using populate.
+   * @remarks This function or retractAndWithdraw should be used to retract all offers before changing the baseQuoteTickOffset, pricePoints, or stepSize using populate.
    * If offers are retracted over multiple transactions, then the chunks are retracted in opposite order from the populate function.
+   * Note that when retracting an offer the dual should also be retracted, else it can be resurrected.
    */
   public async retractOffers(
     params: {
@@ -1004,6 +1070,7 @@ class KandelInstance {
    * @param params.skipLast Whether to skip the last chunk. This is used to allow the last chunk to be retracted while withdrawing funds.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.
+   * @dev
    */
   async retractOfferChunks(
     params: {

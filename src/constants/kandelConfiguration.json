@@ -1,15 +1,15 @@
 {
   "gaspriceFactor": 10,
-  "maxOffersInPopulateChunk": 50,
-  "maxOffersInRetractChunk": 50,
+  "maxOffersInPopulateChunk": 25,
+  "maxOffersInRetractChunk": 25,
   "aaveEnabled": false,
-  "spread": 1,
-  "ratio": 1.01,
+  "stepSize": 1,
+  "baseQuoteTickOffset": 99,
   "networks": {
     "maticmum": {
       "gasPriceFactor": 10,
-      "maxOffersInPopulateChunk": 80,
-      "maxOffersInRetractChunk": 80,
+      "maxOffersInPopulateChunk": 40,
+      "maxOffersInRetractChunk": 40,
       "minimumBasePerOfferFactor": 10,
       "minimumQuotePerOfferFactor": 10,
       "markets": {
@@ -48,8 +48,8 @@
       }
     },
     "matic": {
-      "maxOffersInPopulateChunk": 80,
-      "maxOffersInRetractChunk": 80,
+      "maxOffersInPopulateChunk": 40,
+      "maxOffersInRetractChunk": 40,
       "minimumBasePerOfferFactor": 10,
       "minimumQuotePerOfferFactor": 10,
       "aaveEnabled": true,

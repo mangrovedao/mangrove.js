@@ -3,7 +3,7 @@ import { typechain } from "../types";
 
 import TradeEventManagement from "../util/tradeEventManagement";
 import { PromiseOrValue } from "../types/typechain/common";
-import { ethers } from "ethers";
+import { OLKeyStruct } from "../types/typechain/Mangrove";
 
 /**
  * @title Repository for Kandel instances.
@@ -44,35 +44,38 @@ class KandelFarm {
    * Gets all Kandels matching a given filter.
    * @param filter The filter to apply.
    * @param filter.owner The Kandel instance owner - the one who invoked sow.
-   * @param filter.base The base token for the Kandel instance.
-   * @param filter.quote The quote token for the Kandel instance.
+   * @param filter.baseQuoteOlKey The low-level identifier of the market for the Kandel instance. Takes precedence over baseQuoteOfferList if both are provided.
+   * @param filter.baseQuoteOfferList The identifier of the market for the Kandel instance using Mangrove token identifiers.
    * @param filter.onAave Whether the Kandel instance uses the Aave router.
    * @returns All kandels matching the filter.
    */
   public async getKandels(filter?: {
     owner?: PromiseOrValue<string> | null;
-    olKeyStruct?: PromiseOrValue<{
-      base: PromiseOrValue<string>;
-      quote: PromiseOrValue<string>;
-      tickSpacing: PromiseOrValue<number>;
+    baseQuoteOlKey?: PromiseOrValue<OLKeyStruct> | null;
+    baseQuoteOfferList?: PromiseOrValue<{
+      base: string;
+      quote: string;
+      tickSpacing: number;
     }> | null;
     onAave?: boolean;
   }) {
-    const olKeyStruct = await filter?.olKeyStruct;
-    const baseAddress = olKeyStruct?.base
-      ? this.mgv.getAddress(await olKeyStruct.base)
-      : null;
-    const quoteAddress = olKeyStruct?.quote
-      ? this.mgv.getAddress(await olKeyStruct.quote)
-      : null;
-    const tickSpacing = olKeyStruct?.tickSpacing ?? 0;
+    let olKey = await filter?.baseQuoteOlKey;
+    if (!olKey) {
+      const offerList = await filter?.baseQuoteOfferList;
+      if (offerList) {
+        const baseAddress = this.mgv.getAddress(offerList.base);
+        const quoteAddress = this.mgv.getAddress(offerList.quote);
+        const tickSpacing = offerList.tickSpacing ?? 0;
+        olKey = {
+          outbound_tkn: baseAddress,
+          inbound_tkn: quoteAddress,
+          tickSpacing,
+        };
+      }
+    }
 
-    const olKeyHash = olKeyStruct
-      ? ethers.utils.solidityKeccak256(
-          ["address", "address", "uint256"],
-          [baseAddress, quoteAddress, tickSpacing]
-        )
-      : undefined;
+    const olKeyHash = olKey ? this.mgv.calculateOLKeyHash(olKey) : undefined;
+
     const kandels =
       filter?.onAave == null || filter.onAave == false
         ? (

@@ -1,331 +1,271 @@
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
-import KandelDistribution, {
-  OfferDistribution,
-} from "../../src/kandel/kandelDistribution";
-import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
-import KandelPriceCalculation from "../../src/kandel/kandelPriceCalculation";
+import KandelDistribution from "../../src/kandel/kandelDistribution";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
+import { assertApproxEqAbs } from "../util/helpers";
 
-// describe("KandelDistribution unit tests suite", () => {
-//   describe(
-//     KandelDistribution.prototype.calculateConstantGivesPerOffer.name,
-//     () => {
-//       let sut: KandelDistribution;
-//       beforeEach(() => {
-//         sut = new KandelDistribution(
-//           1,
-//           5,
-//           [
-//             { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
-//             { offerType: "bids", base: Big(21), quote: Big(1000), index: 1 },
-//             { offerType: "asks", base: Big(1), quote: Big(44), index: 2 },
-//             { offerType: "asks", base: Big(1), quote: Big(44), index: 3 },
-//             { offerType: "asks", base: Big(1), quote: Big(44), index: 4 },
-//           ],
-//           4,
-//           6
-//         );
-//       });
+describe("KandelDistribution unit tests suite", () => {
+  let sut: KandelDistribution;
+  beforeEach(() => {
+    sut = new KandelDistribution(
+      1,
+      4,
+      1,
+      {
+        bids: [
+          { tick: -1, gives: Big(1000), index: 0 },
+          { tick: -2, gives: Big(2000), index: 1 },
+          { tick: -3, gives: Big(0), index: 2 },
+        ],
+        asks: [
+          { tick: 2, gives: Big(0), index: 1 },
+          { tick: 3, gives: Big(0), index: 2 },
+          { tick: 4, gives: Big(5000), index: 3 },
+        ],
+      },
+      4,
+      6
+    );
+  });
+  describe(
+    KandelDistribution.prototype.calculateConstantGivesPerOffer.name,
+    () => {
+      it("can calculate constant outbound", () => {
+        // Act
+        const { askGives, bidGives } = sut.calculateConstantGivesPerOffer(
+          Big(3),
+          Big(2000)
+        );
 
-//       it("can calculate constant outbound", () => {
-//         // Act
-//         const { askGives, bidGives } = sut.calculateConstantGivesPerOffer(
-//           Big(3),
-//           Big(2000)
-//         );
+        // Assert
+        assert.equal(askGives?.toNumber(), 3);
+        assert.equal(bidGives?.toNumber(), 1000);
+      });
 
-//         // Assert
-//         assert.equal(askGives?.toNumber(), 1);
-//         assert.equal(bidGives?.toNumber(), 1000);
-//       });
+      it("can work without any available", () => {
+        // Act
+        const { askGives, bidGives } = sut.calculateConstantGivesPerOffer();
 
-//       it("can work without any available", () => {
-//         // Act
-//         const { askGives, bidGives } = sut.calculateConstantGivesPerOffer();
+        // Assert
+        assert.equal(askGives, undefined);
+        assert.equal(bidGives, undefined);
+      });
 
-//         // Assert
-//         assert.equal(askGives, undefined);
-//         assert.equal(bidGives, undefined);
-//       });
+      it("throws if 0 available", () => {
+        // Act/assert
+        assert.throws(
+          () => sut.calculateConstantGivesPerOffer(Big(0)),
+          new Error(
+            "Too low volume for the given number of offers. Would result in 0 gives."
+          )
+        );
+        assert.throws(
+          () => sut.calculateConstantGivesPerOffer(undefined, Big(0)),
+          new Error(
+            "Too low volume for the given number of offers. Would result in 0 gives."
+          )
+        );
+      });
+    }
+  );
 
-//       it("throws if 0 available", () => {
-//         // Act/assert
-//         assert.throws(
-//           () => sut.calculateConstantGivesPerOffer(Big(0)),
-//           new Error(
-//             "Too low volume for the given number of offers. Would result in 0 gives."
-//           )
-//         );
-//         assert.throws(
-//           () => sut.calculateConstantGivesPerOffer(undefined, Big(0)),
-//           new Error(
-//             "Too low volume for the given number of offers. Would result in 0 gives."
-//           )
-//         );
-//       });
-//     }
-//   );
+  describe(KandelDistribution.prototype.getFirstLiveAskIndex.name, () => {
+    it("is correct when no live asks", () => {
+      // Arrange
+      sut = new KandelDistribution(
+        1,
+        2,
+        1,
+        {
+          bids: [{ gives: Big(1), tick: 1, index: 0 }],
+          asks: [{ gives: Big(0), tick: 1, index: 1 }],
+        },
+        4,
+        6
+      );
 
-//   describe(KandelDistribution.prototype.getOfferCount.name, () => {
-//     it("can be less than pricePoints", () => {
-//       // Arrange
-//       const sut = new KandelDistribution(
-//         1,
-//         5,
-//         [{ offerType: "bids", base: Big(11), quote: Big(2000), index: 0 }],
-//         4,
-//         6
-//       );
+      // Act/Assert
+      assert.equal(sut.getFirstLiveAskIndex(), sut.pricePoints);
+    });
 
-//       // Act/Assert
-//       assert.equal(sut.getOfferCount(), 1);
-//     });
-//   });
+    it("is correct when some live asks", () => {
+      // Act/Assert
+      assert.equal(sut.getFirstLiveAskIndex(), 3);
+    });
+  });
 
-//   describe(KandelDistribution.prototype.getFirstAskIndex.name, () => {
-//     it("is correct when none", () => {
-//       // Arrange
-//       const sut = new KandelDistribution(
-//         1,
-//         5,
-//         [
-//           { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
-//           { offerType: "bids", base: Big(11), quote: Big(2000), index: 1 },
-//         ],
-//         4,
-//         6
-//       );
+  describe(
+    KandelDistribution.prototype.getOfferedVolumeForDistribution.name,
+    () => {
+      it("sums up the base and quote volume of the distribution", () => {
+        // Act
+        const { requiredBase, requiredQuote } =
+          sut.getOfferedVolumeForDistribution();
 
-//       // Act/Assert
-//       assert.equal(sut.getFirstAskIndex(), sut.pricePoints);
-//     });
+        // Assert
+        assert.equal(
+          5000,
+          requiredBase.toNumber(),
+          "base should be all the base"
+        );
+        assert.equal(
+          3000,
+          requiredQuote.toNumber(),
+          "quote should be all the quote"
+        );
+      });
+    }
+  );
 
-//     it("is correct when some", () => {
-//       // Arrange
-//       const sut = new KandelDistribution(
-//         1,
-//         5,
-//         [
-//           { offerType: "bids", base: Big(11), quote: Big(2000), index: 0 },
-//           { offerType: "asks", base: Big(11), quote: Big(2000), index: 1 },
-//         ],
-//         4,
-//         6
-//       );
+  describe(KandelDistribution.prototype.chunkDistribution.name, () => {
+    it("can chunk an uneven set", () => {
+      // Act
+      const chunks = sut.chunkDistribution(4);
 
-//       // Act/Assert
-//       assert.equal(sut.getFirstAskIndex(), 1);
-//     });
-//   });
+      // Assert
+      assert.equal(chunks.length, 2);
 
-//   describe(
-//     KandelDistribution.prototype.getOfferedVolumeForDistribution.name,
-//     () => {
-//       it("sums up the base and quote volume of the distribution", () => {
-//         // Arrange
-//         const offers: OfferDistribution = [
-//           {
-//             base: Big(1),
-//             quote: Big(2),
-//             index: 4,
-//             offerType: "bids",
-//           },
-//           {
-//             base: Big(3),
-//             quote: Big(5),
-//             index: 5,
-//             offerType: "bids",
-//           },
-//           {
-//             base: Big(9),
-//             quote: Big(7),
-//             index: 6,
-//             offerType: "asks",
-//           },
-//           {
-//             base: Big(13),
-//             quote: Big(17),
-//             index: 7,
-//             offerType: "asks",
-//           },
-//         ];
+      assert.equal(chunks[0].asks[0].index, 3);
+      assert.equal(chunks[0].bids[0].index, 2);
+      assert.equal(chunks[0].bids[1].index, 1);
+      assert.equal(chunks[0].asks[1].index, 2);
+      assert.equal(chunks[1].asks[0].index, 1);
+      assert.equal(chunks[1].bids[0].index, 0);
+    });
 
-//         const sut = new KandelDistribution(1, offers.length, offers, 4, 6);
+    it("can chunk an even set", () => {
+      // Arrange
+      sut = new KandelDistribution(
+        1,
+        5,
+        1,
+        {
+          bids: [
+            { tick: -1, gives: Big(1000), index: 0 },
+            { tick: -2, gives: Big(2000), index: 1 },
+            { tick: -3, gives: Big(0), index: 2 },
+            { tick: -4, gives: Big(0), index: 3 },
+          ],
+          asks: [
+            { tick: 2, gives: Big(0), index: 1 },
+            { tick: 3, gives: Big(0), index: 2 },
+            { tick: 4, gives: Big(5000), index: 3 },
+            { tick: 5, gives: Big(5000), index: 4 },
+          ],
+        },
+        4,
+        6
+      );
 
-//         // Act
-//         const { requiredBase, requiredQuote } =
-//           sut.getOfferedVolumeForDistribution();
+      // Act
+      const chunks = sut.chunkDistribution(4);
 
-//         // Assert
-//         assert.equal(
-//           9 + 13,
-//           requiredBase.toNumber(),
-//           "base should be all the base"
-//         );
-//         assert.equal(
-//           2 + 5,
-//           requiredQuote.toNumber(),
-//           "quote should be all the quote"
-//         );
-//       });
-//     }
-//   );
+      // Assert
+      assert.equal(chunks.length, 2);
 
-//   describe(KandelDistribution.prototype.chunkDistribution.name, () => {
-//     it("can chunk an uneven set", () => {
-//       // Arrange
-//       const sut = new KandelDistribution(
-//         1,
-//         3,
-//         [
-//           { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
-//           { base: Big(3), quote: Big(4), index: 1, offerType: "bids" },
-//           { base: Big(5), quote: Big(9), index: 2, offerType: "asks" },
-//         ],
-//         4,
-//         6
-//       );
+      assert.equal(chunks[0].asks[0].index, 3);
+      assert.equal(chunks[0].bids[0].index, 2);
+      assert.equal(chunks[0].bids[1].index, 1);
+      assert.equal(chunks[0].asks[1].index, 2);
+      assert.equal(chunks[1].asks[0].index, 4);
+      assert.equal(chunks[1].bids[0].index, 3);
+      assert.equal(chunks[1].asks[1].index, 1);
+      assert.equal(chunks[1].bids[1].index, 0);
+    });
 
-//       // Act
-//       const chunks = sut.chunkDistribution(2);
+    it("can have one extra offer due to boundary", () => {
+      // Act
+      const chunks = sut.chunkDistribution(3);
 
-//       // Assert
-//       assert.equal(chunks.length, 2);
+      // Assert
+      assert.equal(chunks.length, 2);
 
-//       assert.equal(chunks[0].distribution[0].base.toNumber(), 3);
-//       assert.equal(chunks[0].distribution[1].base.toNumber(), 5);
-//       assert.equal(chunks[1].distribution[0].base.toNumber(), 1);
-//     });
+      assert.equal(chunks[0].asks[0].index, 3);
+      assert.equal(chunks[0].bids[0].index, 2);
+      assert.equal(chunks[0].bids[1].index, 1);
+      assert.equal(chunks[0].asks[1].index, 2);
+      assert.equal(chunks[1].asks[0].index, 1);
+      assert.equal(chunks[1].bids[0].index, 0);
+    });
 
-//     it("can chunk an even set", () => {
-//       // Arrange
-//       const sut = new KandelDistribution(
-//         1,
-//         3,
-//         [
-//           { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
-//           { base: Big(3), quote: Big(4), index: 1, offerType: "bids" },
-//           { base: Big(5), quote: Big(6), index: 2, offerType: "asks" },
-//           { base: Big(7), quote: Big(8), index: 3, offerType: "asks" },
-//         ],
-//         4,
-//         6
-//       );
+    bidsAsks.forEach((offerType) => {
+      it(`works with all ${offerType}`, () => {
+        // Arrange
+        const bidGives = offerType == "bids" ? 1000 : 0;
+        const askGives = offerType == "asks" ? 1000 : 0;
+        sut = new KandelDistribution(
+          1,
+          4,
+          1,
+          {
+            bids: [
+              { tick: -1, gives: Big(bidGives), index: 0 },
+              { tick: -2, gives: Big(bidGives), index: 1 },
+              { tick: -3, gives: Big(bidGives), index: 2 },
+            ],
+            asks: [
+              { tick: 2, gives: Big(askGives), index: 1 },
+              { tick: 3, gives: Big(askGives), index: 2 },
+              { tick: 4, gives: Big(askGives), index: 3 },
+            ],
+          },
+          4,
+          6
+        );
 
-//       // Act
-//       const chunks = sut.chunkDistribution(2);
+        // Act
+        const chunks = sut.chunkDistribution(4);
 
-//       // Assert
-//       assert.equal(chunks.length, 2);
+        // Assert
+        assert.equal(chunks.length, 2);
+        if (offerType == "bids") {
+          assert.equal(chunks[0].asks[0].index, 3);
+          assert.equal(chunks[0].bids[0].index, 2);
+          assert.equal(chunks[0].bids[1].index, 1);
+          assert.equal(chunks[0].asks[1].index, 2);
+          assert.equal(chunks[1].asks[0].index, 1);
+          assert.equal(chunks[1].bids[0].index, 0);
+        } else {
+          assert.equal(chunks[0].asks[0].index, 1);
+          assert.equal(chunks[0].bids[0].index, 0);
+          assert.equal(chunks[0].asks[1].index, 2);
+          assert.equal(chunks[0].bids[1].index, 1);
+          assert.equal(chunks[1].asks[0].index, 3);
+          assert.equal(chunks[1].bids[0].index, 2);
+        }
+      });
+    });
+  });
 
-//       assert.equal(chunks[0].distribution[0].base.toNumber(), 3);
-//       assert.equal(chunks[0].distribution[1].base.toNumber(), 5);
-//       assert.equal(chunks[1].distribution[0].base.toNumber(), 1);
-//       assert.equal(chunks[1].distribution[1].base.toNumber(), 7);
-//     });
+  describe(KandelDistribution.prototype.getGeometricParams.name, () => {
+    it("can calculate the geometric params", () => {
+      // Act
+      const params = sut.getGeometricParams();
 
-//     it("can have one extra offer due to boundary", () => {
-//       // Arrange
-//       const sut = new KandelDistribution(
-//         1,
-//         3,
-//         [
-//           { base: Big(1), quote: Big(2), index: 0, offerType: "bids" },
-//           { base: Big(3), quote: Big(4), index: 1, offerType: "bids" },
-//           { base: Big(5), quote: Big(6), index: 2, offerType: "asks" },
-//           { base: Big(7), quote: Big(8), index: 3, offerType: "asks" },
-//         ],
-//         4,
-//         6
-//       );
+      // Assert
+      assert.equal(params.baseQuoteTickOffset, 1);
+      assert.equal(params.baseQuoteTickIndex0, 1);
+      assert.equal(params.firstAskIndex, 3);
+      assert.equal(params.pricePoints, 4);
+      assert.equal(params.stepSize, 1);
+    });
+  });
 
-//       // Act
-//       const chunks = sut.chunkDistribution(3);
+  describe(KandelDistribution.prototype.getPriceRatio.name, () => {
+    [6931, 1, 789].forEach((baseQuoteTickOffset) => {
+      it(`agrees with helper's calculator for baseQuoteTickOffset=${baseQuoteTickOffset}`, () => {
+        // Arrange
+        sut.baseQuoteTickOffset = baseQuoteTickOffset;
+        const priceRatio = sut.getPriceRatio();
 
-//       // Assert
-//       assert.equal(chunks.length, 1);
+        // Act
+        const actualOffset =
+          sut.helper.calculateBaseQuoteTickOffset(priceRatio);
 
-//       assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
-//       assert.equal(chunks[0].distribution[1].base.toNumber(), 3);
-//       assert.equal(chunks[0].distribution[2].base.toNumber(), 5);
-//       assert.equal(chunks[0].distribution[3].base.toNumber(), 7);
-//     });
-
-//     bidsAsks.forEach((offerType) => {
-//       it(`works with all ${offerType}`, () => {
-//         // Arrange
-//         const sut = new KandelDistribution(
-//           1,
-//           3,
-//           [{ base: Big(1), quote: Big(2), index: 0, offerType: offerType }],
-//           4,
-//           6
-//         );
-
-//         // Act
-//         const chunks = sut.chunkDistribution(2);
-
-//         // Assert
-//         assert.equal(chunks.length, 1);
-//         assert.equal(chunks[0].distribution[0].base.toNumber(), 1);
-//       });
-//     });
-//   });
-
-//   describe(KandelDistribution.prototype.getPricesForDistribution.name, () => {
-//     it("returns prices according to bid/ask", () => {
-//       // Arrange
-//       const stepSize = 1.09;
-//       const firstBase = Big(3);
-//       const firstQuote = Big(5000);
-//       const pricePoints = 10;
-//       const priceCalculation = new KandelPriceCalculation(5);
-//       const pricesAndRatio = priceCalculation.calculatePrices({
-//         minPrice: firstQuote.div(firstBase),
-//         stepSize,
-//         pricePoints,
-//       });
-
-//       const helper = new KandelDistributionHelper(12, 12);
-//       const sut = helper.calculateDistributionConstantBase(
-//         stepSize,
-//         pricesAndRatio.prices,
-//         firstBase,
-//         3
-//       );
-
-//       // Act
-//       const prices = sut.getPricesForDistribution();
-
-//       // Assert
-//       let price = firstQuote.div(firstBase);
-//       sut.offers.forEach((e, i) => {
-//         assert.equal(
-//           prices[i]?.toNumber(),
-//           price.toNumber(),
-//           `Price is not as expected at ${i}`
-//         );
-//         price = price.mul(stepSize);
-//       });
-//     });
-
-//     it("returns undefined for dead offers", () => {
-//       // Arrange
-//       const sut = new KandelDistribution(
-//         1,
-//         3,
-//         [{ offerType: "bids", base: Big(1), quote: Big(2000), index: 1 }],
-//         4,
-//         6
-//       );
-
-//       // Act/Assert
-//       assert.deepStrictEqual(
-//         sut.getPricesForDistribution().map((x) => x?.toNumber()),
-//         [undefined, 2000, undefined]
-//       );
-//     });
-//   });
-// });
+        // Assert
+        assertApproxEqAbs(actualOffset, baseQuoteTickOffset, 1);
+      });
+    });
+  });
+});

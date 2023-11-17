@@ -84,24 +84,26 @@ export type KandelNetworkConfiguration = {
  * @param aaveEnabled Whether AaveKandel should be allowed to be used.
  * @param minimumBasePerOfferFactor Additional factor for the minimum amount of base token that should be offered per offer to stay above density requirements.
  * @param minimumQuotePerOfferFactor Additional factor for the minimum amount of quote token that should be offered per offer to stay above density requirements.
- * @param spread The default spread used when transporting funds from an offer to its dual.
- * @param ratio The default ratio of the geometric progression of prices.
+ * @param stepSize The default step size used when transporting funds from an offer to its dual.
+ * @param baseQuoteTickOffset The default baseQuoteTickOffset number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
  */
 export type KandelMarketConfiguration = {
   aaveEnabled: boolean;
   minimumBasePerOfferFactor: Big;
   minimumQuotePerOfferFactor: Big;
-  spread: number;
-  ratio: Big;
+  stepSize: number;
+  baseQuoteTickOffset: number;
 };
 
 export type KandelRawMarketConfiguration = Omit<
   KandelMarketConfiguration,
-  "minimumBasePerOfferFactor" | "minimumQuotePerOfferFactor" | "ratio"
+  | "minimumBasePerOfferFactor"
+  | "minimumQuotePerOfferFactor"
+  | "baseQuoteTickOffset"
 > & {
   minimumBasePerOfferFactor: Bigish;
   minimumQuotePerOfferFactor: Bigish;
-  ratio: Bigish;
+  baseQuoteTickOffset: number;
 };
 
 export type KandelAllConfigurationFields = KandelNetworkConfiguration &
