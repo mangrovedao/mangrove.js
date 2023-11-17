@@ -39,20 +39,20 @@ class KandelSeeder {
 
     const kandelSeederAddress = Mangrove.getAddress(
       "KandelSeeder",
-      this.mgv.network.name
+      this.mgv.network.name,
     );
     this.kandelSeeder = typechain.KandelSeeder__factory.connect(
       kandelSeederAddress,
-      this.mgv.signer
+      this.mgv.signer,
     );
 
     const aaveKandelSeederAddress = Mangrove.getAddress(
       "AaveKandelSeeder",
-      this.mgv.network.name
+      this.mgv.network.name,
     );
     this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
       aaveKandelSeederAddress,
-      this.mgv.signer
+      this.mgv.signer,
     );
   }
 
@@ -62,7 +62,7 @@ class KandelSeeder {
   public async sow(seed: KandelSeed, overrides: ethers.Overrides = {}) {
     if (seed.liquiditySharing && !seed.onAave) {
       throw Error(
-        "Liquidity sharing is only supported for AaveKandel instances."
+        "Liquidity sharing is only supported for AaveKandel instances.",
       );
     }
 
@@ -70,16 +70,16 @@ class KandelSeeder {
       ? this.aaveKandelSeeder.sow(
           seed.market.olKeyBaseQuote,
           seed.liquiditySharing,
-          overrides
+          overrides,
         )
       : this.kandelSeeder.sow(
           seed.market.olKeyBaseQuote,
           seed.liquiditySharing,
-          overrides
+          overrides,
         );
 
     const func = async (
-      response: Promise<ethers.ethers.ContractTransaction>
+      response: Promise<ethers.ethers.ContractTransaction>,
     ) => {
       const receipt = await (await response).wait();
       return await this.getKandelFromReceipt({
@@ -106,7 +106,7 @@ class KandelSeeder {
   }) {
     const events = this.tradeEventManagement.getContractEventsFromReceipt(
       params.receipt,
-      params.onAave ? this.aaveKandelSeeder : this.kandelSeeder
+      params.onAave ? this.aaveKandelSeeder : this.kandelSeeder,
     );
     for (const evt of events) {
       const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
@@ -131,7 +131,7 @@ class KandelSeeder {
       }
     }
     throw Error(
-      "Unable to get Kandel from receipt. Did not find expected events."
+      "Unable to get Kandel from receipt. Did not find expected events.",
     );
   }
 
@@ -160,22 +160,27 @@ class KandelSeeder {
   /** Determines the required provision for the distribution prior to sowing based on the number of price points.
    * @param seed The parameters for sowing the Kandel instance.
    * @param distribution The distribution to determine the provision for.
-   * @param gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
+   * @param gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this. If null, then the default gaspriceFactor for the market will be used.
    * @param gasprice The gasprice (in Mwei) to use for the Kandel (before multiplying with the factor). If null, then Mangrove's global gasprice will be used.
+   * @param gasreq The gasreq to use for the Kandel. If null, then the default gasreq for the Kandel type will be used.
    * @returns The provision required for the distribution.
    * @remarks This takes into account that each price point can become both an ask and a bid which both require provision.
    */
   public async getRequiredProvision(
     seed: KandelSeed,
     distribution: KandelDistribution,
-    gaspriceFactor: number,
-    gasprice?: number
+    gaspriceFactor?: number,
+    gasprice?: number,
+    gasreq?: number,
   ) {
-    const gasreq = await this.getDefaultGasreq(seed.onAave);
     return distribution.getRequiredProvision({
       market: seed.market,
-      gasprice: await this.getBufferedGasprice(gaspriceFactor, gasprice),
-      gasreq,
+      gasprice: await this.getBufferedGasprice(
+        gaspriceFactor ??
+          this.configuration.getConfig(seed.market).gaspriceFactor,
+        gasprice,
+      ),
+      gasreq: gasreq ?? (await this.getDefaultGasreq(seed.onAave)),
     });
   }
 
@@ -221,7 +226,7 @@ class KandelSeeder {
       params.factor ??
         (params.offerType == "asks"
           ? config.minimumBasePerOfferFactor
-          : config.minimumQuotePerOfferFactor)
+          : config.minimumQuotePerOfferFactor),
     );
   }
 }

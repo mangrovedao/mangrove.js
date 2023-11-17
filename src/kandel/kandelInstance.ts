@@ -467,7 +467,9 @@ class KandelInstance {
 
   /** Retrieves the minimum volume for a given offer type.
    * @param offerType The offer type to get the minimum volume for.
+   * @param offerType The offer type to get the minimum volume for.
    * @returns The minimum volume for the given offer type.
+   * @dev @see seeder.getMinimumVolumeForGasreq for parameterized function.
    */
   public async getMinimumVolume(offerType: Market.BA) {
     return this.seeder.getMinimumVolumeForGasreq({
@@ -688,8 +690,8 @@ class KandelInstance {
    * @param params.distribution The distribution to calculate the provision for. Optional if askCount and bidCount are provided.
    * @param params.bidCount The number of bids to calculate the provision for. Optional if distribution is provided.
    * @param params.askCount The number of asks to calculate the provision for. Optional if distribution is provided.
+   * @param params.gasprice The gas price to calculate provision for. Default is retrieved from Kandel parameters. So the gaspriceFactor is should be accounted for in this value.
    * @param params.gasreq The gas required to execute a trade. Default is retrieved from Kandel parameters.
-   * @param params.gasprice The gas price to calculate provision for. Default is retrieved from Kandel parameters.
    * @returns The provision required for the number of offers.
    * @remarks Existing locked provision or balance on Mangrove is not accounted for.
    */
@@ -697,8 +699,8 @@ class KandelInstance {
     distribution?: KandelDistribution;
     bidCount?: number;
     askCount?: number;
-    gasreq?: number;
     gasprice?: number;
+    gasreq?: number;
   }) {
     const { gasreq, gasprice } = await this.getGasreqAndGasprice(
       params.gasreq,

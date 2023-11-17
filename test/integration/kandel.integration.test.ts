@@ -1118,42 +1118,59 @@ describe("Kandel integration tests suite", function () {
         );
       });
 
-      it("getRequiredProvision can get provision", async () => {
-        // Arrange
-        const { distribution } = await populateKandel({
-          approve: true,
-          deposit: false,
-        });
-        const expectedProvision = kandelStrategies.seeder.getRequiredProvision(
-          {
-            market: kandel.market,
-            liquiditySharing: false,
-            onAave: false,
-          },
-          distribution,
-          10,
-        );
+      [
+        [3, 2000, 42000],
+        [undefined, undefined, undefined],
+      ].forEach(([gaspriceFactor, gasprice, gasreq]) => {
+        it(`getRequiredProvision can get provision for gaspriceFactor=${gaspriceFactor} gasprice=${gasprice} gasreq=${gasreq}`, async () => {
+          // Arrange
+          const { distribution } = await populateKandel({
+            approve: true,
+            deposit: false,
+          });
+          const expectedProvision =
+            kandelStrategies.seeder.getRequiredProvision(
+              {
+                market: kandel.market,
+                liquiditySharing: false,
+                onAave: false,
+              },
+              distribution,
+              gaspriceFactor,
+              gasprice,
+              gasreq,
+            );
 
-        // Act
-        const requiredProvisionOfferCount = await kandel.getRequiredProvision({
-          askCount: distribution.offers.asks.length,
-          bidCount: distribution.offers.bids.length,
-        });
-        const requiredProvisionDistribution = await kandel.getRequiredProvision(
-          {
-            distribution,
-          },
-        );
+          // Act
+          const requiredProvisionOfferCount = await kandel.getRequiredProvision(
+            {
+              askCount: distribution.offers.asks.length,
+              bidCount: distribution.offers.bids.length,
+              gasprice: gasprice
+                ? gasprice * (gaspriceFactor ? gaspriceFactor : 1)
+                : undefined,
+              gasreq,
+            },
+          );
+          const requiredProvisionDistribution =
+            await kandel.getRequiredProvision({
+              distribution,
+              gasprice: gasprice
+                ? gasprice * (gaspriceFactor ? gaspriceFactor : 1)
+                : undefined,
+              gasreq,
+            });
 
-        // Assert
-        assert.equal(
-          requiredProvisionOfferCount.toNumber(),
-          (await expectedProvision).toNumber(),
-        );
-        assert.equal(
-          requiredProvisionDistribution.toNumber(),
-          (await expectedProvision).toNumber(),
-        );
+          // Assert
+          assert.equal(
+            requiredProvisionOfferCount.toNumber(),
+            (await expectedProvision).toNumber(),
+          );
+          assert.equal(
+            requiredProvisionDistribution.toNumber(),
+            (await expectedProvision).toNumber(),
+          );
+        });
       });
 
       it("getRequiredProvision can get provision with overrides", async () => {
