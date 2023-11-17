@@ -25,7 +25,7 @@ export const bookOptsDefault: Market.BookOptions = {
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
-import { MgvLib } from "./types/typechain/Mangrove";
+import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
 import { OLKeyStruct } from "./types/typechain/AaveKandel";
 import configuration from "./configuration";
 

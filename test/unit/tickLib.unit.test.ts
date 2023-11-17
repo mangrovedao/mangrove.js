@@ -307,7 +307,7 @@ describe("TickLib unit test suite", () => {
       Big.DP = 42;
       assert.deepStrictEqual(
         result.toFixed(42),
-        Big(1).div(Big(2).pow(MANTISSA_BITS.toNumber())).toFixed(42) // because of ticks, we canoot hit the number exactly, so we only compare the first 42 digits
+        Big(1).div(Big(2).pow(MANTISSA_BITS.toNumber())).toFixed(42) // because of ticks, we cannot hit the number exactly, so we only compare the first 42 digits
       ); // lowest price
       Big.DP = 20;
     });
