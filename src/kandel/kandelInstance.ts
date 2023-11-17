@@ -908,7 +908,7 @@ class KandelInstance {
    * @param params The parameters for populating the offers.
    * @param params.distribution The distribution of offers to populate.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
-   * @param params.distributionChunks Home-grown distribution chunks to populate (can be used to populate, e.g., a single offer) - takes precedence over distribution.
+   * @param params.distributionChunks Home-grown distribution chunks to populate (can be used to populate, e.g., a single offer) - takes precedence over distribution. Take care to ensure duals are included or already populated with correct parameters.
    * @param overrides The ethers overrides to use when calling the populateChunk function.
    * @returns The transaction(s) used to populate the offers.
    */

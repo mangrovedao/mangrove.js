@@ -15,7 +15,7 @@ export type OfferList = {
   tick: number;
 }[];
 
-/** Distribution of bids and asks and their base and quote amounts.
+/** Distribution of bids and asks and their base and quote amounts. Take care to ensure duals are included or already populated with correct parameters.
  * @param bids The bids in the distribution.
  * @param asks The asks in the distribution.
  */
