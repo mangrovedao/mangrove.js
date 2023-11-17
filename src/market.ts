@@ -25,7 +25,7 @@ export const bookOptsDefault: Market.BookOptions = {
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
-import { MgvLib } from "./types/typechain/Mangrove";
+import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
 import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -176,7 +176,6 @@ namespace Market {
     | {
         /** The price that is expected to be used in calls to the market.
          * The cache will initially contain all offers with this price or better.
-         * This can be useful in order to ensure a good pivot is readily available.
          */
         desiredPrice: Bigish;
       }
@@ -295,6 +294,10 @@ class Market {
   base: MgvToken;
   quote: MgvToken;
   tickSpacing: BigNumber;
+  /** The OLKey for the base, quote offer list */
+  olKeyBaseQuote: OLKeyStruct;
+  /** The OLKey for the quote, base offer list */
+  olKeyQuoteBase: OLKeyStruct;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook | undefined;
   #bidsSemibook: Semibook | undefined;
@@ -370,6 +373,16 @@ class Market {
     this.base = params.base;
     this.quote = params.quote;
     this.tickSpacing = params.tickSpacing;
+    this.olKeyBaseQuote = {
+      outbound_tkn: this.base.address,
+      inbound_tkn: this.quote.address,
+      tickSpacing: this.tickSpacing,
+    };
+    this.olKeyQuoteBase = {
+      outbound_tkn: this.quote.address,
+      inbound_tkn: this.base.address,
+      tickSpacing: this.tickSpacing,
+    };
   }
 
   public close() {
@@ -443,6 +456,10 @@ class Market {
     );
     this.#asksSemibook = await asksPromise;
     this.#bidsSemibook = await bidsPromise;
+  }
+
+  getOLKey(ba: Market.BA): OLKeyStruct {
+    return ba === "asks" ? this.olKeyBaseQuote : this.olKeyQuoteBase;
   }
 
   async #semibookEventCallback({

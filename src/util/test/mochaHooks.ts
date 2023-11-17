@@ -1,5 +1,5 @@
 // TODO do not distribute in browser version
-import { BigNumber, ethers } from "ethers";
+import { ethers } from "ethers";
 import { Mangrove, OfferMaker, eth } from "../../";
 import node, { inputServerParamsType, serverType } from "../../util/node";
 import { Deferred } from "../../util";
