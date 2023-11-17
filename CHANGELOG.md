@@ -1,5 +1,8 @@
 # Next version
 
+- feat: Re-enable Kandel
+- fix: Various fixes after initial upgrade.
+
 # 2.0.0-2
 
 - feat: Use addresses from mangrove-deployments and context-addresses
