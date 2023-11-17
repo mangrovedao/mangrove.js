@@ -23,20 +23,20 @@ class KandelFarm {
 
     const kandelSeederAddress = Mangrove.getAddress(
       "KandelSeeder",
-      this.mgv.network.name,
+      this.mgv.network.name
     );
     this.kandelSeeder = typechain.KandelSeeder__factory.connect(
       kandelSeederAddress,
-      this.mgv.signer,
+      this.mgv.signer
     );
 
     const aaveKandelSeederAddress = Mangrove.getAddress(
       "AaveKandelSeeder",
-      this.mgv.network.name,
+      this.mgv.network.name
     );
     this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
       aaveKandelSeederAddress,
-      this.mgv.signer,
+      this.mgv.signer
     );
   }
 
@@ -80,17 +80,17 @@ class KandelFarm {
       filter?.onAave == null || filter.onAave == false
         ? (
             await this.kandelSeeder.queryFilter(
-              this.kandelSeeder.filters.NewKandel(filter?.owner, olKeyHash),
+              this.kandelSeeder.filters.NewKandel(filter?.owner, olKeyHash)
             )
           ).map(async (x) => {
             const olKeyStruct = this.mgv.getOlKeyStruct(
-              x.args.baseQuoteOlKeyHash,
+              x.args.baseQuoteOlKeyHash
             );
             const baseToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.outbound_tkn,
+              await olKeyStruct!.outbound_tkn
             );
             const quoteToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.inbound_tkn,
+              await olKeyStruct!.inbound_tkn
             );
             return {
               kandelAddress: x.args.kandel,
@@ -109,18 +109,18 @@ class KandelFarm {
             await this.aaveKandelSeeder.queryFilter(
               this.aaveKandelSeeder.filters.NewAaveKandel(
                 filter?.owner,
-                olKeyHash,
-              ),
+                olKeyHash
+              )
             )
           ).map(async (x) => {
             const olKeyStruct = this.mgv.getOlKeyStruct(
-              x.args.baseQuoteOlKeyHash,
+              x.args.baseQuoteOlKeyHash
             );
             const baseToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.outbound_tkn,
+              await olKeyStruct!.outbound_tkn
             );
             const quoteToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.inbound_tkn,
+              await olKeyStruct!.inbound_tkn
             );
             return {
               kandelAddress: x.args.aaveKandel,

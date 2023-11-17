@@ -15,7 +15,7 @@ class KandelDistributionGenerator {
 
   public constructor(
     distributionHelper: KandelDistributionHelper,
-    kandelLib: KandelLib,
+    kandelLib: KandelLib
   ) {
     this.distributionHelper = distributionHelper;
     this.kandelLib = kandelLib;
@@ -41,7 +41,7 @@ class KandelDistributionGenerator {
         minBaseQuoteTick,
         midBaseQuoteTick,
         baseQuoteTickOffset,
-        pricePoints,
+        pricePoints
       );
 
     return {
@@ -67,7 +67,7 @@ class KandelDistributionGenerator {
     minBaseQuoteTick: number,
     midBaseQuoteTick: number,
     baseQuoteTickOffset: number,
-    pricePoints: number,
+    pricePoints: number
   ) {
     // If mid is before min, then the floor will be negative 1 or less, and the max makes it go to 0.
     // If there is exactly zero or below 1 room, it will end up at 1 to allow a single bid at index 0.
@@ -76,9 +76,9 @@ class KandelDistributionGenerator {
       Math.min(
         pricePoints,
         Math.floor(
-          (midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset,
-        ) + 1,
-      ),
+          (midBaseQuoteTick - minBaseQuoteTick) / baseQuoteTickOffset
+        ) + 1
+      )
     );
 
     // When generating from mid, take care to use min if mid is before min. Since mid becomes a bid, each stretch of baseQuoteTickOffset has a bid at either end, so subtract 1 when generating the 0th index.
@@ -115,7 +115,7 @@ class KandelDistributionGenerator {
     }
 
     const geometricParams = this.calculateGeometricDistributionParams(
-      params.distributionParams,
+      params.distributionParams
     );
 
     const protoDistribution =
@@ -128,7 +128,7 @@ class KandelDistributionGenerator {
     const { askGives, bidGives } =
       protoDistribution.calculateMinimumInitialGives(
         Big(params.minimumBasePerOffer),
-        Big(params.minimumQuotePerOffer),
+        Big(params.minimumQuotePerOffer)
       );
 
     return this.calculateDistributionFromGeometricParams({
@@ -152,7 +152,7 @@ class KandelDistributionGenerator {
     initialBidGives?: Bigish;
   }) {
     const geometricParams = this.calculateGeometricDistributionParams(
-      params.distributionParams,
+      params.distributionParams
     );
 
     return this.calculateDistributionFromGeometricParams({
@@ -215,7 +215,7 @@ class KandelDistributionGenerator {
   }) {
     const initialGives = params.distribution.calculateConstantGivesPerOffer(
       params.availableBase ? Big(params.availableBase) : undefined,
-      params.availableQuote ? Big(params.availableQuote) : undefined,
+      params.availableQuote ? Big(params.availableQuote) : undefined
     );
 
     return this.calculateDistributionFromGeometricParams({
@@ -246,7 +246,7 @@ class KandelDistributionGenerator {
     const { askGives, bidGives } =
       params.distribution.calculateMinimumInitialGives(
         Big(params.minimumBasePerOffer),
-        Big(params.minimumQuotePerOffer),
+        Big(params.minimumQuotePerOffer)
       );
 
     return this.distributionHelper.uniformlyChangeVolume({
@@ -278,7 +278,7 @@ class KandelDistributionGenerator {
   }) {
     return this.distributionHelper.createDistributionWithOffers(
       params.explicitOffers,
-      params.distribution,
+      params.distribution
     );
   }
 
@@ -309,14 +309,14 @@ class KandelDistributionGenerator {
       params.index,
       params.tick,
       params.baseQuoteTickOffset,
-      params.pricePoints,
+      params.pricePoints
     );
 
     const dualIndex = this.distributionHelper.getDualIndex(
       params.offerType === "bids" ? "asks" : "bids",
       params.index,
       params.pricePoints,
-      params.stepSize,
+      params.stepSize
     );
 
     const bidTick =
@@ -329,7 +329,7 @@ class KandelDistributionGenerator {
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer),
         [bidTick],
-        [askTick],
+        [askTick]
       );
 
     return params.offerType == "asks" ? askGives : bidGives;

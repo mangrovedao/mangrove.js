@@ -1,8 +1,6 @@
 import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
-import { TickLib } from "../util/coreCalculations/TickLib";
-import { BigNumber } from "ethers";
 
 /** Offers with their price, liveness, and Kandel index.
  * @param offerType Whether the offer is a bid or an ask.

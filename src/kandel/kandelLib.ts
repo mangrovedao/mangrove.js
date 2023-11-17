@@ -47,7 +47,7 @@ class KandelLib {
   }): Promise<OfferDistribution> {
     if (params.bidGives == undefined && params.askGives == undefined) {
       throw Error(
-        "Either initialAskGives or initialBidGives must be provided.",
+        "Either initialAskGives or initialBidGives must be provided."
       );
     }
     const distribution = await this.kandelLib.createDistribution(
@@ -63,7 +63,7 @@ class KandelLib {
         ? UnitCalculations.toUnits(params.askGives, this.baseDecimals)
         : ethers.constants.MaxUint256,
       params.pricePoints,
-      params.stepSize,
+      params.stepSize
     );
 
     return {
@@ -100,7 +100,7 @@ class KandelLib {
       params.stepSize,
       offerDistribution,
       this.baseDecimals,
-      this.quoteDecimals,
+      this.quoteDecimals
     );
   }
 }
