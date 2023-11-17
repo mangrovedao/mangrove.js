@@ -95,7 +95,7 @@ describe("Market integration tests suite", () => {
         assert.strictEqual(
           marketReadonly.getBook().asks.size(),
           1,
-          "book should have size 1 by now"
+          "book should have size 1 by now",
         );
       });
       await helpers.newOffer(mgv, market.base, market.quote, {
@@ -418,14 +418,14 @@ describe("Market integration tests suite", () => {
         const mgvProvision = mgv.calculateOfferProvision(
           gasprice ?? (await mgv.config()).gasprice,
           gasreq,
-          gasbase
+          gasbase,
         );
 
         // Act
         const offerProvision = await market.getOfferProvision(
           ba,
           gasreq,
-          gasprice
+          gasprice,
         );
         const baProvision = await (ba == "asks"
           ? market.getAskProvision(gasreq, gasprice)
@@ -448,7 +448,7 @@ describe("Market integration tests suite", () => {
         assert.equal(baProvision.toNumber(), mgvProvision.toNumber());
         assert.equal(
           offersProvision.toNumber(),
-          mgvProvision.mul(2).toNumber()
+          mgvProvision.mul(2).toNumber(),
         );
       });
     });
@@ -468,12 +468,12 @@ describe("Market integration tests suite", () => {
       const missingZero = await market.getMissingProvision(
         "asks",
         provision.mul(2),
-        30000
+        30000,
       );
       const missing = await market.getMissingProvision(
         "asks",
         provision.div(4),
-        30000
+        30000,
       );
 
       // Assert
@@ -786,12 +786,12 @@ describe("Market integration tests suite", () => {
     assert.equal(
       offer1.price.toNumber(),
       latestAsks[0].price.toNumber(),
-      "ask price is incorrect"
+      "ask price is incorrect",
     );
     assert.equal(
       offer2.price.toNumber(),
       latestBids[0].price.toNumber(),
-      "ask price is incorrect"
+      "ask price is incorrect",
     );
     offer1.price = latestAsks[0].price;
     offer2.price = latestBids[0].price;
@@ -829,7 +829,7 @@ describe("Market integration tests suite", () => {
 
     // post a failing offer from SimpleTestMaker
     const maker = await mgvTestUtil.getAccount(
-      mgvTestUtil.AccountName.Deployer
+      mgvTestUtil.AccountName.Deployer,
     );
     const tx = await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
@@ -847,7 +847,7 @@ describe("Market integration tests suite", () => {
     const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(1);
     expect(
-      utils.parseBytes32String(result.tradeFailures[0].reason)
+      utils.parseBytes32String(result.tradeFailures[0].reason),
     ).to.be.equal("mgv/makerTransferFail");
     expect(result.successes).to.have.lengthOf(0);
     //expect(result.failures[0].offerId).to.be.equal(1);
@@ -916,7 +916,7 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(
-      market.base.fromUnits(rawMinGivesBase).toNumber()
+      market.base.fromUnits(rawMinGivesBase).toNumber(),
     );
     expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
     expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);
@@ -961,7 +961,7 @@ describe("Market integration tests suite", () => {
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(
-      market.base.fromUnits(rawMinGivesBase).toNumber()
+      market.base.fromUnits(rawMinGivesBase).toNumber(),
     );
     expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
     expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);
@@ -1020,7 +1020,7 @@ describe("Market integration tests suite", () => {
 
           const tradeParams: Market.TradeParams = {
             tick: TickLib.getTickFromPrice(
-              Big(0.000000000002).div(10)
+              Big(0.000000000002).div(10),
             ).toNumber(),
             fillVolume: 10,
           };
@@ -1038,7 +1038,7 @@ describe("Market integration tests suite", () => {
           }
 
           const maker = await mgvTestUtil.getAccount(
-            mgvTestUtil.AccountName.Maker
+            mgvTestUtil.AccountName.Maker,
           );
           await mgvTestUtil.mint(market.base, maker, 100);
           await mgvTestUtil.postNewOffer({
@@ -1095,7 +1095,7 @@ describe("Market integration tests suite", () => {
         inbound_tkn: market.quote.address,
         tickSpacing: market.tickSpacing,
       },
-      fee
+      fee,
     );
 
     const config = await market.config();
@@ -1115,7 +1115,7 @@ describe("Market integration tests suite", () => {
       assert.strictEqual(
         market.getBook().asks.size(),
         1,
-        "book should have size 1 by now"
+        "book should have size 1 by now",
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
@@ -1129,7 +1129,7 @@ describe("Market integration tests suite", () => {
       assert.strictEqual(
         market.getBook().asks.size(),
         2,
-        "book should have size 2 by now"
+        "book should have size 2 by now",
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
@@ -1143,7 +1143,7 @@ describe("Market integration tests suite", () => {
       assert.strictEqual(
         market.getBook().asks.size(),
         3,
-        "book should have size 3 by now"
+        "book should have size 3 by now",
       );
     });
     await helpers.newOffer(mgv, market.base, market.quote, {
@@ -1192,7 +1192,7 @@ describe("Market integration tests suite", () => {
     await done.promise;
     assert.ok(
       Math.abs(estimatedVolume! - 0.5) < 0.0001,
-      `estimatedVolume should be ~0.5, got ${estimatedVolume}`
+      `estimatedVolume should be ~0.5, got ${estimatedVolume}`,
     );
   });
 
@@ -1387,7 +1387,7 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(
       stringify(book),
       stringify({ bids: bids2, asks: asks2 }),
-      "bad book"
+      "bad book",
     );
   });
 
@@ -1405,7 +1405,7 @@ describe("Market integration tests suite", () => {
     // we need to use BigNumber.isBigNumber() function to test variable type
     expect(
       BigNumber.isBigNumber(gasEstimate),
-      `returned a value that is not a BigNumber. Value was: '${gasEstimate}'.`
+      `returned a value that is not a BigNumber. Value was: '${gasEstimate}'.`,
     ).to.be.true;
   });
 
@@ -1428,7 +1428,7 @@ describe("Market integration tests suite", () => {
     ];
 
     const lastTx = await waitForTransaction(
-      helpers.newOffer(mgv, market.base, market.quote, asks[0])
+      helpers.newOffer(mgv, market.base, market.quote, asks[0]),
     );
 
     await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
@@ -1442,9 +1442,9 @@ describe("Market integration tests suite", () => {
           BigNumber.from(askGasReq)
             .add(BigNumber.from(askGasReq).mul(64).div(63))
             .mul(11)
-            .div(10)
+            .div(10),
         )
-        .toNumber()
+        .toNumber(),
     );
   });
 
@@ -1491,20 +1491,20 @@ describe("Market integration tests suite", () => {
     const gasreq = 152000;
     const baseAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyBaseQuote,
-      gasreq
+      gasreq,
     );
     const quoteAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyQuoteBase,
-      gasreq
+      gasreq,
     );
 
     assert.equal(
       market.minVolumeAsk!.mul(Big(10).pow(market.base.decimals)).toFixed(),
-      baseAsOutbound.toString()
+      baseAsOutbound.toString(),
     );
     assert.equal(
       market.minVolumeBid!.mul(Big(10).pow(market.quote.decimals)).toFixed(),
-      quoteAsOutbound.toString()
+      quoteAsOutbound.toString(),
     );
   });
 });

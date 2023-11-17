@@ -50,7 +50,7 @@ describe("TradeEventManagement unit tests suite", () => {
 
       const expectedGives = UnitCalculations.fromUnits(
         rawGives,
-        baseTokenDecimals
+        baseTokenDecimals,
       );
       when(baseTokenMock.fromUnits(rawGives)).thenReturn(expectedGives);
 
@@ -83,14 +83,14 @@ describe("TradeEventManagement unit tests suite", () => {
         marketMock.getVolumeForGivesAndPrice(
           marketSide,
           deepEqual(expectedGives),
-          deepEqual(expectedPrice)
-        )
+          deepEqual(expectedPrice),
+        ),
       ).thenReturn(expectedVolume);
 
       //Act
       const result = tradeEventManagement.rawOfferToOffer(
         instance(semibookMock),
-        rawOffer
+        rawOffer,
       );
 
       //Assert
@@ -121,7 +121,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const quoteTokenDecimals = 1;
       const expectedGives = UnitCalculations.fromUnits(
         rawGives,
-        quoteTokenDecimals
+        quoteTokenDecimals,
       );
 
       when(quoteTokenMock.decimals).thenReturn(quoteTokenDecimals);
@@ -153,14 +153,14 @@ describe("TradeEventManagement unit tests suite", () => {
         marketMock.getVolumeForGivesAndPrice(
           marketSide,
           deepEqual(expectedGives),
-          deepEqual(expectedPrice)
-        )
+          deepEqual(expectedPrice),
+        ),
       ).thenReturn(expectedVolume);
 
       //Act
       const result = tradeEventManagement.rawOfferToOffer(
         instance(semibookMock),
-        rawOffer
+        rawOffer,
       );
 
       //Assert
@@ -233,7 +233,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const summary: any = "summary";
 
       when(
-        spyTradeEventManagement.createSummaryFromEvent(event, token)
+        spyTradeEventManagement.createSummaryFromEvent(event, token),
       ).thenReturn(summary);
 
       //Act
@@ -241,7 +241,7 @@ describe("TradeEventManagement unit tests suite", () => {
 
       //Asset
       verify(
-        spyTradeEventManagement.createSummaryFromEvent(event, token)
+        spyTradeEventManagement.createSummaryFromEvent(event, token),
       ).once();
       assert(result, summary);
     });
@@ -266,19 +266,19 @@ describe("TradeEventManagement unit tests suite", () => {
       const args: any = { offerId: BigNumber.from(20) };
 
       when(
-        spyTradeEventManagement.createSummaryFromEvent(anything(), anything())
+        spyTradeEventManagement.createSummaryFromEvent(anything(), anything()),
       ).thenReturn(summary);
       when(mockedEvent.args).thenReturn(args);
 
       //Act
       const result = tradeEventManagement.createSummaryFromOrderSummaryEvent(
         event,
-        token
+        token,
       );
 
       //Asset
       verify(
-        spyTradeEventManagement.createSummaryFromEvent(anything(), anything())
+        spyTradeEventManagement.createSummaryFromEvent(anything(), anything()),
       ).once();
       assert.equal(result.taker, summary.taker);
       assert.equal(result.olKeyHash, summary.olKeyHash);
@@ -310,7 +310,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const result = tradeEventManagement.createSuccessFromEvent(
         event,
         instance(gotToken),
-        instance(gaveToken)
+        instance(gaveToken),
       );
 
       // Assert
@@ -340,17 +340,17 @@ describe("TradeEventManagement unit tests suite", () => {
 
       when(mockedEvent.args).thenReturn(args);
       when(gotToken.fromUnits(args.takerWants)).thenReturn(
-        expectedFailToDeliver
+        expectedFailToDeliver,
       );
       when(gaveToken.fromUnits(args.takerGives)).thenReturn(
-        expectedVolumeGiven
+        expectedVolumeGiven,
       );
 
       //Act
       const result = tradeEventManagement.createTradeFailureFromEvent(
         event,
         instance(gotToken),
-        instance(gaveToken)
+        instance(gaveToken),
       );
 
       // Assert

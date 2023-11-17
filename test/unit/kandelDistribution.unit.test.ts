@@ -25,7 +25,7 @@ describe("KandelDistribution unit tests suite", () => {
         ],
       },
       4,
-      6
+      6,
     );
   });
   describe(
@@ -35,7 +35,7 @@ describe("KandelDistribution unit tests suite", () => {
         // Act
         const { askGives, bidGives } = sut.calculateConstantGivesPerOffer(
           Big(3),
-          Big(2000)
+          Big(2000),
         );
 
         // Assert
@@ -57,17 +57,17 @@ describe("KandelDistribution unit tests suite", () => {
         assert.throws(
           () => sut.calculateConstantGivesPerOffer(Big(0)),
           new Error(
-            "Too low volume for the given number of offers. Would result in 0 gives."
-          )
+            "Too low volume for the given number of offers. Would result in 0 gives.",
+          ),
         );
         assert.throws(
           () => sut.calculateConstantGivesPerOffer(undefined, Big(0)),
           new Error(
-            "Too low volume for the given number of offers. Would result in 0 gives."
-          )
+            "Too low volume for the given number of offers. Would result in 0 gives.",
+          ),
         );
       });
-    }
+    },
   );
 
   describe(KandelDistribution.prototype.getFirstLiveAskIndex.name, () => {
@@ -82,7 +82,7 @@ describe("KandelDistribution unit tests suite", () => {
           asks: [{ gives: Big(0), tick: 1, index: 1 }],
         },
         4,
-        6
+        6,
       );
 
       // Act/Assert
@@ -107,15 +107,15 @@ describe("KandelDistribution unit tests suite", () => {
         assert.equal(
           5000,
           requiredBase.toNumber(),
-          "base should be all the base"
+          "base should be all the base",
         );
         assert.equal(
           3000,
           requiredQuote.toNumber(),
-          "quote should be all the quote"
+          "quote should be all the quote",
         );
       });
-    }
+    },
   );
 
   describe(KandelDistribution.prototype.chunkDistribution.name, () => {
@@ -155,7 +155,7 @@ describe("KandelDistribution unit tests suite", () => {
           ],
         },
         4,
-        6
+        6,
       );
 
       // Act
@@ -211,7 +211,7 @@ describe("KandelDistribution unit tests suite", () => {
             ],
           },
           4,
-          6
+          6,
         );
 
         // Act

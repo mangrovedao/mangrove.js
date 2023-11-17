@@ -3,17 +3,17 @@ on:
   workflow_run:
     workflows: ["CI"]
     types:
-      - completed    
+      - completed
 jobs:
   test-results:
     name: Test Results
     runs-on: ubuntu-latest
     steps:
-    - uses: dorny/test-reporter@v1
-      continue-on-error: true
-      with:
-        artifact: test-results
-        name: Test Report
-        path: '*.json'
-        reporter: mocha-json
-        fail-on-error: 'false'
+      - uses: dorny/test-reporter@v1
+        continue-on-error: true
+        with:
+          artifact: test-results
+          name: Test Report
+          path: "*.json"
+          reporter: mocha-json
+          fail-on-error: "false"

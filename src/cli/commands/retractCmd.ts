@@ -49,7 +49,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
       "asks",
       asks,
       makerAddress,
-      argv.deprovision
+      argv.deprovision,
     );
   }
 
@@ -59,7 +59,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
       "bids",
       bids,
       makerAddress,
-      argv.deprovision
+      argv.deprovision,
     );
   }
 
@@ -71,11 +71,11 @@ async function retractAllFromOfferList(
   ba: "asks" | "bids",
   semibook: Semibook,
   makerAddress: string,
-  deprovision: boolean
+  deprovision: boolean,
 ) {
   const offerList = [...semibook];
   console.log(
-    `Retracting from '${ba}' list...        (offer count: ${offerList.length})`
+    `Retracting from '${ba}' list...        (offer count: ${offerList.length})`,
   );
   const { inbound_tkn, outbound_tkn } = market.getOutboundInbound(ba);
   const retractTxPromises: Promise<void>[] = [];
@@ -88,7 +88,7 @@ async function retractAllFromOfferList(
           tickSpacing: market.tickSpacing,
         },
         offer.id,
-        deprovision
+        deprovision,
       );
       const txPromise = market.mgv.contract
         .retractOffer(
@@ -98,7 +98,7 @@ async function retractAllFromOfferList(
             tickSpacing: market.tickSpacing,
           },
           offer.id,
-          deprovision
+          deprovision,
         )
         .then((tx) => tx.wait())
         .then((txReceipt) => {
@@ -106,7 +106,7 @@ async function retractAllFromOfferList(
           if (deprovision) {
             msg += `, ${ethers.utils.formatUnits(
               provision,
-              18
+              18,
             )} was credited to ${makerAddress} provisions (${
               txReceipt.gasUsed
             } gas used)`;
@@ -118,6 +118,6 @@ async function retractAllFromOfferList(
   }
   await Promise.allSettled(retractTxPromises);
   console.log(
-    `Done retracting from '${ba}' list...   (retracted count: ${retractTxPromises.length})`
+    `Done retracting from '${ba}' list...   (retracted count: ${retractTxPromises.length})`,
   );
 }

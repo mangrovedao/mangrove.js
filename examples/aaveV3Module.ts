@@ -22,38 +22,38 @@ class AaveV3Module {
     this.mgv = mgv;
     this.contract = typechain.AaveV3Module__factory.connect(
       address,
-      signer ? signer : this.mgv.signer
+      signer ? signer : this.mgv.signer,
     );
   }
 
   async #debtToken(
     tokenName: string,
-    signer?: SignerOrProvider
+    signer?: SignerOrProvider,
   ): Promise<typechain.ICreditDelegationToken> {
     const asset_address = this.mgv.getAddress(tokenName);
     const debt_address = await this.contract.debtToken(asset_address);
     return typechain.ICreditDelegationToken__factory.connect(
       debt_address,
-      signer ? signer : this.mgv.signer
+      signer ? signer : this.mgv.signer,
     );
   }
 
   async approveDelegation(
     tokenName: string,
     borrower: string,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
     const dTtkn = await this.#debtToken(tokenName);
     return dTtkn.approveDelegation(
       borrower,
       ethers.constants.MaxUint256,
-      overrides
+      overrides,
     );
   }
 
   async status(
     tokenName: string,
-    account: string
+    account: string,
   ): Promise<{ available: Big; borrowable: Big; borrowing: Big }> {
     const asset = await this.mgv.token(tokenName);
     const dToken = await this.#debtToken(tokenName);

@@ -48,7 +48,7 @@ describe("RestingOrder", () => {
       // interpreting mangroveOrder as a maker contract
       orderLogic = mgv.offerLogic(mgv.orderContract.address);
       const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
-        mgv.network.name
+        mgv.network.name,
       );
       orderLP = await LiquidityProvider.connect(orderLogic, gasreq, {
         base: "TokenA",
@@ -90,7 +90,7 @@ describe("RestingOrder", () => {
       });
 
       const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
-        mgv.network.name
+        mgv.network.name,
       );
       orderLP = await LiquidityProvider.connect(orderLogic, gasreq, market);
       router = (await orderLogic.router()) as AbstractRouter;
@@ -143,19 +143,19 @@ describe("RestingOrder", () => {
       assert(
         // 2.5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(10 * 0.975),
-        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`,
       );
       assert(
         orderResult.summary.totalGave!.sub(10).abs().lt(0.001),
-        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`,
       );
       assert(
         orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-        "Resting order was not posted"
+        "Resting order was not posted",
       );
       assert(
         orderResult.summary.partialFill,
-        "Order should have been partially filled"
+        "Order should have been partially filled",
       );
       assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
@@ -177,19 +177,19 @@ describe("RestingOrder", () => {
       assert(
         // 2.5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(10 * 0.975),
-        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`,
       );
       assert(
         orderResult.summary.totalGave!.sub(10).abs().lt(0.001),
-        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`,
       );
       assert(
         orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-        "Resting order was not posted"
+        "Resting order was not posted",
       );
       assert(
         orderResult.summary.partialFill,
-        "Order should have been partially filled"
+        "Order should have been partially filled",
       );
       assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
@@ -211,19 +211,19 @@ describe("RestingOrder", () => {
       assert(
         // 2.5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(10 * 0.975),
-        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`,
       );
       assert(
         orderResult.summary.totalGave!.sub(10).abs().lt(0.001),
-        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`,
       );
       assert(
         orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-        "Resting order was not posted"
+        "Resting order was not posted",
       );
       assert(
         orderResult.summary.partialFill,
-        "Order should have been partially filled"
+        "Order should have been partially filled",
       );
       assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
@@ -242,16 +242,16 @@ describe("RestingOrder", () => {
       assert(
         // 2,5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(5 * 0.975),
-        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`,
       );
       assert(
         orderResult.summary.totalGave!.sub(5).abs().lt(0.001),
-        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`,
       );
       assert(!orderResult.restingOrder?.id, "Resting order was posted");
       assert(
         !orderResult.summary.partialFill,
-        "Order should have been fully filled"
+        "Order should have been fully filled",
       );
       assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
@@ -270,9 +270,8 @@ describe("RestingOrder", () => {
         price: 1, // tokenA
         volume: 20, // tokenB
         expiryDate:
-          (
-            await mgv.provider.getBlock(mgv.provider.getBlockNumber())
-          ).timestamp + 5,
+          (await mgv.provider.getBlock(mgv.provider.getBlockNumber()))
+            .timestamp + 5,
         restingOrder: {
           provision: provisionWithOverride,
           restingOrderGasreq: restingOrderGasreqOverride,
@@ -284,44 +283,44 @@ describe("RestingOrder", () => {
       const restingOrderId = orderResult.restingOrder?.id;
       assert(
         restingOrderId && restingOrderId > 0,
-        "Resting order was not posted"
+        "Resting order was not posted",
       );
       const olKeyHash = mgv.getOlKeyHash(tokenB.address, tokenA.address, 1);
       const ttl = await mgv.orderContract.expiring(
         olKeyHash!,
-        orderResult.restingOrder ? orderResult.restingOrder.id : 0
+        orderResult.restingOrder ? orderResult.restingOrder.id : 0,
       );
 
       const actualProvision =
         await orderLP.logic?.retrieveLockedProvisionForOffer(
           market,
           "bids",
-          restingOrderId
+          restingOrderId,
         );
 
       const defaultProvision = await orderLP.computeBidProvision();
       assert.notEqual(
         defaultProvision.toString(),
         provisionWithOverride.toString(),
-        "Default provision is same as override - use different override gasreq"
+        "Default provision is same as override - use different override gasreq",
       );
       assert.equal(
         actualProvision?.toString(),
         provisionWithOverride.toString(),
-        "Provision did not use overridden gasreq"
+        "Provision did not use overridden gasreq",
       );
 
       assert(
         orderResult.restingOrder
           ? orderResult.restingOrder.gives.sub(10).abs().lt(0.001)
           : false,
-        `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
+        `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`,
       );
       assert(
         orderResult.restingOrder
           ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
           : false,
-        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toFixed()}`
+        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toFixed()}`,
       );
 
       // taking resting offer
@@ -346,14 +345,14 @@ describe("RestingOrder", () => {
           .totalGot!.minus(1 * 0.975)
           .abs()
           .lt(0.001),
-        `Taker received an incorrect amount ${result.summary.totalGot}`
+        `Taker received an incorrect amount ${result.summary.totalGot}`,
       );
       assert(
         await orderLP.market.isLive(
           "bids",
-          orderResult.restingOrder ? orderResult.restingOrder.id : 0
+          orderResult.restingOrder ? orderResult.restingOrder.id : 0,
         ),
-        "Residual should still be in the book"
+        "Residual should still be in the book",
       );
       // Advance time 6 seconds by changing clock and mining block
       await (mgv.provider as JsonRpcProvider).send("evm_increaseTime", ["6"]);
@@ -361,9 +360,10 @@ describe("RestingOrder", () => {
 
       assert(
         ttl.lt(
-          (await mgv.provider.getBlock(mgv.provider.getBlockNumber())).timestamp
+          (await mgv.provider.getBlock(mgv.provider.getBlockNumber()))
+            .timestamp,
         ),
-        "Timestamp did not advance"
+        "Timestamp did not advance",
       );
 
       const sellPromises_ = await market.sell({ price: 1.0001, volume: 5 });
@@ -385,16 +385,16 @@ describe("RestingOrder", () => {
       assert(
         // 2,5% fee configured in mochaHooks.js
         orderResult.summary.totalGot!.eq(5 * 0.975),
-        `Taker received an incorrect amount ${orderResult.summary.totalGot}`
+        `Taker received an incorrect amount ${orderResult.summary.totalGot}`,
       );
       assert(
         orderResult.summary.totalGave!.sub(5).abs().lt(0.001),
-        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`
+        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`,
       );
       assert(!orderResult.restingOrder?.id, "Resting order was posted");
       assert(
         !orderResult.summary.partialFill,
-        "Order should have been fully filled"
+        "Order should have been fully filled",
       );
       assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
@@ -419,19 +419,19 @@ describe("RestingOrder", () => {
       await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
       assert(
         orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-        "Resting order was not posted"
+        "Resting order was not posted",
       );
       assert(
         orderResult.restingOrder
           ? orderResult.restingOrder.gives.sub(10).abs().lt(0.001)
           : false,
-        `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`
+        `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`,
       );
       assert(
         orderResult.restingOrder
           ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
           : false,
-        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toNumber()}`
+        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toNumber()}`,
       );
 
       // taking resting offer
@@ -456,14 +456,14 @@ describe("RestingOrder", () => {
           .totalGot!.minus(10 * 0.975)
           .abs()
           .lt(0.001),
-        `Taker received an incorrect amount ${result.summary.totalGot}`
+        `Taker received an incorrect amount ${result.summary.totalGot}`,
       );
       assert(
         !(await orderLP.market.isLive(
           "bids",
-          orderResult.restingOrder ? orderResult.restingOrder.id : 0
+          orderResult.restingOrder ? orderResult.restingOrder.id : 0,
         )),
-        "Residual should not still be in the book"
+        "Residual should not still be in the book",
       );
 
       const buyAgainPromises = await market.buy({
@@ -480,19 +480,19 @@ describe("RestingOrder", () => {
 
       assert(
         await orderLP.market.isLive("bids", orderResult.restingOrder!.id),
-        "Residual should be in the book again, on same offerId"
+        "Residual should be in the book again, on same offerId",
       );
 
       assert.deepStrictEqual(
         orderAgainResult.restingOrder!.id,
         orderResult.restingOrder!.id,
-        "OfferId should be the same"
+        "OfferId should be the same",
       );
 
       assert.deepStrictEqual(
         orderAgainResult.restingOrder,
         orderAgainResult.offerWrites[0].offer,
-        "Resting order was not correct"
+        "Resting order was not correct",
       );
     });
   });

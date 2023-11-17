@@ -12,7 +12,7 @@ const multicallAddress = "0xdecaf1" + "0".repeat(34);
 /* Call 'decimals' on all given addresses. */
 export const callDecimalsOn = async (
   provider: ethers.providers.JsonRpcProvider,
-  addresses: string[]
+  addresses: string[],
 ): Promise<(number | undefined)[]> => {
   // ABI to get token decimals
   const ierc20 = typechain.IERC20__factory.createInterface();
@@ -21,7 +21,7 @@ export const callDecimalsOn = async (
   /* Grab decimals for all contracts */
   const multicall = typechain.Multicall2__factory.connect(
     multicallAddress,
-    provider
+    provider,
   );
   const args = addresses.map((addr) => {
     return { target: addr, callData: decimalsData };
@@ -34,7 +34,7 @@ export const callDecimalsOn = async (
         // if not a token, decoding will trigger the error encoded in returnData
         decoded = ierc20.decodeFunctionResult(
           "decimals",
-          returnData
+          returnData,
         )[0] as number;
       } catch (e) {}
     }
@@ -45,7 +45,7 @@ export const callDecimalsOn = async (
 
 // Populate a ToyENS contract object
 export const connectToToyENSContract = (
-  provider: ethers.providers.JsonRpcProvider
+  provider: ethers.providers.JsonRpcProvider,
 ): ethers.Contract => {
   return new ethers.Contract(ToyENS.address, ToyENS.abi, provider);
 };
@@ -54,7 +54,7 @@ export const connectToToyENSContract = (
 /* onSets is called at most once per block with the list of name,address pairs that were set during the block */
 export const watchAllToyENSEntries = async (
   provider: ethers.providers.JsonRpcProvider,
-  onSet?: (name: string, address: string, decimals?: number) => void
+  onSet?: (name: string, address: string, decimals?: number) => void,
 ): Promise<DevNode.fetchedContract[]> => {
   const ens = connectToToyENSContract(provider);
   const initialBlock = await provider.getBlockNumber();
@@ -126,7 +126,7 @@ class DevNode {
       this.provider = provider as DevNode.provider;
     } else {
       throw new Error(
-        "provider object has no send property; are you using JSON-RPC?"
+        "provider object has no send property; are you using JSON-RPC?",
       );
     }
   }
@@ -135,7 +135,7 @@ class DevNode {
     if (typeof this.web3ClientVersion === "undefined") {
       this.web3ClientVersion = await this.provider.send(
         "web3_clientVersion",
-        []
+        [],
       );
     }
     return this.web3ClientVersion as string;
@@ -190,7 +190,7 @@ class DevNode {
   setMulticallCodeIfAbsent(): Promise<any> {
     return this.setCodeIfAbsent(
       multicallAddress,
-      multicallAbi.deployedBytecode.object
+      multicallAbi.deployedBytecode.object,
     );
   }
 
@@ -203,7 +203,7 @@ class DevNode {
   }
 
   watchAllToyENSEntries(
-    onSet?: (name: string, address: string, decimals?: number) => void
+    onSet?: (name: string, address: string, decimals?: number) => void,
   ) {
     return watchAllToyENSEntries(this.provider, onSet);
   }

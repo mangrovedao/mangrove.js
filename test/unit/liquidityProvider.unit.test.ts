@@ -19,7 +19,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 18,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 1.0001);
     assert.deepStrictEqual(gives, Big(1));
@@ -40,7 +40,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 18,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 1.0001);
     assert.deepStrictEqual(gives, Big(1));
@@ -62,7 +62,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 18,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), Big(0.010001).toNumber());
     assert.deepStrictEqual(gives, Big(1));
@@ -84,7 +84,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 1);
     assert.deepStrictEqual(gives, Big(1));
@@ -106,7 +106,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 1);
     assert.deepStrictEqual(gives, Big(1));
@@ -128,7 +128,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 2);
     assert.deepStrictEqual(gives, Big(1));
@@ -150,7 +150,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 2);
     assert.deepStrictEqual(gives, Big(2));
@@ -172,7 +172,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 2);
     assert.deepStrictEqual(gives, Big(1));
@@ -194,7 +194,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toNumber(), 2);
     assert.deepStrictEqual(gives, Big(2));
@@ -216,7 +216,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toFixed(4), (20 / 30).toFixed(4));
     assert.deepStrictEqual(gives, Big(20));
@@ -237,7 +237,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
     assert.equal(price.toFixed(4), (30 / 20).toFixed(4));
     assert.deepStrictEqual(gives, Big(20));
@@ -258,7 +258,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), (30000 / 20000).toFixed(4));
@@ -281,7 +281,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "1.0000");
@@ -304,7 +304,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 1,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "10.0000");
@@ -327,7 +327,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "1.0001");
@@ -350,7 +350,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), (1.0001 / 100).toFixed(4));
@@ -373,7 +373,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), (1 / 1.0001).toFixed(4));
@@ -396,7 +396,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 2,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "99.9900");
@@ -419,7 +419,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "1.0000");
@@ -442,7 +442,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 1,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "10.0000");
@@ -465,7 +465,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 1,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "10.0000");
@@ -488,7 +488,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "1.0001");
@@ -511,7 +511,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "0.0100");
@@ -534,7 +534,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "0.9999");
@@ -557,7 +557,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 2,
         },
-      }
+      },
     );
 
     assert.equal(price.toFixed(4), "99.9900");

@@ -18,7 +18,7 @@ class PrettyPrint {
   /** Pretty prints the current state of the asks of the market */
   consoleOffers(
     offers: Iterable<Market.Offer>,
-    filter?: prettyPrintFilter
+    filter?: prettyPrintFilter,
   ): void {
     const column = filter
       ? filter

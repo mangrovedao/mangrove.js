@@ -56,7 +56,7 @@ class TradeEventManagement {
       volume: semibook.market.getVolumeForGivesAndPrice(
         semibook.ba,
         gives,
-        price
+        price,
       ),
     };
   }
@@ -88,7 +88,7 @@ class TradeEventManagement {
         restingOrderId?: number;
       };
     },
-    fillToken: MgvToken
+    fillToken: MgvToken,
   ): Market.OrderSummary {
     if (
       (!event.args.tick && !event.args.maxTick) ||
@@ -111,7 +111,7 @@ class TradeEventManagement {
   createSuccessFromEvent(
     evt: OfferSuccessEvent,
     got: MgvToken,
-    gave: MgvToken
+    gave: MgvToken,
   ) {
     const success = {
       offerId: evt.args.id.toNumber(),
@@ -124,7 +124,7 @@ class TradeEventManagement {
   createTradeFailureFromEvent(
     evt: OfferFailEvent,
     got: MgvToken,
-    gave: MgvToken
+    gave: MgvToken,
   ) {
     const tradeFailure = {
       offerId: evt.args.id.toNumber(),
@@ -137,7 +137,7 @@ class TradeEventManagement {
   }
 
   createPosthookFailureFromEvent(
-    evt: OfferFailWithPosthookDataEvent | OfferSuccessWithPosthookDataEvent
+    evt: OfferFailWithPosthookDataEvent | OfferSuccessWithPosthookDataEvent,
   ) {
     const posthookFailure = {
       offerId: evt.args.id.toNumber(),
@@ -148,7 +148,7 @@ class TradeEventManagement {
 
   createOfferWriteFromEvent(
     market: Market,
-    evt: OfferWriteEvent
+    evt: OfferWriteEvent,
   ): { ba: Market.BA; offer: Market.OfferSlim } | undefined {
     // ba can be both since we get offer writes both from updated orders and from posting a resting order, where the outbound is what taker gives
     let ba: Market.BA = "asks";
@@ -157,7 +157,7 @@ class TradeEventManagement {
     let olKeyHash = market.mgv.getOlKeyHash(
       outbound_tkn.address,
       inbound_tkn.address,
-      market.tickSpacing.toNumber()
+      market.tickSpacing.toNumber(),
     );
 
     if (olKeyHash != evt.args.olKeyHash) {
@@ -165,7 +165,7 @@ class TradeEventManagement {
       olKeyHash = market.mgv.getOlKeyHash(
         inbound_tkn.address,
         outbound_tkn.address,
-        market.tickSpacing.toNumber()
+        market.tickSpacing.toNumber(),
       );
     }
     if (olKeyHash != evt.args.olKeyHash) {
@@ -188,7 +188,7 @@ class TradeEventManagement {
 
   createSummaryFromOrderSummaryEvent(
     evt: MangroveOrderStartEvent,
-    fillToken: MgvToken
+    fillToken: MgvToken,
   ): Market.OrderSummary {
     return this.createSummaryFromEvent(
       {
@@ -203,14 +203,14 @@ class TradeEventManagement {
           restingOrderId: this.#rawIdToId(evt.args.offerId),
         },
       },
-      fillToken
+      fillToken,
     );
   }
 
   createRestingOrderFromIdAndBA(
     ba: Market.BA,
     offerId: number | undefined,
-    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[]
+    offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[],
   ) {
     ba = ba === "bids" ? "asks" : "bids";
     return offerWrites.find((x) => x.ba == ba && x.offer.id === offerId)?.offer;
@@ -218,7 +218,7 @@ class TradeEventManagement {
 
   createPartialFillFunc(
     fillWants: boolean,
-    fillVolume: ethers.ethers.BigNumber
+    fillVolume: ethers.ethers.BigNumber,
   ) {
     return (takerGotWithFee: ethers.BigNumber, takerGave: ethers.BigNumber) =>
       fillWants ? takerGotWithFee.lt(fillVolume) : takerGave.lt(fillVolume);
@@ -231,11 +231,11 @@ class TradeEventManagement {
     ba: Market.BA,
     partialFillFunc: (
       takerGotWithFee: BigNumber,
-      takerGave: BigNumber
+      takerGave: BigNumber,
     ) => boolean,
     fillWants: boolean,
     result: OrderResultWithOptionalSummary,
-    market: Market
+    market: Market,
   ) {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
@@ -245,7 +245,7 @@ class TradeEventManagement {
           break;
         }
         result.summary = this.createCleanSummaryFromEvent(
-          evt as CleanStartEvent
+          evt as CleanStartEvent,
         );
         break;
       }
@@ -261,7 +261,7 @@ class TradeEventManagement {
           result.summary.offersCleaned = result.tradeFailures.length;
           result.summary.bounty = result.tradeFailures.reduce(
             (acc, current) => acc.add(current.penalty ?? 0),
-            BigNumber.from(0)
+            BigNumber.from(0),
           );
         }
         break;
@@ -273,7 +273,7 @@ class TradeEventManagement {
         }
         result.summary = this.createSummaryFromEvent(
           evt as OrderStartEvent,
-          fillWants ? inbound_tkn : outbound_tkn
+          fillWants ? inbound_tkn : outbound_tkn,
         );
         break;
       }
@@ -286,24 +286,24 @@ class TradeEventManagement {
         //last OrderComplete is ours so it overrides previous summaries if any
         if (result.summary != undefined && "tick" in result.summary) {
           result.summary.fee = outbound_tkn.fromUnits(
-            (evt as OrderCompleteEvent).args.fee
+            (evt as OrderCompleteEvent).args.fee,
           );
           result.summary.totalGot = result.successes
             .reduce((acc, current) => acc.add(current.got), Big(0))
             .sub(result.summary.fee);
           result.summary.totalGave = result.successes.reduce(
             (acc, current) => acc.add(current.gave),
-            Big(0)
+            Big(0),
           );
           result.summary.partialFill = partialFillFunc(
             outbound_tkn.toUnits(
-              result.summary.totalGot.add(result.summary.fee)
+              result.summary.totalGot.add(result.summary.fee),
             ),
-            inbound_tkn.toUnits(result.summary.totalGave)
+            inbound_tkn.toUnits(result.summary.totalGave),
           );
           result.summary.bounty = result.tradeFailures.reduce(
             (acc, current) => acc.add(current.penalty ?? 0),
-            BigNumber.from(0)
+            BigNumber.from(0),
           );
         }
 
@@ -317,8 +317,8 @@ class TradeEventManagement {
           this.createSuccessFromEvent(
             evt as OfferSuccessEvent,
             outbound_tkn,
-            inbound_tkn
-          )
+            inbound_tkn,
+          ),
         );
         break;
       }
@@ -328,15 +328,15 @@ class TradeEventManagement {
         }
         result.posthookFailures.push(
           this.createPosthookFailureFromEvent(
-            evt as OfferSuccessWithPosthookDataEvent
-          )
+            evt as OfferSuccessWithPosthookDataEvent,
+          ),
         );
         result.successes.push(
           this.createSuccessFromEvent(
             evt as OfferSuccessEvent,
             outbound_tkn,
-            inbound_tkn
-          )
+            inbound_tkn,
+          ),
         );
         break;
       }
@@ -348,8 +348,8 @@ class TradeEventManagement {
           this.createTradeFailureFromEvent(
             evt as OfferFailEvent,
             outbound_tkn,
-            inbound_tkn
-          )
+            inbound_tkn,
+          ),
         );
         break;
       }
@@ -359,15 +359,15 @@ class TradeEventManagement {
         }
         result.posthookFailures.push(
           this.createPosthookFailureFromEvent(
-            evt as OfferFailWithPosthookDataEvent
-          )
+            evt as OfferFailWithPosthookDataEvent,
+          ),
         );
         result.tradeFailures.push(
           this.createTradeFailureFromEvent(
             evt as OfferFailEvent,
             outbound_tkn,
-            inbound_tkn
-          )
+            inbound_tkn,
+          ),
         );
         break;
       }
@@ -377,7 +377,7 @@ class TradeEventManagement {
         }
         const offerWrite = this.createOfferWriteFromEvent(
           market,
-          evt as OfferWriteEvent
+          evt as OfferWriteEvent,
         );
         if (offerWrite) {
           result.offerWrites.push(offerWrite);
@@ -398,7 +398,7 @@ class TradeEventManagement {
     ba: Market.BA,
     fillWants: boolean,
     result: OrderResultWithOptionalSummary,
-    market: Market
+    market: Market,
   ) {
     if (evt.args?.taker && receipt.from !== evt.args.taker) return;
 
@@ -415,7 +415,7 @@ class TradeEventManagement {
           ...result.summary,
           ...this.createSummaryFromOrderSummaryEvent(
             evt as MangroveOrderStartEvent,
-            fillWants ? inbound_tkn : outbound_tkn
+            fillWants ? inbound_tkn : outbound_tkn,
           ),
         };
         break;
@@ -431,7 +431,7 @@ class TradeEventManagement {
           result.summary?.restingOrderId === undefined
         ) {
           result.restingOrderId = this.#rawIdToId(
-            (evt as NewOwnedOfferEvent).args.offerId
+            (evt as NewOwnedOfferEvent).args.offerId,
           );
         }
         break;
@@ -448,7 +448,7 @@ class TradeEventManagement {
 
   getContractEventsFromReceipt(
     receipt: ethers.ContractReceipt,
-    contract: BaseContract
+    contract: BaseContract,
   ) {
     const parseLogs =
       receipt.to === contract.address
@@ -468,11 +468,11 @@ class TradeEventManagement {
     ba: Market.BA,
     fillWants: boolean,
     fillVolume: ethers.BigNumber,
-    market: Market
+    market: Market,
   ) {
     for (const evt of this.getContractEventsFromReceipt(
       receipt,
-      market.mgv.contract
+      market.mgv.contract,
     )) {
       this.resultOfMangroveEventCore(
         evt,
@@ -480,7 +480,7 @@ class TradeEventManagement {
         this.createPartialFillFunc(fillWants, fillVolume),
         fillWants,
         result,
-        market
+        market,
       );
     }
   }
@@ -490,11 +490,11 @@ class TradeEventManagement {
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
-    market: Market
+    market: Market,
   ) {
     for (const evt of this.getContractEventsFromReceipt(
       receipt,
-      market.mgv.orderContract
+      market.mgv.orderContract,
     )) {
       this.resultOfMangroveOrderEventCore(
         receipt,
@@ -502,13 +502,13 @@ class TradeEventManagement {
         ba,
         fillWants,
         result,
-        market
+        market,
       );
     }
   }
 
   isOrderResult(
-    result: OrderResultWithOptionalSummary
+    result: OrderResultWithOptionalSummary,
   ): result is Market.OrderResult {
     return result.summary !== undefined;
   }

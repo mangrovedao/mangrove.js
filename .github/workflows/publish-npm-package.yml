@@ -1,5 +1,5 @@
 # Publishes npm package with a version bump chosen by the user.
-# 
+#
 # From the master branch, package bumps can be patch, minor, or major.
 #
 # From the develop branch, package bumps can only be prerelease
@@ -9,15 +9,15 @@ on:
   workflow_dispatch:
     inputs:
       versionBumpStrategy:
-        description: 'Version bump strategy'
+        description: "Version bump strategy"
         required: true
-        default: 'prerelease'
+        default: "prerelease"
         type: choice
         options:
-        - prerelease
-        - patch
-        - minor
-        - major
+          - prerelease
+          - patch
+          - minor
+          - major
 
 jobs:
   call-reusable-workflow:

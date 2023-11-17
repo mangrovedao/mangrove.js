@@ -11,7 +11,7 @@ async function main() {
   const outFile = path.join(
     process.cwd(),
     "src/constants",
-    "contractPackageVersions.json"
+    "contractPackageVersions.json",
   );
 
   fs.writeFileSync(
@@ -24,8 +24,8 @@ async function main() {
         "mangrove-strats": mangroveStratsPackageJson.version,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 }
 

@@ -54,17 +54,17 @@ describe("Density unit test suite", () => {
       assert.deepStrictEqual(
         density.mantissa().lte(4),
         true,
-        `mantissa too large, got ${density.mantissa().toString()}`
+        `mantissa too large, got ${density.mantissa().toString()}`,
       );
       assert.deepStrictEqual(
         density.exponent().lte(127),
         true,
-        `exponent too large, got ${density.exponent().toString()}`
+        `exponent too large, got ${density.exponent().toString()}`,
       );
       assert.deepStrictEqual(
         density.to96X32().lte(fixp),
         true,
-        `error too large (above), got ${density.to96X32().toString()}`
+        `error too large (above), got ${density.to96X32().toString()}`,
       );
       const result = density.to96X32().mul(100).div(fixp);
       // maximum error is 20%,
@@ -73,7 +73,7 @@ describe("Density unit test suite", () => {
       assert.deepStrictEqual(
         result.gte(80),
         true,
-        `error too large (below), got ${result.toString()}`
+        `error too large (below), got ${result.toString()}`,
       );
     }
   });
@@ -107,7 +107,7 @@ describe("Density unit test suite", () => {
             assert.deepStrictEqual(
               res.eq(expected),
               true,
-              `wrong multiply, small exp, got ${res.toString()}, expected ${expected.toString()}`
+              `wrong multiply, small exp, got ${res.toString()}, expected ${expected.toString()}`,
             );
           } else {
             let converted = mantissa.or(4).shl(exp.sub(2).toNumber());
@@ -116,7 +116,7 @@ describe("Density unit test suite", () => {
             assert.deepStrictEqual(
               res.eq(expected),
               true,
-              `wrong multiply, big exp, got ${res.toString()}, expected ${expected.toString()}`
+              `wrong multiply, big exp, got ${res.toString()}, expected ${expected.toString()}`,
             );
           }
         }
@@ -130,22 +130,22 @@ describe("Density unit test suite", () => {
       BigNumber.from(250), //gasprice_in_gwei
       BigNumber.from(1 * 100), //eth_in_usdx100
       BigNumber.from(1000 * 100), //outbound_display_in_usdx100
-      BigNumber.from(1000) //cover_factor
+      BigNumber.from(1000), //cover_factor
     );
     assert.deepStrictEqual(
       Density.from96X32(res, 1).densityToString(),
-      "1 * 2^-2"
+      "1 * 2^-2",
     );
     res = Density.paramsTo96X32(
       18, //outbound_decimals
       BigNumber.from(2500), //gasprice_in_gwei
       BigNumber.from(10000 * 100), //eth_in_usdx100
       BigNumber.from(1 * 100), //outbound_display_in_usdx100
-      BigNumber.from(1000) //cover_factor
+      BigNumber.from(1000), //cover_factor
     );
     assert.deepStrictEqual(
       Density.from96X32(res, 1).densityToString(),
-      "1.25 * 2^64"
+      "1.25 * 2^64",
     );
   });
 });
@@ -155,7 +155,7 @@ function assertD(expectedFixp: BigNumber, err: string, d: BigNumber) {
   assert.deepStrictEqual(
     fixp,
     expectedFixp,
-    `${err}: fixed -> floating -> fixed, expected ${expectedFixp.toString()}, got ${fixp.toString()}`
+    `${err}: fixed -> floating -> fixed, expected ${expectedFixp.toString()}, got ${fixp.toString()}`,
   );
   if (
     !expectedFixp.eq(0) &&
@@ -182,6 +182,6 @@ function assertMultiply(p: {
   assert.deepStrictEqual(
     density.multiply(mult),
     expected,
-    `float: ${density.toString()}, mult: ${mult.toString()}, (mantissa: ${mantissa.toString()}, exp: ${exp.toString()})`
+    `float: ${density.toString()}, mult: ${mult.toString()}, (mantissa: ${mantissa.toString()}, exp: ${exp.toString()})`,
   );
 }

@@ -45,7 +45,7 @@ export const toWei = (v: string | number, u = "ether"): BigNumber =>
 export const approxEq = (
   a: BigNumberish,
   b: BigNumberish,
-  delta: string
+  delta: string,
 ): boolean => {
   // const aa = BigNumber.from(a);
   // const bb = BigNumber.from(b);
@@ -61,13 +61,13 @@ export const assertApproxEqAbs = (
   actual: Bigish,
   expected: Bigish,
   maxDelta: Bigish,
-  message?: string
+  message?: string,
 ) => {
   if (!Big(actual).sub(Big(expected)).abs().lte(Big(maxDelta))) {
     assert.fail(
       `${
         message ? message + ": " : ""
-      }expected actual=${actual} to be within ${maxDelta} of expected=${expected}`
+      }expected actual=${actual} to be within ${maxDelta} of expected=${expected}`,
     );
   }
 };
@@ -76,13 +76,13 @@ export const assertApproxEqRel = (
   actual: Bigish,
   expected: Bigish,
   deltaRel: Bigish,
-  message?: string
+  message?: string,
 ) => {
   if (!Big(actual).sub(Big(expected)).abs().div(expected).lte(Big(deltaRel))) {
     assert.fail(
       `${
         message ? message + ": " : ""
-      }expected actual=${actual} to be within relative ${deltaRel} of expected=${expected}`
+      }expected actual=${actual} to be within relative ${deltaRel} of expected=${expected}`,
     );
   }
 };
@@ -97,7 +97,7 @@ export type OfferData = {
 async function getAmountAndAddress(
   mgv: Mangrove,
   token: string | MgvToken,
-  amount: string
+  amount: string,
 ) {
   const mgvToken = await getAddress(token, mgv);
   return { address: mgvToken.address, value: mgvToken.toUnits(amount) };
@@ -107,7 +107,7 @@ export const newOffer = async (
   mgv: Mangrove,
   outbound_tkn: string | MgvToken,
   inbound_tkn: string | MgvToken,
-  { gives, gasreq, gasprice, tick }: OfferData
+  { gives, gasreq, gasprice, tick }: OfferData,
 ): Promise<ContractTransaction> => {
   const outboundInfo = await getAmountAndAddress(mgv, outbound_tkn, gives);
   const inboundInfo = await getAddress(inbound_tkn, mgv);
@@ -121,7 +121,7 @@ export const newOffer = async (
     tick,
     outboundInfo.value,
     gasreq || 10000,
-    gasprice || 1
+    gasprice || 1,
   );
 };
 async function getAddress(token: string | MgvToken, mgv: Mangrove) {

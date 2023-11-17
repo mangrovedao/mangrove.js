@@ -50,7 +50,7 @@ export class Watcher {
   }
 
   watchFor(
-    test: (k: any, v: any) => boolean | Promise<boolean>
+    test: (k: any, v: any) => boolean | Promise<boolean>,
   ): Promise<void> {
     return new Promise<void>((ok) => {
       this.watchers.add({ test, ok });

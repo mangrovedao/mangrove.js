@@ -17,7 +17,7 @@ class UnitCalculations {
    */
   static toUnits(
     amount: Bigish,
-    nameOrDecimals: string | number
+    nameOrDecimals: string | number,
   ): ethers.BigNumber {
     let decimals;
     if (typeof nameOrDecimals === "number") {
@@ -41,7 +41,7 @@ class UnitCalculations {
    */
   static fromUnits(
     amount: number | string | ethers.BigNumber,
-    nameOrDecimals: string | number
+    nameOrDecimals: string | number,
   ): Big {
     let decimals;
     if (typeof nameOrDecimals === "number") {

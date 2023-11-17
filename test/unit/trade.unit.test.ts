@@ -34,7 +34,7 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.volume)
+        BigNumber.from(params.volume),
       );
       when(baseToken.decimals).thenReturn(18);
       when(quoteToken.toUnits(anything()))
@@ -53,25 +53,25 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
       const [wants] = capture(baseToken.toUnits).first();
 
       //Assert
       assert.equal(
         result.fillVolume.toString(),
-        BigNumber.from(params.volume).toString()
+        BigNumber.from(params.volume).toString(),
       );
 
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         Big(params.price)
           .mul(100 + slippage)
-          .div(100)
+          .div(100),
       );
 
       assert.equal(
         result.tick.toString(),
-        BigNumber.from(expectedTickWithSlippage).toString()
+        BigNumber.from(expectedTickWithSlippage).toString(),
       );
       assert.equal(result.fillWants, true);
       assert.equal(Big(params.volume).toFixed(), Big(wants).toFixed());
@@ -91,11 +91,11 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.total).div(price).toFixed(0))
+        BigNumber.from(Big(params.total).div(price).toFixed(0)),
       );
       when(baseToken.decimals).thenReturn(18);
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.total)
+        BigNumber.from(params.total),
       );
       when(quoteToken.decimals).thenReturn(12);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
@@ -108,19 +108,19 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
       //Assert
 
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         Big(params.price)
           .mul(100 + slippage)
-          .div(100)
+          .div(100),
       );
 
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.total).toFixed(0))),
-        true
+        true,
       );
       assert.equal(result.fillWants, false);
       assert.equal(result.tick.toString(), expectedTickWithSlippage.toString());
@@ -139,10 +139,10 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.fillVolume).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0)),
       );
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.fillVolume).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0)),
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -150,7 +150,7 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
 
       //Assert
@@ -158,12 +158,12 @@ describe("Trade unit tests suite", () => {
       const expectedTickWithSlippage = TickLib.getTickFromPrice(
         TickLib.priceFromTick(BigNumber.from(params.tick))
           .mul(100 + slippage)
-          .div(100)
+          .div(100),
       );
 
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.fillVolume).toFixed(0))),
-        true
+        true,
       );
       assert.equal(result.fillWants, true);
       assert.equal(result.tick.toString(), expectedTickWithSlippage.toString());
@@ -183,10 +183,10 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.fillVolume).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0)),
       );
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.fillVolume).toFixed(0))
+        BigNumber.from(Big(params.fillVolume).toFixed(0)),
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -194,7 +194,7 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForBuy(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
 
       //Assert
@@ -202,16 +202,16 @@ describe("Trade unit tests suite", () => {
       const expectedTickWithSlippage = TickLib.getTickFromPrice(
         TickLib.priceFromTick(BigNumber.from(params.tick))
           .mul(100 + slippage)
-          .div(100)
+          .div(100),
       );
 
       assert.equal(
         result.fillVolume.eq(BigNumber.from(Big(params.fillVolume).toFixed(0))),
-        true
+        true,
       );
       assert.deepStrictEqual(
         result.tick.toString(),
-        expectedTickWithSlippage.toString()
+        expectedTickWithSlippage.toString(),
       );
       assert.equal(result.fillWants, params.fillWants);
     });
@@ -247,11 +247,11 @@ describe("Trade unit tests suite", () => {
       const givesWithSlippage = quoteToken.toUnits(
         Big(params.gives)
           .mul(100 + slippage)
-          .div(100)
+          .div(100),
       );
       const expectedTick = TickLib.tickFromVolumes(
         givesWithSlippage,
-        baseToken.toUnits(params.wants)
+        baseToken.toUnits(params.wants),
       );
 
       assert.equal(result.fillVolume.toString(), givesWithSlippage.toString());
@@ -275,11 +275,11 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.volume)
+        BigNumber.from(params.volume),
       );
       when(baseToken.decimals).thenReturn(18);
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.volume).mul(price).toFixed(0))
+        BigNumber.from(Big(params.volume).mul(price).toFixed(0)),
       );
       when(quoteToken.decimals).thenReturn(12);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
@@ -288,17 +288,19 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
       const priceWithCorrectDecimals = Big(params.price).mul(
         Big(10).pow(
-          Math.abs(instance(baseToken).decimals - instance(quoteToken).decimals)
-        )
+          Math.abs(
+            instance(baseToken).decimals - instance(quoteToken).decimals,
+          ),
+        ),
       );
       const expectedTickWithSlippage = TickLib.getTickFromPrice(
         Big(priceWithCorrectDecimals)
           .mul(100 - slippage)
-          .div(100)
+          .div(100),
       );
 
       //Assert
@@ -321,11 +323,11 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.total)
+        BigNumber.from(params.total),
       );
       when(quoteToken.decimals).thenReturn(12);
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(Big(params.total).div(price).toFixed(0))
+        BigNumber.from(Big(params.total).div(price).toFixed(0)),
       );
       when(baseToken.decimals).thenReturn(18);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
@@ -334,25 +336,27 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
       const priceWithCorrectDecimals = Big(params.price).mul(
         Big(10).pow(
-          Math.abs(instance(baseToken).decimals - instance(quoteToken).decimals)
-        )
+          Math.abs(
+            instance(baseToken).decimals - instance(quoteToken).decimals,
+          ),
+        ),
       );
       const expectedTickWithSlippage = TickLib.getTickFromPrice(
         Big(1).div(
           Big(priceWithCorrectDecimals)
             .mul(100 - slippage)
-            .div(100)
-        )
+            .div(100),
+        ),
       );
 
       //Assert
       assert.equal(
         result.fillVolume.toString(),
-        BigNumber.from(params.total).toString()
+        BigNumber.from(params.total).toString(),
       );
       assert.equal(result.tick.toString(), expectedTickWithSlippage.toString());
       assert.equal(result.fillWants, true);
@@ -371,10 +375,10 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.fillVolume)
+        BigNumber.from(params.fillVolume),
       );
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.fillVolume)
+        BigNumber.from(params.fillVolume),
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -382,19 +386,19 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
 
       //Assert
       const expectedTickWithSlippage = TickLib.getTickFromPrice(
         TickLib.priceFromTick(BigNumber.from(params.tick))
           .mul(100 - slippage)
-          .div(100)
+          .div(100),
       );
 
       assert.equal(
         result.fillVolume.toString(),
-        BigNumber.from(params.fillVolume).toString()
+        BigNumber.from(params.fillVolume).toString(),
       );
       assert.equal(result.tick.toString(), expectedTickWithSlippage.toString());
       assert.equal(result.fillWants, false);
@@ -414,10 +418,10 @@ describe("Trade unit tests suite", () => {
       const baseToken = mock(MgvToken);
       const quoteToken = mock(MgvToken);
       when(quoteToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.fillVolume)
+        BigNumber.from(params.fillVolume),
       );
       when(baseToken.toUnits(anything())).thenReturn(
-        BigNumber.from(params.fillVolume)
+        BigNumber.from(params.fillVolume),
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
@@ -425,7 +429,7 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForSell(
         params,
         instance(baseToken),
-        instance(quoteToken)
+        instance(quoteToken),
       );
 
       //Assert
@@ -433,12 +437,12 @@ describe("Trade unit tests suite", () => {
       const expectedTickWithSlippage = TickLib.getTickFromPrice(
         TickLib.priceFromTick(BigNumber.from(params.tick))
           .mul(100 - slippage)
-          .div(100)
+          .div(100),
       );
 
       assert.equal(
         result.fillVolume.toString(),
-        BigNumber.from(params.fillVolume).toString()
+        BigNumber.from(params.fillVolume).toString(),
       );
       assert.equal(result.tick.toString(), expectedTickWithSlippage.toString());
       assert.equal(result.fillWants, true);
@@ -474,16 +478,16 @@ describe("Trade unit tests suite", () => {
       const wantsWithSlippage = quoteToken.toUnits(
         Big(params.wants)
           .mul(100 - slippage)
-          .div(100)
+          .div(100),
       );
       const expectedTick = TickLib.tickFromVolumes(
         baseToken.toUnits(params.gives),
-        wantsWithSlippage
+        wantsWithSlippage,
       );
 
       assert.equal(
         result.fillVolume.toString(),
-        quoteToken.toUnits(params.gives).toString()
+        quoteToken.toUnits(params.gives).toString(),
       );
       assert.deepStrictEqual(result.tick.toString(), expectedTick.toString());
       assert.equal(result.fillWants, params.fillWants);

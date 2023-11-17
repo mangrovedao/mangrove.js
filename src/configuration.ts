@@ -26,8 +26,8 @@ export type RecursivePartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
     ? RecursivePartial<U>[]
     : T[P] extends object | undefined
-    ? RecursivePartial<T[P]>
-    : T[P];
+      ? RecursivePartial<T[P]>
+      : T[P];
 };
 
 export type network = string;
@@ -188,7 +188,7 @@ export const addressesConfiguration = {
   watchAddress: (
     network: string,
     name: string,
-    callback: (address: string) => void
+    callback: (address: string) => void,
   ) => {
     let networkWatchers = addressWatchers.get(network);
     if (networkWatchers === undefined) {
@@ -231,14 +231,14 @@ export const addressesConfiguration = {
    */
   getNameFromAddress: (
     address: string,
-    network: string
+    network: string,
   ): string | undefined => {
     const networkAddresses = config.addressesByNetwork[network];
     address = ethers.utils.getAddress(address); // normalize
 
     if (networkAddresses) {
       for (const [name, candidateAddress] of Object.entries(
-        networkAddresses
+        networkAddresses,
       ) as any) {
         if (candidateAddress == address) {
           return name;
@@ -287,7 +287,7 @@ export const tokensConfiguration = {
    */
   getOrFetchDecimals: async (
     tokenName: string,
-    provider: Provider
+    provider: Provider,
   ): Promise<number> => {
     const decimals = tokensConfiguration.getDecimals(tokenName);
     if (decimals !== undefined) {
@@ -302,12 +302,12 @@ export const tokensConfiguration = {
    */
   fetchDecimals: async (
     tokenName: string,
-    provider: Provider
+    provider: Provider,
   ): Promise<number> => {
     const network = await eth.getProviderNetwork(provider);
     const token = typechain.IERC20__factory.connect(
       addressesConfiguration.getAddress(tokenName, network.name),
-      provider
+      provider,
     );
     const decimals = await token.decimals();
     tokensConfiguration.setDecimals(tokenName, decimals);
@@ -321,7 +321,7 @@ export const tokensConfiguration = {
     async (address: string, provider: Provider): Promise<number> => {
       const token = typechain.IERC20__factory.connect(address, provider);
       return token.decimals();
-    }
+    },
   ),
 
   /**
@@ -394,7 +394,7 @@ export const reliableEventSubscriberConfiguration = {
   },
 
   getReliableHttpProviderOptions: (
-    network: string
+    network: string,
   ): Omit<ReliableHttpProvider.Options, "onError"> => {
     return (
       config.reliableEventSubscriber.reliableHttpProviderOptionsByNetwork[
@@ -404,7 +404,7 @@ export const reliableEventSubscriberConfiguration = {
   },
 
   getReliableWebSocketOptions: (
-    network: string
+    network: string,
   ): Omit<ReliableWebsocketProvider.Options, "wsUrl"> => {
     return (
       config.reliableEventSubscriber.reliableWebSocketOptionsByNetwork[
@@ -472,7 +472,7 @@ export function resetConfiguration(): void {
         loadedBlockManagerOptionsByNetwork as Record<
           network,
           BlockManager.Options
-        >
+        >,
       ),
       defaultReliableHttpProviderOptions: {
         estimatedBlockTimeMs: 2000,
@@ -481,7 +481,7 @@ export function resetConfiguration(): void {
         loadedReliableHttpProviderOptionsByNetwork as Record<
           network,
           Omit<ReliableHttpProvider.Options, "onError">
-        >
+        >,
       ),
       defaultReliableWebSocketOptions: {
         pingIntervalMs: 10000,
@@ -492,11 +492,11 @@ export function resetConfiguration(): void {
         loadedReliableWebSocketOptionsByNetwork as Record<
           network,
           Omit<ReliableWebsocketProvider.Options, "wsUrl">
-        >
+        >,
       ),
     },
     mangroveOrder: clone(
-      loadedMangroveOrderConfiguration as PartialMangroveOrderConfiguration
+      loadedMangroveOrderConfiguration as PartialMangroveOrderConfiguration,
     ),
     kandel: clone(loadedKandelConfiguration as PartialKandelConfiguration),
   };
@@ -534,17 +534,17 @@ function readMangroveDeploymentAddresses() {
 }
 
 function readVersionDeploymentsAddresses(
-  contractsDeployments: mgvDeployments.VersionDeployments[]
+  contractsDeployments: mgvDeployments.VersionDeployments[],
 ) {
   for (const contractDeployments of contractsDeployments) {
     for (const [networkId, networkDeployments] of Object.entries(
-      contractDeployments.networkAddresses
+      contractDeployments.networkAddresses,
     )) {
       const networkName = eth.getNetworkName(+networkId);
       addressesConfiguration.setAddress(
         contractDeployments.deploymentName ?? contractDeployments.contractName,
         networkDeployments.primaryAddress,
-        networkName
+        networkName,
       );
     }
   }
@@ -568,26 +568,26 @@ function readContextMulticallAddresses() {
 
 function readContextErc20Addresses() {
   for (const [, /*tokenId*/ erc20] of Object.entries(
-    contextAddresses.getAllErc20s()
+    contextAddresses.getAllErc20s(),
   )) {
     for (const [networkId, networkInstances] of Object.entries(
-      erc20.networkInstances
+      erc20.networkInstances,
     )) {
       const networkName = eth.getNetworkName(+networkId);
       for (const [erc20InstanceId, erc20Instance] of Object.entries(
-        networkInstances
+        networkInstances,
       )) {
         addressesConfiguration.setAddress(
           erc20InstanceId,
           erc20Instance.address,
-          networkName
+          networkName,
         );
         // Also register the default instance as the token symbol for convenience
         if (erc20Instance.default) {
           addressesConfiguration.setAddress(
             erc20.symbol,
             erc20Instance.address,
-            networkName
+            networkName,
           );
         }
       }

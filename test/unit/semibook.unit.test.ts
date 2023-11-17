@@ -807,7 +807,7 @@ describe("Semibook unit test suite", () => {
       });
       assert.deepStrictEqual(
         state.binCache.get(offer3.tick.toNumber()),
-        undefined
+        undefined,
       );
     });
 
@@ -935,7 +935,7 @@ describe("Semibook unit test suite", () => {
       });
       assert.deepStrictEqual(
         state.binCache.get(offer3.tick.toNumber()),
-        undefined
+        undefined,
       );
     });
 
@@ -990,7 +990,7 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.throws(
         () => book.getOfferFromCacheOrFail(state, 1),
-        new Error(`Offer 1 is not in cache`)
+        new Error(`Offer 1 is not in cache`),
       );
     });
 

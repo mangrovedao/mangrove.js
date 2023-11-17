@@ -89,7 +89,7 @@ describe("Cleaner integration tests suite", () => {
       ba: "asks",
       maker,
       tick: TickLib.getTickFromPrice(
-        Big(1).div(rawMinGivesBase.mul(2).toString())
+        Big(1).div(rawMinGivesBase.mul(2).toString()),
       ),
       gives: rawMinGivesBase.mul(2),
       shouldFail: true,
@@ -116,7 +116,7 @@ describe("Cleaner integration tests suite", () => {
           },
         ],
       },
-      { gasLimit: 600000 }
+      { gasLimit: 600000 },
     );
     const result = await cleanPromises.result;
     result.summary = result.summary as Market.CleanSummary;
@@ -127,26 +127,26 @@ describe("Cleaner integration tests suite", () => {
     assert.deepStrictEqual(
       result.summary.offersCleaned,
       2,
-      `wrong number of offers cleaned`
+      `wrong number of offers cleaned`,
     );
     assert.deepStrictEqual(
       result.summary.offersToBeCleaned,
       2,
-      `wrong number of offers to be cleaned`
+      `wrong number of offers to be cleaned`,
     );
 
     assert.deepStrictEqual(
       result.summary.bounty!.toNumber() > 0,
       true,
-      `bounty should be greater than zero, but was ${result.summary.bounty!.toNumber()}`
+      `bounty should be greater than zero, but was ${result.summary.bounty!.toNumber()}`,
     );
     assert.deepStrictEqual(
       mgv.fromUnits(result.summary.bounty!, 18).lt(0.001),
       true,
       `bounty should be 0.0001, but was ${mgv.fromUnits(
         result.summary.bounty!,
-        18
-      )}`
+        18,
+      )}`,
     );
     // Verify book gets updated to reflect offers have failed and are removed
     await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
@@ -195,7 +195,7 @@ describe("Cleaner integration tests suite", () => {
           },
         ],
       },
-      { gasLimit: 600000 }
+      { gasLimit: 600000 },
     );
     await cleanPromises.result;
     const result = await cleanPromises.result;
@@ -207,18 +207,18 @@ describe("Cleaner integration tests suite", () => {
     assert.deepStrictEqual(
       result.summary.offersCleaned,
       0,
-      `wrong number of offers cleaned`
+      `wrong number of offers cleaned`,
     );
     assert.deepStrictEqual(
       result.summary.offersToBeCleaned,
       1,
-      `wrong number of offers to be cleaned`
+      `wrong number of offers to be cleaned`,
     );
 
     assert.deepStrictEqual(
       result.summary.bounty!.toNumber() == 0,
       true,
-      `bounty should be zero, but was ${result.summary.bounty!.toNumber()}`
+      `bounty should be zero, but was ${result.summary.bounty!.toNumber()}`,
     );
     // Verify book gets updated to reflect offers have failed and are removed
     await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
@@ -274,7 +274,7 @@ describe("Cleaner integration tests suite", () => {
         ],
         taker: this.accounts.cleaner.address,
       },
-      { gasLimit: 600000 }
+      { gasLimit: 600000 },
     );
     await cleanPromises.result;
     const result = await cleanPromises.result;
@@ -286,18 +286,18 @@ describe("Cleaner integration tests suite", () => {
     assert.deepStrictEqual(
       result.summary.offersCleaned,
       1,
-      `wrong number of offers cleaned`
+      `wrong number of offers cleaned`,
     );
     assert.deepStrictEqual(
       result.summary.offersToBeCleaned,
       1,
-      `wrong number of offers to be cleaned`
+      `wrong number of offers to be cleaned`,
     );
 
     assert.deepStrictEqual(
       result.summary.bounty!.toNumber() > 0,
       true,
-      `bounty should be larger than zero, but was ${result.summary.bounty!.toNumber()}`
+      `bounty should be larger than zero, but was ${result.summary.bounty!.toNumber()}`,
     );
     // Verify book gets updated to reflect offers have failed and are removed
     await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
@@ -351,26 +351,26 @@ describe("Cleaner integration tests suite", () => {
     const result = await market.mgv.contract.callStatic.cleanByImpersonation(
       olKey,
       raw.targets,
-      await market.mgv.signer.getAddress()
+      await market.mgv.signer.getAddress(),
     );
 
     assert.deepStrictEqual(
       result.bounty.toNumber() > 0,
       true,
-      `bounty should be greater than zero, but was ${result.bounty.toNumber()}`
+      `bounty should be greater than zero, but was ${result.bounty.toNumber()}`,
     );
     assert.deepStrictEqual(
       mgv.fromUnits(result.bounty, 18).lte(0.001),
       true,
       `bounty should be less than 0.001, but was ${mgv.fromUnits(
         result.bounty,
-        18
-      )}`
+        18,
+      )}`,
     );
     assert.deepStrictEqual(
       result.successes.toNumber(),
       1,
-      `wrong number of offers cleaned`
+      `wrong number of offers cleaned`,
     );
   });
 });

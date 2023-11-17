@@ -26,13 +26,13 @@ async function main() {
   try {
     // Get directory for mangrove-core module's abis
     const coreDir = path.parse(
-      require.resolve("@mangrovedao/mangrove-core")
+      require.resolve("@mangrovedao/mangrove-core"),
     ).dir;
     const coreAbisDir = `${coreDir}/dist/abis`;
 
     // Get directory for mangrove-strats module's abis
     const stratsDir = path.parse(
-      require.resolve("@mangrovedao/mangrove-strats")
+      require.resolve("@mangrovedao/mangrove-strats"),
     ).dir;
     const stratsAbisDir = `${stratsDir}/dist/abis`;
 

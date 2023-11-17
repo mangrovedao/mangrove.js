@@ -25,24 +25,24 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
           2,
           1000,
           100,
-          5
+          5,
         );
         const baseQuoteTicksForBid = sut.getBaseQuoteTicksFromTick(
           "bids",
           2,
           -1000,
           100,
-          5
+          5,
         );
 
         // Assert
         assert.deepStrictEqual(
           baseQuoteTicksForAsk,
-          [800, 900, 1000, 1100, 1200]
+          [800, 900, 1000, 1100, 1200],
         );
         assert.deepStrictEqual(baseQuoteTicksForAsk, baseQuoteTicksForBid);
       });
-    }
+    },
   );
 
   describe(
@@ -66,10 +66,10 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         // Act/assert
         assert.throws(
           () => sut.calculateBaseQuoteTickOffset(Big(0.99)),
-          new Error("priceRatio must be larger than 1")
+          new Error("priceRatio must be larger than 1"),
         );
       });
-    }
+    },
   );
 
   describe(
@@ -109,7 +109,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
             stepSize,
             generateFromMid: true,
           }),
-          expectedParams
+          expectedParams,
         );
         assert.deepStrictEqual(
           sut.getTickDistributionParams({
@@ -120,7 +120,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
             stepSize,
             generateFromMid: true,
           }),
-          expectedParams
+          expectedParams,
         );
         assert.deepStrictEqual(
           sut.getTickDistributionParams({
@@ -131,7 +131,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
             stepSize,
             generateFromMid: true,
           }),
-          expectedParams
+          expectedParams,
         );
         assert.deepStrictEqual(
           sut.getTickDistributionParams({
@@ -142,7 +142,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
             stepSize,
             generateFromMid: true,
           }),
-          expectedParams
+          expectedParams,
         );
 
         assert.deepStrictEqual(
@@ -154,7 +154,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
             stepSize,
             generateFromMid: true,
           }),
-          expectedParams
+          expectedParams,
         );
       });
 
@@ -169,7 +169,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
               generateFromMid: false,
               stepSize: 1,
             }),
-          new Error("midPrice or midBaseQuoteTick must be provided.")
+          new Error("midPrice or midBaseQuoteTick must be provided."),
         );
       });
 
@@ -189,7 +189,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         // Assert
         assert.equal(
           params.baseQuoteTickOffset.toString(),
-          params.baseQuoteTickOffset.toFixed(0)
+          params.baseQuoteTickOffset.toFixed(0),
         );
       });
 
@@ -205,8 +205,8 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
               generateFromMid: true,
             }),
           new Error(
-            "Exactly three of minPrice (or minBaseQuoteTick), maxPrice (or maxBaseQuoteTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given"
-          )
+            "Exactly three of minPrice (or minBaseQuoteTick), maxPrice (or maxBaseQuoteTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given",
+          ),
         );
       });
 
@@ -222,7 +222,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
               stepSize: 1,
               generateFromMid: true,
             }),
-          new Error("There must be at least 2 price points")
+          new Error("There must be at least 2 price points"),
         );
       });
 
@@ -239,8 +239,8 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
               generateFromMid: true,
             }),
           new Error(
-            "minBaseQuoteTick and maxBaseQuoteTick are too close. There must be room for at least two price points"
-          )
+            "minBaseQuoteTick and maxBaseQuoteTick are too close. There must be room for at least two price points",
+          ),
         );
       });
 
@@ -256,7 +256,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
               stepSize: 1,
               generateFromMid: true,
             }),
-          new Error("minBaseQuoteTick too low.")
+          new Error("minBaseQuoteTick too low."),
         );
       });
 
@@ -272,10 +272,10 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
               stepSize: 1,
               generateFromMid: true,
             }),
-          new Error("maxBaseQuoteTick too high.")
+          new Error("maxBaseQuoteTick too high."),
         );
       });
-    }
+    },
   );
 });
 
@@ -292,7 +292,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
           Big(1),
           Big(2),
           [],
-          []
+          [],
         );
 
         // Assert
@@ -309,7 +309,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
           Big(1),
           Big(1000),
           [sut.bidTickPriceHelper.tickFromPrice(1000).toNumber()],
-          [sut.askTickPriceHelper.tickFromPrice(1000).toNumber()]
+          [sut.askTickPriceHelper.tickFromPrice(1000).toNumber()],
         );
 
         // Assert
@@ -322,7 +322,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         const sut = new KandelDistributionHelper(0, 0);
 
         const baseQuoteTicks = [Big(2000), Big(1000), Big(500), Big(4000)].map(
-          (x) => sut.askTickPriceHelper.tickFromPrice(x).toNumber()
+          (x) => sut.askTickPriceHelper.tickFromPrice(x).toNumber(),
         );
 
         // Act
@@ -330,14 +330,14 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
           Big(1),
           Big(1000),
           baseQuoteTicks.map((x) => -x),
-          baseQuoteTicks
+          baseQuoteTicks,
         );
 
         // Assert
         assert.equal(askGives.toNumber(), 3);
         assert.equal(bidGives.toNumber(), 4000);
       });
-    }
+    },
   );
 
   describe(KandelDistributionHelper.prototype.uniformlyDecrease.name, () => {
@@ -350,13 +350,13 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         [Big(3), Big(2), Big(5), Big(2)],
         Big(4),
         Big(1),
-        (v) => v
+        (v) => v,
       );
 
       // Assert
       assert.deepStrictEqual(
         result.newValues.map((x) => x.toNumber()),
-        [2, 1, 4, 1]
+        [2, 1, 4, 1],
       );
       assert.equal(result.totalChange.toNumber(), 4);
     });
@@ -370,13 +370,13 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         [Big(3), Big(2), Big(5), Big(2)],
         Big(6),
         Big(1),
-        (v) => v
+        (v) => v,
       );
 
       // Assert
       assert.deepStrictEqual(
         result.newValues.map((x) => x.toNumber()),
-        [1, 1, 3, 1]
+        [1, 1, 3, 1],
       );
       assert.equal(result.totalChange.toNumber(), 6);
     });
@@ -390,13 +390,13 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         [Big(3), Big(2), Big(5), Big(2)],
         Big(9),
         Big(1),
-        (v) => v
+        (v) => v,
       );
 
       // Assert
       assert.deepStrictEqual(
         result.newValues.map((x) => x.toNumber()),
-        [1, 1, 1, 1]
+        [1, 1, 1, 1],
       );
       assert.equal(result.totalChange.toNumber(), 8);
     });
@@ -410,13 +410,13 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         [Big(2), Big(2), Big(2)],
         Big(1),
         Big(1),
-        (v) => v.round(4, Big.roundHalfUp)
+        (v) => v.round(4, Big.roundHalfUp),
       );
 
       // Assert
       assert.deepStrictEqual(
         result.newValues.map((x) => x.toString()),
-        ["1.6667", "1.6666", "1.6667"]
+        ["1.6667", "1.6666", "1.6667"],
       );
       assert.equal(result.totalChange.toNumber(), 1);
     });
@@ -430,13 +430,13 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         [Big(2.6), Big(2.6)],
         Big(3.1),
         Big(1),
-        (v) => v.round(0, Big.roundHalfUp)
+        (v) => v.round(0, Big.roundHalfUp),
       );
 
       // Assert
       assert.deepStrictEqual(
         result.newValues.map((x) => x.toString()),
-        ["1", "1"]
+        ["1", "1"],
       );
       assert.equal(result.totalChange.toNumber(), 3.2);
     });
@@ -451,13 +451,13 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
       const result = sut.uniformlyIncrease(
         [Big(3), Big(2), Big(5), Big(2)],
         Big(4),
-        (v) => v
+        (v) => v,
       );
 
       // Assert
       assert.deepStrictEqual(
         result.newValues.map((x) => x.toNumber()),
-        [4, 3, 6, 3]
+        [4, 3, 6, 3],
       );
       assert.equal(result.totalChange.toNumber(), 4);
     });
@@ -470,13 +470,13 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
       const result = sut.uniformlyIncrease(
         [Big(2), Big(2), Big(2)],
         Big(1),
-        (v) => v.round(4, Big.roundHalfUp)
+        (v) => v.round(4, Big.roundHalfUp),
       );
 
       // Assert
       assert.deepStrictEqual(
         result.newValues.map((x) => x.toString()),
-        ["2.3333", "2.3334", "2.3333"]
+        ["2.3333", "2.3334", "2.3333"],
       );
       assert.equal(result.totalChange.toNumber(), 1);
     });
@@ -525,11 +525,11 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         const newVolume = result.distribution.getOfferedVolumeForDistribution();
         assert.equal(
           newVolume.requiredBase.toNumber(),
-          oldVolume.requiredBase.add(baseDelta).toNumber()
+          oldVolume.requiredBase.add(baseDelta).toNumber(),
         );
         assert.equal(
           newVolume.requiredQuote.toNumber(),
-          oldVolume.requiredQuote.add(quoteDelta).toNumber()
+          oldVolume.requiredQuote.add(quoteDelta).toNumber(),
         );
 
         assertIsRounded(result.distribution);
@@ -540,21 +540,21 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
           assert.ok(o.gives.gte(Big(1)), "ask base should be above minimum");
           assert.ok(
             Big(
-              sut.askTickPriceHelper.inboundFromOutbound(o.tick, o.gives)
+              sut.askTickPriceHelper.inboundFromOutbound(o.tick, o.gives),
             ).gte(Big(9000)),
-            "ask quote should be above minimum"
+            "ask quote should be above minimum",
           );
         });
         result.distribution.getLiveOffers("bids").forEach((o) => {
           assert.ok(
             o.gives.gte(Big(9000)),
-            "bid quote should be above minimum"
+            "bid quote should be above minimum",
           );
           assert.ok(
             sut.bidTickPriceHelper
               .inboundFromOutbound(o.tick, o.gives)
               .gte(Big(1)),
-            "bid base should be above minimum"
+            "bid base should be above minimum",
           );
         });
       });
@@ -583,15 +583,15 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
             result.distribution.getOfferedVolumeForDistribution();
           assert.equal(
             newVolume.requiredBase.toNumber(),
-            oldVolume.requiredBase.add(baseDelta ?? Big(0)).toNumber()
+            oldVolume.requiredBase.add(baseDelta ?? Big(0)).toNumber(),
           );
           assert.equal(
             newVolume.requiredQuote.toNumber(),
-            oldVolume.requiredQuote.add(quoteDelta ?? Big(0)).toNumber()
+            oldVolume.requiredQuote.add(quoteDelta ?? Big(0)).toNumber(),
           );
         });
       });
-    }
+    },
   );
 
   describe(KandelDistributionHelper.prototype.chunkIndices.name, () => {
@@ -657,7 +657,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         assert.deepStrictEqual(chunks[0], { from: 3, to: 5 });
         assert.deepStrictEqual(chunks[1], { from: 1, to: 3 });
       });
-    }
+    },
   );
 
   describe(KandelDistributionHelper.prototype.sortByIndex.name, () => {

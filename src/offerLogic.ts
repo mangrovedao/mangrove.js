@@ -22,7 +22,7 @@ class OfferLogic {
     this.signerOrProvider = signer ?? this.mgv.signer;
     this.contract = typechain.IOfferLogic__factory.connect(
       this.address,
-      this.signerOrProvider
+      this.signerOrProvider,
     );
   }
 
@@ -35,7 +35,7 @@ class OfferLogic {
     if (router_address != ethers.constants.AddressZero) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
-        this.signerOrProvider
+        this.signerOrProvider,
       );
     }
   }
@@ -58,7 +58,7 @@ class OfferLogic {
       optSpender?: string;
       optAmount?: Bigish;
       optOverrides?: ethers.Overrides;
-    }
+    },
   ): Promise<ethers.ContractTransaction> {
     const token = await this.mgv.token(tokenName);
     const amount =
@@ -73,7 +73,7 @@ class OfferLogic {
       token.address,
       spender,
       amount,
-      args && args.optOverrides ? args.optOverrides : {}
+      args && args.optOverrides ? args.optOverrides : {},
     );
   }
 
@@ -92,11 +92,11 @@ class OfferLogic {
    */
   setAdmin(
     newAdmin: string,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<TransactionResponse> {
     const accessControlled = typechain.AccessControlled__factory.connect(
       this.address,
-      this.mgv.signer
+      this.mgv.signer,
     );
     return accessControlled.setAdmin(newAdmin, overrides);
   }
@@ -107,7 +107,7 @@ class OfferLogic {
   admin(): Promise<string> {
     const accessControlled = typechain.AccessControlled__factory.connect(
       this.address,
-      this.mgv.signer
+      this.mgv.signer,
     );
     return accessControlled.admin();
   }
@@ -120,10 +120,10 @@ class OfferLogic {
    * */
   activate(
     tokenNames: string[],
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<TransactionResponse> {
     const tokenAddresses = tokenNames.map((tokenName) =>
-      this.mgv.getAddress(tokenName)
+      this.mgv.getAddress(tokenName),
     );
     return this.contract.activate(tokenAddresses, overrides);
   }
@@ -146,12 +146,12 @@ class OfferLogic {
   /** tx will revert is signer is not the admin of the OfferLogic onchain contract */
   async withdrawFromMangrove(
     amount: Bigish,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<TransactionResponse> {
     return this.contract.withdrawFromMangrove(
       this.mgv.toUnits(amount, 18),
       await this.mgv.signer.getAddress(),
-      overrides
+      overrides,
     );
   }
 
@@ -165,7 +165,7 @@ class OfferLogic {
   public async retrieveLockedProvisionForOffer(
     market: Market,
     ba: Market.BA,
-    offerId?: number
+    offerId?: number,
   ) {
     // checking now the funds that are either locked in the offer or on the maker balance on Mangrove
     if (!offerId) {
@@ -179,9 +179,9 @@ class OfferLogic {
           inbound_tkn: inbound_tkn.address,
           tickSpacing: market.tickSpacing,
         },
-        offerId
+        offerId,
       ),
-      18
+      18,
     );
   }
 
@@ -198,18 +198,18 @@ class OfferLogic {
     market: Market,
     ba: Market.BA,
     gasreq: number,
-    opts: { id?: number; gasprice?: number } = {}
+    opts: { id?: number; gasprice?: number } = {},
   ) {
     const lockedProvision = await this.retrieveLockedProvisionForOffer(
       market,
       ba,
-      opts.id
+      opts.id,
     );
     return await market.getMissingProvision(
       ba,
       lockedProvision,
       gasreq,
-      opts.gasprice
+      opts.gasprice,
     );
   }
 }

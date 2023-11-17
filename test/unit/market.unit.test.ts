@@ -16,7 +16,7 @@ describe("Market unit tests suite", () => {
       const { gives, wants } = Market.getGivesWantsForVolumeAtPrice(
         "asks",
         volume,
-        price
+        price,
       );
       // Assert
       assert.equal(volume, gives);
@@ -31,7 +31,7 @@ describe("Market unit tests suite", () => {
       const { gives, wants } = Market.getGivesWantsForVolumeAtPrice(
         "bids",
         volume,
-        price
+        price,
       );
       // Assert
       assert.equal(volume, wants);

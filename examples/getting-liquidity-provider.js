@@ -9,7 +9,7 @@ const { Mangrove, ethers } = require("@mangrovedao/mangrove.js");
 const overrides = { gasPrice: ethers.utils.parseUnits("60", "gwei") };
 
 const provider = new ethers.providers.JsonRpcProvider(
-  env.parsed.MUMBAI_NODE_URL
+  env.parsed.MUMBAI_NODE_URL,
 );
 
 let wallet = new ethers.Wallet(env.parsed.MUMBAI_TESTER_PRIVATE_KEY, provider);
@@ -36,5 +36,5 @@ await maker.newAsk(
     price: 1.01,
     fund: 0.1,
   },
-  overrides
+  overrides,
 );

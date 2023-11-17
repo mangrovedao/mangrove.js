@@ -10,7 +10,7 @@ const currentFilePath = fileURLToPath(import.meta.url);
 function getPath(absoluteResolvePath, shim) {
   const relativePath = path.relative(
     absoluteResolvePath,
-    path.dirname(currentFilePath)
+    path.dirname(currentFilePath),
   );
   return path.join(absoluteResolvePath, relativePath, shim);
 }

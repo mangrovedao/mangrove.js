@@ -54,8 +54,8 @@ describe("MGV Token integration tests suite", () => {
     await waitForTransaction(
       usdc.approve(
         mgv.address,
-        Big(2).pow(200).add(1).div(Big(10).pow(usdc.decimals))
-      )
+        Big(2).pow(200).add(1).div(Big(10).pow(usdc.decimals)),
+      ),
     );
     assert.ok(await usdc.allowanceInfinite());
   });
@@ -64,7 +64,10 @@ describe("MGV Token integration tests suite", () => {
     const usdc = await mgv.token("USDC");
     assert.ok(!(await usdc.allowanceInfinite()));
     await waitForTransaction(
-      usdc.approve(mgv.address, Big(2).pow(200).div(Big(10).pow(usdc.decimals)))
+      usdc.approve(
+        mgv.address,
+        Big(2).pow(200).div(Big(10).pow(usdc.decimals)),
+      ),
     );
     assert.ok(!(await usdc.allowanceInfinite()));
   });
@@ -77,7 +80,7 @@ describe("MGV Token integration tests suite", () => {
     assert.equal(
       allowance.toNumber(),
       200,
-      "allowance should be the final value"
+      "allowance should be the final value",
     );
   });
 
@@ -93,16 +96,16 @@ describe("MGV Token integration tests suite", () => {
     const usdc = await mgv.token("USDC");
 
     await waitForOptionalTransaction(
-      await usdc.approveIfHigher(mgv.address, 100)
+      await usdc.approveIfHigher(mgv.address, 100),
     );
     await waitForOptionalTransaction(
-      await usdc.approveIfHigher(mgv.address, 200)
+      await usdc.approveIfHigher(mgv.address, 200),
     );
     const allowance = await usdc.allowance();
     assert.equal(
       allowance.toNumber(),
       200,
-      "allowance should updated to the highest"
+      "allowance should updated to the highest",
     );
 
     const tx = await usdc.approveIfHigher(mgv.address, 100);
@@ -113,17 +116,17 @@ describe("MGV Token integration tests suite", () => {
     assert.equal(
       usdc.toUnits(maxAllowance).toString(),
       ethers.constants.MaxUint256.toString(),
-      "allowance should updated to max"
+      "allowance should updated to max",
     );
     assert.equal(
       await usdc.approveIfHigher(mgv.address, 100),
       undefined,
-      "no tx should be generated"
+      "no tx should be generated",
     );
     assert.equal(
       await usdc.approveIfHigher(mgv.address),
       undefined,
-      "no tx should be generated"
+      "no tx should be generated",
     );
   });
 
@@ -131,10 +134,10 @@ describe("MGV Token integration tests suite", () => {
     const usdc = await mgv.token("USDC");
 
     await waitForOptionalTransaction(
-      await usdc.increaseApproval(mgv.address, 100)
+      await usdc.increaseApproval(mgv.address, 100),
     );
     await waitForOptionalTransaction(
-      await usdc.increaseApproval(mgv.address, 50)
+      await usdc.increaseApproval(mgv.address, 50),
     );
 
     const allowance = await usdc.allowance();
@@ -145,18 +148,18 @@ describe("MGV Token integration tests suite", () => {
     assert.equal(
       usdc.toUnits(maxAllowance).toString(),
       ethers.constants.MaxUint256.toString(),
-      "allowance should updated to max"
+      "allowance should updated to max",
     );
 
     assert.equal(
       await usdc.increaseApproval(mgv.address, 50),
       undefined,
-      "no tx should be generated"
+      "no tx should be generated",
     );
     assert.equal(
       await usdc.increaseApproval(mgv.address),
       undefined,
-      "no tx should be generated"
+      "no tx should be generated",
     );
   });
 
@@ -164,39 +167,39 @@ describe("MGV Token integration tests suite", () => {
     const usdc = await mgv.token("USDC");
 
     await waitForOptionalTransaction(
-      await usdc.approveIfNotInfinite(mgv.address, 100)
+      await usdc.approveIfNotInfinite(mgv.address, 100),
     );
     await waitForOptionalTransaction(
-      await usdc.approveIfNotInfinite(mgv.address, 200)
+      await usdc.approveIfNotInfinite(mgv.address, 200),
     );
     await waitForOptionalTransaction(
-      await usdc.approveIfNotInfinite(mgv.address, 50)
+      await usdc.approveIfNotInfinite(mgv.address, 50),
     );
     const allowance = await usdc.allowance();
     assert.equal(
       allowance.toNumber(),
       50,
-      "allowance should updated to the latest"
+      "allowance should updated to the latest",
     );
 
     await waitForOptionalTransaction(
-      await usdc.approveIfNotInfinite(mgv.address)
+      await usdc.approveIfNotInfinite(mgv.address),
     );
     const maxAllowance = await usdc.allowance();
     assert.equal(
       usdc.toUnits(maxAllowance).toString(),
       ethers.constants.MaxUint256.toString(),
-      "allowance should updated to max"
+      "allowance should updated to max",
     );
     assert.equal(
       await usdc.approveIfNotInfinite(mgv.address, 100),
       undefined,
-      "no tx should be generated"
+      "no tx should be generated",
     );
     assert.equal(
       await usdc.approveIfNotInfinite(mgv.address),
       undefined,
-      "no tx should be generated"
+      "no tx should be generated",
     );
   });
 

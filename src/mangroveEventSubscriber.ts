@@ -25,7 +25,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
   constructor(
     private provider: Provider,
     private contract: Contract,
-    private blockManager: BlockManager
+    private blockManager: BlockManager,
   ) {
     super();
     this.bookEventSubscribers = {};
@@ -45,7 +45,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
         address: this.contract.address,
         topics: [],
       },
-      this
+      this,
     );
   }
 
@@ -55,14 +55,14 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
           .getOlKeyHash(
             market.base.address,
             market.quote.address,
-            market.tickSpacing.toNumber()
+            market.tickSpacing.toNumber(),
           )!
           .toLowerCase()
       : market.mgv
           .getOlKeyHash(
             market.quote.address,
             market.base.address,
-            market.tickSpacing.toNumber()
+            market.tickSpacing.toNumber(),
           )!
           .toLowerCase();
   }
@@ -70,7 +70,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
   public getSemibook(
     market: Market,
     ba: Market.BA,
-    options: Semibook.Options
+    options: Semibook.Options,
   ): Semibook | undefined {
     const identifier = this.computeBookIdentifier(market, ba);
 
@@ -92,14 +92,14 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     const identifier = this.computeBookIdentifier(semibook.market, semibook.ba);
 
     logger.debug(
-      `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
+      `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`,
     );
     const block = this.blockManager.getLastBlock();
 
     const error = await semibook.initialize(block);
     if (error) {
       logger.debug(
-        `[MangroveEventSubscriber] found error initialization for ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
+        `[MangroveEventSubscriber] found error initialization for ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`,
       );
       /* detected reorg during initialization */
       return new Promise((resolve, reject) => {
@@ -120,7 +120,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     }
 
     logger.debug(
-      `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`
+      `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`,
     );
 
     if (!this.bookEventSubscribers[identifier]) {
@@ -135,7 +135,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
    * initialize subscriber at block number `blockNumber`.
    */
   public async initialize(
-    wantedBlock: BlockManager.BlockWithoutParentHash
+    wantedBlock: BlockManager.BlockWithoutParentHash,
   ): Promise<LogSubscriber.InitializeErrorOrBlock> {
     this.initializedAt = undefined;
     this.lastSeenEventBlock = undefined;

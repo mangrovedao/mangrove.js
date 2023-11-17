@@ -24,7 +24,7 @@ function approveArgsIsBigish(args: ApproveArgs): args is Bigish {
 }
 
 function approveArgsIAmountAndOverrides(
-  args: ApproveArgs
+  args: ApproveArgs,
 ): args is AmountAndOverrides {
   return typeof args === "object" && "amount" in (args as object);
 }
@@ -61,7 +61,7 @@ class MgvToken {
   constructor(
     name: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions
+    options?: MgvToken.ConstructorOptions,
   ) {
     this.mgv = mgv;
     this.name = name;
@@ -70,12 +70,12 @@ class MgvToken {
     this.address = this.mgv.getAddress(this.name);
     this.decimals = configuration.tokens.getDecimalsOrFail(this.name);
     this.displayedDecimals = configuration.tokens.getDisplayedDecimals(
-      this.name
+      this.name,
     );
 
     this.contract = typechain.TestToken__factory.connect(
       this.address,
-      this.mgv.signer
+      this.mgv.signer,
     );
   }
 
@@ -83,7 +83,7 @@ class MgvToken {
   static async createToken(
     name: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions
+    options?: MgvToken.ConstructorOptions,
   ): Promise<MgvToken> {
     MgvToken.#applyOptions(name, mgv, options);
 
@@ -95,11 +95,11 @@ class MgvToken {
 
   static async createTokenFromAddress(
     address: string,
-    mgv: Mangrove
+    mgv: Mangrove,
   ): Promise<MgvToken> {
     const contract = typechain.TestToken__factory.connect(
       address,
-      mgv.provider
+      mgv.provider,
     );
 
     const name = await contract.callStatic.symbol();
@@ -112,7 +112,7 @@ class MgvToken {
   static #applyOptions(
     name: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions
+    options?: MgvToken.ConstructorOptions,
   ) {
     if (options === undefined) {
       return;
@@ -132,7 +132,7 @@ class MgvToken {
     ) {
       configuration.tokens.setDisplayedDecimals(
         name,
-        options.displayedDecimals
+        options.displayedDecimals,
       );
     }
   }
@@ -193,7 +193,7 @@ class MgvToken {
    * If `spender` is not specified, defaults to Mangrove instance.
    */
   async allowance(
-    params: { owner?: string; spender?: string } = {}
+    params: { owner?: string; spender?: string } = {},
   ): Promise<Big> {
     const rawAmount = await this.getRawAllowance(params);
     return this.fromUnits(rawAmount);
@@ -212,7 +212,7 @@ class MgvToken {
   }
 
   private async getRawAllowance(
-    params: { owner?: string; spender?: string } = {}
+    params: { owner?: string; spender?: string } = {},
   ) {
     if (typeof params.owner === "undefined") {
       params.owner = await this.mgv.signer.getAddress();
@@ -245,7 +245,7 @@ class MgvToken {
    */
   static getOrFetchDecimals(
     tokenName: string,
-    provider: Provider
+    provider: Provider,
   ): Promise<number> {
     return configuration.tokens.getOrFetchDecimals(tokenName, provider);
   }
@@ -269,7 +269,7 @@ class MgvToken {
    */
   approve(
     spender: string,
-    arg: ApproveArgs = {}
+    arg: ApproveArgs = {},
   ): Promise<ethers.ContractTransaction> {
     const args = convertToApproveArgs(arg);
     const rawAmount = this.getRawApproveAmount(args.amount);
@@ -325,7 +325,7 @@ class MgvToken {
       return this.contract.approve(
         spender,
         rawAllowance.add(rawAmount),
-        args.overrides
+        args.overrides,
       );
     }
   }
@@ -335,7 +335,7 @@ class MgvToken {
    */
   async balanceOf(
     account: string,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<Big> {
     const bal = await this.contract.balanceOf(account, overrides);
     return this.fromUnits(bal);
@@ -347,7 +347,7 @@ class MgvToken {
   async transfer(
     to: string,
     value: Bigish,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
     return this.contract.transfer(to, this.toUnits(value), overrides);
   }

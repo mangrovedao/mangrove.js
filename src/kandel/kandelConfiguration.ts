@@ -21,7 +21,7 @@ class KandelConfiguration {
     if (configurationOverride !== undefined) {
       this.rawConfiguration = deepmerge(
         this.rawConfiguration,
-        configurationOverride
+        configurationOverride,
       );
     }
   }
@@ -35,7 +35,7 @@ class KandelConfiguration {
   public getMostSpecificConfig(
     networkName: string,
     baseName: string,
-    quoteName: string
+    quoteName: string,
   ): KandelNetworkConfiguration & Partial<KandelMarketConfiguration> {
     const networkSpecificConfig = this.rawConfiguration.networks?.[networkName];
     const baseSpecificConfig = networkSpecificConfig?.markets?.[baseName];
@@ -78,13 +78,13 @@ class KandelConfiguration {
   public getConfigForBaseQuote(
     networkName: string,
     baseName: string,
-    quoteName: string
+    quoteName: string,
   ): KandelNetworkConfiguration & KandelMarketConfiguration {
     const config = this.getMostSpecificConfig(networkName, baseName, quoteName);
 
     function thrower(msg: string): never {
       throw new Error(
-        `${msg} for pair ${baseName}/${quoteName} on network ${networkName}.`
+        `${msg} for pair ${baseName}/${quoteName} on network ${networkName}.`,
       );
     }
 
@@ -115,12 +115,12 @@ class KandelConfiguration {
    * @throws If the full config is not available for the market.
    */
   public getConfig(
-    market: Market
+    market: Market,
   ): KandelNetworkConfiguration & KandelMarketConfiguration {
     return this.getConfigForBaseQuote(
       market.mgv.network.name,
       market.base.name,
-      market.quote.name
+      market.quote.name,
     );
   }
 
@@ -137,10 +137,10 @@ class KandelConfiguration {
    * @returns The list of markets that are configured for the network.
    */
   public getConfiguredMarketsForNetwork(
-    networkName: string
+    networkName: string,
   ): { base: string; quote: string }[] {
     return Object.entries(
-      this.rawConfiguration.networks?.[networkName]?.markets ?? {}
+      this.rawConfiguration.networks?.[networkName]?.markets ?? {},
     ).flatMap(([base, quotes]: [string, unknown]) => {
       return Object.keys(quotes as Record<string, string>).map((quote) => ({
         base,

@@ -144,7 +144,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         // Assert
         assert.equal(
           result.toPrecision(comparisonPrecision).toString(),
-          Big(price).toPrecision(comparisonPrecision).toString()
+          Big(price).toPrecision(comparisonPrecision).toString(),
         );
       });
     });
@@ -197,11 +197,11 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
     assert.equal(
       UnitCalculations.toUnits(displayBaseAmount, baseDecimals),
-      rawBaseAmount
+      rawBaseAmount,
     );
     assert.equal(
       UnitCalculations.toUnits(displayQuoteAmount, quoteDecimals),
-      rawQuoteAmount
+      rawQuoteAmount,
     );
     assert.equal(displayPrice, displayQuoteAmount / displayBaseAmount);
 
@@ -246,11 +246,11 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
     const calcAskRawOutbound = TickLib.outboundFromInbound(
       BigNumber.from(rawAskTick),
-      BigNumber.from(rawAskInbound)
+      BigNumber.from(rawAskInbound),
     );
     const calcBidRawOutbound = TickLib.outboundFromInbound(
       BigNumber.from(rawBidTick),
-      BigNumber.from(rawBidInbound)
+      BigNumber.from(rawBidInbound),
     );
 
     assertApproxEqAbs(rawAskOutbound, calcAskRawOutbound.toNumber(), 1);
@@ -258,11 +258,11 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
     const calcAskRawInbound = TickLib.inboundFromOutbound(
       BigNumber.from(rawAskTick),
-      BigNumber.from(rawAskOutbound)
+      BigNumber.from(rawAskOutbound),
     );
     const calcBidRawInbound = TickLib.inboundFromOutbound(
       BigNumber.from(rawBidTick),
-      BigNumber.from(rawBidOutbound)
+      BigNumber.from(rawBidOutbound),
     );
 
     assertApproxEqRel(rawAskInbound, calcAskRawInbound.toNumber(), 0.01);
@@ -270,11 +270,11 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
     const calcAskInbound = askTickPriceHelper.inboundFromOutbound(
       BigNumber.from(rawAskTick),
-      displayAskOutbound
+      displayAskOutbound,
     );
     const calcBidInbound = bidTickPriceHelper.inboundFromOutbound(
       BigNumber.from(rawBidTick),
-      displayBidOutbound
+      displayBidOutbound,
     );
 
     assertApproxEqAbs(displayAskInbound, calcAskInbound.toNumber(), 0.01);
@@ -357,7 +357,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
         // Act
         const result = tickPriceHelper.tickFromPrice(
-          tickPriceHelper.priceFromTick(BigNumber.from(tick))
+          tickPriceHelper.priceFromTick(BigNumber.from(tick)),
         );
 
         // Assert
@@ -374,15 +374,15 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
         // Act
         const resultPrice = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price)
+          tickPriceHelper.tickFromPrice(price),
         );
 
         const resultPriceTickPlusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price).add(args.ba == "bids" ? -1 : 1)
+          tickPriceHelper.tickFromPrice(price).add(args.ba == "bids" ? -1 : 1),
         );
 
         const resultPriceTickMinusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price).add(args.ba == "bids" ? 1 : -1)
+          tickPriceHelper.tickFromPrice(price).add(args.ba == "bids" ? 1 : -1),
         );
 
         const roundedPrice = Big(price).round(comparisonPrecision);
@@ -393,7 +393,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             .round(comparisonPrecision)
             .lte(roundedPrice) &&
             resultPriceTickPlusOne.round(comparisonPrecision).gte(roundedPrice),
-          `expected ${price} to be within one tick-step of ${resultPrice}`
+          `expected ${price} to be within one tick-step of ${resultPrice}`,
         );
       });
     });
@@ -425,14 +425,14 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             const resultUp = tickPriceHelper.inboundFromOutbound(
               tick,
               outbound,
-              true
+              true,
             );
 
             // Assert
             assertApproxEqAbs(result, expectedInbound, 0.1);
             assert.ok(
               resultUp.gte(result),
-              "round up should be at least as big as round down"
+              "round up should be at least as big as round down",
             );
             assertApproxEqAbs(resultUp, expectedInbound, 0.1);
           });
@@ -452,14 +452,14 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             const resultUp = tickPriceHelper.outboundFromInbound(
               tick,
               inbound,
-              true
+              true,
             );
 
             // Assert
             assertApproxEqAbs(result, expectedOutbound, 0.1);
             assert.ok(
               resultUp.gte(result),
-              "round up should be at least as big as round down"
+              "round up should be at least as big as round down",
             );
             assertApproxEqAbs(resultUp, expectedOutbound, 0.1);
           });

@@ -20,7 +20,7 @@ class TickPriceHelper {
    */
   constructor(
     ba: Market.BA,
-    market: { base: { decimals: number }; quote: { decimals: number } }
+    market: { base: { decimals: number }; quote: { decimals: number } },
   ) {
     this.ba = ba;
     this.market = market;
@@ -39,7 +39,7 @@ class TickPriceHelper {
     Big.DP = 300;
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
-      this.market.base.decimals - this.market.quote.decimals
+      this.market.base.decimals - this.market.quote.decimals,
     );
 
     // Since ratio is for inbound/outbound, and price is quote/base, they coincide (modulo scaling) for asks, and we inverse the ratio for bids
@@ -63,7 +63,7 @@ class TickPriceHelper {
     Big.DP = 300;
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
-      this.market.base.decimals - this.market.quote.decimals
+      this.market.base.decimals - this.market.quote.decimals,
     );
 
     const priceAdjustedForDecimals = Big(price).div(decimalsScaling);
@@ -90,13 +90,13 @@ class TickPriceHelper {
   inboundFromOutbound(
     tick: BigNumberish,
     outboundAmount: Bigish,
-    roundUp?: boolean
+    roundUp?: boolean,
   ) {
     const rawOutbound = UnitCalculations.toUnits(
       outboundAmount,
       this.ba === "bids"
         ? this.market.quote.decimals
-        : this.market.base.decimals
+        : this.market.base.decimals,
     );
     const rawInbound = (
       roundUp ? TickLib.inboundFromOutboundUp : TickLib.inboundFromOutbound
@@ -105,7 +105,7 @@ class TickPriceHelper {
       rawInbound,
       this.ba === "bids"
         ? this.market.base.decimals
-        : this.market.quote.decimals
+        : this.market.quote.decimals,
     );
   }
 
@@ -119,18 +119,22 @@ class TickPriceHelper {
   outboundFromInbound(
     tick: BigNumberish,
     inboundAmount: Bigish,
-    roundUp?: boolean
+    roundUp?: boolean,
   ) {
     const rawInbound = UnitCalculations.toUnits(
       inboundAmount,
-      this.ba == "bids" ? this.market.base.decimals : this.market.quote.decimals
+      this.ba == "bids"
+        ? this.market.base.decimals
+        : this.market.quote.decimals,
     );
     const rawOutbound = (
       roundUp ? TickLib.outboundFromInboundUp : TickLib.outboundFromInbound
     )(BigNumber.from(tick), rawInbound);
     return UnitCalculations.fromUnits(
       rawOutbound,
-      this.ba == "bids" ? this.market.quote.decimals : this.market.base.decimals
+      this.ba == "bids"
+        ? this.market.quote.decimals
+        : this.market.base.decimals,
     );
   }
 }

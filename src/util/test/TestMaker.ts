@@ -65,24 +65,24 @@ class TestMaker {
   constructor(p: { mgv: Mangrove; market: Market; address: string }) {
     if (!canConstructTestMaker) {
       throw Error(
-        "TestMaker must be initialized async with Market.create (constructors cannot be async)"
+        "TestMaker must be initialized async with Market.create (constructors cannot be async)",
       );
     }
     this.mgv = p.mgv;
     this.contract = typechain.SimpleTestMaker__factory.connect(
       p.address,
-      p.mgv.signer
+      p.mgv.signer,
     );
     this.market = p.market;
   }
 
   static async create(
-    p: TestMaker.CreateParams & Partial<Market.OptionalParams>
+    p: TestMaker.CreateParams & Partial<Market.OptionalParams>,
   ): Promise<TestMaker> {
     const baseAddress = p.mgv.getAddress(p.base);
     const quoteAddress = p.mgv.getAddress(p.quote);
     const contract = await new typechain.SimpleTestMaker__factory(
-      p.mgv.signer
+      p.mgv.signer,
     ).deploy(p.mgv.address, {
       outbound_tkn: baseAddress,
       inbound_tkn: quoteAddress,
@@ -110,13 +110,13 @@ class TestMaker {
     return waitForTransaction(
       this.contract.approveMgv(address, ethers.constants.MaxUint256, {
         gasLimit: 100_000,
-      })
+      }),
     );
   }
 
   async newOffer(
     p: { ba: Market.BA } & TestMaker.OfferParams,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ) {
     const defaults = {
       shouldRevert: false,
@@ -129,7 +129,7 @@ class TestMaker {
 
     const { tick, gives, fund } = LiquidityProvider.normalizeOfferParams(
       p,
-      this.market
+      this.market,
     );
 
     const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
@@ -145,7 +145,7 @@ class TestMaker {
 
     // Ensure maker has the right amount of tokens
     const internalBal = await outbound_tkn.contract.balanceOf(
-      this.contract.address
+      this.contract.address,
     );
     await (
       await (await node({ url: url, spawn: false, deploy: false })).connect()
@@ -157,7 +157,7 @@ class TestMaker {
 
     const payableOverrides = LiquidityProvider.optValueToPayableOverride(
       overrides,
-      fund
+      fund,
     );
 
     const amount = payableOverrides.value ?? 0;
@@ -181,7 +181,7 @@ class TestMaker {
       p.gasprice as number,
       amount,
       offerData,
-      payableOverrides
+      payableOverrides,
     );
 
     return this.#constructPromise(
@@ -191,7 +191,7 @@ class TestMaker {
         event: _ethersLog as Log,
       }),
       txPromise,
-      (cbArg) => cbArg.type === "OfferWrite"
+      (cbArg) => cbArg.type === "OfferWrite",
     );
   }
 
@@ -199,7 +199,7 @@ class TestMaker {
     market: Market,
     cb: Market.MarketCallback<T>,
     txPromise: Promise<ethers.ethers.ContractTransaction>,
-    filter: Market.MarketFilter
+    filter: Market.MarketFilter,
   ): Promise<T> {
     let promiseResolve: (value: T) => void;
     let promiseReject: (reason: string) => void;
@@ -214,7 +214,7 @@ class TestMaker {
     const callback = async (
       cbArg: Market.BookSubscriptionCbArgument,
       bookEvent?: Market.BookSubscriptionEvent,
-      ethersLog?: ethers.providers.Log
+      ethersLog?: ethers.providers.Log,
     ) => {
       const txHash = (await txPromise).hash;
       const logTxHash = ethersLog?.transactionHash;

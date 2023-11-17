@@ -42,7 +42,7 @@ market.consoleAsks();
 
 let offerLogic = new OfferLogic(
   mgv,
-  "" //Write your contract address here
+  "", //Write your contract address here
 );
 
 // We recommend to use a liquidityProvider
@@ -56,7 +56,7 @@ let result = await offerLogic.contract.updateOffer(
   {
     // overrides
     value: mgv.toUnits(123, 18), // give correct value
-  }
+  },
 );
 
 let lp = await offerLogic.liquidityProvider(market);

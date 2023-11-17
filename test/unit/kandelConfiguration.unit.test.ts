@@ -90,7 +90,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         // Assert
         assert.deepStrictEqual(markets, []);
       });
-    }
+    },
   );
 
   describe(KandelConfiguration.prototype.getConfigForBaseQuote.name, () => {
@@ -99,7 +99,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       const config = sutWithOverride.getConfigForBaseQuote(
         "configTest",
         "TokenA",
-        "TokenB"
+        "TokenB",
       );
 
       // Assert
@@ -108,7 +108,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       assert.equal(
         config.maxOffersInPopulateChunk,
         50,
-        "inherited from global"
+        "inherited from global",
       );
       // Assert all others are also read
       assert.equal(config.aaveEnabled, true);
@@ -132,9 +132,9 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
             sutWithOverride.getConfigForBaseQuote(
               "configTest",
               "TokenA",
-              `FailingConfig${index}`
+              `FailingConfig${index}`,
             ),
-          { message }
+          { message },
         );
       });
     });
@@ -154,7 +154,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       const config = sutWithOverride.getMostSpecificConfig(
         "unknown",
         "unknown",
-        "unknown"
+        "unknown",
       );
       assert.equal(config.stepSize, 1);
     });
@@ -163,7 +163,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       const config = sutWithOverride.getMostSpecificConfig(
         "configTest",
         "unknown",
-        "unknown"
+        "unknown",
       );
       assert.equal(config.stepSize, 2);
     });
@@ -172,7 +172,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       const config = sutWithOverride.getMostSpecificConfig(
         "configTest",
         "TokenA",
-        "unknown"
+        "unknown",
       );
       assert.equal(config.stepSize, 2);
     });
@@ -181,7 +181,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
       const config = sutWithOverride.getMostSpecificConfig(
         "configTest",
         "TokenA",
-        "FailingConfig0"
+        "FailingConfig0",
       );
       assert.equal(config.stepSize, undefined);
       assert.equal(config.minimumBasePerOfferFactor, 1);

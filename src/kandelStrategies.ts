@@ -50,7 +50,7 @@ class KandelStrategies {
       | ((
           baseAddress: string,
           quoteAddress: string,
-          tickSpacing: Bigish
+          tickSpacing: Bigish,
         ) => Promise<Market>);
   }) {
     const market =
@@ -90,7 +90,7 @@ class KandelStrategies {
         baseDecimals: market.base.decimals,
         quoteDecimals: market.quote.decimals,
         signer: market.mgv.signer,
-      })
+      }),
     );
   }
 }
