@@ -524,7 +524,6 @@ function readMangroveDeploymentAddresses() {
     });
   readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
 
-  // const mgvStratsVersionPattern = `^${contractPackageVersions["mangrove-strats"]}`;
   const mgvStratsVersionPattern = createContractVersionPattern(
     contractPackageVersions["mangrove-strats"],
   );
