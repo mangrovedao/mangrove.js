@@ -27,6 +27,7 @@ import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
 import configuration from "./configuration";
+import TickPriceHelper from "./util/tickPriceHelper";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -306,6 +307,9 @@ class Market {
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
+  public askTickPriceHelper: TickPriceHelper;
+  public bidTickPriceHelper: TickPriceHelper;
+
   private asksCb: Semibook.EventListener | undefined;
   private bidsCb: Semibook.EventListener | undefined;
 
@@ -383,6 +387,20 @@ class Market {
       inbound_tkn: this.base.address,
       tickSpacing: this.tickSpacing,
     };
+
+    const tickPriceHelperConfigObject = {
+      base: { decimals: params.base.decimals },
+      quote: { decimals: params.quote.decimals },
+    };
+    this.askTickPriceHelper = new TickPriceHelper(
+      "asks",
+      tickPriceHelperConfigObject,
+    );
+
+    this.bidTickPriceHelper = new TickPriceHelper(
+      "bids",
+      tickPriceHelperConfigObject,
+    );
   }
 
   public close() {
