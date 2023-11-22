@@ -137,6 +137,29 @@ class TickPriceHelper {
         : this.market.base.decimals,
     );
   }
+
+  /**
+   * Calculates the tick from inbound and outbound volumes.
+   * @param inboundVolume inbound amount to calculate the tick for
+   * @param outboundVolume outbound amount to calculate the tick for
+   * @returns raw offer list tick for volumes
+   */
+  tickFromVolumes(inboundVolume: Bigish, outboundVolume: Bigish): BigNumber {
+    const rawInbound = UnitCalculations.toUnits(
+      inboundVolume,
+      this.ba === "bids"
+        ? this.market.base.decimals
+        : this.market.quote.decimals,
+    );
+    const rawOutbound = UnitCalculations.toUnits(
+      outboundVolume,
+      this.ba === "bids"
+        ? this.market.quote.decimals
+        : this.market.base.decimals,
+    );
+    const tick = TickLib.tickFromVolumes(rawInbound, rawOutbound);
+    return tick;
+  }
 }
 
 export default TickPriceHelper;

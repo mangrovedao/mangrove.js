@@ -150,6 +150,34 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
   });
 
+  describe(TickPriceHelper.prototype.tickFromVolumes.name, () => {
+    it("returns tick=0 for inboundVolume=1, outboundVolume=1 with base decimals: 6, quote decimals: 6 (bids semibook)", () => {
+      // Arrange
+      const tickPriceHelper = new TickPriceHelper("bids", {
+        base: { decimals: 6 },
+        quote: { decimals: 6 },
+      });
+
+      // Act
+      const result = tickPriceHelper.tickFromVolumes(1, 1);
+      // Assert
+      assert.equal(0, result.toNumber());
+    });
+
+    it("returns tick=0 for inboundVolume=1, outboundVolume=1 with base decimals: 6, quote decimals: 6 (asks semibook)", () => {
+      // Arrange
+      const tickPriceHelper = new TickPriceHelper("asks", {
+        base: { decimals: 6 },
+        quote: { decimals: 6 },
+      });
+
+      // Act
+      const result = tickPriceHelper.tickFromVolumes(1, 1);
+      // Assert
+      assert.equal(0, result.toNumber());
+    });
+  });
+
   describe(TickPriceHelper.prototype.tickFromPrice.name, () => {
     priceAndTickPairs.forEach(({ args, tick, price }) => {
       it(`returns tick=${tick} for price ${price} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} (${args.ba} semibook)) `, () => {
@@ -235,8 +263,35 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       .tickFromPrice(displayPrice)
       .toNumber();
 
-    assert.equal(rawAskTick, calcAskTick);
-    assert.equal(rawBidTick, calcBidTick);
+    // relate tickFromPrice to tickFromVolumes
+    const calcAskTickFromVolumes = askTickPriceHelper
+      .tickFromVolumes(displayAskInbound, displayAskOutbound)
+      .toNumber();
+    const calcBidTickFromVolumes = bidTickPriceHelper
+      .tickFromVolumes(displayBidInbound, displayBidOutbound)
+      .toNumber();
+
+    assert.equal(
+      rawAskTick,
+      calcAskTickFromVolumes,
+      "rawAskTick not equal to ask tick calculated from volumes",
+    );
+    assert.equal(
+      rawBidTick,
+      calcBidTickFromVolumes,
+      "rawBidTick not equal to bid tick calculated from volumes",
+    );
+
+    assert.equal(
+      rawAskTick,
+      calcAskTick,
+      "rawAskTick not equal to ask tick calculated from price",
+    );
+    assert.equal(
+      rawBidTick,
+      calcBidTick,
+      "rawBidTick not equal to bid tick calculated from price",
+    );
 
     const calcAskPrice = askTickPriceHelper.priceFromTick(rawAskTick);
     const calcBidPrice = bidTickPriceHelper.priceFromTick(rawBidTick);
