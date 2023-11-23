@@ -17,7 +17,6 @@ import {
 } from "./types/typechain/MgvReader";
 import { MAX_TICK, MIN_TICK } from "./util/coreCalculations/Constants";
 import { Density } from "./util/coreCalculations/Density";
-import { TickLib } from "./util/coreCalculations/TickLib";
 import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
@@ -457,7 +456,7 @@ class Semibook
           acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
           acc.lastGasreq = offer.gasreq;
           const offerWants = offer.gives.mul(
-            TickLib.priceFromTick(offer!.tick),
+            this.tickPriceHelper.priceFromTick(offer!.tick),
           );
           if (
             (fillWants && fillVolume.gt(offer.gives)) ||
@@ -1009,7 +1008,9 @@ class Semibook
         if (desiredVolume.to === "buy") {
           return offer.gives;
         } else {
-          return offer.gives.mul(TickLib.priceFromTick(offer.tick));
+          return offer.gives.mul(
+            this.tickPriceHelper.priceFromTick(offer.tick),
+          );
         }
       };
       let volume = Big(0);
