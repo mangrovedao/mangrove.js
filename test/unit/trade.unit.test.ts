@@ -487,8 +487,8 @@ describe("Trade unit tests suite", () => {
           .div(100),
       );
       const expectedTick = TickLib.tickFromVolumes(
-        wantsWithSlippage,
         baseToken.toUnits(params.gives),
+        wantsWithSlippage,
       );
 
       assert.equal(

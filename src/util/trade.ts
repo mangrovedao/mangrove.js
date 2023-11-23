@@ -184,7 +184,7 @@ class Trade {
       );
       fillWants = params.fillWants ?? false;
       fillVolume = fillWants ? wantsWithSlippage : Big(params.gives);
-      tick = tickPriceHelper.tickFromVolumes(wantsWithSlippage, params.gives);
+      tick = tickPriceHelper.tickFromVolumes(params.gives, wantsWithSlippage);
     }
 
     return {
