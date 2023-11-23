@@ -1,13 +1,14 @@
 import Mangrove from "./mangrove";
 import KandelSeeder from "./kandel/kandelSeeder";
 import KandelFarm from "./kandel/kandelFarm";
-import KandelInstance from "./kandel/kandelInstance";
 import Market from "./market";
 import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
-import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
+import GeometricKandelDistributionGenerator from "./kandel/geometricKandel/geometricKandelDistributionGenerator";
 import KandelConfiguration from "./kandel/kandelConfiguration";
 import { Bigish } from "./types";
-import KandelLib from "./kandel/kandelLib";
+import GeometricKandelLib from "./kandel/geometricKandel/geometricKandelLib";
+import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
+import GeometricKandelDistributionHelper from "./kandel/geometricKandel/geometricKandelDistributionHelper";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -71,7 +72,7 @@ class KandelStrategies {
         });
       });
 
-    return KandelInstance.create({
+    return GeometricKandelInstance.create({
       address: params.address,
       signer: this.mgv.signer,
       market,
@@ -83,9 +84,13 @@ class KandelStrategies {
    * @returns A new KandelDistributionGenerator.
    */
   public generator(market: Market) {
-    return new KandelDistributionGenerator(
+    return new GeometricKandelDistributionGenerator(
+      new GeometricKandelDistributionHelper(
+        market.base.decimals,
+        market.quote.decimals,
+      ),
       new KandelDistributionHelper(market.base.decimals, market.quote.decimals),
-      new KandelLib({
+      new GeometricKandelLib({
         address: market.mgv.getAddress("KandelLib"),
         baseDecimals: market.base.decimals,
         quoteDecimals: market.quote.decimals,

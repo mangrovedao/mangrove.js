@@ -17,13 +17,16 @@ import KandelStrategies from "./kandelStrategies";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
 import { typechain } from "./types";
 import KandelDistribution from "./kandel/kandelDistribution";
-import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
+import GeometricKandelDistributionGenerator from "./kandel/geometricKandel/geometricKandelDistributionGenerator";
 import KandelFarm from "./kandel/kandelFarm";
 import KandelSeeder from "./kandel/kandelSeeder";
-import KandelInstance from "./kandel/kandelInstance";
+import CoreKandelInstance from "./kandel/coreKandelInstance";
 import OfferMaker from "./offerMaker";
 import { enableLogging } from "./util/logger";
 import { addressesConfiguration, tokensConfiguration } from "./configuration";
+import GeometricKandelDistribution from "./kandel/geometricKandel/geometricKandelDistribution";
+import GeneralKandelDistribution from "./kandel/generalKandelDistribution";
+import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -42,10 +45,13 @@ export {
   mgvTestUtil,
   KandelStrategies,
   KandelDistribution,
-  KandelDistributionGenerator,
+  GeneralKandelDistribution,
+  GeometricKandelDistributionGenerator,
+  GeometricKandelDistribution,
   KandelFarm,
   KandelSeeder,
-  KandelInstance,
+  CoreKandelInstance,
+  GeometricKandelInstance,
   OfferMaker,
   enableLogging,
   addressesConfiguration,

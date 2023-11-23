@@ -1,6 +1,6 @@
 import assert from "assert";
 import { describe, it } from "mocha";
-import KandelConfiguration from "../../src/kandel/kandelConfiguration";
+import KandelConfiguration from "../../../src/kandel/kandelConfiguration";
 
 describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, () => {
   let sut: KandelConfiguration;

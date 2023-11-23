@@ -1,11 +1,12 @@
 import * as ethers from "ethers";
-import { Bigish, typechain } from "../types";
+import { Bigish, typechain } from "../../types";
 
-import UnitCalculations from "../util/unitCalculations";
-import KandelDistribution, { OfferDistribution } from "./kandelDistribution";
+import UnitCalculations from "../../util/unitCalculations";
+import { OfferDistribution } from "../kandelDistribution";
+import GeometricKandelDistribution from "./geometricKandelDistribution";
 
 /** @title Management of a single Kandel instance. */
-class KandelLib {
+class GeometricKandelLib {
   kandelLib: typechain.GeometricKandel;
   baseDecimals: number;
   quoteDecimals: number;
@@ -94,8 +95,12 @@ class KandelLib {
       from: 0,
       to: params.pricePoints,
     });
-    return new KandelDistribution(
+    return new GeometricKandelDistribution(
+      params.baseQuoteTickIndex0,
       params.baseQuoteTickOffset,
+      params.firstAskIndex,
+      params.bidGives,
+      params.askGives,
       params.pricePoints,
       params.stepSize,
       offerDistribution,
@@ -105,4 +110,4 @@ class KandelLib {
   }
 }
 
-export default KandelLib;
+export default GeometricKandelLib;

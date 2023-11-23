@@ -1,24 +1,27 @@
 import Big from "big.js";
-import Market from "../market";
-import { Bigish } from "../types";
-import KandelDistribution from "./kandelDistribution";
-import KandelDistributionHelper, {
+import Market from "../../market";
+import { Bigish } from "../../types";
+import GeometricKandelLib from "./geometricKandelLib";
+import GeometricKandelDistributionHelper, {
   DistributionParams,
-  OffersWithGives,
-} from "./kandelDistributionHelper";
-import KandelLib from "./kandelLib";
+} from "./geometricKandelDistributionHelper";
+import GeometricKandelDistribution from "./geometricKandelDistribution";
+import KandelDistributionHelper from "../kandelDistributionHelper";
 
-/** @title Helper for generating Kandel distributions. */
-class KandelDistributionGenerator {
-  distributionHelper: KandelDistributionHelper;
-  kandelLib: KandelLib;
+/** @title Helper for generating geometric Kandel distributions. */
+class GeometricKandelDistributionGenerator {
+  geometricDistributionHelper: GeometricKandelDistributionHelper;
+  generalDistributionHelper: KandelDistributionHelper;
+  geometricKandelLib: GeometricKandelLib;
 
   public constructor(
-    distributionHelper: KandelDistributionHelper,
-    kandelLib: KandelLib,
+    geometricDistributionHelper: GeometricKandelDistributionHelper,
+    generalDistributionHelper: KandelDistributionHelper,
+    geometricKandelLib: GeometricKandelLib,
   ) {
-    this.distributionHelper = distributionHelper;
-    this.kandelLib = kandelLib;
+    this.geometricDistributionHelper = geometricDistributionHelper;
+    this.generalDistributionHelper = generalDistributionHelper;
+    this.geometricKandelLib = geometricKandelLib;
   }
 
   /** Generates a geometric price distribution.
@@ -26,7 +29,7 @@ class KandelDistributionGenerator {
    */
   public calculateGeometricDistributionParams(params: DistributionParams) {
     const tickDistributionParams =
-      this.distributionHelper.getTickDistributionParams(params);
+      this.geometricDistributionHelper.getTickDistributionParams(params);
     const {
       minBaseQuoteTick,
       baseQuoteTickOffset,
@@ -186,15 +189,16 @@ class KandelDistributionGenerator {
     initialAskGives?: Bigish;
     initialBidGives?: Bigish;
   }) {
-    const distribution = await this.kandelLib.createFullGeometricDistribution({
-      baseQuoteTickIndex0: params.geometricParams.baseQuoteTickIndex0,
-      baseQuoteTickOffset: params.geometricParams.baseQuoteTickOffset,
-      firstAskIndex: params.geometricParams.firstAskIndex,
-      bidGives: params.initialBidGives,
-      askGives: params.initialAskGives,
-      pricePoints: params.geometricParams.pricePoints,
-      stepSize: params.geometricParams.stepSize,
-    });
+    const distribution =
+      await this.geometricKandelLib.createFullGeometricDistribution({
+        baseQuoteTickIndex0: params.geometricParams.baseQuoteTickIndex0,
+        baseQuoteTickOffset: params.geometricParams.baseQuoteTickOffset,
+        firstAskIndex: params.geometricParams.firstAskIndex,
+        bidGives: params.initialBidGives,
+        askGives: params.initialAskGives,
+        pricePoints: params.geometricParams.pricePoints,
+        stepSize: params.geometricParams.stepSize,
+      });
 
     return distribution;
   }
@@ -209,7 +213,7 @@ class KandelDistributionGenerator {
    * Note that the resulting offered base volume for each offer should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market - and similar for quote.
    */
   public recalculateDistributionFromAvailable(params: {
-    distribution: KandelDistribution;
+    distribution: GeometricKandelDistribution;
     availableBase?: Bigish;
     availableQuote?: Bigish;
   }) {
@@ -219,67 +223,10 @@ class KandelDistributionGenerator {
     );
 
     return this.calculateDistributionFromGeometricParams({
-      geometricParams: params.distribution.getGeometricParams(),
+      geometricParams: params.distribution,
       initialAskGives: initialGives.askGives,
       initialBidGives: initialGives.bidGives,
     });
-  }
-
-  /** Creates a new distribution with uniformly changed volume.
-   * @param params The parameters for the change.
-   * @param params.distribution The distribution to change.
-   * @param params.baseDelta The change in base volume.
-   * @param params.quoteDelta The change in quote volume.
-   * @param params.minimumBasePerOffer The minimum amount of base to give for each offer. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
-   * @param params.minimumQuotePerOffer The minimum amount of quote to give for each offer. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
-   * @returns The new distribution.
-   * @remarks The decrease has to respect minimums, and thus may decrease some offers more than others.
-   */
-  public uniformlyChangeVolume(params: {
-    distribution: KandelDistribution;
-    baseDelta?: Bigish;
-    quoteDelta?: Bigish;
-    minimumBasePerOffer: Bigish;
-    minimumQuotePerOffer: Bigish;
-  }) {
-    // Minimums are increased based on prices of current distribution
-    const { askGives, bidGives } =
-      params.distribution.calculateMinimumInitialGives(
-        Big(params.minimumBasePerOffer),
-        Big(params.minimumQuotePerOffer),
-      );
-
-    return this.distributionHelper.uniformlyChangeVolume({
-      distribution: params.distribution,
-      baseDelta: params.baseDelta ? Big(params.baseDelta) : undefined,
-      quoteDelta: params.quoteDelta ? Big(params.quoteDelta) : undefined,
-      minimumBasePerOffer: askGives,
-      minimumQuotePerOffer: bidGives,
-    });
-  }
-
-  /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
-   * @param params The parameters for the distribution.
-   * @param params.explicitOffers The explicit offers to use.
-   * @param params.explicitOffers.bids The explicit bids to use.
-   * @param params.explicitOffers.asks The explicit asks to use.
-   * @param params.distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
-   * @returns The new distribution.
-   */
-  public createDistributionWithOffers(params: {
-    explicitOffers: { bids: OffersWithGives; asks: OffersWithGives };
-    distribution:
-      | {
-          baseQuoteTickOffset: number;
-          pricePoints: number;
-          stepSize: number;
-        }
-      | KandelDistribution;
-  }) {
-    return this.distributionHelper.createDistributionWithOffers(
-      params.explicitOffers,
-      params.distribution,
-    );
   }
 
   /** Retrieves the minimum volume for a given offer type at the given index.
@@ -304,15 +251,16 @@ class KandelDistributionGenerator {
     minimumBasePerOffer: Bigish;
     minimumQuotePerOffer: Bigish;
   }) {
-    const baseQuoteTicks = this.distributionHelper.getBaseQuoteTicksFromTick(
-      params.offerType,
-      params.index,
-      params.tick,
-      params.baseQuoteTickOffset,
-      params.pricePoints,
-    );
+    const baseQuoteTicks =
+      this.geometricDistributionHelper.getBaseQuoteTicksFromTick(
+        params.offerType,
+        params.index,
+        params.tick,
+        params.baseQuoteTickOffset,
+        params.pricePoints,
+      );
 
-    const dualIndex = this.distributionHelper.getDualIndex(
+    const dualIndex = this.generalDistributionHelper.getDualIndex(
       params.offerType === "bids" ? "asks" : "bids",
       params.index,
       params.pricePoints,
@@ -325,7 +273,7 @@ class KandelDistributionGenerator {
       baseQuoteTicks[params.offerType == "asks" ? params.index : dualIndex];
 
     const { askGives, bidGives } =
-      this.distributionHelper.calculateMinimumInitialGives(
+      this.generalDistributionHelper.calculateMinimumInitialGives(
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer),
         [bidTick],
@@ -336,4 +284,4 @@ class KandelDistributionGenerator {
   }
 }
 
-export default KandelDistributionGenerator;
+export default GeometricKandelDistributionGenerator;

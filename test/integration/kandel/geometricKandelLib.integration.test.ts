@@ -1,22 +1,22 @@
 import assert from "assert";
-import { eth } from "../../src";
-import KandelLib from "../../src/kandel/kandelLib";
-import { createGeneratorStub } from "../unit/kandelDistributionGenerator.unit.test";
+import { eth } from "../../../src";
+import GeometricKandelLib from "../../../src/kandel/geometricKandel/geometricKandelLib";
 import { BigNumber, ethers } from "ethers";
-import UnitCalculations from "../../src/util/unitCalculations";
-import configuration from "../../src/configuration";
+import UnitCalculations from "../../../src/util/unitCalculations";
+import configuration from "../../../src/configuration";
+import { createGeneratorStub } from "../../unit/kandel/geometricKandel/geometricKandelDistributionGenerator.unit.test";
 
-describe(`${KandelLib.prototype.constructor.name} integration test suite`, () => {
-  let stub: KandelLib;
-  let lib: KandelLib;
+describe(`${GeometricKandelLib.prototype.constructor.name} integration test suite`, () => {
+  let stub: GeometricKandelLib;
+  let lib: GeometricKandelLib;
 
   beforeEach(async function () {
     const { signer } = await eth._createSigner({
       provider: this.server.url,
       privateKey: this.accounts.tester.key,
     });
-    stub = createGeneratorStub().kandelLib;
-    lib = new KandelLib({
+    stub = createGeneratorStub().geometricKandelLib;
+    lib = new GeometricKandelLib({
       address: configuration.addresses.getAddress("KandelLib", "local"),
       signer: signer,
       baseDecimals: 4,
