@@ -447,6 +447,7 @@ describe("Trade unit tests suite", () => {
       assert.equal(result.tick.toString(), expectedTickWithSlippage.toString());
       assert.equal(result.fillWants, true);
     });
+
     it("returns fillVolume as gives, tick as TickLib.fromVolume(gives,wants) and fillWants as fillWants, when params has gives, wants and fillWants ", async function () {
       //Arrange
       const trade = new Trade();
@@ -458,16 +459,21 @@ describe("Trade unit tests suite", () => {
         fillWants: false,
         slippage: slippage,
       };
+      const baseTokenDecimals = 18;
       const baseToken = {
-        decimals: 18,
+        decimals: baseTokenDecimals,
         toUnits: (v: Bigish) =>
-          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
+          BigNumber.from(Big(v).mul(Big(10).pow(baseTokenDecimals)).toFixed(0)),
       };
+      const quoteTokenDecimals = 18;
       const quoteToken = {
-        decimals: 18,
+        decimals: quoteTokenDecimals,
         toUnits: (v: Bigish) =>
-          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
-        fromUnits: (v: BigNumber) => Big(v.toString()).div(Big(10).pow(18)),
+          BigNumber.from(
+            Big(v).mul(Big(10).pow(quoteTokenDecimals)).toFixed(0),
+          ),
+        fromUnits: (v: BigNumber) =>
+          Big(v.toString()).div(Big(10).pow(quoteTokenDecimals)),
       };
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 

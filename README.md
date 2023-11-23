@@ -1,4 +1,4 @@
-[![CI](https://github.com/mangrovedao/mangrove.js/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove.js/actions/workflows/node.js.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove.js/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove.js)
+[![CI](https://github.com/mangrovedao/mangrove.js/actions/workflows/ci.yml/badge.svg)](https://github.com/mangrovedao/mangrove.js/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove.js/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove.js)
 
 This repo contains the SDK for developing TypeScript (and JavaScript) apps using the Mangrove.
 

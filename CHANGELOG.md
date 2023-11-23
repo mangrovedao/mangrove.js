@@ -1,5 +1,9 @@
 # Next version
 
+# 2.0.0-4
+
+- fix: For prereleases of contract packages, include deployments of earlier prereleases of those packages.
+
 # 2.0.0-3
 
 - feat: Re-enable Kandel
