@@ -39,7 +39,9 @@ class TickPriceHelper {
     Big.DP = 300;
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
-      this.market.base.decimals - this.market.quote.decimals,
+      this.market.base.decimals > this.market.quote.decimals
+        ? this.market.quote.decimals - this.market.base.decimals
+        : this.market.base.decimals - this.market.quote.decimals,
     );
 
     // Since ratio is for inbound/outbound, and price is quote/base, they coincide (modulo scaling) for asks, and we inverse the ratio for bids
