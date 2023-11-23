@@ -17,6 +17,7 @@ import KandelSeeder from "./kandelSeeder";
 import GeneralKandelDistribution from "./generalKandelDistribution";
 import GeneralKandelDistributionGenerator from "./generalKandelDistributionGenerator";
 import LiquidityProvider from "../liquidityProvider";
+import GeneralKandelDistributionHelper from "./generalKandelDistributionHelper";
 
 // The market used by the Kandel instance or a factory function to create the market.
 export type MarketOrMarketFactory =
@@ -98,14 +99,19 @@ class CoreKandelInstance {
       market.quote.decimals,
     );
 
+    const generalKandelDistributionHelper = new GeneralKandelDistributionHelper(
+      distributionHelper,
+    );
+
     const generalKandelDistributionGenerator =
-      new GeneralKandelDistributionGenerator(distributionHelper);
+      new GeneralKandelDistributionGenerator(generalKandelDistributionHelper);
 
     return {
       address: params.address,
       market,
       kandel,
       distributionHelper,
+      generalKandelDistributionHelper,
       offerLogic,
       configuration: new KandelConfiguration(),
       seeder: new KandelSeeder(market.mgv),
@@ -449,7 +455,7 @@ class CoreKandelInstance {
       await this.getMinimumOrOverrides(params);
 
     return this.generalKandelDistributionGenerator.uniformlyChangeVolume({
-      distribution: distribution.wrappedDistribution,
+      distribution,
       baseDelta: params.baseDelta,
       quoteDelta: params.quoteDelta,
       minimumBasePerOffer,
@@ -510,7 +516,7 @@ class CoreKandelInstance {
     distribution: GeneralKandelDistribution;
     maxOffersInChunk?: number;
   }) {
-    params.distribution.wrappedDistribution.verifyDistribution();
+    params.distribution.verifyDistribution();
 
     return params.distribution.chunkDistribution(
       params.maxOffersInChunk ??
@@ -753,7 +759,7 @@ class CoreKandelInstance {
       rawDepositBaseAmount,
       rawDepositQuoteAmount,
     } = await this.getRawParametersForPopulate(
-      { ...params, distribution: params.distribution.wrappedDistribution },
+      { ...params, distribution: params.distribution },
       overrides,
     );
 

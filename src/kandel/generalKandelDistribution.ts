@@ -4,15 +4,30 @@ import KandelDistribution, {
   OfferList,
 } from "./kandelDistribution";
 
-/** @title A general distribution of bids and ask for Kandel fully specified as bids and asks with tick and volumes. */
-class GeneralKandelDistribution {
-  wrappedDistribution: KandelDistribution;
-
+/** @title A general distribution of bids and ask for Kandel fully specified as bids and asks with tick and volumes and no other parameters. */
+class GeneralKandelDistribution extends KandelDistribution {
   /** Constructor
-   * @param distribution The distribution of bids and asks.
+   * @param params.offers The distribution of bids and asks.
+   * @param params.baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
+   * @param params.pricePoints The number of price points in the distribution.
+   * @param params.stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
+   * @param params.baseDecimals The number of decimals for the base token.
+   * @param params.quoteDecimals The number of decimals for the quote token.
    */
-  public constructor(distribution: KandelDistribution) {
-    this.wrappedDistribution = distribution;
+  public constructor(params: {
+    pricePoints: number;
+    stepSize: number;
+    offers: OfferDistribution;
+    baseDecimals: number;
+    quoteDecimals: number;
+  }) {
+    super(
+      params.pricePoints,
+      params.stepSize,
+      params.offers,
+      params.baseDecimals,
+      params.quoteDecimals,
+    );
   }
 
   /** Adds offers from lists to a chunk, including its dual; only adds each offer once.
@@ -36,15 +51,15 @@ class GeneralKandelDistribution {
       if (!offers.included[offer.index]) {
         offers.included[offer.index] = true;
         chunks[chunks.length - 1][offerType].push(offer);
-        const dualIndex = this.wrappedDistribution.helper.getDualIndex(
+        const dualIndex = this.helper.getDualIndex(
           dualOfferType,
           offer.index,
-          this.wrappedDistribution.pricePoints,
-          this.wrappedDistribution.stepSize,
+          this.pricePoints,
+          this.stepSize,
         );
         if (!dualOffers.included[dualIndex]) {
           dualOffers.included[dualIndex] = true;
-          const dual = this.wrappedDistribution.offers[dualOfferType].find(
+          const dual = this.offers[dualOfferType].find(
             (x) => x.index == dualIndex,
           );
           if (!dual) {
@@ -72,18 +87,17 @@ class GeneralKandelDistribution {
     const offerLists = {
       asks: {
         current: 0,
-        included: Array(this.wrappedDistribution.pricePoints).fill(false),
-        offers: this.wrappedDistribution
-          .getLiveOffers("asks")
-          .concat(this.wrappedDistribution.getDeadOffers("asks").reverse()),
+        included: Array(this.pricePoints).fill(false),
+        offers: this.getLiveOffers("asks").concat(
+          this.getDeadOffers("asks").reverse(),
+        ),
       },
       bids: {
         current: 0,
-        included: Array(this.wrappedDistribution.pricePoints).fill(false),
-        offers: this.wrappedDistribution
-          .getLiveOffers("bids")
+        included: Array(this.pricePoints).fill(false),
+        offers: this.getLiveOffers("bids")
           .reverse()
-          .concat(this.wrappedDistribution.getDeadOffers("bids")),
+          .concat(this.getDeadOffers("bids")),
       },
     };
     while (

@@ -110,7 +110,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       });
 
     const { requiredBase, requiredQuote } =
-      distribution.wrappedDistribution.getOfferedVolumeForDistribution();
+      distribution.getOfferedVolumeForDistribution();
     if (params.approve) {
       const approvalTxs = await kandel.approveIfHigher();
       await approvalTxs[0]?.wait();
@@ -159,13 +159,16 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       await assert.rejects(
         kandel.populateGeneralDistribution({
           parameters: { pricePoints: 5 },
-          distribution: kandel.distributionHelper.createDistributionWithOffers(
-            {
-              asks: [{ gives: Big(0), index: 1, tick: 1 }],
-              bids: [{ gives: Big(1), index: 0, tick: 2 }],
-            },
-            { priceRatio: Big(1.5), pricePoints: 2, stepSize: 1 },
-          ),
+          distribution:
+            kandel.generalKandelDistributionGenerator.createDistributionWithOffers(
+              {
+                explicitOffers: {
+                  asks: [{ gives: Big(0), index: 1, tick: 1 }],
+                  bids: [{ gives: Big(1), index: 0, tick: 2 }],
+                },
+                distribution: { pricePoints: 2, stepSize: 1 },
+              },
+            ),
         }),
         new Error(
           "pricePoints in parameter overrides does not match the pricePoints of the distribution.",
@@ -181,13 +184,16 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       await assert.rejects(
         kandel.populateGeneralDistribution({
           parameters: { stepSize: 5 },
-          distribution: kandel.distributionHelper.createDistributionWithOffers(
-            {
-              asks: [{ gives: Big(0), index: 1, tick: 1 }],
-              bids: [{ gives: Big(1), index: 0, tick: 2 }],
-            },
-            { priceRatio: Big(1.5), pricePoints: 2, stepSize: 1 },
-          ),
+          distribution:
+            kandel.generalKandelDistributionGenerator.createDistributionWithOffers(
+              {
+                explicitOffers: {
+                  asks: [{ gives: Big(0), index: 1, tick: 1 }],
+                  bids: [{ gives: Big(1), index: 0, tick: 2 }],
+                },
+                distribution: { pricePoints: 2, stepSize: 1 },
+              },
+            ),
         }),
         new Error(
           "stepSize in parameter overrides does not match the stepSize of the distribution.",
@@ -415,7 +421,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
               liquiditySharing: false,
               onAave: false,
             },
-            distribution.wrappedDistribution,
+            distribution,
             gaspriceFactor,
             gasprice,
             gasreq,
@@ -423,8 +429,8 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
 
         // Act
         const requiredProvisionOfferCount = await kandel.getRequiredProvision({
-          askCount: distribution.wrappedDistribution.offers.asks.length,
-          bidCount: distribution.wrappedDistribution.offers.bids.length,
+          askCount: distribution.offers.asks.length,
+          bidCount: distribution.offers.bids.length,
           gasprice: gasprice
             ? gasprice * (gaspriceFactor ? gaspriceFactor : 1)
             : undefined,
@@ -432,7 +438,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         });
         const requiredProvisionDistribution = await kandel.getRequiredProvision(
           {
-            distribution: distribution.wrappedDistribution,
+            distribution,
             gasprice: gasprice
               ? gasprice * (gaspriceFactor ? gaspriceFactor : 1)
               : undefined,
@@ -460,22 +466,21 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       });
       const gasprice = 10;
       const gasreq = 42;
-      const expectedProvision =
-        distribution.wrappedDistribution.getRequiredProvision({
-          market: kandel.market,
-          gasprice,
-          gasreq,
-        });
+      const expectedProvision = distribution.getRequiredProvision({
+        market: kandel.market,
+        gasprice,
+        gasreq,
+      });
 
       // Act
       const requiredProvisionOfferCount = await kandel.getRequiredProvision({
-        askCount: distribution.wrappedDistribution.offers.asks.length,
-        bidCount: distribution.wrappedDistribution.offers.bids.length,
+        askCount: distribution.offers.asks.length,
+        bidCount: distribution.offers.bids.length,
         gasreq,
         gasprice,
       });
       const requiredProvisionDistribution = await kandel.getRequiredProvision({
-        distribution: distribution.wrappedDistribution,
+        distribution,
         gasreq,
         gasprice,
       });
@@ -499,7 +504,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         syncBooks: true,
       });
       const requiredProvision = await kandel.getRequiredProvision({
-        distribution: distribution.wrappedDistribution,
+        distribution,
       });
 
       const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
@@ -530,7 +535,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         syncBooks: true,
       });
       const requiredProvision = await kandel.getRequiredProvision({
-        distribution: distribution.wrappedDistribution,
+        distribution,
       });
 
       const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
@@ -541,8 +546,8 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
 
       // Act
       const params = {
-        askCount: distribution.wrappedDistribution.offers.asks.length * 3,
-        bidCount: distribution.wrappedDistribution.offers.bids.length * 3,
+        askCount: distribution.offers.asks.length * 3,
+        bidCount: distribution.offers.bids.length * 3,
       };
       const missingProvisionFromOffers =
         await kandel.getMissingProvisionFromOffers(params, indexerOffers);
@@ -567,7 +572,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         syncBooks: true,
       });
       const requiredProvision = await kandel.getRequiredProvision({
-        distribution: distribution.wrappedDistribution,
+        distribution,
       });
 
       const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
@@ -660,7 +665,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         explicitOffers,
       });
       const offeredVolume =
-        existingDistribution.wrappedDistribution.getOfferedVolumeForDistribution();
+        existingDistribution.getOfferedVolumeForDistribution();
 
       // Act
       const result =
@@ -672,8 +677,8 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
 
       // Assert
       assertPricesApproxEq(
-        result.distribution.wrappedDistribution,
-        getUniquePrices(existingDistribution.wrappedDistribution),
+        result.distribution,
+        getUniquePrices(existingDistribution),
       );
       assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
       assert.ok(result.totalQuoteChange.neg().lt(offeredVolume.requiredQuote));
@@ -809,8 +814,8 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
           const generalDistribution =
             kandel.generalKandelDistributionGenerator.createDistributionWithOffers(
               {
-                explicitOffers: distribution.wrappedDistribution.offers,
-                distribution: distribution.wrappedDistribution,
+                explicitOffers: distribution.offers,
+                distribution,
               },
             );
           const offeredQuoteBefore = await kandel.getOfferedVolume("bids");

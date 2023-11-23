@@ -6,6 +6,7 @@ import GeneralKandelDistributionGenerator from "../../../src/kandel/generalKande
 import { KandelDistribution, Market } from "../../../src";
 import { assertApproxEqRel } from "../../util/helpers";
 import { createGeneratorStub } from "./geometricKandel/geometricKandelDistributionGenerator.unit.test";
+import GeneralKandelDistributionHelper from "../../../src/kandel/generalKandelDistributionHelper";
 
 export function assertIsRounded(distribution: KandelDistribution) {
   distribution.offers.asks.forEach((e) => {
@@ -113,7 +114,7 @@ describe(`${GeneralKandelDistributionGenerator.prototype.constructor.name} unit 
   let sut: GeneralKandelDistributionGenerator;
   beforeEach(() => {
     sut = new GeneralKandelDistributionGenerator(
-      new KandelDistributionHelper(4, 6),
+      new GeneralKandelDistributionHelper(new KandelDistributionHelper(4, 6)),
     );
   });
   describe(
@@ -140,12 +141,11 @@ describe(`${GeneralKandelDistributionGenerator.prototype.constructor.name} unit 
           distribution: geometricDistribution,
         });
 
-        const offeredVolume =
-          distribution.wrappedDistribution.getOfferedVolumeForDistribution();
+        const offeredVolume = distribution.getOfferedVolumeForDistribution();
 
         // Act
         const result = sut.uniformlyChangeVolume({
-          distribution: distribution.wrappedDistribution,
+          distribution,
           baseDelta: offeredVolume.requiredBase.neg(),
           quoteDelta: offeredVolume.requiredQuote.neg(),
           minimumBasePerOffer: 1,
@@ -153,36 +153,29 @@ describe(`${GeneralKandelDistributionGenerator.prototype.constructor.name} unit 
         });
 
         // Assert
-        assertSameTicks(
-          distribution.wrappedDistribution,
-          result.distribution.wrappedDistribution,
-        );
+        assertSameTicks(distribution, result.distribution);
         assert.ok(result.totalBaseChange.neg().lt(offeredVolume.requiredBase));
         assert.ok(
           result.totalQuoteChange.neg().lt(offeredVolume.requiredQuote),
         );
         // minimums c.f. calculateMinimumInitialGives
 
-        result.distribution.wrappedDistribution
-          .getLiveOffers("bids")
-          .forEach((o) => {
-            assertApproxEqRel(
-              o.gives.toNumber(),
-              64000,
-              0.01,
-              "quote should be at minimum",
-            );
-          });
-        result.distribution.wrappedDistribution
-          .getLiveOffers("asks")
-          .forEach((o) => {
-            assertApproxEqRel(
-              o.gives.toNumber(),
-              1,
-              0.01,
-              "base should be at minimum",
-            );
-          });
+        result.distribution.getLiveOffers("bids").forEach((o) => {
+          assertApproxEqRel(
+            o.gives.toNumber(),
+            64000,
+            0.01,
+            "quote should be at minimum",
+          );
+        });
+        result.distribution.getLiveOffers("asks").forEach((o) => {
+          assertApproxEqRel(
+            o.gives.toNumber(),
+            1,
+            0.01,
+            "base should be at minimum",
+          );
+        });
       });
     },
   );

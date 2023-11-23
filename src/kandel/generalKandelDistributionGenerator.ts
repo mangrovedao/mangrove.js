@@ -2,14 +2,16 @@ import Big from "big.js";
 import { Bigish } from "../types";
 import KandelDistribution from "./kandelDistribution";
 import { OffersWithGives } from "./kandelDistributionHelper";
-import KandelDistributionHelper from "./kandelDistributionHelper";
+import GeneralKandelDistributionHelper from "./generalKandelDistributionHelper";
 
 /** @title Helper for generating general Kandel distributions with fully specified bids and asks with tick and volumes. */
 class GeneralKandelDistributionGenerator {
-  distributionHelper: KandelDistributionHelper;
+  generalDistributionHelper: GeneralKandelDistributionHelper;
 
-  public constructor(distributionHelper: KandelDistributionHelper) {
-    this.distributionHelper = distributionHelper;
+  public constructor(
+    generalDistributionHelper: GeneralKandelDistributionHelper,
+  ) {
+    this.generalDistributionHelper = generalDistributionHelper;
   }
 
   /** Creates a new distribution with uniformly changed volume.
@@ -36,7 +38,7 @@ class GeneralKandelDistributionGenerator {
         Big(params.minimumQuotePerOffer),
       );
 
-    return this.distributionHelper.uniformlyChangeVolume({
+    return this.generalDistributionHelper.uniformlyChangeVolume({
       distribution: params.distribution,
       baseDelta: params.baseDelta ? Big(params.baseDelta) : undefined,
       quoteDelta: params.quoteDelta ? Big(params.quoteDelta) : undefined,
@@ -62,7 +64,7 @@ class GeneralKandelDistributionGenerator {
         }
       | KandelDistribution;
   }) {
-    return this.distributionHelper.createDistributionWithOffers(
+    return this.generalDistributionHelper.createDistributionWithOffers(
       params.explicitOffers,
       params.distribution,
     );

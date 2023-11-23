@@ -81,7 +81,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
     );
     const geometricGenerator = new GeometricKandelDistributionGenerator(
       geometricDistributionHelper,
-      coreParams.distributionHelper,
+      coreParams.generalKandelDistributionHelper,
       kandelLib,
     );
 

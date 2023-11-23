@@ -9,6 +9,7 @@ import { Bigish } from "./types";
 import GeometricKandelLib from "./kandel/geometricKandel/geometricKandelLib";
 import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
 import GeometricKandelDistributionHelper from "./kandel/geometricKandel/geometricKandelDistributionHelper";
+import GeneralKandelDistributionHelper from "./kandel/generalKandelDistributionHelper";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -89,7 +90,12 @@ class KandelStrategies {
         market.base.decimals,
         market.quote.decimals,
       ),
-      new KandelDistributionHelper(market.base.decimals, market.quote.decimals),
+      new GeneralKandelDistributionHelper(
+        new KandelDistributionHelper(
+          market.base.decimals,
+          market.quote.decimals,
+        ),
+      ),
       new GeometricKandelLib({
         address: market.mgv.getAddress("KandelLib"),
         baseDecimals: market.base.decimals,

@@ -6,17 +6,17 @@ import GeometricKandelDistributionHelper, {
   DistributionParams,
 } from "./geometricKandelDistributionHelper";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
-import KandelDistributionHelper from "../kandelDistributionHelper";
+import GeneralKandelDistributionHelper from "../generalKandelDistributionHelper";
 
 /** @title Helper for generating geometric Kandel distributions. */
 class GeometricKandelDistributionGenerator {
   geometricDistributionHelper: GeometricKandelDistributionHelper;
-  generalDistributionHelper: KandelDistributionHelper;
+  generalDistributionHelper: GeneralKandelDistributionHelper;
   geometricKandelLib: GeometricKandelLib;
 
   public constructor(
     geometricDistributionHelper: GeometricKandelDistributionHelper,
-    generalDistributionHelper: KandelDistributionHelper,
+    generalDistributionHelper: GeneralKandelDistributionHelper,
     geometricKandelLib: GeometricKandelLib,
   ) {
     this.geometricDistributionHelper = geometricDistributionHelper;
@@ -260,7 +260,7 @@ class GeometricKandelDistributionGenerator {
         params.pricePoints,
       );
 
-    const dualIndex = this.generalDistributionHelper.getDualIndex(
+    const dualIndex = this.generalDistributionHelper.helper.getDualIndex(
       params.offerType === "bids" ? "asks" : "bids",
       params.index,
       params.pricePoints,
@@ -273,7 +273,7 @@ class GeometricKandelDistributionGenerator {
       baseQuoteTicks[params.offerType == "asks" ? params.index : dualIndex];
 
     const { askGives, bidGives } =
-      this.generalDistributionHelper.calculateMinimumInitialGives(
+      this.generalDistributionHelper.helper.calculateMinimumInitialGives(
         Big(params.minimumBasePerOffer),
         Big(params.minimumQuotePerOffer),
         [bidTick],

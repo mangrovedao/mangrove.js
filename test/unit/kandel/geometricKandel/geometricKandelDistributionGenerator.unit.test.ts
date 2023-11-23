@@ -20,6 +20,7 @@ import {
   assertPricesApproxEq,
   assertSameTicks,
 } from "../generalKandelDistributionGenerator.unit.test";
+import GeneralKandelDistributionHelper from "../../../../src/kandel/generalKandelDistributionHelper";
 
 interface DistributionOffer {
   index: number;
@@ -212,7 +213,7 @@ export class KandelLibStub {
 export function createGeneratorStub() {
   return new GeometricKandelDistributionGenerator(
     new GeometricKandelDistributionHelper(4, 6),
-    new KandelDistributionHelper(4, 6),
+    new GeneralKandelDistributionHelper(new KandelDistributionHelper(4, 6)),
     new GeometricKandelLib({
       address: "0x0",
       signer: {} as ethers.Signer,
@@ -233,18 +234,7 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
   const askTickPriceHelper = new TickPriceHelper("asks", market);
   const bidTickPriceHelper = new TickPriceHelper("bids", market);
   beforeEach(() => {
-    sut = new GeometricKandelDistributionGenerator(
-      new GeometricKandelDistributionHelper(4, 6),
-      new KandelDistributionHelper(4, 6),
-      new GeometricKandelLib({
-        address: "0x0",
-        signer: {} as ethers.Signer,
-        kandelLibInstance:
-          new KandelLibStub() as unknown as typechain.GeometricKandel,
-        baseDecimals: market.base.decimals,
-        quoteDecimals: market.quote.decimals,
-      }),
-    );
+    sut = createGeneratorStub();
   });
   describe(
     GeometricKandelDistributionGenerator.prototype
