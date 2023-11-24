@@ -6,7 +6,6 @@ import { typechain } from "../../types";
 
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Deferred } from "../../util";
-import { PromiseOrValue } from "../../types/typechain/common";
 
 export type Account = {
   name: string;
@@ -41,7 +40,6 @@ export type Addresses = {
 let addresses: Addresses;
 
 let mgv: Mangrove;
-let mgvAdmin: Mangrove | undefined;
 const signers: any = {};
 
 // A safe minimum to be above density requirement.
@@ -53,13 +51,8 @@ export const rawMinGivesBase = BigNumber.from("1000000000000000000");
 // We minimally disrupt this library and just add a global "mangrove"
 // to be set early in the tests.
 // TODO: Remove this hack, and either remove this lib or add an `mgv` param everywhere.
-export const setConfig = (
-  _mgv: Mangrove,
-  accounts: any,
-  _mgvAdmin: Mangrove,
-) => {
+export const setConfig = (_mgv: Mangrove, accounts: any) => {
   mgv = _mgv;
-  mgvAdmin = _mgvAdmin;
   for (const [name, { key }] of Object.entries(accounts) as any) {
     signers[name] = new ethers.Wallet(key, mgv.provider);
   }
@@ -320,7 +313,19 @@ export const stopPollOfTransactionTracking = (): void => {
  * NB: Only works when this is awaited before sending more tx's.
  */
 export async function waitForTransactions(
-  txPromises: PromiseOrValue<PromiseOrValue<ContractTransaction | undefined>[]>,
+  txPromises:
+    | Promise<
+        (
+          | Promise<ContractTransaction | undefined>
+          | ContractTransaction
+          | undefined
+        )[]
+      >
+    | (
+        | Promise<ContractTransaction | undefined>
+        | ContractTransaction
+        | undefined
+      )[],
 ): Promise<TransactionReceipt[]> {
   const txs = (await txPromises).filter((x) => x) as ContractTransaction[];
   const receipts: TransactionReceipt[] = Array(txs.length);
@@ -336,7 +341,10 @@ export async function waitForTransactions(
  * NB: Only works when this is awaited before sending more tx's.
  */
 export async function waitForOptionalTransaction(
-  txPromise: PromiseOrValue<ContractTransaction | undefined>,
+  txPromise:
+    | Promise<ContractTransaction | undefined>
+    | ContractTransaction
+    | undefined,
 ): Promise<TransactionReceipt | undefined> {
   awaitedPollId = undefined;
   lastTxReceipt = undefined;
@@ -357,7 +365,7 @@ export async function waitForOptionalTransaction(
  * NB: Only works when this is awaited before sending more tx's.
  */
 export async function waitForTransaction(
-  txPromise: PromiseOrValue<ContractTransaction>,
+  txPromise: ContractTransaction | Promise<ContractTransaction>,
 ): Promise<TransactionReceipt> {
   const lastTxReceipt = await waitForOptionalTransaction(txPromise);
   if (lastTxReceipt === undefined) {

@@ -37,7 +37,7 @@ describe("Semibook integration tests suite", function () {
       provider: mgv.provider,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     (mgv.provider as any).pollingInterval = 10;
@@ -521,7 +521,6 @@ describe("Semibook integration tests suite", function () {
           ).wait();
 
           await mgvTestUtil.waitForBlock(mgv, offer2.blockNumber);
-          market.consoleAsks();
 
           const volume = await semibook.estimateVolume({ given: 3, to });
 
@@ -1210,7 +1209,6 @@ describe("Semibook integration tests suite", function () {
             },
           });
 
-          market2.consoleAsks();
           const semibook2 = market2.getSemibook("asks");
           expect(semibook2.size()).to.equal(1);
         });

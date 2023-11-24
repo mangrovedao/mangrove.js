@@ -41,7 +41,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
       privateKey: this.accounts.deployer.key,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     (mgv.provider as any).pollingInterval = 10;

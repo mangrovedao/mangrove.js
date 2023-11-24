@@ -179,7 +179,7 @@ class TestMaker {
       outbound_tkn.toUnits(gives),
       p.gasreq as number,
       p.gasprice as number,
-      amount,
+      await amount,
       offerData,
       payableOverrides,
     );

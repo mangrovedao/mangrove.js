@@ -35,7 +35,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
       privateKey: this.accounts.deployer.key,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     (mgv.provider as any).pollingInterval = 10;

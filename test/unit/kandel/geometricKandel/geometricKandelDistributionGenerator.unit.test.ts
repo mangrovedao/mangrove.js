@@ -5,7 +5,6 @@ import KandelDistributionHelper from "../../../../src/kandel/kandelDistributionH
 import GeometricKandelDistributionGenerator from "../../../../src/kandel/geometricKandel/geometricKandelDistributionGenerator";
 import { Market, ethers, typechain } from "../../../../src";
 import GeometricKandelLib from "../../../../src/kandel/geometricKandel/geometricKandelLib";
-import { PromiseOrValue } from "../../../../src/types/typechain/common";
 import { BigNumber, BigNumberish } from "ethers";
 import { DirectWithBidsAndAsksDistribution } from "../../../../src/types/typechain/Kandel";
 import { TickLib } from "../../../../src/util/coreCalculations/TickLib";
@@ -173,27 +172,27 @@ export class KandelLibStub {
   }
 
   public async createDistribution(
-    from: PromiseOrValue<BigNumberish>,
-    to: PromiseOrValue<BigNumberish>,
-    baseQuoteTickIndex0: PromiseOrValue<BigNumberish>,
-    _baseQuoteTickOffset: PromiseOrValue<BigNumberish>,
-    firstAskIndex: PromiseOrValue<BigNumberish>,
-    bidGives: PromiseOrValue<BigNumberish>,
-    askGives: PromiseOrValue<BigNumberish>,
-    pricePoints: PromiseOrValue<BigNumberish>,
-    stepSize: PromiseOrValue<BigNumberish>,
+    from: BigNumberish,
+    to: BigNumberish,
+    baseQuoteTickIndex0: BigNumberish,
+    _baseQuoteTickOffset: BigNumberish,
+    firstAskIndex: BigNumberish,
+    bidGives: BigNumberish,
+    askGives: BigNumberish,
+    pricePoints: BigNumberish,
+    stepSize: BigNumberish,
     /*overrides?: CallOverrides*/
   ): Promise<DirectWithBidsAndAsksDistribution.DistributionStruct> {
     const distribution = this.createGeometricDistributionFromSolidity(
-      BigNumber.from(await from).toNumber(),
-      BigNumber.from(await to).toNumber(),
-      BigNumber.from(await baseQuoteTickIndex0).toNumber(),
-      BigNumber.from(await _baseQuoteTickOffset).toNumber(),
-      BigNumber.from(await firstAskIndex).toNumber(),
-      BigNumber.from(await bidGives),
-      BigNumber.from(await askGives),
-      BigNumber.from(await pricePoints).toNumber(),
-      BigNumber.from(await stepSize).toNumber(),
+      BigNumber.from(from).toNumber(),
+      BigNumber.from(to).toNumber(),
+      BigNumber.from(baseQuoteTickIndex0).toNumber(),
+      BigNumber.from(_baseQuoteTickOffset).toNumber(),
+      BigNumber.from(firstAskIndex).toNumber(),
+      BigNumber.from(bidGives),
+      BigNumber.from(askGives),
+      BigNumber.from(pricePoints).toNumber(),
+      BigNumber.from(stepSize).toNumber(),
     );
     return {
       asks: distribution.asks.map((x) => ({
