@@ -32,13 +32,8 @@ class TickPriceHelper {
    * @returns price at tick (not to be confused with offer list ratio).
    */
   priceFromTick(tick: BigNumberish): Big {
-    if (tick.toString() == "0") {
-      return Big(1);
-    }
-
-    const tickAsBigNumber = BigNumber.from(tick);
     // The priceFromTick gives the rawInbound/rawOutbound ratio for the tick.
-    const offerListRatioFromTick = TickLib.priceFromTick(tickAsBigNumber);
+    const offerListRatioFromTick = TickLib.priceFromTick(BigNumber.from(tick));
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
     Big.DP = 300;
