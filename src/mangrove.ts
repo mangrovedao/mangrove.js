@@ -841,78 +841,6 @@ class Mangrove {
   }
 
   /**
-   * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimals(tokenName: string): number | undefined {
-    return configuration.tokens.getDecimals(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimalsOrFail(tokenName: string): number {
-    return configuration.tokens.getDecimalsOrFail(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * If not found in the local configuration, fetch them from the current network and save them
-   */
-  static getOrFetchDecimals(
-    tokenName: string,
-    provider: Provider,
-  ): Promise<number> {
-    return configuration.tokens.getOrFetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Read chain for decimals of `tokenName` on current network and save them
-   */
-  static async fetchDecimals(
-    tokenName: string,
-    provider: Provider,
-  ): Promise<number> {
-    return configuration.tokens.fetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Read displayed decimals for `tokenName`.
-   */
-  static getDisplayedDecimals(tokenName: string): number {
-    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
-  }
-
-  /**
-   * Read displayed decimals for `tokenName` when displayed as a price.
-   */
-  static getDisplayedPriceDecimals(tokenName: string): number {
-    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
-  }
-
-  /**
-   * Set decimals for `tokenName` on current network.
-   */
-  static setDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDecimals(tokenName, dec);
-  }
-
-  /**
-   * Set displayed decimals for `tokenName`.
-   */
-  static setDisplayedDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDisplayedDecimals(tokenName, dec);
-  }
-
-  /**
-   * Set displayed decimals for `tokenName` when displayed as a price.
-   */
-  static setDisplayedPriceDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDisplayedPriceDecimals(tokenName, dec);
-  }
-
-  /**
    * Setup dev node necessary contracts if needed, register dev Multicall2
    * address, listen to future additions (a script external to mangrove.js may
    * deploy contracts during execution).
@@ -1114,13 +1042,6 @@ class Mangrove {
         });
       }),
     );
-  }
-
-  /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
-   * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
-   */
-  setCashness(name: string, cashness: number) {
-    configuration.tokens.setCashness(name, cashness);
   }
 
   // cashness is "how similar to cash is a token". The cashier token is the quote.

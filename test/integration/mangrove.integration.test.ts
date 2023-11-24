@@ -6,6 +6,7 @@ import { toWei } from "../util/helpers";
 import { serverType } from "../../src/util/node";
 
 import { Mangrove } from "../../src";
+import { configuration } from "../../src/configuration";
 
 import { Big } from "big.js";
 
@@ -119,7 +120,7 @@ describe("Mangrove integration tests suite", function () {
       assert.deepEqual(marketData[0].base, tokenAData);
       assert.deepEqual(marketData[0].quote, tokenBData);
 
-      mgv.setCashness("TokenA", 1000000);
+      configuration.tokens.setCashness("TokenA", 1000000);
       marketData = await mgv.openMarketsData();
 
       assert.deepEqual(marketData[0].base, tokenBData);
