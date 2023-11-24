@@ -1370,6 +1370,7 @@ export class SemibookCacheOperations {
       const removedOffer = this.removeOffer(
         state,
         state.worstInCache as number,
+        true,
       ); // state.offerCache.size > this.options.maxOffers  implies  worstInCache !== undefined
       if (offer.id === removedOffer?.id) {
         return false;
@@ -1381,7 +1382,11 @@ export class SemibookCacheOperations {
   // remove offer id from book and connect its prev/next.
   // return 'undefined' if offer was not found in book
   // This modifies the cache so must be called in a context where #cacheLock is acquired
-  removeOffer(state: Semibook.State, id: number): Market.Offer | undefined {
+  removeOffer(
+    state: Semibook.State,
+    id: number,
+    removeOfferBecauseCacheIsFull: boolean = false,
+  ): Market.Offer | undefined {
     const offer = state.offerCache.get(id);
     if (offer === undefined) return undefined;
 
@@ -1424,7 +1429,10 @@ export class SemibookCacheOperations {
         }
       }
     } else if (prevOffer !== undefined) {
-      prevOffer.next = offer.next;
+      // if the offer is removed because cache is full we keep next even if we do not have it in our cache
+      if (!removeOfferBecauseCacheIsFull) {
+        prevOffer.next = offer.next;
+      }
     }
 
     if (bin !== undefined && bin.offers.length > 1) {
