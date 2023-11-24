@@ -89,8 +89,8 @@ namespace Mangrove {
   };
 
   export type OpenMarketInfo = {
-    base: { name: string; address: string; symbol: string; decimals: number };
-    quote: { name: string; address: string; symbol: string; decimals: number };
+    base: { id: string; address: string; symbol: string; decimals: number };
+    quote: { id: string; address: string; symbol: string; decimals: number };
     tickSpacing: ethers.BigNumber;
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
@@ -505,22 +505,14 @@ class Mangrove {
 
   /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
   async token(
-    name: string,
+    id: string,
     options?: MgvToken.ConstructorOptions,
   ): Promise<MgvToken> {
-    return MgvToken.createToken(name, this, options);
+    return MgvToken.createToken(id, this, options);
   }
 
   async tokenFromAddress(address: string): Promise<MgvToken> {
     return MgvToken.createTokenFromAddress(address, this);
-  }
-
-  /** Return MgvToken instance reading only from configuration, not from chain. */
-  tokenFromConfig(
-    name: string,
-    options?: MgvToken.ConstructorOptions,
-  ): MgvToken {
-    return new MgvToken(name, this, options);
   }
 
   /**
@@ -614,10 +606,10 @@ class Mangrove {
   }
 
   async approveMangrove(
-    tokenName: string,
+    tokenId: string,
     arg: ApproveArgs = {},
   ): Promise<ethers.ContractTransaction> {
-    const token = await this.token(tokenName);
+    const token = await this.token(tokenId);
     return token.approveMangrove(arg);
   }
 
@@ -945,24 +937,21 @@ class Mangrove {
     // format return value
     return raw.markets.map(([tkn0, tkn1, tickSpacing]) => {
       // Use internal mgv name if defined; otherwise use the symbol.
-      const tkn0Name = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
-      const tkn1Name = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
+      const tkn0Id = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
+      const tkn1Id = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
 
-      const { baseName, quoteName } = Mangrove.toBaseQuoteByCashness(
-        tkn0Name,
-        tkn1Name,
-      );
-      const [base, quote] = baseName === tkn0Name ? [tkn0, tkn1] : [tkn1, tkn0];
+      const { baseId, quoteId } = this.toBaseQuoteByCashness(tkn0Id, tkn1Id);
+      const [base, quote] = baseId === tkn0Id ? [tkn0, tkn1] : [tkn1, tkn0];
 
       return {
         base: {
-          name: baseName,
+          id: baseId,
           address: base,
           symbol: data[base].symbol,
           decimals: data[base].decimals,
         },
         quote: {
-          name: quoteName,
+          id: quoteId,
           address: quote,
           symbol: data[quote].symbol,
           decimals: data[quote].decimals,
@@ -1012,18 +1001,18 @@ class Mangrove {
     // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
     return Promise.all(
       openMarketsData.map(({ base, quote, tickSpacing }) => {
-        this.setAddress(base.name, base.address);
-        if (configuration.tokens.getDecimals(base.name) === undefined) {
-          configuration.tokens.setDecimals(base.name, base.decimals);
+        this.setAddress(base.id, base.address);
+        if (configuration.tokens.getDecimals(base.id) === undefined) {
+          configuration.tokens.setDecimals(base.id, base.decimals);
         }
-        this.setAddress(quote.name, quote.address);
-        if (configuration.tokens.getDecimals(quote.name) === undefined) {
-          configuration.tokens.setDecimals(quote.name, quote.decimals);
+        this.setAddress(quote.id, quote.address);
+        if (configuration.tokens.getDecimals(quote.id) === undefined) {
+          configuration.tokens.setDecimals(quote.id, quote.decimals);
         }
         return Market.connect({
           mgv: this,
-          base: base.name,
-          quote: quote.name,
+          base: base.id,
+          quote: quote.id,
           tickSpacing: tickSpacing.toString(),
           bookOptions: bookOptions,
           noInit: noInit,
@@ -1036,16 +1025,16 @@ class Mangrove {
   // toBaseQuoteByCashness orders tokens according to relative cashness.
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
-  static toBaseQuoteByCashness(name0: string, name1: string) {
-    let cash0 = configuration.tokens.getCashness(name0);
-    let cash1 = configuration.tokens.getCashness(name1);
+  toBaseQuoteByCashness(tokenId0: string, tokenId1: string) {
+    let cash0 = configuration.tokens.getCashness(tokenId0);
+    let cash1 = configuration.tokens.getCashness(tokenId1);
     if (cash0 === undefined || cash1 === undefined) {
       cash0 = cash1 = 0;
     }
-    if (cash0 < cash1 || (cash0 === cash1 && name0 < name1)) {
-      return { baseName: name0, quoteName: name1 };
+    if (cash0 < cash1 || (cash0 === cash1 && tokenId0 < tokenId1)) {
+      return { baseId: tokenId0, quoteId: tokenId1 };
     } else {
-      return { baseName: name1, quoteName: name0 };
+      return { baseId: tokenId1, quoteId: tokenId0 };
     }
   }
 }

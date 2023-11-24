@@ -499,8 +499,8 @@ class CoreKandelInstance {
   getMostSpecificConfig() {
     return this.configuration.getMostSpecificConfig(
       this.market.mgv.network.name,
-      this.getBase().name,
-      this.getQuote().name,
+      this.getBase().id,
+      this.getQuote().id,
     );
   }
 

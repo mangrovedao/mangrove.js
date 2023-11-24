@@ -108,13 +108,13 @@ describe("Mangrove integration tests suite", function () {
       const tokenAData = {
         address: mgv.getAddress("TokenA"),
         decimals: 18,
-        name: "TokenA",
+        id: "TokenA",
         symbol: "TokenA",
       };
       const tokenBData = {
         address: mgv.getAddress("TokenB"),
         decimals: 6,
-        name: "TokenB",
+        id: "TokenB",
         symbol: "TokenB",
       };
       assert.deepEqual(marketData[0].base, tokenAData);

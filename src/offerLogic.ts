@@ -53,14 +53,14 @@ class OfferLogic {
    * @param args optional `arg.amount` can be used if one wishes to approve a finite amount
    */
   async approve(
-    tokenName: string,
+    tokenId: string,
     args?: {
       optSpender?: string;
       optAmount?: Bigish;
       optOverrides?: ethers.Overrides;
     },
   ): Promise<ethers.ContractTransaction> {
-    const token = await this.mgv.token(tokenName);
+    const token = await this.mgv.token(tokenId);
     const amount =
       args && args.optAmount != undefined
         ? token.toUnits(args.optAmount)

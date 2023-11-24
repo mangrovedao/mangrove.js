@@ -13,35 +13,35 @@
       "minimumBasePerOfferFactor": 10,
       "minimumQuotePerOfferFactor": 10,
       "markets": {
-        "WETH": {
-          "DAI": {
+        "WETH.T/MGV": {
+          "DAI.T/AAVEv3": {
             "aaveEnabled": false
           },
-          "USDC": {
+          "USDC.T/MGV": {
             "minimumBasePerOfferFactor": 6,
             "minimumQuotePerOfferFactor": 6,
             "aaveEnabled": false
           }
         },
-        "DAI": {
-          "USDC": {
+        "DAI.T/AAVEv3": {
+          "USDC.T/MGV": {
             "aaveEnabled": true
           }
         },
-        "WMATIC": {
-          "USDT": {
+        "WMATIC.T/MGV": {
+          "USDT.T/MGV": {
             "minimumBasePerOfferFactor": 6,
             "minimumQuotePerOfferFactor": 6
           }
         },
-        "WBTC": {
-          "USDT": {},
-          "DAI": {
+        "WBTC.T/AAVEv3": {
+          "USDT.T/MGV": {},
+          "DAI.T/AAVEv3": {
             "aaveEnabled": true
           }
         },
-        "CRV": {
-          "WBTC": {
+        "CRV.T/AAVEv3": {
+          "WBTC.T/AAVEv3": {
             "aaveEnabled": true
           }
         }
@@ -54,17 +54,14 @@
       "minimumQuotePerOfferFactor": 10,
       "aaveEnabled": true,
       "markets": {
-        "WETH": {
-          "USDC": {
+        "WETH.e": {
+          "USDC.e": {
             "minimumBasePerOfferFactor": 6,
             "minimumQuotePerOfferFactor": 6
           }
         },
-        "USDC": {
-          "USDT": {}
-        },
-        "WMATIC": {
-          "WETH": {}
+        "USDC.e": {
+          "USDT.e": {}
         }
       }
     },

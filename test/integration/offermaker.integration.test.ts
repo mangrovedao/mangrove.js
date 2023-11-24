@@ -420,7 +420,7 @@ describe("OfferMaker integration test suite", () => {
       const logic = onchain_lp.logic as OfferLogic;
       const signer_address = await logic.mgv.signer.getAddress();
 
-      const tx = await logic.approve(base.name, {
+      const tx = await logic.approve(base.id, {
         optAmount: 42,
         optOverrides: { gasLimit: 80000 },
       });

@@ -11,6 +11,7 @@ namespace MgvToken {
   export type ConstructorOptions = {
     address?: string;
     decimals?: number;
+    symbol?: string;
     displayedDecimals?: number;
   };
 }
@@ -52,26 +53,30 @@ function convertToApproveArgs(arg: ApproveArgs): {
 
 class MgvToken {
   mgv: Mangrove;
-  name: string;
+  // ID which should be unique within a network.
+  // Typically the id from the context-addresses package.
+  // May be the symbol if the symbol is unique. NB: This uniqueness is not enforced and duplicates will give undefined behavior.
+  id: string;
+  // Non-unique and optional symbol cf. ERC20
+  symbol?: string;
   address: string;
   displayedDecimals: number;
   decimals: number;
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
   constructor(
-    name: string,
+    id: string,
     mgv: Mangrove,
     options?: MgvToken.ConstructorOptions,
   ) {
     this.mgv = mgv;
-    this.name = name;
-    MgvToken.#applyOptions(name, mgv, options);
+    this.id = id;
+    MgvToken.#applyOptions(id, mgv, options);
 
-    this.address = this.mgv.getAddress(this.name);
-    this.decimals = configuration.tokens.getDecimalsOrFail(this.name);
-    this.displayedDecimals = configuration.tokens.getDisplayedDecimals(
-      this.name,
-    );
+    this.address = this.mgv.getAddress(this.id);
+    this.decimals = configuration.tokens.getDecimalsOrFail(this.id);
+    this.symbol = configuration.tokens.getSymbol(this.id);
+    this.displayedDecimals = configuration.tokens.getDisplayedDecimals(this.id);
 
     this.contract = typechain.TestToken__factory.connect(
       this.address,
@@ -81,16 +86,17 @@ class MgvToken {
 
   /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
   static async createToken(
-    name: string,
+    id: string,
     mgv: Mangrove,
     options?: MgvToken.ConstructorOptions,
   ): Promise<MgvToken> {
-    MgvToken.#applyOptions(name, mgv, options);
+    MgvToken.#applyOptions(id, mgv, options);
 
-    // Ensure decimals are known before token construction as it will otherwise fail.
-    await configuration.tokens.getOrFetchDecimals(name, mgv.provider);
+    // Ensure decimals and symbol are known before token construction as it will otherwise fail.
+    await configuration.tokens.getOrFetchDecimals(id, mgv.provider);
+    await configuration.tokens.getOrFetchSymbol(id, mgv.provider);
 
-    return new MgvToken(name, mgv, options);
+    return new MgvToken(id, mgv, options);
   }
 
   static async createTokenFromAddress(
@@ -102,15 +108,17 @@ class MgvToken {
       mgv.provider,
     );
 
-    const name = await contract.callStatic.symbol();
+    const symbol = await contract.callStatic.symbol();
+    const id = symbol ?? address;
 
-    return this.createToken(name, mgv, {
+    return this.createToken(id, mgv, {
       address,
+      symbol,
     });
   }
 
   static #applyOptions(
-    name: string,
+    id: string,
     mgv: Mangrove,
     options?: MgvToken.ConstructorOptions,
   ) {
@@ -119,21 +127,22 @@ class MgvToken {
     }
 
     if ("address" in options && options.address !== undefined) {
-      mgv.setAddress(name, options.address);
+      mgv.setAddress(id, options.address);
     }
 
     if ("decimals" in options && options.decimals !== undefined) {
-      configuration.tokens.setDecimals(name, options.decimals);
+      configuration.tokens.setDecimals(id, options.decimals);
+    }
+
+    if ("symbol" in options && options.symbol !== undefined) {
+      configuration.tokens.setSymbol(id, options.symbol);
     }
 
     if (
       "displayedDecimals" in options &&
       options.displayedDecimals !== undefined
     ) {
-      configuration.tokens.setDisplayedDecimals(
-        name,
-        options.displayedDecimals,
-      );
+      configuration.tokens.setDisplayedDecimals(id, options.displayedDecimals);
     }
   }
 

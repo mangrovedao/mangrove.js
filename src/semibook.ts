@@ -218,7 +218,7 @@ class Semibook
       canConstructSemibook = true;
       semibook = new Semibook(market, ba, eventListener, options);
       logger.debug(
-        `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`,
+        `Semibook.connect() ${ba} ${market.base.id} / ${market.quote.id}`,
       );
       if (!market.mgv.shouldNotListenToNewEvents) {
         await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);

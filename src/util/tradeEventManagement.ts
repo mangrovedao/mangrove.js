@@ -171,8 +171,8 @@ class TradeEventManagement {
     if (olKeyHash != evt.args.olKeyHash) {
       logger.debug("OfferWrite for unknown market!", {
         contextInfo: "tradeEventManagement",
-        base: market.base.name,
-        quote: market.quote.name,
+        base: market.base.id,
+        quote: market.quote.id,
         tickSpacing: market.tickSpacing,
         data: {
           olKeyHash: evt.args.olKeyHash,

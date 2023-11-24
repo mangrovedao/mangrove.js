@@ -32,12 +32,15 @@ export type RecursivePartial<T> = {
 
 export type network = string;
 export type address = string;
+export type tokenId = string;
 export type tokenSymbol = string;
 
 export type NamedAddresses = Record<string, address>;
 export type AddressesConfig = Record<network, NamedAddresses>;
 
 export type TokenConfig = {
+  symbol?: tokenSymbol;
+  description?: string;
   decimals?: number;
   displayedDecimals?: number;
   displayedAsPriceDecimals?: number;
@@ -113,7 +116,7 @@ export type PartialKandelAllConfigurationFields =
   Partial<KandelAllConfigurationFields>;
 export type PartialMarketConfig = PartialKandelAllConfigurationFields;
 export type PartialNetworkConfig = PartialKandelAllConfigurationFields & {
-  markets?: Record<tokenSymbol, Record<tokenSymbol, PartialMarketConfig>>; // base symbol -> quote symbol -> market config
+  markets?: Record<tokenId, Record<tokenId, PartialMarketConfig>>; // base ID -> quote ID -> market config
 };
 
 export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
@@ -137,7 +140,7 @@ export type PartialMangroveOrderConfiguration =
 export type Configuration = {
   addressesByNetwork: AddressesConfig;
   tokenDefaults: TokenDefaults;
-  tokens: Record<tokenSymbol, TokenConfig>;
+  tokens: Record<tokenId, TokenConfig>;
   mangroveOrder: PartialMangroveOrderConfiguration;
   reliableEventSubscriber: ReliableEventSubscriberConfig;
   kandel: PartialKandelConfiguration;
@@ -251,121 +254,169 @@ export const addressesConfiguration = {
 
 /// TOKENS
 
-function getOrCreateTokenConfig(tokenName: string) {
-  let tokenConfig = config.tokens[tokenName];
+function getOrCreateTokenConfig(tokenId: tokenId) {
+  let tokenConfig = config.tokens[tokenId];
   if (tokenConfig === undefined) {
-    config.tokens[tokenName] = tokenConfig = {};
+    config.tokens[tokenId] = tokenConfig = {};
   }
   return tokenConfig;
 }
 
 export const tokensConfiguration = {
   /**
-   * Read decimals for `tokenName`.
+   * Read decimals for `tokenId`.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimals: (tokenName: string): number | undefined => {
-    return config.tokens[tokenName]?.decimals;
+  getDecimals: (tokenId: tokenId): number | undefined => {
+    return getOrCreateTokenConfig(tokenId).decimals;
   },
 
   /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
+   * Read decimals for `tokenId`. Fails if the decimals are not in the configuration.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimalsOrFail: (tokenName: string): number => {
-    const decimals = tokensConfiguration.getDecimals(tokenName);
+  getDecimalsOrFail: (tokenId: tokenId): number => {
+    const decimals = tokensConfiguration.getDecimals(tokenId);
     if (decimals === undefined) {
-      throw Error(`No decimals on record for token ${tokenName}`);
+      throw Error(`No decimals on record for token ${tokenId}`);
     }
 
     return decimals;
   },
 
   /**
-   * Read decimals for `tokenName` on given network.
+   * Read decimals for `tokenId` on given network.
    * If not found in the local configuration, fetch them from the current network and save them
    */
   getOrFetchDecimals: async (
-    tokenName: string,
+    tokenId: tokenId,
     provider: Provider,
   ): Promise<number> => {
-    const decimals = tokensConfiguration.getDecimals(tokenName);
+    const decimals = tokensConfiguration.getDecimals(tokenId);
     if (decimals !== undefined) {
       return decimals;
     }
 
-    return tokensConfiguration.fetchDecimals(tokenName, provider);
+    return tokensConfiguration.fetchDecimals(tokenId, provider);
   },
 
   /**
-   * Read chain for decimals of `tokenName` on current network and save them
+   * Read chain for decimals of `tokenId` on current network and save them
    */
   fetchDecimals: async (
-    tokenName: string,
+    tokenId: tokenId,
     provider: Provider,
   ): Promise<number> => {
     const network = await eth.getProviderNetwork(provider);
     const token = typechain.IERC20__factory.connect(
-      addressesConfiguration.getAddress(tokenName, network.name),
+      addressesConfiguration.getAddress(tokenId, network.name),
       provider,
     );
     const decimals = await token.decimals();
-    tokensConfiguration.setDecimals(tokenName, decimals);
+    tokensConfiguration.setDecimals(tokenId, decimals);
     return decimals;
   },
 
   /**
-   * Read displayed decimals for `tokenName`.
+   * Read symbol for `tokenId`.
+   * To read symbol directly onchain, use `fetchSymbol`.
    */
-  getDisplayedDecimals: (tokenName: string): number => {
+  getSymbol: (tokenId: tokenId): tokenSymbol | undefined => {
+    return getOrCreateTokenConfig(tokenId).symbol;
+  },
+
+  /**
+   * Read symbol for `tokenId` on given network.
+   * If not found in the local configuration, fetch them from the current network and save them
+   */
+  getOrFetchSymbol: async (
+    tokenId: tokenId,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const symbol = tokensConfiguration.getSymbol(tokenId);
+    if (symbol !== undefined) {
+      return symbol;
+    }
+
+    return tokensConfiguration.fetchSymbol(tokenId, provider);
+  },
+
+  /**
+   * Read chain for symbol of `tokenId` on current network and save them
+   */
+  fetchSymbol: async (
+    tokenId: tokenId,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const network = await eth.getProviderNetwork(provider);
+    const token = typechain.IERC20__factory.connect(
+      addressesConfiguration.getAddress(tokenId, network.name),
+      provider,
+    );
+    const symbol = await token.symbol();
+    tokensConfiguration.setSymbol(tokenId, symbol);
+    return symbol;
+  },
+
+  /**
+   * Read displayed decimals for `tokenId`.
+   */
+  getDisplayedDecimals: (tokenId: tokenId): number => {
     return (
-      config.tokens[tokenName]?.displayedDecimals ||
+      getOrCreateTokenConfig(tokenId).displayedDecimals ||
       config.tokenDefaults.defaultDisplayedDecimals
     );
   },
 
   /**
-   * Read displayed decimals for `tokenName` when displayed as a price.
+   * Read displayed decimals for `tokenId` when displayed as a price.
    */
-  getDisplayedPriceDecimals: (tokenName: string): number => {
+  getDisplayedPriceDecimals: (tokenId: tokenId): number => {
     return (
-      config.tokens[tokenName]?.displayedAsPriceDecimals ||
+      getOrCreateTokenConfig(tokenId).displayedAsPriceDecimals ||
       config.tokenDefaults.defaultDisplayedPriceDecimals
     );
   },
 
   /** Get the cashness of a token. See {@link setCashness} for details.
    */
-  getCashness: (tokenName: string): number | undefined => {
-    return config.tokens[tokenName]?.cashness;
+  getCashness: (tokenId: tokenId): number | undefined => {
+    return getOrCreateTokenConfig(tokenId).cashness;
   },
 
   /**
-   * Set decimals for `tokenName`.
+   * Set decimals for `tokenId` on the given network.
    */
-  setDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).decimals = dec;
+  setDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).decimals = dec;
   },
 
   /**
-   * Set displayed decimals for `tokenName`.
+   * Set symbol for `tokenId` on the given network.
    */
-  setDisplayedDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).displayedDecimals = dec;
+  setSymbol: (tokenId: tokenId, symbol: tokenSymbol): void => {
+    getOrCreateTokenConfig(tokenId).symbol = symbol;
   },
 
   /**
-   * Set displayed decimals for `tokenName` when displayed as a price.
+   * Set displayed decimals for `tokenId` on the given network.
    */
-  setDisplayedPriceDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).displayedAsPriceDecimals = dec;
+  setDisplayedDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).displayedDecimals = dec;
   },
 
-  /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
+  /**
+   * Set displayed decimals for `tokenId` on the given network when displayed as a price.
+   */
+  setDisplayedPriceDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).displayedAsPriceDecimals = dec;
+  },
+
+  /** Set the relative cashness of a token on the given network. This determines which token is base & which is quote in a {@link Market}.
    * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
    */
-  setCashness: (tokenName: string, cashness: number) => {
-    getOrCreateTokenConfig(tokenName).cashness = cashness;
+  setCashness: (tokenId: tokenId, cashness: number) => {
+    getOrCreateTokenConfig(tokenId).cashness = cashness;
   },
 };
 
@@ -448,7 +499,7 @@ export function resetConfiguration(): void {
       defaultDisplayedDecimals: 2,
       defaultDisplayedPriceDecimals: 6,
     },
-    tokens: clone(loadedTokens as Record<tokenSymbol, TokenConfig>),
+    tokens: clone(loadedTokens as Record<tokenId, TokenConfig>),
     reliableEventSubscriber: {
       defaultBlockManagerOptions: {
         maxBlockCached: 50,

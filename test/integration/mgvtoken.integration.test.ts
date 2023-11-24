@@ -1,6 +1,7 @@
 import assert from "assert";
 import { afterEach, beforeEach, describe, it } from "mocha";
 import { Mangrove, ethers } from "../../src";
+import { configuration } from "../../src/configuration";
 
 import { Big } from "big.js";
 import {
@@ -21,6 +22,11 @@ describe("MGV Token integration tests suite", () => {
       provider: this.server.url,
       privateKey: this.accounts.tester.key,
     });
+
+    configuration.tokens.setDecimals("USDC", 6);
+    configuration.tokens.setDisplayedDecimals("USDC", 2);
+    configuration.tokens.setDecimals("WETH", 18);
+    configuration.tokens.setDisplayedDecimals("WETH", 4);
 
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -221,7 +227,7 @@ describe("MGV Token integration tests suite", () => {
     const usdc = await mgv.token("USDC");
     const usdc2 = await mgv.tokenFromAddress(usdc.address);
 
-    assert.equal(usdc.name, usdc2.name);
+    assert.equal(usdc.id, usdc2.id);
     assert.equal(usdc.decimals, usdc2.decimals);
   });
 });

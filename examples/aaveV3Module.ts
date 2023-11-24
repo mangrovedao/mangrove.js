@@ -27,10 +27,10 @@ class AaveV3Module {
   }
 
   async #debtToken(
-    tokenName: string,
+    tokenId: string,
     signer?: SignerOrProvider,
   ): Promise<typechain.ICreditDelegationToken> {
-    const asset_address = this.mgv.getAddress(tokenName);
+    const asset_address = this.mgv.getAddress(tokenId);
     const debt_address = await this.contract.debtToken(asset_address);
     return typechain.ICreditDelegationToken__factory.connect(
       debt_address,
@@ -39,11 +39,11 @@ class AaveV3Module {
   }
 
   async approveDelegation(
-    tokenName: string,
+    tokenId: string,
     borrower: string,
     overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
-    const dTtkn = await this.#debtToken(tokenName);
+    const dTtkn = await this.#debtToken(tokenId);
     return dTtkn.approveDelegation(
       borrower,
       ethers.constants.MaxUint256,
@@ -52,11 +52,11 @@ class AaveV3Module {
   }
 
   async status(
-    tokenName: string,
+    tokenId: string,
     account: string,
   ): Promise<{ available: Big; borrowable: Big; borrowing: Big }> {
-    const asset = await this.mgv.token(tokenName);
-    const dToken = await this.#debtToken(tokenName);
+    const asset = await this.mgv.token(tokenId);
+    const dToken = await this.#debtToken(tokenId);
     const { maxRedeemableUnderlying, maxBorrowAfterRedeemInUnderlying } =
       await this.contract.maxGettableUnderlying(asset.address, true, account);
     return {
@@ -66,11 +66,11 @@ class AaveV3Module {
     };
   }
 
-  async logStatus(tokenNames: string[], account?: string): Promise<void> {
+  async logStatus(tokenIds: string[], account?: string): Promise<void> {
     account = account ? account : await this.mgv.signer.getAddress();
-    for (const tokenName of tokenNames) {
-      const stat = await this.status(tokenName, account);
-      console.log(`----------${tokenName}----------`);
+    for (const tokenId of tokenIds) {
+      const stat = await this.status(tokenId, account);
+      console.log(`----------${tokenId}----------`);
       console.log("debit:", `\u001b[32m${stat.available}\u001b[0m`);
       console.log("credit:", `\u001b[33m${stat.borrowable}\u001b[0m`);
       console.log("debt:", `\u001b[31m${stat.borrowing}\u001b[0m`);

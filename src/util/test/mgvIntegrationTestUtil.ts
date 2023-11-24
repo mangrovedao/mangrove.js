@@ -472,7 +472,7 @@ const rawMint = async (
   internalAmount: ethers.BigNumberish,
 ): Promise<void> => {
   const deployer = await getAccount(AccountName.Deployer);
-  switch (token.name) {
+  switch (token.id) {
     case "TokenA":
       await waitForTransaction(
         deployer.connectedContracts.tokenA.mintTo(
