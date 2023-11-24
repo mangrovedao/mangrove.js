@@ -465,14 +465,14 @@ export const tokensConfiguration = {
   },
 
   /**
-   * Set decimals for `tokenId` on the given network.
+   * Set decimals for `tokenId`.
    */
   setDecimals: (tokenId: tokenId, dec: number): void => {
     getOrCreateTokenConfig(tokenId).decimals = dec;
   },
 
   /**
-   * Set symbol for `tokenId` on the given network.
+   * Set symbol for `tokenId`.
    */
   setSymbol: (tokenId: tokenId, symbol: tokenSymbol): void => {
     getOrCreateTokenConfig(tokenId).symbol = symbol;
@@ -486,20 +486,20 @@ export const tokensConfiguration = {
   },
 
   /**
-   * Set displayed decimals for `tokenId` on the given network.
+   * Set displayed decimals for `tokenId`.
    */
   setDisplayedDecimals: (tokenId: tokenId, dec: number): void => {
     getOrCreateTokenConfig(tokenId).displayedDecimals = dec;
   },
 
   /**
-   * Set displayed decimals for `tokenId` on the given network when displayed as a price.
+   * Set displayed decimals for `tokenId` when displayed as a price.
    */
   setDisplayedPriceDecimals: (tokenId: tokenId, dec: number): void => {
     getOrCreateTokenConfig(tokenId).displayedAsPriceDecimals = dec;
   },
 
-  /** Set the relative cashness of a token on the given network. This determines which token is base & which is quote in a {@link Market}.
+  /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
    * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
    */
   setCashness: (tokenId: tokenId, cashness: number) => {
