@@ -6735,11 +6735,14 @@ __metadata:
   linkType: hard
 
 "ts-essentials@npm:^9.3.1":
-  version: 9.3.2
-  resolution: "ts-essentials@npm:9.3.2"
+  version: 9.4.1
+  resolution: "ts-essentials@npm:9.4.1"
   peerDependencies:
     typescript: ">=4.1.0"
-  checksum: 88726b3f9bdc8f59f9a998bb925c989268d7e2f24d29ac13545e457d3ac8ee5472c78990eaa415b4c58244d55b989985a999345d6845055f5a58bb0f098c6f44
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 3a7404b88549a005eb19881348905bc76faec2438f1997a9cccb8ecdaaef481b88896fea91353c14435f6d4354259a1c527c438b353353c9de526a9c593ab7d0
   languageName: node
   linkType: hard
 
