@@ -40,7 +40,6 @@ export type AddressesConfig = Record<network, NamedAddresses>;
 
 export type TokenConfig = {
   symbol?: tokenSymbol;
-  description?: string;
   decimals?: number;
   displayedDecimals?: number;
   displayedAsPriceDecimals?: number;
@@ -546,7 +545,7 @@ export function resetConfiguration(): void {
   // 1. context-addresses addresses
   // 2. mangrove-deployments addresses
   // Last loaded address is used
-  readContextAddresses();
+  readContextAddressesAndTokens();
   readMangroveDeploymentAddresses();
 }
 
@@ -616,9 +615,9 @@ function readVersionDeploymentsAddresses(
   }
 }
 
-function readContextAddresses() {
+function readContextAddressesAndTokens() {
   readContextMulticallAddresses();
-  readContextErc20Addresses();
+  readContextErc20Tokens();
   readContextAaveAddresses();
 }
 
@@ -632,10 +631,8 @@ function readContextMulticallAddresses() {
   }
 }
 
-function readContextErc20Addresses() {
-  for (const [, /*tokenId*/ erc20] of Object.entries(
-    contextAddresses.getAllErc20s(),
-  )) {
+function readContextErc20Tokens() {
+  for (const [, erc20] of Object.entries(contextAddresses.getAllErc20s())) {
     for (const [networkId, networkInstances] of Object.entries(
       erc20.networkInstances,
     )) {
@@ -643,6 +640,9 @@ function readContextErc20Addresses() {
       for (const [erc20InstanceId, erc20Instance] of Object.entries(
         networkInstances,
       )) {
+        tokensConfiguration.setDecimals(erc20InstanceId, erc20.decimals);
+        tokensConfiguration.setSymbol(erc20InstanceId, erc20.symbol);
+
         addressesConfiguration.setAddress(
           erc20InstanceId,
           erc20Instance.address,
