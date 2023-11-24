@@ -5,7 +5,7 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { toWei } from "../util/helpers";
 import { serverType } from "../../src/util/node";
 
-import { Mangrove } from "../../src";
+import { Mangrove, MgvToken } from "../../src";
 import { configuration } from "../../src/configuration";
 
 import { Big } from "big.js";
@@ -108,14 +108,20 @@ describe("Mangrove integration tests suite", function () {
         id: "TokenB",
         symbol: "TokenB",
       };
-      assert.deepEqual(marketData[0].base, tokenAData);
-      assert.deepEqual(marketData[0].quote, tokenBData);
+      const tokenToData = (token: MgvToken) => ({
+        address: token.address,
+        decimals: token.decimals,
+        id: token.id,
+        symbol: token.symbol,
+      });
+      assert.deepEqual(tokenToData(marketData[0].base), tokenAData);
+      assert.deepEqual(tokenToData(marketData[0].quote), tokenBData);
 
       configuration.tokens.setCashness("TokenA", 1000000);
       marketData = await mgv.openMarketsData();
 
-      assert.deepEqual(marketData[0].base, tokenBData);
-      assert.deepEqual(marketData[0].quote, tokenAData);
+      assert.deepEqual(tokenToData(marketData[0].base), tokenBData);
+      assert.deepEqual(tokenToData(marketData[0].quote), tokenAData);
     });
   });
   describe("node utils", () => {

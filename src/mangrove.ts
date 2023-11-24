@@ -89,8 +89,8 @@ namespace Mangrove {
   };
 
   export type OpenMarketInfo = {
-    base: { id: string; address: string; symbol: string; decimals: number };
-    quote: { id: string; address: string; symbol: string; decimals: number };
+    base: MgvToken;
+    quote: MgvToken;
     tickSpacing: ethers.BigNumber;
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
@@ -927,46 +927,46 @@ class Mangrove {
     tryDecodeSymbol(returnData.slice(addresses.length), "symbol");
 
     // format return value
-    return raw.markets.map(([tkn0, tkn1, tickSpacing]) => {
-      // Use internal mgv name if defined; otherwise use the symbol.
-      const tkn0Id =
-        configuration.tokens.getTokenIdFromAddress(tkn0, this.network.name) ??
-        data[tkn0].symbol;
-      const tkn1Id =
-        configuration.tokens.getTokenIdFromAddress(tkn1, this.network.name) ??
-        data[tkn1].symbol;
+    return await Promise.all(
+      raw.markets.map(async ([tkn0, tkn1, tickSpacing]) => {
+        // Use internal mgv name if defined; otherwise use the symbol.
+        const tkn0Id =
+          configuration.tokens.getTokenIdFromAddress(tkn0, this.network.name) ??
+          data[tkn0].symbol;
+        const tkn1Id =
+          configuration.tokens.getTokenIdFromAddress(tkn1, this.network.name) ??
+          data[tkn1].symbol;
 
-      const { baseId, quoteId } = this.toBaseQuoteByCashness(tkn0Id, tkn1Id);
-      const [base, quote] = baseId === tkn0Id ? [tkn0, tkn1] : [tkn1, tkn0];
+        const { baseId, quoteId } = this.toBaseQuoteByCashness(tkn0Id, tkn1Id);
+        const [base, quote] = baseId === tkn0Id ? [tkn0, tkn1] : [tkn1, tkn0];
 
-      return {
-        base: {
-          id: baseId,
-          address: base,
-          symbol: data[base].symbol,
-          decimals: data[base].decimals,
-        },
-        quote: {
-          id: quoteId,
-          address: quote,
-          symbol: data[quote].symbol,
-          decimals: data[quote].decimals,
-        },
-        tickSpacing: tickSpacing,
-        asksConfig: params.configs
-          ? Semibook.rawLocalConfigToLocalConfig(
-              data[base].configs[quote],
-              data[base].decimals,
-            )
-          : undefined,
-        bidsConfig: params.configs
-          ? Semibook.rawLocalConfigToLocalConfig(
-              data[quote].configs[base],
-              data[quote].decimals,
-            )
-          : undefined,
-      };
-    });
+        return {
+          base: await this.tokenFromId(baseId, {
+            address: base,
+            symbol: data[base].symbol,
+            decimals: data[base].decimals,
+          }),
+          quote: await this.tokenFromId(quoteId, {
+            address: quote,
+            symbol: data[quote].symbol,
+            decimals: data[quote].decimals,
+          }),
+          tickSpacing: tickSpacing,
+          asksConfig: params.configs
+            ? Semibook.rawLocalConfigToLocalConfig(
+                data[base].configs[quote],
+                data[base].decimals,
+              )
+            : undefined,
+          bidsConfig: params.configs
+            ? Semibook.rawLocalConfigToLocalConfig(
+                data[quote].configs[base],
+                data[quote].decimals,
+              )
+            : undefined,
+        };
+      }),
+    );
   }
 
   /**
