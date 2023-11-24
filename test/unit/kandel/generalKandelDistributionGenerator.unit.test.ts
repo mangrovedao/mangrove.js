@@ -41,21 +41,8 @@ export function assertSameTicks(
   );
 }
 
-export function getOffersWithPrices(distribution: KandelDistribution) {
-  return {
-    asks: distribution.offers.asks.map((x) => ({
-      ...x,
-      price: distribution.helper.askTickPriceHelper.priceFromTick(x.tick),
-    })),
-    bids: distribution.offers.bids.map((x) => ({
-      ...x,
-      price: distribution.helper.bidTickPriceHelper.priceFromTick(x.tick),
-    })),
-  };
-}
-
 export function getUniquePrices(distribution: KandelDistribution) {
-  const offersWithPrices = getOffersWithPrices(distribution);
+  const offersWithPrices = distribution.getOffersWithPrices();
   const s = [
     ...new Set(
       offersWithPrices.asks
