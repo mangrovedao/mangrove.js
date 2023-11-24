@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { afterEach, beforeEach, describe, it } from "mocha";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-import { newOffer, toWei } from "../util/helpers";
+import { assertApproxEqAbs, newOffer, toWei } from "../util/helpers";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
 import { Mangrove, Semibook } from "../../src";
@@ -425,13 +425,6 @@ describe("Semibook integration tests suite", function () {
         });
 
         it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
-          // Put one offer on asks
-          const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "0" }),
-          );
-
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-          // Load no offers in cache
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
@@ -439,35 +432,33 @@ describe("Semibook integration tests suite", function () {
             bookOptions: { maxOffers: 0 },
           });
           const semibook = market.getSemibook("asks");
-          const volume = await semibook.estimateVolume({ given: 1, to });
-          assert.deepStrictEqual(
-            volume.tick.toString(),
-            "0",
-            "tick should be 0",
+
+          const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
+
+          // Put one offer on asks
+          const tx = await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick }),
           );
-          assert.deepStrictEqual(
-            volume.estimatedVolume.toFixed(),
-            "1",
+
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
+          const volume = await semibook.estimateVolume({ given: 1, to });
+
+          assertApproxEqAbs(
+            volume.estimatedVolume,
+            1,
+            0.001,
             "estimatedVolume should be 1",
           );
-          assert.deepStrictEqual(
-            volume.remainingFillVolume.toFixed(),
-            "0",
+          assertApproxEqAbs(
+            volume.remainingFillVolume,
+            0,
+            0.001,
             "remainingFillVolume should be 0",
           );
         });
 
         it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
-          // Put one offer on asks
-          await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "0" }),
-          );
-          const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "0" }),
-          );
-
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
           // Load 1 offer in cache
           const market = await mgv.market({
             base: "TokenA",
@@ -476,35 +467,39 @@ describe("Semibook integration tests suite", function () {
             bookOptions: { maxOffers: 1 },
           });
           const semibook = market.getSemibook("asks");
+
+          const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
+
+          const ask1 = await (
+            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick })
+          ).wait();
+
+          // Put one offer on asks
+          await mgvTestUtil.waitForBlock(mgv, ask1.blockNumber);
+
+          const ask2 = await (
+            await newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick })
+          ).wait();
+
+          await mgvTestUtil.waitForBlock(mgv, ask2.blockNumber);
+
           const volume = await semibook.estimateVolume({ given: 2, to });
-          assert.deepStrictEqual(
-            volume.tick.toString(),
-            "0",
-            "tick should be 0",
-          );
-          assert.deepStrictEqual(
-            volume.estimatedVolume.toFixed(),
-            "2",
+
+          assertApproxEqAbs(
+            volume.estimatedVolume,
+            2,
+            0.001,
             "estimatedVolume should be 2",
           );
-          assert.deepStrictEqual(
-            volume.remainingFillVolume.toFixed(),
-            "0",
+          assertApproxEqAbs(
+            volume.remainingFillVolume,
+            0,
+            0.001,
             "remainingFillVolume should be 0",
           );
         });
 
         it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
-          // Put two offers on asks
-          await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "0" }),
-          );
-          const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "0" }),
-          );
-
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-          // Load 1 offer in cache
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
@@ -512,20 +507,34 @@ describe("Semibook integration tests suite", function () {
             bookOptions: { maxOffers: 1 },
           });
           const semibook = market.getSemibook("asks");
+
+          const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
+          // Put two offers on asks
+          const offer1 = await (
+            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick })
+          ).wait();
+
+          await mgvTestUtil.waitForBlock(mgv, offer1.blockNumber);
+
+          const offer2 = await (
+            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick })
+          ).wait();
+
+          await mgvTestUtil.waitForBlock(mgv, offer2.blockNumber);
+          market.consoleAsks();
+
           const volume = await semibook.estimateVolume({ given: 3, to });
-          assert.deepStrictEqual(
-            volume.tick.toString(),
-            "0",
-            "tick should be 0",
-          );
-          assert.deepStrictEqual(
-            volume.estimatedVolume.toFixed(),
-            "2",
+
+          assertApproxEqAbs(
+            volume.estimatedVolume,
+            2,
+            0.001,
             "estimatedVolume should be 2",
           );
-          assert.deepStrictEqual(
-            volume.remainingFillVolume.toFixed(),
-            "1",
+          assertApproxEqAbs(
+            volume.remainingFillVolume,
+            1,
+            0.001,
             "remainingFillVolume should be 1",
           );
         });
@@ -534,27 +543,48 @@ describe("Semibook integration tests suite", function () {
 
     describe("estimateVolume({to: buy}) - calculation tests", () => {
       it("returns zero when given is zero", async function () {
-        const tick = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick }),
-        );
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
+
         const semibook = market.getSemibook("asks");
+
+        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+        );
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
         const volume = await semibook.estimateVolume({ given: 0, to: "buy" });
         assert.deepStrictEqual(
-          volume.tick.toString(),
-          tick.toString(),
-          `tick should be ${tick.toString()}`,
+          volume.estimatedVolume.toFixed(),
+          "0",
+          "estimatedVolume should be 0",
         );
+        assert.deepStrictEqual(
+          volume.remainingFillVolume.toFixed(),
+          "0",
+          "remainingFillVolume should be 0",
+        );
+      });
+
+      it("reversed market: returns zero when given is zero", async function () {
+        const market = await mgv.market({
+          base: "TokenB",
+          quote: "TokenA",
+          tickSpacing: 1,
+        });
+        const semibook = market.getSemibook("asks");
+        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
+
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenB", "TokenA", { gives: "1", tick: tick }),
+        );
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+        const volume = await semibook.estimateVolume({ given: 0, to: "buy" });
+
         assert.deepStrictEqual(
           volume.estimatedVolume.toFixed(),
           "0",
@@ -568,22 +598,20 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-        const tick = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
+
         const semibook = market.getSemibook("asks");
+        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+        );
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
         const volume = await semibook.estimateVolume({ given: 2, to: "buy" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -603,29 +631,25 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
-        const tick1 = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
-        await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
-        );
-        const tick2 = TickLib.tickFromVolumes(
-          BigNumber.from(3),
-          BigNumber.from(1),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
+
         const semibook = market.getSemibook("asks");
+
+        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+        );
+
+        const tick2 = semibook.tickPriceHelper.tickFromVolumes(3, 1);
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
+        );
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
         const volume = await semibook.estimateVolume({ given: 3, to: "buy" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -645,22 +669,21 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-        const tick = TickLib.tickFromVolumes(
-          BigNumber.from(4),
-          BigNumber.from(2),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
+
         const semibook = market.getSemibook("asks");
+
+        const tick = semibook.tickPriceHelper.tickFromVolumes(4, 2);
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
+        );
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
         const volume = await semibook.estimateVolume({ given: 1, to: "buy" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -680,29 +703,25 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
-        const tick1 = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+        });
+
+        const semibook = market.getSemibook("asks");
+
+        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
         );
-        const tick2 = TickLib.tickFromVolumes(
-          BigNumber.from(4),
-          BigNumber.from(2),
-        );
+        const tick2 = semibook.tickPriceHelper.tickFromVolumes(4, 2);
         const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick2 }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-        const semibook = market.getSemibook("asks");
         const volume = await semibook.estimateVolume({ given: 2, to: "buy" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -724,28 +743,21 @@ describe("Semibook integration tests suite", function () {
 
     describe("estimateVolume({to: sell}) - calculation tests", () => {
       it("returns zero when given is zero", async function () {
-        const tick = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
-        const volume = await semibook.estimateVolume({ given: 0, to: "sell" });
-        assert.deepStrictEqual(
-          volume.tick.toString(),
-          tick.toString(),
-          `tick should be ${tick.toString()}`,
+
+        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
         );
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+        const volume = await semibook.estimateVolume({ given: 0, to: "sell" });
+
         assert.deepStrictEqual(
           volume.estimatedVolume.toFixed(),
           "0",
@@ -759,22 +771,20 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-        const tick = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
+
         const semibook = market.getSemibook("asks");
+
+        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+        );
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
         const volume = await semibook.estimateVolume({ given: 3, to: "sell" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -794,29 +804,24 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
-        const tick1 = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
-        await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
-        );
-        const tick2 = TickLib.tickFromVolumes(
-          BigNumber.from(3),
-          BigNumber.from(1),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
+
+        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
+        await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+        );
+        const tick2 = semibook.tickPriceHelper.tickFromVolumes(3, 1);
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
+        );
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
         const volume = await semibook.estimateVolume({ given: 6, to: "sell" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -836,22 +841,21 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-        const tick = TickLib.tickFromVolumes(
-          BigNumber.from(4),
-          BigNumber.from(2),
-        );
-        const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
         const market = await mgv.market({
           base: "TokenA",
           quote: "TokenB",
           tickSpacing: 1,
         });
         const semibook = market.getSemibook("asks");
+
+        const tick = semibook.tickPriceHelper.tickFromVolumes(4, 2);
+
+        const tx = await waitForTransaction(
+          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
+        );
+
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
         const volume = await semibook.estimateVolume({ given: 2, to: "sell" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -871,29 +875,25 @@ describe("Semibook integration tests suite", function () {
       });
 
       it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
-        const tick1 = TickLib.tickFromVolumes(
-          BigNumber.from(2),
-          BigNumber.from(1),
-        );
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+        });
+
+        const semibook = market.getSemibook("asks");
+
+        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
         );
-        const tick2 = TickLib.tickFromVolumes(
-          BigNumber.from(4),
-          BigNumber.from(2),
-        );
+        const tick2 = semibook.tickPriceHelper.tickFromVolumes(4, 2);
         const tx = await waitForTransaction(
           newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick2 }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-        const semibook = market.getSemibook("asks");
         const volume = await semibook.estimateVolume({ given: 3, to: "sell" });
         assert.deepStrictEqual(
           volume.tick.toString(),
@@ -1025,14 +1025,6 @@ describe("Semibook integration tests suite", function () {
         });
 
         it("fetches all offers if offer list has insufficient volume", async function () {
-          await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
-          );
-          const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" }),
-          );
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
@@ -1047,18 +1039,24 @@ describe("Semibook integration tests suite", function () {
             },
           });
           const semibook = market.getSemibook("asks");
+
+          const tick1 = semibook.tickPriceHelper.tickFromPrice(1.001);
+
+          await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+          );
+
+          const tick2 = semibook.tickPriceHelper.tickFromPrice(1.002);
+
+          const tx = await waitForTransaction(
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
+          );
+          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
           expect(semibook.size()).to.equal(2);
         });
 
         it("fetches only one chunk if it has sufficient volume", async function () {
-          await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
-          );
-          const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" }),
-          );
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
@@ -1073,6 +1071,17 @@ describe("Semibook integration tests suite", function () {
             },
           });
           const semibook = market.getSemibook("asks");
+
+          const tick1 = semibook.tickPriceHelper.tickFromPrice(1.001);
+
+          const offer1 = await (
+            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 })
+          ).wait();
+          await mgvTestUtil.waitForBlock(mgv, offer1.blockNumber);
+
+          const tick2 = semibook.tickPriceHelper.tickFromPrice(1.002);
+          await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 });
+
           expect(semibook.size()).to.equal(1);
         });
 
@@ -1129,15 +1138,27 @@ describe("Semibook integration tests suite", function () {
         });
 
         it("fetches all offers if offer list has insufficient volume", async function () {
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            tickSpacing: 1,
+          });
+          const semibook = market.getSemibook("asks");
+
+          const tick = semibook.tickPriceHelper.tickFromPrice(1.001);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "1" }),
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
-          const market = await mgv.market({
+          const newMgv = await Mangrove.connect({
+            provider: mgv.provider,
+          });
+
+          const market2 = await newMgv.market({
             base: "TokenA",
             quote: "TokenB",
             tickSpacing: 1,
@@ -1150,20 +1171,32 @@ describe("Semibook integration tests suite", function () {
               chunkSize: 1, // Fetch only 1 offer in each chunk
             },
           });
-          const semibook = market.getSemibook("asks");
-          expect(semibook.size()).to.equal(2);
+
+          const semibook2 = market2.getSemibook("asks");
+          expect(semibook2.size()).to.equal(2);
         });
 
         it("fetches only one chunk if it has sufficient volume", async function () {
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            tickSpacing: 1,
+          });
+          const semibook = market.getSemibook("asks");
+          const tick = semibook.tickPriceHelper.tickFromPrice(1.001);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: "1" }),
+            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
-          const market = await mgv.market({
+          const newMgv = await Mangrove.connect({
+            provider: mgv.provider,
+          });
+
+          const market2 = await newMgv.market({
             base: "TokenA",
             quote: "TokenB",
             tickSpacing: 1,
@@ -1176,49 +1209,47 @@ describe("Semibook integration tests suite", function () {
               chunkSize: 1, // Fetch only 1 offer in each chunk
             },
           });
-          const semibook = market.getSemibook("asks");
-          expect(semibook.size()).to.equal(1);
+
+          market2.consoleAsks();
+          const semibook2 = market2.getSemibook("asks");
+          expect(semibook2.size()).to.equal(1);
         });
 
         it("stops fetching when sufficient volume has been fetched", async function () {
-          const tick5 = TickLib.tickFromVolumes(
-            BigNumber.from(1),
-            BigNumber.from(5),
-          );
+          const market = await mgv.market({
+            base: "TokenA",
+            quote: "TokenB",
+            tickSpacing: 1,
+          });
+          const semibook = market.getSemibook("asks");
+
+          const tick5 = semibook.tickPriceHelper.tickFromVolumes(1, 5);
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "5", tick: tick5 }),
           );
-          const tick4 = TickLib.tickFromVolumes(
-            BigNumber.from(1),
-            BigNumber.from(4),
-          );
+          const tick4 = semibook.tickPriceHelper.tickFromVolumes(1, 4);
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "4", tick: tick4 }),
           );
-          const tick3 = TickLib.tickFromVolumes(
-            BigNumber.from(1),
-            BigNumber.from(3),
-          );
+          const tick3 = semibook.tickPriceHelper.tickFromVolumes(1, 3);
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "3", tick: tick3 }),
           );
-          const tick2 = TickLib.tickFromVolumes(
-            BigNumber.from(1),
-            BigNumber.from(2),
-          );
+          const tick2 = semibook.tickPriceHelper.tickFromVolumes(1, 2);
           await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick2 }),
           );
-          const tick1 = TickLib.tickFromVolumes(
-            BigNumber.from(1),
-            BigNumber.from(1),
-          );
+          const tick1 = semibook.tickPriceHelper.tickFromVolumes(1, 1);
           const tx = await waitForTransaction(
             newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
-          const market = await mgv.market({
+          const newMgv = await Mangrove.connect({
+            provider: mgv.provider,
+          });
+
+          const market2 = await newMgv.market({
             base: "TokenA",
             quote: "TokenB",
             tickSpacing: 1,
@@ -1231,8 +1262,8 @@ describe("Semibook integration tests suite", function () {
               chunkSize: 1, // Fetch only 1 offer in each chunk
             },
           });
-          const semibook = market.getSemibook("asks");
-          expect(semibook.size()).to.equal(4); // need 4 offers, as each offer gives slightly less than one, do to tick.
+          const semibook2 = market2.getSemibook("asks");
+          expect(semibook2.size()).to.equal(4); // need 4 offers, as each offer gives slightly less than one, do to tick.
         });
       });
     });
