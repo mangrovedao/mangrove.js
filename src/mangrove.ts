@@ -556,18 +556,6 @@ class Mangrove {
     );
   }
 
-  /**
-   * Gets the name of an address on the current network.
-   *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
-   */
-  getNameFromAddress(address: string): string | undefined {
-    return configuration.addresses.getNameFromAddress(
-      address,
-      this.network.name || "mainnet",
-    );
-  }
-
   /** Convert public token amount to internal token representation.
    *
    * For convenience, has a static and an instance version.
@@ -825,18 +813,6 @@ class Mangrove {
   }
 
   /**
-   * Gets the name of an address on the given network.
-   *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
-   */
-  static getNameFromAddress(
-    address: string,
-    network: string,
-  ): string | undefined {
-    return configuration.addresses.getNameFromAddress(address, network);
-  }
-
-  /**
    * Setup dev node necessary contracts if needed, register dev Multicall2
    * address, listen to future additions (a script external to mangrove.js may
    * deploy contracts during execution).
@@ -953,8 +929,12 @@ class Mangrove {
     // format return value
     return raw.markets.map(([tkn0, tkn1, tickSpacing]) => {
       // Use internal mgv name if defined; otherwise use the symbol.
-      const tkn0Id = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
-      const tkn1Id = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
+      const tkn0Id =
+        configuration.tokens.getTokenIdFromAddress(tkn0, this.network.name) ??
+        data[tkn0].symbol;
+      const tkn1Id =
+        configuration.tokens.getTokenIdFromAddress(tkn1, this.network.name) ??
+        data[tkn1].symbol;
 
       const { baseId, quoteId } = this.toBaseQuoteByCashness(tkn0Id, tkn1Id);
       const [base, quote] = baseId === tkn0Id ? [tkn0, tkn1] : [tkn1, tkn0];

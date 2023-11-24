@@ -89,15 +89,6 @@ describe("Mangrove integration tests suite", function () {
       );
     });
 
-    it("has reverse lookup of address", function () {
-      const address = mgv.getAddress("TokenA");
-      assert.equal(mgv.getNameFromAddress(address), "TokenA");
-      assert.equal(
-        mgv.getNameFromAddress("0xdeaddeaddeaddaeddeaddeaddeaddeaddeaddead"),
-        null,
-      );
-    });
-
     it("gets correct market info and updates with cashness", async function () {
       await mgv.readerContract.updateMarket({
         tkn0: mgv.getAddress("TokenA"),

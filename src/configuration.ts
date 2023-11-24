@@ -226,30 +226,6 @@ export const addressesConfiguration = {
       }
     }
   },
-
-  /**
-   * Gets the name of an address on the current network.
-   *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
-   */
-  getNameFromAddress: (
-    address: string,
-    network: string,
-  ): string | undefined => {
-    const networkAddresses = config.addressesByNetwork[network];
-    address = ethers.utils.getAddress(address); // normalize
-
-    if (networkAddresses) {
-      for (const [name, candidateAddress] of Object.entries(
-        networkAddresses,
-      ) as any) {
-        if (candidateAddress == address) {
-          return name;
-        }
-      }
-    }
-    return undefined;
-  },
 };
 
 /// TOKENS
@@ -310,6 +286,30 @@ export const tokensConfiguration = {
       }
     }
     return foundTokenId;
+  },
+
+  /**
+   * Gets the token ID of an address on the given network.
+   */
+  getTokenIdFromAddress: (
+    address: string,
+    network: string,
+  ): tokenId | undefined => {
+    const networkAddresses = config.addressesByNetwork[network];
+    address = ethers.utils.getAddress(address); // normalize
+
+    if (networkAddresses) {
+      for (const [name, candidateAddress] of Object.entries(
+        networkAddresses,
+      ) as any) {
+        if (candidateAddress == address) {
+          if (tokensConfiguration.isTokenIdRegistered(name)) {
+            return name;
+          }
+        }
+      }
+    }
+    return undefined;
   },
 
   /**
