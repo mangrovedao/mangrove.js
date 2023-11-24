@@ -1263,9 +1263,6 @@ describe("Semibook integration tests suite", function () {
             },
           });
           const semibook2 = market2.getSemibook("asks");
-
-          market2.consoleAsks();
-
           expect(semibook2.size()).to.equal(4); // need 4 offers, as each offer gives slightly less than one, do to tick.
         });
       });
