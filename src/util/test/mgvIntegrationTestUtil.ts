@@ -320,9 +320,9 @@ export const stopPollOfTransactionTracking = (): void => {
  * NB: Only works when this is awaited before sending more tx's.
  */
 export async function waitForTransactions(
-  txPromises: PromiseOrValue<PromiseOrValue<ContractTransaction>[]>,
+  txPromises: PromiseOrValue<PromiseOrValue<ContractTransaction | undefined>[]>,
 ): Promise<TransactionReceipt[]> {
-  const txs = await txPromises;
+  const txs = (await txPromises).filter((x) => x) as ContractTransaction[];
   const receipts: TransactionReceipt[] = Array(txs.length);
   for (let i = 0; i < txs.length; i++) {
     receipts[i] = await waitForTransaction(txs[i]);

@@ -1,6 +1,6 @@
 import Big from "big.js";
-import Market from "../market";
-import KandelDistributionHelper from "./kandelDistributionHelper";
+import Market from "../../market";
+import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
 
 /** Offers with their price, liveness, and Kandel index.
  * @param offerType Whether the offer is a bid or an ask.
@@ -79,15 +79,17 @@ export type Statuses = {
   maxBaseQuoteTick: number;
 };
 
-/** @title Helper for getting status about a Kandel instance. */
-class KandelStatus {
-  distributionHelper: KandelDistributionHelper;
+/** @title Helper for getting status about a geometric Kandel instance. */
+class GeometricKandelStatus {
+  geometricDistributionHelper: GeometricKandelDistributionHelper;
 
   /** Constructor
-   * @param distributionHelper The KandelDistributionHelper instance.
+   * @param geometricDistributionHelper The GeometricKandelDistributionHelper instance.
    */
-  public constructor(distributionHelper: KandelDistributionHelper) {
-    this.distributionHelper = distributionHelper;
+  public constructor(
+    geometricDistributionHelper: GeometricKandelDistributionHelper,
+  ) {
+    this.geometricDistributionHelper = geometricDistributionHelper;
   }
 
   /** Gets the index of the offer with a price closest to the mid price (since precision matters most there since it is used to distinguish expected dead from live.)
@@ -129,9 +131,10 @@ class KandelStatus {
     stepSize: number,
     offers: OffersWithLiveness,
   ): Statuses {
-    const midBaseQuoteTick = this.distributionHelper.askTickPriceHelper
-      .tickFromPrice(midPrice)
-      .toNumber();
+    const midBaseQuoteTick =
+      this.geometricDistributionHelper.helper.askTickPriceHelper
+        .tickFromPrice(midPrice)
+        .toNumber();
 
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
     const offersInRange = offers.filter((x) => x.index < pricePoints);
@@ -146,7 +149,7 @@ class KandelStatus {
     // We can now calculate expected prices of all indices, but it may not entirely match live offer's prices
     // due to rounding and due to slight drift of prices during order execution.
     const expectedBaseQuoteTicks =
-      this.distributionHelper.getBaseQuoteTicksFromTick(
+      this.geometricDistributionHelper.getBaseQuoteTicksFromTick(
         offer.offerType,
         offer.index,
         offer.tick,
@@ -163,7 +166,7 @@ class KandelStatus {
         expectedLiveAsk: baseQuoteTick >= midBaseQuoteTick,
         expectedBaseQuoteTick: baseQuoteTick,
         expectedPrice:
-          this.distributionHelper.askTickPriceHelper.priceFromTick(
+          this.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
             baseQuoteTick,
           ),
         asks: undefined as
@@ -181,8 +184,8 @@ class KandelStatus {
         live,
         offerId,
         price: (offerType == "asks"
-          ? this.distributionHelper.askTickPriceHelper
-          : this.distributionHelper.bidTickPriceHelper
+          ? this.geometricDistributionHelper.helper.askTickPriceHelper
+          : this.geometricDistributionHelper.helper.bidTickPriceHelper
         ).priceFromTick(tick),
         tick,
       };
@@ -191,7 +194,7 @@ class KandelStatus {
     // Offers are allowed to be dead if their dual offer is live
     statuses.forEach((s, index) => {
       if (s.expectedLiveAsk && (s.asks?.live ?? false) == false) {
-        const dualIndex = this.distributionHelper.getDualIndex(
+        const dualIndex = this.geometricDistributionHelper.helper.getDualIndex(
           "bids",
           index,
           pricePoints,
@@ -202,7 +205,7 @@ class KandelStatus {
         }
       }
       if (s.expectedLiveBid && (s.bids?.live ?? false) == false) {
-        const dualIndex = this.distributionHelper.getDualIndex(
+        const dualIndex = this.geometricDistributionHelper.helper.getDualIndex(
           "asks",
           index,
           pricePoints,
@@ -235,11 +238,11 @@ class KandelStatus {
         offerId: offer.offerId,
       },
       minPrice:
-        this.distributionHelper.askTickPriceHelper.priceFromTick(
+        this.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
           minBaseQuoteTick,
         ),
       maxPrice:
-        this.distributionHelper.askTickPriceHelper.priceFromTick(
+        this.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
           maxBaseQuoteTick,
         ),
       minBaseQuoteTick,
@@ -248,4 +251,4 @@ class KandelStatus {
   }
 }
 
-export default KandelStatus;
+export default GeometricKandelStatus;
