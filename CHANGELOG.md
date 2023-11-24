@@ -7,6 +7,7 @@
 # 2.0.0-5
 
 - feat: Add usage of Geometric Kandel's call-data-reducing function
+- feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `MgvToken.createTokenFromAddress` and read the decimals from that token.
 
 # 2.0.0-4
 
