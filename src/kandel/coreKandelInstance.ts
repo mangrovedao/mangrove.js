@@ -56,8 +56,7 @@ export type KandelParameterOverrides = {
 
 /** @title Management of a single Kandel instance. */
 class CoreKandelInstance {
-  //FIXME should be CoreKandel, extend strats config.js
-  kandel: typechain.Kandel;
+  kandel: typechain.CoreKandel;
   address: string;
   market: Market;
   distributionHelper: KandelDistributionHelper;
@@ -73,8 +72,7 @@ class CoreKandelInstance {
     signer: ethers.Signer;
     market: MarketOrMarketFactory;
   }) {
-    //FIXME should be CoreKandel
-    const kandel = typechain.Kandel__factory.connect(
+    const kandel = typechain.CoreKandel__factory.connect(
       params.address,
       params.signer,
     );
@@ -122,7 +120,7 @@ class CoreKandelInstance {
   /** Constructor. @see create */
   protected constructor(params: {
     address: string;
-    kandel: typechain.Kandel;
+    kandel: typechain.CoreKandel;
     market: Market;
     distributionHelper: KandelDistributionHelper;
     offerLogic: OfferLogic;
