@@ -1,7 +1,7 @@
 import Big from "big.js";
 import * as ethers from "ethers";
 import Mangrove from "./mangrove";
-import { Bigish, Provider } from "./types";
+import { Bigish } from "./types";
 import { typechain } from "./types";
 import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";
@@ -88,7 +88,7 @@ class MgvToken {
     MgvToken.#applyOptions(name, mgv, options);
 
     // Ensure decimals are known before token construction as it will otherwise fail.
-    await MgvToken.getOrFetchDecimals(name, mgv.provider);
+    await configuration.tokens.getOrFetchDecimals(name, mgv.provider);
 
     return new MgvToken(name, mgv, options);
   }
@@ -221,40 +221,6 @@ class MgvToken {
       params.spender = this.mgv.address;
     }
     return await this.contract.allowance(params.owner, params.spender);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimals(tokenName: string): number | undefined {
-    return configuration.tokens.getDecimals(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimalsOrFail(tokenName: string): number {
-    return configuration.tokens.getDecimalsOrFail(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * If not found in the local configuration, fetch them from the current network and save them
-   */
-  static getOrFetchDecimals(
-    tokenName: string,
-    provider: Provider,
-  ): Promise<number> {
-    return configuration.tokens.getOrFetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Set decimals for `tokenName` on current network.
-   */
-  static setDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDecimals(tokenName, dec);
   }
 
   /**
