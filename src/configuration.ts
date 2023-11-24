@@ -41,6 +41,7 @@ export type AddressesConfig = Record<network, NamedAddresses>;
 export type TokenConfig = {
   symbol?: tokenSymbol;
   decimals?: number;
+  displayName?: string;
   displayedDecimals?: number;
   displayedAsPriceDecimals?: number;
   cashness?: number;
@@ -420,6 +421,13 @@ export const tokensConfiguration = {
   },
 
   /**
+   * Read display name for `tokenId`.
+   */
+  getDisplayName: (tokenId: tokenId): string | undefined => {
+    return getOrCreateTokenConfig(tokenId).displayName;
+  },
+
+  /**
    * Read displayed decimals for `tokenId`.
    */
   getDisplayedDecimals: (tokenId: tokenId): number => {
@@ -468,6 +476,13 @@ export const tokensConfiguration = {
    */
   setSymbol: (tokenId: tokenId, symbol: tokenSymbol): void => {
     getOrCreateTokenConfig(tokenId).symbol = symbol;
+  },
+
+  /**
+   * Set display name for `tokenId`.
+   */
+  setDisplayName: (tokenId: tokenId, displayName: string): void => {
+    getOrCreateTokenConfig(tokenId).displayName = displayName;
   },
 
   /**

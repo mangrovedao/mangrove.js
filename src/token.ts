@@ -12,7 +12,9 @@ namespace Token {
     address?: string;
     decimals?: number;
     symbol?: string;
+    displayName?: string;
     displayedDecimals?: number;
+    displayedAsPriceDecimals?: number;
   };
 }
 
@@ -61,7 +63,9 @@ class Token {
    * @param address Address of the token contract.
    * @param symbol Non-unique and optional symbol cf. ERC20.
    * @param decimals Number of decimals used by the token.
+   * @param displayName Optional display name for the token.
    * @param displayedDecimals Number of decimals to display in the UI.
+   * @param displayedAsPriceDecimals Number of decimals to display in the UI when showing a price.
    * @param mgv The Mangrove instance this token is associated with.
    */
   private constructor(
@@ -69,7 +73,9 @@ class Token {
     public address: string,
     public symbol: string | undefined,
     public decimals: number,
+    public displayName: string | undefined,
     public displayedDecimals: number,
+    public displayedAsPriceDecimals: number,
     public mgv: Mangrove,
   ) {
     this.contract = typechain.TestToken__factory.connect(
@@ -120,11 +126,25 @@ class Token {
     const symbol =
       options?.symbol ??
       (await configuration.tokens.getOrFetchSymbol(id, mgv.provider));
+    const displayName =
+      options?.displayName ?? configuration.tokens.getDisplayName(id);
     const displayedDecimals =
       options?.displayedDecimals ??
       configuration.tokens.getDisplayedDecimals(id);
+    const displayedAsPriceDecimals =
+      options?.displayedAsPriceDecimals ??
+      configuration.tokens.getDisplayedPriceDecimals(id);
 
-    return new Token(id, address, symbol, decimals, displayedDecimals, mgv);
+    return new Token(
+      id,
+      address,
+      symbol,
+      decimals,
+      displayName,
+      displayedDecimals,
+      displayedAsPriceDecimals,
+      mgv,
+    );
   }
 
   static async createTokenFromAddress(

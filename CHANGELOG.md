@@ -1,12 +1,5 @@
 # Next version
 
-# 2.0.0-7
-
-# 2.0.0-6
-
-# 2.0.0-5
-
-- feat: Add usage of Geometric Kandel's call-data-reducing function
 - feat!: `MgvToken` has been renamed to `Token`.
 - feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `Token.createTokenFromAddress` and read the decimals from that token.
 - feat!: `Mangrove.toUnits|fromUnits` no longer accepts a token name/symbol as this was ambiguous. Instead, use `Token.createToken` and call `toUnits|fromUnits` on that.
@@ -18,6 +11,15 @@
 - feat!: `Mangrove.getNameFromAddress` has been removed: It was ambiguous (multiple names could be registered) and only used for resolving tokens which can now be done with the new `configuration.tokens.getTokenIdFromAddress()` function.
 - feat!: The `Mangrove.openMarkets` function now uses `Token` instead of a bespoke token data struct.
 - feat: `Mangrove.market` and `Market.connect` now accept either symbol, token ID, or `Token` for base and quote.
+- feat: Added `displayName` and `displayedAsPriceDecimals` to `Token`.
+
+# 2.0.0-7
+
+# 2.0.0-6
+
+# 2.0.0-5
+
+- feat: Add usage of Geometric Kandel's call-data-reducing function
 
 # 2.0.0-4
 
