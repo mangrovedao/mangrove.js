@@ -30,7 +30,7 @@ class AaveV3Module {
     tokenId: string,
     signer?: SignerOrProvider,
   ): Promise<typechain.ICreditDelegationToken> {
-    const asset_address = this.mgv.getAddress(tokenId);
+    const asset_address = this.mgv.getTokenAddress(tokenId);
     const debt_address = await this.contract.debtToken(asset_address);
     return typechain.ICreditDelegationToken__factory.connect(
       debt_address,

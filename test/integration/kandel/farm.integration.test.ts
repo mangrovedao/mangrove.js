@@ -119,12 +119,14 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
     assert.equal(kandels.filter((x) => x.base?.id == "TokenA").length, 1);
     assert.equal(kandels.filter((x) => x.base?.id == "WETH").length, 4);
     assert.equal(
-      kandels.filter((x) => x.baseAddress == mgv.getAddress("WETH")).length,
+      kandels.filter((x) => x.baseAddress == mgv.getTokenAddress("WETH"))
+        .length,
       4,
     );
     assert.equal(kandels.filter((x) => x.quote?.id == "USDC").length, 3);
     assert.equal(
-      kandels.filter((x) => x.quoteAddress == mgv.getAddress("USDC")).length,
+      kandels.filter((x) => x.quoteAddress == mgv.getTokenAddress("USDC"))
+        .length,
       3,
     );
     assert.equal(kandels.filter((x) => x.onAave).length, 2);

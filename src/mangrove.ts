@@ -544,6 +544,15 @@ class Mangrove {
   }
 
   /**
+   * Read a token address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  getTokenAddress(symbolOrId: string): string {
+    return Token.getTokenAddress(symbolOrId, this.network.name || "mainnet");
+  }
+
+  /**
    * Set a contract address on the current network.
    *
    * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.

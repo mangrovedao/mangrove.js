@@ -259,7 +259,8 @@ export const tokensConfiguration = {
   /**
    * Gets the default token ID for a given symbol and network if
    * (1) any has been registered or
-   * (2) if there is only one token with that symbol.
+   * (2) if there is only one token with that symbol or
+   * (3) if there are no tokens with that symbol, then the symbol itself.
    */
   getDefaultIdForSymbolOnNetwork(
     tokenSymbol: tokenSymbol,
@@ -285,7 +286,7 @@ export const tokensConfiguration = {
         foundTokenId = tokenId;
       }
     }
-    return foundTokenId;
+    return foundTokenId ?? tokenSymbol;
   },
 
   /**

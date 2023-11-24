@@ -62,8 +62,8 @@ class KandelFarm {
     if (!olKey) {
       const offerList = filter?.baseQuoteOfferList;
       if (offerList) {
-        const baseAddress = this.mgv.getAddress(offerList.base);
-        const quoteAddress = this.mgv.getAddress(offerList.quote);
+        const baseAddress = this.mgv.getTokenAddress(offerList.base);
+        const quoteAddress = this.mgv.getTokenAddress(offerList.quote);
         const tickSpacing = offerList.tickSpacing ?? 0;
         olKey = {
           outbound_tkn: baseAddress,

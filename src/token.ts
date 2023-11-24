@@ -69,7 +69,7 @@ class Token {
     this.id = id;
     Token.#applyOptions(id, mgv, options);
 
-    this.address = this.mgv.getAddress(this.id);
+    this.address = Token.getTokenAddress(this.id, mgv.network.name);
     this.decimals = configuration.tokens.getDecimalsOrFail(this.id);
     this.symbol = configuration.tokens.getSymbol(this.id);
     this.displayedDecimals = configuration.tokens.getDisplayedDecimals(this.id);
@@ -145,6 +145,26 @@ class Token {
       address,
       symbol,
     });
+  }
+
+  /**
+   * Read a token address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  static getTokenAddress(symbolOrId: string, network: string): string {
+    const tokenId = configuration.tokens.isTokenIdRegistered(symbolOrId)
+      ? symbolOrId
+      : configuration.tokens.getDefaultIdForSymbolOnNetwork(
+          symbolOrId,
+          network,
+        );
+    if (tokenId === undefined) {
+      throw new Error(
+        `No token with symbol or ID ${symbolOrId} on network ${network}`,
+      );
+    }
+    return configuration.addresses.getAddress(tokenId, network);
   }
 
   static #applyOptions(

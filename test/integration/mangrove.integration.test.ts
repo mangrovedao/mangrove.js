@@ -51,25 +51,25 @@ describe("Mangrove integration tests suite", function () {
   describe("getMarkets", function () {
     it("updates with mgvReader", async function () {
       await mgvAdmin.contract.deactivate({
-        outbound_tkn: mgv.getAddress("TokenA"),
-        inbound_tkn: mgv.getAddress("TokenB"),
+        outbound_tkn: mgv.getTokenAddress("TokenA"),
+        inbound_tkn: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       await mgvAdmin.contract.deactivate({
-        outbound_tkn: mgv.getAddress("TokenB"),
-        inbound_tkn: mgv.getAddress("TokenA"),
+        outbound_tkn: mgv.getTokenAddress("TokenB"),
+        inbound_tkn: mgv.getTokenAddress("TokenA"),
         tickSpacing: 1,
       });
       await mgv.readerContract.updateMarket({
-        tkn0: mgv.getAddress("TokenA"),
-        tkn1: mgv.getAddress("TokenB"),
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       const marketsBefore = await mgv.openMarkets();
       await mgvAdmin.contract.activate(
         {
-          outbound_tkn: mgv.getAddress("TokenA"),
-          inbound_tkn: mgv.getAddress("TokenB"),
+          outbound_tkn: mgv.getTokenAddress("TokenA"),
+          inbound_tkn: mgv.getTokenAddress("TokenB"),
           tickSpacing: 1,
         },
         1,
@@ -77,8 +77,8 @@ describe("Mangrove integration tests suite", function () {
         1,
       );
       await mgv.readerContract.updateMarket({
-        tkn0: mgv.getAddress("TokenA"),
-        tkn1: mgv.getAddress("TokenB"),
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       const markets = await mgv.openMarkets();
@@ -91,19 +91,19 @@ describe("Mangrove integration tests suite", function () {
 
     it("gets correct market info and updates with cashness", async function () {
       await mgv.readerContract.updateMarket({
-        tkn0: mgv.getAddress("TokenA"),
-        tkn1: mgv.getAddress("TokenB"),
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       let marketData = await mgv.openMarketsData();
       const tokenAData = {
-        address: mgv.getAddress("TokenA"),
+        address: mgv.getTokenAddress("TokenA"),
         decimals: 18,
         id: "TokenA",
         symbol: "TokenA",
       };
       const tokenBData = {
-        address: mgv.getAddress("TokenB"),
+        address: mgv.getTokenAddress("TokenB"),
         decimals: 6,
         id: "TokenB",
         symbol: "TokenB",
