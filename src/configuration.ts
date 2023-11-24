@@ -398,13 +398,24 @@ export const tokensConfiguration = {
     provider: Provider,
   ): Promise<tokenSymbol> => {
     const network = await eth.getProviderNetwork(provider);
-    const token = typechain.IERC20__factory.connect(
-      addressesConfiguration.getAddress(tokenId, network.name),
+    const address = addressesConfiguration.getAddress(tokenId, network.name);
+    const symbol = await tokensConfiguration.fetchSymbolFromAddress(
+      address,
       provider,
     );
-    const symbol = await token.symbol();
     tokensConfiguration.setSymbol(tokenId, symbol);
     return symbol;
+  },
+
+  /**
+   * Read chain for symbol of `address` on current network.
+   */
+  fetchSymbolFromAddress: async (
+    address: address,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const token = typechain.IERC20__factory.connect(address, provider);
+    return await token.symbol();
   },
 
   /**

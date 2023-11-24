@@ -127,15 +127,21 @@ class Token {
     address: string,
     mgv: Mangrove,
   ): Promise<Token> {
-    const contract = typechain.TestToken__factory.connect(
+    let tokenId = configuration.tokens.getTokenIdFromAddress(
+      address,
+      mgv.network.name,
+    );
+    if (tokenId !== undefined) {
+      return this.createTokenFromId(tokenId, mgv, { address });
+    }
+
+    const symbol = await configuration.tokens.fetchSymbolFromAddress(
       address,
       mgv.provider,
     );
+    tokenId = symbol ?? address;
 
-    const symbol = await contract.callStatic.symbol();
-    const id = symbol ?? address;
-
-    return this.createTokenFromId(id, mgv, {
+    return this.createTokenFromId(tokenId, mgv, {
       address,
       symbol,
     });
