@@ -52,28 +52,26 @@ function convertToApproveArgs(arg: ApproveArgs): {
 }
 
 class Token {
-  mgv: Mangrove;
-  // ID which should be unique within a network.
-  // Typically the id from the context-addresses package.
-  // May be the symbol if the symbol is unique. NB: This uniqueness is not enforced and duplicates will give undefined behavior.
-  id: string;
-  // Non-unique and optional symbol cf. ERC20
-  symbol?: string;
-  address: string;
-  displayedDecimals: number;
-  decimals: number;
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
-  constructor(id: string, mgv: Mangrove, options?: Token.ConstructorOptions) {
-    this.mgv = mgv;
-    this.id = id;
-    Token.#applyOptions(id, mgv, options);
 
-    this.address = Token.getTokenAddress(this.id, mgv.network.name);
-    this.decimals = configuration.tokens.getDecimalsOrFail(this.id);
-    this.symbol = configuration.tokens.getSymbol(this.id);
-    this.displayedDecimals = configuration.tokens.getDisplayedDecimals(this.id);
-
+  /**
+   *
+   * @param id ID which should be unique within a network, but can be used across networks. Typically the id from the context-addresses package. May be the symbol if the symbol is unique. NB: This uniqueness is not enforced and duplicates will give undefined behavior.
+   * @param address Address of the token contract.
+   * @param symbol Non-unique and optional symbol cf. ERC20.
+   * @param decimals Number of decimals used by the token.
+   * @param displayedDecimals Number of decimals to display in the UI.
+   * @param mgv The Mangrove instance this token is associated with.
+   */
+  private constructor(
+    public id: string,
+    public address: string,
+    public symbol: string | undefined,
+    public decimals: number,
+    public displayedDecimals: number,
+    public mgv: Mangrove,
+  ) {
     this.contract = typechain.TestToken__factory.connect(
       this.address,
       this.mgv.signer,
@@ -94,21 +92,6 @@ class Token {
   }
 
   /** Create a Token instance, fetching data (decimals) from chain if needed. */
-  static async createTokenFromId(
-    id: string,
-    mgv: Mangrove,
-    options?: Token.ConstructorOptions,
-  ): Promise<Token> {
-    Token.#applyOptions(id, mgv, options);
-
-    // Ensure decimals and symbol are known before token construction as it will otherwise fail.
-    await configuration.tokens.getOrFetchDecimals(id, mgv.provider);
-    await configuration.tokens.getOrFetchSymbol(id, mgv.provider);
-
-    return new Token(id, mgv, options);
-  }
-
-  /** Create a Token instance, fetching data (decimals) from chain if needed. */
   static async createTokenFromSymbol(
     symbol: string,
     mgv: Mangrove,
@@ -121,6 +104,27 @@ class Token {
       ) ?? symbol;
 
     return this.createTokenFromId(id, mgv, { ...options, symbol });
+  }
+
+  /** Create a Token instance, fetching data (decimals) from chain if needed. */
+  static async createTokenFromId(
+    id: string,
+    mgv: Mangrove,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    const address =
+      options?.address ?? Token.getTokenAddress(id, mgv.network.name);
+    const decimals =
+      options?.decimals ??
+      (await configuration.tokens.getOrFetchDecimals(id, mgv.provider));
+    const symbol =
+      options?.symbol ??
+      (await configuration.tokens.getOrFetchSymbol(id, mgv.provider));
+    const displayedDecimals =
+      options?.displayedDecimals ??
+      configuration.tokens.getDisplayedDecimals(id);
+
+    return new Token(id, address, symbol, decimals, displayedDecimals, mgv);
   }
 
   static async createTokenFromAddress(
@@ -165,35 +169,6 @@ class Token {
       );
     }
     return configuration.addresses.getAddress(tokenId, network);
-  }
-
-  static #applyOptions(
-    id: string,
-    mgv: Mangrove,
-    options?: Token.ConstructorOptions,
-  ) {
-    if (options === undefined) {
-      return;
-    }
-
-    if ("address" in options && options.address !== undefined) {
-      mgv.setAddress(id, options.address);
-    }
-
-    if ("decimals" in options && options.decimals !== undefined) {
-      configuration.tokens.setDecimals(id, options.decimals);
-    }
-
-    if ("symbol" in options && options.symbol !== undefined) {
-      configuration.tokens.setSymbol(id, options.symbol);
-    }
-
-    if (
-      "displayedDecimals" in options &&
-      options.displayedDecimals !== undefined
-    ) {
-      configuration.tokens.setDisplayedDecimals(id, options.displayedDecimals);
-    }
   }
 
   /**
