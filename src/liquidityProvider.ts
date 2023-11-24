@@ -14,8 +14,6 @@ import { OfferLogic } from ".";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import Trade from "./util/trade";
 import TickPriceHelper from "./util/tickPriceHelper";
-import { TickLib } from "./util/coreCalculations/TickLib";
-import { BigNumber } from "ethers/lib/ethers";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace LiquidityProvider {
@@ -219,36 +217,25 @@ class LiquidityProvider {
   } {
     const tickPriceHelper = new TickPriceHelper(p.ba, market);
     let tick: ethers.BigNumber, gives: Big, price: Big;
-    // deduce price from tick & gives, or deduce tick & gives from volume & price
     if ("tick" in p) {
+      // deduce price from tick & gives
       tick = ethers.BigNumber.from(p.tick);
       price = tickPriceHelper.priceFromTick(tick);
       gives = Big(p.gives);
     } else if ("price" in p) {
+      // deduce tick & gives from volume & price
       price = Big(p.price);
       tick = tickPriceHelper.tickFromPrice(price);
-      if (p.ba === "asks") {
-        gives = Big(p.volume);
-      } else {
+      if (p.ba === "bids") {
         gives = Big(p.volume).mul(price);
+      } else {
+        gives = Big(p.volume);
       }
     } else {
+      // deduce tick and price from wants & gives
       gives = Big(p.gives);
       const wants = Big(p.wants);
-
-      tick = TickLib.tickFromVolumes(
-        BigNumber.from(
-          p.ba === "asks"
-            ? wants.mul(Big(10).pow(market.quote.decimals)).toFixed()
-            : wants.mul(Big(10).pow(market.base.decimals)).toFixed(),
-        ),
-        BigNumber.from(
-          p.ba === "asks"
-            ? gives.mul(Big(10).pow(market.base.decimals)).toFixed()
-            : gives.mul(Big(10).pow(market.quote.decimals)).toFixed(),
-        ),
-      );
-
+      tick = tickPriceHelper.tickFromVolumes(wants, gives);
       if (p.ba === "bids") {
         price = Big(gives).div(wants);
       } else {

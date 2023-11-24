@@ -20,6 +20,7 @@ import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
 import moize from "moize";
+import semver from "semver";
 
 // Make keys optional at all levels of T
 export type RecursivePartial<T> = {
@@ -511,8 +512,9 @@ export function resetConfiguration(): void {
 
 function readMangroveDeploymentAddresses() {
   // Note: Consider how to expose other deployments than the primary
-
-  const mgvCoreVersionPattern = `^${contractPackageVersions["mangrove-core"]}`;
+  const mgvCoreVersionPattern = createContractVersionPattern(
+    contractPackageVersions["mangrove-core"],
+  );
   // Note: Make this configurable?
   const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvCoreContractsDeployments =
@@ -522,7 +524,9 @@ function readMangroveDeploymentAddresses() {
     });
   readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
 
-  const mgvStratsVersionPattern = `^${contractPackageVersions["mangrove-strats"]}`;
+  const mgvStratsVersionPattern = createContractVersionPattern(
+    contractPackageVersions["mangrove-strats"],
+  );
   // Note: Make this configurable?
   const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvStratsContractsDeployments =
@@ -531,6 +535,28 @@ function readMangroveDeploymentAddresses() {
       released: mgvStratsReleasedFilter,
     });
   readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
+}
+
+function createContractVersionPattern(contractPackageVersion: string) {
+  const preleaseComponents = semver.prerelease(contractPackageVersion);
+  if (preleaseComponents === null) {
+    // For release versions of contract packages, we match any deployment of the same major version, _excluding_ prereleases.
+    return `^${contractPackageVersion}`;
+  } else {
+    // For pre-release versions of contract packages, we match any deployment of the same major version, _including_ prereleases.
+    // This is achieved by replacing the last prelease component by 0 and using the caret '^' pattern.
+    // This pattern is equivalent to '>= x.y.z-0 < x+1.0.0'.
+    // Examples:
+    //   2.0.0-alpha.1 => ^2.0.0-alpha.0
+    //   2.0.0-4       => ^2.0.0-0
+    const patternPreleaseComponents = [...preleaseComponents];
+    patternPreleaseComponents[patternPreleaseComponents.length - 1] = "0";
+    return `^${semver.major(contractPackageVersion)}.${semver.minor(
+      contractPackageVersion,
+    )}.${semver.patch(contractPackageVersion)}-${patternPreleaseComponents.join(
+      ".",
+    )}`;
+  }
 }
 
 function readVersionDeploymentsAddresses(
