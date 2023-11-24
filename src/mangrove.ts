@@ -1,4 +1,4 @@
-import { LiquidityProvider, Market, MgvToken, OfferLogic, Semibook } from ".";
+import { LiquidityProvider, Market, Token, OfferLogic, Semibook } from ".";
 import configuration, {
   Configuration as MangroveJsConfiguration,
   PartialConfiguration as PartialMangroveJsConfiguration,
@@ -8,7 +8,7 @@ import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
 import { TypedDataSigner } from "@ethersproject/abstract-signer";
-import { ApproveArgs } from "./mgvtoken";
+import { ApproveArgs } from "./token";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -89,8 +89,8 @@ namespace Mangrove {
   };
 
   export type OpenMarketInfo = {
-    base: MgvToken;
-    quote: MgvToken;
+    base: Token;
+    quote: Token;
     tickSpacing: ethers.BigNumber;
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
@@ -503,32 +503,32 @@ class Mangrove {
     }
   }
 
-  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
   async token(
     symbolOrId: string,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
-    return MgvToken.createTokenFromSymbolOrId(symbolOrId, this, options);
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromSymbolOrId(symbolOrId, this, options);
   }
 
-  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
   async tokenFromSymbol(
     symbol: string,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
-    return MgvToken.createTokenFromSymbol(symbol, this, options);
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromSymbol(symbol, this, options);
   }
 
-  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
   async tokenFromId(
     tokenId: string,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
-    return MgvToken.createTokenFromId(tokenId, this, options);
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromId(tokenId, this, options);
   }
 
-  async tokenFromAddress(address: string): Promise<MgvToken> {
-    return MgvToken.createTokenFromAddress(address, this);
+  async tokenFromAddress(address: string): Promise<Token> {
+    return Token.createTokenFromAddress(address, this);
   }
 
   /**

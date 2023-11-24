@@ -5,7 +5,7 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { toWei } from "../util/helpers";
 import { serverType } from "../../src/util/node";
 
-import { Mangrove, MgvToken } from "../../src";
+import { Mangrove, Token } from "../../src";
 import { configuration } from "../../src/configuration";
 
 import { Big } from "big.js";
@@ -108,7 +108,7 @@ describe("Mangrove integration tests suite", function () {
         id: "TokenB",
         symbol: "TokenB",
       };
-      const tokenToData = (token: MgvToken) => ({
+      const tokenToData = (token: Token) => ({
         address: token.address,
         decimals: token.decimals,
         id: token.id,

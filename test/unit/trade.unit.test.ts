@@ -12,7 +12,7 @@ import {
   verify,
   when,
 } from "ts-mockito";
-import { Market, MgvToken } from "../../src";
+import { Market, Token } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
 import { TickLib } from "../../src/util/coreCalculations/TickLib";
@@ -31,8 +31,8 @@ describe("Trade unit tests suite", () => {
         volume: 30,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(baseToken.toUnits(anything())).thenReturn(
         BigNumber.from(params.volume),
       );
@@ -88,8 +88,8 @@ describe("Trade unit tests suite", () => {
         total: 30,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(baseToken.toUnits(anything())).thenReturn(
         BigNumber.from(Big(params.total).div(price).toFixed(0)),
       );
@@ -136,8 +136,8 @@ describe("Trade unit tests suite", () => {
         fillVolume: 30,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(baseToken.toUnits(anything())).thenReturn(
         BigNumber.from(Big(params.fillVolume).toFixed(0)),
       );
@@ -180,8 +180,8 @@ describe("Trade unit tests suite", () => {
         fillWants: false,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(baseToken.toUnits(anything())).thenReturn(
         BigNumber.from(Big(params.fillVolume).toFixed(0)),
       );
@@ -272,8 +272,8 @@ describe("Trade unit tests suite", () => {
         volume: 30,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(baseToken.toUnits(anything())).thenReturn(
         BigNumber.from(params.volume),
       );
@@ -320,8 +320,8 @@ describe("Trade unit tests suite", () => {
         total: 30,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(quoteToken.toUnits(anything())).thenReturn(
         BigNumber.from(params.total),
       );
@@ -372,8 +372,8 @@ describe("Trade unit tests suite", () => {
         tick: 30,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(quoteToken.toUnits(anything())).thenReturn(
         BigNumber.from(params.fillVolume),
       );
@@ -415,8 +415,8 @@ describe("Trade unit tests suite", () => {
         fillWants: true,
         slippage: slippage,
       };
-      const baseToken = mock(MgvToken);
-      const quoteToken = mock(MgvToken);
+      const baseToken = mock(Token);
+      const quoteToken = mock(Token);
       when(quoteToken.toUnits(anything())).thenReturn(
         BigNumber.from(params.fillVolume),
       );

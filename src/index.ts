@@ -11,7 +11,7 @@ import Mangrove from "./mangrove";
 import Market from "./market";
 import Semibook from "./semibook";
 import OfferLogic from "./offerLogic";
-import MgvToken from "./mgvtoken";
+import Token from "./token";
 import LiquidityProvider from "./liquidityProvider";
 import KandelStrategies from "./kandelStrategies";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
@@ -39,7 +39,7 @@ export {
   Mangrove,
   Market,
   Semibook,
-  MgvToken,
+  Token,
   OfferLogic,
   LiquidityProvider,
   mgvTestUtil,

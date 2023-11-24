@@ -8,7 +8,7 @@ import {
   LiquidityProvider,
   Mangrove,
   Market,
-  MgvToken,
+  Token,
   OfferLogic,
   mgvTestUtil,
 } from "../../src";
@@ -26,8 +26,8 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 
 describe("RestingOrder", () => {
   let mgv: Mangrove;
-  let tokenA: MgvToken;
-  let tokenB: MgvToken;
+  let tokenA: Token;
+  let tokenB: Token;
   let orderLogic: OfferLogic;
   let orderLP: LiquidityProvider;
   let router: AbstractRouter;

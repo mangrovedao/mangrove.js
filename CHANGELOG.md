@@ -7,15 +7,16 @@
 # 2.0.0-5
 
 - feat: Add usage of Geometric Kandel's call-data-reducing function
-- feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `MgvToken.createTokenFromAddress` and read the decimals from that token.
-- feat!: `Mangrove.toUnits|fromUnits` no longer accepts a token name/symbol as this was ambiguous. Instead, use `MgvToken.createToken` and call `toUnits|fromUnits` on that.
-- feat!: Static token configuration getters and setters have been removed from `Mangrove` and `MgvToken`. Instead, use the methods on `configuration.token`.
+- feat!: `MgvToken` has been renamed to `Token`.
+- feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `Token.createTokenFromAddress` and read the decimals from that token.
+- feat!: `Mangrove.toUnits|fromUnits` no longer accepts a token name/symbol as this was ambiguous. Instead, use `Token.createToken` and call `toUnits|fromUnits` on that.
+- feat!: Static token configuration getters and setters have been removed from `Mangrove` and `Token`. Instead, use the methods on `configuration.token`.
 - feat!: `Mangrove.getTokenAndAddress` has been removed. Instead, use `Mangrove.tokenFromAddress` and read the address from there.
 - feat!: Remove `Mangrove.tokenFromConfig`. Use `Mangrove.token` instead.
 - feat!/fix: Token `name` was misused: Sometimes it was assumed to be a symbol and sometimes an ID. It has therefore been replaced by `id` and `symbol` in all relevant places. Configuration files have been converted to use the token instance ID's from the context-addresses package to avoid ambiguity among (1) different tokens with the same symbol and (2) multiple token instances such as `USDC` (Circle issued) and `USDC.e` (bridged from Ethereum).
   - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. `Mangrove.token()` will create an instance of the default token ID if found.
 - feat!: `Mangrove.getNameFromAddress` has been removed: It was ambiguous (multiple names could be registered) and only used for resolving tokens which can now be done with the new `configuration.tokens.getTokenIdFromAddress()` function.
-- feat!: The `Mangrove.openMarkets` function now uses `MgvToken` instead of a bespoke token data struct.
+- feat!: The `Mangrove.openMarkets` function now uses `Token` instead of a bespoke token data struct.
 
 # 2.0.0-4
 

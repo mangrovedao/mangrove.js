@@ -1,7 +1,7 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
 import Mangrove from "./mangrove";
-import MgvToken from "./mgvtoken";
+import Token from "./token";
 import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
 import Trade from "./util/trade";
@@ -291,8 +291,8 @@ namespace Market {
  */
 class Market {
   mgv: Mangrove;
-  base: MgvToken;
-  quote: MgvToken;
+  base: Token;
+  quote: Token;
   tickSpacing: BigNumber;
   /** The OLKey for the base, quote offer list */
   olKeyBaseQuote: OLKeyStruct;
@@ -357,8 +357,8 @@ class Market {
    */
   private constructor(params: {
     mgv: Mangrove;
-    base: MgvToken;
-    quote: MgvToken;
+    base: Token;
+    quote: Token;
     tickSpacing: BigNumber;
   }) {
     if (!canConstructMarket) {
@@ -636,8 +636,8 @@ class Market {
     action: "buy" | "sell",
     data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">,
   ): Promise<ethers.ContractTransaction> {
-    let outbound_tkn: MgvToken;
-    let inbound_tkn: MgvToken;
+    let outbound_tkn: Token;
+    let inbound_tkn: Token;
 
     if (action === "buy") {
       outbound_tkn = this.base;
@@ -962,8 +962,8 @@ class Market {
 
   /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
   getOutboundInbound(ba: Market.BA): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
+    outbound_tkn: Token;
+    inbound_tkn: Token;
   } {
     return Market.getOutboundInbound(ba, this.base, this.quote);
   }
@@ -971,11 +971,11 @@ class Market {
   /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
   static getOutboundInbound(
     ba: Market.BA,
-    base: MgvToken,
-    quote: MgvToken,
+    base: Token,
+    quote: Token,
   ): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
+    outbound_tkn: Token;
+    inbound_tkn: Token;
   } {
     return {
       outbound_tkn: ba === "asks" ? base : quote,

@@ -7,7 +7,7 @@ import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
-namespace MgvToken {
+namespace Token {
   export type ConstructorOptions = {
     address?: string;
     decimals?: number;
@@ -51,7 +51,7 @@ function convertToApproveArgs(arg: ApproveArgs): {
   return amount === undefined ? { overrides } : { amount, overrides };
 }
 
-class MgvToken {
+class Token {
   mgv: Mangrove;
   // ID which should be unique within a network.
   // Typically the id from the context-addresses package.
@@ -64,14 +64,10 @@ class MgvToken {
   decimals: number;
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
-  constructor(
-    id: string,
-    mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
-  ) {
+  constructor(id: string, mgv: Mangrove, options?: Token.ConstructorOptions) {
     this.mgv = mgv;
     this.id = id;
-    MgvToken.#applyOptions(id, mgv, options);
+    Token.#applyOptions(id, mgv, options);
 
     this.address = this.mgv.getAddress(this.id);
     this.decimals = configuration.tokens.getDecimalsOrFail(this.id);
@@ -84,12 +80,12 @@ class MgvToken {
     );
   }
 
-  /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Create a Token instance, fetching data (decimals) from chain if needed. */
   static async createTokenFromSymbolOrId(
     symbolOrId: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
     if (configuration.tokens.isTokenIdRegistered(symbolOrId)) {
       return this.createTokenFromId(symbolOrId, mgv, options);
     } else {
@@ -97,27 +93,27 @@ class MgvToken {
     }
   }
 
-  /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Create a Token instance, fetching data (decimals) from chain if needed. */
   static async createTokenFromId(
     id: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
-    MgvToken.#applyOptions(id, mgv, options);
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    Token.#applyOptions(id, mgv, options);
 
     // Ensure decimals and symbol are known before token construction as it will otherwise fail.
     await configuration.tokens.getOrFetchDecimals(id, mgv.provider);
     await configuration.tokens.getOrFetchSymbol(id, mgv.provider);
 
-    return new MgvToken(id, mgv, options);
+    return new Token(id, mgv, options);
   }
 
-  /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Create a Token instance, fetching data (decimals) from chain if needed. */
   static async createTokenFromSymbol(
     symbol: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
     const id =
       configuration.tokens.getDefaultIdForSymbolOnNetwork(
         symbol,
@@ -130,7 +126,7 @@ class MgvToken {
   static async createTokenFromAddress(
     address: string,
     mgv: Mangrove,
-  ): Promise<MgvToken> {
+  ): Promise<Token> {
     const contract = typechain.TestToken__factory.connect(
       address,
       mgv.provider,
@@ -148,7 +144,7 @@ class MgvToken {
   static #applyOptions(
     id: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
+    options?: Token.ConstructorOptions,
   ) {
     if (options === undefined) {
       return;
@@ -356,4 +352,4 @@ class MgvToken {
   }
 }
 
-export default MgvToken;
+export default Token;
