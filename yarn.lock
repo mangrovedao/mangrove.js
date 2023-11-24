@@ -1262,11 +1262,11 @@ __metadata:
   linkType: hard
 
 "@mangrovedao/mangrove-strats@npm:next":
-  version: 0.0.2-6
-  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-6"
+  version: 0.0.2-7
+  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-7"
   dependencies:
     "@mangrovedao/mangrove-core": next
-  checksum: 2caf63978301d986b9dc0f23bc07a5707f158884358ada6908fa4ba94e6d881a34f58e9047574a4742f80af31ea0fb8c2772031e5f57cf33c58bb0f0941e90a9
+  checksum: 42cc7b7ad26d8f483b1883febed3168b81d29bb60352a80e8c951d47c5930fbecdec70a6a178924125a8389600188cdf45de009f700bd042c5889ba0eb3e82df
   languageName: node
   linkType: hard
 

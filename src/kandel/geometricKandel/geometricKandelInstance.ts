@@ -96,7 +96,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
   /** Constructor. @see create */
   protected constructor(params: {
     address: string;
-    kandel: typechain.GeometricKandel;
+    kandel: typechain.CoreKandel;
     market: Market;
     distributionHelper: KandelDistributionHelper;
     offerLogic: OfferLogic;
@@ -115,7 +115,8 @@ class GeometricKandelInstance extends CoreKandelInstance {
 
   /** Gets the base quote tick offset stored on the contract. */
   public async getBaseQuoteTickOffset() {
-    const baseQuoteTickOffset = await this.kandel.baseQuoteTickOffset();
+    const baseQuoteTickOffset =
+      await this.geometricKandel.baseQuoteTickOffset();
 
     return {
       baseQuoteTickOffset: baseQuoteTickOffset.toNumber(),
@@ -372,7 +373,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
       );
 
       const txs = [
-        await this.kandel.populateFromOffset(
+        await this.geometricKandel.populateFromOffset(
           firstDistribution.from,
           firstDistribution.to,
           params.distribution.baseQuoteTickIndex0,
@@ -402,7 +403,10 @@ class GeometricKandelInstance extends CoreKandelInstance {
     baseQuoteTickOffset: number,
     overrides: ethers.Overrides = {},
   ) {
-    return this.kandel.setBaseQuoteTickOffset(baseQuoteTickOffset, overrides);
+    return this.geometricKandel.setBaseQuoteTickOffset(
+      baseQuoteTickOffset,
+      overrides,
+    );
   }
 
   /** Converts gives to raw values usable for geometric Kandel `populateFromOffset` functions.
@@ -446,7 +450,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
 
     for (let i = 0; i < chunks.length; i++) {
       txs.push(
-        await this.kandel.populateChunkFromOffset(
+        await this.geometricKandel.populateChunkFromOffset(
           chunks[i].from,
           chunks[i].to,
           distribution.baseQuoteTickIndex0,
