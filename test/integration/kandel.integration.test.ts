@@ -49,7 +49,7 @@ describe("Kandel integration tests suite", function () {
       privateKey: this.accounts.deployer.key,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     (mgv.provider as any).pollingInterval = 10;
@@ -1680,7 +1680,7 @@ describe("Kandel integration tests suite", function () {
 
           // Act
           const receipts = await waitForTransactions(
-            await kandel.retractAndWithdraw({
+            kandel.retractAndWithdraw({
               startIndex: 1,
               endIndex: 4,
               withdrawFunds: withdrawnFunds,
