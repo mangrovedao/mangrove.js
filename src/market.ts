@@ -315,13 +315,19 @@ class Market {
   static async connect(
     params: {
       mgv: Mangrove;
-      base: string;
-      quote: string;
+      base: string | Token;
+      quote: string | Token;
       tickSpacing: Bigish;
     } & Partial<Market.OptionalParams>,
   ): Promise<Market> {
-    const base = await params.mgv.token(params.base);
-    const quote = await params.mgv.token(params.quote);
+    const base =
+      typeof params.base === "string"
+        ? await params.mgv.token(params.base)
+        : params.base;
+    const quote =
+      typeof params.quote === "string"
+        ? await params.mgv.token(params.quote)
+        : params.quote;
     canConstructMarket = true;
     const market = new Market({
       mgv: params.mgv,

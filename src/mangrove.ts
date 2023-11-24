@@ -436,8 +436,8 @@ class Mangrove {
      To set your own token, use `setDecimals` and `setAddress`.
   */
   async market(params: {
-    base: string;
-    quote: string;
+    base: string | Token;
+    quote: string | Token;
     tickSpacing: Bigish;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {

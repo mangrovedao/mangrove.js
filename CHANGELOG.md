@@ -17,6 +17,7 @@
   - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. `Mangrove.token()` will create an instance of the default token ID if found.
 - feat!: `Mangrove.getNameFromAddress` has been removed: It was ambiguous (multiple names could be registered) and only used for resolving tokens which can now be done with the new `configuration.tokens.getTokenIdFromAddress()` function.
 - feat!: The `Mangrove.openMarkets` function now uses `Token` instead of a bespoke token data struct.
+- feat: `Mangrove.market` and `Market.connect` now accept either symbol, token ID, or `Token` for base and quote.
 
 # 2.0.0-4
 
