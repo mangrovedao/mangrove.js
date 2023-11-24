@@ -85,22 +85,55 @@ class KandelDistribution {
     return Big(0);
   }
 
+  /** Gets all offers of the given type
+   * @param offerType The type of offer.
+   * @returns All offers of the given type.
+   */
   public getOffers(offerType: Market.BA) {
     return offerType == "bids" ? this.offers.bids : this.offers.asks;
   }
 
+  /** Gets all live offers of the given type (offers with non-zero gives)
+   * @param offerType The type of offer.
+   * @returns All live offers of the given type (offers with non-zero gives)
+   */
   public getLiveOffers(offerType: Market.BA) {
     return this.getOffers(offerType).filter((x) => x.gives.gt(0));
   }
 
+  /** Gets all dead offers of the given type (offers with 0 gives)
+   * @param offerType The type of offer.
+   * @returns All dead offers of the given type (offers with 0 gives)
+   */
   public getDeadOffers(offerType: Market.BA) {
     return (offerType == "bids" ? this.offers.bids : this.offers.asks).filter(
       (x) => !x.gives.gt(0),
     );
   }
 
+  /** Gets the offer at the given index for the given offer type
+   * @param offerType The type of offer.
+   * @param index The index of the offer.
+   * @returns The offer at the given index for the given offer type.
+   */
   public getOfferAtIndex(offerType: Market.BA, index: number) {
     return this.getOffers(offerType).find((x) => x.index == index);
+  }
+
+  /** Gets an offer distribution adorned with prices of offers.
+   * @returns An offer distribution adorned with prices of offers.
+   */
+  public getOffersWithPrices() {
+    return {
+      asks: this.getOffers("asks").map((x) => ({
+        ...x,
+        price: this.helper.askTickPriceHelper.priceFromTick(x.tick),
+      })),
+      bids: this.getOffers("bids").map((x) => ({
+        ...x,
+        price: this.helper.bidTickPriceHelper.priceFromTick(x.tick),
+      })),
+    };
   }
 
   /** Calculates the gives for bids and asks based on the available volume for the distribution.

@@ -201,6 +201,41 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       );
     });
 
+    it("populate changes parameters, deposits, funds with undefined distribution", async () => {
+      // Arrange
+      await populateKandel({ approve: true, deposit: true });
+
+      const paramsBefore = await kandel.getParameters();
+      const baseBefore = await kandel.getBalance("asks");
+      const nativeBalanceBefore = (
+        await kandel.offerLogic.getMangroveBalance()
+      ).toNumber();
+
+      // Act
+      await waitForTransactions(
+        await kandel.populateGeneralDistribution({
+          parameters: { stepSize: 5, gasprice: 22 },
+          depositBaseAmount: 1,
+          funds: 42,
+        }),
+      );
+
+      // Assert
+      const paramsAfter = await kandel.getParameters();
+      assert.deepStrictEqual(
+        { ...paramsBefore, stepSize: 5, gasprice: 22 },
+        paramsAfter,
+      );
+      assert.equal(
+        (await kandel.getBalance("asks")).toNumber(),
+        baseBefore.add(1).toNumber(),
+      );
+      assert.equal(
+        (await kandel.offerLogic.getMangroveBalance()).toNumber(),
+        nativeBalanceBefore + 42,
+      );
+    });
+
     it("pending, volume, reserve correct after populate with deposit", async function () {
       // all zeros prior to populate
       assert.equal((await kandel.getBalance("asks")).toString(), "0");

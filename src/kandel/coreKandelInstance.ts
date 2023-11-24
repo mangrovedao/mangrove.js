@@ -685,7 +685,7 @@ class CoreKandelInstance {
    */
   async getRawParametersForPopulate(
     params: {
-      distribution: KandelDistribution;
+      distribution?: KandelDistribution;
       parameters?: KandelParameterOverrides;
       depositBaseAmount?: Bigish;
       depositQuoteAmount?: Bigish;
@@ -696,8 +696,8 @@ class CoreKandelInstance {
     const parameterOverrides = params.parameters ?? {};
     const parameters = await this.getParametersWithOverrides(
       parameterOverrides,
-      params.distribution.pricePoints,
-      params.distribution.stepSize,
+      params.distribution?.pricePoints,
+      params.distribution?.stepSize,
     );
     const rawParameters = this.getRawParameters(parameters);
 
@@ -730,11 +730,11 @@ class CoreKandelInstance {
 
   /** Populates the offers in the distribution for the Kandel instance and sets parameters.
    * @param params The parameters for populating the offers.
-   * @param params.distribution The distribution of offers to populate.
+   * @param params.distribution The distribution of offers to populate. Can be undefined to allow setting parameters and depositing in a single transaction.
    * @param params.parameters The parameters to set leave out values to keep their current value. If gasprice is not set, the current gasprice and cover factor is used.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
-   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision.
+   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision. (if a distribution is provided)
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.
@@ -742,7 +742,7 @@ class CoreKandelInstance {
    */
   public async populateGeneralDistribution(
     params: {
-      distribution: GeneralKandelDistribution;
+      distribution?: GeneralKandelDistribution;
       parameters?: KandelParameterOverrides;
       depositBaseAmount?: Bigish;
       depositQuoteAmount?: Bigish;
@@ -761,10 +761,12 @@ class CoreKandelInstance {
       overrides,
     );
 
-    const distributionChunks = await this.getDistributionChunks({
-      distribution: params.distribution,
-      maxOffersInChunk: params.maxOffersInChunk,
-    });
+    const distributionChunks = params.distribution
+      ? await this.getDistributionChunks({
+          distribution: params.distribution,
+          maxOffersInChunk: params.maxOffersInChunk,
+        })
+      : [];
 
     const rawDistributions = distributionChunks.map((distribution) =>
       this.getRawDistribution(distribution),
