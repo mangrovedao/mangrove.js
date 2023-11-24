@@ -505,10 +505,26 @@ class Mangrove {
 
   /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
   async token(
-    id: string,
+    symbolOrId: string,
     options?: MgvToken.ConstructorOptions,
   ): Promise<MgvToken> {
-    return MgvToken.createToken(id, this, options);
+    return MgvToken.createTokenFromSymbolOrId(symbolOrId, this, options);
+  }
+
+  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  async tokenFromSymbol(
+    symbol: string,
+    options?: MgvToken.ConstructorOptions,
+  ): Promise<MgvToken> {
+    return MgvToken.createTokenFromSymbol(symbol, this, options);
+  }
+
+  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  async tokenFromId(
+    tokenId: string,
+    options?: MgvToken.ConstructorOptions,
+  ): Promise<MgvToken> {
+    return MgvToken.createTokenFromId(tokenId, this, options);
   }
 
   async tokenFromAddress(address: string): Promise<MgvToken> {

@@ -85,7 +85,20 @@ class MgvToken {
   }
 
   /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
-  static async createToken(
+  static async createTokenFromSymbolOrId(
+    symbolOrId: string,
+    mgv: Mangrove,
+    options?: MgvToken.ConstructorOptions,
+  ): Promise<MgvToken> {
+    if (configuration.tokens.isTokenIdRegistered(symbolOrId)) {
+      return this.createTokenFromId(symbolOrId, mgv, options);
+    } else {
+      return this.createTokenFromSymbol(symbolOrId, mgv, options);
+    }
+  }
+
+  /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
+  static async createTokenFromId(
     id: string,
     mgv: Mangrove,
     options?: MgvToken.ConstructorOptions,
@@ -97,6 +110,21 @@ class MgvToken {
     await configuration.tokens.getOrFetchSymbol(id, mgv.provider);
 
     return new MgvToken(id, mgv, options);
+  }
+
+  /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
+  static async createTokenFromSymbol(
+    symbol: string,
+    mgv: Mangrove,
+    options?: MgvToken.ConstructorOptions,
+  ): Promise<MgvToken> {
+    const id =
+      configuration.tokens.getDefaultIdForSymbolOnNetwork(
+        symbol,
+        mgv.network.name,
+      ) ?? symbol;
+
+    return this.createTokenFromId(id, mgv, { ...options, symbol });
   }
 
   static async createTokenFromAddress(
@@ -111,7 +139,7 @@ class MgvToken {
     const symbol = await contract.callStatic.symbol();
     const id = symbol ?? address;
 
-    return this.createToken(id, mgv, {
+    return this.createTokenFromId(id, mgv, {
       address,
       symbol,
     });

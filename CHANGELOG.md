@@ -13,6 +13,7 @@
 - feat!: `Mangrove.getTokenAndAddress` has been removed. Instead, use `Mangrove.tokenFromAddress` and read the address from there.
 - feat!: Remove `Mangrove.tokenFromConfig`. Use `Mangrove.token` instead.
 - feat!/fix: Token `name` was misused: Sometimes it was assumed to be a symbol and sometimes an ID. It has therefore been replaced by `id` and `symbol` in all relevant places. Configuration files have been converted to use the token instance ID's from the context-addresses package to avoid ambiguity among (1) different tokens with the same symbol and (2) multiple token instances such as `USDC` (Circle issued) and `USDC.e` (bridged from Ethereum).
+  - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. `Mangrove.token()` will create an instance of the default token ID if found.
 
 # 2.0.0-4
 

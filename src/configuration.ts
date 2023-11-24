@@ -140,6 +140,7 @@ export type Configuration = {
   addressesByNetwork: AddressesConfig;
   tokenDefaults: TokenDefaults;
   tokens: Record<tokenId, TokenConfig>;
+  tokenSymbolDefaultIdsByNetwork: Record<tokenSymbol, Record<network, tokenId>>;
   mangroveOrder: PartialMangroveOrderConfiguration;
   reliableEventSubscriber: ReliableEventSubscriberConfig;
   kandel: PartialKandelConfiguration;
@@ -253,7 +254,7 @@ export const addressesConfiguration = {
 
 /// TOKENS
 
-function getOrCreateTokenConfig(tokenId: tokenId) {
+function getOrCreateTokenConfig(tokenId: tokenId): TokenConfig {
   let tokenConfig = config.tokens[tokenId];
   if (tokenConfig === undefined) {
     config.tokens[tokenId] = tokenConfig = {};
@@ -261,7 +262,56 @@ function getOrCreateTokenConfig(tokenId: tokenId) {
   return tokenConfig;
 }
 
+function getOrCreateDefaultIdsForSymbol(
+  symbol: tokenSymbol,
+): Record<network, tokenId> {
+  let defaultIdsForSymbol = config.tokenSymbolDefaultIdsByNetwork[symbol];
+  if (defaultIdsForSymbol === undefined) {
+    config.tokenSymbolDefaultIdsByNetwork[symbol] = defaultIdsForSymbol = {};
+  }
+  return defaultIdsForSymbol;
+}
+
 export const tokensConfiguration = {
+  /**
+   * Returns true if the given token ID has been registered; otherwise, false.
+   */
+  isTokenIdRegistered(tokenId: tokenId): boolean {
+    return config.tokens[tokenId] !== undefined;
+  },
+
+  /**
+   * Gets the default token ID for a given symbol and network if
+   * (1) any has been registered or
+   * (2) if there is only one token with that symbol.
+   */
+  getDefaultIdForSymbolOnNetwork(
+    tokenSymbol: tokenSymbol,
+    network: network,
+  ): tokenId | undefined {
+    const registeredDefault =
+      getOrCreateDefaultIdsForSymbol(tokenSymbol)[network];
+    if (registeredDefault !== undefined) {
+      return registeredDefault;
+    }
+
+    // Loop through config.tokens to find the first token with the given symbol on the given network
+    let foundTokenId: tokenId | undefined;
+    for (const [tokenId, tokenConfig] of Object.entries(config.tokens)) {
+      if (
+        tokenConfig.symbol === tokenSymbol &&
+        addressesConfiguration.getAddress(tokenId, network) !== undefined
+      ) {
+        if (foundTokenId !== undefined) {
+          // If we already found a token with that symbol, we cannot decide which one is the default
+          return undefined;
+        }
+        foundTokenId = tokenId;
+      }
+    }
+    return foundTokenId;
+  },
+
   /**
    * Read decimals for `tokenId`.
    * To read decimals directly onchain, use `fetchDecimals`.
@@ -384,6 +434,17 @@ export const tokensConfiguration = {
   },
 
   /**
+   * Set the default token ID for a given symbol and network.
+   */
+  setDefaultIdForSymbolOnNetwork(
+    tokenSymbol: tokenSymbol,
+    network: network,
+    tokenId: tokenId,
+  ): void {
+    getOrCreateDefaultIdsForSymbol(tokenSymbol)[network] = tokenId;
+  },
+
+  /**
    * Set decimals for `tokenId` on the given network.
    */
   setDecimals: (tokenId: tokenId, dec: number): void => {
@@ -499,6 +560,7 @@ export function resetConfiguration(): void {
       defaultDisplayedPriceDecimals: 6,
     },
     tokens: clone(loadedTokens as Record<tokenId, TokenConfig>),
+    tokenSymbolDefaultIdsByNetwork: {},
     reliableEventSubscriber: {
       defaultBlockManagerOptions: {
         maxBlockCached: 50,
@@ -648,8 +710,15 @@ function readContextErc20Tokens() {
           erc20Instance.address,
           networkName,
         );
-        // Also register the default instance as the token symbol for convenience
+
         if (erc20Instance.default) {
+          tokensConfiguration.setDefaultIdForSymbolOnNetwork(
+            erc20.symbol,
+            networkName,
+            erc20InstanceId,
+          );
+
+          // Also register the default instance as the token symbol for convenience
           addressesConfiguration.setAddress(
             erc20.symbol,
             erc20Instance.address,
