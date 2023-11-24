@@ -574,9 +574,6 @@ class Mangrove {
 
   /** Convert public token amount to internal token representation.
    *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
-   *
    * For convenience, has a static and an instance version.
    *
    *  @example
@@ -585,32 +582,22 @@ class Mangrove {
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
-  static toUnits(
-    amount: Bigish,
-    nameOrDecimals: string | number,
-  ): ethers.BigNumber {
-    return UnitCalculations.toUnits(amount, nameOrDecimals);
+  static toUnits(amount: Bigish, decimals: number): ethers.BigNumber {
+    return UnitCalculations.toUnits(amount, decimals);
   }
-  toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
-    return Mangrove.toUnits(amount, nameOrDecimals);
+  toUnits(amount: Bigish, decimals: number): ethers.BigNumber {
+    return Mangrove.toUnits(amount, decimals);
   }
 
   /** Convert internal token amount to public token representation.
    *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
-   *
    *  @example
    *  ```
-   *  mgv.fromUnits("1e19","DAI") // 10
    *  mgv.fromUnits("1e19",18) // 10
    *  ```
    */
-  fromUnits(
-    amount: number | string | ethers.BigNumber,
-    nameOrDecimals: string | number,
-  ): Big {
-    return UnitCalculations.fromUnits(amount, nameOrDecimals);
+  fromUnits(amount: number | string | ethers.BigNumber, decimals: number): Big {
+    return UnitCalculations.fromUnits(amount, decimals);
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */

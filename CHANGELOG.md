@@ -8,6 +8,7 @@
 
 - feat: Add usage of Geometric Kandel's call-data-reducing function
 - feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `MgvToken.createTokenFromAddress` and read the decimals from that token.
+- feat!: `Mangrove.toUnits|fromUnits` no longer accepts a token name/symbol as this was ambiguous. Instead, use `MgvToken.createToken` and call `toUnits|fromUnits` on that.
 
 # 2.0.0-4
 

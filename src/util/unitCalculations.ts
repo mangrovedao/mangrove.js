@@ -1,54 +1,30 @@
 import Big from "big.js";
 import * as ethers from "ethers";
-import configuration from "../configuration";
 import { Bigish } from "../types";
 
 class UnitCalculations {
   /** Convert public token amount to internal token representation.
    *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
-   *
    *  @example
    *  ```
-   *  mgv.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
-  static toUnits(
-    amount: Bigish,
-    nameOrDecimals: string | number,
-  ): ethers.BigNumber {
-    let decimals;
-    if (typeof nameOrDecimals === "number") {
-      decimals = nameOrDecimals;
-    } else {
-      decimals = configuration.tokens.getDecimalsOrFail(nameOrDecimals);
-    }
+  static toUnits(amount: Bigish, decimals: number): ethers.BigNumber {
     return ethers.BigNumber.from(Big(10).pow(decimals).mul(amount).toFixed(0));
   }
 
   /** Convert internal token amount to public token representation.
    *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
-   *
    *  @example
    *  ```
-   *  mgv.fromUnits("1e19","DAI") // 10
    *  mgv.fromUnits("1e19",18) // 10
    *  ```
    */
   static fromUnits(
     amount: number | string | ethers.BigNumber,
-    nameOrDecimals: string | number,
+    decimals: number,
   ): Big {
-    let decimals;
-    if (typeof nameOrDecimals === "number") {
-      decimals = nameOrDecimals;
-    } else {
-      decimals = configuration.tokens.getDecimalsOrFail(nameOrDecimals);
-    }
     if (amount instanceof ethers.BigNumber) {
       amount = amount.toString();
     }
