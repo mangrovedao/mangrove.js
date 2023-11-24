@@ -10,6 +10,7 @@
 - feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `MgvToken.createTokenFromAddress` and read the decimals from that token.
 - feat!: `Mangrove.toUnits|fromUnits` no longer accepts a token name/symbol as this was ambiguous. Instead, use `MgvToken.createToken` and call `toUnits|fromUnits` on that.
 - feat!: Static token configuration getters and setters have been removed from `Mangrove`. Instead, use the methods on `MgvToken`.
+- feat!: `Mangrove.getTokenAndAddress` has been removed. Instead, use `Mangrove.tokenFromAddress` and read the address from there.
 
 # 2.0.0-4
 

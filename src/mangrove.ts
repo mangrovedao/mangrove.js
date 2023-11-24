@@ -560,18 +560,6 @@ class Mangrove {
     );
   }
 
-  /** Gets the token corresponding to the address if it is known; otherwise, undefined.
-   */
-  async getTokenAndAddress(
-    address: string,
-  ): Promise<{ address: string; token?: MgvToken }> {
-    const name = this.getNameFromAddress(address);
-    return {
-      address,
-      token: name === undefined ? undefined : await this.token(name),
-    };
-  }
-
   /** Convert public token amount to internal token representation.
    *
    * For convenience, has a static and an instance version.

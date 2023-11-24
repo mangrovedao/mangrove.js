@@ -85,20 +85,20 @@ class KandelFarm {
             const olKeyStruct = this.mgv.getOlKeyStruct(
               x.args.baseQuoteOlKeyHash,
             );
-            const baseToken = await this.mgv.getTokenAndAddress(
-              olKeyStruct!.outbound_tkn,
+            const baseToken = await this.mgv.tokenFromAddress(
+              await olKeyStruct!.outbound_tkn,
             );
-            const quoteToken = await this.mgv.getTokenAndAddress(
-              olKeyStruct!.inbound_tkn,
+            const quoteToken = await this.mgv.tokenFromAddress(
+              await olKeyStruct!.inbound_tkn,
             );
             return {
               kandelAddress: x.args.kandel,
               ownerAddress: x.args.owner,
               onAave: false,
               baseAddress: baseToken.address,
-              base: baseToken.token,
+              base: baseToken,
               quoteAddress: quoteToken.address,
-              quote: quoteToken.token,
+              quote: quoteToken,
             };
           })
         : [];
@@ -115,20 +115,20 @@ class KandelFarm {
             const olKeyStruct = this.mgv.getOlKeyStruct(
               x.args.baseQuoteOlKeyHash,
             );
-            const baseToken = await this.mgv.getTokenAndAddress(
-              olKeyStruct!.outbound_tkn,
+            const baseToken = await this.mgv.tokenFromAddress(
+              await olKeyStruct!.outbound_tkn,
             );
-            const quoteToken = await this.mgv.getTokenAndAddress(
-              olKeyStruct!.inbound_tkn,
+            const quoteToken = await this.mgv.tokenFromAddress(
+              await olKeyStruct!.inbound_tkn,
             );
             return {
               kandelAddress: x.args.aaveKandel,
               ownerAddress: x.args.owner,
               onAave: true,
               baseAddress: baseToken.address,
-              base: baseToken.token,
+              base: baseToken,
               quoteAddress: quoteToken.address,
-              quote: quoteToken.token,
+              quote: quoteToken,
             };
           })
         : [];
