@@ -1,11 +1,13 @@
-import { BigNumber, BigNumberish } from "ethers";
+/*
+ * Yul instruction implementations to allow 1:1 translation of contract assembly code.
+ * Arbitrary integer precision is achieved by using BigNumber from ethers.js.
+ * Care must be taken to match the number of bits used in the Solidity code.
+ *
+ * NB: Consider using the solidity-math library for easier, more direct, and type-safe
+ *     translation of the Solidity code.
+ */
 
-// Yul instruction implementations to allow 1:1 translation of contract assembly code.
-// Arbitrary integer precision is achieved by using BigNumber from ethers.js.
-// Care must be taken to match the number of bits used in the Solidity code.
-//
-// NB: Consider using the solidity-math library for easier, more direct, and type-safe
-//     translation of the Solidity code.
+import { BigNumber, BigNumberish } from "ethers";
 
 // Literal constants are precomputed for efficiency and readability.
 const _0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff =

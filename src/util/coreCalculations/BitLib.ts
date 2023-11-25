@@ -1,3 +1,12 @@
+/*
+ * This is a TypeScript implementation of Mangrove's BitLib library. It allows efficient and accurate simulation of Mangrove's bit operations without RPC calls.
+ *
+ * The implementation follows the original BitLib implementation as closely as possible.
+ *
+ * The original BitLib implementation can be found here: https://github.com/mangrovedao/mangrove-core/blob/0ff366b52b8f3ee5962a8dc53c33ad6d5aaded86/lib/core/BitLib.sol
+ * This is the audited version of Mangrove v2.0.0.
+ */
+
 import { BigNumber } from "ethers";
 import { add, and, byte, iszero, lt, mul, not, or, shl, shr } from "./yul";
 
@@ -17,14 +26,6 @@ const _0x00011c021d0e18031e16140f191104081f1b0d17151310071a0c12060b050a09 =
 const _0x0009010a0d15021d0b0e10121619031e080c141c0f111807131b17061a05041f =
   BigNumber.from("0x0009010a0d15021d0b0e10121619031e080c141c0f111807131b17061a05041f");
 
-/**
- * This is a TypeScript implementation of Mangrove's BitLib library. It allows efficient and accurate simulation of Mangrove's bit operations without RPC calls.
- *
- * The implementation follows the original BitLib implementation as closely as possible.
- *
- * The original BitLib implementation can be found here: https://github.com/mangrovedao/mangrove-core/blob/0ff366b52b8f3ee5962a8dc53c33ad6d5aaded86/lib/core/BitLib.sol
- * This is the audited version of Mangrove v2.0.0.
- */
 export class BitLib {
   public static ctz64(x: BigNumber): BigNumber {
     let c: BigNumber // return variable

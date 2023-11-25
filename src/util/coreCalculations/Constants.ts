@@ -1,6 +1,4 @@
-import { BigNumber, ethers } from "ethers";
-
-/**
+/*
  * This is a TypeScript implementation of Mangrove's Constants.sol file.
  *
  * The implementation follows the original Constants.sol implementation as closely as possible,
@@ -9,6 +7,8 @@ import { BigNumber, ethers } from "ethers";
  * The original Constants.sol implementation can be found here: https://github.com/mangrovedao/mangrove-core/blob/0ff366b52b8f3ee5962a8dc53c33ad6d5aaded86/lib/core/Constants.sol
  * This is the audited version of Mangrove v2.0.0.
  */
+
+import { BigNumber, ethers } from "ethers";
 
 /* The constants below are written as literals to optimize gas. For all the relevant constants here, the non-literal expression that computes them is checked in `Constants.t.sol`. */
 
