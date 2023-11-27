@@ -262,11 +262,13 @@ export const tokensConfiguration = {
    * (1) any has been registered or
    * (2) if there is only one token with that symbol or
    * (3) if there are no tokens with that symbol, then the symbol itself.
+   *
+   * If no default is registered and there are multiple tokens with that symbol an error is thrown.
    */
   getDefaultIdForSymbolOnNetwork(
     tokenSymbol: tokenSymbol,
     network: network,
-  ): tokenId | undefined {
+  ): tokenId {
     const registeredDefault =
       getOrCreateDefaultIdsForSymbol(tokenSymbol)[network];
     if (registeredDefault !== undefined) {
@@ -282,7 +284,9 @@ export const tokensConfiguration = {
       ) {
         if (foundTokenId !== undefined) {
           // If we already found a token with that symbol, we cannot decide which one is the default
-          return undefined;
+          throw Error(
+            `No default token ID registered for symbol ${tokenSymbol} and multiple tokens defined on network ${network} with that symbol`,
+          );
         }
         foundTokenId = tokenId;
       }
