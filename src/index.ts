@@ -24,6 +24,7 @@ import CoreKandelInstance from "./kandel/coreKandelInstance";
 import OfferMaker from "./offerMaker";
 import { enableLogging } from "./util/logger";
 import { addressesConfiguration, tokensConfiguration } from "./configuration";
+import TickPriceHelper from "./util/tickPriceHelper";
 import GeometricKandelDistribution from "./kandel/geometricKandel/geometricKandelDistribution";
 import GeneralKandelDistribution from "./kandel/generalKandelDistribution";
 import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
@@ -53,6 +54,7 @@ export {
   CoreKandelInstance,
   GeometricKandelInstance,
   OfferMaker,
+  TickPriceHelper,
   enableLogging,
   addressesConfiguration,
   tokensConfiguration,

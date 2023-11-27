@@ -14,6 +14,8 @@
 - feat: Added `displayName` and `displayedAsPriceDecimals` to `Token`.
 - feat!: `Token.getDecimals` now throws an error instead of returning undefined if the decimals are not on record.
 
+# 2.0.0-8
+
 # 2.0.0-7
 
 # 2.0.0-6
