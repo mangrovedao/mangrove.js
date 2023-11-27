@@ -62,8 +62,8 @@ class KandelFarm {
     if (!olKey) {
       const offerList = filter?.baseQuoteOfferList;
       if (offerList) {
-        const baseAddress = this.mgv.getAddress(offerList.base);
-        const quoteAddress = this.mgv.getAddress(offerList.quote);
+        const baseAddress = this.mgv.getTokenAddress(offerList.base);
+        const quoteAddress = this.mgv.getTokenAddress(offerList.quote);
         const tickSpacing = offerList.tickSpacing ?? 0;
         olKey = {
           outbound_tkn: baseAddress,
@@ -85,10 +85,10 @@ class KandelFarm {
             const olKeyStruct = this.mgv.getOlKeyStruct(
               x.args.baseQuoteOlKeyHash,
             );
-            const baseToken = await this.mgv.getTokenAndAddress(
+            const baseToken = await this.mgv.tokenFromAddress(
               olKeyStruct!.outbound_tkn,
             );
-            const quoteToken = await this.mgv.getTokenAndAddress(
+            const quoteToken = await this.mgv.tokenFromAddress(
               olKeyStruct!.inbound_tkn,
             );
             return {
@@ -96,9 +96,9 @@ class KandelFarm {
               ownerAddress: x.args.owner,
               onAave: false,
               baseAddress: baseToken.address,
-              base: baseToken.token,
+              base: baseToken,
               quoteAddress: quoteToken.address,
-              quote: quoteToken.token,
+              quote: quoteToken,
             };
           })
         : [];
@@ -115,10 +115,10 @@ class KandelFarm {
             const olKeyStruct = this.mgv.getOlKeyStruct(
               x.args.baseQuoteOlKeyHash,
             );
-            const baseToken = await this.mgv.getTokenAndAddress(
+            const baseToken = await this.mgv.tokenFromAddress(
               olKeyStruct!.outbound_tkn,
             );
-            const quoteToken = await this.mgv.getTokenAndAddress(
+            const quoteToken = await this.mgv.tokenFromAddress(
               olKeyStruct!.inbound_tkn,
             );
             return {
@@ -126,9 +126,9 @@ class KandelFarm {
               ownerAddress: x.args.owner,
               onAave: true,
               baseAddress: baseToken.address,
-              base: baseToken.token,
+              base: baseToken,
               quoteAddress: quoteToken.address,
-              quote: quoteToken.token,
+              quote: quoteToken,
             };
           })
         : [];

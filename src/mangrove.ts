@@ -1,4 +1,4 @@
-import { LiquidityProvider, Market, MgvToken, OfferLogic, Semibook } from ".";
+import { LiquidityProvider, Market, Token, OfferLogic, Semibook } from ".";
 import configuration, {
   Configuration as MangroveJsConfiguration,
   PartialConfiguration as PartialMangroveJsConfiguration,
@@ -8,7 +8,7 @@ import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
 import { TypedDataSigner } from "@ethersproject/abstract-signer";
-import { ApproveArgs } from "./mgvtoken";
+import { ApproveArgs } from "./token";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -89,8 +89,8 @@ namespace Mangrove {
   };
 
   export type OpenMarketInfo = {
-    base: { name: string; address: string; symbol: string; decimals: number };
-    quote: { name: string; address: string; symbol: string; decimals: number };
+    base: Token;
+    quote: Token;
     tickSpacing: ethers.BigNumber;
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
@@ -436,8 +436,8 @@ class Mangrove {
      To set your own token, use `setDecimals` and `setAddress`.
   */
   async market(params: {
-    base: string;
-    quote: string;
+    base: string | Token;
+    quote: string | Token;
     tickSpacing: Bigish;
     bookOptions?: Market.BookOptions;
   }): Promise<Market> {
@@ -503,24 +503,32 @@ class Mangrove {
     }
   }
 
-  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
   async token(
-    name: string,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
-    return MgvToken.createToken(name, this, options);
+    symbolOrId: string,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromSymbolOrId(symbolOrId, this, options);
   }
 
-  async tokenFromAddress(address: string): Promise<MgvToken> {
-    return MgvToken.createTokenFromAddress(address, this);
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
+  async tokenFromSymbol(
+    symbol: string,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromSymbol(symbol, this, options);
   }
 
-  /** Return MgvToken instance reading only from configuration, not from chain. */
-  tokenFromConfig(
-    name: string,
-    options?: MgvToken.ConstructorOptions,
-  ): MgvToken {
-    return new MgvToken(name, this, options);
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
+  async tokenFromId(
+    tokenId: string,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromId(tokenId, this, options);
+  }
+
+  async tokenFromAddress(address: string): Promise<Token> {
+    return Token.createTokenFromAddress(address, this);
   }
 
   /**
@@ -536,6 +544,15 @@ class Mangrove {
   }
 
   /**
+   * Read a token address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  getTokenAddress(symbolOrId: string): string {
+    return Token.getTokenAddress(symbolOrId, this.network.name || "mainnet");
+  }
+
+  /**
    * Set a contract address on the current network.
    *
    * Note that this writes to the static `Mangrove` address registry which is shared across instances of this class.
@@ -548,34 +565,7 @@ class Mangrove {
     );
   }
 
-  /**
-   * Gets the name of an address on the current network.
-   *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
-   */
-  getNameFromAddress(address: string): string | undefined {
-    return configuration.addresses.getNameFromAddress(
-      address,
-      this.network.name || "mainnet",
-    );
-  }
-
-  /** Gets the token corresponding to the address if it is known; otherwise, undefined.
-   */
-  async getTokenAndAddress(
-    address: string,
-  ): Promise<{ address: string; token?: MgvToken }> {
-    const name = this.getNameFromAddress(address);
-    return {
-      address,
-      token: name === undefined ? undefined : await this.token(name),
-    };
-  }
-
   /** Convert public token amount to internal token representation.
-   *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
    *
    * For convenience, has a static and an instance version.
    *
@@ -585,32 +575,22 @@ class Mangrove {
    *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
    *  ```
    */
-  static toUnits(
-    amount: Bigish,
-    nameOrDecimals: string | number,
-  ): ethers.BigNumber {
-    return UnitCalculations.toUnits(amount, nameOrDecimals);
+  static toUnits(amount: Bigish, decimals: number): ethers.BigNumber {
+    return UnitCalculations.toUnits(amount, decimals);
   }
-  toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
-    return Mangrove.toUnits(amount, nameOrDecimals);
+  toUnits(amount: Bigish, decimals: number): ethers.BigNumber {
+    return Mangrove.toUnits(amount, decimals);
   }
 
   /** Convert internal token amount to public token representation.
    *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
-   *
    *  @example
    *  ```
-   *  mgv.fromUnits("1e19","DAI") // 10
    *  mgv.fromUnits("1e19",18) // 10
    *  ```
    */
-  fromUnits(
-    amount: number | string | ethers.BigNumber,
-    nameOrDecimals: string | number,
-  ): Big {
-    return UnitCalculations.fromUnits(amount, nameOrDecimals);
+  fromUnits(amount: number | string | ethers.BigNumber, decimals: number): Big {
+    return UnitCalculations.fromUnits(amount, decimals);
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
@@ -639,10 +619,10 @@ class Mangrove {
   }
 
   async approveMangrove(
-    tokenName: string,
+    tokenId: string,
     arg: ApproveArgs = {},
   ): Promise<ethers.ContractTransaction> {
-    const token = await this.token(tokenName);
+    const token = await this.token(tokenId);
     return token.approveMangrove(arg);
   }
 
@@ -842,90 +822,6 @@ class Mangrove {
   }
 
   /**
-   * Gets the name of an address on the given network.
-   *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
-   */
-  static getNameFromAddress(
-    address: string,
-    network: string,
-  ): string | undefined {
-    return configuration.addresses.getNameFromAddress(address, network);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimals(tokenName: string): number | undefined {
-    return configuration.tokens.getDecimals(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimalsOrFail(tokenName: string): number {
-    return configuration.tokens.getDecimalsOrFail(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * If not found in the local configuration, fetch them from the current network and save them
-   */
-  static getOrFetchDecimals(
-    tokenName: string,
-    provider: Provider,
-  ): Promise<number> {
-    return configuration.tokens.getOrFetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Read chain for decimals of `tokenName` on current network and save them
-   */
-  static async fetchDecimals(
-    tokenName: string,
-    provider: Provider,
-  ): Promise<number> {
-    return configuration.tokens.fetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Read displayed decimals for `tokenName`.
-   */
-  static getDisplayedDecimals(tokenName: string): number {
-    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
-  }
-
-  /**
-   * Read displayed decimals for `tokenName` when displayed as a price.
-   */
-  static getDisplayedPriceDecimals(tokenName: string): number {
-    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
-  }
-
-  /**
-   * Set decimals for `tokenName` on current network.
-   */
-  static setDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDecimals(tokenName, dec);
-  }
-
-  /**
-   * Set displayed decimals for `tokenName`.
-   */
-  static setDisplayedDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDisplayedDecimals(tokenName, dec);
-  }
-
-  /**
-   * Set displayed decimals for `tokenName` when displayed as a price.
-   */
-  static setDisplayedPriceDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDisplayedPriceDecimals(tokenName, dec);
-  }
-
-  /**
    * Setup dev node necessary contracts if needed, register dev Multicall2
    * address, listen to future additions (a script external to mangrove.js may
    * deploy contracts during execution).
@@ -959,7 +855,6 @@ class Mangrove {
    * @param from: start at market `from`. Default 0.
    * @param maxLen: max number of markets returned. Default all.
    * @param configs: fetch market's config information. Default true.
-   * @param tokenInfo: fetch token information (symbol, decimals)
    * @note If an open market has a token with no/bad decimals/symbol function, this function will revert.
    */
   async openMarketsData(
@@ -967,14 +862,12 @@ class Mangrove {
       from?: number;
       maxLen?: number | ethers.BigNumber;
       configs?: boolean;
-      tokenInfos?: boolean;
     } = {},
   ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
     params.from ??= 0;
     params.maxLen ??= ethers.constants.MaxUint256;
     params.configs ??= true;
-    params.tokenInfos ??= true;
     // read open markets and their configs off mgvReader
     const raw = await this.readerContract["openMarkets(uint256,uint256,bool)"](
       params.from,
@@ -982,15 +875,15 @@ class Mangrove {
       params.configs,
     );
 
-    // structure data object as address => (symbol,decimals,address=>config)
+    // structure data object as address => (token,address=>config)
     const data: Record<
       string,
       {
-        symbol: string;
-        decimals: number;
+        token: Token;
         configs: Record<string, LocalUnpackedStructOutput>;
       }
     > = {};
+
     raw.markets.forEach(([tkn0, tkn1], i) => {
       (data[tkn0] as any) ??= { configs: {} };
       (data[tkn1] as any) ??= { configs: {} };
@@ -1001,80 +894,36 @@ class Mangrove {
       }
     });
 
+    // TODO: Consider fetching missing decimals/symbols in one Multicall and dispatch to Token initializations instead of firing multiple RPC calls.
+    //       However, viem (and maybe ethers6) automatically batches multiple read requests as a multicall, so not sure this is worth pursuing.
     const addresses = Object.keys(data);
-
-    //read decimals & symbol for each token using Multicall
-    const ierc20 = typechain.IERC20__factory.createInterface();
-
-    const tryDecodeDecimals = (ary: any[], fnName: "decimals") => {
-      return ary.forEach((returnData, i) => {
-        // will raise exception if call reverted
-        data[addresses[i]][fnName] = ierc20.decodeFunctionResult(
-          fnName as any,
-          returnData,
-        )[0] as number;
-      });
-    };
-    const tryDecodeSymbol = (ary: any[], fnName: "symbol") => {
-      return ary.forEach((returnData, i) => {
-        // will raise exception if call reverted
-        data[addresses[i]][fnName] = ierc20.decodeFunctionResult(
-          fnName as any,
-          returnData,
-        )[0] as string;
-      });
-    };
-
-    /* Grab decimals for all contracts */
-    const decimalArgs = addresses.map((addr) => {
-      return { target: addr, callData: ierc20.encodeFunctionData("decimals") };
-    });
-    const symbolArgs = addresses.map((addr) => {
-      return { target: addr, callData: ierc20.encodeFunctionData("symbol") };
-    });
-    const { returnData } = await this.multicallContract.callStatic.aggregate([
-      ...decimalArgs,
-      ...symbolArgs,
-    ]);
-    tryDecodeDecimals(returnData.slice(0, addresses.length), "decimals");
-    tryDecodeSymbol(returnData.slice(addresses.length), "symbol");
+    await Promise.all(
+      addresses.map(async (address) => {
+        data[address].token = await this.tokenFromAddress(address);
+      }),
+    );
 
     // format return value
     return raw.markets.map(([tkn0, tkn1, tickSpacing]) => {
-      // Use internal mgv name if defined; otherwise use the symbol.
-      const tkn0Name = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
-      const tkn1Name = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
-
-      const { baseName, quoteName } = Mangrove.toBaseQuoteByCashness(
-        tkn0Name,
-        tkn1Name,
+      const { base, quote } = this.toBaseQuoteByCashness(
+        data[tkn0].token,
+        data[tkn1].token,
       );
-      const [base, quote] = baseName === tkn0Name ? [tkn0, tkn1] : [tkn1, tkn0];
 
       return {
-        base: {
-          name: baseName,
-          address: base,
-          symbol: data[base].symbol,
-          decimals: data[base].decimals,
-        },
-        quote: {
-          name: quoteName,
-          address: quote,
-          symbol: data[quote].symbol,
-          decimals: data[quote].decimals,
-        },
+        base,
+        quote,
         tickSpacing: tickSpacing,
         asksConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
-              data[base].configs[quote],
-              data[base].decimals,
+              data[base.address].configs[quote.address],
+              base.decimals,
             )
           : undefined,
         bidsConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
-              data[quote].configs[base],
-              data[quote].decimals,
+              data[quote.address].configs[base.address],
+              quote.decimals,
             )
           : undefined,
       };
@@ -1103,24 +952,19 @@ class Mangrove {
     delete params.bookOptions;
     const openMarketsData = await this.openMarketsData({
       ...params,
-      tokenInfos: true,
       configs: false,
     });
     // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
     return Promise.all(
       openMarketsData.map(({ base, quote, tickSpacing }) => {
-        this.setAddress(base.name, base.address);
-        if (configuration.tokens.getDecimals(base.name) === undefined) {
-          configuration.tokens.setDecimals(base.name, base.decimals);
-        }
-        this.setAddress(quote.name, quote.address);
-        if (configuration.tokens.getDecimals(quote.name) === undefined) {
-          configuration.tokens.setDecimals(quote.name, quote.decimals);
-        }
+        this.setAddress(base.id, base.address);
+        configuration.tokens.setDecimals(base.id, base.decimals);
+        this.setAddress(quote.id, quote.address);
+        configuration.tokens.setDecimals(quote.id, quote.decimals);
         return Market.connect({
           mgv: this,
-          base: base.name,
-          quote: quote.name,
+          base: base.id,
+          quote: quote.id,
           tickSpacing: tickSpacing.toString(),
           bookOptions: bookOptions,
           noInit: noInit,
@@ -1129,27 +973,23 @@ class Mangrove {
     );
   }
 
-  /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
-   * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
-   */
-  setCashness(name: string, cashness: number) {
-    configuration.tokens.setCashness(name, cashness);
-  }
-
   // cashness is "how similar to cash is a token". The cashier token is the quote.
   // toBaseQuoteByCashness orders tokens according to relative cashness.
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
-  static toBaseQuoteByCashness(name0: string, name1: string) {
-    let cash0 = configuration.tokens.getCashness(name0);
-    let cash1 = configuration.tokens.getCashness(name1);
+  toBaseQuoteByCashness(
+    token0: Token,
+    token1: Token,
+  ): { base: Token; quote: Token } {
+    let cash0 = configuration.tokens.getCashness(token0.id);
+    let cash1 = configuration.tokens.getCashness(token1.id);
     if (cash0 === undefined || cash1 === undefined) {
       cash0 = cash1 = 0;
     }
-    if (cash0 < cash1 || (cash0 === cash1 && name0 < name1)) {
-      return { baseName: name0, quoteName: name1 };
+    if (cash0 < cash1 || (cash0 === cash1 && token0.id < token1.id)) {
+      return { base: token0, quote: token1 };
     } else {
-      return { baseName: name1, quoteName: name0 };
+      return { base: token1, quote: token0 };
     }
   }
 }

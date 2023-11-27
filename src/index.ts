@@ -11,7 +11,7 @@ import Mangrove from "./mangrove";
 import Market from "./market";
 import Semibook from "./semibook";
 import OfferLogic from "./offerLogic";
-import MgvToken from "./mgvtoken";
+import Token from "./token";
 import LiquidityProvider from "./liquidityProvider";
 import KandelStrategies from "./kandelStrategies";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
@@ -29,7 +29,6 @@ import GeometricKandelDistribution from "./kandel/geometricKandel/geometricKande
 import GeneralKandelDistribution from "./kandel/generalKandelDistribution";
 import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
 
-
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
@@ -41,7 +40,7 @@ export {
   Mangrove,
   Market,
   Semibook,
-  MgvToken,
+  Token,
   OfferLogic,
   LiquidityProvider,
   mgvTestUtil,

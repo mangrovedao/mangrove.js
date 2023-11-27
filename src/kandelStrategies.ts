@@ -10,6 +10,7 @@ import GeometricKandelLib from "./kandel/geometricKandel/geometricKandelLib";
 import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
 import GeometricKandelDistributionHelper from "./kandel/geometricKandel/geometricKandelDistributionHelper";
 import GeneralKandelDistributionHelper from "./kandel/generalKandelDistributionHelper";
+import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -58,11 +59,17 @@ class KandelStrategies {
     const market =
       params.market ??
       ((baseAddress: string, quoteAddress: string, tickSpacing: Bigish) => {
-        const baseToken = this.mgv.getNameFromAddress(baseAddress);
+        const baseToken = configuration.tokens.getTokenIdFromAddress(
+          baseAddress,
+          this.mgv.network.name,
+        );
         if (!baseToken) {
           throw new Error(`Unknown token at address ${baseAddress}`);
         }
-        const quoteToken = this.mgv.getNameFromAddress(quoteAddress);
+        const quoteToken = configuration.tokens.getTokenIdFromAddress(
+          quoteAddress,
+          this.mgv.network.name,
+        );
         if (!quoteToken) {
           throw new Error(`Unknown token at address ${quoteAddress}`);
         }

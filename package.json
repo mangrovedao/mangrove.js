@@ -1,6 +1,6 @@
 {
   "name": "@mangrovedao/mangrove.js",
-  "version": "2.0.0-8",
+  "version": "2.0.0-9",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
   "license": "(BSD-2-Clause OR BSD-3-Clause)",
@@ -76,7 +76,6 @@
     "just-clone": "^6.2.0",
     "logform": "^2.5.1",
     "loglevel": "^1.8.1",
-    "moize": "^6.1.6",
     "node-cleanup": "^2.1.2",
     "object-inspect": "^1.12.3",
     "semver": "^7.5.4",

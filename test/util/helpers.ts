@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish, ContractTransaction, utils } from "ethers";
-import Mangrove, { MgvToken } from "../../src";
+import Mangrove, { Token } from "../../src";
 import { Bigish } from "../../src/types";
 import Big from "big.js";
 import assert from "assert";
@@ -96,17 +96,17 @@ export type OfferData = {
 
 async function getAmountAndAddress(
   mgv: Mangrove,
-  token: string | MgvToken,
+  token: string | Token,
   amount: string,
 ) {
-  const mgvToken = await getAddress(token, mgv);
-  return { address: mgvToken.address, value: mgvToken.toUnits(amount) };
+  const Token = await getAddress(token, mgv);
+  return { address: Token.address, value: Token.toUnits(amount) };
 }
 
 export const newOffer = async (
   mgv: Mangrove,
-  outbound_tkn: string | MgvToken,
-  inbound_tkn: string | MgvToken,
+  outbound_tkn: string | Token,
+  inbound_tkn: string | Token,
   { gives, gasreq, gasprice, tick }: OfferData,
 ): Promise<ContractTransaction> => {
   const outboundInfo = await getAmountAndAddress(mgv, outbound_tkn, gives);
@@ -124,6 +124,6 @@ export const newOffer = async (
     gasprice || 1,
   );
 };
-async function getAddress(token: string | MgvToken, mgv: Mangrove) {
+async function getAddress(token: string | Token, mgv: Mangrove) {
   return typeof token === "string" ? await mgv.token(token) : token;
 }

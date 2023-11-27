@@ -12,7 +12,7 @@ import {
   verify,
   when,
 } from "ts-mockito";
-import { Semibook, Market, MgvToken } from "../../src";
+import { Semibook, Market, Token } from "../../src";
 import TradeEventManagement from "../../src/util/tradeEventManagement";
 import UnitCalculations from "../../src/util/unitCalculations";
 import {
@@ -44,7 +44,7 @@ describe("TradeEventManagement unit tests suite", () => {
 
       const marketSide: Market.BA = "bids";
 
-      const baseTokenMock = mock(MgvToken);
+      const baseTokenMock = mock(Token);
       const baseTokenDecimals: number = 3;
       when(baseTokenMock.decimals).thenReturn(baseTokenDecimals);
 
@@ -54,7 +54,7 @@ describe("TradeEventManagement unit tests suite", () => {
       );
       when(baseTokenMock.fromUnits(rawGives)).thenReturn(expectedGives);
 
-      const quoteTokenMock = mock(MgvToken);
+      const quoteTokenMock = mock(Token);
       const quoteTokenDecimals = 1;
 
       const tickPriceHelper = new TickPriceHelper(marketSide, {
@@ -114,10 +114,10 @@ describe("TradeEventManagement unit tests suite", () => {
 
       const marketSide: Market.BA = "asks";
 
-      const baseTokenMock = mock(MgvToken);
+      const baseTokenMock = mock(Token);
       const baseTokenDecimals: number = 3;
 
-      const quoteTokenMock = mock(MgvToken);
+      const quoteTokenMock = mock(Token);
       const quoteTokenDecimals = 1;
       const expectedGives = UnitCalculations.fromUnits(
         rawGives,
@@ -195,7 +195,7 @@ describe("TradeEventManagement unit tests suite", () => {
     it("return summary with partialFill as true, when partialFill func returns true", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
-      const mockedToken = mock(MgvToken);
+      const mockedToken = mock(Token);
       const token = instance(mockedToken);
       const evt: summaryEvent = {
         args: {
@@ -227,7 +227,7 @@ describe("TradeEventManagement unit tests suite", () => {
 
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
-      const mockedToken = mock(MgvToken);
+      const mockedToken = mock(Token);
       const token = instance(mockedToken);
       const event = instance(mock<summaryEvent>());
       const summary: any = "summary";
@@ -253,7 +253,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
       const mockedEvent = mock<MangroveOrderStartEvent>();
-      const mockedToken = mock(MgvToken);
+      const mockedToken = mock(Token);
       const token = instance(mockedToken);
       const event = instance(mockedEvent);
       const summary: Market.OrderSummary = {
@@ -297,8 +297,8 @@ describe("TradeEventManagement unit tests suite", () => {
         takerWants: BigNumber.from(2),
         takerGives: BigNumber.from(3),
       };
-      const gotToken = mock(MgvToken);
-      const gaveToken = mock(MgvToken);
+      const gotToken = mock(Token);
+      const gaveToken = mock(Token);
       const expectedGot = Big(args.takerWants.toNumber());
       const expectedGave = Big(args.takerGives.toNumber());
 
@@ -333,8 +333,8 @@ describe("TradeEventManagement unit tests suite", () => {
         takerWants: BigNumber.from(2),
         takerGives: BigNumber.from(3),
       };
-      const gotToken = mock(MgvToken);
-      const gaveToken = mock(MgvToken);
+      const gotToken = mock(Token);
+      const gaveToken = mock(Token);
       const expectedFailToDeliver = Big(args.takerWants.toNumber());
       const expectedVolumeGiven = Big(args.takerGives.toNumber());
 

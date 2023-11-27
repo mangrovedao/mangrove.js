@@ -103,8 +103,8 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
 
         // Assert
         const params = await kandel.getParameters();
-        assert.equal("TokenA", kandel.getBase().name, "wrong base");
-        assert.equal("TokenB", kandel.getQuote().name, "wrong base");
+        assert.equal("TokenA", kandel.getBase().id, "wrong base");
+        assert.equal("TokenB", kandel.getQuote().id, "wrong base");
         assert.equal(market, kandel.market, "wrong market");
         assert.equal(
           liquiditySharing && onAave
