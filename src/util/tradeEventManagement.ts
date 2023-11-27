@@ -4,7 +4,7 @@ import { BaseContract, BigNumber } from "ethers";
 import { LogDescription } from "ethers/lib/utils";
 import Market from "../market";
 import Semibook from "../semibook";
-import MgvToken from "../mgvtoken";
+import Token from "../token";
 import {
   OfferFailEvent,
   OfferFailWithPosthookDataEvent,
@@ -88,7 +88,7 @@ class TradeEventManagement {
         restingOrderId?: number;
       };
     },
-    fillToken: MgvToken,
+    fillToken: Token,
   ): Market.OrderSummary {
     if (
       (!event.args.tick && !event.args.maxTick) ||
@@ -108,11 +108,7 @@ class TradeEventManagement {
     };
   }
 
-  createSuccessFromEvent(
-    evt: OfferSuccessEvent,
-    got: MgvToken,
-    gave: MgvToken,
-  ) {
+  createSuccessFromEvent(evt: OfferSuccessEvent, got: Token, gave: Token) {
     const success = {
       offerId: evt.args.id.toNumber(),
       got: got.fromUnits(evt.args.takerWants),
@@ -121,11 +117,7 @@ class TradeEventManagement {
     return success;
   }
 
-  createTradeFailureFromEvent(
-    evt: OfferFailEvent,
-    got: MgvToken,
-    gave: MgvToken,
-  ) {
+  createTradeFailureFromEvent(evt: OfferFailEvent, got: Token, gave: Token) {
     const tradeFailure = {
       offerId: evt.args.id.toNumber(),
       reason: evt.args.mgvData,
@@ -171,8 +163,8 @@ class TradeEventManagement {
     if (olKeyHash != evt.args.olKeyHash) {
       logger.debug("OfferWrite for unknown market!", {
         contextInfo: "tradeEventManagement",
-        base: market.base.name,
-        quote: market.quote.name,
+        base: market.base.id,
+        quote: market.quote.id,
         tickSpacing: market.tickSpacing,
         data: {
           olKeyHash: evt.args.olKeyHash,
@@ -188,7 +180,7 @@ class TradeEventManagement {
 
   createSummaryFromOrderSummaryEvent(
     evt: MangroveOrderStartEvent,
-    fillToken: MgvToken,
+    fillToken: Token,
   ): Market.OrderSummary {
     return this.createSummaryFromEvent(
       {

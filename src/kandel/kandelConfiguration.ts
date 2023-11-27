@@ -28,18 +28,18 @@ class KandelConfiguration {
 
   /** Gets the most specific available config for the network and the base/quote pair.
    * @param networkName The name of the network.
-   * @param baseName The name of the base token.
-   * @param quoteName The name of the quote token.
+   * @param baseId The ID of the base token.
+   * @param quoteId The ID of the quote token.
    * @returns The most specific configuration available for the network and the base/quote pair.
    */
   public getMostSpecificConfig(
     networkName: string,
-    baseName: string,
-    quoteName: string,
+    baseId: string,
+    quoteId: string,
   ): KandelNetworkConfiguration & Partial<KandelMarketConfiguration> {
     const networkSpecificConfig = this.rawConfiguration.networks?.[networkName];
-    const baseSpecificConfig = networkSpecificConfig?.markets?.[baseName];
-    const marketSpecificConfig = baseSpecificConfig?.[quoteName];
+    const baseSpecificConfig = networkSpecificConfig?.markets?.[baseId];
+    const marketSpecificConfig = baseSpecificConfig?.[quoteId];
 
     const config = {
       ...this.rawConfiguration,
@@ -70,21 +70,21 @@ class KandelConfiguration {
 
   /** Gets the config for the network and the base/quote pair.
    * @param networkName The name of the network.
-   * @param baseName The name of the base token.
-   * @param quoteName The name of the quote token.
+   * @param baseId The ID of the base token.
+   * @param quoteId The ID of the quote token.
    * @returns The configuration for the network and the base/quote pair.
    * @throws If the full config is not available for the network and the base/quote pair.
    */
   public getConfigForBaseQuote(
     networkName: string,
-    baseName: string,
-    quoteName: string,
+    baseId: string,
+    quoteId: string,
   ): KandelNetworkConfiguration & KandelMarketConfiguration {
-    const config = this.getMostSpecificConfig(networkName, baseName, quoteName);
+    const config = this.getMostSpecificConfig(networkName, baseId, quoteId);
 
     function thrower(msg: string): never {
       throw new Error(
-        `${msg} for pair ${baseName}/${quoteName} on network ${networkName}.`,
+        `${msg} for pair ${baseId}/${quoteId} on network ${networkName}.`,
       );
     }
 
@@ -119,8 +119,8 @@ class KandelConfiguration {
   ): KandelNetworkConfiguration & KandelMarketConfiguration {
     return this.getConfigForBaseQuote(
       market.mgv.network.name,
-      market.base.name,
-      market.quote.name,
+      market.base.id,
+      market.quote.id,
     );
   }
 

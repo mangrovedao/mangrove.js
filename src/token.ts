@@ -1,17 +1,20 @@
 import Big from "big.js";
 import * as ethers from "ethers";
 import Mangrove from "./mangrove";
-import { Bigish, Provider } from "./types";
+import { Bigish } from "./types";
 import { typechain } from "./types";
 import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
-namespace MgvToken {
+namespace Token {
   export type ConstructorOptions = {
     address?: string;
     decimals?: number;
+    symbol?: string;
+    displayName?: string;
     displayedDecimals?: number;
+    displayedAsPriceDecimals?: number;
   };
 }
 
@@ -50,91 +53,142 @@ function convertToApproveArgs(arg: ApproveArgs): {
   return amount === undefined ? { overrides } : { amount, overrides };
 }
 
-class MgvToken {
-  mgv: Mangrove;
-  name: string;
-  address: string;
-  displayedDecimals: number;
-  decimals: number;
+class Token {
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
-  constructor(
-    name: string,
-    mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
+
+  /**
+   *
+   * @param id ID which should be unique within a network, but can be used across networks. Typically the id from the context-addresses package. May be the symbol if the symbol is unique. NB: This uniqueness is not enforced and duplicates will give undefined behavior.
+   * @param address Address of the token contract.
+   * @param symbol Non-unique and optional symbol cf. ERC20.
+   * @param decimals Number of decimals used by the token.
+   * @param displayName Optional display name for the token.
+   * @param displayedDecimals Number of decimals to display in the UI.
+   * @param displayedAsPriceDecimals Number of decimals to display in the UI when showing a price.
+   * @param mgv The Mangrove instance this token is associated with.
+   */
+  private constructor(
+    public id: string,
+    public address: string,
+    public symbol: string | undefined,
+    public decimals: number,
+    public displayName: string | undefined,
+    public displayedDecimals: number,
+    public displayedAsPriceDecimals: number,
+    public mgv: Mangrove,
   ) {
-    this.mgv = mgv;
-    this.name = name;
-    MgvToken.#applyOptions(name, mgv, options);
-
-    this.address = this.mgv.getAddress(this.name);
-    this.decimals = configuration.tokens.getDecimalsOrFail(this.name);
-    this.displayedDecimals = configuration.tokens.getDisplayedDecimals(
-      this.name,
-    );
-
     this.contract = typechain.TestToken__factory.connect(
       this.address,
       this.mgv.signer,
     );
   }
 
-  /** Create a MgvToken instance, fetching data (decimals) from chain if needed. */
-  static async createToken(
-    name: string,
+  /** Create a Token instance, fetching data (decimals) from chain if needed. */
+  static async createTokenFromSymbolOrId(
+    symbolOrId: string,
     mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
-  ): Promise<MgvToken> {
-    MgvToken.#applyOptions(name, mgv, options);
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    if (configuration.tokens.isTokenIdRegistered(symbolOrId)) {
+      return this.createTokenFromId(symbolOrId, mgv, options);
+    } else {
+      return this.createTokenFromSymbol(symbolOrId, mgv, options);
+    }
+  }
 
-    // Ensure decimals are known before token construction as it will otherwise fail.
-    await MgvToken.getOrFetchDecimals(name, mgv.provider);
+  /** Create a Token instance, fetching data (decimals) from chain if needed. */
+  static async createTokenFromSymbol(
+    symbol: string,
+    mgv: Mangrove,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    const id =
+      configuration.tokens.getDefaultIdForSymbolOnNetwork(
+        symbol,
+        mgv.network.name,
+      ) ?? symbol;
 
-    return new MgvToken(name, mgv, options);
+    return this.createTokenFromId(id, mgv, { ...options, symbol });
+  }
+
+  /** Create a Token instance, fetching data (decimals) from chain if needed. */
+  static async createTokenFromId(
+    id: string,
+    mgv: Mangrove,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    const address =
+      options?.address ?? Token.getTokenAddress(id, mgv.network.name);
+    const decimals =
+      options?.decimals ??
+      (await configuration.tokens.getOrFetchDecimals(id, mgv.provider));
+    const symbol =
+      options?.symbol ??
+      (await configuration.tokens.getOrFetchSymbol(id, mgv.provider));
+    const displayName =
+      options?.displayName ?? configuration.tokens.getDisplayName(id);
+    const displayedDecimals =
+      options?.displayedDecimals ??
+      configuration.tokens.getDisplayedDecimals(id);
+    const displayedAsPriceDecimals =
+      options?.displayedAsPriceDecimals ??
+      configuration.tokens.getDisplayedPriceDecimals(id);
+
+    return new Token(
+      id,
+      address,
+      symbol,
+      decimals,
+      displayName,
+      displayedDecimals,
+      displayedAsPriceDecimals,
+      mgv,
+    );
   }
 
   static async createTokenFromAddress(
     address: string,
     mgv: Mangrove,
-  ): Promise<MgvToken> {
-    const contract = typechain.TestToken__factory.connect(
+  ): Promise<Token> {
+    let tokenId = configuration.tokens.getTokenIdFromAddress(
+      address,
+      mgv.network.name,
+    );
+    if (tokenId !== undefined) {
+      return this.createTokenFromId(tokenId, mgv, { address });
+    }
+
+    const symbol = await configuration.tokens.fetchSymbolFromAddress(
       address,
       mgv.provider,
     );
+    tokenId = symbol ?? address;
 
-    const name = await contract.callStatic.symbol();
-
-    return this.createToken(name, mgv, {
+    return this.createTokenFromId(tokenId, mgv, {
       address,
+      symbol,
     });
   }
 
-  static #applyOptions(
-    name: string,
-    mgv: Mangrove,
-    options?: MgvToken.ConstructorOptions,
-  ) {
-    if (options === undefined) {
-      return;
-    }
-
-    if ("address" in options && options.address !== undefined) {
-      mgv.setAddress(name, options.address);
-    }
-
-    if ("decimals" in options && options.decimals !== undefined) {
-      configuration.tokens.setDecimals(name, options.decimals);
-    }
-
-    if (
-      "displayedDecimals" in options &&
-      options.displayedDecimals !== undefined
-    ) {
-      configuration.tokens.setDisplayedDecimals(
-        name,
-        options.displayedDecimals,
+  /**
+   * Read a token address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  static getTokenAddress(symbolOrId: string, network: string): string {
+    const tokenId = configuration.tokens.isTokenIdRegistered(symbolOrId)
+      ? symbolOrId
+      : configuration.tokens.getDefaultIdForSymbolOnNetwork(
+          symbolOrId,
+          network,
+        );
+    if (tokenId === undefined) {
+      throw new Error(
+        `No token with symbol or ID ${symbolOrId} on network ${network}`,
       );
     }
+    return configuration.addresses.getAddress(tokenId, network);
   }
 
   /**
@@ -221,40 +275,6 @@ class MgvToken {
       params.spender = this.mgv.address;
     }
     return await this.contract.allowance(params.owner, params.spender);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimals(tokenName: string): number | undefined {
-    return configuration.tokens.getDecimals(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimalsOrFail(tokenName: string): number {
-    return configuration.tokens.getDecimalsOrFail(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * If not found in the local configuration, fetch them from the current network and save them
-   */
-  static getOrFetchDecimals(
-    tokenName: string,
-    provider: Provider,
-  ): Promise<number> {
-    return configuration.tokens.getOrFetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Set decimals for `tokenName` on current network.
-   */
-  static setDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDecimals(tokenName, dec);
   }
 
   /**
@@ -353,4 +373,4 @@ class MgvToken {
   }
 }
 
-export default MgvToken;
+export default Token;

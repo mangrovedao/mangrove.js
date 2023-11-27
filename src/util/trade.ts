@@ -501,8 +501,8 @@ class Trade {
     logger.debug("Creating market order", {
       contextInfo: "market.marketOrder",
       data: {
-        outboundTkn: outboundTkn.name,
-        inboundTkn: inboundTkn.name,
+        outboundTkn: outboundTkn.id,
+        inboundTkn: inboundTkn.id,
         fillWants: fillWants,
         tick: tick.toString(),
         fillVolume: fillVolume.toString(),
@@ -754,8 +754,8 @@ class Trade {
     logger.debug("Creating cleans", {
       contextInfo: "market.clean",
       data: {
-        outboundTkn: outboundTkn.name,
-        inboundTkn: inboundTkn.name,
+        outboundTkn: outboundTkn.id,
+        inboundTkn: inboundTkn.id,
       },
     });
 

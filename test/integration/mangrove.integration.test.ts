@@ -5,7 +5,8 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { toWei } from "../util/helpers";
 import { serverType } from "../../src/util/node";
 
-import { Mangrove } from "../../src";
+import { Mangrove, Token } from "../../src";
+import { configuration } from "../../src/configuration";
 
 import { Big } from "big.js";
 
@@ -50,25 +51,25 @@ describe("Mangrove integration tests suite", function () {
   describe("getMarkets", function () {
     it("updates with mgvReader", async function () {
       await mgvAdmin.contract.deactivate({
-        outbound_tkn: mgv.getAddress("TokenA"),
-        inbound_tkn: mgv.getAddress("TokenB"),
+        outbound_tkn: mgv.getTokenAddress("TokenA"),
+        inbound_tkn: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       await mgvAdmin.contract.deactivate({
-        outbound_tkn: mgv.getAddress("TokenB"),
-        inbound_tkn: mgv.getAddress("TokenA"),
+        outbound_tkn: mgv.getTokenAddress("TokenB"),
+        inbound_tkn: mgv.getTokenAddress("TokenA"),
         tickSpacing: 1,
       });
       await mgv.readerContract.updateMarket({
-        tkn0: mgv.getAddress("TokenA"),
-        tkn1: mgv.getAddress("TokenB"),
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       const marketsBefore = await mgv.openMarkets();
       await mgvAdmin.contract.activate(
         {
-          outbound_tkn: mgv.getAddress("TokenA"),
-          inbound_tkn: mgv.getAddress("TokenB"),
+          outbound_tkn: mgv.getTokenAddress("TokenA"),
+          inbound_tkn: mgv.getTokenAddress("TokenB"),
           tickSpacing: 1,
         },
         1,
@@ -76,8 +77,8 @@ describe("Mangrove integration tests suite", function () {
         1,
       );
       await mgv.readerContract.updateMarket({
-        tkn0: mgv.getAddress("TokenA"),
-        tkn1: mgv.getAddress("TokenB"),
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       const markets = await mgv.openMarkets();
@@ -88,42 +89,39 @@ describe("Mangrove integration tests suite", function () {
       );
     });
 
-    it("has reverse lookup of address", function () {
-      const address = mgv.getAddress("TokenA");
-      assert.equal(mgv.getNameFromAddress(address), "TokenA");
-      assert.equal(
-        mgv.getNameFromAddress("0xdeaddeaddeaddaeddeaddeaddeaddeaddeaddead"),
-        null,
-      );
-    });
-
     it("gets correct market info and updates with cashness", async function () {
       await mgv.readerContract.updateMarket({
-        tkn0: mgv.getAddress("TokenA"),
-        tkn1: mgv.getAddress("TokenB"),
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
       let marketData = await mgv.openMarketsData();
       const tokenAData = {
-        address: mgv.getAddress("TokenA"),
+        address: mgv.getTokenAddress("TokenA"),
         decimals: 18,
-        name: "TokenA",
+        id: "TokenA",
         symbol: "TokenA",
       };
       const tokenBData = {
-        address: mgv.getAddress("TokenB"),
+        address: mgv.getTokenAddress("TokenB"),
         decimals: 6,
-        name: "TokenB",
+        id: "TokenB",
         symbol: "TokenB",
       };
-      assert.deepEqual(marketData[0].base, tokenAData);
-      assert.deepEqual(marketData[0].quote, tokenBData);
+      const tokenToData = (token: Token) => ({
+        address: token.address,
+        decimals: token.decimals,
+        id: token.id,
+        symbol: token.symbol,
+      });
+      assert.deepEqual(tokenToData(marketData[0].base), tokenAData);
+      assert.deepEqual(tokenToData(marketData[0].quote), tokenBData);
 
-      mgv.setCashness("TokenA", 1000000);
+      configuration.tokens.setCashness("TokenA", 1000000);
       marketData = await mgv.openMarketsData();
 
-      assert.deepEqual(marketData[0].base, tokenBData);
-      assert.deepEqual(marketData[0].quote, tokenAData);
+      assert.deepEqual(tokenToData(marketData[0].base), tokenBData);
+      assert.deepEqual(tokenToData(marketData[0].quote), tokenAData);
     });
   });
   describe("node utils", () => {

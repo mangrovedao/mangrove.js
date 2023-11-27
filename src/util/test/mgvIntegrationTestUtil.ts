@@ -1,7 +1,7 @@
 // TODO do not distribute in browser version
 // Utility functions for writing integration tests against Mangrove.
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import { Market, MgvToken, Mangrove } from "../..";
+import { Market, Token, Mangrove } from "../..";
 import { typechain } from "../../types";
 
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
@@ -218,8 +218,8 @@ export const getTokens = (
   market: Market,
   ba: Market.BA,
 ): {
-  inboundToken: MgvToken;
-  outboundToken: MgvToken;
+  inboundToken: Token;
+  outboundToken: Token;
 } => {
   return {
     inboundToken: ba === "asks" ? market.quote : market.base,
@@ -467,12 +467,12 @@ export const setMgvGasPrice = async (
 };
 
 const rawMint = async (
-  token: MgvToken,
+  token: Token,
   receiverAddress: string,
   internalAmount: ethers.BigNumberish,
 ): Promise<void> => {
   const deployer = await getAccount(AccountName.Deployer);
-  switch (token.name) {
+  switch (token.id) {
     case "TokenA":
       await waitForTransaction(
         deployer.connectedContracts.tokenA.mintTo(
@@ -496,7 +496,7 @@ const rawMint = async (
 };
 
 export const mint = async (
-  token: MgvToken,
+  token: Token,
   receiver: Account,
   amount: number,
 ): Promise<void> => {

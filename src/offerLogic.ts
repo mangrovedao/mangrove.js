@@ -53,14 +53,14 @@ class OfferLogic {
    * @param args optional `arg.amount` can be used if one wishes to approve a finite amount
    */
   async approve(
-    tokenName: string,
+    tokenId: string,
     args?: {
       optSpender?: string;
       optAmount?: Bigish;
       optOverrides?: ethers.Overrides;
     },
   ): Promise<ethers.ContractTransaction> {
-    const token = await this.mgv.token(tokenName);
+    const token = await this.mgv.token(tokenId);
     const amount =
       args && args.optAmount != undefined
         ? token.toUnits(args.optAmount)
@@ -114,16 +114,16 @@ class OfferLogic {
 
   /**
    * @note (contract admin action) activates logic
-   * @param tokenNames the names of the tokens one wishes the logic to trade
+   * @param tokenSymbolsOrIds the symbols or IDs of the tokens one wishes the logic to trade
    * @param overrides The ethers overrides to use when calling the activate function.
    * @returns The transaction used to activate the OfferLogic.
    * */
   activate(
-    tokenNames: string[],
+    tokenSymbolsOrIds: string[],
     overrides: ethers.Overrides = {},
   ): Promise<TransactionResponse> {
-    const tokenAddresses = tokenNames.map((tokenName) =>
-      this.mgv.getAddress(tokenName),
+    const tokenAddresses = tokenSymbolsOrIds.map((symbolOrId) =>
+      this.mgv.getTokenAddress(symbolOrId),
     );
     return this.contract.activate(tokenAddresses, overrides);
   }

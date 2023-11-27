@@ -74,13 +74,13 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         const markets = sut.getConfiguredMarketsForNetwork("maticmum");
         // Assert
         assert.deepStrictEqual(markets, [
-          { base: "WETH", quote: "DAI" },
-          { base: "WETH", quote: "USDC" },
-          { base: "DAI", quote: "USDC" },
-          { base: "WMATIC", quote: "USDT" },
-          { base: "WBTC", quote: "USDT" },
-          { base: "WBTC", quote: "DAI" },
-          { base: "CRV", quote: "WBTC" },
+          { base: "WETH.T/MGV", quote: "DAI.T/AAVEv3" },
+          { base: "WETH.T/MGV", quote: "USDC.T/MGV" },
+          { base: "DAI.T/AAVEv3", quote: "USDC.T/MGV" },
+          { base: "WMATIC.T/MGV", quote: "USDT.T/MGV" },
+          { base: "WBTC.T/AAVEv3", quote: "USDT.T/MGV" },
+          { base: "WBTC.T/AAVEv3", quote: "DAI.T/AAVEv3" },
+          { base: "CRV.T/AAVEv3", quote: "WBTC.T/AAVEv3" },
         ]);
       });
 

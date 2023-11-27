@@ -139,8 +139,8 @@ describe("Market integration tests suite", () => {
       // Act
       const result = market.getOutboundInbound("asks");
       // Assert
-      assert.equal(result.outbound_tkn.name, "TokenA");
-      assert.equal(result.inbound_tkn.name, "TokenB");
+      assert.equal(result.outbound_tkn.id, "TokenA");
+      assert.equal(result.inbound_tkn.id, "TokenB");
     });
 
     it("returns this.base as inbound and this.quote as outbound, when bids", async function () {
@@ -153,8 +153,8 @@ describe("Market integration tests suite", () => {
       // Act
       const result = market.getOutboundInbound("bids");
       // Assert
-      assert.equal(result.inbound_tkn.name, "TokenA");
-      assert.equal(result.outbound_tkn.name, "TokenB");
+      assert.equal(result.inbound_tkn.id, "TokenA");
+      assert.equal(result.outbound_tkn.id, "TokenB");
     });
   });
 

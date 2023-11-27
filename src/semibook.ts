@@ -2,7 +2,7 @@ import { Log } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
 import clone from "just-clone";
-import { Mangrove, Market, MgvToken } from ".";
+import { Mangrove, Market, Token } from ".";
 
 import {
   BlockManager,
@@ -218,7 +218,7 @@ class Semibook
       canConstructSemibook = true;
       semibook = new Semibook(market, ba, eventListener, options);
       logger.debug(
-        `Semibook.connect() ${ba} ${market.base.name} / ${market.quote.name}`,
+        `Semibook.connect() ${ba} ${market.base.id} / ${market.quote.id}`,
       );
       if (!market.mgv.shouldNotListenToNewEvents) {
         await market.mgv.mangroveEventSubscriber.subscribeToSemibook(semibook);
@@ -918,8 +918,8 @@ class Semibook
     } & OfferFailEvent,
     removedOffer: Market.Offer | undefined,
     state: Semibook.State,
-    outbound_tkn: MgvToken,
-    inbound_tkn: MgvToken,
+    outbound_tkn: Token,
+    inbound_tkn: Token,
     log: Log,
   ) {
     const id = Semibook.rawIdToId(event.args.id);
@@ -952,8 +952,8 @@ class Semibook
     } & OfferSuccessEvent,
     removedOffer: Market.Offer | undefined,
     state: Semibook.State,
-    outbound_tkn: MgvToken,
-    inbound_tkn: MgvToken,
+    outbound_tkn: Token,
+    inbound_tkn: Token,
     log: Log,
   ) {
     const id = Semibook.rawIdToId(event.args.id);

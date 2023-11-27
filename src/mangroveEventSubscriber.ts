@@ -92,14 +92,14 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     const identifier = this.computeBookIdentifier(semibook.market, semibook.ba);
 
     logger.debug(
-      `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`,
+      `[MangroveEventSubscriber] subscribeToSemibook() ${semibook.ba} ${semibook.market.base.id}/${semibook.market.quote.id}`,
     );
     const block = this.blockManager.getLastBlock();
 
     const error = await semibook.initialize(block);
     if (error) {
       logger.debug(
-        `[MangroveEventSubscriber] found error initialization for ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`,
+        `[MangroveEventSubscriber] found error initialization for ${semibook.ba} ${semibook.market.base.id}/${semibook.market.quote.id}`,
       );
       /* detected reorg during initialization */
       return new Promise((resolve, reject) => {
@@ -120,7 +120,7 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
     }
 
     logger.debug(
-      `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.name}/${semibook.market.quote.name}`,
+      `[MangroveEventSubscriber] Semibook initialized ${semibook.ba} ${semibook.market.base.id}/${semibook.market.quote.id}`,
     );
 
     if (!this.bookEventSubscribers[identifier]) {

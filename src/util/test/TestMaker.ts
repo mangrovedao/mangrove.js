@@ -79,8 +79,8 @@ class TestMaker {
   static async create(
     p: TestMaker.CreateParams & Partial<Market.OptionalParams>,
   ): Promise<TestMaker> {
-    const baseAddress = p.mgv.getAddress(p.base);
-    const quoteAddress = p.mgv.getAddress(p.quote);
+    const baseAddress = p.mgv.getTokenAddress(p.base);
+    const quoteAddress = p.mgv.getTokenAddress(p.quote);
     const contract = await new typechain.SimpleTestMaker__factory(
       p.mgv.signer,
     ).deploy(p.mgv.address, {

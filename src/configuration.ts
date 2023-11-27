@@ -19,7 +19,6 @@ import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
-import moize from "moize";
 import semver from "semver";
 
 // Make keys optional at all levels of T
@@ -33,13 +32,16 @@ export type RecursivePartial<T> = {
 
 export type network = string;
 export type address = string;
+export type tokenId = string;
 export type tokenSymbol = string;
 
 export type NamedAddresses = Record<string, address>;
 export type AddressesConfig = Record<network, NamedAddresses>;
 
 export type TokenConfig = {
+  symbol?: tokenSymbol;
   decimals?: number;
+  displayName?: string;
   displayedDecimals?: number;
   displayedAsPriceDecimals?: number;
   cashness?: number;
@@ -114,7 +116,7 @@ export type PartialKandelAllConfigurationFields =
   Partial<KandelAllConfigurationFields>;
 export type PartialMarketConfig = PartialKandelAllConfigurationFields;
 export type PartialNetworkConfig = PartialKandelAllConfigurationFields & {
-  markets?: Record<tokenSymbol, Record<tokenSymbol, PartialMarketConfig>>; // base symbol -> quote symbol -> market config
+  markets?: Record<tokenId, Record<tokenId, PartialMarketConfig>>; // base ID -> quote ID -> market config
 };
 
 export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
@@ -138,7 +140,8 @@ export type PartialMangroveOrderConfiguration =
 export type Configuration = {
   addressesByNetwork: AddressesConfig;
   tokenDefaults: TokenDefaults;
-  tokens: Record<tokenSymbol, TokenConfig>;
+  tokens: Record<tokenId, TokenConfig>;
+  tokenSymbolDefaultIdsByNetwork: Record<tokenSymbol, Record<network, tokenId>>;
   mangroveOrder: PartialMangroveOrderConfiguration;
   reliableEventSubscriber: ReliableEventSubscriberConfig;
   kandel: PartialKandelConfiguration;
@@ -224,16 +227,80 @@ export const addressesConfiguration = {
       }
     }
   },
+};
+
+/// TOKENS
+
+function getOrCreateTokenConfig(tokenId: tokenId): TokenConfig {
+  let tokenConfig = config.tokens[tokenId];
+  if (tokenConfig === undefined) {
+    config.tokens[tokenId] = tokenConfig = {};
+  }
+  return tokenConfig;
+}
+
+function getOrCreateDefaultIdsForSymbol(
+  symbol: tokenSymbol,
+): Record<network, tokenId> {
+  let defaultIdsForSymbol = config.tokenSymbolDefaultIdsByNetwork[symbol];
+  if (defaultIdsForSymbol === undefined) {
+    config.tokenSymbolDefaultIdsByNetwork[symbol] = defaultIdsForSymbol = {};
+  }
+  return defaultIdsForSymbol;
+}
+
+export const tokensConfiguration = {
+  /**
+   * Returns true if the given token ID has been registered; otherwise, false.
+   */
+  isTokenIdRegistered(tokenId: tokenId): boolean {
+    return config.tokens[tokenId] !== undefined;
+  },
 
   /**
-   * Gets the name of an address on the current network.
+   * Gets the default token ID for a given symbol and network if
+   * (1) any has been registered or
+   * (2) if there is only one token with that symbol or
+   * (3) if there are no tokens with that symbol, then the symbol itself.
    *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   * If no default is registered and there are multiple tokens with that symbol an error is thrown.
    */
-  getNameFromAddress: (
+  getDefaultIdForSymbolOnNetwork(
+    tokenSymbol: tokenSymbol,
+    network: network,
+  ): tokenId {
+    const registeredDefault =
+      getOrCreateDefaultIdsForSymbol(tokenSymbol)[network];
+    if (registeredDefault !== undefined) {
+      return registeredDefault;
+    }
+
+    // Loop through config.tokens to find the first token with the given symbol on the given network
+    let foundTokenId: tokenId | undefined;
+    for (const [tokenId, tokenConfig] of Object.entries(config.tokens)) {
+      if (
+        tokenConfig.symbol === tokenSymbol &&
+        addressesConfiguration.getAddress(tokenId, network) !== undefined
+      ) {
+        if (foundTokenId !== undefined) {
+          // If we already found a token with that symbol, we cannot decide which one is the default
+          throw Error(
+            `No default token ID registered for symbol ${tokenSymbol} and multiple tokens defined on network ${network} with that symbol`,
+          );
+        }
+        foundTokenId = tokenId;
+      }
+    }
+    return foundTokenId ?? tokenSymbol;
+  },
+
+  /**
+   * Gets the token ID of an address on the given network.
+   */
+  getTokenIdFromAddress: (
     address: string,
     network: string,
-  ): string | undefined => {
+  ): tokenId | undefined => {
     const networkAddresses = config.addressesByNetwork[network];
     address = ethers.utils.getAddress(address); // normalize
 
@@ -242,141 +309,197 @@ export const addressesConfiguration = {
         networkAddresses,
       ) as any) {
         if (candidateAddress == address) {
-          return name;
+          if (tokensConfiguration.isTokenIdRegistered(name)) {
+            return name;
+          }
         }
       }
     }
     return undefined;
   },
-};
-
-/// TOKENS
-
-function getOrCreateTokenConfig(tokenName: string) {
-  let tokenConfig = config.tokens[tokenName];
-  if (tokenConfig === undefined) {
-    config.tokens[tokenName] = tokenConfig = {};
-  }
-  return tokenConfig;
-}
-
-export const tokensConfiguration = {
-  /**
-   * Read decimals for `tokenName`.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  getDecimals: (tokenName: string): number | undefined => {
-    return config.tokens[tokenName]?.decimals;
-  },
 
   /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
+   * Read decimals for `tokenId`. Fails if the decimals are not in the configuration.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimalsOrFail: (tokenName: string): number => {
-    const decimals = tokensConfiguration.getDecimals(tokenName);
+  getDecimals: (tokenId: tokenId): number => {
+    const decimals = getOrCreateTokenConfig(tokenId).decimals;
     if (decimals === undefined) {
-      throw Error(`No decimals on record for token ${tokenName}`);
+      throw Error(`No decimals on record for token ${tokenId}`);
     }
 
     return decimals;
   },
 
   /**
-   * Read decimals for `tokenName` on given network.
+   * Read decimals for `tokenId` on given network.
    * If not found in the local configuration, fetch them from the current network and save them
    */
   getOrFetchDecimals: async (
-    tokenName: string,
+    tokenId: tokenId,
     provider: Provider,
   ): Promise<number> => {
-    const decimals = tokensConfiguration.getDecimals(tokenName);
+    const decimals = tokensConfiguration.getDecimals(tokenId);
     if (decimals !== undefined) {
       return decimals;
     }
 
-    return tokensConfiguration.fetchDecimals(tokenName, provider);
+    return tokensConfiguration.fetchDecimals(tokenId, provider);
   },
 
   /**
-   * Read chain for decimals of `tokenName` on current network and save them
+   * Read chain for decimals of `tokenId` on current network and save them
    */
   fetchDecimals: async (
-    tokenName: string,
+    tokenId: tokenId,
     provider: Provider,
   ): Promise<number> => {
     const network = await eth.getProviderNetwork(provider);
     const token = typechain.IERC20__factory.connect(
-      addressesConfiguration.getAddress(tokenName, network.name),
+      addressesConfiguration.getAddress(tokenId, network.name),
       provider,
     );
     const decimals = await token.decimals();
-    tokensConfiguration.setDecimals(tokenName, decimals);
+    tokensConfiguration.setDecimals(tokenId, decimals);
     return decimals;
   },
 
   /**
-   * Read chain for decimals of `address` on current network
+   * Read symbol for `tokenId`.
+   * To read symbol directly onchain, use `fetchSymbol`.
    */
-  fetchDecimalsFromAddress: moize(
-    async (address: string, provider: Provider): Promise<number> => {
-      const token = typechain.IERC20__factory.connect(address, provider);
-      return token.decimals();
-    },
-  ),
+  getSymbol: (tokenId: tokenId): tokenSymbol | undefined => {
+    return getOrCreateTokenConfig(tokenId).symbol;
+  },
 
   /**
-   * Read displayed decimals for `tokenName`.
+   * Read symbol for `tokenId` on given network.
+   * If not found in the local configuration, fetch them from the current network and save them
    */
-  getDisplayedDecimals: (tokenName: string): number => {
+  getOrFetchSymbol: async (
+    tokenId: tokenId,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const symbol = tokensConfiguration.getSymbol(tokenId);
+    if (symbol !== undefined) {
+      return symbol;
+    }
+
+    return tokensConfiguration.fetchSymbol(tokenId, provider);
+  },
+
+  /**
+   * Read chain for symbol of `tokenId` on current network and save them
+   */
+  fetchSymbol: async (
+    tokenId: tokenId,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const network = await eth.getProviderNetwork(provider);
+    const address = addressesConfiguration.getAddress(tokenId, network.name);
+    const symbol = await tokensConfiguration.fetchSymbolFromAddress(
+      address,
+      provider,
+    );
+    tokensConfiguration.setSymbol(tokenId, symbol);
+    return symbol;
+  },
+
+  /**
+   * Read chain for symbol of `address` on current network.
+   */
+  fetchSymbolFromAddress: async (
+    address: address,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const token = typechain.IERC20__factory.connect(address, provider);
+    return await token.symbol();
+  },
+
+  /**
+   * Read display name for `tokenId`.
+   */
+  getDisplayName: (tokenId: tokenId): string | undefined => {
+    return getOrCreateTokenConfig(tokenId).displayName;
+  },
+
+  /**
+   * Read displayed decimals for `tokenId`.
+   */
+  getDisplayedDecimals: (tokenId: tokenId): number => {
     return (
-      config.tokens[tokenName]?.displayedDecimals ||
+      getOrCreateTokenConfig(tokenId).displayedDecimals ||
       config.tokenDefaults.defaultDisplayedDecimals
     );
   },
 
   /**
-   * Read displayed decimals for `tokenName` when displayed as a price.
+   * Read displayed decimals for `tokenId` when displayed as a price.
    */
-  getDisplayedPriceDecimals: (tokenName: string): number => {
+  getDisplayedPriceDecimals: (tokenId: tokenId): number => {
     return (
-      config.tokens[tokenName]?.displayedAsPriceDecimals ||
+      getOrCreateTokenConfig(tokenId).displayedAsPriceDecimals ||
       config.tokenDefaults.defaultDisplayedPriceDecimals
     );
   },
 
   /** Get the cashness of a token. See {@link setCashness} for details.
    */
-  getCashness: (tokenName: string): number | undefined => {
-    return config.tokens[tokenName]?.cashness;
+  getCashness: (tokenId: tokenId): number | undefined => {
+    return getOrCreateTokenConfig(tokenId).cashness;
   },
 
   /**
-   * Set decimals for `tokenName`.
+   * Set the default token ID for a given symbol and network.
    */
-  setDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).decimals = dec;
+  setDefaultIdForSymbolOnNetwork(
+    tokenSymbol: tokenSymbol,
+    network: network,
+    tokenId: tokenId,
+  ): void {
+    getOrCreateDefaultIdsForSymbol(tokenSymbol)[network] = tokenId;
   },
 
   /**
-   * Set displayed decimals for `tokenName`.
+   * Set decimals for `tokenId`.
    */
-  setDisplayedDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).displayedDecimals = dec;
+  setDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).decimals = dec;
   },
 
   /**
-   * Set displayed decimals for `tokenName` when displayed as a price.
+   * Set symbol for `tokenId`.
    */
-  setDisplayedPriceDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).displayedAsPriceDecimals = dec;
+  setSymbol: (tokenId: tokenId, symbol: tokenSymbol): void => {
+    getOrCreateTokenConfig(tokenId).symbol = symbol;
+  },
+
+  /**
+   * Set display name for `tokenId`.
+   */
+  setDisplayName: (tokenId: tokenId, displayName: string): void => {
+    getOrCreateTokenConfig(tokenId).displayName = displayName;
+  },
+
+  /**
+   * Set displayed decimals for `tokenId`.
+   */
+  setDisplayedDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).displayedDecimals = dec;
+  },
+
+  /**
+   * Set displayed decimals for `tokenId` when displayed as a price.
+   */
+  setDisplayedPriceDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).displayedAsPriceDecimals = dec;
   },
 
   /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
    * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
    */
-  setCashness: (tokenName: string, cashness: number) => {
-    getOrCreateTokenConfig(tokenName).cashness = cashness;
+  setCashness: (tokenId: tokenId, cashness: number) => {
+    getOrCreateTokenConfig(tokenId).cashness = cashness;
   },
 };
 
@@ -459,7 +582,8 @@ export function resetConfiguration(): void {
       defaultDisplayedDecimals: 2,
       defaultDisplayedPriceDecimals: 6,
     },
-    tokens: clone(loadedTokens as Record<tokenSymbol, TokenConfig>),
+    tokens: clone(loadedTokens as Record<tokenId, TokenConfig>),
+    tokenSymbolDefaultIdsByNetwork: {},
     reliableEventSubscriber: {
       defaultBlockManagerOptions: {
         maxBlockCached: 50,
@@ -506,7 +630,7 @@ export function resetConfiguration(): void {
   // 1. context-addresses addresses
   // 2. mangrove-deployments addresses
   // Last loaded address is used
-  readContextAddresses();
+  readContextAddressesAndTokens();
   readMangroveDeploymentAddresses();
 }
 
@@ -576,9 +700,9 @@ function readVersionDeploymentsAddresses(
   }
 }
 
-function readContextAddresses() {
+function readContextAddressesAndTokens() {
   readContextMulticallAddresses();
-  readContextErc20Addresses();
+  readContextErc20Tokens();
   readContextAaveAddresses();
 }
 
@@ -592,10 +716,8 @@ function readContextMulticallAddresses() {
   }
 }
 
-function readContextErc20Addresses() {
-  for (const [, /*tokenId*/ erc20] of Object.entries(
-    contextAddresses.getAllErc20s(),
-  )) {
+function readContextErc20Tokens() {
+  for (const [, erc20] of Object.entries(contextAddresses.getAllErc20s())) {
     for (const [networkId, networkInstances] of Object.entries(
       erc20.networkInstances,
     )) {
@@ -603,13 +725,23 @@ function readContextErc20Addresses() {
       for (const [erc20InstanceId, erc20Instance] of Object.entries(
         networkInstances,
       )) {
+        tokensConfiguration.setDecimals(erc20InstanceId, erc20.decimals);
+        tokensConfiguration.setSymbol(erc20InstanceId, erc20.symbol);
+
         addressesConfiguration.setAddress(
           erc20InstanceId,
           erc20Instance.address,
           networkName,
         );
-        // Also register the default instance as the token symbol for convenience
+
         if (erc20Instance.default) {
+          tokensConfiguration.setDefaultIdForSymbolOnNetwork(
+            erc20.symbol,
+            networkName,
+            erc20InstanceId,
+          );
+
+          // Also register the default instance as the token symbol for convenience
           addressesConfiguration.setAddress(
             erc20.symbol,
             erc20Instance.address,

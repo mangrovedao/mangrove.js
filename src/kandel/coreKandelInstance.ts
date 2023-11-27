@@ -6,7 +6,7 @@ import * as KandelTypes from "../types/typechain/GeometricKandel";
 import Big from "big.js";
 import Market from "../market";
 import UnitCalculations from "../util/unitCalculations";
-import { ApproveArgs } from "../mgvtoken";
+import { ApproveArgs } from "../token";
 import KandelDistributionHelper, {
   OffersWithGives,
 } from "./kandelDistributionHelper";
@@ -499,8 +499,8 @@ class CoreKandelInstance {
   getMostSpecificConfig() {
     return this.configuration.getMostSpecificConfig(
       this.market.mgv.network.name,
-      this.getBase().name,
-      this.getQuote().name,
+      this.getBase().id,
+      this.getQuote().id,
     );
   }
 
