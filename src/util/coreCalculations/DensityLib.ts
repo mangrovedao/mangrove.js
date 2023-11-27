@@ -23,7 +23,7 @@ type uint = BigNumber;
 
 // import {Field} from "@mgv/lib/core/TickTreeLib.sol";
 import {ONES} from "./Constants";
-import {BitLib} from "./BitLib";
+import * as BitLib from "./BitLib";
 
 /*
 

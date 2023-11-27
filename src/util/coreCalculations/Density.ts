@@ -1,6 +1,6 @@
 import Big from "big.js";
 import { BigNumber } from "ethers";
-import { BitLib } from "./BitLib";
+import * as BitLib from "./BitLib";
 
 const ONES = -1n;
 const MAX_MARKET_ORDER_GAS = 10000000n;

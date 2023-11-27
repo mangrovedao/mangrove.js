@@ -1,9 +1,14 @@
 /*
  * This is a TypeScript implementation of Mangrove's BitLibTest tests.
  *
- * The implementation follows the original BitLibTest implementation as closely as possible.
+ * The implementation follows the original BitLibTest implementation as closely as possible:
+ * 
+ * - uint is modeled as BigNumber
+ * - infix operators such as << are replaced by functions from uint.ts
+ * - literal constants are precomputed BigNumbers called _constant, eg _0 and _0xffffffff
+ *   - This avoids the need to use BigNumber.from() everywhere
  *
- * The original BitLibTest implementation can be found here: https://github.com/mangrovedao/mangrove-core/blob/0ff366b52b8f3ee5962a8dc53c33ad6d5aaded86/test/self/BitLib.t.sol
+ * The original BitLibTest implementation can be found here: https://github.com/mangrovedao/mangrove-core/blob/596ed77be48838b10364b7eda1a4f4a4970c0cad/test/self/BitLib.t.sol
  * This is the audited version of Mangrove v2.0.0.
  */
 
@@ -11,6 +16,9 @@ import { assert } from "chai";
 import { BigNumber, BigNumberish, ethers } from "ethers";
 import { shl } from "../../../src/util/coreCalculations/uint";
 type uint = BigNumber;
+
+// Literal constants are precomputed for readability and efficiency.
+const _0 = BigNumber.from(0);
 
 // FIXME: Move somewhere else
 // Assertion functions that mimic Solidity's Foundry's assertions.
@@ -35,9 +43,10 @@ function generateRandomBigNumber(bits: number): BigNumber {
 }
 
 
+// # BitLib.t.sol
+
 // import "@mgv/lib/Test2.sol";
-import { BitLib } from "../../../src/util/coreCalculations/BitLib";
-// import "@mgv/lib/Debug.sol";
+import * as BitLib from "../../../src/util/coreCalculations/BitLib";
 
 // contract BitLibTest is Test2 {
 describe("BitLib unit test suite", () => {
@@ -51,7 +60,7 @@ describe("BitLib unit test suite", () => {
       assertEq(BitLib.ctz64(shl(ethers.constants.MaxUint256, i)), i);
       assertEq(BitLib.ctz64(shl(brutalizer.or(1), i)), i);
     }
-    assertEq(BitLib.ctz64(BigNumber.from("0")), 64);
+    assertEq(BitLib.ctz64(_0), 64);
   });
 
   it("test_fls()", () => {
@@ -61,6 +70,6 @@ describe("BitLib unit test suite", () => {
       assertEq(BitLib.fls((shl(1, i))), i);
       assertEq(BitLib.fls((shl(1, i)).add(1)), i);
     }
-    assertEq(BitLib.fls(BigNumber.from(0)), 256);
+    assertEq(BitLib.fls(_0), 256);
   });
 });

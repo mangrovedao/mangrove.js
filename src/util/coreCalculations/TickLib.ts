@@ -13,7 +13,7 @@ import {
   LOG_BP_2X235,
 } from "./Constants";
 import Big from "big.js";
-import { BitLib } from "./BitLib";
+import * as BitLib from "./BitLib";
 import { Bigish } from "../../types";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
