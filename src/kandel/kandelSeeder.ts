@@ -4,12 +4,12 @@ import { typechain } from "../types";
 
 import TradeEventManagement from "../util/tradeEventManagement";
 
-import KandelInstance from "./kandelInstance";
 import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
 import KandelConfiguration from "./kandelConfiguration";
 import { NewKandelEvent } from "../types/typechain/KandelSeeder";
 import { NewAaveKandelEvent } from "../types/typechain/AaveKandelSeeder";
+import GeometricKandelInstance from "./geometricKandel/geometricKandelInstance";
 
 /** The parameters for sowing the Kandel instance.
  * @param onAave Whether to create an AaveKandel which supplies liquidity on Aave to earn yield, or a standard Kandel.
@@ -113,7 +113,7 @@ class KandelSeeder {
       switch (name) {
         case "NewKandel": {
           const kandelEvent = evt as NewKandelEvent;
-          return KandelInstance.create({
+          return GeometricKandelInstance.create({
             address: kandelEvent.args.kandel,
             signer: this.mgv.signer,
             market: params.market,
@@ -122,7 +122,7 @@ class KandelSeeder {
         case "NewAaveKandel": {
           evt as NewAaveKandelEvent;
           const aaveKandelEvent = evt as NewAaveKandelEvent;
-          return KandelInstance.create({
+          return GeometricKandelInstance.create({
             address: aaveKandelEvent.args.aaveKandel,
             signer: this.mgv.signer,
             market: params.market,

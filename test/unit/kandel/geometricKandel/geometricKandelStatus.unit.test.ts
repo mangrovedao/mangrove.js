@@ -2,17 +2,19 @@ import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
 import {
+  GeometricKandelDistributionGenerator,
   KandelDistribution,
-  KandelDistributionGenerator,
   Market,
-} from "../../src";
-import KandelDistributionHelper from "../../src/kandel/kandelDistributionHelper";
-import KandelStatus, { Statuses } from "../../src/kandel/kandelStatus";
-import { createGeneratorStub } from "./kandelDistributionGenerator.unit.test";
-import TickPriceHelper from "../../src/util/tickPriceHelper";
-import { assertApproxEqRel } from "../util/helpers";
+} from "../../../../src/";
+import GeometricKandelStatus, {
+  Statuses,
+} from "../../../../src/kandel/geometricKandel/geometricKandelStatus";
+import TickPriceHelper from "../../../../src/util/tickPriceHelper";
+import { assertApproxEqRel } from "../../../util/helpers";
+import { createGeneratorStub } from "./geometricKandelDistributionGenerator.unit.test";
+import GeometricKandelDistributionHelper from "../../../../src/kandel/geometricKandel/geometricKandelDistributionHelper";
 
-describe("KandelStatus unit tests suite", () => {
+describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`, () => {
   function getOfferId(offerType: Market.BA, index: number) {
     return offerType == "asks" ? (index + 1) * 100 : (index + 1) * 1000;
   }
@@ -128,8 +130,8 @@ describe("KandelStatus unit tests suite", () => {
     });
   }
 
-  let sut: KandelStatus;
-  let generator: KandelDistributionGenerator;
+  let sut: GeometricKandelStatus;
+  let generator: GeometricKandelDistributionGenerator;
   const askTickPriceHelper = new TickPriceHelper("asks", {
     base: { decimals: 4 },
     quote: { decimals: 6 },
@@ -139,24 +141,29 @@ describe("KandelStatus unit tests suite", () => {
     quote: { decimals: 6 },
   });
   beforeEach(() => {
-    sut = new KandelStatus(new KandelDistributionHelper(4, 6));
+    sut = new GeometricKandelStatus(
+      new GeometricKandelDistributionHelper(4, 6),
+    );
 
     generator = createGeneratorStub();
   });
 
-  describe(KandelStatus.prototype.getIndexOfPriceClosestToMid.name, () => {
-    it(`gets offer if single`, () => {
-      const index = sut.getIndexOfPriceClosestToMid(5, [1]);
-      assert.equal(index, 0);
-    });
+  describe(
+    GeometricKandelStatus.prototype.getIndexOfPriceClosestToMid.name,
+    () => {
+      it(`gets offer if single`, () => {
+        const index = sut.getIndexOfPriceClosestToMid(5, [1]);
+        assert.equal(index, 0);
+      });
 
-    it(`gets closest to mid on multiple`, () => {
-      // Arrange/act
-      const index = sut.getIndexOfPriceClosestToMid(5, [42, 3, 6, 9]);
-      // Assert
-      assert.equal(index, 2);
-    });
-  });
+      it(`gets closest to mid on multiple`, () => {
+        // Arrange/act
+        const index = sut.getIndexOfPriceClosestToMid(5, [42, 3, 6, 9]);
+        // Assert
+        assert.equal(index, 2);
+      });
+    },
+  );
 
   function getOffersWithPrices(distribution: KandelDistribution) {
     return distribution.offers.asks
@@ -178,7 +185,7 @@ describe("KandelStatus unit tests suite", () => {
       );
   }
 
-  describe(KandelStatus.prototype.getOfferStatuses.name, () => {
+  describe(GeometricKandelStatus.prototype.getOfferStatuses.name, () => {
     it("gets all as expected for initial distribution", async () => {
       // Arrange
       const pricePoints = 6;
@@ -224,9 +231,10 @@ describe("KandelStatus unit tests suite", () => {
           ? {
               live: ask?.gives.gt(0),
               offerId: getOfferId("asks", i),
-              price: sut.distributionHelper.askTickPriceHelper.priceFromTick(
-                expectedBaseQuoteTick,
-              ),
+              price:
+                sut.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
+                  expectedBaseQuoteTick,
+                ),
               tick: expectedBaseQuoteTick,
             }
           : undefined;
@@ -234,9 +242,10 @@ describe("KandelStatus unit tests suite", () => {
           ? {
               live: bid?.gives.gt(0),
               offerId: getOfferId("bids", i),
-              price: sut.distributionHelper.bidTickPriceHelper.priceFromTick(
-                -expectedBaseQuoteTick,
-              ),
+              price:
+                sut.geometricDistributionHelper.helper.bidTickPriceHelper.priceFromTick(
+                  -expectedBaseQuoteTick,
+                ),
               tick: -expectedBaseQuoteTick,
             }
           : undefined;
@@ -244,7 +253,7 @@ describe("KandelStatus unit tests suite", () => {
           expectedLiveBid: bid?.gives.gt(0),
           expectedLiveAsk: ask?.gives.gt(0),
           expectedPrice:
-            sut.distributionHelper.askTickPriceHelper.priceFromTick(
+            sut.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
               expectedBaseQuoteTick,
             ),
           expectedBaseQuoteTick: expectedBaseQuoteTick,
@@ -286,7 +295,7 @@ describe("KandelStatus unit tests suite", () => {
     it("gets price and status with dead and crossed offers", () => {
       // Arrange
       const baseQuoteTickOffset =
-        sut.distributionHelper.calculateBaseQuoteTickOffset(Big(2));
+        sut.geometricDistributionHelper.calculateBaseQuoteTickOffset(Big(2));
       const pricePoints = 6;
       const midPrice = Big(5000);
 
@@ -429,7 +438,9 @@ describe("KandelStatus unit tests suite", () => {
         it(`gets status with ${dead} dead near mid with stepSize=${stepSize} where ${reason}`, () => {
           // Arrange
           const baseQuoteTickOffset =
-            sut.distributionHelper.calculateBaseQuoteTickOffset(Big(2));
+            sut.geometricDistributionHelper.calculateBaseQuoteTickOffset(
+              Big(2),
+            );
           const pricePoints = 6;
           const midPrice = Big(5000);
 
@@ -516,7 +527,9 @@ describe("KandelStatus unit tests suite", () => {
       // Arrange
       const priceRatio = Big(2);
       const baseQuoteTickOffset =
-        sut.distributionHelper.calculateBaseQuoteTickOffset(priceRatio);
+        sut.geometricDistributionHelper.calculateBaseQuoteTickOffset(
+          priceRatio,
+        );
       const pricePoints = 2;
       const midPrice = Big(5000);
 

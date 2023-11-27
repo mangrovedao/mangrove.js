@@ -2,7 +2,6 @@ import Mangrove from "../mangrove";
 import { typechain } from "../types";
 
 import TradeEventManagement from "../util/tradeEventManagement";
-import { PromiseOrValue } from "../types/typechain/common";
 import { OLKeyStruct } from "../types/typechain/Mangrove";
 
 /**
@@ -50,18 +49,18 @@ class KandelFarm {
    * @returns All kandels matching the filter.
    */
   public async getKandels(filter?: {
-    owner?: PromiseOrValue<string> | null;
-    baseQuoteOlKey?: PromiseOrValue<OLKeyStruct> | null;
-    baseQuoteOfferList?: PromiseOrValue<{
+    owner?: string | null;
+    baseQuoteOlKey?: OLKeyStruct | null;
+    baseQuoteOfferList?: {
       base: string;
       quote: string;
       tickSpacing: number;
-    }> | null;
+    } | null;
     onAave?: boolean;
   }) {
-    let olKey = await filter?.baseQuoteOlKey;
+    let olKey = filter?.baseQuoteOlKey;
     if (!olKey) {
-      const offerList = await filter?.baseQuoteOfferList;
+      const offerList = filter?.baseQuoteOfferList;
       if (offerList) {
         const baseAddress = this.mgv.getAddress(offerList.base);
         const quoteAddress = this.mgv.getAddress(offerList.quote);
@@ -87,10 +86,10 @@ class KandelFarm {
               x.args.baseQuoteOlKeyHash,
             );
             const baseToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.outbound_tkn,
+              olKeyStruct!.outbound_tkn,
             );
             const quoteToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.inbound_tkn,
+              olKeyStruct!.inbound_tkn,
             );
             return {
               kandelAddress: x.args.kandel,
@@ -117,10 +116,10 @@ class KandelFarm {
               x.args.baseQuoteOlKeyHash,
             );
             const baseToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.outbound_tkn,
+              olKeyStruct!.outbound_tkn,
             );
             const quoteToken = await this.mgv.getTokenAndAddress(
-              await olKeyStruct!.inbound_tkn,
+              olKeyStruct!.inbound_tkn,
             );
             return {
               kandelAddress: x.args.aaveKandel,

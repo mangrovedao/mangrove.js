@@ -43,7 +43,7 @@ describe("Market integration tests suite", () => {
       provider: mgv.provider,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -1161,6 +1161,7 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
+    const semibook = market.getSemibook("asks");
     const done = new Deferred();
     let estimatedVolume = 0;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1179,13 +1180,13 @@ describe("Market integration tests suite", () => {
 
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        tick: TickLib.getTickFromPrice(1.2 / 0.3),
+        tick: semibook.tickPriceHelper.tickFromPrice(1.2 / 0.3),
         gives: "0.3",
       })
       .then((tx) => tx.wait());
     await helpers
       .newOffer(mgv, market.base, market.quote, {
-        tick: TickLib.getTickFromPrice(1 / 0.25),
+        tick: semibook.tickPriceHelper.tickFromPrice(1 / 0.25),
         gives: "0.25",
       })
       .then((tx) => tx.wait());

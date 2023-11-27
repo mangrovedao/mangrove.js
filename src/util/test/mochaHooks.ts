@@ -1,6 +1,6 @@
 // TODO do not distribute in browser version
 import { ethers } from "ethers";
-import { Mangrove, OfferMaker, eth } from "../../";
+import { Mangrove } from "../../";
 import node, { inputServerParamsType, serverType } from "../../util/node";
 import { Deferred } from "../../util";
 import ProxyServer from "transparent-proxy";
@@ -35,7 +35,6 @@ export type hookInfo = {
     tester: account;
     arbitrager: account;
   };
-  offerMakerAddress?: string;
   server?: serverType;
   closeCurrentProxy?: () => Promise<void>;
 };
@@ -85,15 +84,6 @@ export const mochaHooks = {
       provider,
       privateKey: hook.accounts.deployer.key,
     });
-    const offerMakerSigner = await eth._createSigner({
-      provider: provider,
-      privateKey: hook.accounts.tester.key,
-    });
-    hook.offerMakerAddress = await OfferMaker.deploy(
-      // Saving the address for later use
-      mgv.address,
-      offerMakerSigner.signer,
-    );
 
     const tokenA = await mgv.token("TokenA");
     const tokenB = await mgv.token("TokenB");
@@ -113,15 +103,13 @@ export const mochaHooks = {
     );
 
     const tx = await mgv.fundMangrove(10, mgv.getAddress("SimpleTestMaker"));
-    // making sure that last one is mined before snapshotting, anvil may snapshot too early otherwise
+    // making sure that last one is mined before snapshot is taken, anvil may snapshot too early otherwise
     await tx.wait();
     mgv.disconnect();
     await hook.server.snapshot();
   },
 
   async beforeEachImpl(hook: hookInfo) {
-    Mangrove.setAddress("OfferMaker", hook.offerMakerAddress!, "local"); //FIXME: have to set the address in beforeEach, instead of beforeAll, because mangrove configuration gets reset by other tests. (e.g. configuration unit tests)
-
     if (!hook.proxies) {
       hook.proxies = [];
     }

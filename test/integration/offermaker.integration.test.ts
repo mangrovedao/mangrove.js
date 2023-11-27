@@ -1,7 +1,13 @@
 import assert from "assert";
 import { ethers } from "ethers";
 
-import { LiquidityProvider, Mangrove, OfferLogic } from "../../src";
+import {
+  LiquidityProvider,
+  Mangrove,
+  OfferLogic,
+  OfferMaker,
+  eth,
+} from "../../src";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { approxEq } from "../util/helpers";
 
@@ -23,13 +29,23 @@ describe("OfferMaker integration test suite", () => {
       provider: mgv.provider,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     mgv.provider.pollingInterval = 10;
-    const logic = mgv.offerLogic("OfferMaker");
+
+    const offerMakerSigner = await eth._createSigner({
+      provider: mgv.provider,
+      privateKey: this.accounts.tester.key,
+    });
+    const offerMakerAddress = await OfferMaker.deploy(
+      mgv.address,
+      offerMakerSigner.signer,
+    );
+
+    const logic = mgv.offerLogic(offerMakerAddress);
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",

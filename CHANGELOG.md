@@ -1,5 +1,13 @@
 # Next version
 
+# 2.0.0-7
+
+# 2.0.0-6
+
+# 2.0.0-5
+
+- feat: Add usage of Geometric Kandel's call-data-reducing function
+
 # 2.0.0-4
 
 - fix: For prereleases of contract packages, include deployments of earlier prereleases of those packages.
