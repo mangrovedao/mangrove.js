@@ -13,11 +13,9 @@
  * This is the audited version of Mangrove v2.0.0.
  */
 
-import { assert } from "chai";
-import { BigNumber, BigNumberish, ethers } from "ethers";
+import { Density, assertEq, assertGe, assertLe, generateRandomBigNumberRange, uint, toString } from "./coreCalculationsTestUtils";
+import { BigNumber, ethers } from "ethers";
 import { shl } from "../../../src/util/coreCalculations/uint";
-type uint = BigNumber;
-type Density = BigNumber;
 
 // Literal constants are precomputed for readability and efficiency.
 const _0 = BigNumber.from(0);
@@ -39,68 +37,6 @@ const _250 = BigNumber.from(250);
 const _1000 = BigNumber.from(1000);
 const _2500 = BigNumber.from(2500);
 const _10000 = BigNumber.from(10000);
-
-// FIXME: Move somewhere else
-
-function toString(density: Density): string {
-  if (!density.and(DensityLib.MASK).eq(density)) {
-    throw new Error("Given density is too big");
-  }
-  const mantissa: uint = DensityLib.mantissa(density);
-  const exp: uint = DensityLib.exponent(density);
-  if (exp.eq(1)) {
-    throw new Error("Invalid density, value not canonical");
-  }
-  if (exp.lt(2)) {
-    return exp.toString() + " * 2^-32";
-  }
-  const unbiasedExp: number = exp.toNumber() - 32;
-  const mant: string = mantissa.eq(0) ? "1" : mantissa.eq(1) ? "1.25" : mantissa.eq(2) ? "1.5" : "1.75";
-  return mant + " * 2^" + unbiasedExp.toString();
-}
-
-
-// Assertion functions that mimic Solidity's Foundry's assertions.
-function assertEq(a: BigNumber | string, b: BigNumberish, err?: string) {
-  if (typeof a === "string") {
-    assert.equal(a, b, err);
-  } else {
-    assert.isTrue(a.eq(b), err);
-  }
-}
-
-function assertGe(a: BigNumber, b: BigNumberish, err?: string) {
-  assert.isTrue(a.gte(b), err);
-}
-
-function assertLe(a: BigNumber, b: BigNumberish, err?: string) {
-  assert.isTrue(a.lte(b), err);
-}
-
-// NB: Due to the limitations of `number` this is a poor and slow approximation
-// of a random distribution, but good enough for generating parameters for tests.
-function generateRandomBigNumber(bits: number): BigNumber {
-  let randomBigNumber = _0;
-
-  for (let i = 0; i < bits; i++) {
-      // Generate a random bit (0 or 1)
-      const bit = Math.random() < 0.5 ? 0 : 1;
-      
-      // Shift the current number left and add the new bit
-      randomBigNumber = randomBigNumber.shl(1).or(bit);
-  }
-
-  return randomBigNumber;
-}
-
-function generateRandomBigNumberRange(bits: number, size: number): BigNumber[] {
-  // Always include edge cases
-  const result: BigNumber[] = [_0, _1, _2.pow(bits).sub(1)];
-  for (let i = result.length; i < size; i++) {
-    result.push(generateRandomBigNumber(bits));
-  }
-  return result;
-}
 
 
 // # Density.t.sol

@@ -12,35 +12,12 @@
  * This is the audited version of Mangrove v2.0.0.
  */
 
-import { assert } from "chai";
-import { BigNumber, BigNumberish, ethers } from "ethers";
+import { assertEq, generateRandomBigNumber, uint } from "./coreCalculationsTestUtils";
+import { BigNumber, ethers } from "ethers";
 import { shl } from "../../../src/util/coreCalculations/uint";
-type uint = BigNumber;
 
 // Literal constants are precomputed for readability and efficiency.
 const _0 = BigNumber.from(0);
-
-// FIXME: Move somewhere else
-// Assertion functions that mimic Solidity's Foundry's assertions.
-function assertEq(a: BigNumber, b: BigNumberish, err?: string) {
-  assert.isTrue(a.eq(b), err);
-}
-
-// NB: Due to the limitations of `number` this is a poor and slow approximation
-// of a random distribution, but good enough for generating parameters for tests.
-function generateRandomBigNumber(bits: number): BigNumber {
-  let randomBigNumber = BigNumber.from(0);
-
-  for (let i = 0; i < bits; i++) {
-      // Generate a random bit (0 or 1)
-      const bit = Math.random() < 0.5 ? 0 : 1;
-      
-      // Shift the current number left and add the new bit
-      randomBigNumber = randomBigNumber.shl(1).or(bit);
-  }
-
-  return randomBigNumber;
-}
 
 
 // # BitLib.t.sol
