@@ -1,15 +1,18 @@
-/**
+/*
  * This is a TypeScript implementation of Mangrove's DensityLib library. It allows efficient and accurate simulation of Mangrove's density calculations without RPC calls.
  *
- * The implementation follows the original DensityLib implementation as closely as possible.
- * Notes:
- * - uint -> BigNumber
- * - infix operators -> BigNumber functions FIXME overflow
- * - unchecked -> assumed not to over-/underflow
- * - paramsTo96X32 overloads -> paramsTo96X32_centiusd and paramsTo96X32_Mwei
- * - FIXME: Precompute constants at the top
+ * The implementation follows the original DensityLib implementation as closely as possible:
+ * - type uint is defined as BigNumber
+ * - unchecked code is assumed not to over-/underflow
+ * - infix operators such as << are replaced by functions from uint.ts
+ * - uint operations that may overflow are replaced by functions from uint.ts
+ * - literal constants are precomputed BigNumbers called _constant, eg _0 or _0xffffffff
+ *   - This avoids the need to use BigNumber.from() everywhere
+ *   - When a literal is small enough to fit in `number` and used in a context where BigNumberish allowed, it is left as a literal
+ * - Density.wrap/unwrap have been removed as TypeScript uses structural typing and we do not wish to introduce a wrapper around BigNumber
+ * - paramsTo96X32 has two overloads that have been split into paramsTo96X32_centiusd and paramsTo96X32_Mwei
  *
- * The original DensityLib implementation can be found here: https://github.com/mangrovedao/mangrove-core/blob/0ff366b52b8f3ee5962a8dc53c33ad6d5aaded86/lib/core/DensityLib.sol
+ * The original DensityLib implementation can be found here: https://github.com/mangrovedao/mangrove-core/blob/596ed77be48838b10364b7eda1a4f4a4970c0cad/lib/core/DensityLib.sol
  * This is the audited version of Mangrove v2.0.0.
  * 
  * NB: Consider using the solidity-math library for easier, more direct, and type-safe
@@ -18,8 +21,20 @@
 
 import assert from "assert";
 import { BigNumber } from "ethers";
-import { shl, shr, not } from "./uint";
+import { shl, shr, not, mul } from "./uint";
 type uint = BigNumber;
+
+// Literal constants are precomputed for readability and efficiency.
+const _1 = BigNumber.from(1);
+const _2 = BigNumber.from(2);
+const _9 = BigNumber.from(9);
+const _10 = BigNumber.from(10);
+
+
+// # DensityLib.sol
+
+// SPDX-License-Identifier: MIT
+// pragma solidity ^0.8.17;
 
 // import {Field} from "@mgv/lib/core/TickTreeLib.sol";
 import {ONES} from "./Constants";
@@ -33,7 +48,7 @@ Density can be < 1.
 
 The density of a semibook is stored as a 9 bits float. For convenience, governance functions read density as a 96.32 fixed point number. The functions below give conversion utilities between the two formats
 
-As a guideline, fixed-point densities should be uints and should use hungarian notation (for instance `let density96X32: uint`). Floating-point densities should use the Density user-defined type.
+As a guideline, fixed-point densities should be uints and should use hungarian notation (for instance `uint density96X32`). Floating-point densities should use the Density user-defined type.
 
 The float <-> fixed conversion is format agnostic but the expectation is that fixed points are 96x32, and floats are 2-bit mantissa, 7bit exponent with bias 32. 
 
@@ -61,17 +76,17 @@ so the small values have some holes:
 ```
 */
 
-type Density = BigNumber;
+type Density = uint;
 // using DensityLib for Density global;
 
 // library DensityLib {
   /* Numbers in this file assume that density is 9 bits in structs.ts */
-  export const BITS = BigNumber.from("9"); // must match structs.ts
-  export const MANTISSA_BITS = BigNumber.from("2");
+  export const BITS = _9; // must match structs.ts
+  export const MANTISSA_BITS = _2;
   export const SUBNORMAL_LIMIT = not(shl(ONES, (MANTISSA_BITS.add(1))));
   export const MANTISSA_MASK = not(shl(ONES, MANTISSA_BITS));
   export const MASK = not(shl(ONES, BITS));
-  export const MANTISSA_INTEGER = shl(BigNumber.from("1"), MANTISSA_BITS);
+  export const MANTISSA_INTEGER = shl(_1, MANTISSA_BITS);
   export const EXPONENT_BITS = BITS.sub(MANTISSA_BITS);
 
   export function eq(a: Density, b: Density): boolean {// unchecked {
@@ -152,15 +167,9 @@ type Density = BigNumber;
     // Do not use unchecked here
     // require(uint8(outbound_decimals) == outbound_decimals,"DensityLib/fixedFromParams1/decimals/wrong");
     assert(outbound_decimals.lt(shl(2, 8)), "DensityLib/fixedFromParams1/decimals/wrong");
-    const num: uint = cover_factor.mul(gasprice_in_Mwei).mul(BigNumber.from(10).pow(outbound_decimals)).mul(eth_in_centiusd);
-    assert(num.and(ONES).eq(num), "DensityLib/fixedFromParams1/overflow1");
+    const num: uint = mul(cover_factor, mul(gasprice_in_Mwei, mul(_10.pow(outbound_decimals), eth_in_centiusd)));
     // use * instead of << to trigger overflow check
-    // return (num * (1 << 32)) / (outbound_display_in_centiusd * 1e12);
-    const numerator = num.mul(shl(1, 32));
-    assert(numerator.and(ONES).eq(numerator), "DensityLib/fixedFromParams1/overflow2");
-    const denominator = outbound_display_in_centiusd.mul(BigNumber.from(10).pow(12));
-    assert(denominator.and(ONES).eq(denominator), "DensityLib/fixedFromParams1/overflow3");
-    return numerator.div(denominator);
+    return mul(num, shl(1, 32)).div(mul(outbound_display_in_centiusd, _10.pow(12)));
   }
 
   /* Version with token in Mwei instead of usd */
@@ -173,12 +182,8 @@ type Density = BigNumber;
     /* **Do not** use unchecked here. */
     // require(uint8(outbound_decimals) == outbound_decimals,"DensityLib/fixedFromParams2/decimals/wrong");
     assert(outbound_decimals.lt(shl(2, 8)), "DensityLib/fixedFromParams2/decimals/wrong");
-    const num: uint = cover_factor.mul(gasprice_in_Mwei).mul(BigNumber.from(10).pow(outbound_decimals));
-    assert(num.and(ONES).eq(num), "DensityLib/fixedFromParams2/overflow1");
+    const num: uint = mul(cover_factor, mul(gasprice_in_Mwei, _10.pow(outbound_decimals)));
     /* use `*` instead of `<<` to trigger overflow check */
-    // return (num * (1 << 32)) / outbound_display_in_Mwei;
-    const numerator = num.mul(shl(1, 32));
-    assert(numerator.and(ONES).eq(numerator), "DensityLib/fixedFromParams2/overflow2");
-    return numerator.div(outbound_display_in_Mwei);
+    return mul(num, shl(1, 32)).div(outbound_display_in_Mwei);
   }
 // }

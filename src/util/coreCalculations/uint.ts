@@ -9,6 +9,7 @@
 
 import { BigNumber, BigNumberish } from "ethers";
 import * as yul from "./yul";
+import { ONES } from "./Constants";
 
 // a << b for uint256.
 export function shl(a: BigNumberish, b: BigNumberish): BigNumber {
@@ -22,7 +23,16 @@ export function shr(a: BigNumberish, b: BigNumberish): BigNumber {
   return yul.shr(b, a);
 }
 
-// ~a for uint256
+// ~a for uint256.
 export function not(a: BigNumber): BigNumber {
   return yul.not(a);
+}
+
+// a * b for uint256.
+export function mul(a: BigNumberish, b: BigNumberish): BigNumber {
+  const result = BigNumber.from(a).mul(b);
+  if (result.gt(ONES)) {
+    throw new Error(`coreCalculations/uint/mul/overflow - a: ${a}, b: ${b}`);
+  }
+  return result;
 }
