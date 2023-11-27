@@ -86,10 +86,10 @@ class KandelFarm {
               x.args.baseQuoteOlKeyHash,
             );
             const baseToken = await this.mgv.tokenFromAddress(
-              await olKeyStruct!.outbound_tkn,
+              olKeyStruct!.outbound_tkn,
             );
             const quoteToken = await this.mgv.tokenFromAddress(
-              await olKeyStruct!.inbound_tkn,
+              olKeyStruct!.inbound_tkn,
             );
             return {
               kandelAddress: x.args.kandel,
@@ -116,10 +116,10 @@ class KandelFarm {
               x.args.baseQuoteOlKeyHash,
             );
             const baseToken = await this.mgv.tokenFromAddress(
-              await olKeyStruct!.outbound_tkn,
+              olKeyStruct!.outbound_tkn,
             );
             const quoteToken = await this.mgv.tokenFromAddress(
-              await olKeyStruct!.inbound_tkn,
+              olKeyStruct!.inbound_tkn,
             );
             return {
               kandelAddress: x.args.aaveKandel,
