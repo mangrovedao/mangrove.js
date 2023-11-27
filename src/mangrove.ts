@@ -958,13 +958,9 @@ class Mangrove {
     return Promise.all(
       openMarketsData.map(({ base, quote, tickSpacing }) => {
         this.setAddress(base.id, base.address);
-        if (configuration.tokens.getDecimals(base.id) === undefined) {
-          configuration.tokens.setDecimals(base.id, base.decimals);
-        }
+        configuration.tokens.setDecimals(base.id, base.decimals);
         this.setAddress(quote.id, quote.address);
-        if (configuration.tokens.getDecimals(quote.id) === undefined) {
-          configuration.tokens.setDecimals(quote.id, quote.decimals);
-        }
+        configuration.tokens.setDecimals(quote.id, quote.decimals);
         return Market.connect({
           mgv: this,
           base: base.id,

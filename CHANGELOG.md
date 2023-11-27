@@ -12,6 +12,7 @@
 - feat!: The `Mangrove.openMarkets` function now uses `Token` instead of a bespoke token data struct.
 - feat: `Mangrove.market` and `Market.connect` now accept either symbol, token ID, or `Token` for base and quote.
 - feat: Added `displayName` and `displayedAsPriceDecimals` to `Token`.
+- feat!: `Token.getDecimals` now throws an error instead of returning undefined if the decimals are not on record.
 
 # 2.0.0-7
 

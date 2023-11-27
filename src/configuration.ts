@@ -319,19 +319,11 @@ export const tokensConfiguration = {
   },
 
   /**
-   * Read decimals for `tokenId`.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  getDecimals: (tokenId: tokenId): number | undefined => {
-    return getOrCreateTokenConfig(tokenId).decimals;
-  },
-
-  /**
    * Read decimals for `tokenId`. Fails if the decimals are not in the configuration.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimalsOrFail: (tokenId: tokenId): number => {
-    const decimals = tokensConfiguration.getDecimals(tokenId);
+  getDecimals: (tokenId: tokenId): number => {
+    const decimals = getOrCreateTokenConfig(tokenId).decimals;
     if (decimals === undefined) {
       throw Error(`No decimals on record for token ${tokenId}`);
     }
