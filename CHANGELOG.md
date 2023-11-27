@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-9
+
 - feat!: `MgvToken` has been renamed to `Token`.
 - feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `Token.createTokenFromAddress` and read the decimals from that token.
 - feat!: `Mangrove.toUnits|fromUnits` no longer accepts a token name/symbol as this was ambiguous. Instead, use `Token.createToken` and call `toUnits|fromUnits` on that.
