@@ -3,14 +3,12 @@ import { BigNumber } from "ethers";
 import { BitLib } from "./BitLib";
 
 const ONES = -1n;
-const MAX_MARKET_ORDER_GAS = 10000000n;
 const BITS = 9n; // must match structs.ts
 const MANTISSA_BITS = 2n;
 const SUBNORMAL_LIMIT = ~(ONES << (MANTISSA_BITS + 1n));
 const MANTISSA_MASK = ~(ONES << MANTISSA_BITS);
 const MASK = ~(ONES << BITS);
 const MANTISSA_INTEGER = 1n << MANTISSA_BITS;
-const EXPONENT_BITS = BITS - MANTISSA_BITS;
 
 export class Density {
   #value: BigNumber;
@@ -98,9 +96,9 @@ export class Density {
 
   static paramsTo96X32(
     outbound_decimals: number,
-    gasprice_in_gwei: BigNumber,
-    eth_in_usdx100: BigNumber,
-    outbound_display_in_usdx100: BigNumber,
+    gasprice_in_mwei: BigNumber,
+    eth_in_usd_centiusd: BigNumber,
+    outbound_display_in_centiusd: BigNumber,
     cover_factor: BigNumber,
   ): BigNumber {
     if (
@@ -111,31 +109,12 @@ export class Density {
       throw new Error("DensityLib/fixedFromParams1/decimals/wrong");
     }
     const num = cover_factor
-      .mul(gasprice_in_gwei)
+      .mul(gasprice_in_mwei)
       .mul(BigNumber.from(10).pow(outbound_decimals))
-      .mul(eth_in_usdx100);
+      .mul(eth_in_usd_centiusd);
     return num
       .mul(BigNumber.from(1).shl(32))
-      .div(outbound_display_in_usdx100.mul(1e9));
-  }
-
-  paramsTo96X32_2(
-    outbound_decimals: number,
-    gasprice_in_gwei: BigNumber,
-    outbound_display_in_gwei: BigNumber,
-    cover_factor: BigNumber,
-  ): BigNumber {
-    if (
-      outbound_decimals !== Math.floor(outbound_decimals) ||
-      outbound_decimals < 0 ||
-      outbound_decimals > 255
-    ) {
-      throw new Error("DensityLib/fixedFromParams2/decimals/wrong");
-    }
-    const num = cover_factor
-      .mul(gasprice_in_gwei)
-      .mul(Math.pow(10, outbound_decimals));
-    return num.mul(BigNumber.from(1).shl(32)).div(outbound_display_in_gwei);
+      .div(outbound_display_in_centiusd.mul(1e12));
   }
 
   densityToString() {

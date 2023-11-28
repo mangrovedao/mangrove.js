@@ -127,9 +127,9 @@ describe("Density unit test suite", () => {
   it("test_paramsTo96X32", () => {
     let res = Density.paramsTo96X32(
       6, //outbound_decimals
-      BigNumber.from(250), //gasprice_in_gwei
-      BigNumber.from(1 * 100), //eth_in_usdx100
-      BigNumber.from(1000 * 100), //outbound_display_in_usdx100
+      BigNumber.from(250_000), //gasprice_in_mwei
+      BigNumber.from(1 * 100), //eth_in_centiusd
+      BigNumber.from(1000 * 100), //outbound_display_in_centiusd
       BigNumber.from(1000), //cover_factor
     );
     assert.deepStrictEqual(
@@ -138,9 +138,9 @@ describe("Density unit test suite", () => {
     );
     res = Density.paramsTo96X32(
       18, //outbound_decimals
-      BigNumber.from(2500), //gasprice_in_gwei
-      BigNumber.from(10000 * 100), //eth_in_usdx100
-      BigNumber.from(1 * 100), //outbound_display_in_usdx100
+      BigNumber.from(2_500_000), //gasprice_in_mwei
+      BigNumber.from(10000 * 100), //eth_in_
+      BigNumber.from(1 * 100), //outbound_display_in_centiusd
       BigNumber.from(1000), //cover_factor
     );
     assert.deepStrictEqual(
