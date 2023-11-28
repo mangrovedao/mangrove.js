@@ -26,6 +26,10 @@ export function assertLe(a: BigNumber, b: BigNumberish, err?: string) {
   assert.isTrue(a.lte(b), err);
 }
 
+export function vm_expectRevert(err: string, f: () => void) {
+  assert.throws(f, err);
+}
+
 
 // # Utility functions for generating pseudo-random values for fuzz testing.
 

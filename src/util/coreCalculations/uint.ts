@@ -9,7 +9,26 @@
 
 import { BigNumber, BigNumberish } from "ethers";
 import * as yul from "./yul";
-import { ONES } from "./Constants";
+
+export type uint = BigNumber;
+export type int = BigNumber;
+
+const _0 = BigNumber.from(0);
+const _2pow256 = BigNumber.from("2").pow(256);
+const MAX_UINT256 = _2pow256.sub(1);
+const MIN_UINT256 = _0;
+
+function checkOverflow(a: BigNumber, error: string): void {
+  if (a.gt(MAX_UINT256)) {
+    throw new Error(error);
+  }
+}
+
+function checkUnderflow(a: BigNumber, error: string): void {
+  if (a.lt(MIN_UINT256)) {
+    throw new Error(error);
+  }
+}
 
 // a << b for uint256.
 export function shl(a: BigNumberish, b: BigNumberish): BigNumber {
@@ -28,11 +47,29 @@ export function not(a: BigNumber): BigNumber {
   return yul.not(a);
 }
 
+// a + b for uint256.
+export function add(a: BigNumberish, b: BigNumberish): BigNumber {
+  const result = BigNumber.from(a).add(b);
+  checkOverflow(result, `coreCalculations/uint/add/overflow - a: ${a}, b: ${b}`);
+  return result;
+}
+
+// a - b for uint256.
+export function sub(a: BigNumberish, b: BigNumberish): BigNumber {
+  const result = BigNumber.from(a).sub(b);
+  checkUnderflow(result, `coreCalculations/uint/sub/underflow - a: ${a}, b: ${b}`);
+  return result;
+}
+
 // a * b for uint256.
 export function mul(a: BigNumberish, b: BigNumberish): BigNumber {
   const result = BigNumber.from(a).mul(b);
-  if (result.gt(ONES)) {
-    throw new Error(`coreCalculations/uint/mul/overflow - a: ${a}, b: ${b}`);
-  }
+  checkOverflow(result, `coreCalculations/uint/mul/overflow - a: ${a}, b: ${b}`);
   return result;
+}
+
+// "Cast" a uint256 or int256 to a uint256.
+// NB: This assumes a is within the appropriate range.
+export function uint(a: int): uint {
+  return yul.toUIntBigNumber(a);
 }
