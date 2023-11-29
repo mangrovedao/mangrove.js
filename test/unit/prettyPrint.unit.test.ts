@@ -5,7 +5,6 @@ import { capture, spy } from "ts-mockito";
 import { Market } from "../../src";
 import Big from "big.js";
 import { BigNumber } from "ethers";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("PrettyPrint Unit test suite", () => {
   describe("consoleOffers", () => {
@@ -21,10 +20,10 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
+        gives: Big(12),
         tick: BigNumber.from(31),
-        price: TickLib.priceFromTick(BigNumber.from(31)),
-        volume: new Big(42),
+        price: Big(1.2),
+        volume: Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -54,10 +53,10 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
+        gives: Big(12),
         tick: BigNumber.from(31),
-        price: TickLib.priceFromTick(BigNumber.from(31)),
-        volume: new Big(42),
+        price: Big(1.2),
+        volume: Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -86,10 +85,10 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
+        gives: Big(12),
         tick: BigNumber.from(31),
-        price: TickLib.priceFromTick(BigNumber.from(31)),
-        volume: new Big(42),
+        price: Big(1.2),
+        volume: Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer, offer];
 

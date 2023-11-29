@@ -4,7 +4,7 @@ import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -115,7 +115,7 @@ describe("Market unit tests suite", () => {
         gasreq: 1,
         offer_gasbase: 1000,
         gives: Big(1),
-        tick: TickLib.getTickFromPrice(price),
+        tick: TickPriceHelper.tickFromRawRatio(Big(price)),
         price: Big(price),
         volume: Big(42),
       };

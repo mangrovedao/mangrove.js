@@ -20,7 +20,6 @@ import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
 import { Density } from "../../src/util/coreCalculations/Density";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 //pretty-print when using console.log
@@ -336,6 +335,7 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const askTickPriceHelper = new TickPriceHelper("asks", market);
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
@@ -351,7 +351,7 @@ describe("Market integration tests suite", () => {
         offer_gasbase: 0,
         gives: expectedGives,
         tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        price: askTickPriceHelper.priceFromTick(BigNumber.from(23)),
         volume: expectedGives,
       };
       mockito
@@ -371,6 +371,7 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const askTickPriceHelper = new TickPriceHelper("asks", market);
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
@@ -386,7 +387,7 @@ describe("Market integration tests suite", () => {
         offer_gasbase: 0,
         gives: expectedGives,
         tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        price: askTickPriceHelper.priceFromTick(BigNumber.from(23)),
         volume: expectedGives,
       };
       mockito
@@ -490,6 +491,7 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const askTickPriceHelper = new TickPriceHelper("asks", market);
       const mockedMarket = mockito.spy(market);
       const offer: Market.Offer = {
         id: 0,
@@ -501,7 +503,7 @@ describe("Market integration tests suite", () => {
         offer_gasbase: 0,
         gives: new Big(12),
         tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        price: askTickPriceHelper.priceFromTick(BigNumber.from(23)),
         volume: new Big(42),
       };
       mockito
@@ -521,6 +523,7 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const askTickPriceHelper = new TickPriceHelper("asks", market);
       const mockedMarket = mockito.spy(market);
       const offer: Market.Offer = {
         id: 0,
@@ -532,7 +535,7 @@ describe("Market integration tests suite", () => {
         offer_gasbase: 0,
         gives: new Big(12),
         tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        price: askTickPriceHelper.priceFromTick(BigNumber.from(23)),
         volume: new Big(42),
       };
       mockito
@@ -552,6 +555,7 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const askTickPriceHelper = new TickPriceHelper("asks", market);
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
       const ba = "asks";
@@ -566,7 +570,7 @@ describe("Market integration tests suite", () => {
         offer_gasbase: 0,
         gives: expectedGives,
         tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        price: askTickPriceHelper.priceFromTick(BigNumber.from(23)),
         volume: expectedGives,
       };
       mockito
@@ -886,6 +890,8 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
+
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.mint(market.quote, maker, 100);
@@ -904,7 +910,8 @@ describe("Market integration tests suite", () => {
       tick: 2,
       gives: rawMinGivesBase.mul(2),
     });
-    const gave = TickLib.priceFromTick(BigNumber.from(1))
+    const gave = askTickPriceHelper
+      .priceFromTick(BigNumber.from(1))
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
@@ -928,6 +935,8 @@ describe("Market integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
+
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -955,7 +964,8 @@ describe("Market integration tests suite", () => {
     });
     const result = await buyPromises.result;
     result.summary = result.summary as Market.OrderSummary;
-    const gave = TickLib.priceFromTick(BigNumber.from(1))
+    const gave = askTickPriceHelper
+      .priceFromTick(BigNumber.from(1))
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -974,6 +984,8 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
+    const bidTickPriceHelper = new TickPriceHelper("bids", market);
+
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.mint(market.quote, maker, 100);
@@ -982,14 +994,14 @@ describe("Market integration tests suite", () => {
       market,
       ba: "bids",
       maker,
-      tick: TickLib.getTickFromPrice(2),
+      tick: bidTickPriceHelper.tickFromPrice(2),
       gives: 1000000,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
-      tick: TickLib.getTickFromPrice(1),
+      tick: bidTickPriceHelper.tickFromPrice(1),
       gives: 1000000,
     });
 
@@ -997,7 +1009,7 @@ describe("Market integration tests suite", () => {
 
     const sellPromises = await market.sell({
       volume: "0.0000000000000001",
-      price: TickLib.priceFromTick(MAX_TICK),
+      price: bidTickPriceHelper.priceFromTick(MAX_TICK),
     });
     const result = await sellPromises.result;
 
@@ -1019,7 +1031,7 @@ describe("Market integration tests suite", () => {
           });
 
           const tradeParams: Market.TradeParams = {
-            tick: TickLib.getTickFromPrice(
+            tick: TickPriceHelper.tickFromRawRatio(
               Big(0.000000000002).div(10),
             ).toNumber(),
             fillVolume: 10,
