@@ -105,6 +105,9 @@ class TradeEventManagement {
       fillWants: event.args.fillWants,
       restingOrder: event.args.restingOrder,
       restingOrderId: event.args.restingOrderId,
+      partialFill: false,
+      totalGot: Big(0),
+      totalGave: Big(0),
     };
   }
 
@@ -409,6 +412,9 @@ class TradeEventManagement {
             evt as MangroveOrderStartEvent,
             fillWants ? inbound_tkn : outbound_tkn,
           ),
+          totalGot: result.summary!.totalGot,
+          totalGave: result.summary!.totalGave,
+          partialFill: result.summary!.partialFill,
         };
         break;
       }
