@@ -68,9 +68,9 @@ namespace Market {
     restingOrder?: boolean;
     restingOrderId?: number;
     fee?: Big;
-    totalGot?: Big;
-    totalGave?: Big;
-    partialFill?: boolean;
+    totalGot: Big;
+    totalGave: Big;
+    partialFill: boolean;
     bounty?: BigNumber;
   };
 
