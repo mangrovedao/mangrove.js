@@ -716,12 +716,12 @@ describe("Market integration tests suite", () => {
 
     market2.subscribe(cb2);
 
-    const askTickHelpers = market.getSemibook("asks").tickPriceHelper;
+    const askTickHelper = market.getSemibook("asks").tickPriceHelper;
 
     const asksGives = Big(1);
     let askPrice = Big(2);
-    const tick = askTickHelpers.tickFromPrice(askPrice);
-    askPrice = askTickHelpers.priceFromTick(tick);
+    const tick = askTickHelper.tickFromPrice(askPrice);
+    askPrice = askTickHelper.priceFromTick(tick);
 
     await helpers
       .newOffer(mgv, market.base, market.quote, {
@@ -741,17 +741,17 @@ describe("Market integration tests suite", () => {
       tick: tick,
       gives: asksGives,
       price: askPrice,
-      wants: askTickHelpers.inboundFromOutbound(tick, asksGives),
+      wants: askTickHelper.inboundFromOutbound(tick, asksGives),
       volume: asksGives,
     };
 
-    const bidTickHelpers = market.getSemibook("bids").tickPriceHelper;
+    const bidTickHelper = market.getSemibook("bids").tickPriceHelper;
 
     const bidsGives = Big(2);
     let bidPrice = Big(2);
 
-    const bidTick = bidTickHelpers.tickFromPrice(bidPrice);
-    bidPrice = bidTickHelpers.priceFromTick(bidTick);
+    const bidTick = bidTickHelper.tickFromPrice(bidPrice);
+    bidPrice = bidTickHelper.priceFromTick(bidTick);
 
     await helpers
       .newOffer(mgv, market.quote, market.base, {
@@ -770,7 +770,7 @@ describe("Market integration tests suite", () => {
       offer_gasbase: (await market.config()).bids.offer_gasbase,
       tick: bidTick,
       gives: bidsGives,
-      wants: bidTickHelpers.inboundFromOutbound(bidTick, bidsGives),
+      wants: bidTickHelper.inboundFromOutbound(bidTick, bidsGives),
       price: bidPrice,
       volume: bidsGives.div(bidPrice),
     };
