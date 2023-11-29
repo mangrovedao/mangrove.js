@@ -204,10 +204,11 @@ namespace Market {
     tick: BigNumber;
     price: Big;
     gives: Big;
+    wants: Big;
     volume: Big;
   };
 
-  export type Offer = OfferSlim & {
+  export type Offer = Omit<OfferSlim, "wants"> & {
     next: number | undefined;
     prev: number | undefined;
     offer_gasbase: number;

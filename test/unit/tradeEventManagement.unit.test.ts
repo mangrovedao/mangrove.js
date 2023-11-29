@@ -102,6 +102,7 @@ describe("TradeEventManagement unit tests suite", () => {
         gives: expectedGives,
         tick: rawOffer.tick,
         price: expectedPrice,
+        wants: expectedPrice.mul(expectedGives).round(),
         volume: expectedVolume,
       };
 
@@ -170,6 +171,7 @@ describe("TradeEventManagement unit tests suite", () => {
         maker: rawOffer.maker,
         gasreq: rawOffer.gasreq.toNumber(),
         gives: expectedGives,
+        wants: expectedPrice.mul(expectedGives).round(),
         tick: rawOffer.tick,
         price: expectedPrice,
         volume: expectedVolume,
