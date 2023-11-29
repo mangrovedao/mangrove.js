@@ -83,7 +83,8 @@ namespace Market {
   };
   export type OrderResult = {
     txReceipt: ethers.ContractReceipt;
-    summary: OrderSummary | CleanSummary;
+    summary?: OrderSummary;
+    cleanSummary?: CleanSummary;
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];

@@ -239,7 +239,7 @@ class TradeEventManagement {
         if (this.numberOfOrderStart > 0) {
           break;
         }
-        result.summary = this.createCleanSummaryFromEvent(
+        result.cleanSummary = this.createCleanSummaryFromEvent(
           evt as CleanStartEvent,
         );
         break;
@@ -250,11 +250,11 @@ class TradeEventManagement {
         }
         //last CleanComplete is ours so it overrides previous summaries if any
         if (
-          result.summary != undefined &&
-          "offersToBeCleaned" in result.summary
+          result.cleanSummary != undefined &&
+          "offersToBeCleaned" in result.cleanSummary
         ) {
-          result.summary.offersCleaned = result.tradeFailures.length;
-          result.summary.bounty = result.tradeFailures.reduce(
+          result.cleanSummary.offersCleaned = result.tradeFailures.length;
+          result.cleanSummary.bounty = result.tradeFailures.reduce(
             (acc, current) => acc.add(current.penalty ?? 0),
             BigNumber.from(0),
           );
@@ -509,6 +509,12 @@ class TradeEventManagement {
     result: OrderResultWithOptionalSummary,
   ): result is Market.OrderResult {
     return result.summary !== undefined;
+  }
+
+  isCleanResult(
+    result: OrderResultWithOptionalSummary,
+  ): result is Market.OrderResult {
+    return result.cleanSummary !== undefined;
   }
 }
 
