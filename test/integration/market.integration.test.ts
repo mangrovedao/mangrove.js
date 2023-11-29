@@ -336,11 +336,18 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
+
       const offerId = 23;
       const expectedGives = new Big(23);
+
+      const tick = BigNumber.from(23);
+
+      const price = tickPriceHelper.priceFromTick(23);
+
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -350,8 +357,9 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         offer_gasbase: 0,
         gives: expectedGives,
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        tick,
+        price,
+        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
         volume: expectedGives,
       };
       mockito
@@ -371,11 +379,15 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
       const offerId = 23;
       const expectedGives = new Big(0);
+
+      const tick = BigNumber.from(23);
+
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -385,8 +397,9 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         offer_gasbase: 0,
         gives: expectedGives,
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        tick,
+        price: tickPriceHelper.priceFromTick(tick),
+        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
         volume: expectedGives,
       };
       mockito
@@ -491,6 +504,11 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
+
+      const tick = BigNumber.from(23);
+
+      const semiBook = market.getSemibook("bids");
+      const gives = new Big(12);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -499,9 +517,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        gives,
+        tick,
+        price: semiBook.tickPriceHelper.priceFromTick(tick),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(tick, gives),
         volume: new Big(42),
       };
       mockito
@@ -522,6 +541,12 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
+
+      const semiBook = market.getSemibook("asks");
+
+      const gives = Big(12);
+      const tick = BigNumber.from(23);
+
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -530,9 +555,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        gives,
+        tick,
+        price: semiBook.tickPriceHelper.priceFromTick(tick),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(tick, gives),
         volume: new Big(42),
       };
       mockito
@@ -552,10 +578,13 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
+
       const expectedGives = new Big(12);
+      const tick = BigNumber.from(23);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -565,8 +594,9 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         offer_gasbase: 0,
         gives: expectedGives,
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        tick,
+        price: tickPriceHelper.priceFromTick(tick),
+        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
         volume: expectedGives,
       };
       mockito

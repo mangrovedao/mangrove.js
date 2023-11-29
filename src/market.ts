@@ -208,7 +208,7 @@ namespace Market {
     volume: Big;
   };
 
-  export type Offer = Omit<OfferSlim, "wants"> & {
+  export type Offer = OfferSlim & {
     next: number | undefined;
     prev: number | undefined;
     offer_gasbase: number;
