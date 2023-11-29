@@ -914,6 +914,7 @@ describe("Market integration tests suite", () => {
     const result = await buyPromises.result;
     result.summary = result.summary!;
 
+    expect(result.successes).to.have.lengthOf(1);
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes[0].got.toNumber()).to.be.equal(
       market.base.fromUnits(rawMinGivesBase).toNumber(),
