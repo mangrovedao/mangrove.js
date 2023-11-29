@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish } from "ethers";
-import * as TickLib from "./coreCalculations/TickLibNew";
+import * as TickLib from "./coreCalculations/TickLib";
 import Market from "../market";
 
 import Big from "big.js";

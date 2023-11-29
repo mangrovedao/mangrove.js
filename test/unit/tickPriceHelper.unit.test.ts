@@ -7,7 +7,7 @@ import TickPriceHelper from "../../src/util/tickPriceHelper";
 import { Bigish } from "../../src/types";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import UnitCalculations from "../../src/util/unitCalculations";
-import * as TickLib from "../../src/util/coreCalculations/TickLibNew";
+import * as TickLib from "../../src/util/coreCalculations/TickLib";
 import { assertApproxEqAbs, assertApproxEqRel } from "../util/helpers";
 import {
   MANTISSA_BITS,
@@ -244,9 +244,15 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     const rawBidOutbound = rawQuoteAmount;
     const rawBidInbound = rawBaseAmount;
 
-    assert.equal(rawAskRatio, rawAskInbound / rawAskOutbound);
-    assert.equal(rawBidRatio.toNumber(), rawBidInbound / rawBidOutbound);
-    assert.equal(rawBidRatio, 1 / rawAskRatio.toNumber());
+    assert.equal(
+      rawAskRatio.toString(),
+      Big(rawAskInbound).div(rawAskOutbound).toString(),
+    );
+    assert.equal(
+      rawBidRatio.toString(),
+      Big(rawBidInbound).div(rawBidOutbound).toString(),
+    );
+    assert.equal(rawBidRatio.toString(), Big(1).div(rawAskRatio).toString());
 
     assert.equal(
       rawAskTick,

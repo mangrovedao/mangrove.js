@@ -14,7 +14,7 @@ import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import { Density } from "../../src/util/coreCalculations/Density";
-import * as TickLib from "../../src/util/coreCalculations/TickLibNew";
+import * as TickLib from "../../src/util/coreCalculations/TickLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {

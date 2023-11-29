@@ -7,7 +7,7 @@ import { Market, ethers, typechain } from "../../../../src";
 import GeometricKandelLib from "../../../../src/kandel/geometricKandel/geometricKandelLib";
 import { BigNumber, BigNumberish } from "ethers";
 import { DirectWithBidsAndAsksDistribution } from "../../../../src/types/typechain/Kandel";
-import * as TickLib from "../../../../src/util/coreCalculations/TickLibNew";
+import * as TickLib from "../../../../src/util/coreCalculations/TickLib";
 import { bidsAsks } from "../../../../src/util/test/mgvIntegrationTestUtil";
 import TickPriceHelper from "../../../../src/util/tickPriceHelper";
 import { assertApproxEqRel } from "../../../util/helpers";

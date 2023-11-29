@@ -15,7 +15,7 @@ import {
 import { Market, Token } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
-import * as TickLib from "../../src/util/coreCalculations/TickLibNew";
+import * as TickLib from "../../src/util/coreCalculations/TickLib";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 describe("Trade unit tests suite", () => {

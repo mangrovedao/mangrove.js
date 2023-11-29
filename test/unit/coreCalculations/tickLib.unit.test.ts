@@ -62,8 +62,8 @@ const type_uint_max = ethers.constants.MaxUint256;
 // import "@mgv/lib/Test2.sol";
 // import "@mgv/src/core/MgvLib.sol";
 // import "@mgv/test/lib/MangroveTest.sol";
-import * as TickLib from "../../../src/util/coreCalculations/TickLibNew";
-import { Tick } from "../../../src/util/coreCalculations/TickLibNew";
+import * as TickLib from "../../../src/util/coreCalculations/TickLib";
+import { Tick } from "../../../src/util/coreCalculations/TickLib";
 import { MAX_RATIO_EXP, MAX_RATIO_MANTISSA, MAX_TICK, MIN_RATIO_EXP, MIN_RATIO_MANTISSA, MIN_TICK } from "../../../src/util/coreCalculations/Constants";
 
 // contract TickAndBinTest is MangroveTest {
