@@ -810,6 +810,7 @@ class Trade {
     );
 
     const result = this.responseToCleanResult(response, raw, market);
+
     return { result, response };
   }
 
@@ -836,7 +837,8 @@ class Trade {
       ethers.BigNumber.from(0),
       market,
     );
-    if (!this.tradeEventManagement.isOrderResult(result)) {
+
+    if (!this.tradeEventManagement.isCleanResult(result)) {
       throw Error("clean went wrong");
     }
     return result;
