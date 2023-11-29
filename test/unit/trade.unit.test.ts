@@ -15,7 +15,7 @@ import {
 import { Market, Token } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import * as TickLib from "../../src/util/coreCalculations/TickLibNew";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 describe("Trade unit tests suite", () => {
@@ -155,8 +155,8 @@ describe("Trade unit tests suite", () => {
 
       //Assert
 
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
-        TickLib.priceFromTick(BigNumber.from(params.tick))
+      const expectedTickWithSlippage = TickPriceHelper.tickFromRawRatio(
+        TickPriceHelper.rawRatioFromTick(BigNumber.from(params.tick))
           .mul(100 + slippage)
           .div(100),
       );
@@ -199,8 +199,8 @@ describe("Trade unit tests suite", () => {
 
       //Assert
 
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
-        TickLib.priceFromTick(BigNumber.from(params.tick))
+      const expectedTickWithSlippage = TickPriceHelper.tickFromRawRatio(
+        TickPriceHelper.rawRatioFromTick(BigNumber.from(params.tick))
           .mul(100 + slippage)
           .div(100),
       );
@@ -297,7 +297,7 @@ describe("Trade unit tests suite", () => {
           ),
         ),
       );
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
+      const expectedTickWithSlippage = TickPriceHelper.tickFromRawRatio(
         Big(priceWithCorrectDecimals)
           .mul(100 - slippage)
           .div(100),
@@ -345,7 +345,7 @@ describe("Trade unit tests suite", () => {
           ),
         ),
       );
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
+      const expectedTickWithSlippage = TickPriceHelper.tickFromRawRatio(
         Big(1).div(
           Big(priceWithCorrectDecimals)
             .mul(100 - slippage)
@@ -390,8 +390,8 @@ describe("Trade unit tests suite", () => {
       );
 
       //Assert
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
-        TickLib.priceFromTick(BigNumber.from(params.tick))
+      const expectedTickWithSlippage = TickPriceHelper.tickFromRawRatio(
+        TickPriceHelper.rawRatioFromTick(BigNumber.from(params.tick))
           .mul(100 - slippage)
           .div(100),
       );
@@ -434,8 +434,8 @@ describe("Trade unit tests suite", () => {
 
       //Assert
 
-      const expectedTickWithSlippage = TickLib.getTickFromPrice(
-        TickLib.priceFromTick(BigNumber.from(params.tick))
+      const expectedTickWithSlippage = TickPriceHelper.tickFromRawRatio(
+        TickPriceHelper.rawRatioFromTick(BigNumber.from(params.tick))
           .mul(100 - slippage)
           .div(100),
       );

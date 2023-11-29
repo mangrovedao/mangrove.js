@@ -8,7 +8,6 @@ import TradeEventManagement, {
 } from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
 import { MAX_TICK, MIN_TICK } from "./coreCalculations/Constants";
-import { TickLib } from "./coreCalculations/TickLib";
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 
@@ -149,7 +148,8 @@ class Trade {
         if (params.price == 0) {
           tick = BigNumber.from(MAX_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(priceWithSlippage);
+          // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
+          tick = TickPriceHelper.tickFromRawRatio(priceWithSlippage);
         }
         fillWants = false;
       } else {
@@ -157,7 +157,10 @@ class Trade {
         if (params.price == 0) {
           tick = BigNumber.from(MIN_TICK);
         } else {
-          tick = TickLib.getTickFromPrice(Big(1).div(priceWithSlippage));
+          // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
+          tick = TickPriceHelper.tickFromRawRatio(
+            Big(1).div(priceWithSlippage),
+          );
         }
         fillWants = true;
       }
@@ -166,13 +169,17 @@ class Trade {
       fillWants = params.fillWants ?? false;
       if (slippage > 0) {
         // if slippage is 0, we don't need to do anything
-        const price = TickLib.priceFromTick(BigNumber.from(params.tick)); // This can result in small rounding differences
+        // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
+        const price = TickPriceHelper.rawRatioFromTick(
+          BigNumber.from(params.tick),
+        ); // This can result in small rounding differences
         const priceWithSlippage = this.adjustForSlippage(
           price,
           slippage,
           "sell",
         );
-        tick = TickLib.getTickFromPrice(priceWithSlippage);
+        // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
+        tick = TickPriceHelper.tickFromRawRatio(priceWithSlippage);
       } else {
         tick = BigNumber.from(params.tick);
       }
