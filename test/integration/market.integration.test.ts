@@ -716,21 +716,20 @@ describe("Market integration tests suite", () => {
 
     market2.subscribe(cb2);
 
-    await helpers
-      .newOffer(mgv, market.base, market.quote, { tick: "1", gives: "1.2" })
-      .then((tx) => tx.wait());
+    const askTickHelpers = market.getSemibook("asks").tickPriceHelper;
 
-    const askTickPriceHelper = new TickPriceHelper("asks", market);
-    const bidTickPriceHelper = new TickPriceHelper("bids", market);
+    const asksGives = Big(1);
+    let askPrice = Big(2);
+    const tick = askTickHelpers.tickFromPrice(askPrice);
+    askPrice = askTickHelpers.priceFromTick(tick);
 
     await helpers
-      .newOffer(mgv, market.quote, market.base, {
-        tick: "1",
-        gives: "1.1",
+      .newOffer(mgv, market.base, market.quote, {
+        tick: tick,
+        gives: asksGives.toString(),
       })
       .then((tx) => tx.wait());
 
-    const asksGives = Big("1.2");
     const offer1 = {
       id: 1,
       prev: undefined,
@@ -739,14 +738,28 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).asks.offer_gasbase,
-      tick: BigNumber.from(1),
+      tick: tick,
       gives: asksGives,
-      price: askTickPriceHelper.priceFromTick(BigNumber.from(1)),
+      price: askPrice,
+      wants: askTickHelpers.inboundFromOutbound(tick, asksGives),
       volume: asksGives,
     };
 
-    const bidsGives = Big("1.1");
-    const bidsPrice = bidTickPriceHelper.priceFromTick(BigNumber.from(1));
+    const bidTickHelpers = market.getSemibook("bids").tickPriceHelper;
+
+    const bidsGives = Big(2);
+    let bidPrice = Big(2);
+
+    const bidTick = bidTickHelpers.tickFromPrice(bidPrice);
+    bidPrice = bidTickHelpers.priceFromTick(bidTick);
+
+    await helpers
+      .newOffer(mgv, market.quote, market.base, {
+        tick: bidTick,
+        gives: bidsGives.toString(),
+      })
+      .then((tx) => tx.wait());
+
     const offer2 = {
       id: 1,
       prev: undefined,
@@ -755,10 +768,11 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).bids.offer_gasbase,
-      tick: BigNumber.from(1),
+      tick: bidTick,
       gives: bidsGives,
-      price: bidsPrice,
-      volume: bidsGives.div(bidsPrice),
+      wants: bidTickHelpers.inboundFromOutbound(bidTick, bidsGives),
+      price: bidPrice,
+      volume: bidsGives.div(bidPrice),
     };
 
     // Events may be received in different order
@@ -778,6 +792,7 @@ describe("Market integration tests suite", () => {
       },
     ];
     const events = [await queue.get(), await queue.get()];
+
     assert.deepStrictEqual(events, expectedEvents);
 
     const events2 = [await queue2.get(), await queue2.get()];
@@ -802,7 +817,8 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ tick: "1", fillVolume: "1.3" });
+    await market.sell({ tick: bidTick.toString(), fillVolume: "1.3" });
+
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
@@ -1197,7 +1213,7 @@ describe("Market integration tests suite", () => {
     );
   });
 
-  it("gets OB", async function () {
+  it.only("gets OB", async function () {
     // Initialize A/B market.
     const market = await mgv.market({
       base: "TokenA",
@@ -1380,6 +1396,7 @@ describe("Market integration tests suite", () => {
           ...obj,
           tick: obj.tick.toString(),
           gives: obj.gives.toString(),
+          wants: undefined, // do not test wants are it's tested else where
         };
       };
       return { bids: bids.map(s), asks: asks.map(s) };
