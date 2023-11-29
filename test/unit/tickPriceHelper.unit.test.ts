@@ -7,8 +7,14 @@ import TickPriceHelper from "../../src/util/tickPriceHelper";
 import { Bigish } from "../../src/types";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import UnitCalculations from "../../src/util/unitCalculations";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import * as TickLib from "../../src/util/coreCalculations/TickLibNew";
 import { assertApproxEqAbs, assertApproxEqRel } from "../util/helpers";
+import {
+  MANTISSA_BITS,
+  MAX_RATIO_MANTISSA,
+  MAX_TICK,
+  MIN_TICK,
+} from "../../src/util/coreCalculations/Constants";
 
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
@@ -242,8 +248,14 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     assert.equal(rawBidRatio.toNumber(), rawBidInbound / rawBidOutbound);
     assert.equal(rawBidRatio, 1 / rawAskRatio.toNumber());
 
-    assert.equal(rawAskTick, TickLib.getTickFromPrice(rawAskRatio).toNumber());
-    assert.equal(rawBidTick, TickLib.getTickFromPrice(rawBidRatio).toNumber());
+    assert.equal(
+      rawAskTick,
+      TickPriceHelper.tickFromRawRatio(rawAskRatio).toNumber(),
+    );
+    assert.equal(
+      rawBidTick,
+      TickPriceHelper.tickFromRawRatio(rawBidRatio).toNumber(),
+    );
     // The following are slow, but they work
     //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.1);
     //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio.toNumber()) < 0.1);
@@ -520,6 +532,116 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
           });
         });
       });
+    });
+  });
+
+  describe(TickPriceHelper.rawRatioFromTick.name, () => {
+    it("should return the correct ratio for tick, MAX_TICK", () => {
+      const result = TickPriceHelper.rawRatioFromTick(MAX_TICK);
+      assert.deepStrictEqual(result, Big(MAX_RATIO_MANTISSA.toString())); // biggest ratio
+    });
+
+    it("should return the correct ratio for tick, MIN_TICK", () => {
+      const result = TickPriceHelper.rawRatioFromTick(MIN_TICK);
+      const dp = Big.DP;
+      Big.DP = 42;
+      assert.deepStrictEqual(
+        result.toFixed(42),
+        Big(1).div(Big(2).pow(MANTISSA_BITS.toNumber())).toFixed(42), // because of ticks, we cannot hit the number exactly, so we only compare the first 42 digits
+      ); // lowest ratio
+      Big.DP = dp;
+    });
+
+    it("should return the correct ratio for tick, 0", () => {
+      const result = TickPriceHelper.rawRatioFromTick(BigNumber.from(0));
+      assert.deepStrictEqual(result, Big("1")); // tick 0 = price 1
+    });
+
+    it("should return the correct ratio for tick, 1 ", () => {
+      const result = TickPriceHelper.rawRatioFromTick(BigNumber.from(1));
+      assert.deepStrictEqual(
+        result.minus(Big("1.0001")).abs().gt(0) && result.lt(1.0001),
+        true,
+        `ratio should be slightly less than 1.0001 but is ${result}, do to man and exp cannot express 1.0001`,
+      );
+    });
+  });
+
+  describe(TickPriceHelper.tickFromRawRatio.name, () => {
+    it("should return the correct tick for ratio, MAX_TICK", () => {
+      const maxRatio = TickPriceHelper.rawRatioFromTick(MAX_TICK);
+      const result = TickPriceHelper.tickFromRawRatio(maxRatio);
+      assert.deepStrictEqual(result, MAX_TICK);
+    });
+
+    it("should return the correct tick for ratio, MIN_TICK", () => {
+      const minRatio = TickPriceHelper.rawRatioFromTick(MIN_TICK);
+      const result = TickPriceHelper.tickFromRawRatio(minRatio);
+      assert.deepStrictEqual(result, MIN_TICK);
+    });
+
+    it("should return the correct tick for ratio = 1", () => {
+      const result = TickPriceHelper.tickFromRawRatio(Big(1));
+      assert.deepStrictEqual(result, BigNumber.from(0));
+    });
+  });
+
+  describe("ratioToRawRatio", () => {
+    it("should return the correct mantissa and exponent for price, MAX_TICK", () => {
+      const ratio = TickPriceHelper.rawRatioFromTick(MAX_TICK);
+      const { man, exp } = TickLib.ratioFromTick(MAX_TICK);
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, MIN_TICK", () => {
+      const ratio = TickPriceHelper.rawRatioFromTick(MIN_TICK);
+      const { man, exp } = TickLib.ratioFromTick(MIN_TICK);
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+      assert.deepStrictEqual(result.man.toString(), man.toString());
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, tick = 1", () => {
+      const ratio = TickPriceHelper.rawRatioFromTick(BigNumber.from(1));
+      const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1));
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, tick = 0", () => {
+      const ratio = TickPriceHelper.rawRatioFromTick(BigNumber.from(0));
+      const { man, exp } = TickLib.ratioFromTick(BigNumber.from(0));
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, tick = -1", () => {
+      const ratio = TickPriceHelper.rawRatioFromTick(BigNumber.from(-1));
+      const { man, exp } = TickLib.ratioFromTick(BigNumber.from(-1));
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, tick = 1000", () => {
+      const ratio = TickPriceHelper.rawRatioFromTick(BigNumber.from(1000));
+      const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1000));
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, tick = -1000", () => {
+      const ratio = TickPriceHelper.rawRatioFromTick(BigNumber.from(-1000));
+      const { man, exp } = TickLib.ratioFromTick(BigNumber.from(-1000));
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
     });
   });
 });

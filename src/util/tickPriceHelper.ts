@@ -5,9 +5,7 @@ import Market from "../market";
 import Big from "big.js";
 import { Bigish } from "../types";
 import UnitCalculations from "./unitCalculations";
-import { MAX_SAFE_VOLUME } from "./coreCalculations/Constants";
-
-const MAX_SAFE_VOLUME_Big = Big(MAX_SAFE_VOLUME.toString());
+import { MANTISSA_BITS, MIN_RATIO_EXP } from "./coreCalculations/Constants";
 
 class TickPriceHelper {
   ba: Market.BA;
@@ -197,24 +195,107 @@ class TickPriceHelper {
    * @returns a tick that approximates the given ratio.
    */
   static tickFromRawRatio(ratio: Big): BigNumber {
-    // TODO: Consider using a more precise conversion method.
-    // We take a shortcut and use TickLib.tickFromVolumes since it does the same thing as TickLib.tickFromRatio,
-    // but we avoid having to convert `ratio` to a ratio in the special format required by TickLib.tickFromRatio.
-    let outboundAmt: BigNumber;
-    let inboundAmt: BigNumber;
-    if (ratio.gt(1)) {
-      inboundAmt = MAX_SAFE_VOLUME;
-      outboundAmt = BigNumber.from(
-        MAX_SAFE_VOLUME_Big.div(ratio).round(0).toFixed(0),
-      );
-    } else {
-      inboundAmt = BigNumber.from(
-        MAX_SAFE_VOLUME_Big.mul(ratio).round(0).toFixed(0),
-      );
-      outboundAmt = MAX_SAFE_VOLUME;
+    const { man, exp } = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+    return TickLib.tickFromRatio(man, exp);
+  }
+
+  static rawRatioToMantissaExponent(ratio: Big): {
+    man: BigNumber;
+    exp: BigNumber;
+  } {
+    const dp = Big.DP;
+    Big.DP = 300;
+    // Step 1: Split the price into integer and decimal parts
+    const integerPart = ratio.round(0, 0);
+    const decimalPart = ratio.minus(integerPart);
+
+    // Step 2: Convert integer part to binary
+    const integerBinary = TickPriceHelper.#bigNumberToBits(
+      BigNumber.from(integerPart.toFixed()),
+    ).slice(0, MANTISSA_BITS.toNumber());
+
+    // Step 3: Convert decimal part to binary
+    let decimalBinary = "";
+    let tempDecimalPart = decimalPart;
+    let i = 0;
+    let zeroesInFront = 0;
+    let hitFirstZero = false;
+    while (!tempDecimalPart.eq(0) && i < MIN_RATIO_EXP.toNumber()) {
+      tempDecimalPart = tempDecimalPart.times(2);
+      if (tempDecimalPart.gte(1)) {
+        if (!hitFirstZero && ratio.lt(1)) {
+          zeroesInFront = i;
+        }
+        hitFirstZero = true;
+        decimalBinary += "1";
+        tempDecimalPart = tempDecimalPart.minus(1);
+      } else {
+        decimalBinary += "0";
+      }
+      i++;
     }
 
-    return TickLib.tickFromVolumes(inboundAmt, outboundAmt);
+    // Step 4: Calculate the exponent based on the length of integer part's binary
+    const exp = ratio.gte(1)
+      ? MANTISSA_BITS.sub(integerBinary.length)
+      : BigNumber.from(MANTISSA_BITS.toNumber()).add(zeroesInFront);
+
+    // Step 5: Form the mantissa by concatenating integer and decimal binary
+    const combinedBinary = (
+      ratio.gte(1)
+        ? integerBinary + decimalBinary
+        : decimalBinary.slice(zeroesInFront)
+    ).slice(0, MANTISSA_BITS.toNumber());
+
+    const man = BigNumber.from(
+      TickPriceHelper.#integerBitsToNumber(
+        combinedBinary.padEnd(MANTISSA_BITS.toNumber(), "0"),
+      ).toFixed(),
+    );
+
+    Big.DP = dp;
+    return { man, exp };
+  }
+
+  static #bigNumberToBits(bn: BigNumber): string {
+    const isNegative = bn.isNegative();
+    let hexValue = bn.abs().toHexString(); // Use absolute value
+
+    // Remove '0x' prefix
+    hexValue = hexValue.slice(2);
+
+    // Convert hex to binary
+    let binaryString = "";
+    for (let i = 0; i < hexValue.length; i++) {
+      let binaryByte = parseInt(hexValue[i], 16).toString(2);
+
+      // Ensure each byte is represented as a 4-bit value
+      binaryByte = binaryByte.padStart(4, "0");
+
+      binaryString += binaryByte;
+    }
+
+    // If the original number is negative, apply two's complement to get the binary representation
+    if (isNegative) {
+      binaryString = `1${binaryString}`; // Add a 1 to the front of the string
+    }
+    while (binaryString[0] === "0") {
+      binaryString = binaryString.slice(1);
+    }
+
+    return binaryString;
+  }
+
+  static #integerBitsToNumber(integerBits: string): Big {
+    let result = Big(0);
+    let num = Big(1);
+    for (let i = integerBits.length - 1; i >= 0; i--) {
+      if (integerBits[i] === "1") {
+        result = result.add(Big(num));
+      }
+      num = num.mul(2);
+    }
+    return result;
   }
 }
 
