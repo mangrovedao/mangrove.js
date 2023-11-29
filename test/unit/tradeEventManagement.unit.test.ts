@@ -262,6 +262,9 @@ describe("TradeEventManagement unit tests suite", () => {
         tick: 1,
         fillVolume: Big(2),
         fillWants: true,
+        totalGot: Big(0),
+        totalGave: Big(0),
+        partialFill: false,
       };
       const args: any = { offerId: BigNumber.from(20) };
 

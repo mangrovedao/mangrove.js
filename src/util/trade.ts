@@ -364,12 +364,22 @@ class Trade {
     market: Market,
     overrides: ethers.Overrides = {},
   ): Promise<{
-    result: Promise<Market.OrderResult>;
+    result: Promise<Market.CleanResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
     const raw = await this.getRawCleanParams(params, market);
 
-    return this.cleanWithRawParameters(raw, market, overrides);
+    const result = await this.cleanWithRawParameters(raw, market, overrides);
+
+    const awaitedResult = await result.result;
+
+    return {
+      result: Promise.resolve({
+        ...awaitedResult,
+        summary: awaitedResult.cleanSummary!,
+      }),
+      response: result.response,
+    };
   }
 
   /**
@@ -799,7 +809,7 @@ class Trade {
     market: Market,
     overrides: ethers.Overrides,
   ): Promise<{
-    result: Promise<Market.OrderResult>;
+    result: Promise<Market.DirtyOrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
     // Invoking the cleanerContract does not populate receipt.events, so we instead parse receipt.logs
@@ -817,6 +827,7 @@ class Trade {
     );
 
     const result = this.responseToCleanResult(response, raw, market);
+
     return { result, response };
   }
 
@@ -843,7 +854,8 @@ class Trade {
       ethers.BigNumber.from(0),
       market,
     );
-    if (!this.tradeEventManagement.isOrderResult(result)) {
+
+    if (!this.tradeEventManagement.isCleanResult(result)) {
       throw Error("clean went wrong");
     }
     return result;
