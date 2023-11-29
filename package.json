@@ -19,7 +19,7 @@
     "test": "npm-run-all --parallel test:unit test:integration",
     "test:integration": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --parallel --config test/mocha/config/integration-tests.json --exit",
     "test:unit": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --parallel --config test/mocha/config/unit-tests.json --exit",
-    "test:coverage": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --config test/mocha/config/coverage-tests.json --exit ",
+    "test:coverage": "cross-env NODE_ENV=test nyc --reporter=lcov mocha --forbid-only --config test/mocha/config/coverage-tests.json --exit ",
     "typechain": "ts-node --transpileOnly src/util/runTypechain.ts",
     "write-contract-package-versions": "ts-node --transpileOnly src/util/writeContractPackageVersions.ts",
     "doc": "cd src && yarn typedoc --options ../typedoc.json index.ts",
