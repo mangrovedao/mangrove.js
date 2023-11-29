@@ -81,7 +81,7 @@ namespace Market {
     bounty?: BigNumber;
     offersCleaned?: number;
   };
-  export type OrderResult = {
+  export type DirtyOrderResult = {
     txReceipt: ethers.ContractReceipt;
     summary?: OrderSummary;
     cleanSummary?: CleanSummary;
@@ -91,6 +91,20 @@ namespace Market {
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[];
     restingOrder?: Market.OfferSlim;
     restingOrderId?: number;
+  };
+
+  export type OrderResult = Omit<
+    DirtyOrderResult,
+    "summary" | "cleanSummary"
+  > & {
+    summary: OrderSummary;
+  };
+
+  export type CleanResult = Omit<
+    DirtyOrderResult,
+    "summary" | "cleanSummary"
+  > & {
+    summary: CleanSummary;
   };
 
   export type BookSubscriptionEvent =
@@ -752,7 +766,7 @@ class Market {
     params: Market.CleanParams,
     overrides: ethers.Overrides = {},
   ): Promise<{
-    result: Promise<Market.OrderResult>;
+    result: Promise<Market.CleanResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
     return this.trade.clean(params, this, overrides);

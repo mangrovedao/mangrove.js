@@ -912,7 +912,6 @@ describe("Market integration tests suite", () => {
       fillVolume: 10,
     });
     const result = await buyPromises.result;
-    result.summary = result.summary!;
 
     expect(result.successes).to.have.lengthOf(1);
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -955,7 +954,7 @@ describe("Market integration tests suite", () => {
       fillVolume: 10,
     });
     const result = await buyPromises.result;
-    result.summary = result.summary!;
+
     const gave = TickLib.priceFromTick(BigNumber.from(1))
       .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();

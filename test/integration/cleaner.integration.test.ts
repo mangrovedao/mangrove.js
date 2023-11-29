@@ -119,32 +119,31 @@ describe("Cleaner integration tests suite", () => {
       { gasLimit: 600000 },
     );
     const result = await cleanPromises.result;
-    result.cleanSummary = result.cleanSummary!;
 
     assert.deepStrictEqual(result.tradeFailures.length, 2);
     assert.deepStrictEqual(result.successes.length, 0);
 
     assert.deepStrictEqual(
-      result.cleanSummary.offersCleaned,
+      result.summary.offersCleaned,
       2,
       `wrong number of offers cleaned`,
     );
     assert.deepStrictEqual(
-      result.cleanSummary.offersToBeCleaned,
+      result.summary.offersToBeCleaned,
       2,
       `wrong number of offers to be cleaned`,
     );
 
     assert.deepStrictEqual(
-      result.cleanSummary.bounty!.toNumber() > 0,
+      result.summary.bounty!.toNumber() > 0,
       true,
-      `bounty should be greater than zero, but was ${result.cleanSummary.bounty!.toNumber()}`,
+      `bounty should be greater than zero, but was ${result.summary.bounty!.toNumber()}`,
     );
     assert.deepStrictEqual(
-      mgv.fromUnits(result.cleanSummary.bounty!, 18).lt(0.001),
+      mgv.fromUnits(result.summary.bounty!, 18).lt(0.001),
       true,
       `bounty should be 0.0001, but was ${mgv.fromUnits(
-        result.cleanSummary.bounty!,
+        result.summary.bounty!,
         18,
       )}`,
     );
@@ -199,26 +198,25 @@ describe("Cleaner integration tests suite", () => {
     );
     await cleanPromises.result;
     const result = await cleanPromises.result;
-    result.cleanSummary = result.cleanSummary!;
 
     assert.deepStrictEqual(result.tradeFailures.length, 0);
     assert.deepStrictEqual(result.successes.length, 0); // the "OfferSuccess" event is not emitted, because the contract reverts that part
 
     assert.deepStrictEqual(
-      result.cleanSummary.offersCleaned,
+      result.summary.offersCleaned,
       0,
       `wrong number of offers cleaned`,
     );
     assert.deepStrictEqual(
-      result.cleanSummary.offersToBeCleaned,
+      result.summary.offersToBeCleaned,
       1,
       `wrong number of offers to be cleaned`,
     );
 
     assert.deepStrictEqual(
-      result.cleanSummary.bounty!.toNumber() == 0,
+      result.summary.bounty!.toNumber() == 0,
       true,
-      `bounty should be zero, but was ${result.cleanSummary.bounty!.toNumber()}`,
+      `bounty should be zero, but was ${result.summary.bounty!.toNumber()}`,
     );
     // Verify book gets updated to reflect offers have failed and are removed
     await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
@@ -278,26 +276,25 @@ describe("Cleaner integration tests suite", () => {
     );
     await cleanPromises.result;
     const result = await cleanPromises.result;
-    result.cleanSummary = result.cleanSummary!;
 
     assert.deepStrictEqual(result.tradeFailures.length, 1);
     assert.deepStrictEqual(result.successes.length, 0); // the "OfferSuccess" event is not emitted, because the contract reverts that part
 
     assert.deepStrictEqual(
-      result.cleanSummary.offersCleaned,
+      result.summary.offersCleaned,
       1,
       `wrong number of offers cleaned`,
     );
     assert.deepStrictEqual(
-      result.cleanSummary.offersToBeCleaned,
+      result.summary.offersToBeCleaned,
       1,
       `wrong number of offers to be cleaned`,
     );
 
     assert.deepStrictEqual(
-      result.cleanSummary.bounty!.toNumber() > 0,
+      result.summary.bounty!.toNumber() > 0,
       true,
-      `bounty should be larger than zero, but was ${result.cleanSummary.bounty!.toNumber()}`,
+      `bounty should be larger than zero, but was ${result.summary.bounty!.toNumber()}`,
     );
     // Verify book gets updated to reflect offers have failed and are removed
     await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
