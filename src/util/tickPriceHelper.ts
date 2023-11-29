@@ -1,10 +1,13 @@
 import { BigNumber, BigNumberish } from "ethers";
-import { TickLib } from "./coreCalculations/TickLib";
+import * as TickLib from "./coreCalculations/TickLibNew";
 import Market from "../market";
 
 import Big from "big.js";
 import { Bigish } from "../types";
 import UnitCalculations from "./unitCalculations";
+import { MAX_SAFE_VOLUME } from "./coreCalculations/Constants";
+
+const MAX_SAFE_VOLUME_Big = Big(MAX_SAFE_VOLUME.toString());
 
 class TickPriceHelper {
   ba: Market.BA;
@@ -32,11 +35,11 @@ class TickPriceHelper {
    * @returns price at tick (not to be confused with offer list ratio).
    */
   priceFromTick(tick: BigNumberish): Big {
-    // The priceFromTick gives the rawInbound/rawOutbound ratio for the tick.
-    const offerListRatioFromTick = TickLib.priceFromTick(BigNumber.from(tick));
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
     Big.DP = 300;
+
+    const offerListRatioFromTick = TickPriceHelper.rawRatioFromTick(tick);
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
       this.market.base.decimals - this.market.quote.decimals,
@@ -45,8 +48,9 @@ class TickPriceHelper {
     // Since ratio is for inbound/outbound, and price is quote/base, they coincide (modulo scaling) for asks, and we inverse the ratio for bids
     const priceWithCorrectDecimals =
       this.ba === "bids"
-        ? Big(1).mul(decimalsScaling).div(offerListRatioFromTick)
+        ? decimalsScaling.div(offerListRatioFromTick)
         : offerListRatioFromTick.mul(decimalsScaling);
+
     Big.DP = dp;
 
     return priceWithCorrectDecimals;
@@ -57,6 +61,7 @@ class TickPriceHelper {
    * @param price price to calculate tick for
    * @returns raw offer list tick for price
    */
+  // TODO: Consider allowing the user to control whether to round up or down.
   tickFromPrice(price: Bigish): BigNumber {
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
@@ -75,7 +80,7 @@ class TickPriceHelper {
         : priceAdjustedForDecimals;
 
     // TickLib.getTickFromPrice expects a ratio of rawInbound/rawOutbound, which is now available in offerListRatio
-    const tick = TickLib.getTickFromPrice(offerListRatio);
+    const tick = TickPriceHelper.tickFromRawRatio(offerListRatio);
     Big.DP = dp;
     return tick;
   }
@@ -159,6 +164,57 @@ class TickPriceHelper {
     );
     const tick = TickLib.tickFromVolumes(rawInbound, rawOutbound);
     return tick;
+  }
+
+  // Helper functions for converting between ticks and ratios as Big instead of the special format used by TickLib.
+  // In TickLib, ratios are represented as a mantissa and exponent such that ratio = mantissa * 2^(-exponent).
+
+  /**
+   * Calculates the raw ratio as a Big with big precision.
+   *
+   * NB: Raw ratios do not take token decimals into account.
+   *
+   * @param tick tick to calculate the ratio for
+   * @returns ratio as a Big.
+   */
+  static rawRatioFromTick(tick: BigNumberish): Big {
+    const { man, exp } = TickLib.ratioFromTick(BigNumber.from(tick));
+    // Increase decimals due to pow and division potentially needing more than the default 20.
+    const dp = Big.DP;
+    Big.DP = 300;
+    const ratio = Big(man.toString()).div(Big(2).pow(exp.toNumber()));
+    Big.DP = dp;
+    return ratio;
+  }
+
+  /**
+   * Converts a raw ratio as a Big to a tick.
+   *
+   * NB: Raw ratios do not take token decimals into account.
+   * NB: This is a lossy conversions since ticks are discrete and ratios are not.
+   *
+   * @param ratio ratio to calculate the tick for
+   * @returns a tick that approximates the given ratio.
+   */
+  static tickFromRawRatio(ratio: Big): BigNumber {
+    // TODO: Consider using a more precise conversion method.
+    // We take a shortcut and use TickLib.tickFromVolumes since it does the same thing as TickLib.tickFromRatio,
+    // but we avoid having to convert `ratio` to a ratio in the special format required by TickLib.tickFromRatio.
+    let outboundAmt: BigNumber;
+    let inboundAmt: BigNumber;
+    if (ratio.gt(1)) {
+      inboundAmt = MAX_SAFE_VOLUME;
+      outboundAmt = BigNumber.from(
+        MAX_SAFE_VOLUME_Big.div(ratio).round(0).toFixed(0),
+      );
+    } else {
+      inboundAmt = BigNumber.from(
+        MAX_SAFE_VOLUME_Big.mul(ratio).round(0).toFixed(0),
+      );
+      outboundAmt = MAX_SAFE_VOLUME;
+    }
+
+    return TickLib.tickFromVolumes(inboundAmt, outboundAmt);
   }
 }
 
