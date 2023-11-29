@@ -1213,7 +1213,7 @@ describe("Market integration tests suite", () => {
     );
   });
 
-  it.only("gets OB", async function () {
+  it("gets OB", async function () {
     // Initialize A/B market.
     const market = await mgv.market({
       base: "TokenA",
