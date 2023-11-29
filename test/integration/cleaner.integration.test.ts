@@ -119,7 +119,6 @@ describe("Cleaner integration tests suite", () => {
       { gasLimit: 600000 },
     );
     const result = await cleanPromises.result;
-    result.summary = result.summary as Market.CleanSummary;
 
     assert.deepStrictEqual(result.tradeFailures.length, 2);
     assert.deepStrictEqual(result.successes.length, 0);
@@ -199,7 +198,6 @@ describe("Cleaner integration tests suite", () => {
     );
     await cleanPromises.result;
     const result = await cleanPromises.result;
-    result.summary = result.summary as Market.CleanSummary;
 
     assert.deepStrictEqual(result.tradeFailures.length, 0);
     assert.deepStrictEqual(result.successes.length, 0); // the "OfferSuccess" event is not emitted, because the contract reverts that part
@@ -278,7 +276,6 @@ describe("Cleaner integration tests suite", () => {
     );
     await cleanPromises.result;
     const result = await cleanPromises.result;
-    result.summary = result.summary as Market.CleanSummary;
 
     assert.deepStrictEqual(result.tradeFailures.length, 1);
     assert.deepStrictEqual(result.successes.length, 0); // the "OfferSuccess" event is not emitted, because the contract reverts that part

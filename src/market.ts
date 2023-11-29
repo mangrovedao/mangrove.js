@@ -68,9 +68,9 @@ namespace Market {
     restingOrder?: boolean;
     restingOrderId?: number;
     fee?: Big;
-    totalGot?: Big;
-    totalGave?: Big;
-    partialFill?: boolean;
+    totalGot: Big;
+    totalGave: Big;
+    partialFill: boolean;
     bounty?: BigNumber;
   };
 
@@ -81,15 +81,30 @@ namespace Market {
     bounty?: BigNumber;
     offersCleaned?: number;
   };
-  export type OrderResult = {
+  export type DirtyOrderResult = {
     txReceipt: ethers.ContractReceipt;
-    summary: OrderSummary | CleanSummary;
+    summary?: OrderSummary;
+    cleanSummary?: CleanSummary;
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[];
     restingOrder?: Market.OfferSlim;
     restingOrderId?: number;
+  };
+
+  export type OrderResult = Omit<
+    DirtyOrderResult,
+    "summary" | "cleanSummary"
+  > & {
+    summary: OrderSummary;
+  };
+
+  export type CleanResult = Omit<
+    DirtyOrderResult,
+    "summary" | "cleanSummary"
+  > & {
+    summary: CleanSummary;
   };
 
   export type BookSubscriptionEvent =
@@ -751,7 +766,7 @@ class Market {
     params: Market.CleanParams,
     overrides: ethers.Overrides = {},
   ): Promise<{
-    result: Promise<Market.OrderResult>;
+    result: Promise<Market.CleanResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
     return this.trade.clean(params, this, overrides);
