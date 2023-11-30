@@ -219,6 +219,7 @@ namespace Market {
     tick: BigNumber;
     price: Big;
     gives: Big;
+    wants: Big;
     volume: Big;
   };
 

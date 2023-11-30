@@ -106,6 +106,8 @@ describe("Market unit tests suite", () => {
 
   describe("getDisplayDecimalsForPriceDifferences", () => {
     function makeOfferWithPrice(price: number) {
+      const gives = Big(1);
+      const priceBig = Big(price);
       return {
         id: 0,
         prev: undefined,
@@ -114,8 +116,9 @@ describe("Market unit tests suite", () => {
         maker: "",
         gasreq: 1,
         offer_gasbase: 1000,
-        gives: Big(1),
-        tick: TickPriceHelper.tickFromRawRatio(Big(price)),
+        gives,
+        wants: priceBig.mul(gives).round(),
+        tick: TickPriceHelper.tickFromRawRatio(priceBig),
         price: Big(price),
         volume: Big(42),
       };

@@ -53,6 +53,7 @@ class TradeEventManagement {
       tick: raw.tick,
       gives: gives,
       price: price,
+      wants: semibook.tickPriceHelper.inboundFromOutbound(raw.tick, gives),
       volume: semibook.market.getVolumeForGivesAndPrice(
         semibook.ba,
         gives,
