@@ -139,7 +139,7 @@ export type Tick = int;
         bin = add(bin,sgt(smod(tick,tickSpacing),0))
       // }
     // }
-    return bin;
+    return int(bin);
   }
 
   /* ## Conversion functions */

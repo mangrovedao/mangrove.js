@@ -81,6 +81,16 @@ export function mul(a: BigNumberish, b: BigNumberish): BigNumber {
   return result;
 }
 
+// a / b for int256.
+export function div(a: BigNumberish, b: BigNumberish): BigNumber {
+  return int(yul.sdiv(int(a), int(b)));
+}
+
+// a % b for int256.
+export function mod(a: BigNumberish, b: BigNumberish): BigNumber {
+  return int(yul.smod(a, b));
+}
+
 // "Cast" a uint256 or int256 to a int256.
 // NB: This assumes a is within the appropriate range.
 export function int(a: BigNumberish): int {
