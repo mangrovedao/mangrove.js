@@ -13,6 +13,12 @@ describe("PrettyPrint Unit test suite", () => {
       const prettyPrint = new PrettyPrint();
       //Arrange
       const spyPrint = spy(prettyPrint);
+
+      const tick = BigNumber.from(31);
+      const price = TickLib.priceFromTick(tick);
+      const gives = Big(12);
+      const wants = price.mul(gives);
+
       const offer: Market.Offer = {
         id: 1,
         prev: 2,
@@ -21,9 +27,10 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
-        tick: BigNumber.from(31),
-        price: TickLib.priceFromTick(BigNumber.from(31)),
+        gives,
+        tick,
+        price,
+        wants,
         volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
@@ -46,6 +53,12 @@ describe("PrettyPrint Unit test suite", () => {
       const prettyPrint = new PrettyPrint();
       //Arrange
       const spyPrint = spy(prettyPrint);
+
+      const tick = BigNumber.from(31);
+      const price = TickLib.priceFromTick(tick);
+      const gives = Big(12);
+      const wants = price.mul(gives);
+
       const offer: Market.Offer = {
         id: 1,
         prev: 2,
@@ -55,8 +68,9 @@ describe("PrettyPrint Unit test suite", () => {
         gasreq: 0,
         offer_gasbase: 0,
         gives: new Big(12),
-        tick: BigNumber.from(31),
-        price: TickLib.priceFromTick(BigNumber.from(31)),
+        tick,
+        price,
+        wants,
         volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
@@ -78,6 +92,12 @@ describe("PrettyPrint Unit test suite", () => {
     it("prints the offers using the given filter", async function () {
       //Arrange
       const prettyPrint = new PrettyPrint();
+
+      const tick = BigNumber.from(31);
+      const price = TickLib.priceFromTick(tick);
+      const gives = Big(12);
+      const wants = price.mul(gives);
+
       const offer: Market.Offer = {
         id: 1,
         prev: 2,
@@ -86,9 +106,10 @@ describe("PrettyPrint Unit test suite", () => {
         maker: "maker",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
-        tick: BigNumber.from(31),
-        price: TickLib.priceFromTick(BigNumber.from(31)),
+        gives,
+        tick,
+        wants,
+        price,
         volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer, offer];

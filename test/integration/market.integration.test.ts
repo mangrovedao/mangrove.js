@@ -336,11 +336,18 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
+
       const offerId = 23;
       const expectedGives = new Big(23);
+
+      const tick = BigNumber.from(23);
+
+      const price = tickPriceHelper.priceFromTick(23);
+
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -350,8 +357,9 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         offer_gasbase: 0,
         gives: expectedGives,
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        tick,
+        price,
+        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
         volume: expectedGives,
       };
       mockito
@@ -371,11 +379,15 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
       const offerId = 23;
       const expectedGives = new Big(0);
+
+      const tick = BigNumber.from(23);
+
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -385,8 +397,9 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         offer_gasbase: 0,
         gives: expectedGives,
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        tick,
+        price: tickPriceHelper.priceFromTick(tick),
+        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
         volume: expectedGives,
       };
       mockito
@@ -491,6 +504,11 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
+
+      const tick = BigNumber.from(23);
+
+      const semiBook = market.getSemibook("bids");
+      const gives = new Big(12);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -499,9 +517,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        gives,
+        tick,
+        price: semiBook.tickPriceHelper.priceFromTick(tick),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(tick, gives),
         volume: new Big(42),
       };
       mockito
@@ -522,6 +541,12 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
       const mockedMarket = mockito.spy(market);
+
+      const semiBook = market.getSemibook("asks");
+
+      const gives = Big(12);
+      const tick = BigNumber.from(23);
+
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -530,9 +555,10 @@ describe("Market integration tests suite", () => {
         maker: "",
         gasreq: 0,
         offer_gasbase: 0,
-        gives: new Big(12),
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        gives,
+        tick,
+        price: semiBook.tickPriceHelper.priceFromTick(tick),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(tick, gives),
         volume: new Big(42),
       };
       mockito
@@ -552,10 +578,13 @@ describe("Market integration tests suite", () => {
         quote: "TokenA",
         tickSpacing: 1,
       });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
+
       const expectedGives = new Big(12);
+      const tick = BigNumber.from(23);
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -565,8 +594,9 @@ describe("Market integration tests suite", () => {
         gasreq: 0,
         offer_gasbase: 0,
         gives: expectedGives,
-        tick: BigNumber.from(23),
-        price: TickLib.priceFromTick(BigNumber.from(23)),
+        tick,
+        price: tickPriceHelper.priceFromTick(tick),
+        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
         volume: expectedGives,
       };
       mockito
@@ -716,21 +746,20 @@ describe("Market integration tests suite", () => {
 
     market2.subscribe(cb2);
 
-    await helpers
-      .newOffer(mgv, market.base, market.quote, { tick: "1", gives: "1.2" })
-      .then((tx) => tx.wait());
+    const askTickHelper = market.getSemibook("asks").tickPriceHelper;
 
-    const askTickPriceHelper = new TickPriceHelper("asks", market);
-    const bidTickPriceHelper = new TickPriceHelper("bids", market);
+    const asksGives = Big(1);
+    let askPrice = Big(2);
+    const tick = askTickHelper.tickFromPrice(askPrice);
+    askPrice = askTickHelper.priceFromTick(tick);
 
     await helpers
-      .newOffer(mgv, market.quote, market.base, {
-        tick: "1",
-        gives: "1.1",
+      .newOffer(mgv, market.base, market.quote, {
+        tick: tick,
+        gives: asksGives.toString(),
       })
       .then((tx) => tx.wait());
 
-    const asksGives = Big("1.2");
     const offer1 = {
       id: 1,
       prev: undefined,
@@ -739,14 +768,28 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).asks.offer_gasbase,
-      tick: BigNumber.from(1),
+      tick: tick,
       gives: asksGives,
-      price: askTickPriceHelper.priceFromTick(BigNumber.from(1)),
+      price: askPrice,
+      wants: askTickHelper.inboundFromOutbound(tick, asksGives),
       volume: asksGives,
     };
 
-    const bidsGives = Big("1.1");
-    const bidsPrice = bidTickPriceHelper.priceFromTick(BigNumber.from(1));
+    const bidTickHelper = market.getSemibook("bids").tickPriceHelper;
+
+    const bidsGives = Big(2);
+    let bidPrice = Big(2);
+
+    const bidTick = bidTickHelper.tickFromPrice(bidPrice);
+    bidPrice = bidTickHelper.priceFromTick(bidTick);
+
+    await helpers
+      .newOffer(mgv, market.quote, market.base, {
+        tick: bidTick,
+        gives: bidsGives.toString(),
+      })
+      .then((tx) => tx.wait());
+
     const offer2 = {
       id: 1,
       prev: undefined,
@@ -755,10 +798,11 @@ describe("Market integration tests suite", () => {
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
       offer_gasbase: (await market.config()).bids.offer_gasbase,
-      tick: BigNumber.from(1),
+      tick: bidTick,
       gives: bidsGives,
-      price: bidsPrice,
-      volume: bidsGives.div(bidsPrice),
+      wants: bidTickHelper.inboundFromOutbound(bidTick, bidsGives),
+      price: bidPrice,
+      volume: bidsGives.div(bidPrice),
     };
 
     // Events may be received in different order
@@ -778,6 +822,7 @@ describe("Market integration tests suite", () => {
       },
     ];
     const events = [await queue.get(), await queue.get()];
+
     assert.deepStrictEqual(events, expectedEvents);
 
     const events2 = [await queue2.get(), await queue2.get()];
@@ -802,7 +847,8 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ tick: "1", fillVolume: "1.3" });
+    await market.sell({ tick: bidTick.toString(), fillVolume: "1.3" });
+
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
@@ -1380,6 +1426,7 @@ describe("Market integration tests suite", () => {
           ...obj,
           tick: obj.tick.toString(),
           gives: obj.gives.toString(),
+          wants: undefined, // do not test wants are it's tested else where
         };
       };
       return { bids: bids.map(s), asks: asks.map(s) };
