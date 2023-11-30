@@ -4,7 +4,7 @@ import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -107,6 +107,7 @@ describe("Market unit tests suite", () => {
   describe("getDisplayDecimalsForPriceDifferences", () => {
     function makeOfferWithPrice(price: number) {
       const gives = Big(1);
+      const priceBig = Big(price);
       return {
         id: 0,
         prev: undefined,
@@ -116,8 +117,8 @@ describe("Market unit tests suite", () => {
         gasreq: 1,
         offer_gasbase: 1000,
         gives,
-        wants: Big(price).mul(gives).round(),
-        tick: TickLib.getTickFromPrice(price),
+        wants: priceBig.mul(gives).round(),
+        tick: TickPriceHelper.tickFromRawRatio(priceBig),
         price: Big(price),
         volume: Big(42),
       };

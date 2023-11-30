@@ -1,4 +1,4 @@
-import { TickLib } from "../../util/coreCalculations/TickLib";
+import * as TickLib from "../../util/coreCalculations/TickLib";
 import Market from "../../market";
 import { MAX_TICK, MIN_TICK } from "../../util/coreCalculations/Constants";
 import Big from "big.js";

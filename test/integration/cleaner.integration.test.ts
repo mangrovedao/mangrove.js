@@ -6,12 +6,11 @@ chai.use(chaiAsPromised);
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { rawMinGivesBase } from "../../src/util/test/mgvIntegrationTestUtil";
 
-import Mangrove, { Market } from "../../src";
+import Mangrove, { Market, TickPriceHelper } from "../../src";
 
 import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
 import assert from "assert";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
 import { OLKeyStruct } from "../../src/types/typechain/Mangrove";
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -70,6 +69,7 @@ describe("Cleaner integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
 
     // post progressively worse offers.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -80,7 +80,9 @@ describe("Cleaner integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      tick: TickLib.getTickFromPrice(Big(1).div(rawMinGivesBase.toString())),
+      tick: askTickPriceHelper.tickFromPrice(
+        Big(1).div(rawMinGivesBase.toString()),
+      ),
       gives: rawMinGivesBase,
       shouldFail: true,
     });
@@ -88,7 +90,7 @@ describe("Cleaner integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      tick: TickLib.getTickFromPrice(
+      tick: askTickPriceHelper.tickFromPrice(
         Big(1).div(rawMinGivesBase.mul(2).toString()),
       ),
       gives: rawMinGivesBase.mul(2),
@@ -161,6 +163,7 @@ describe("Cleaner integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
 
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.mint(market.quote, maker, 100);
@@ -169,7 +172,9 @@ describe("Cleaner integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      tick: TickLib.getTickFromPrice(Big(1).div(rawMinGivesBase.toString())),
+      tick: askTickPriceHelper.tickFromPrice(
+        Big(1).div(rawMinGivesBase.toString()),
+      ),
       gives: rawMinGivesBase,
     });
 
@@ -231,6 +236,7 @@ describe("Cleaner integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
 
     // post progressively worse offers.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -241,7 +247,9 @@ describe("Cleaner integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      tick: TickLib.getTickFromPrice(Big(1).div(rawMinGivesBase.toString())),
+      tick: askTickPriceHelper.tickFromPrice(
+        Big(1).div(rawMinGivesBase.toString()),
+      ),
       gives: rawMinGivesBase,
       shouldFail: true,
     });
@@ -309,6 +317,7 @@ describe("Cleaner integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
 
     // post progressively worse offers.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -319,7 +328,9 @@ describe("Cleaner integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      tick: TickLib.getTickFromPrice(Big(1).div(rawMinGivesBase.toString())),
+      tick: askTickPriceHelper.tickFromPrice(
+        Big(1).div(rawMinGivesBase.toString()),
+      ),
       gives: rawMinGivesBase,
       shouldFail: true,
     });

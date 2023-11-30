@@ -6,6 +6,7 @@ import { toWei } from "../util/helpers";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import {
   rawMinGivesBase,
+  rawMinGivesQuote,
   waitForTransaction,
 } from "../../src/util/test/mgvIntegrationTestUtil";
 
@@ -18,9 +19,8 @@ import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
-import { Density } from "../../src/util/coreCalculations/Density";
-import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import { Density } from "../../src/util/Density";
+import { MIN_TICK } from "../../src/util/coreCalculations/Constants";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 //pretty-print when using console.log
@@ -932,6 +932,8 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
+
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.mint(market.quote, maker, 100);
@@ -950,8 +952,9 @@ describe("Market integration tests suite", () => {
       tick: 2,
       gives: rawMinGivesBase.mul(2),
     });
-    const gave = TickLib.priceFromTick(BigNumber.from(1))
-      .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
+    const gave = askTickPriceHelper
+      .priceFromTick(BigNumber.from(1))
+      .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
       tick: 1,
@@ -974,6 +977,8 @@ describe("Market integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
+
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -1000,9 +1005,10 @@ describe("Market integration tests suite", () => {
       fillVolume: 10,
     });
     const result = await buyPromises.result;
-
-    const gave = TickLib.priceFromTick(BigNumber.from(1))
-      .mul(market.quote.fromUnits(rawMinGivesBase).toNumber())
+    result.summary = result.summary as Market.OrderSummary;
+    const gave = askTickPriceHelper
+      .priceFromTick(BigNumber.from(1))
+      .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
@@ -1020,6 +1026,8 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
+    const bidTickPriceHelper = new TickPriceHelper("bids", market);
+
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
     await mgvTestUtil.mint(market.quote, maker, 100);
@@ -1028,29 +1036,33 @@ describe("Market integration tests suite", () => {
       market,
       ba: "bids",
       maker,
-      tick: TickLib.getTickFromPrice(2),
-      gives: 1000000,
+      tick: bidTickPriceHelper.tickFromPrice(2),
+      gives: rawMinGivesQuote,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
-      tick: TickLib.getTickFromPrice(1),
-      gives: 1000000,
+      tick: bidTickPriceHelper.tickFromPrice(1),
+      gives: rawMinGivesQuote,
     });
 
     await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
     const sellPromises = await market.sell({
-      volume: "0.0000000000000001",
-      price: TickLib.priceFromTick(MAX_TICK),
+      volume: "0.0001",
+      price: bidTickPriceHelper.priceFromTick(MIN_TICK),
     });
     const result = await sellPromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(0.0001);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
+    expect(result.successes[0].got.toString()).to.equal(
+      Big("0.0001").mul(2).toString(),
+    );
+    expect(result.successes[0].gave.toString()).to.equal(
+      Big("0.0001").toString(),
+    );
   });
 
   [true, false].forEach((forceRouting) => {
@@ -1065,7 +1077,7 @@ describe("Market integration tests suite", () => {
           });
 
           const tradeParams: Market.TradeParams = {
-            tick: TickLib.getTickFromPrice(
+            tick: TickPriceHelper.tickFromRawRatio(
               Big(0.000000000002).div(10),
             ).toNumber(),
             fillVolume: 10,

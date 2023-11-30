@@ -13,8 +13,9 @@ import { TransactionReceipt } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
-import { Density } from "../../src/util/coreCalculations/Density";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
+import { Density } from "../../src/util/Density";
+import * as DensityLib from "../../src/util/coreCalculations/DensityLib";
+import * as TickLib from "../../src/util/coreCalculations/TickLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -107,8 +108,8 @@ describe("Semibook integration tests suite", function () {
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
-      const density = Density.paramsTo96X32(
-        market.base.decimals,
+      const density = DensityLib.paramsTo96X32_centiusd(
+        BigNumber.from(market.base.decimals),
         BigNumber.from(1),
         BigNumber.from(1800 * 100),
         BigNumber.from(1 * 100),
@@ -161,8 +162,8 @@ describe("Semibook integration tests suite", function () {
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
-      const density = Density.paramsTo96X32(
-        market.base.decimals,
+      const density = DensityLib.paramsTo96X32_centiusd(
+        BigNumber.from(market.base.decimals),
         BigNumber.from(1),
         BigNumber.from(1800 * 100),
         BigNumber.from(1 * 100),
@@ -181,8 +182,8 @@ describe("Semibook integration tests suite", function () {
           1,
         ),
       );
-      const newDensity = Density.paramsTo96X32(
-        market.base.decimals,
+      const newDensity = DensityLib.paramsTo96X32_centiusd(
+        BigNumber.from(market.base.decimals),
         BigNumber.from(10),
         BigNumber.from(1800 * 100),
         BigNumber.from(1 * 100),
@@ -262,8 +263,8 @@ describe("Semibook integration tests suite", function () {
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
-      const density = Density.paramsTo96X32(
-        market.base.decimals,
+      const density = DensityLib.paramsTo96X32_centiusd(
+        BigNumber.from(market.base.decimals),
         BigNumber.from(1),
         BigNumber.from(1800 * 100),
         BigNumber.from(1 * 100),
@@ -319,8 +320,8 @@ describe("Semibook integration tests suite", function () {
       });
       const semibook = market.getSemibook("asks");
       const fee = 1;
-      const density = Density.paramsTo96X32(
-        market.base.decimals,
+      const density = DensityLib.paramsTo96X32_centiusd(
+        BigNumber.from(market.base.decimals),
         BigNumber.from(1),
         BigNumber.from(1800 * 100),
         BigNumber.from(1 * 100),

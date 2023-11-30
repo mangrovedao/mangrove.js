@@ -363,11 +363,11 @@ class Market {
     const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
       market.mgv.network.name,
     );
-    market.minVolumeAsk = config.asks.density.multiplyUpReadable(
-      BigNumber.from(config.asks.offer_gasbase).add(gasreq.toString()),
+    market.minVolumeAsk = config.asks.density.getRequiredOutboundForGas(
+      config.asks.offer_gasbase + gasreq,
     );
-    market.minVolumeBid = config.bids.density.multiplyUpReadable(
-      BigNumber.from(config.bids.offer_gasbase).add(gasreq.toString()),
+    market.minVolumeBid = config.bids.density.getRequiredOutboundForGas(
+      config.bids.offer_gasbase + gasreq,
     );
     return market;
   }
@@ -797,10 +797,10 @@ class Market {
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
     const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
     // boosting estimates of 10% to be on the safe side
-    const estimation = density.multiply(BigNumber.from(1)).isZero()
+    const estimation = density.isZero()
       ? maxMarketOrderGas
       : BigNumber.from(offer_gasbase)
-          .add(volume.div(density.multiply(BigNumber.from(1))))
+          .add(density.getMaximumGasForRawOutbound(volume))
           .add(maxGasreqOffer)
           .add(BigNumber.from(maxGasreqOffer).mul(64).div(63))
           .mul(11)

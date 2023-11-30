@@ -5,7 +5,6 @@ import { capture, spy } from "ts-mockito";
 import { Market } from "../../src";
 import Big from "big.js";
 import { BigNumber } from "ethers";
-import { TickLib } from "../../src/util/coreCalculations/TickLib";
 
 describe("PrettyPrint Unit test suite", () => {
   describe("consoleOffers", () => {
@@ -15,7 +14,7 @@ describe("PrettyPrint Unit test suite", () => {
       const spyPrint = spy(prettyPrint);
 
       const tick = BigNumber.from(31);
-      const price = TickLib.priceFromTick(tick);
+      const price = Big(1.2);
       const gives = Big(12);
       const wants = price.mul(gives);
 
@@ -55,7 +54,7 @@ describe("PrettyPrint Unit test suite", () => {
       const spyPrint = spy(prettyPrint);
 
       const tick = BigNumber.from(31);
-      const price = TickLib.priceFromTick(tick);
+      const price = Big(1.2);
       const gives = Big(12);
       const wants = price.mul(gives);
 
@@ -94,7 +93,7 @@ describe("PrettyPrint Unit test suite", () => {
       const prettyPrint = new PrettyPrint();
 
       const tick = BigNumber.from(31);
-      const price = TickLib.priceFromTick(tick);
+      const price = Big(1.2);
       const gives = Big(12);
       const wants = price.mul(gives);
 
