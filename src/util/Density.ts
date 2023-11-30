@@ -4,6 +4,9 @@ import * as DensityLib from "./coreCalculations/DensityLib";
 
 const _2pow32 = Big(2).pow(32);
 
+/**
+ * Utility wrapper around raw Density values from Mangrove.
+ */
 export class Density {
   #rawDensity: BigNumber;
   #outbound_decimals: number;
@@ -36,35 +39,25 @@ export class Density {
     );
   }
 
-  eq(value: Density): boolean {
-    return this.#rawDensity.eq(value.#rawDensity);
-  }
-
-  toString(): string {
-    return this.#rawDensity.toString();
-  }
-
-  isZero(): boolean {
-    return this.#rawDensity.isZero();
-  }
-
-  getRequiredOutboundForGas(gas: BigNumberish): Big {
-    return Big(
-      DensityLib.multiplyUp(this.#rawDensity, BigNumber.from(gas)).toString(),
-    ).div(Big(10).pow(this.#outbound_decimals));
-  }
-
-  getMaximumGasForRawOutbound(rawOutboundAmt: BigNumberish): BigNumber {
-    const density96X32 = DensityLib.to96X32(this.#rawDensity);
-    const densityDecimal = Big(density96X32.toString()).div(_2pow32);
-    return BigNumber.from(
-      Big(BigNumber.from(rawOutboundAmt).toString())
-        .div(densityDecimal)
-        .toFixed(0),
+  /**
+   * Equality comparison for densities.
+   *
+   * @param density The density to compare to
+   * @returns true if the given density is equal to this density; false otherwise
+   */
+  eq(density: Density): boolean {
+    return (
+      this.#rawDensity.eq(density.#rawDensity) &&
+      this.#outbound_decimals === density.#outbound_decimals
     );
   }
 
-  densityToString() {
+  /**
+   * Format the density formatted as a string.
+   *
+   * @returns the density formatted as a 'mantissa * 2^exponent' string
+   */
+  toString(): string {
     const newLocal = this.#rawDensity.and(DensityLib.MASK);
     if (!newLocal.eq(this.#rawDensity)) {
       throw new Error("Given density is too big");
@@ -86,5 +79,42 @@ export class Density {
           ? "1.5"
           : "1.75";
     return `${mant.toString()} * 2^${unbiasedExp.toString()}`;
+  }
+
+  /**
+   * Check whether the density is zero.
+   *
+   * @returns true if the density is zero; false otherwise
+   */
+  isZero(): boolean {
+    return this.#rawDensity.isZero();
+  }
+
+  /**
+   * Get the minimum amount of outbound tokens required for the given amount of gas.
+   *
+   * @param gas the amount of gas to calculate the required outbound for
+   * @returns the minimum amount of outbound tokens required for the given amount of gas
+   */
+  getRequiredOutboundForGas(gas: BigNumberish): Big {
+    return Big(
+      DensityLib.multiplyUp(this.#rawDensity, BigNumber.from(gas)).toString(),
+    ).div(Big(10).pow(this.#outbound_decimals));
+  }
+
+  /**
+   * Get the maximum amount of gas an offer may require for the given raw amount of outbound tokens.
+   *
+   * @param outbound the raw amount of outbound tokens to calculate the maximum gas for
+   * @returns the maximum amount of gas an offer may require for the given raw amount of outbound tokens
+   */
+  getMaximumGasForRawOutbound(rawOutboundAmt: BigNumberish): BigNumber {
+    const density96X32 = DensityLib.to96X32(this.#rawDensity);
+    const densityDecimal = Big(density96X32.toString()).div(_2pow32);
+    return BigNumber.from(
+      Big(BigNumber.from(rawOutboundAmt).toString())
+        .div(densityDecimal)
+        .toFixed(0),
+    );
   }
 }
