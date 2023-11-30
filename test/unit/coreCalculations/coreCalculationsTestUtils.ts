@@ -4,7 +4,7 @@
 
 import { assert } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
-import * as DensityLib from "../../../src/util/coreCalculations/DensityLib";
+import { Density as DensityWrapper } from "../../../src/util/Density";
 
 export type uint = BigNumber;
 export type Density = BigNumber;
@@ -62,23 +62,6 @@ export function generateRandomBigNumberRange(bits: number, size: number): BigNum
   return result;
 }
 
-
-// # toString functions from ToString.post.sol
-// TODO: Move these to a separate file.
-
 export function toString(density: Density): string {
-  if (!density.and(DensityLib.MASK).eq(density)) {
-    throw new Error("Given density is too big");
-  }
-  const mantissa: uint = DensityLib.mantissa(density);
-  const exp: uint = DensityLib.exponent(density);
-  if (exp.eq(1)) {
-    throw new Error("Invalid density, value not canonical");
-  }
-  if (exp.lt(2)) {
-    return exp.toString() + " * 2^-32";
-  }
-  const unbiasedExp: number = exp.toNumber() - 32;
-  const mant: string = mantissa.eq(0) ? "1" : mantissa.eq(1) ? "1.25" : mantissa.eq(2) ? "1.5" : "1.75";
-  return mant + " * 2^" + unbiasedExp.toString();
+  return DensityWrapper.toString(density);
 }

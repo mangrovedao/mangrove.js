@@ -61,8 +61,23 @@ export class Density {
    * @returns the density formatted as a 'mantissa * 2^exponent' string
    */
   toString(): string {
-    const mantissa = DensityLib.mantissa(this.#rawDensity);
-    const exp = DensityLib.exponent(this.#rawDensity);
+    return Density.toString(this.#rawDensity);
+  }
+
+  /**
+   * Format the density formatted as a string.
+   *
+   * @param rawDensity the raw density to format
+   * @returns the density formatted as a 'mantissa * 2^exponent' string
+   */
+  static toString(rawDensity: BigNumberish): string {
+    const density = BigNumber.from(rawDensity);
+    // Ported from ToString.post.sol
+    if (!density.and(DensityLib.MASK).eq(density)) {
+      throw new Error("Given density is too big");
+    }
+    const mantissa = DensityLib.mantissa(density);
+    const exp = DensityLib.exponent(density);
     if (exp.eq(1)) {
       throw new Error("Invalid density, value not canonical");
     }
