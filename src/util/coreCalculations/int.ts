@@ -7,16 +7,16 @@
  *     translation of the Solidity code.
  */
 
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber, BigNumberish, ethers } from "ethers";
 import * as yul from "./yul";
 
 export type int = BigNumber;
 
 const _0 = BigNumber.from(0);
 const _2 = BigNumber.from(2);
-const _2pow255 = BigNumber.from("2").pow(255);
-const MAX_INT256 = _2pow255.sub(1);
-const MIN_INT256 = _2pow255.mul(-1);
+
+const MAX_INT256 = ethers.constants.MaxInt256;;
+const MIN_INT256 = ethers.constants.MinInt256;;
 
 function checkOverflow(a: BigNumber, error: string): void {
   if (a.gt(MAX_INT256)) {
