@@ -254,6 +254,7 @@ class KandelDistributionHelper {
    * @param maxOffersInChunk The maximum number of offers in a single chunk.
    * @param middle The middle to split around; typically the index of the first ask in the distribution; if not provided, the midpoint between from and to is used.
    * @returns The chunks.
+   * @dev Since each chunk should contain both an offer and its dual, the returned chunks will have size less than maxOffersInChunk/2.
    */
   public chunkIndicesAroundMiddle(
     from: number,
@@ -261,6 +262,12 @@ class KandelDistributionHelper {
     maxOffersInChunk: number,
     middle?: number,
   ) {
+    if (maxOffersInChunk < 2) {
+      throw Error("maxOffersInChunk must be at least 2");
+    }
+
+    maxOffersInChunk = Math.floor(maxOffersInChunk / 2);
+
     if (middle === undefined) {
       middle = from + Math.floor((to - from) / 2);
     }

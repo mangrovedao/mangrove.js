@@ -229,7 +229,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
       [undefined, 2].forEach((middle) => {
         it(`can chunk an uneven set with middle=${middle}`, () => {
           // Arrange/act
-          const chunks = sut.chunkIndicesAroundMiddle(1, 4, 2, middle);
+          const chunks = sut.chunkIndicesAroundMiddle(1, 4, 4, middle);
 
           // Assert
           assert.equal(chunks.length, 2);
@@ -240,7 +240,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
       it("can chunk an even set", () => {
         // Arrange/act
-        const chunks = sut.chunkIndicesAroundMiddle(1, 9, 2, 6);
+        const chunks = sut.chunkIndicesAroundMiddle(1, 9, 4, 6);
 
         // Assert
         assert.equal(chunks.length, 4);
@@ -252,7 +252,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
       it(`works with middle=0`, () => {
         // Arrange/act
-        const chunks = sut.chunkIndicesAroundMiddle(1, 5, 2, 0);
+        const chunks = sut.chunkIndicesAroundMiddle(1, 5, 4, 0);
 
         // Assert
         assert.equal(chunks.length, 2);
@@ -262,7 +262,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
       it(`works with middle=4`, () => {
         // Arrange/act
-        const chunks = sut.chunkIndicesAroundMiddle(1, 5, 2, 4);
+        const chunks = sut.chunkIndicesAroundMiddle(1, 5, 4, 4);
 
         // Assert
         assert.equal(chunks.length, 2);

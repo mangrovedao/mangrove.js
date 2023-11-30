@@ -1,7 +1,6 @@
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
-import KandelDistributionHelper from "../../../src/kandel/kandelDistributionHelper";
 import { KandelDistribution } from "../../../src";
 import {
   assertIsRounded,
@@ -125,92 +124,4 @@ describe(`${GeneralKandelDistributionHelper.prototype.constructor.name} unit tes
       });
     },
   );
-
-  describe(KandelDistributionHelper.prototype.chunkIndices.name, () => {
-    it("can chunk", () => {
-      // Arrange/act
-      const chunks = new KandelDistributionHelper(0, 0).chunkIndices(1, 4, 2);
-
-      // Assert
-      assert.equal(chunks.length, 2);
-      assert.deepStrictEqual(chunks[0], { from: 1, to: 3 });
-      assert.deepStrictEqual(chunks[1], { from: 3, to: 4 });
-    });
-  });
-
-  describe(
-    KandelDistributionHelper.prototype.chunkIndicesAroundMiddle.name,
-    () => {
-      let sut: KandelDistributionHelper;
-      beforeEach(() => {
-        sut = new KandelDistributionHelper(0, 0);
-      });
-
-      [undefined, 2].forEach((middle) => {
-        it(`can chunk an uneven set with middle=${middle}`, () => {
-          // Arrange/act
-          const chunks = sut.chunkIndicesAroundMiddle(1, 4, 2, middle);
-
-          // Assert
-          assert.equal(chunks.length, 2);
-          assert.deepStrictEqual(chunks[0], { from: 1, to: 3 });
-          assert.deepStrictEqual(chunks[1], { from: 3, to: 4 });
-        });
-      });
-
-      it("can chunk an even set", () => {
-        // Arrange/act
-        const chunks = sut.chunkIndicesAroundMiddle(1, 9, 2, 6);
-
-        // Assert
-        assert.equal(chunks.length, 4);
-        assert.deepStrictEqual(chunks[0], { from: 5, to: 7 });
-        assert.deepStrictEqual(chunks[1], { from: 3, to: 5 });
-        assert.deepStrictEqual(chunks[2], { from: 7, to: 9 });
-        assert.deepStrictEqual(chunks[3], { from: 1, to: 3 });
-      });
-
-      it(`works with middle=0`, () => {
-        // Arrange/act
-        const chunks = sut.chunkIndicesAroundMiddle(1, 5, 2, 0);
-
-        // Assert
-        assert.equal(chunks.length, 2);
-        assert.deepStrictEqual(chunks[0], { from: 1, to: 3 });
-        assert.deepStrictEqual(chunks[1], { from: 3, to: 5 });
-      });
-
-      it(`works with middle=4`, () => {
-        // Arrange/act
-        const chunks = sut.chunkIndicesAroundMiddle(1, 5, 2, 4);
-
-        // Assert
-        assert.equal(chunks.length, 2);
-        assert.deepStrictEqual(chunks[0], { from: 3, to: 5 });
-        assert.deepStrictEqual(chunks[1], { from: 1, to: 3 });
-      });
-    },
-  );
-
-  describe(KandelDistributionHelper.prototype.sortByIndex.name, () => {
-    it("sorts", () => {
-      // Arrange
-      const list = [
-        { a: "1", index: 2 },
-        { a: "3", index: 1 },
-        { a: "0", index: 9 },
-      ];
-      const sut = new KandelDistributionHelper(0, 0);
-
-      // Act
-      sut.sortByIndex(list);
-
-      // Assert
-      assert.deepStrictEqual(list, [
-        { a: "3", index: 1 },
-        { a: "1", index: 2 },
-        { a: "0", index: 9 },
-      ]);
-    });
-  });
 });
