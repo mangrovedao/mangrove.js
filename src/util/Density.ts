@@ -19,6 +19,9 @@ export class Density {
    */
   constructor(rawDensity: BigNumberish, outboundDecimals: number) {
     this.#rawDensity = BigNumber.from(rawDensity);
+    if (!this.#rawDensity.and(DensityLib.MASK).eq(this.#rawDensity)) {
+      throw new Error("Given density is too big");
+    }
     this.#outboundDecimals = outboundDecimals;
   }
 
@@ -58,10 +61,6 @@ export class Density {
    * @returns the density formatted as a 'mantissa * 2^exponent' string
    */
   toString(): string {
-    const newLocal = this.#rawDensity.and(DensityLib.MASK);
-    if (!newLocal.eq(this.#rawDensity)) {
-      throw new Error("Given density is too big");
-    }
     const mantissa = DensityLib.mantissa(this.#rawDensity);
     const exp = DensityLib.exponent(this.#rawDensity);
     if (exp.eq(1)) {
