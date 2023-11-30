@@ -19,7 +19,7 @@ import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
-import { Density } from "../../src/util/coreCalculations/Density";
+import { Density } from "../../src/util/Density";
 import { MIN_TICK } from "../../src/util/coreCalculations/Constants";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 

@@ -19,7 +19,6 @@
  *     translation of the Solidity code.
  */
 
-import assert from "assert";
 import { BigNumber } from "ethers";
 import { shl, shr, not, mul } from "./uint";
 type uint = BigNumber;
@@ -29,6 +28,13 @@ const _1 = BigNumber.from(1);
 const _2 = BigNumber.from(2);
 const _9 = BigNumber.from(9);
 const _10 = BigNumber.from(10);
+
+// TODO: Consider extracting and using in other Solidity translations
+function _require(condition: boolean, message: string): void {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
 
 
 // # DensityLib.sol
@@ -166,7 +172,7 @@ type Density = uint;
   ): uint {
     // Do not use unchecked here
     // require(uint8(outbound_decimals) == outbound_decimals,"DensityLib/fixedFromParams1/decimals/wrong");
-    assert(outbound_decimals.lt(shl(2, 8)), "DensityLib/fixedFromParams1/decimals/wrong");
+    _require(outbound_decimals.lt(shl(2, 8)), "DensityLib/fixedFromParams1/decimals/wrong");
     const num: uint = mul(cover_factor, mul(gasprice_in_Mwei, mul(_10.pow(outbound_decimals), eth_in_centiusd)));
     // use * instead of << to trigger overflow check
     return mul(num, shl(1, 32)).div(mul(outbound_display_in_centiusd, _10.pow(12)));
@@ -181,7 +187,7 @@ type Density = uint;
   ): uint {
     /* **Do not** use unchecked here. */
     // require(uint8(outbound_decimals) == outbound_decimals,"DensityLib/fixedFromParams2/decimals/wrong");
-    assert(outbound_decimals.lt(shl(2, 8)), "DensityLib/fixedFromParams2/decimals/wrong");
+    _require(outbound_decimals.lt(shl(2, 8)), "DensityLib/fixedFromParams2/decimals/wrong");
     const num: uint = mul(cover_factor, mul(gasprice_in_Mwei, _10.pow(outbound_decimals)));
     /* use `*` instead of `<<` to trigger overflow check */
     return mul(num, shl(1, 32)).div(outbound_display_in_Mwei);

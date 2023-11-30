@@ -1,150 +1,76 @@
 import Big from "big.js";
-import { BigNumber } from "ethers";
-import * as BitLib from "./BitLib";
+import { BigNumber, BigNumberish } from "ethers";
+import * as DensityLib from "./coreCalculations/DensityLib";
 
-const ONES = -1n;
-const MAX_MARKET_ORDER_GAS = 10000000n;
-const BITS = 9n; // must match structs.ts
-const MANTISSA_BITS = 2n;
-const SUBNORMAL_LIMIT = ~(ONES << (MANTISSA_BITS + 1n));
-const MANTISSA_MASK = ~(ONES << MANTISSA_BITS);
-const MASK = ~(ONES << BITS);
-const MANTISSA_INTEGER = 1n << MANTISSA_BITS;
-const EXPONENT_BITS = BITS - MANTISSA_BITS;
+const _2pow32 = Big(2).pow(32);
 
 export class Density {
-  #value: BigNumber;
-  outbound_decimals: number;
-  constructor(value: BigNumber, outbound_decimals: number) {
-    this.#value = value;
-    this.outbound_decimals = outbound_decimals;
+  #rawDensity: BigNumber;
+  #outbound_decimals: number;
+
+  /**
+   * Construct a wrapper around a raw Density from Mangrove.
+   *
+   * @param rawDensity A raw Density from Mangrove
+   * @param outbound_decimals number of decimals for the outbound token
+   */
+  constructor(rawDensity: BigNumberish, outbound_decimals: number) {
+    this.#rawDensity = BigNumber.from(rawDensity);
+    this.#outbound_decimals = outbound_decimals;
   }
 
-  eq(value: Density): boolean {
-    return this.#value.eq(value.#value);
-  }
-
-  toString(): string {
-    return this.#value.toString();
-  }
-
-  checkDensity96X32(density96X32: BigNumber): boolean {
-    return density96X32.lt(BigNumber.from(1).shl(96 + 32));
-  }
-
+  /**
+   * Factory method for creating a Density object from a 96X32 density.
+   *
+   * @param density96X32 density encoded as a 96X32
+   * @param outbound_decimals number of decimals for the outbound token
+   * @returns a Density object corresponding to the given density
+   */
   static from96X32(
-    density96X32: BigNumber,
-    outbound_decimals: number,
-  ): Density {
-    if (density96X32.lte(MANTISSA_MASK)) {
-      return new Density(density96X32, outbound_decimals);
-    }
-    const exp = BitLib.fls(density96X32);
-    return Density.make(
-      density96X32.shr(exp.sub(MANTISSA_BITS).toNumber()),
-      exp,
-      outbound_decimals,
-    );
-  }
-
-  to96X32(): BigNumber {
-    if (this.#value.lte(SUBNORMAL_LIMIT)) {
-      return this.#value.and(MANTISSA_MASK);
-    }
-    const shift = this.#value
-      .shr(BigNumber.from(MANTISSA_BITS).toNumber())
-      .sub(MANTISSA_BITS);
-    return this.#value
-      .and(MANTISSA_MASK)
-      .or(MANTISSA_INTEGER)
-      .shl(shift.toNumber());
-  }
-
-  mantissa(): BigNumber {
-    return this.#value.and(MANTISSA_MASK);
-  }
-
-  exponent(): BigNumber {
-    return this.#value.shr(BigNumber.from(MANTISSA_BITS).toNumber());
-  }
-
-  static make(
-    mantissa: BigNumber,
-    exponent: BigNumber,
+    density96X32: BigNumberish,
     outbound_decimals: number,
   ): Density {
     return new Density(
-      exponent
-        .shl(BigNumber.from(MANTISSA_BITS).toNumber())
-        .or(mantissa.and(MANTISSA_MASK)),
+      DensityLib.from96X32(BigNumber.from(density96X32)),
       outbound_decimals,
     );
   }
 
-  multiply(m: BigNumber): BigNumber {
-    return m.mul(this.to96X32()).shr(32);
+  eq(value: Density): boolean {
+    return this.#rawDensity.eq(value.#rawDensity);
   }
 
-  multiplyUp(m: BigNumber): BigNumber {
-    const part = m.mul(this.to96X32());
-    return part.shr(32).add(part.mod(BigNumber.from(2).shl(32)).eq(0) ? 0 : 1);
+  toString(): string {
+    return this.#rawDensity.toString();
   }
 
-  multiplyUpReadable(m: BigNumber): Big {
-    return Big(this.multiplyUp(m).toString()).div(
-      Big(10).pow(this.outbound_decimals),
+  isZero(): boolean {
+    return this.#rawDensity.isZero();
+  }
+
+  getRequiredOutboundForGas(gas: BigNumberish): Big {
+    return Big(
+      DensityLib.multiplyUp(this.#rawDensity, BigNumber.from(gas)).toString(),
+    ).div(Big(10).pow(this.#outbound_decimals));
+  }
+
+  getMaximumGasForRawOutbound(rawOutboundAmt: BigNumberish): BigNumber {
+    const density96X32 = DensityLib.to96X32(this.#rawDensity);
+    const densityDecimal = Big(density96X32.toString()).div(_2pow32);
+    return BigNumber.from(
+      Big(BigNumber.from(rawOutboundAmt).toString())
+        .div(densityDecimal)
+        .toFixed(0),
     );
   }
 
-  static paramsTo96X32(
-    outbound_decimals: number,
-    gasprice_in_gwei: BigNumber,
-    eth_in_usdx100: BigNumber,
-    outbound_display_in_usdx100: BigNumber,
-    cover_factor: BigNumber,
-  ): BigNumber {
-    if (
-      outbound_decimals !== Math.floor(outbound_decimals) ||
-      outbound_decimals < 0 ||
-      outbound_decimals > 255
-    ) {
-      throw new Error("DensityLib/fixedFromParams1/decimals/wrong");
-    }
-    const num = cover_factor
-      .mul(gasprice_in_gwei)
-      .mul(BigNumber.from(10).pow(outbound_decimals))
-      .mul(eth_in_usdx100);
-    return num
-      .mul(BigNumber.from(1).shl(32))
-      .div(outbound_display_in_usdx100.mul(1e9));
-  }
-
-  paramsTo96X32_2(
-    outbound_decimals: number,
-    gasprice_in_gwei: BigNumber,
-    outbound_display_in_gwei: BigNumber,
-    cover_factor: BigNumber,
-  ): BigNumber {
-    if (
-      outbound_decimals !== Math.floor(outbound_decimals) ||
-      outbound_decimals < 0 ||
-      outbound_decimals > 255
-    ) {
-      throw new Error("DensityLib/fixedFromParams2/decimals/wrong");
-    }
-    const num = cover_factor
-      .mul(gasprice_in_gwei)
-      .mul(Math.pow(10, outbound_decimals));
-    return num.mul(BigNumber.from(1).shl(32)).div(outbound_display_in_gwei);
-  }
-
   densityToString() {
-    const newLocal = this.#value.and(MASK);
-    if (!newLocal.eq(this.#value)) {
+    const newLocal = this.#rawDensity.and(DensityLib.MASK);
+    if (!newLocal.eq(this.#rawDensity)) {
       throw new Error("Given density is too big");
     }
-    const mantissa = this.mantissa();
-    const exp = this.exponent();
+    const mantissa = DensityLib.mantissa(this.#rawDensity);
+    const exp = DensityLib.exponent(this.#rawDensity);
     if (exp.eq(1)) {
       throw new Error("Invalid density, value not canonical");
     }

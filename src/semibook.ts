@@ -16,7 +16,7 @@ import {
   OfferUnpackedStructOutput,
 } from "./types/typechain/MgvReader";
 import { MAX_TICK, MIN_TICK } from "./util/coreCalculations/Constants";
-import { Density } from "./util/coreCalculations/Density";
+import { Density } from "./util/Density";
 import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
@@ -1138,8 +1138,8 @@ class Semibook
    */
   public async getMinimumVolume(gasreq: number) {
     const config = await this.getConfig();
-    const min = config.density.multiplyUpReadable(
-      BigNumber.from(gasreq).add(BigNumber.from(config.offer_gasbase)),
+    const min = config.density.getRequiredOutboundForGas(
+      gasreq + config.offer_gasbase,
     );
     return min.gt(0)
       ? min
