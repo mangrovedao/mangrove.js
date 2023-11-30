@@ -38,6 +38,8 @@ const _1000 = BigNumber.from(1000);
 const _2500 = BigNumber.from(2500);
 const _10000 = BigNumber.from(10000);
 
+const type_uint_max = ethers.constants.MaxUint256;
+
 
 // # Density.t.sol
 
@@ -92,7 +94,7 @@ describe("DensityLib unit test suite", () => {
   function assertD(expectedFixp: uint, err: string) {
     const fixp: uint = DensityLib.to96X32(DensityLib.from96X32(d));
     assertEq(fixp, expectedFixp, err + ": fixed -> floating -> fixed");
-    if (expectedFixp.gt(0) && expectedFixp.lt(ethers.constants.MaxUint256.div(100))) {
+    if (!expectedFixp.eq(0) && expectedFixp.lt(type_uint_max.div(100))) {
       // check approx/original ratio
 
       assertLe(fixp, d, err + ": ratio");
