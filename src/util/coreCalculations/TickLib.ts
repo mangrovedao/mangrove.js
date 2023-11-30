@@ -359,7 +359,7 @@ export type Tick = int;
         log2ratio = sdiv(shiftedTick,LOG_BP_2X235)
         log2ratio = sub(log2ratio,slt(smod(shiftedTick,LOG_BP_2X235),0))
       // }
-      const diff: int = Int.add(int(log2ratio),Int.sub(Int.int(exp),Int.int(MANTISSA_BITS_MINUS_ONE)));
+      const diff: int = Int.sub(Int.add(int(log2ratio),Int.int(exp)),Int.int(MANTISSA_BITS_MINUS_ONE));
       if (diff.gt(_0)) {
         // For |tick| <= 887272, this drops at most 5 bits of precision
         man = UInt.shr(man, uint(diff));
