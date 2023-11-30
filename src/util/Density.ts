@@ -9,17 +9,17 @@ const _2pow32 = Big(2).pow(32);
  */
 export class Density {
   #rawDensity: BigNumber;
-  #outbound_decimals: number;
+  #outboundDecimals: number;
 
   /**
    * Construct a wrapper around a raw Density from Mangrove.
    *
    * @param rawDensity A raw Density from Mangrove
-   * @param outbound_decimals number of decimals for the outbound token
+   * @param outboundDecimals number of decimals for the outbound token
    */
-  constructor(rawDensity: BigNumberish, outbound_decimals: number) {
+  constructor(rawDensity: BigNumberish, outboundDecimals: number) {
     this.#rawDensity = BigNumber.from(rawDensity);
-    this.#outbound_decimals = outbound_decimals;
+    this.#outboundDecimals = outboundDecimals;
   }
 
   /**
@@ -48,7 +48,7 @@ export class Density {
   eq(density: Density): boolean {
     return (
       this.#rawDensity.eq(density.#rawDensity) &&
-      this.#outbound_decimals === density.#outbound_decimals
+      this.#outboundDecimals === density.#outboundDecimals
     );
   }
 
@@ -99,7 +99,7 @@ export class Density {
   getRequiredOutboundForGas(gas: BigNumberish): Big {
     return Big(
       DensityLib.multiplyUp(this.#rawDensity, BigNumber.from(gas)).toString(),
-    ).div(Big(10).pow(this.#outbound_decimals));
+    ).div(Big(10).pow(this.#outboundDecimals));
   }
 
   /**
