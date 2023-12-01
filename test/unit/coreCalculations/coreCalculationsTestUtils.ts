@@ -11,7 +11,6 @@ export type Density = BigNumber;
 
 // # Assert functions that mimic Solidity's Foundry's assertions.
 export function assertEq(a: BigNumber | string, b: BigNumberish, err?: string) {
-  console.log("assertEq", a.toString(), b.toString());
   if (typeof a === "string") {
     assert.equal(a, b, err);
   } else {
