@@ -55,6 +55,7 @@ export type inputServerParamsTypeOnly = {
   deploy?: boolean;
   forkUrl?: string;
   forkBlockNumber?: number;
+  gasLimit?: number;
 };
 
 export type inputServerParamsType = inputServerParamsTypeOnly &
@@ -85,6 +86,7 @@ export type partialComputeArgvType = {
   forkUrl?: string;
   "fork-block-number"?: number;
   forkBlockNumber?: number;
+  gasLimit?: number;
   "chain-id"?: number;
   chainId?: number;
   pipe: boolean;
@@ -179,6 +181,11 @@ export const builder = (yargs: yargs.Argv<{}>) => {
       describe: "Pipe all internal anvil/script data to stdout",
       default: false,
       type: "boolean",
+    })
+    .option("gas-limit", {
+      describe: "The block gas limit",
+      type: "number",
+      default: 30_000_000,
     })
     .option("set-multicall-code-if-absent", {
       describe: "Set Multicall code if absent",

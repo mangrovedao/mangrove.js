@@ -779,7 +779,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
             await kandel.retractOffers({
               startIndex: 4,
               endIndex: 6,
-              maxOffersInChunk: inChunks ? 1 : 80,
+              maxOffersInChunk: inChunks ? 2 : 80,
               firstAskIndex: 3,
             }),
           );

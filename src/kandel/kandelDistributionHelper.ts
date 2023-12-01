@@ -254,6 +254,7 @@ class KandelDistributionHelper {
    * @param maxOffersInChunk The maximum number of offers in a single chunk.
    * @param middle The middle to split around; typically the index of the first ask in the distribution; if not provided, the midpoint between from and to is used.
    * @returns The chunks.
+   * @dev Since each chunk should contain pairs of offers and their duals the returned chunks will each have size less than maxOffersInChunk/2.
    */
   public chunkIndicesAroundMiddle(
     from: number,
@@ -261,25 +262,35 @@ class KandelDistributionHelper {
     maxOffersInChunk: number,
     middle?: number,
   ) {
+    if (maxOffersInChunk < 2) {
+      throw Error("maxOffersInChunk must be at least 2");
+    }
+
+    const maxOfferPairsInChunk = Math.floor(maxOffersInChunk / 2);
+
     if (middle === undefined) {
       middle = from + Math.floor((to - from) / 2);
     }
     const middleChunk = {
-      from: Math.max(from, middle - Math.floor(maxOffersInChunk / 2)),
-      to: Math.min(to, middle + Math.ceil(maxOffersInChunk / 2)),
+      from: Math.max(from, middle - Math.floor(maxOfferPairsInChunk / 2)),
+      to: Math.min(to, middle + Math.ceil(maxOfferPairsInChunk / 2)),
     };
 
     // expand middleChunk if not full
-    const residual = maxOffersInChunk - (middleChunk.to - middleChunk.from);
+    const residual = maxOfferPairsInChunk - (middleChunk.to - middleChunk.from);
     middleChunk.from = Math.max(from, middleChunk.from - residual);
     middleChunk.to = Math.min(to, middleChunk.to + residual);
 
     const lowChunks = this.chunkIndices(
       from,
       middleChunk.from,
-      maxOffersInChunk,
+      maxOfferPairsInChunk,
     );
-    const highChunks = this.chunkIndices(middleChunk.to, to, maxOffersInChunk);
+    const highChunks = this.chunkIndices(
+      middleChunk.to,
+      to,
+      maxOfferPairsInChunk,
+    );
 
     const chunks: { from: number; to: number }[] = [middleChunk];
 
