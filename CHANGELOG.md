@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-10
+
 # 2.0.0-9
 
 - feat!: `MgvToken` has been renamed to `Token`.
