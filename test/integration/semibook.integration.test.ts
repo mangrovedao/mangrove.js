@@ -1337,6 +1337,12 @@ describe("Semibook integration tests suite", function () {
       const base = "TokenA";
       const quote = "TokenB";
 
+      const market = await mgv.market({
+        base: base,
+        quote: quote,
+        tickSpacing: 1,
+      });
+
       const expectedAsksMaxGasReq = 10_011;
       const expectedBidsMaxGasReq = 10_022;
 
@@ -1344,21 +1350,21 @@ describe("Semibook integration tests suite", function () {
       const asks = [
         {
           id: 1,
-          tick: TickLib.tickFromVolumes(BigNumber.from(1), BigNumber.from(1)),
+          tick: market.getBook().asks.tickPriceHelper.tickFromVolumes(1, 1),
           gives: "1",
           gasreq: expectedAsksMaxGasReq - 100,
           gasprice: 1,
         },
         {
           id: 2,
-          tick: TickLib.tickFromVolumes(BigNumber.from(12), BigNumber.from(10)),
+          tick: market.getBook().asks.tickPriceHelper.tickFromVolumes(12, 10),
           gives: "1",
           gasreq: expectedAsksMaxGasReq,
           gasprice: 3,
         },
         {
           id: 3,
-          tick: TickLib.tickFromVolumes(BigNumber.from(10), BigNumber.from(12)),
+          tick: market.getBook().asks.tickPriceHelper.tickFromVolumes(10, 12),
           gives: "1.2",
           gasreq: expectedAsksMaxGasReq - 2,
           gasprice: 21,
@@ -1368,30 +1374,21 @@ describe("Semibook integration tests suite", function () {
       const bids = [
         {
           id: 1,
-          tick: TickLib.tickFromVolumes(
-            BigNumber.from(99),
-            BigNumber.from(100),
-          ),
+          tick: market.getBook().bids.tickPriceHelper.tickFromVolumes(99, 100),
           gives: "1",
           gasreq: expectedBidsMaxGasReq - 7,
           gasprice: 11,
         },
         {
           id: 2,
-          tick: TickLib.tickFromVolumes(
-            BigNumber.from(100),
-            BigNumber.from(143),
-          ),
+          tick: market.getBook().bids.tickPriceHelper.tickFromVolumes(100, 143),
           gives: "1.43",
           gasreq: expectedBidsMaxGasReq - 10,
           gasprice: 7,
         },
         {
           id: 3,
-          tick: TickLib.tickFromVolumes(
-            BigNumber.from(111),
-            BigNumber.from(100),
-          ),
+          tick: market.getBook().bids.tickPriceHelper.tickFromVolumes(111, 100),
           gives: "1",
           gasreq: expectedBidsMaxGasReq,
           gasprice: 30,
@@ -1412,11 +1409,6 @@ describe("Semibook integration tests suite", function () {
         await mgvTestUtil.waitForBlock(mgv, lastTx.blockNumber);
       }
 
-      const market = await mgv.market({
-        base: base,
-        quote: quote,
-        tickSpacing: 1,
-      });
       const actualAsksMaxGasReq = await market.getBook().asks.getMaxGasReq();
       const actualBidsMaxGasReq = await market.getBook().bids.getMaxGasReq();
 
