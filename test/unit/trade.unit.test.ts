@@ -240,23 +240,34 @@ describe("Trade unit tests suite", () => {
       };
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
+      const tickPriceHelper = new TickPriceHelper("asks", {
+        base: baseToken,
+        quote: quoteToken,
+      });
+
       //Act
       const result = trade.getParamsForBuy(params, baseToken, quoteToken);
 
       //Assert
-      const givesWithSlippage = quoteToken.toUnits(
-        Big(params.gives)
-          .mul(100 + slippage)
-          .div(100),
-      );
-      const expectedTick = TickLib.tickFromVolumes(
+      const givesWithSlippage = Big(params.gives)
+        .mul(100 + slippage)
+        .div(100);
+      const expectedTick = tickPriceHelper.tickFromVolumes(
         givesWithSlippage,
-        baseToken.toUnits(params.wants),
+        params.wants,
       );
 
-      assert.equal(result.fillVolume.toString(), givesWithSlippage.toString());
-      assert.deepStrictEqual(result.tick.toString(), expectedTick.toString());
-      assert.equal(result.fillWants, params.fillWants);
+      assert.equal(
+        result.fillVolume.toString(),
+        quoteToken.toUnits(givesWithSlippage).toString(),
+        "fillVolume",
+      );
+      assert.deepStrictEqual(
+        result.tick.toString(),
+        expectedTick.toString(),
+        "tick",
+      );
+      assert.equal(result.fillWants, params.fillWants, "fillWants");
     });
   });
 
@@ -477,17 +488,20 @@ describe("Trade unit tests suite", () => {
       };
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
+      const tickPriceHelper = new TickPriceHelper("bids", {
+        base: baseToken,
+        quote: quoteToken,
+      });
+
       //Act
       const result = trade.getParamsForSell(params, baseToken, quoteToken);
 
       //Assert
-      const wantsWithSlippage = quoteToken.toUnits(
-        Big(params.wants)
-          .mul(100 - slippage)
-          .div(100),
-      );
-      const expectedTick = TickLib.tickFromVolumes(
-        baseToken.toUnits(params.gives),
+      const wantsWithSlippage = Big(params.wants)
+        .mul(100 - slippage)
+        .div(100);
+      const expectedTick = tickPriceHelper.tickFromVolumes(
+        params.gives,
         wantsWithSlippage,
       );
 
