@@ -21,15 +21,6 @@ import {
 import { logger } from "./logger";
 import { CleanStartEvent } from "../types/typechain/IMangrove";
 
-type RawOfferData = {
-  id: BigNumber;
-  gasprice: BigNumber;
-  maker: string;
-  gasreq: BigNumber;
-  tick: BigNumber;
-  gives: BigNumber;
-};
-
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
 export type OrderResultWithOptionalSummary = Optional<
@@ -38,35 +29,6 @@ export type OrderResultWithOptionalSummary = Optional<
 >;
 
 class TradeEventManagement {
-  rawOfferToOffer(semibook: Semibook, raw: RawOfferData): Market.OfferSlim {
-    const { outbound_tkn } = semibook.market.getOutboundInbound(semibook.ba);
-    const gives = outbound_tkn.fromUnits(raw.gives);
-    const id = this.#rawIdToId(raw.id);
-    const price = semibook.tickPriceHelper.priceFromTick(raw.tick);
-
-    if (id === undefined) throw new Error("Offer ID is 0");
-    return {
-      id,
-      gasprice: raw.gasprice.toNumber(),
-      maker: raw.maker,
-      gasreq: raw.gasreq.toNumber(),
-      tick: raw.tick,
-      gives: gives,
-      price: price,
-      wants: semibook.tickPriceHelper.inboundFromOutbound(raw.tick, gives),
-      volume: semibook.market.getVolumeForGivesAndPrice(
-        semibook.ba,
-        gives,
-        price,
-      ),
-    };
-  }
-
-  #rawIdToId(rawId: BigNumber): number | undefined {
-    const id = rawId.toNumber();
-    return id === 0 ? undefined : id;
-  }
-
   createCleanSummaryFromEvent(event: CleanStartEvent): Market.CleanSummary {
     return {
       olKeyHash: event.args.olKeyHash,
@@ -166,7 +128,7 @@ class TradeEventManagement {
       }
     }
 
-    const offer = this.rawOfferToOffer(market.getSemibook(ba), evt.args);
+    const offer = market.getSemibook(ba).rawOfferSlimToOfferSlim(evt.args);
     return { ba, offer };
   }
 
@@ -184,7 +146,7 @@ class TradeEventManagement {
           fillVolume: evt.args.fillVolume,
           fillWants: evt.args.fillWants,
           restingOrder: evt.args.restingOrder,
-          restingOrderId: this.#rawIdToId(evt.args.offerId),
+          restingOrderId: Semibook.rawIdToId(evt.args.offerId),
         },
       },
       fillToken,
@@ -417,7 +379,7 @@ class TradeEventManagement {
           "fee" in result.summary &&
           result.summary?.restingOrderId === undefined
         ) {
-          result.restingOrderId = this.#rawIdToId(
+          result.restingOrderId = Semibook.rawIdToId(
             (evt as NewOwnedOfferEvent).args.offerId,
           );
         }

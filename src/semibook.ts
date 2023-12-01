@@ -23,6 +23,7 @@ import { Result } from "./util/types";
 import UnitCalculations from "./util/unitCalculations";
 import { OfferFailEvent, OfferSuccessEvent } from "./types/typechain/IMangrove";
 import TickPriceHelper from "./util/tickPriceHelper";
+import { OfferWriteEventObject } from "./types/typechain/Mangrove";
 
 // Guard constructor against external calls
 let canConstructSemibook = false;
@@ -43,19 +44,18 @@ namespace Semibook {
    * Specification of how much volume to (potentially) trade on the semibook.
    *
    * `{given:100, to:"buy"}` means buying 100 base tokens.
-   * `{given:100, to:"buy", boundary: 10})` means buying 100 quote tokens for a max. avg. price of 1/10 (boundary/given).
+   * `{given:100, to:"buy", limitPrice: 0.1})` means buying 100 base tokens for a max. price of 0.1 quote/base.
    *
    * `{given:10, to:"sell"})` means selling 10 quote tokens.
-   * `{given:10, to:"sell", boundary: 5})` means selling 10 quote tokens for a min. avg. price of 0.5 (given/boundary).
+   * `{given:10, to:"sell", limitPrice: 0.5})` means selling 10 quote tokens for a max. price of 0.5 quote/base.
    */
   export type VolumeParams = {
     /** Amount of token to trade. */
     given: Bigish;
     /** Whether `given` is base to be bought or quote to be sold. */
     to: Market.BS;
-    /** Optional: induce a max price after which to stop buying/selling.
-     * TODO: Non-functional at the moment. */
-    boundary?: Big;
+    /** Optional: a max price after which to stop buying/selling. */
+    limitPrice?: Bigish;
   };
 
   /**
@@ -149,6 +149,7 @@ namespace Semibook {
   export type Bin = {
     tick: number;
     offers: number[];
+    // FIXME: Should be first and last
     prev: number | undefined;
     next: number | undefined;
   };
@@ -164,16 +165,20 @@ namespace Semibook {
     Market.Offer[],
     LogSubscriber.Error
   >;
+
+  // Based on the OfferWrite event to ensure consistency and ease
+  // when mapping from raw to represensation
+  export type RawOfferSlim = Omit<OfferWriteEventObject, "olKeyHash">;
 }
 
 /**
- * The Semibook is a data structure for maintaining a cached prefix
+ * The Semibook is a data structure for maintaining a cache
  * of an offer list for one side (asks or bids) of a market.
  *
  * While offer lists on-chain for a market A-B are symmetric (the offer lists are
  * the same for the market B-A), a `Semibook` depends on the market:
  *
- * - Prices are in terms of quote tokens
+ * - Prices are in terms of quote tokens per base token
  * - Volumes are in terms of base tokens
  */
 // TODO: Document invariants
@@ -187,7 +192,7 @@ class Semibook
   readonly market: Market;
   readonly tickPriceHelper: TickPriceHelper;
   readonly options: Semibook.ResolvedOptions; // complete and validated
-  private readonly cacheOperations: SemibookCacheOperations =
+  readonly #cacheOperations: SemibookCacheOperations =
     new SemibookCacheOperations();
 
   // offer gasbase is stored as part of the semibook since it is used each time an offer is written to be able to calculate locked provision for that offer
@@ -281,11 +286,11 @@ class Semibook
       offerId,
     );
     return {
-      next: Semibook.rawIdToId(offer.next),
       offer_gasbase: details.kilo_offer_gasbase.toNumber() * 1000,
-      prev: offer.prev.toNumber(),
-      ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(this, {
-        id: this.#idToRawId(offerId),
+      next: Semibook.rawIdToId(offer.next),
+      prev: Semibook.rawIdToId(offer.prev),
+      ...this.rawOfferSlimToOfferSlim({
+        id: Semibook.idToRawId(offerId),
         ...offer,
         ...details,
       }),
@@ -314,7 +319,7 @@ class Semibook
       { blockTag: blockNumber },
     );
 
-    return this.#rawLocalConfigToLocalConfig(local);
+    return this.rawLocalConfigToLocalConfig(local);
   }
 
   /** Sign permit data for buying outbound_tkn with spender's inbound_tkn
@@ -526,6 +531,23 @@ class Semibook
     return this.tradeManagement.isPriceWorse(price, referencePrice, this.ba);
   }
 
+  /** Determines the minimum volume required to stay above density limit for the given gasreq (with a minimum of 1 unit of outbound, since 0 gives is not allowed).
+   * @param gasreq The gas requirement for the offer.
+   * @returns The minimum volume required to stay above density limit.
+   */
+  async getMinimumVolume(gasreq: number) {
+    const config = await this.getConfig();
+    const min = config.density.getRequiredOutboundForGas(
+      gasreq + config.offer_gasbase,
+    );
+    return min.gt(0)
+      ? min
+      : UnitCalculations.fromUnits(
+          1,
+          this.market.getOutboundInbound(this.ba).outbound_tkn.decimals,
+        );
+  }
+
   async getMaxGasReq(): Promise<number | undefined> {
     // If a cache max size is set, then we look at those; otherwise, allow going to the chain to fetch data for the semibook.
     const maxOffers =
@@ -591,7 +613,7 @@ class Semibook
     // Are we certain to be at the end of the book?
     const isCacheCertainlyComplete =
       state.worstInCache !== undefined &&
-      this.cacheOperations.getOfferFromCacheOrFail(state, state.worstInCache)
+      this.#cacheOperations.getOfferFromCacheOrFail(state, state.worstInCache)
         .next === undefined;
 
     if (isCacheCertainlyComplete) {
@@ -617,7 +639,7 @@ class Semibook
       // Are we certain to be at the end of the book?
       const isCacheCertainlyComplete =
         state.worstInCache !== undefined &&
-        this.cacheOperations.getOfferFromCacheOrFail(state, state.worstInCache)
+        this.#cacheOperations.getOfferFromCacheOrFail(state, state.worstInCache)
           .next === undefined;
       if (isCacheCertainlyComplete) {
         return accumulator;
@@ -628,7 +650,7 @@ class Semibook
       const nextId =
         state.worstInCache === undefined
           ? undefined
-          : this.cacheOperations.getOfferFromCacheOrFail(
+          : this.#cacheOperations.getOfferFromCacheOrFail(
               state,
               state.worstInCache,
             ).next;
@@ -640,7 +662,7 @@ class Semibook
         (chunk: Market.Offer[]) => {
           for (const offer of chunk) {
             // We try to insert all the fetched offers in case the cache is not at max size
-            this.cacheOperations.insertOffer(state, offer, {
+            this.#cacheOperations.insertOffer(state, offer, {
               maxOffers:
                 "maxOffers" in this.options
                   ? this.options.maxOffers
@@ -695,7 +717,7 @@ class Semibook
     this.#eventListeners.set(eventListener, true);
   }
 
-  public async stateInitialize(
+  async stateInitialize(
     block: BlockManager.BlockWithoutParentHash,
   ): Promise<LogSubscriber.ErrorOrState<Semibook.State>> {
     try {
@@ -723,7 +745,7 @@ class Semibook
         };
 
         for (const offer of offers) {
-          this.cacheOperations.insertOffer(state, offer, {
+          this.#cacheOperations.insertOffer(state, offer, {
             maxOffers:
               "maxOffers" in this.options ? this.options.maxOffers : undefined,
           });
@@ -751,7 +773,7 @@ class Semibook
     }
   }
 
-  public stateHandleLog(
+  stateHandleLog(
     state: Semibook.State,
     log: Log,
     event?: Market.BookSubscriptionEvent,
@@ -777,7 +799,7 @@ class Semibook
         if (id === undefined)
           throw new Error("Received OfferWrite event with id = 0");
         let expectOfferInsertionInCache = true;
-        this.cacheOperations.removeOffer(state, id);
+        this.#cacheOperations.removeOffer(state, id);
 
         /* After removing the offer (a noop if the offer was not in local cache), we reinsert it.
          * The offer comes with id of its prev. If prev does not exist in cache, we skip
@@ -790,14 +812,11 @@ class Semibook
           offer_gasbase: this.#offer_gasbase,
           next: next,
           prev: undefined,
-          ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(
-            this,
-            event.args,
-          ),
+          ...this.rawOfferSlimToOfferSlim(event.args),
         };
 
         if (
-          !this.cacheOperations.insertOffer(state, offer, {
+          !this.#cacheOperations.insertOffer(state, offer, {
             maxOffers:
               "maxOffers" in this.options ? this.options.maxOffers : undefined,
           })
@@ -823,7 +842,7 @@ class Semibook
       }
 
       case "OfferFail": {
-        removedOffer = this.handleOfferFail(
+        removedOffer = this.#handleOfferFail(
           event,
           removedOffer,
           state,
@@ -835,7 +854,7 @@ class Semibook
       }
 
       case "OfferFailWithPosthookData": {
-        removedOffer = this.handleOfferFail(
+        removedOffer = this.#handleOfferFail(
           event,
           removedOffer,
           state,
@@ -847,7 +866,7 @@ class Semibook
       }
 
       case "OfferSuccess": {
-        removedOffer = this.handleOfferSuccess(
+        removedOffer = this.#handleOfferSuccess(
           event,
           removedOffer,
           state,
@@ -859,7 +878,7 @@ class Semibook
       }
 
       case "OfferSuccessWithPosthookData": {
-        removedOffer = this.handleOfferSuccess(
+        removedOffer = this.#handleOfferSuccess(
           event,
           removedOffer,
           state,
@@ -874,7 +893,7 @@ class Semibook
         const id = Semibook.rawIdToId(event.args.id);
         if (id === undefined)
           throw new Error("Received OfferRetract event with id = 0");
-        removedOffer = this.cacheOperations.removeOffer(state, id);
+        removedOffer = this.#cacheOperations.removeOffer(state, id);
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
@@ -912,7 +931,7 @@ class Semibook
     return state;
   }
 
-  private handleOfferFail(
+  #handleOfferFail(
     event: {
       name: "OfferFail" | "OfferFailWithPosthookData";
     } & OfferFailEvent,
@@ -925,7 +944,7 @@ class Semibook
     const id = Semibook.rawIdToId(event.args.id);
     if (id === undefined)
       throw new Error("Received OfferFail event with id = 0");
-    removedOffer = this.cacheOperations.removeOffer(state, id);
+    removedOffer = this.#cacheOperations.removeOffer(state, id);
     Array.from(this.#eventListeners.keys()).forEach(
       (listener) =>
         void listener({
@@ -946,7 +965,7 @@ class Semibook
     return removedOffer;
   }
 
-  private handleOfferSuccess(
+  #handleOfferSuccess(
     event: {
       name: "OfferSuccess" | "OfferSuccessWithPosthookData";
     } & OfferSuccessEvent,
@@ -959,7 +978,7 @@ class Semibook
     const id = Semibook.rawIdToId(event.args.id);
     if (id === undefined)
       throw new Error("Received OfferSuccess event with id = 0");
-    removedOffer = this.cacheOperations.removeOffer(state, id);
+    removedOffer = this.#cacheOperations.removeOffer(state, id);
     Array.from(this.#eventListeners.keys()).forEach(
       (listener) =>
         void listener({
@@ -1071,7 +1090,7 @@ class Semibook
             inbound_tkn: inbound_tkn.address,
             tickSpacing: this.market.tickSpacing,
           },
-          this.#idToRawId(fromId),
+          Semibook.idToRawId(fromId),
           chunkSize ?? Semibook.DEFAULT_MAX_OFFERS,
           { blockTag: block.number },
         );
@@ -1081,10 +1100,10 @@ class Semibook
           const offer = offers[index];
           const detail = details[index];
           return {
-            next: Semibook.rawIdToId(offer.next),
             offer_gasbase: detail.kilo_offer_gasbase.toNumber() * 1000,
+            next: Semibook.rawIdToId(offer.next),
             prev: Semibook.rawIdToId(offer.prev),
-            ...this.tradeManagement.tradeEventManagement.rawOfferToOffer(this, {
+            ...this.rawOfferSlimToOfferSlim({
               id: offerId,
               ...offer,
               ...detail,
@@ -1106,7 +1125,9 @@ class Semibook
     };
   }
 
-  #rawLocalConfigToLocalConfig(
+  // # Methods for mapping between raw data and mangrove.js representations
+
+  rawLocalConfigToLocalConfig(
     local: Mangrove.RawConfig["_local"],
   ): Mangrove.LocalConfig {
     const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
@@ -1132,21 +1153,24 @@ class Semibook
     };
   }
 
-  /** Determines the minimum volume required to stay above density limit for the given gasreq (with a minimum of 1 unit of outbound, since 0 gives is not allowed).
-   * @param gasreq The gas requirement for the offer.
-   * @returns The minimum volume required to stay above density limit.
-   */
-  public async getMinimumVolume(gasreq: number) {
-    const config = await this.getConfig();
-    const min = config.density.getRequiredOutboundForGas(
-      gasreq + config.offer_gasbase,
-    );
-    return min.gt(0)
-      ? min
-      : UnitCalculations.fromUnits(
-          1,
-          this.market.getOutboundInbound(this.ba).outbound_tkn.decimals,
-        );
+  rawOfferSlimToOfferSlim(raw: Semibook.RawOfferSlim): Market.OfferSlim {
+    const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
+    const gives = outbound_tkn.fromUnits(raw.gives);
+    const id = Semibook.rawIdToId(raw.id);
+    const price = this.tickPriceHelper.priceFromTick(raw.tick);
+
+    if (id === undefined) throw new Error("Offer ID is 0");
+    return {
+      id,
+      gasprice: raw.gasprice.toNumber(),
+      maker: raw.maker,
+      gasreq: raw.gasreq.toNumber(),
+      tick: raw.tick,
+      gives: gives,
+      price: price,
+      wants: this.tickPriceHelper.inboundFromOutbound(raw.tick, gives),
+      volume: this.market.getVolumeForGivesAndPrice(this.ba, gives, price),
+    };
   }
 
   static rawIdToId(rawId: BigNumber): number | undefined {
@@ -1154,9 +1178,11 @@ class Semibook
     return id === 0 ? undefined : id;
   }
 
-  #idToRawId(id: number | undefined): BigNumber {
+  static idToRawId(id: number | undefined): BigNumber {
     return id === undefined ? BigNumber.from(0) : BigNumber.from(id);
   }
+
+  // # Methods related to options
 
   #setDefaultsAndValidateOptions(
     options: Semibook.Options,
@@ -1206,6 +1232,7 @@ class Semibook
           opts.desiredVolume.to === "sell"))
     );
   }
+
   static getIsVolumeDesiredForBids(opts: Market.BookOptions) {
     return (
       "desiredVolume" in opts &&
