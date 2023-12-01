@@ -51,20 +51,8 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
 
   public computeBookIdentifier(market: Market, ba: Market.BA): string {
     return ba === "asks"
-      ? market.mgv
-          .getOlKeyHash(
-            market.base.address,
-            market.quote.address,
-            market.tickSpacing.toNumber(),
-          )!
-          .toLowerCase()
-      : market.mgv
-          .getOlKeyHash(
-            market.quote.address,
-            market.base.address,
-            market.tickSpacing.toNumber(),
-          )!
-          .toLowerCase();
+      ? market.mgv.getOlKeyHash(market.olKeyBaseQuote).toLowerCase()
+      : market.mgv.getOlKeyHash(market.olKeyQuoteBase).toLowerCase();
   }
 
   public getSemibook(

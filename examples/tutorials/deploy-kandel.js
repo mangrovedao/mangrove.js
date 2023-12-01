@@ -7,6 +7,7 @@ const {
   KandelStrategies,
   ethers,
 } = require("@mangrovedao/mangrove.js");
+const { default: configuration } = require("../../src/configuration");
 
 // Create a wallet with a provider to interact with the chain
 const provider = new ethers.providers.WebSocketProvider(process.env.LOCAL_URL);
@@ -16,13 +17,22 @@ const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const mgv = await Mangrove.connect({ signer: wallet });
 
 // Choose a market
-const market = await mgv.market({ base: "WETH", quote: "USDC" });
+const market = await mgv.market({
+  base: "WETH",
+  quote: "USDT",
+  tickSpacing: 1,
+});
 
 // Initialize KandelStrategies for strategy management
 const kandelStrategies = new KandelStrategies(mgv);
 
 // Retrieve default configuration for the selected market
 const config = kandelStrategies.configuration.getConfig(market);
+
+//TODO hack: add KandelLib until deployed
+const { kandelLibPromise } = await kandelStrategies.seeder.sow(seed);
+const kandelLibAddress = (await kandelLibPromise).address;
+configuration.addresses.setAddress("KandelLib", kandelLibAddress);
 
 // Create a distribution generator for the selected market
 const distributionGenerator = kandelStrategies.generator(market);

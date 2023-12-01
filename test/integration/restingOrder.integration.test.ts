@@ -285,7 +285,7 @@ describe("RestingOrder", () => {
         restingOrderId && restingOrderId > 0,
         "Resting order was not posted",
       );
-      const olKeyHash = mgv.getOlKeyHash(tokenB.address, tokenA.address, 1);
+      const olKeyHash = mgv.getOlKeyHash(market.getOLKey("bids"));
       const ttl = await mgv.orderContract.expiring(
         olKeyHash!,
         orderResult.restingOrder ? orderResult.restingOrder.id : 0,
