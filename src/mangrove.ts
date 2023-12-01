@@ -358,14 +358,16 @@ class Mangrove {
     );
   }
 
-  getOlKeyHash(
-    outbound: string,
-    inbound: string,
-    tickSpacing: number,
-  ): string | undefined {
-    return this.olKeyStructToOlKeyHashMap.get(
-      `${outbound.toLowerCase()}_${inbound.toLowerCase()}_${tickSpacing}`,
-    );
+  getOlKeyHash(olKey: OLKeyStruct) {
+    const key = `${olKey.outbound_tkn.toLowerCase()}_${olKey.inbound_tkn.toLowerCase()}_${
+      olKey.tickSpacing
+    }`;
+    let value = this.olKeyStructToOlKeyHashMap.get(key);
+    if (!value) {
+      value = this.calculateOLKeyHash(olKey);
+      this.olKeyStructToOlKeyHashMap.set(key, value);
+    }
+    return value;
   }
   getOlKeyStruct(olKeyHash: string): OLKeyStruct | undefined {
     return this.olKeyHashToOLKeyStructMap.get(olKeyHash);

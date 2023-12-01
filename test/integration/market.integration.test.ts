@@ -201,6 +201,18 @@ describe("Market integration tests suite", () => {
       expect(isActive).to.be.equal(true);
     });
 
+    it("non-existing market can be created but is not active", async function () {
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "USDC",
+        tickSpacing: 1,
+      });
+      assert.ok(
+        !(await market.isActive()),
+        "market is not existing and thus not active",
+      );
+    });
+
     it("returns false, when asks and bids both not active", async function () {
       // Arrange
       const market = await mgv.market({

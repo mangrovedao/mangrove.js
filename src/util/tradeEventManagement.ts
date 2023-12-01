@@ -148,34 +148,22 @@ class TradeEventManagement {
   ): { ba: Market.BA; offer: Market.OfferSlim } | undefined {
     // ba can be both since we get offer writes both from updated orders and from posting a resting order, where the outbound is what taker gives
     let ba: Market.BA = "asks";
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     // If no match, try flipping
-    let olKeyHash = market.mgv.getOlKeyHash(
-      outbound_tkn.address,
-      inbound_tkn.address,
-      market.tickSpacing.toNumber(),
-    );
-
-    if (olKeyHash != evt.args.olKeyHash) {
+    if (market.mgv.getOlKeyHash(market.getOLKey(ba)) != evt.args.olKeyHash) {
       ba = "bids";
-      olKeyHash = market.mgv.getOlKeyHash(
-        inbound_tkn.address,
-        outbound_tkn.address,
-        market.tickSpacing.toNumber(),
-      );
-    }
-    if (olKeyHash != evt.args.olKeyHash) {
-      logger.debug("OfferWrite for unknown market!", {
-        contextInfo: "tradeEventManagement",
-        base: market.base.id,
-        quote: market.quote.id,
-        tickSpacing: market.tickSpacing,
-        data: {
-          olKeyHash: evt.args.olKeyHash,
-        },
-      });
+      if (market.mgv.getOlKeyHash(market.getOLKey(ba)) != evt.args.olKeyHash) {
+        logger.debug("OfferWrite for unknown market!", {
+          contextInfo: "tradeEventManagement",
+          base: market.base.id,
+          quote: market.quote.id,
+          tickSpacing: market.tickSpacing,
+          data: {
+            olKeyHash: evt.args.olKeyHash,
+          },
+        });
 
-      return undefined;
+        return undefined;
+      }
     }
 
     const offer = this.rawOfferToOffer(market.getSemibook(ba), evt.args);
