@@ -128,6 +128,7 @@ describe("Kandel MaxOffersInChunk verification", () => {
             saveGasPopulateMode,
             configuredMaxOffersInChunk,
           );
+          // Populate another instance with same offers to ensure that the slightly different cost when offers exists does not cause a revert.
           await deployAndPopulate(
             onAave,
             saveGasPopulateMode,
@@ -136,11 +137,13 @@ describe("Kandel MaxOffersInChunk verification", () => {
         });
 
         it(`can create chunks the size of configured +4 in buffer for ${context} which has gasLimit=${gasLimit} onAave=${onAave} saveGas=${saveGasPopulateMode}`, async function () {
+          // This test verifies that there is a buffer on top of the configured maxOffersInChunk (at least 4 additional offers)
           await deployAndPopulate(
             onAave,
             saveGasPopulateMode,
             configuredMaxOffersInChunk + 4,
           );
+          // Populate another instance with same offers to ensure that the slightly different cost when offers exists does not cause a revert.
           await deployAndPopulate(
             onAave,
             saveGasPopulateMode,
