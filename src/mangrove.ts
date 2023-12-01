@@ -358,7 +358,7 @@ class Mangrove {
     );
   }
 
-  getOlKeyHash(olKey: OLKeyStruct) {
+  getOlKeyHash(olKey: OLKeyStruct): string {
     const key = `${olKey.outbound_tkn.toLowerCase()}_${olKey.inbound_tkn.toLowerCase()}_${
       olKey.tickSpacing
     }`;
