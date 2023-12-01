@@ -7,7 +7,7 @@ const {
   KandelStrategies,
   ethers,
 } = require("@mangrovedao/mangrove.js");
-const { default: configuration } = require("../../src/configuration");
+const { addressesConfiguration } = require("@mangrovedao/mangrove.js");
 
 // Create a wallet with a provider to interact with the chain
 const provider = new ethers.providers.WebSocketProvider(process.env.LOCAL_URL);
@@ -29,10 +29,14 @@ const kandelStrategies = new KandelStrategies(mgv);
 // Retrieve default configuration for the selected market
 const config = kandelStrategies.configuration.getConfig(market);
 
-//TODO hack: add KandelLib until deployed
-const { kandelLibPromise } = await kandelStrategies.seeder.sow(seed);
-const kandelLibAddress = (await kandelLibPromise).address;
-configuration.addresses.setAddress("KandelLib", kandelLibAddress);
+//FIXME: add KandelLib manually until address packages are updated
+const kandelLibAddress = (await kandelStrategies.farm.getKandels())[0]
+  .kandelAddress;
+addressesConfiguration.setAddress(
+  "KandelLib",
+  kandelLibAddress,
+  wallet.provider.network.name,
+);
 
 // Create a distribution generator for the selected market
 const distributionGenerator = kandelStrategies.generator(market);
@@ -49,17 +53,21 @@ const minQuotePerOffer = await kandelStrategies.seeder.getMinimumVolume({
   onAave: false,
 });
 
-// Calculate a candidate distribution with the recommended minimum volumes given the price range and the default base quote tick offset
-const minDistribution = distributionGenerator.calculateMinimumDistribution({
-  priceParams: {
-    minPrice: 900,
-    maxPrice: 1100,
-    baseQuoteTickOffset: config.baseQuoteTickOffset,
-  },
-  midPrice: 1000,
-  minimumBasePerOffer: minBasePerOffer,
-  minimumQuotePerOffer: minQuotePerOffer,
-});
+// Calculate a candidate distribution with the recommended minimum volumes given the price range and a price ratio of roughly 1% (it gets converted to an offset in ticks between prices, and some precision is lost)
+// The price points are generated outwards from the mid price, and the default step size for the market is used.
+const minDistribution =
+  await distributionGenerator.calculateMinimumDistribution({
+    distributionParams: {
+      minPrice: 900,
+      maxPrice: 1100,
+      priceRatio: 1.01,
+      midPrice: 1000,
+      generateFromMid: true,
+      stepSize: config.stepSize,
+    },
+    minimumBasePerOffer: minBasePerOffer,
+    minimumQuotePerOffer: minQuotePerOffer,
+  });
 
 // Output information about the minimum distribution
 const minVolumes = minDistribution.getOfferedVolumeForDistribution();
@@ -69,22 +77,21 @@ console.log("Minimum quote volume:", minVolumes.requiredQuote.toString());
 
 // Recalculate the distribution based on desired base and quote amounts, which should be at least the recommended.
 const finalDistribution =
-  distributionGenerator.recalculateDistributionFromAvailable({
+  await distributionGenerator.recalculateDistributionFromAvailable({
     distribution: minDistribution,
     availableBase: 3,
     availableQuote: 3000,
   });
 const offeredVolumes = finalDistribution.getOfferedVolumeForDistribution();
 
-// Inspect the final distribution's offers
-console.log(finalDistribution.offers);
+// Inspect the final distribution's offers - their raw ticks are shown along with their price - and initially dead offers can be seen with 0 gives.
+console.log(finalDistribution.getOffersWithPrices());
 
 // Prepare seed data for deploying a Kandel instance
 const seed = {
   onAave: false,
   market,
   liquiditySharing: false,
-  gaspriceFactor: config.gaspriceFactor,
 };
 
 // Deploy a Kandel instance with the specified seed data (the offers are later populated based on the above distribution)
@@ -97,13 +104,21 @@ const approvalTxs = await kandelInstance.approveIfHigher();
 // Wait for approval transactions (one for base, one for quote) to be mined
 const approvalReceipts = await Promise.all(approvalTxs.map((x) => x?.wait()));
 
+// To mint test tokens the following can be used
+await (
+  await market.base.contract.mint(
+    market.base.toUnits(offeredVolumes.requiredBase),
+  )
+).wait();
+await (
+  await market.quote.contract.mint(
+    market.quote.toUnits(offeredVolumes.requiredQuote),
+  )
+).wait();
+
 // Populate the Kandel instance according to our desired distribution (can be multiple transactions if there are many price points)
-// This is with the default step size for the market.
-const populateTxs = await kandelInstance.populate({
+const populateTxs = await kandelInstance.populateGeometricDistribution({
   distribution: finalDistribution,
-  parameters: {
-    stepSize: config.stepSize,
-  },
   depositBaseAmount: offeredVolumes.requiredBase,
   depositQuoteAmount: offeredVolumes.requiredQuote,
 });
