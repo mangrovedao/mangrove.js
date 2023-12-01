@@ -292,6 +292,13 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
       });
     });
 
+    it("throws on no live offers", () => {
+      assert.throws(
+        () => sut.getOfferStatuses(Big(1000), 42, 10, 1, []),
+        new Error("Unable to determine distribution: no offers in range exist"),
+      );
+    });
+
     it("gets price and status with dead and crossed offers", () => {
       // Arrange
       const baseQuoteTickOffset =

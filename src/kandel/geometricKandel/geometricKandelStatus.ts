@@ -138,6 +138,10 @@ class GeometricKandelStatus {
 
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
     const offersInRange = offers.filter((x) => x.index < pricePoints);
+    if (offersInRange.length == 0) {
+      throw Error("Unable to determine distribution: no offers in range exist");
+    }
+
     const offer =
       offersInRange[
         this.getIndexOfPriceClosestToMid(
