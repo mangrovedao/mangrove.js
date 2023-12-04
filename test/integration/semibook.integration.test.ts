@@ -15,7 +15,6 @@ import { BigNumber } from "ethers";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import { Density } from "../../src/util/Density";
 import * as DensityLib from "../../src/util/coreCalculations/DensityLib";
-import * as TickLib from "../../src/util/coreCalculations/TickLib";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -60,7 +59,13 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+        newOffer({
+          mgv,
+          outbound: "TokenA",
+          inbound: "TokenB",
+          gives: "1",
+          tick: "1",
+        }),
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -80,7 +85,13 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+        newOffer({
+          mgv,
+          outbound: "TokenA",
+          inbound: "TokenB",
+          gives: 1,
+          tick: 1,
+        }),
       );
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -227,7 +238,13 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+        newOffer({
+          mgv,
+          outbound: "TokenA",
+          inbound: "TokenB",
+          gives: 1,
+          tick: 1,
+        }),
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -239,7 +256,13 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+        newOffer({
+          mgv,
+          outbound: "TokenA",
+          inbound: "TokenB",
+          gives: 1,
+          tick: 1,
+        }),
       );
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -369,7 +392,13 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+        newOffer({
+          mgv,
+          outbound: "TokenA",
+          inbound: "TokenB",
+          gives: 1,
+          tick: 1,
+        }),
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -389,7 +418,13 @@ describe("Semibook integration tests suite", function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
-        newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+        newOffer({
+          mgv,
+          outbound: "TokenA",
+          inbound: "TokenB",
+          gives: 1,
+          tick: 1,
+        }),
       );
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -438,7 +473,13 @@ describe("Semibook integration tests suite", function () {
 
           // Put one offer on asks
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick: tick,
+            }),
           );
 
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -472,14 +513,26 @@ describe("Semibook integration tests suite", function () {
           const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
 
           const ask1 = await (
-            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick })
+            await newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick: tick,
+            })
           ).wait();
 
           // Put one offer on asks
           await mgvTestUtil.waitForBlock(mgv, ask1.blockNumber);
 
           const ask2 = await (
-            await newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick })
+            await newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "2",
+              tick: tick,
+            })
           ).wait();
 
           await mgvTestUtil.waitForBlock(mgv, ask2.blockNumber);
@@ -512,13 +565,25 @@ describe("Semibook integration tests suite", function () {
           const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
           // Put two offers on asks
           const offer1 = await (
-            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick })
+            await newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick,
+            })
           ).wait();
 
           await mgvTestUtil.waitForBlock(mgv, offer1.blockNumber);
 
           const offer2 = await (
-            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick })
+            await newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick,
+            })
           ).wait();
 
           await mgvTestUtil.waitForBlock(mgv, offer2.blockNumber);
@@ -553,7 +618,13 @@ describe("Semibook integration tests suite", function () {
 
         const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick,
+          }),
         );
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -580,7 +651,13 @@ describe("Semibook integration tests suite", function () {
         const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
 
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenB", "TokenA", { gives: "1", tick: tick }),
+          newOffer({
+            mgv,
+            outbound: "TokenB",
+            inbound: "TokenA",
+            gives: "1",
+            tick: tick,
+          }),
         );
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
         const volume = await semibook.estimateVolume({ given: 0, to: "buy" });
@@ -607,7 +684,13 @@ describe("Semibook integration tests suite", function () {
         const semibook = market.getSemibook("asks");
         const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -641,12 +724,24 @@ describe("Semibook integration tests suite", function () {
 
         const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick: tick1,
+          }),
         );
 
         const tick2 = semibook.tickPriceHelper.tickFromVolumes(3, 1);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick: tick2,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -679,7 +774,13 @@ describe("Semibook integration tests suite", function () {
 
         const tick = semibook.tickPriceHelper.tickFromVolumes(4, 2);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "2",
+            tick,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -713,11 +814,23 @@ describe("Semibook integration tests suite", function () {
 
         const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick: tick1,
+          }),
         );
         const tick2 = semibook.tickPriceHelper.tickFromVolumes(4, 2);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick2 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "2",
+            tick: tick2,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -752,7 +865,13 @@ describe("Semibook integration tests suite", function () {
 
         const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -781,7 +900,13 @@ describe("Semibook integration tests suite", function () {
 
         const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -813,11 +938,23 @@ describe("Semibook integration tests suite", function () {
 
         const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick: tick1,
+          }),
         );
         const tick2 = semibook.tickPriceHelper.tickFromVolumes(3, 1);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick: tick2,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -851,7 +988,13 @@ describe("Semibook integration tests suite", function () {
         const tick = semibook.tickPriceHelper.tickFromVolumes(4, 2);
 
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "2",
+            tick,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -885,11 +1028,23 @@ describe("Semibook integration tests suite", function () {
 
         const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick: tick1,
+          }),
         );
         const tick2 = semibook.tickPriceHelper.tickFromVolumes(4, 2);
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick2 }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "2",
+            tick: tick2,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -932,10 +1087,22 @@ describe("Semibook integration tests suite", function () {
 
       it("fetches all offers if all have a better price", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 1,
+          }),
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 2,
+          }),
         );
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -954,10 +1121,22 @@ describe("Semibook integration tests suite", function () {
 
       it("fetches only one chunk if no offers have a better price", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 2,
+          }),
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 3,
+          }),
         );
 
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -977,16 +1156,40 @@ describe("Semibook integration tests suite", function () {
 
       it("stops fetching when a chunk with a worse price has been fetched", async function () {
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 1,
+          }),
         );
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 2,
+          }),
         );
         await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 3,
+          }),
         );
         const tx = await waitForTransaction(
-          newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "4" }),
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: 1,
+            tick: 4,
+          }),
         );
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -1043,13 +1246,25 @@ describe("Semibook integration tests suite", function () {
           const tick1 = semibook.tickPriceHelper.tickFromPrice(1.001);
 
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick: tick1,
+            }),
           );
 
           const tick2 = semibook.tickPriceHelper.tickFromPrice(1.002);
 
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick: tick2,
+            }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -1075,28 +1290,64 @@ describe("Semibook integration tests suite", function () {
           const tick1 = semibook.tickPriceHelper.tickFromPrice(1.001);
 
           const offer1 = await (
-            await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 })
+            await newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick: tick1,
+            })
           ).wait();
           await mgvTestUtil.waitForBlock(mgv, offer1.blockNumber);
 
           const tick2 = semibook.tickPriceHelper.tickFromPrice(1.002);
-          await newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick2 });
+          await newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: "1",
+            tick: tick2,
+          });
 
           expect(semibook.size()).to.equal(1);
         });
 
         it("stops fetching when sufficient volume has been fetched", async function () {
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "1" }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: 1,
+              tick: 1,
+            }),
           );
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "2" }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: 1,
+              tick: 2,
+            }),
           );
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "3" }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: 1,
+              tick: 3,
+            }),
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: "4" }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: 1,
+              tick: 4,
+            }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -1147,10 +1398,22 @@ describe("Semibook integration tests suite", function () {
 
           const tick = semibook.tickPriceHelper.tickFromPrice(1.001);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "2",
+              tick,
+            }),
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick,
+            }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -1185,10 +1448,22 @@ describe("Semibook integration tests suite", function () {
           const semibook = market.getSemibook("asks");
           const tick = semibook.tickPriceHelper.tickFromPrice(1.001);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "2",
+              tick,
+            }),
           );
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick,
+            }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -1224,23 +1499,53 @@ describe("Semibook integration tests suite", function () {
 
           const tick5 = semibook.tickPriceHelper.tickFromVolumes(1, 5);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "5", tick: tick5 }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "5",
+              tick: tick5,
+            }),
           );
           const tick4 = semibook.tickPriceHelper.tickFromVolumes(1, 4);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "4", tick: tick4 }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "4",
+              tick: tick4,
+            }),
           );
           const tick3 = semibook.tickPriceHelper.tickFromVolumes(1, 3);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "3", tick: tick3 }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "3",
+              tick: tick3,
+            }),
           );
           const tick2 = semibook.tickPriceHelper.tickFromVolumes(1, 2);
           await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "2", tick: tick2 }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "2",
+              tick: tick2,
+            }),
           );
           const tick1 = semibook.tickPriceHelper.tickFromVolumes(1, 1);
           const tx = await waitForTransaction(
-            newOffer(mgv, "TokenA", "TokenB", { gives: "1", tick: tick1 }),
+            newOffer({
+              mgv,
+              outbound: "TokenA",
+              inbound: "TokenB",
+              gives: "1",
+              tick: tick1,
+            }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
@@ -1350,21 +1655,21 @@ describe("Semibook integration tests suite", function () {
       const asks = [
         {
           id: 1,
-          tick: market.getBook().asks.tickPriceHelper.tickFromVolumes(1, 1),
+          price: "1",
           gives: "1",
           gasreq: expectedAsksMaxGasReq - 100,
           gasprice: 1,
         },
         {
           id: 2,
-          tick: market.getBook().asks.tickPriceHelper.tickFromVolumes(12, 10),
+          price: "1.2",
           gives: "1",
           gasreq: expectedAsksMaxGasReq,
           gasprice: 3,
         },
         {
           id: 3,
-          tick: market.getBook().asks.tickPriceHelper.tickFromVolumes(10, 12),
+          price: "0.83",
           gives: "1.2",
           gasreq: expectedAsksMaxGasReq - 2,
           gasprice: 21,
@@ -1374,21 +1679,21 @@ describe("Semibook integration tests suite", function () {
       const bids = [
         {
           id: 1,
-          tick: market.getBook().bids.tickPriceHelper.tickFromVolumes(99, 100),
+          price: "1.01",
           gives: "1",
           gasreq: expectedBidsMaxGasReq - 7,
           gasprice: 11,
         },
         {
           id: 2,
-          tick: market.getBook().bids.tickPriceHelper.tickFromVolumes(100, 143),
+          price: "1.43",
           gives: "1.43",
           gasreq: expectedBidsMaxGasReq - 10,
           gasprice: 7,
         },
         {
           id: 3,
-          tick: market.getBook().bids.tickPriceHelper.tickFromVolumes(111, 100),
+          price: "0.9009",
           gives: "1",
           gasreq: expectedBidsMaxGasReq,
           gasprice: 30,
@@ -1396,12 +1701,16 @@ describe("Semibook integration tests suite", function () {
       ];
 
       for (const ask of asks) {
-        await waitForTransaction(newOffer(mgv, base, quote, ask));
+        await waitForTransaction(
+          newOffer({ mgv, base, quote, ba: "asks", ...ask }),
+        );
       }
 
       let lastTx: TransactionReceipt | undefined;
       for (const bid of bids) {
-        lastTx = await waitForTransaction(newOffer(mgv, quote, base, bid));
+        lastTx = await waitForTransaction(
+          newOffer({ mgv, base, quote, ba: "bids", ...bid }),
+        );
       }
 
       // wait for offer(s) to be recorded in OB

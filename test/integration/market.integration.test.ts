@@ -2,7 +2,7 @@
 import { expect } from "chai";
 import { afterEach, beforeEach, describe, it } from "mocha";
 
-import { toWei } from "../util/helpers";
+import { newOffer, toWei } from "../util/helpers";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import {
   rawMinGivesBase,
@@ -98,9 +98,12 @@ describe("Market integration tests suite", () => {
           "book should have size 1 by now",
         );
       });
-      await helpers.newOffer(mgv, market.base, market.quote, {
-        tick: 1,
+      await newOffer({
+        mgv,
+        market,
+        ba: "asks",
         gives: "1.2",
+        price: "1.0001",
       });
       await pro1;
     });
@@ -733,8 +736,6 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
-    console.log("markets created");
-
     let latestAsks: Market.Offer[] = [];
     let latestBids: Market.Offer[] = [];
 
@@ -766,9 +767,12 @@ describe("Market integration tests suite", () => {
     askPrice = askTickHelper.priceFromTick(tick);
 
     await helpers
-      .newOffer(mgv, market.base, market.quote, {
+      .newOffer({
+        mgv,
+        outbound: market.base,
+        inbound: market.quote,
         tick: tick,
-        gives: asksGives.toString(),
+        gives: asksGives,
       })
       .then((tx) => tx.wait());
 
@@ -795,12 +799,13 @@ describe("Market integration tests suite", () => {
     const bidTick = bidTickHelper.tickFromPrice(bidPrice);
     bidPrice = bidTickHelper.priceFromTick(bidTick);
 
-    await helpers
-      .newOffer(mgv, market.quote, market.base, {
-        tick: bidTick,
-        gives: bidsGives.toString(),
-      })
-      .then((tx) => tx.wait());
+    await newOffer({
+      mgv,
+      outbound: market.quote,
+      inbound: market.base,
+      tick: bidTick,
+      gives: bidsGives,
+    }).then((tx) => tx.wait());
 
     const offer2 = {
       id: 1,
@@ -1188,7 +1193,10 @@ describe("Market integration tests suite", () => {
         "book should have size 1 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
       tick: "1",
       gives: "1.2",
     });
@@ -1202,7 +1210,10 @@ describe("Market integration tests suite", () => {
         "book should have size 2 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
       tick: "1",
       gives: "1.2",
     });
@@ -1216,7 +1227,10 @@ describe("Market integration tests suite", () => {
         "book should have size 3 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
       tick: "1",
       gives: "1.2",
     });
@@ -1224,14 +1238,13 @@ describe("Market integration tests suite", () => {
     //TODO add to after
   });
 
-  it("crudely simulates market buy", async function () {
+  it.only("crudely simulates market buy", async function () {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
       tickSpacing: 1,
     });
 
-    const semibook = market.getSemibook("asks");
     const done = new Deferred();
     let estimatedVolume = 0;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1243,22 +1256,15 @@ describe("Market integration tests suite", () => {
           to: "sell",
         });
         estimatedVolume = estimated.toNumber();
-        console.log("done");
         done.resolve();
       }
     });
 
     await helpers
-      .newOffer(mgv, market.base, market.quote, {
-        tick: semibook.tickPriceHelper.tickFromPrice(1.2 / 0.3),
-        gives: "0.3",
-      })
+      .newOffer({ mgv, market, ba: "asks", gives: "0.3", price: 4 })
       .then((tx) => tx.wait());
     await helpers
-      .newOffer(mgv, market.base, market.quote, {
-        tick: semibook.tickPriceHelper.tickFromPrice(1 / 0.25),
-        gives: "0.25",
-      })
+      .newOffer({ mgv, market, ba: "asks", gives: "0.25", price: 4 })
       .then((tx) => tx.wait());
     await done.promise;
     assert.ok(
@@ -1384,10 +1390,10 @@ describe("Market integration tests suite", () => {
     /* note that we are NOT testing mangrove.js's newOffer function
      * so we create offers through ethers.js generic API */
     for (const ask of asks) {
-      await waitForTransaction(helpers.newOffer(mgv, "TokenA", "TokenB", ask));
+      await waitForTransaction(newOffer({ mgv, market, ba: "asks", ...ask }));
     }
     for (const bid of bids) {
-      await waitForTransaction(helpers.newOffer(mgv, "TokenB", "TokenA", bid));
+      await waitForTransaction(newOffer({ mgv, market, ba: "bids", ...bid }));
     }
 
     /* Now we create the order book we expect to get back so we can compare them */
@@ -1496,11 +1502,11 @@ describe("Market integration tests suite", () => {
     /* create asks */
     const askGasReq = 10000;
     const asks = [
-      { id: 1, tick: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
+      { id: 1, price: "1.0001", gives: "1", gasreq: askGasReq, gasprice: 1 },
     ];
 
     const lastTx = await waitForTransaction(
-      helpers.newOffer(mgv, market.base, market.quote, asks[0]),
+      newOffer({ mgv, market, ba: "asks", ...asks[0] }),
     );
 
     await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
