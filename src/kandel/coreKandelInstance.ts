@@ -25,7 +25,7 @@ export type MarketOrMarketFactory =
   | ((
       baseAddress: string,
       quoteAddress: string,
-      tickSpacing: Bigish,
+      tickSpacing: ethers.BigNumberish,
     ) => Promise<Market>);
 
 /**

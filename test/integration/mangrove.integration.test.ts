@@ -95,7 +95,7 @@ describe("Mangrove integration tests suite", function () {
         tkn1: mgv.getTokenAddress("TokenB"),
         tickSpacing: 1,
       });
-      let marketData = await mgv.openMarketsData();
+      let marketData = await mgv.openMarkets();
       const tokenAData = {
         address: mgv.getTokenAddress("TokenA"),
         decimals: 18,
@@ -118,7 +118,7 @@ describe("Mangrove integration tests suite", function () {
       assert.deepEqual(tokenToData(marketData[0].quote), tokenBData);
 
       configuration.tokens.setCashness("TokenA", 1000000);
-      marketData = await mgv.openMarketsData();
+      marketData = await mgv.openMarkets();
 
       assert.deepEqual(tokenToData(marketData[0].base), tokenBData);
       assert.deepEqual(tokenToData(marketData[0].quote), tokenAData);

@@ -88,10 +88,7 @@ namespace Mangrove {
     deadline: number;
   };
 
-  export type OpenMarketInfo = {
-    base: Token;
-    quote: Token;
-    tickSpacing: ethers.BigNumber;
+  export type OpenMarketInfo = Market.KeyResolved & {
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
   };
@@ -437,17 +434,17 @@ class Mangrove {
      Argument of the form `{base,quote}` where each is a string.
      To set your own token, use `setDecimals` and `setAddress`.
   */
-  async market(params: {
-    base: string | Token;
-    quote: string | Token;
-    tickSpacing: Bigish;
-    bookOptions?: Market.BookOptions;
-  }): Promise<Market> {
+  async market(
+    params: Market.Key & {
+      bookOptions?: Market.BookOptions;
+    },
+  ): Promise<Market> {
     logger.debug("Initialize Market", {
       contextInfo: "mangrove.base",
       data: {
         base: params.base,
         quote: params.quote,
+        tickSpacing: params.tickSpacing,
         bookOptions: params.bookOptions,
       },
     });
@@ -483,7 +480,7 @@ class Mangrove {
       | {
           base: string;
           quote: string;
-          tickSpacing: Bigish;
+          tickSpacing: ethers.BigNumberish;
           bookOptions?: Market.BookOptions;
         },
   ): Promise<LiquidityProvider> {
@@ -853,13 +850,13 @@ class Mangrove {
   }
 
   /**
-   * Returns open markets data according to mangrove reader.
-   * @param from: start at market `from`. Default 0.
-   * @param maxLen: max number of markets returned. Default all.
-   * @param configs: fetch market's config information. Default true.
+   * Returns open markets data according to MgvReader.
+   * @param from start at market `from`. Default 0.
+   * @param maxLen max number of markets returned. Default all.
+   * @param configs fetch market's config information. Default true.
    * @note If an open market has a token with no/bad decimals/symbol function, this function will revert.
    */
-  async openMarketsData(
+  async openMarkets(
     params: {
       from?: number;
       maxLen?: number | ethers.BigNumber;
@@ -930,49 +927,6 @@ class Mangrove {
           : undefined,
       };
     });
-  }
-
-  /**
-   * Returns open markets according to mangrove reader. Will internally update Mangrove token information.
-   *
-   * @param from: start at market `from` (default: 0)
-   * @param maxLen: max number of markets returned (default: all)
-   * @param noInit: do not initialize markets (default: false)
-   * @param bookOptions: bookOptions argument to pass to every new market (default: undefined)
-   */
-  async openMarkets(
-    params: {
-      from?: number;
-      maxLen?: number;
-      noInit?: boolean;
-      bookOptions?: Market.BookOptions;
-    } = {},
-  ): Promise<Market[]> {
-    const noInit = params.noInit ?? false;
-    delete params.noInit;
-    const bookOptions = params.bookOptions;
-    delete params.bookOptions;
-    const openMarketsData = await this.openMarketsData({
-      ...params,
-      configs: false,
-    });
-    // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
-    return Promise.all(
-      openMarketsData.map(({ base, quote, tickSpacing }) => {
-        this.setAddress(base.id, base.address);
-        configuration.tokens.setDecimals(base.id, base.decimals);
-        this.setAddress(quote.id, quote.address);
-        configuration.tokens.setDecimals(quote.id, quote.decimals);
-        return Market.connect({
-          mgv: this,
-          base: base.id,
-          quote: quote.id,
-          tickSpacing: tickSpacing.toString(),
-          bookOptions: bookOptions,
-          noInit: noInit,
-        });
-      }),
-    );
   }
 
   // cashness is "how similar to cash is a token". The cashier token is the quote.

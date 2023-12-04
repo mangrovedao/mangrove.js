@@ -5,11 +5,11 @@ import Token from "./token";
 import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
 import Trade from "./util/trade";
-
-let canConstructMarket = false;
-
-const MAX_MARKET_ORDER_GAS = 10000000;
-
+import * as TCM from "./types/typechain/Mangrove";
+import TradeEventManagement from "./util/tradeEventManagement";
+import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
+import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
+import configuration from "./configuration";
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
 big.js handles arbitrary precision decimals, which is what we want
@@ -18,18 +18,28 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 */
 import Big from "big.js";
 
+let canConstructMarket = false;
+
+const MAX_MARKET_ORDER_GAS = 10000000;
+
 export const bookOptsDefault: Market.BookOptions = {
   maxOffers: Semibook.DEFAULT_MAX_OFFERS,
 };
 
-import * as TCM from "./types/typechain/Mangrove";
-import TradeEventManagement from "./util/tradeEventManagement";
-import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
-import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
-import configuration from "./configuration";
-
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
+  export type Key = {
+    base: string | Token;
+    quote: string | Token;
+    tickSpacing: ethers.BigNumberish;
+  };
+
+  export type KeyResolved = {
+    base: Token;
+    quote: Token;
+    tickSpacing: ethers.BigNumber;
+  };
+
   export type BA = "bids" | "asks";
   export type getPriceParams =
     | {
@@ -331,10 +341,8 @@ class Market {
   static async connect(
     params: {
       mgv: Mangrove;
-      base: string | Token;
-      quote: string | Token;
-      tickSpacing: Bigish;
-    } & Partial<Market.OptionalParams>,
+    } & Market.Key &
+      Partial<Market.OptionalParams>,
   ): Promise<Market> {
     const base =
       typeof params.base === "string"
@@ -377,12 +385,11 @@ class Market {
    *
    * `params.mgv` will be used as mangrove instance
    */
-  private constructor(params: {
-    mgv: Mangrove;
-    base: Token;
-    quote: Token;
-    tickSpacing: BigNumber;
-  }) {
+  private constructor(
+    params: {
+      mgv: Mangrove;
+    } & Market.KeyResolved,
+  ) {
     if (!canConstructMarket) {
       throw Error(
         "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)",
