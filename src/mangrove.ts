@@ -222,22 +222,6 @@ class Mangrove {
       shouldNotListenToNewEvents: options.shouldNotListenToNewEvents,
     });
 
-    // Read all setActive events to populate olKeyHashMap
-    const markets = await mgv.contract.queryFilter(
-      mgv.contract.filters.SetActive(null, null),
-    );
-    markets.map((market) => {
-      mgv.olKeyHashToOLKeyStructMap.set(market.args.olKeyHash, {
-        outbound_tkn: market.args.outbound_tkn,
-        inbound_tkn: market.args.inbound_tkn,
-        tickSpacing: market.args.tickSpacing,
-      });
-      mgv.olKeyStructToOlKeyHashMap.set(
-        `${market.args.outbound_tkn.toLowerCase()}_${market.args.inbound_tkn.toLowerCase()}_${market.args.tickSpacing.toNumber()}`,
-        market.args.olKeyHash,
-      );
-    });
-
     await mgv.initializeProvider();
 
     canConstructMangrove = false;
@@ -363,11 +347,29 @@ class Mangrove {
     if (!value) {
       value = this.calculateOLKeyHash(olKey);
       this.olKeyStructToOlKeyHashMap.set(key, value);
+      this.olKeyHashToOLKeyStructMap.set(value, olKey);
     }
     return value;
   }
-  getOlKeyStruct(olKeyHash: string): OLKeyStruct | undefined {
-    return this.olKeyHashToOLKeyStructMap.get(olKeyHash);
+
+  async getOlKeyStruct(olKeyHash: string): Promise<OLKeyStruct | undefined> {
+    let struct = this.olKeyHashToOLKeyStructMap.get(olKeyHash);
+    if (!struct) {
+      try {
+        struct = await this.contract.callStatic.olKeys(olKeyHash);
+        this.olKeyHashToOLKeyStructMap.set(olKeyHash, struct);
+
+        // TODO: use a function to transform OlkeyStruct to string
+        const key = `${struct.outbound_tkn.toLowerCase()}_${struct.inbound_tkn.toLowerCase()}_${
+          struct.tickSpacing
+        }`;
+        this.olKeyStructToOlKeyHashMap.set(key, olKeyHash);
+      } catch {
+        return undefined;
+      }
+    }
+
+    return struct;
   }
 
   calculateOLKeyHash(olKey: OLKeyStruct) {
