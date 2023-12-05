@@ -47,7 +47,7 @@ namespace Semibook {
    * `{given:100, to:"buy", limitPrice: 0.1})` means buying 100 base tokens for a max. price of 0.1 quote/base.
    *
    * `{given:10, to:"sell"})` means selling 10 quote tokens.
-   * `{given:10, to:"sell", limitPrice: 0.5})` means selling 10 quote tokens for a max. price of 0.5 quote/base.
+   * `{given:10, to:"sell", limitPrice: 0.5})` means selling 10 quote tokens for a max. price of 0.5 quote/base (i.e. a min. "price" of 1/(0.5) = 2 base/quote).
    */
   export type VolumeParams = {
     /** Amount of token to trade. */
@@ -379,16 +379,15 @@ class Semibook
    * it will given you an estimate of how much base tokens you'd have to buy in
    * order to spend 10 quote tokens.
    *
-   * if you add a `boundary` field, it either means
-   * - the minimum amount you want to receive if you spend all `given` (if to:"sell"), or
-   * - the maximum amount you are ready to spend if you buy all `given` (if to:"buy")
+   * if you add a `limitPrice` field, only offers with that price or better will be considered.
    *
-   * So for instance, if you say `{given:10,to:"sell",boundary:"5"}`, estimateVolume will return the volume you will be able to receive if selling up to 10 at a min price of 10/5.
+   * So for instance, if you say `{given:10,to:"sell",limitPrice:"2"}`, estimateVolume
+   * will return the volume you will be able to receive if selling up to 10 quote
+   * at a max. price of 2 quote/base, i.e. a min. "price" of 1/2 = 0.5 base/quote.
    *
    * The returned `givenResidue` is how much of the given token that cannot be
    * traded due to insufficient volume on the book / price becoming bad.
    */
-
   async estimateVolume(
     params: Semibook.VolumeParams,
   ): Promise<Market.VolumeEstimate> {
@@ -397,18 +396,16 @@ class Semibook
     // if 'buying N units' set max sell to max(uint256),
     // if 'selling N units' set buy desire to 0
     const initialGives = Big(params.given);
-    const maxTick = MAX_TICK;
+    const maxTick = params.limitPrice
+      ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
+      : MAX_TICK;
 
-    const {
-      tick: tick,
-      remainingFillVolume,
-      totalGot,
-      totalGave,
-    } = await this.simulateMarketOrder(maxTick, initialGives, buying);
+    const { maxTickMatched, remainingFillVolume, totalGot, totalGave } =
+      await this.simulateMarketOrder(maxTick, initialGives, buying);
 
     const estimatedVolume = buying ? totalGave : totalGot;
 
-    return { tick: tick, estimatedVolume, remainingFillVolume };
+    return { maxTickMatched, estimatedVolume, remainingFillVolume };
   }
 
   /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */
@@ -418,7 +415,7 @@ class Semibook
     initialFillVolume: Big,
     fillWants: boolean,
   ): Promise<{
-    tick: BigNumber;
+    maxTickMatched: BigNumber;
     remainingFillVolume: Big;
     totalGot: Big;
     totalGave: Big;
@@ -430,7 +427,7 @@ class Semibook
 
     const initialAccumulator = {
       stop: false,
-      tick: initialTick,
+      maxTickMatched: initialTick,
       remainingFillVolume: initialFillVolume,
       got: Big(0),
       gave: Big(0),
@@ -489,7 +486,7 @@ class Semibook
           }
         }
         if (!acc.stop) {
-          acc.tick = BigNumber.from(offer.tick);
+          acc.maxTickMatched = offer.tick;
           acc.totalGot = acc.totalGot.add(acc.got);
           acc.totalGave = acc.totalGave.add(acc.gave);
           acc.remainingFillVolume = initialFillVolume.sub(
