@@ -167,7 +167,7 @@ namespace Semibook {
   >;
 
   // Based on the OfferWrite event to ensure consistency and ease
-  // when mapping from raw to represensation
+  // when mapping from raw to representation
   export type RawOfferSlim = Omit<OfferWriteEventObject, "olKeyHash">;
 }
 
