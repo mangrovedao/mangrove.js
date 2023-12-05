@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-12
+
 - fix: lazy load ol keys mapping
 
 # 2.0.0-11
