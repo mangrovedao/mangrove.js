@@ -157,8 +157,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       const offer: Market.Offer = {
         id: 1,
@@ -179,8 +179,12 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 1);
       assert.equal(state.binCache.size, 1);
-      assert.deepStrictEqual(state.bestInCache, offer.id);
-      assert.deepStrictEqual(state.worstInCache, offer.id);
+      assert.notEqual(state.bestBinInCache, undefined);
+      assert.notEqual(state.worstBinInCache, undefined);
+      assert.equal(state.bestBinInCache?.tick, offer.tick);
+      assert.deepStrictEqual(state.bestBinInCache, state.worstBinInCache);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer.id);
+      assert.deepStrictEqual(state.bestBinInCache?.lastOfferId, offer.id);
       assert.deepStrictEqual(offer.next, undefined);
       assert.deepStrictEqual(offer.prev, undefined);
     });
@@ -219,8 +223,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer1);
 
@@ -230,22 +234,25 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 2);
       assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
+      assert.notDeepStrictEqual(state.bestBinInCache, state.worstBinInCache);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer2.id);
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer1.id,
         prev: undefined,
-        next: offer2.tick,
+        next: state.worstBinInCache,
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
+        firstOfferId: offer2.id,
+        lastOfferId: offer2.id,
+        prev: state.bestBinInCache,
         next: undefined,
       });
     });
@@ -271,8 +278,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer1);
 
@@ -282,23 +289,26 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 2);
       assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
+      assert.notDeepStrictEqual(state.bestBinInCache, state.worstBinInCache);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer2.id);
+      assert.deepStrictEqual(state.worstBinInCache?.firstOfferId, offer1.id);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id],
-        prev: offer2.tick,
+        firstOfferId: offer1.id,
+        lastOfferId: offer1.id,
+        prev: state.bestBinInCache,
         next: undefined,
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id],
+        firstOfferId: offer2.id,
+        lastOfferId: offer2.id,
         prev: undefined,
-        next: offer1.tick,
+        next: state.worstBinInCache,
       });
     });
 
@@ -333,8 +343,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer1);
       book.insertOffer(state, offer3);
@@ -345,8 +355,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 3);
       assert.equal(state.binCache.size, 3);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer3.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer3.id);
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
@@ -355,20 +365,23 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer3.prev, undefined);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer1.id,
         prev: undefined,
-        next: offer2.tick,
+        next: state.binCache.get(offer2.tick),
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
-        next: offer3.tick,
+        firstOfferId: offer2.id,
+        lastOfferId: offer2.id,
+        prev: state.binCache.get(offer1.tick),
+        next: state.binCache.get(offer3.tick),
       });
       assert.deepStrictEqual(state.binCache.get(offer3.tick), {
         tick: offer3.tick,
-        offers: [offer3.id],
-        prev: offer2.tick,
+        firstOfferId: offer3.id,
+        lastOfferId: offer3.id,
+        prev: state.binCache.get(offer2.tick),
         next: undefined,
       });
     });
@@ -409,8 +422,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
 
       book.insertOffer(state, offer1);
@@ -423,8 +436,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 4);
       assert.equal(state.binCache.size, 3);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer3.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer3.id);
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, offer4.id);
@@ -435,20 +448,23 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer4.prev, offer2.id);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer1.id,
         prev: undefined,
-        next: offer2.tick,
+        next: state.binCache.get(offer2.tick),
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id, offer4.id],
-        prev: offer1.tick,
-        next: offer3.tick,
+        firstOfferId: offer2.id,
+        lastOfferId: offer4.id,
+        prev: state.binCache.get(offer1.tick),
+        next: state.binCache.get(offer3.tick),
       });
       assert.deepStrictEqual(state.binCache.get(offer3.tick), {
         tick: offer3.tick,
-        offers: [offer3.id],
-        prev: offer2.tick,
+        firstOfferId: offer3.id,
+        lastOfferId: offer3.id,
+        prev: state.binCache.get(offer2.tick),
         next: undefined,
       });
     });
@@ -484,8 +500,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
 
       book.insertOffer(state, offer1);
@@ -497,8 +513,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 3);
       assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer3.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer3.id);
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, offer3.id);
@@ -507,14 +523,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer3.prev, offer2.id);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer1.id,
         prev: undefined,
-        next: offer2.tick,
+        next: state.binCache.get(offer2.tick),
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id, offer3.id],
-        prev: offer1.tick,
+        firstOfferId: offer2.id,
+        lastOfferId: offer3.id,
+        prev: state.binCache.get(offer1.tick),
         next: undefined,
       });
     });
@@ -550,8 +568,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
 
       book.insertOffer(state, offer1);
@@ -564,8 +582,8 @@ describe("Semibook unit test suite", () => {
       assert.equal(state.offerCache.size, 3);
       assert.equal(state.binCache.size, 2);
 
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer2.id);
       assert.deepStrictEqual(offer1.next, offer3.id);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
@@ -574,14 +592,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer3.prev, offer1.id);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id, offer3.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer3.id,
         prev: undefined,
-        next: offer2.tick,
+        next: state.binCache.get(offer2.tick),
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
+        firstOfferId: offer2.id,
+        lastOfferId: offer2.id,
+        prev: state.binCache.get(offer1.tick),
         next: undefined,
       });
     });
@@ -607,8 +627,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
 
       const options = { maxOffers: 5 };
@@ -652,8 +672,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
 
       const options = { maxOffers: 5 };
@@ -685,8 +705,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: 0,
-        worstInCache: 0,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       //Act
       const offerRemoved = book.removeOffer(state, 1);
@@ -729,8 +749,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer1);
       book.insertOffer(state, offer2);
@@ -742,8 +762,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 2);
       assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer2.id);
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
@@ -751,14 +771,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offerRemoved, offer3);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer1.id,
         prev: undefined,
-        next: offer2.tick,
+        next: state.binCache.get(offer2.tick),
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
+        firstOfferId: offer2.id,
+        lastOfferId: offer2.id,
+        prev: state.binCache.get(offer1.tick),
         next: undefined,
       });
     });
@@ -795,8 +817,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer1);
       book.insertOffer(state, offer2);
@@ -808,8 +830,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 2);
       assert.equal(state.binCache.size, 1);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer2.id);
       assert.deepStrictEqual(offer1.next, offer2.id);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
@@ -817,7 +839,8 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offerRemoved, offer3);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id, offer2.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer2.id,
         prev: undefined,
         next: undefined,
       });
@@ -856,8 +879,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer1);
       book.insertOffer(state, offer2);
@@ -869,8 +892,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 2);
       assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer2.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer1.id);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer2.prev, undefined);
@@ -878,15 +901,17 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offerRemoved, offer3);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id],
-        prev: offer2.tick,
+        firstOfferId: offer1.id,
+        lastOfferId: offer1.id,
+        prev: state.binCache.get(offer2.tick),
         next: undefined,
       });
       assert.deepStrictEqual(state.binCache.get(offer2.tick), {
         tick: offer2.tick,
-        offers: [offer2.id],
+        firstOfferId: offer2.id,
+        lastOfferId: offer2.id,
         prev: undefined,
-        next: offer1.tick,
+        next: state.binCache.get(offer1.tick),
       });
     });
 
@@ -922,8 +947,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer1);
       book.insertOffer(state, offer2);
@@ -935,8 +960,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 2);
       assert.equal(state.binCache.size, 1);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
+      assert.deepStrictEqual(state.bestBinInCache?.firstOfferId, offer1.id);
+      assert.deepStrictEqual(state.worstBinInCache?.lastOfferId, offer2.id);
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer1.next, offer2.id);
       assert.deepStrictEqual(offer2.prev, offer1.id);
@@ -944,7 +969,8 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offerRemoved, offer3);
       assert.deepStrictEqual(state.binCache.get(offer1.tick), {
         tick: offer1.tick,
-        offers: [offer1.id, offer2.id],
+        firstOfferId: offer1.id,
+        lastOfferId: offer2.id,
         prev: undefined,
         next: undefined,
       });
@@ -971,8 +997,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       book.insertOffer(state, offer);
 
@@ -982,8 +1008,8 @@ describe("Semibook unit test suite", () => {
       // Assert
       assert.equal(state.offerCache.size, 0);
       assert.equal(state.binCache.size, 0);
-      assert.deepStrictEqual(state.bestInCache, undefined);
-      assert.deepStrictEqual(state.worstInCache, undefined);
+      assert.deepStrictEqual(state.bestBinInCache, undefined);
+      assert.deepStrictEqual(state.worstBinInCache, undefined);
       assert.deepStrictEqual(offerRemoved, offer);
     });
   });
@@ -995,8 +1021,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
       //Act
 
@@ -1027,8 +1053,8 @@ describe("Semibook unit test suite", () => {
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
       };
 
       book.insertOffer(state, offer);
