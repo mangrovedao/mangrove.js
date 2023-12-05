@@ -20,7 +20,7 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
 import { Density } from "../../src/util/Density";
-import { MAX_TICK, MIN_TICK } from "../../src/util/coreCalculations/Constants";
+import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 //pretty-print when using console.log
