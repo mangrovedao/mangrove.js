@@ -5,12 +5,12 @@ import Market from "./market";
 import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
 import GeometricKandelDistributionGenerator from "./kandel/geometricKandel/geometricKandelDistributionGenerator";
 import KandelConfiguration from "./kandel/kandelConfiguration";
-import { Bigish } from "./types";
 import GeometricKandelLib from "./kandel/geometricKandel/geometricKandelLib";
 import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
 import GeometricKandelDistributionHelper from "./kandel/geometricKandel/geometricKandelDistributionHelper";
 import GeneralKandelDistributionHelper from "./kandel/generalKandelDistributionHelper";
 import configuration from "./configuration";
+import { BigNumberish } from "ethers";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -53,12 +53,16 @@ class KandelStrategies {
       | ((
           baseAddress: string,
           quoteAddress: string,
-          tickSpacing: Bigish,
+          tickSpacing: BigNumberish,
         ) => Promise<Market>);
   }) {
     const market =
       params.market ??
-      ((baseAddress: string, quoteAddress: string, tickSpacing: Bigish) => {
+      ((
+        baseAddress: string,
+        quoteAddress: string,
+        tickSpacing: BigNumberish,
+      ) => {
         const baseToken = configuration.tokens.getTokenIdFromAddress(
           baseAddress,
           this.mgv.network.name,
