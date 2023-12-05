@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-11
+
 - feat: `Market.Key` type introduced to identify markets (base, quote, tick spacing) in the API.
 - feat!: `Mangrove.openMarkets` no longer connects to all markets, but returns a list of `Market.Key`s, optionally with the relevant offer list configuration attached to each. This is identical to the previous `Mangrove.openMarketsData` which has been removed.
 - feat!: Use of `Big(ish)` for `tickSpacing` in a few places has been replaced by `BigNumber(ish)` for consistency with the rest of the API.
