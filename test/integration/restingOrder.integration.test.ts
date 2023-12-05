@@ -367,8 +367,9 @@ describe("RestingOrder", () => {
       );
 
       const sellPromises_ = await market.sell({
-        limitPrice: 1.0001,
-        volume: 5,
+        maxTick: orderResult.restingOrder!.tick.toNumber(),
+        fillVolume: 5,
+        fillWants: true,
       });
       const result_ = await sellPromises_.result;
       assert(result_.summary.bounty!.gt(0), "Order should have reneged");
