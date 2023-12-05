@@ -1238,7 +1238,7 @@ describe("Market integration tests suite", () => {
     //TODO add to after
   });
 
-  it.only("crudely simulates market buy", async function () {
+  it("crudely simulates market buy", async function () {
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
