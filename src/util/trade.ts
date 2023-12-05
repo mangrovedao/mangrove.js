@@ -7,7 +7,6 @@ import TradeEventManagement, {
   OrderResultWithOptionalSummary,
 } from "./tradeEventManagement";
 import UnitCalculations from "./unitCalculations";
-import { MAX_TICK, MIN_TICK } from "./coreCalculations/Constants";
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 
@@ -47,26 +46,20 @@ class Trade {
       quote: quoteToken,
     });
     if ("price" in params) {
+      if (Big(params.price).lte(0)) {
+        throw new Error("Cannot buy at or below price 0");
+      }
       const priceWithSlippage = this.adjustForSlippage(
         Big(params.price),
         slippage,
         "buy",
       );
+      tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        if (params.price == 0) {
-          tick = BigNumber.from(MIN_TICK);
-        } else {
-          tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
-        }
         fillWants = true;
       } else {
         fillVolume = Big(params.total);
-        if (params.price == 0) {
-          tick = BigNumber.from(MAX_TICK);
-        } else {
-          tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
-        }
         fillWants = false;
       }
     } else if ("tick" in params) {
@@ -74,7 +67,6 @@ class Trade {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
-        // if slippage is 0, we don't need to do anything
         const price = tickPriceHelper.priceFromTick(
           BigNumber.from(params.tick),
         ); // This can result in small rounding differences
@@ -85,6 +77,7 @@ class Trade {
         );
         tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       } else {
+        // if slippage is 0, we don't need to do anything
         tick = BigNumber.from(params.tick);
       }
     } else {
@@ -135,42 +128,28 @@ class Trade {
       quote: quoteToken,
     });
     if ("price" in params) {
-      const priceWithCorrectDecimals = Big(params.price).mul(
-        Big(10).pow(Math.abs(baseToken.decimals - quoteToken.decimals)),
-      );
+      if (Big(params.price).lte(0)) {
+        throw new Error("Cannot buy at or below price 0");
+      }
       const priceWithSlippage = this.adjustForSlippage(
-        priceWithCorrectDecimals,
+        Big(params.price),
         slippage,
         "sell",
       );
+      tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        if (params.price == 0) {
-          tick = BigNumber.from(MAX_TICK);
-        } else {
-          // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
-          tick = TickPriceHelper.tickFromRawRatio(priceWithSlippage);
-        }
         fillWants = false;
       } else {
         fillVolume = Big(params.total);
-        if (params.price == 0) {
-          tick = BigNumber.from(MIN_TICK);
-        } else {
-          // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
-          tick = TickPriceHelper.tickFromRawRatio(
-            Big(1).div(priceWithSlippage),
-          );
-        }
         fillWants = true;
       }
     } else if ("tick" in params) {
+      // in this case, we're merely asking to get the tick adjusted for slippage
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
       if (slippage > 0) {
-        // if slippage is 0, we don't need to do anything
-        // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
-        const price = TickPriceHelper.rawRatioFromTick(
+        const price = tickPriceHelper.priceFromTick(
           BigNumber.from(params.tick),
         ); // This can result in small rounding differences
         const priceWithSlippage = this.adjustForSlippage(
@@ -178,9 +157,9 @@ class Trade {
           slippage,
           "sell",
         );
-        // FIXME: This is wrong and should be migrated to use an instance of TickPriceHelper
-        tick = TickPriceHelper.tickFromRawRatio(priceWithSlippage);
+        tick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       } else {
+        // if slippage is 0, we don't need to do anything
         tick = BigNumber.from(params.tick);
       }
     } else {
