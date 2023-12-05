@@ -4,7 +4,7 @@
   "networks": {
     "maticmum": {
       "restingOrderGasreq": 152001,
-      "takeGasOverhead": 330000
+      "takeGasOverhead": 330001
     }
   }
 }

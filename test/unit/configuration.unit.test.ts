@@ -86,7 +86,7 @@ describe("Configuration unit tests suite", () => {
     );
     assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("maticmum"),
-      330000,
+      330001,
     );
   });
 });
