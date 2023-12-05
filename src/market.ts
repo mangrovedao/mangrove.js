@@ -305,7 +305,7 @@ namespace Market {
   export type Book = { asks: Semibook; bids: Semibook };
 
   export type VolumeEstimate = {
-    maxTickMatched: BigNumber;
+    maxTickMatched: BigNumber | undefined; // undefined iff no offers matched
     estimatedVolume: Big;
     remainingFillVolume: Big;
   };
@@ -832,7 +832,7 @@ class Market {
    */
   async simulateGas(
     ba: Market.BA,
-    tick: BigNumber,
+    maxTick: BigNumber,
     fillVolume: BigNumber,
     fillWants: boolean,
   ): Promise<BigNumber> {
@@ -841,7 +841,7 @@ class Market {
     // Overestimate by 50% because market can have changed between estimation and execution and some offers may be failing.
     const estimation = (
       await semibook.simulateMarketOrder(
-        tick,
+        maxTick,
         new Big(fillVolume.toNumber()),
         fillWants,
       )

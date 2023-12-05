@@ -409,13 +409,12 @@ class Semibook
   }
 
   /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */
-
   async simulateMarketOrder(
-    initialTick: BigNumber,
+    maxTick: BigNumber,
     initialFillVolume: Big,
     fillWants: boolean,
   ): Promise<{
-    maxTickMatched: BigNumber;
+    maxTickMatched?: BigNumber;
     remainingFillVolume: Big;
     totalGot: Big;
     totalGave: Big;
@@ -427,7 +426,7 @@ class Semibook
 
     const initialAccumulator = {
       stop: false,
-      maxTickMatched: initialTick,
+      maxTickMatched: undefined as BigNumber | undefined,
       remainingFillVolume: initialFillVolume,
       got: Big(0),
       gave: Big(0),
@@ -452,7 +451,7 @@ class Semibook
         acc.offersConsidered += 1;
 
         // bad price
-        if (offer.tick.gt(initialTick)) {
+        if (offer.tick.gt(maxTick)) {
           acc.stop = true;
         } else {
           acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
