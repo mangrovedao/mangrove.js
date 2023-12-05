@@ -20,7 +20,7 @@ import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
 import { Density } from "../../src/util/Density";
-import { MIN_TICK } from "../../src/util/coreCalculations/Constants";
+import { MAX_TICK, MIN_TICK } from "../../src/util/coreCalculations/Constants";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 //pretty-print when using console.log
@@ -1062,8 +1062,8 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
 
     const sellPromises = await market.sell({
-      volume: "0.0001",
-      price: bidTickPriceHelper.priceFromTick(MIN_TICK),
+      fillVolume: "0.0001",
+      tick: MAX_TICK.toNumber(),
     });
     const result = await sellPromises.result;
 
@@ -1471,7 +1471,7 @@ describe("Market integration tests suite", () => {
     });
     const gasEstimate = await market.gasEstimateSell({
       volume: market.quote.fromUnits(1),
-      price: 0,
+      price: 1,
     });
 
     // we need to use BigNumber.isBigNumber() function to test variable type
@@ -1490,7 +1490,7 @@ describe("Market integration tests suite", () => {
 
     const emptyBookAsksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
-      price: 0,
+      price: 1,
     });
 
     /* create asks */
@@ -1506,7 +1506,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
     const asksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
-      price: 0,
+      price: 1,
     });
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate
