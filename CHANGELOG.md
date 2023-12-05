@@ -1,5 +1,7 @@
 # Next version
 
+- fix: lazy load ol keys mapping
+
 # 2.0.0-11
 
 - feat: `Market.Key` type introduced to identify markets (base, quote, tick spacing) in the API.
