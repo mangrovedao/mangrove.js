@@ -2,7 +2,7 @@
 import { expect } from "chai";
 import { afterEach, beforeEach, describe, it } from "mocha";
 
-import { toWei } from "../util/helpers";
+import { newOffer, toWei } from "../util/helpers";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import {
   rawMinGivesBase,
@@ -15,7 +15,7 @@ import { Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { BigNumber, utils } from "ethers";
+import { BigNumber, BigNumberish, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
 import { Deferred } from "../../src/util";
@@ -98,9 +98,12 @@ describe("Market integration tests suite", () => {
           "book should have size 1 by now",
         );
       });
-      await helpers.newOffer(mgv, market.base, market.quote, {
-        tick: 1,
+      await newOffer({
+        mgv,
+        market,
+        ba: "asks",
         gives: "1.2",
+        price: "1.0001",
       });
       await pro1;
     });
@@ -640,7 +643,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        tick: BigNumber.from(0),
+        maxTickMatched: BigNumber.from(0),
         estimatedVolume: new Big(12),
         remainingFillVolume: new Big(12),
       };
@@ -670,7 +673,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        tick: BigNumber.from(0),
+        maxTickMatched: BigNumber.from(0),
         estimatedVolume: new Big(12),
         remainingFillVolume: new Big(12),
       };
@@ -700,7 +703,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        tick: BigNumber.from(0),
+        maxTickMatched: BigNumber.from(0),
         estimatedVolume: new Big(12),
         remainingFillVolume: new Big(12),
       };
@@ -733,8 +736,6 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
-    console.log("markets created");
-
     let latestAsks: Market.Offer[] = [];
     let latestBids: Market.Offer[] = [];
 
@@ -766,9 +767,12 @@ describe("Market integration tests suite", () => {
     askPrice = askTickHelper.priceFromTick(tick);
 
     await helpers
-      .newOffer(mgv, market.base, market.quote, {
+      .newOffer({
+        mgv,
+        outbound: market.base,
+        inbound: market.quote,
         tick: tick,
-        gives: asksGives.toString(),
+        gives: asksGives,
       })
       .then((tx) => tx.wait());
 
@@ -795,12 +799,13 @@ describe("Market integration tests suite", () => {
     const bidTick = bidTickHelper.tickFromPrice(bidPrice);
     bidPrice = bidTickHelper.priceFromTick(bidTick);
 
-    await helpers
-      .newOffer(mgv, market.quote, market.base, {
-        tick: bidTick,
-        gives: bidsGives.toString(),
-      })
-      .then((tx) => tx.wait());
+    await newOffer({
+      mgv,
+      outbound: market.quote,
+      inbound: market.base,
+      tick: bidTick,
+      gives: bidsGives,
+    }).then((tx) => tx.wait());
 
     const offer2 = {
       id: 1,
@@ -859,7 +864,7 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ tick: bidTick.toString(), fillVolume: "1.3" });
+    await market.sell({ maxTick: bidTick, fillVolume: "1.3" });
 
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
@@ -899,7 +904,7 @@ describe("Market integration tests suite", () => {
 
     // make a buy, which we expect to provoke an OfferFail
     const buyPromises = await market.buy({
-      tick: "1",
+      maxTick: "1",
       fillVolume: "1.5e12",
     });
     const result = await buyPromises.result;
@@ -925,7 +930,7 @@ describe("Market integration tests suite", () => {
     const tx2 = await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
     await mgvTestUtil.waitForBlock(mgv, tx2.blockNumber);
     const buyPromises_ = await market.buy({
-      tick: "1",
+      maxTick: "1",
       fillVolume: "1.5e12",
     });
     const result_ = await buyPromises_.result;
@@ -969,7 +974,7 @@ describe("Market integration tests suite", () => {
       .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
-      tick: 1,
+      maxTick: 1,
       fillVolume: 10,
     });
     const result = await buyPromises.result;
@@ -1013,7 +1018,7 @@ describe("Market integration tests suite", () => {
 
     const buyPromises = await market.buy({
       forceRoutingToMangroveOrder: false,
-      tick: 1,
+      maxTick: 1,
       fillVolume: 10,
     });
     const result = await buyPromises.result;
@@ -1063,7 +1068,7 @@ describe("Market integration tests suite", () => {
 
     const sellPromises = await market.sell({
       fillVolume: "0.0001",
-      tick: MAX_TICK.toNumber(),
+      maxTick: MAX_TICK,
     });
     const result = await sellPromises.result;
 
@@ -1089,7 +1094,7 @@ describe("Market integration tests suite", () => {
           });
 
           const tradeParams: Market.TradeParams = {
-            tick: TickPriceHelper.tickFromRawRatio(
+            maxTick: TickPriceHelper.tickFromRawRatio(
               Big(0.000000000002).div(10),
             ).toNumber(),
             fillVolume: 10,
@@ -1188,7 +1193,10 @@ describe("Market integration tests suite", () => {
         "book should have size 1 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
       tick: "1",
       gives: "1.2",
     });
@@ -1202,7 +1210,10 @@ describe("Market integration tests suite", () => {
         "book should have size 2 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
       tick: "1",
       gives: "1.2",
     });
@@ -1216,7 +1227,10 @@ describe("Market integration tests suite", () => {
         "book should have size 3 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
       tick: "1",
       gives: "1.2",
     });
@@ -1231,7 +1245,6 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
-    const semibook = market.getSemibook("asks");
     const done = new Deferred();
     let estimatedVolume = 0;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1243,22 +1256,15 @@ describe("Market integration tests suite", () => {
           to: "sell",
         });
         estimatedVolume = estimated.toNumber();
-        console.log("done");
         done.resolve();
       }
     });
 
     await helpers
-      .newOffer(mgv, market.base, market.quote, {
-        tick: semibook.tickPriceHelper.tickFromPrice(1.2 / 0.3),
-        gives: "0.3",
-      })
+      .newOffer({ mgv, market, ba: "asks", gives: "0.3", price: 4 })
       .then((tx) => tx.wait());
     await helpers
-      .newOffer(mgv, market.base, market.quote, {
-        tick: semibook.tickPriceHelper.tickFromPrice(1 / 0.25),
-        gives: "0.25",
-      })
+      .newOffer({ mgv, market, ba: "asks", gives: "0.25", price: 4 })
       .then((tx) => tx.wait());
     await done.promise;
     assert.ok(
@@ -1384,10 +1390,10 @@ describe("Market integration tests suite", () => {
     /* note that we are NOT testing mangrove.js's newOffer function
      * so we create offers through ethers.js generic API */
     for (const ask of asks) {
-      await waitForTransaction(helpers.newOffer(mgv, "TokenA", "TokenB", ask));
+      await waitForTransaction(newOffer({ mgv, market, ba: "asks", ...ask }));
     }
     for (const bid of bids) {
-      await waitForTransaction(helpers.newOffer(mgv, "TokenB", "TokenA", bid));
+      await waitForTransaction(newOffer({ mgv, market, ba: "bids", ...bid }));
     }
 
     /* Now we create the order book we expect to get back so we can compare them */
@@ -1437,7 +1443,7 @@ describe("Market integration tests suite", () => {
 
     type Bs = {
       gives: Bigish;
-      tick: Bigish | BigNumber;
+      tick: BigNumberish;
     }[];
     /* Start testing */
 
@@ -1471,7 +1477,7 @@ describe("Market integration tests suite", () => {
     });
     const gasEstimate = await market.gasEstimateSell({
       volume: market.quote.fromUnits(1),
-      price: 1,
+      limitPrice: 1,
     });
 
     // we need to use BigNumber.isBigNumber() function to test variable type
@@ -1490,23 +1496,23 @@ describe("Market integration tests suite", () => {
 
     const emptyBookAsksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
-      price: 1,
+      limitPrice: 1,
     });
 
     /* create asks */
     const askGasReq = 10000;
     const asks = [
-      { id: 1, tick: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
+      { id: 1, price: "1.0001", gives: "1", gasreq: askGasReq, gasprice: 1 },
     ];
 
     const lastTx = await waitForTransaction(
-      helpers.newOffer(mgv, market.base, market.quote, asks[0]),
+      newOffer({ mgv, market, ba: "asks", ...asks[0] }),
     );
 
     await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
     const asksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
-      price: 1,
+      limitPrice: 1,
     });
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate
@@ -1535,7 +1541,7 @@ describe("Market integration tests suite", () => {
 
       const bs = market.trade.baToBs(ba);
       const params: Market.TradeParams = {
-        tick: 1,
+        maxTick: 1,
         fillVolume: 1,
       };
 

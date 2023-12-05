@@ -133,7 +133,7 @@ describe("RestingOrder", () => {
       await w(tokenA.approve(router.address));
 
       const buyPromises = await orderLP.market.buy({
-        price: 1,
+        limitPrice: 1,
         volume: 20,
         restingOrder: { provision: provision },
       });
@@ -168,7 +168,7 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
-        price: 1,
+        limitPrice: 1,
         volume: 20,
         restingOrder: { provision: provision },
       });
@@ -202,7 +202,7 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: false,
-        price: 1, // tokenA
+        limitPrice: 1, // tokenA
         volume: 20, // tokenB
         restingOrder: { provision: provision },
       });
@@ -234,7 +234,7 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
-        price: 1, // tokenA
+        limitPrice: 1, // tokenA
         volume: 5, // tokenB
       });
       const orderResult = await buyPromises.result;
@@ -267,7 +267,7 @@ describe("RestingOrder", () => {
         await market.getBidProvision(restingOrderGasreqOverride)
       ).toString();
       const buyPromises = await market.buy({
-        price: 1, // tokenA
+        limitPrice: 1, // tokenA
         volume: 20, // tokenB
         expiryDate:
           (await mgv.provider.getBlock(mgv.provider.getBlockNumber()))
@@ -329,7 +329,7 @@ describe("RestingOrder", () => {
       await w(tokenA.approveMangrove());
 
       const sellPromises = await market.sell({
-        tick: orderResult.restingOrder!.tick.toNumber(),
+        maxTick: orderResult.restingOrder!.tick.toNumber(),
         fillVolume: 1,
         fillWants: true,
       });
@@ -367,7 +367,7 @@ describe("RestingOrder", () => {
       );
 
       const sellPromises_ = await market.sell({
-        tick: orderResult.restingOrder!.tick.toNumber(),
+        maxTick: orderResult.restingOrder!.tick.toNumber(),
         fillVolume: 5,
         fillWants: true,
       });
@@ -381,7 +381,7 @@ describe("RestingOrder", () => {
 
       const buyPromises = await orderLP.market.buy({
         forceRoutingToMangroveOrder: true,
-        price: 1, // tokenA
+        limitPrice: 1, // tokenA
         volume: 5, // tokenB
       });
       const orderResult = await buyPromises.result;
@@ -412,7 +412,7 @@ describe("RestingOrder", () => {
       const market: Market = orderLP.market;
 
       const buyPromises = await market.buy({
-        price: 1, // tokenA
+        limitPrice: 1, // tokenA
         volume: 20, // tokenB
         restingOrder: {
           provision: provision,
@@ -444,7 +444,7 @@ describe("RestingOrder", () => {
       await w(tokenA.approveMangrove());
 
       const sellPromises = await market.sell({
-        tick: orderResult.restingOrder!.tick.toNumber(),
+        maxTick: orderResult.restingOrder!.tick.toNumber(),
         fillVolume: 10,
         fillWants: true,
       });
@@ -471,7 +471,7 @@ describe("RestingOrder", () => {
       );
 
       const buyAgainPromises = await market.buy({
-        price: 1, // tokenA
+        limitPrice: 1, // tokenA
         volume: 20, // tokenB
         restingOrder: {
           provision: provision,

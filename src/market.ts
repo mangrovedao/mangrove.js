@@ -133,11 +133,17 @@ namespace Market {
     slippage?: number;
     fillOrKill?: boolean;
     expiryDate?: number;
-    gasLowerBound?: ethers.ethers.BigNumberish;
-  } & { restingOrder?: RestingOrderParams } & (
-      | { volume: Bigish; price: Bigish }
-      | { total: Bigish; price: Bigish }
-      | { tick: Bigish; fillVolume: Bigish; fillWants?: boolean }
+    gasLowerBound?: ethers.BigNumberish;
+  } & {
+    restingOrder?: RestingOrderParams;
+  } & (
+      | { volume: Bigish; limitPrice: Bigish }
+      | { total: Bigish; limitPrice: Bigish }
+      | {
+          maxTick: ethers.BigNumberish;
+          fillVolume: Bigish;
+          fillWants?: boolean;
+        }
       | { gives: Bigish; wants: Bigish; fillWants?: boolean }
     );
 
@@ -299,7 +305,7 @@ namespace Market {
   export type Book = { asks: Semibook; bids: Semibook };
 
   export type VolumeEstimate = {
-    tick: BigNumber;
+    maxTickMatched: BigNumber;
     estimatedVolume: Big;
     remainingFillVolume: Big;
   };

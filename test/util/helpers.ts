@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish, ContractTransaction, utils } from "ethers";
-import Mangrove, { Token } from "../../src";
+import Mangrove, { Market, TickPriceHelper, Token } from "../../src";
 import { Bigish } from "../../src/types";
 import Big from "big.js";
 import assert from "assert";
@@ -87,43 +87,89 @@ export const assertApproxEqRel = (
   }
 };
 
-export type OfferData = {
-  gives: string;
-  tick: BigNumberish;
+export type BaseOfferData = {
+  gives: Bigish;
   gasreq?: BigNumberish;
   gasprice?: BigNumberish;
 };
 
-async function getAmountAndAddress(
-  mgv: Mangrove,
-  token: string | Token,
-  amount: string,
-) {
-  const Token = await getAddress(token, mgv);
-  return { address: Token.address, value: Token.toUnits(amount) };
-}
+export type TickOfferData = BaseOfferData & {
+  tick: BigNumberish;
+};
+
+export type PriceOfferData = BaseOfferData & {
+  ba: "bids" | "asks";
+  price: Bigish;
+};
+
+export type OfferData = TickOfferData | PriceOfferData;
 
 export const newOffer = async (
-  mgv: Mangrove,
-  outbound_tkn: string | Token,
-  inbound_tkn: string | Token,
-  { gives, gasreq, gasprice, tick }: OfferData,
+  params: { mgv: Mangrove } & BaseOfferData &
+    (
+      | {
+          tick: BigNumberish;
+          outbound: string | Token;
+          inbound: string | Token;
+        }
+      | ({
+          price: Bigish;
+          ba: "bids" | "asks";
+        } & (
+          | { market: Market }
+          | {
+              base: string | Token;
+              quote: string | Token;
+            }
+        ))
+    ),
 ): Promise<ContractTransaction> => {
-  const outboundInfo = await getAmountAndAddress(mgv, outbound_tkn, gives);
-  const inboundInfo = await getAddress(inbound_tkn, mgv);
+  const mgv = params.mgv;
+  const { gives, gasreq, gasprice } = params;
+  let tick: BigNumber;
+  let outboundToken: Token;
+  let inboundToken: Token;
+  if ("price" in params) {
+    let base: string | Token;
+    let quote: string | Token;
+    if ("market" in params) {
+      base = params.market.base;
+      quote = params.market.quote;
+    } else {
+      base = params.base;
+      quote = params.quote;
+    }
+
+    const { ba, price } = params;
+    const baseToken = await getToken(base, mgv);
+    const quoteToken = await getToken(quote, mgv);
+    outboundToken = ba === "asks" ? baseToken : quoteToken;
+    inboundToken = ba === "asks" ? quoteToken : baseToken;
+    tick = new TickPriceHelper(ba, {
+      base: { decimals: baseToken.decimals },
+      quote: { decimals: quoteToken.decimals },
+    }).tickFromPrice(price);
+  } else {
+    const { outbound: outbound_tkn, inbound: inbound_tkn } = params;
+    tick = BigNumber.from(params.tick);
+    outboundToken = await getToken(outbound_tkn, mgv);
+    inboundToken = await getToken(inbound_tkn, mgv);
+  }
+  const givesRaw = outboundToken.toUnits(gives);
 
   return mgv.contract.newOfferByTick(
     {
-      outbound_tkn: outboundInfo.address,
-      inbound_tkn: inboundInfo.address,
+      outbound_tkn: outboundToken.address,
+      inbound_tkn: inboundToken.address,
       tickSpacing: 1,
     },
     tick,
-    outboundInfo.value,
+    givesRaw,
     gasreq || 10000,
     gasprice || 1,
   );
 };
-async function getAddress(token: string | Token, mgv: Mangrove) {
+
+async function getToken(token: string | Token, mgv: Mangrove): Promise<Token> {
   return typeof token === "string" ? await mgv.token(token) : token;
 }
