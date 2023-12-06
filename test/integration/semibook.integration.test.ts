@@ -108,175 +108,6 @@ describe("Semibook integration tests suite", function () {
   });
 
   describe("getConfig", () => {
-    it("returns the config of a block as Mangrove.LocalConfig, when given blocknumber", async function () {
-      const deployer = mgvTestUtil.getAccount(mgvTestUtil.AccountName.Deployer);
-      const mgv = await Mangrove.connect({ signer: (await deployer).signer });
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      const semibook = market.getSemibook("asks");
-      const fee = 1;
-      const density = DensityLib.paramsTo96X32_centiusd(
-        BigNumber.from(market.base.decimals),
-        BigNumber.from(1),
-        BigNumber.from(1800 * 100),
-        BigNumber.from(1 * 100),
-        BigNumber.from(3),
-      );
-      const gasbase = 3000;
-      const active = await waitForTransaction(
-        mgv.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          fee,
-          density,
-          gasbase,
-        ),
-      );
-      await waitForTransaction(
-        mgv.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          3,
-          BigNumber.from("4000000000000000000"),
-          1,
-        ),
-      );
-      const config = await semibook.getConfig(active.blockNumber);
-
-      expect(config.fee).to.be.eq(fee);
-      const densityFrom96X32 = Density.from96X32(density, market.base.decimals);
-      expect(config.density.eq(densityFrom96X32)).to.be.eq(
-        true,
-        `Expected ${config.density.toString()} to be equal to ${densityFrom96X32.toString()}`,
-      );
-      expect(config.offer_gasbase).to.be.eq(gasbase);
-      mgv.disconnect();
-    });
-
-    it("returns the config of the latest block as Mangrove.LocalConfig, when given no blocknumber", async function () {
-      const deployer = mgvTestUtil.getAccount(mgvTestUtil.AccountName.Deployer);
-      const mgv = await Mangrove.connect({ signer: (await deployer).signer });
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      const semibook = market.getSemibook("asks");
-      const fee = 1;
-      const density = DensityLib.paramsTo96X32_centiusd(
-        BigNumber.from(market.base.decimals),
-        BigNumber.from(1),
-        BigNumber.from(1800 * 100),
-        BigNumber.from(1 * 100),
-        BigNumber.from(3),
-      );
-      const gasbase = 3000;
-      await waitForTransaction(
-        mgv.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          3,
-          density,
-          1,
-        ),
-      );
-      const newDensity = DensityLib.paramsTo96X32_centiusd(
-        BigNumber.from(market.base.decimals),
-        BigNumber.from(10),
-        BigNumber.from(1800 * 100),
-        BigNumber.from(1 * 100),
-        BigNumber.from(3),
-      );
-      await waitForTransaction(
-        mgv.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          fee,
-          newDensity,
-          gasbase,
-        ),
-      );
-      const config = await semibook.getConfig();
-
-      expect(config.fee).to.be.eq(fee);
-      const densityFrom96X32 = Density.from96X32(
-        newDensity,
-        market.base.decimals,
-      );
-      expect(config.density.eq(densityFrom96X32)).to.be.eq(
-        true,
-        `Expected ${config.density.toString()} to be equal to ${densityFrom96X32.toString()}`,
-      );
-      expect(config.offer_gasbase).to.be.eq(gasbase);
-      mgv.disconnect();
-    });
-  });
-
-  describe("getBestInCache", () => {
-    it("returns offer id 1, because cache gets synced even though market is created before offer", async function () {
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      // Put one offer on asks
-      // TODO: Can we explicitly get the id of this offer?
-      const tx = await waitForTransaction(
-        newOffer({
-          mgv,
-          outbound: "TokenA",
-          inbound: "TokenB",
-          gives: 1,
-          tick: 1,
-        }),
-      );
-
-      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-      const bestInCache = market.getSemibook("asks").getBestInCache();
-      expect(bestInCache).to.be.eq(1);
-    });
-    it("returns offer id 1, because market made after offer", async function () {
-      // Put one offer on asks
-      // TODO: Can we explicitly get the id of this offer?
-      const tx = await waitForTransaction(
-        newOffer({
-          mgv,
-          outbound: "TokenA",
-          inbound: "TokenB",
-          gives: 1,
-          tick: 1,
-        }),
-      );
-      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-
-      const bestInCache = market.getSemibook("asks").getBestInCache();
-      expect(bestInCache).to.be.eq(1);
-    });
-  });
-
-  describe("getConfig", () => {
     it("returns the config of a block, when given blocknumber", async function () {
       const market = await mgv.market({
         base: "TokenA",
@@ -358,9 +189,16 @@ describe("Semibook integration tests suite", function () {
             tickSpacing: 1,
           },
           3,
-          BigNumber.from("4000000000000000000"),
+          density,
           1,
         ),
+      );
+      const newDensity = DensityLib.paramsTo96X32_centiusd(
+        BigNumber.from(market.base.decimals),
+        BigNumber.from(10),
+        BigNumber.from(1800 * 100),
+        BigNumber.from(1 * 100),
+        BigNumber.from(3),
       );
       await waitForTransaction(
         mgvAdmin.contract.activate(
@@ -370,24 +208,32 @@ describe("Semibook integration tests suite", function () {
             tickSpacing: 1,
           },
           fee,
-          density,
+          newDensity,
           gasbase,
         ),
       );
       const config = await semibook.getConfig();
 
       expect(config.fee).to.be.eq(fee);
-      const densityFrom96X32 = Density.from96X32(density, market.base.decimals);
-      expect(config.density.eq(densityFrom96X32)).to.be.eq(
+      const newDensityFrom96X32 = Density.from96X32(
+        newDensity,
+        market.base.decimals,
+      );
+      expect(config.density.eq(newDensityFrom96X32)).to.be.eq(
         true,
-        `Expected ${config.density.toString()} to be equal to ${densityFrom96X32.toString()}`,
+        `Expected ${config.density.toString()} to be equal to ${newDensityFrom96X32.toString()}`,
       );
       expect(config.offer_gasbase).to.be.eq(gasbase);
     });
   });
 
-  describe("offerInfo", () => {
-    it("returns offer from cache, when offer is in cache", async function () {
+  describe("getBestInCache", () => {
+    it("returns offer id 1, because cache gets synced even though market is created before offer", async function () {
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
@@ -402,18 +248,11 @@ describe("Semibook integration tests suite", function () {
 
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      const asksSemibook = market.getSemibook("asks");
-      const offer = await asksSemibook.offerInfo(1);
-
-      expect(offer.id).to.be.eq(1);
+      const bestInCache = market.getSemibook("asks").getBestInCache();
+      expect(bestInCache).to.be.eq(1);
     });
 
-    it("returns offer from contract, when offer is not in cache", async function () {
+    it("returns offer id 1, because market made after offer", async function () {
       // Put one offer on asks
       // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
@@ -425,19 +264,16 @@ describe("Semibook integration tests suite", function () {
           tick: 1,
         }),
       );
-
       await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
         tickSpacing: 1,
-        bookOptions: { maxOffers: 0 },
       });
-      const asksSemibook = market.getSemibook("asks");
-      const offer = await asksSemibook.offerInfo(1);
 
-      expect(offer.id).to.be.eq(1);
+      const bestInCache = market.getSemibook("asks").getBestInCache();
+      expect(bestInCache).to.be.eq(1);
     });
   });
 
