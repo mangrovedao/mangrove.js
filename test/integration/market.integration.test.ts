@@ -1287,7 +1287,7 @@ describe("Market integration tests suite", () => {
     let asks = [
       {
         id: 1,
-        tick: "1",
+        tick: 1,
         price: askTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 9999,
@@ -1295,7 +1295,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 2,
-        tick: "2",
+        tick: 2,
         price: askTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 9999,
@@ -1303,7 +1303,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 3,
-        tick: "1",
+        tick: 1,
         price: askTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 9999,
@@ -1311,7 +1311,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 4,
-        tick: "2",
+        tick: 2,
         price: askTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 9999,
@@ -1319,7 +1319,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 5,
-        tick: "1",
+        tick: 1,
         price: askTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 9999,
@@ -1327,7 +1327,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 6,
-        tick: "3",
+        tick: 3,
         price: askTickPriceHelper.priceFromTick(3),
         gives: "1",
         gasreq: 9999,
@@ -1338,7 +1338,7 @@ describe("Market integration tests suite", () => {
     let bids = [
       {
         id: 1,
-        tick: "2",
+        tick: 2,
         price: bidTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 10_022,
@@ -1346,7 +1346,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 2,
-        tick: "1",
+        tick: 1,
         price: bidTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 10_022,
@@ -1354,7 +1354,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 3,
-        tick: "2",
+        tick: 2,
         price: bidTickPriceHelper.priceFromTick(2),
         gives: "1",
         gasreq: 10_022,
@@ -1362,7 +1362,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 4,
-        tick: "1",
+        tick: 1,
         price: bidTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 10_022,
@@ -1370,7 +1370,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 5,
-        tick: "3",
+        tick: 3,
         price: bidTickPriceHelper.priceFromTick(3),
         gives: "1",
         gasreq: 10_022,
@@ -1378,7 +1378,7 @@ describe("Market integration tests suite", () => {
       },
       {
         id: 6,
-        tick: "1",
+        tick: 1,
         price: bidTickPriceHelper.priceFromTick(1),
         gives: "1",
         gasreq: 10_022,
@@ -1416,8 +1416,8 @@ describe("Market integration tests suite", () => {
     const complete = (isAsk: boolean, ary: typeof bids) => {
       return ary.map((ofr, i) => {
         const _config = config[isAsk ? "asks" : "bids"];
-        const prevOfferTick = ary[i - 1]?.tick ?? "-1";
-        const nextOfferTick = ary[i + 1]?.tick ?? "-2";
+        const prevOfferTick = ary[i - 1]?.tick ?? -1;
+        const nextOfferTick = ary[i + 1]?.tick ?? -2;
         return {
           ...ofr,
           prev:
@@ -1443,7 +1443,7 @@ describe("Market integration tests suite", () => {
 
     type Bs = {
       gives: Bigish;
-      tick: BigNumberish;
+      tick: number;
     }[];
     /* Start testing */
 
@@ -1454,7 +1454,7 @@ describe("Market integration tests suite", () => {
       const s = (obj: Bs[number]) => {
         return {
           ...obj,
-          tick: obj.tick.toString(),
+          tick: obj.tick,
           gives: obj.gives.toString(),
           wants: undefined, // do not test wants are it's tested else where
         };
