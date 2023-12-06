@@ -25,7 +25,7 @@ export type OfferDistribution = {
 /** @title A distribution of bids and ask for Kandel. */
 class KandelDistribution {
   offers: OfferDistribution;
-  market: Market.KeyData;
+  market: Market.DecimalsAndTickSpacing;
   pricePoints: number;
   stepSize: number;
   helper: KandelDistributionHelper;
@@ -41,7 +41,7 @@ class KandelDistribution {
     pricePoints: number,
     stepSize: number,
     offers: OfferDistribution,
-    market: Market.KeyData,
+    market: Market.DecimalsAndTickSpacing,
   ) {
     this.helper = new KandelDistributionHelper(market);
     this.helper.sortByIndex(offers.asks);

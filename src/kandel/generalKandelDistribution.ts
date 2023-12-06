@@ -18,7 +18,7 @@ class GeneralKandelDistribution extends KandelDistribution {
     pricePoints: number;
     stepSize: number;
     offers: OfferDistribution;
-    market: Market.KeyData;
+    market: Market.DecimalsAndTickSpacing;
   }) {
     super(params.pricePoints, params.stepSize, params.offers, params.market);
   }

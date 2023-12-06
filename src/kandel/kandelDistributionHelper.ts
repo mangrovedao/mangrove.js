@@ -18,12 +18,12 @@ export type OffersWithGives = {
 class KandelDistributionHelper {
   askTickPriceHelper: TickPriceHelper;
   bidTickPriceHelper: TickPriceHelper;
-  market: Market.KeyData;
+  market: Market.DecimalsAndTickSpacing;
 
   /** Constructor
    * @param market The key data about the market.
    */
-  public constructor(market: Market.KeyData) {
+  public constructor(market: Market.DecimalsAndTickSpacing) {
     this.market = market;
     this.askTickPriceHelper = new TickPriceHelper("asks", market);
     this.bidTickPriceHelper = new TickPriceHelper("bids", market);

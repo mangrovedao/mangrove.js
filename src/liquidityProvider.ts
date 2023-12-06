@@ -203,7 +203,7 @@ class LiquidityProvider {
    */
   static normalizeOfferParams(
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
-    market: Market.KeyData,
+    market: Market.DecimalsAndTickSpacing,
   ): {
     price: Big;
     tick: number;

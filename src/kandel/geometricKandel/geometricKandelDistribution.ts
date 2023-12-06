@@ -31,7 +31,7 @@ class GeometricKandelDistribution extends KandelDistribution {
     pricePoints: number,
     stepSize: number,
     offers: OfferDistribution,
-    market: Market.KeyData,
+    market: Market.DecimalsAndTickSpacing,
   ) {
     super(pricePoints, stepSize, offers, market);
     this.baseQuoteTickOffset = baseQuoteTickOffset;

@@ -9,7 +9,7 @@ import Market from "../../market";
 /** @title Management of a single Kandel instance. */
 class GeometricKandelLib {
   kandelLib: typechain.GeometricKandel;
-  market: Market.KeyData;
+  market: Market.DecimalsAndTickSpacing;
 
   /** Creates a KandelLib object to perform static calls toward a KandelLib.
    * @param params The parameters used to create an instance.
@@ -22,7 +22,7 @@ class GeometricKandelLib {
   public constructor(params: {
     address: string;
     signer: ethers.Signer;
-    market: Market.KeyData;
+    market: Market.DecimalsAndTickSpacing;
     kandelLibInstance?: typechain.GeometricKandel;
   }) {
     this.kandelLib =

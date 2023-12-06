@@ -34,7 +34,8 @@ namespace Market {
     tickSpacing: number;
   };
 
-  export type KeyData = {
+  /** Values needed for converting between ticks/prices/volumes, is a subset of @see KeyResolved */
+  export type DecimalsAndTickSpacing = {
     base: { decimals: number };
     quote: { decimals: number };
     tickSpacing: number;
