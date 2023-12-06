@@ -116,7 +116,10 @@ export type PartialKandelAllConfigurationFields =
   Partial<KandelAllConfigurationFields>;
 export type PartialMarketConfig = PartialKandelAllConfigurationFields;
 export type PartialNetworkConfig = PartialKandelAllConfigurationFields & {
-  markets?: Record<tokenId, Record<tokenId, PartialMarketConfig>>; // base ID -> quote ID -> market config
+  markets?: Record<
+    tokenId,
+    Record<tokenId, Record<number, PartialMarketConfig>>
+  >; // base ID -> quote ID -> tickSpacing -> market config
 };
 
 export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {

@@ -20,29 +20,37 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
           markets: {
             TokenA: {
               TokenB: {
-                minimumBasePerOfferFactor: 2,
-                minimumQuotePerOfferFactor: "3",
-                baseQuoteTickOffset: 1,
-                aaveEnabled: true,
+                "1": {
+                  minimumBasePerOfferFactor: 2,
+                  minimumQuotePerOfferFactor: "3",
+                  baseQuoteTickOffset: 1,
+                  aaveEnabled: true,
+                },
               },
               FailingConfig0: {
-                aaveEnabled: undefined,
-                minimumBasePerOfferFactor: 1,
-                minimumQuotePerOfferFactor: 1,
-                stepSize: undefined,
-                baseQuoteTickOffset: undefined,
+                "0": {
+                  aaveEnabled: undefined,
+                  minimumBasePerOfferFactor: 1,
+                  minimumQuotePerOfferFactor: 1,
+                  stepSize: undefined,
+                  baseQuoteTickOffset: undefined,
+                },
               },
-              FailingConfig1: {},
-              FailingConfig2: { minimumBasePerOfferFactor: 1 },
+              FailingConfig1: { "1": {} },
+              FailingConfig2: { "2": { minimumBasePerOfferFactor: 1 } },
               FailingConfig3: {
-                minimumBasePerOfferFactor: 1,
-                minimumQuotePerOfferFactor: 1,
-                stepSize: undefined,
+                "3": {
+                  minimumBasePerOfferFactor: 1,
+                  minimumQuotePerOfferFactor: 1,
+                  stepSize: undefined,
+                },
               },
               FailingConfig4: {
-                minimumBasePerOfferFactor: 1,
-                minimumQuotePerOfferFactor: 1,
-                baseQuoteTickOffset: undefined,
+                "4": {
+                  minimumBasePerOfferFactor: 1,
+                  minimumQuotePerOfferFactor: 1,
+                  baseQuoteTickOffset: undefined,
+                },
               },
             },
           },
@@ -60,12 +68,12 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
           sutWithOverride.getConfiguredMarketsForNetwork("configTest");
         // Assert
         assert.deepStrictEqual(markets, [
-          { base: "TokenA", quote: "TokenB" },
-          { base: "TokenA", quote: "FailingConfig0" },
-          { base: "TokenA", quote: "FailingConfig1" },
-          { base: "TokenA", quote: "FailingConfig2" },
-          { base: "TokenA", quote: "FailingConfig3" },
-          { base: "TokenA", quote: "FailingConfig4" },
+          { base: "TokenA", quote: "TokenB", tickSpacing: 1 },
+          { base: "TokenA", quote: "FailingConfig0", tickSpacing: 0 },
+          { base: "TokenA", quote: "FailingConfig1", tickSpacing: 1 },
+          { base: "TokenA", quote: "FailingConfig2", tickSpacing: 2 },
+          { base: "TokenA", quote: "FailingConfig3", tickSpacing: 3 },
+          { base: "TokenA", quote: "FailingConfig4", tickSpacing: 4 },
         ]);
       });
 
@@ -74,13 +82,13 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         const markets = sut.getConfiguredMarketsForNetwork("maticmum");
         // Assert
         assert.deepStrictEqual(markets, [
-          { base: "WETH.T/MGV", quote: "DAI.T/AAVEv3" },
-          { base: "WETH.T/MGV", quote: "USDC.T/MGV" },
-          { base: "DAI.T/AAVEv3", quote: "USDC.T/MGV" },
-          { base: "WMATIC.T/MGV", quote: "USDT.T/MGV" },
-          { base: "WBTC.T/AAVEv3", quote: "USDT.T/MGV" },
-          { base: "WBTC.T/AAVEv3", quote: "DAI.T/AAVEv3" },
-          { base: "CRV.T/AAVEv3", quote: "WBTC.T/AAVEv3" },
+          { base: "WETH.T/MGV", quote: "DAI.T/AAVEv3", tickSpacing: 1 },
+          { base: "WETH.T/MGV", quote: "USDC.T/MGV", tickSpacing: 1 },
+          { base: "DAI.T/AAVEv3", quote: "USDC.T/MGV", tickSpacing: 1 },
+          { base: "WMATIC.T/MGV", quote: "USDT.T/MGV", tickSpacing: 1 },
+          { base: "WBTC.T/AAVEv3", quote: "USDT.T/MGV", tickSpacing: 1 },
+          { base: "WBTC.T/AAVEv3", quote: "DAI.T/AAVEv3", tickSpacing: 1 },
+          { base: "CRV.T/AAVEv3", quote: "WBTC.T/AAVEv3", tickSpacing: 1 },
         ]);
       });
 
@@ -93,61 +101,71 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
     },
   );
 
-  describe(KandelConfiguration.prototype.getConfigForBaseQuote.name, () => {
-    it("inherits and overrides for market", () => {
-      // Arrange/act
-      const config = sutWithOverride.getConfigForBaseQuote(
-        "configTest",
-        "TokenA",
-        "TokenB",
-      );
-
-      // Assert
-      assert.equal(config.stepSize, 2, "overriden for network");
-      assert.equal(config.baseQuoteTickOffset, 1, "overridden for market");
-      assert.equal(
-        config.maxOffersInPopulateChunk,
-        50,
-        "inherited from global",
-      );
-      // Assert all others are also read
-      assert.equal(config.aaveEnabled, true);
-      assert.equal(config.maxOffersInRetractChunk, 50);
-      assert.equal(config.gaspriceFactor, 10);
-      assert.equal(config.minimumBasePerOfferFactor.toNumber(), 2);
-      assert.equal(config.minimumQuotePerOfferFactor.toNumber(), 3);
-    });
-
-    [
-      "aaveEnabled is not configured for pair TokenA/FailingConfig0 on network configTest.",
-      "minimumBasePerOfferFactor is not configured for pair TokenA/FailingConfig1 on network configTest.",
-      "minimumQuotePerOfferFactor is not configured for pair TokenA/FailingConfig2 on network configTest.",
-      "stepSize is not configured for pair TokenA/FailingConfig3 on network configTest.",
-      "baseQuoteTickOffset is not configured for pair TokenA/FailingConfig4 on network configTest.",
-    ].forEach((message, index) => {
-      it(`throws on missing config ${index} - ${message}`, () => {
-        // Act/Assert
-        assert.throws(
-          () =>
-            sutWithOverride.getConfigForBaseQuote(
-              "configTest",
-              "TokenA",
-              `FailingConfig${index}`,
-            ),
-          { message },
+  describe(
+    KandelConfiguration.prototype.getConfigForBaseQuoteTickSpacing.name,
+    () => {
+      it("inherits and overrides for market", () => {
+        // Arrange/act
+        const config = sutWithOverride.getConfigForBaseQuoteTickSpacing(
+          "configTest",
+          "TokenA",
+          "TokenB",
+          1,
         );
-      });
-    });
 
-    it("parses all expected valid", () => {
-      sut.getNetworks().forEach((network) => {
-        sut.getConfiguredMarketsForNetwork(network).forEach((market) => {
-          // Act/assert - simply do not throw.
-          sut.getConfigForBaseQuote(network, market.base, market.quote);
+        // Assert
+        assert.equal(config.stepSize, 2, "overriden for network");
+        assert.equal(config.baseQuoteTickOffset, 1, "overridden for market");
+        assert.equal(
+          config.maxOffersInPopulateChunk,
+          50,
+          "inherited from global",
+        );
+        // Assert all others are also read
+        assert.equal(config.aaveEnabled, true);
+        assert.equal(config.maxOffersInRetractChunk, 50);
+        assert.equal(config.gaspriceFactor, 10);
+        assert.equal(config.minimumBasePerOfferFactor.toNumber(), 2);
+        assert.equal(config.minimumQuotePerOfferFactor.toNumber(), 3);
+      });
+
+      [
+        "aaveEnabled is not configured for TokenA/FailingConfig0/0 on network configTest.",
+        "minimumBasePerOfferFactor is not configured for TokenA/FailingConfig1/1 on network configTest.",
+        "minimumQuotePerOfferFactor is not configured for TokenA/FailingConfig2/2 on network configTest.",
+        "stepSize is not configured for TokenA/FailingConfig3/3 on network configTest.",
+        "baseQuoteTickOffset is not configured for TokenA/FailingConfig4/4 on network configTest.",
+      ].forEach((message, index) => {
+        it(`throws on missing config ${index} - ${message}`, () => {
+          // Act/Assert
+          assert.throws(
+            () =>
+              sutWithOverride.getConfigForBaseQuoteTickSpacing(
+                "configTest",
+                "TokenA",
+                `FailingConfig${index}`,
+                index,
+              ),
+            { message },
+          );
         });
       });
-    });
-  });
+
+      it("parses all expected valid", () => {
+        sut.getNetworks().forEach((network) => {
+          sut.getConfiguredMarketsForNetwork(network).forEach((market) => {
+            // Act/assert - simply do not throw.
+            sut.getConfigForBaseQuoteTickSpacing(
+              network,
+              market.base,
+              market.quote,
+              market.tickSpacing,
+            );
+          });
+        });
+      });
+    },
+  );
 
   describe(KandelConfiguration.prototype.getMostSpecificConfig.name, () => {
     it("does not fail on missing network", () => {
@@ -155,6 +173,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "unknown",
         "unknown",
         "unknown",
+        42,
       );
       assert.equal(config.stepSize, 1);
     });
@@ -164,6 +183,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "configTest",
         "unknown",
         "unknown",
+        42,
       );
       assert.equal(config.stepSize, 2);
     });
@@ -173,6 +193,17 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "configTest",
         "TokenA",
         "unknown",
+        42,
+      );
+      assert.equal(config.stepSize, 2);
+    });
+
+    it("does not fail on missing tickSpacing", () => {
+      const config = sutWithOverride.getMostSpecificConfig(
+        "configTest",
+        "TokenA",
+        "TokenB",
+        42,
       );
       assert.equal(config.stepSize, 2);
     });
@@ -182,6 +213,7 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
         "configTest",
         "TokenA",
         "FailingConfig0",
+        0,
       );
       assert.equal(config.stepSize, undefined);
       assert.equal(config.minimumBasePerOfferFactor, 1);

@@ -13,34 +13,46 @@
       "markets": {
         "WETH.T/MGV": {
           "DAI.T/AAVEv3": {
-            "aaveEnabled": false
+            "1": {
+              "aaveEnabled": false
+            }
           },
           "USDC.T/MGV": {
-            "minimumBasePerOfferFactor": 6,
-            "minimumQuotePerOfferFactor": 6,
-            "aaveEnabled": false
+            "1": {
+              "minimumBasePerOfferFactor": 6,
+              "minimumQuotePerOfferFactor": 6,
+              "aaveEnabled": false
+            }
           }
         },
         "DAI.T/AAVEv3": {
           "USDC.T/MGV": {
-            "aaveEnabled": true
+            "1": {
+              "aaveEnabled": true
+            }
           }
         },
         "WMATIC.T/MGV": {
           "USDT.T/MGV": {
-            "minimumBasePerOfferFactor": 6,
-            "minimumQuotePerOfferFactor": 6
+            "1": {
+              "minimumBasePerOfferFactor": 6,
+              "minimumQuotePerOfferFactor": 6
+            }
           }
         },
         "WBTC.T/AAVEv3": {
-          "USDT.T/MGV": {},
+          "USDT.T/MGV": { "1": {} },
           "DAI.T/AAVEv3": {
-            "aaveEnabled": true
+            "1": {
+              "aaveEnabled": true
+            }
           }
         },
         "CRV.T/AAVEv3": {
           "WBTC.T/AAVEv3": {
-            "aaveEnabled": true
+            "1": {
+              "aaveEnabled": true
+            }
           }
         }
       }
@@ -52,12 +64,14 @@
       "markets": {
         "WETH.e": {
           "USDC.e": {
-            "minimumBasePerOfferFactor": 6,
-            "minimumQuotePerOfferFactor": 6
+            "1": {
+              "minimumBasePerOfferFactor": 6,
+              "minimumQuotePerOfferFactor": 6
+            }
           }
         },
         "USDC.e": {
-          "USDT.e": {}
+          "USDT.e": { "1": {} }
         }
       }
     },
@@ -65,8 +79,10 @@
       "markets": {
         "TokenA": {
           "TokenB": {
-            "minimumBasePerOfferFactor": 10,
-            "minimumQuotePerOfferFactor": 10
+            "1": {
+              "minimumBasePerOfferFactor": 10,
+              "minimumQuotePerOfferFactor": 10
+            }
           }
         }
       }

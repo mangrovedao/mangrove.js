@@ -30,16 +30,19 @@ class KandelConfiguration {
    * @param networkName The name of the network.
    * @param baseId The ID of the base token.
    * @param quoteId The ID of the quote token.
+   * @param tickSpacing The tick spacing of the market.
    * @returns The most specific configuration available for the network and the base/quote pair.
    */
   public getMostSpecificConfig(
     networkName: string,
     baseId: string,
     quoteId: string,
+    tickSpacing: number,
   ): KandelNetworkConfiguration & Partial<KandelMarketConfiguration> {
     const networkSpecificConfig = this.rawConfiguration.networks?.[networkName];
     const baseSpecificConfig = networkSpecificConfig?.markets?.[baseId];
-    const marketSpecificConfig = baseSpecificConfig?.[quoteId];
+    const baseQuoteSpecificConfig = baseSpecificConfig?.[quoteId];
+    const marketSpecificConfig = baseQuoteSpecificConfig?.[tickSpacing];
 
     const config = {
       ...this.rawConfiguration,
@@ -68,23 +71,30 @@ class KandelConfiguration {
     };
   }
 
-  /** Gets the config for the network and the base/quote pair.
+  /** Gets the config for the network and the base/quote/tickSpacing set.
    * @param networkName The name of the network.
    * @param baseId The ID of the base token.
    * @param quoteId The ID of the quote token.
-   * @returns The configuration for the network and the base/quote pair.
-   * @throws If the full config is not available for the network and the base/quote pair.
+   * @param tickSpacing The tick spacing of the market.
+   * @returns The configuration for the network and the base/quote/tickSpacing set.
+   * @throws If the full config is not available for the network and the base/quote/tickSpacing set.
    */
-  public getConfigForBaseQuote(
+  public getConfigForBaseQuoteTickSpacing(
     networkName: string,
     baseId: string,
     quoteId: string,
+    tickSpacing: number,
   ): KandelNetworkConfiguration & KandelMarketConfiguration {
-    const config = this.getMostSpecificConfig(networkName, baseId, quoteId);
+    const config = this.getMostSpecificConfig(
+      networkName,
+      baseId,
+      quoteId,
+      tickSpacing,
+    );
 
     function thrower(msg: string): never {
       throw new Error(
-        `${msg} for pair ${baseId}/${quoteId} on network ${networkName}.`,
+        `${msg} for ${baseId}/${quoteId}/${tickSpacing} on network ${networkName}.`,
       );
     }
 
@@ -117,10 +127,11 @@ class KandelConfiguration {
   public getConfig(
     market: Market,
   ): KandelNetworkConfiguration & KandelMarketConfiguration {
-    return this.getConfigForBaseQuote(
+    return this.getConfigForBaseQuoteTickSpacing(
       market.mgv.network.name,
       market.base.id,
       market.quote.id,
+      market.tickSpacing.toNumber(),
     );
   }
 
@@ -138,15 +149,22 @@ class KandelConfiguration {
    */
   public getConfiguredMarketsForNetwork(
     networkName: string,
-  ): { base: string; quote: string }[] {
-    return Object.entries(
-      this.rawConfiguration.networks?.[networkName]?.markets ?? {},
-    ).flatMap(([base, quotes]: [string, unknown]) => {
-      return Object.keys(quotes as Record<string, string>).map((quote) => ({
-        base,
-        quote,
-      }));
-    });
+  ): { base: string; quote: string; tickSpacing: number }[] {
+    const result: { base: string; quote: string; tickSpacing: number }[] = [];
+    const markets =
+      this.rawConfiguration.networks?.[networkName]?.markets ?? {};
+    for (const base in markets) {
+      for (const quote in markets[base]) {
+        for (const tickSpacing in markets[base][quote]) {
+          result.push({
+            base: base,
+            quote: quote,
+            tickSpacing: Number(tickSpacing),
+          });
+        }
+      }
+    }
+    return result;
   }
 
   /** Gets the networks with some configuration. */

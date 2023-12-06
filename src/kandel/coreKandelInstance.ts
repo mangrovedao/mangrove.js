@@ -498,6 +498,7 @@ class CoreKandelInstance {
       this.market.mgv.network.name,
       this.getBase().id,
       this.getQuote().id,
+      this.market.tickSpacing.toNumber(),
     );
   }
 
