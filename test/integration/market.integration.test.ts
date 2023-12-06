@@ -1068,7 +1068,7 @@ describe("Market integration tests suite", () => {
 
     const sellPromises = await market.sell({
       fillVolume: "0.0001",
-      maxTick: MAX_TICK,
+      maxTick: MAX_TICK.toNumber(),
     });
     const result = await sellPromises.result;
 

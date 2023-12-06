@@ -115,13 +115,13 @@ describe("TickLibNew unit test suite", () => {
     // let sig = round(price * 2^exp) with exp chosen such that sig uses 128 bits
     // add or remove as necessary to match the error of the `ratioFromTick` function
     inner_test_ratioFromTick({
-      tick: BigNumber.from(MAX_TICK),
+      tick: MAX_TICK,
       expected_sig: MAX_RATIO_MANTISSA,
       expected_exp: uint(MAX_RATIO_EXP)
     });
 
     inner_test_ratioFromTick({
-      tick: BigNumber.from(MIN_TICK),
+      tick: MIN_TICK,
       expected_sig: MIN_RATIO_MANTISSA,
       expected_exp: uint(MIN_RATIO_EXP)
     });

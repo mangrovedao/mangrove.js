@@ -398,7 +398,7 @@ class Semibook
     const initialGives = Big(params.given);
     const maxTick = params.limitPrice
       ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
-      : MAX_TICK;
+      : MAX_TICK.toNumber();
 
     const { maxTickMatched, remainingFillVolume, totalGot, totalGave } =
       await this.simulateMarketOrder(maxTick, initialGives, buying);
@@ -1382,7 +1382,7 @@ export class SemibookCacheOperations {
 
     const worstTick = Array.from(state.binCache.keys()).reduce(
       (acc, tick) => (tick > acc ? tick : acc),
-      MIN_TICK,
+      MIN_TICK.toNumber(),
     );
     if (offer.tick === worstTick) {
       state.worstInCache = offer.id;

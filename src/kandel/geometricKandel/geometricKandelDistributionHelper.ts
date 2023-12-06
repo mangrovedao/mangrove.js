@@ -185,10 +185,10 @@ class GeometricKandelDistributionHelper {
       }
     }
 
-    if (minBaseQuoteTick < MIN_TICK) {
+    if (minBaseQuoteTick < MIN_TICK.toNumber()) {
       throw Error("minBaseQuoteTick too low.");
     }
-    if (maxBaseQuoteTick > MAX_TICK) {
+    if (maxBaseQuoteTick > MAX_TICK.toNumber()) {
       throw Error("maxBaseQuoteTick too high.");
     }
 

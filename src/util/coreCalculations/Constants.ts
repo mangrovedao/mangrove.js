@@ -65,8 +65,8 @@ export const MIN_BIN = BigNumber.from("-1048576");
 export const MAX_BIN = BigNumber.from("1048575");
 
 /* The tick range is the largest such that the mantissa of `1.0001^MAX_TICK` fits on 128 bits (and thus can be multiplied by volumes). */
-export const MIN_TICK = -887272;
-export const MAX_TICK = 887272;
+export const MIN_TICK = BigNumber.from(-887272);
+export const MAX_TICK = BigNumber.from(887272);
 /* These are reference values for what the function `tickFromRatio` function will return, not the most possible accurate values for the min and max tick. */
 export const MIN_RATIO_MANTISSA = BigNumber.from("170153974464283981435225617938057077692");
 export const MIN_RATIO_EXP = BigNumber.from("255");

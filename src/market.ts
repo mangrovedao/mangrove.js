@@ -31,13 +31,13 @@ namespace Market {
   export type Key = {
     base: string | Token;
     quote: string | Token;
-    tickSpacing: ethers.BigNumberish;
+    tickSpacing: number;
   };
 
   export type KeyResolved = {
     base: Token;
     quote: Token;
-    tickSpacing: ethers.BigNumber;
+    tickSpacing: number;
   };
 
   export type BA = "bids" | "asks";
@@ -49,7 +49,7 @@ namespace Market {
       }
     | {
         tick: number;
-        tickSpacing: Big;
+        tickSpacing: number;
       }
     | {
         tick: number;
@@ -325,7 +325,7 @@ class Market {
   mgv: Mangrove;
   base: Token;
   quote: Token;
-  tickSpacing: BigNumber;
+  tickSpacing: number;
   /** The OLKey for the base, quote offer list */
   olKeyBaseQuote: OLKeyStruct;
   /** The OLKey for the quote, base offer list */
@@ -363,7 +363,7 @@ class Market {
       mgv: params.mgv,
       base,
       quote,
-      tickSpacing: BigNumber.from(params.tickSpacing),
+      tickSpacing: params.tickSpacing,
     });
     canConstructMarket = false;
     if (params["noInit"]) {
