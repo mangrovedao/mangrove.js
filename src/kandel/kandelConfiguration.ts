@@ -131,7 +131,7 @@ class KandelConfiguration {
       market.mgv.network.name,
       market.base.id,
       market.quote.id,
-      market.tickSpacing.toNumber(),
+      market.tickSpacing,
     );
   }
 
