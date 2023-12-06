@@ -454,7 +454,7 @@ describe("Semibook integration tests suite", function () {
           const semibook = market.getSemibook("asks");
           const volume = await semibook.estimateVolume({ given: 1, to });
           expect(volume).to.deep.equal({
-            maxTickMatched: MAX_TICK,
+            maxTickMatched: undefined,
             estimatedVolume: Big(0),
             remainingFillVolume: Big(1),
           });
@@ -697,7 +697,7 @@ describe("Semibook integration tests suite", function () {
 
         const volume = await semibook.estimateVolume({ given: 2, to: "buy" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick.toString(),
           `tick should be ${tick.toString()}`,
         );
@@ -747,7 +747,7 @@ describe("Semibook integration tests suite", function () {
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
         const volume = await semibook.estimateVolume({ given: 3, to: "buy" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick2.toString(),
           `tick should be ${tick2.toString()}`,
         );
@@ -787,7 +787,7 @@ describe("Semibook integration tests suite", function () {
 
         const volume = await semibook.estimateVolume({ given: 1, to: "buy" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick.toString(),
           `tick should be ${tick.toString()}`,
         );
@@ -837,7 +837,7 @@ describe("Semibook integration tests suite", function () {
 
         const volume = await semibook.estimateVolume({ given: 2, to: "buy" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick2.toString(),
           `tick should be ${tick2.toString()}`,
         );
@@ -912,7 +912,7 @@ describe("Semibook integration tests suite", function () {
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
         const volume = await semibook.estimateVolume({ given: 3, to: "sell" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick.toString(),
           `tick should be ${tick.toString()}`,
         );
@@ -961,7 +961,7 @@ describe("Semibook integration tests suite", function () {
 
         const volume = await semibook.estimateVolume({ given: 6, to: "sell" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick2.toString(),
           `tick should be ${tick2.toString()}`,
         );
@@ -1001,7 +1001,7 @@ describe("Semibook integration tests suite", function () {
 
         const volume = await semibook.estimateVolume({ given: 2, to: "sell" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick.toString(),
           `tick should be ${tick.toString()}`,
         );
@@ -1051,7 +1051,7 @@ describe("Semibook integration tests suite", function () {
 
         const volume = await semibook.estimateVolume({ given: 3, to: "sell" });
         assert.deepStrictEqual(
-          volume.maxTickMatched.toString(),
+          volume.maxTickMatched?.toString(),
           tick2.toString(),
           `tick should be ${tick2.toString()}`,
         );
