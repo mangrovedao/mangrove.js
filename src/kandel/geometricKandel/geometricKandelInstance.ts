@@ -182,7 +182,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
         index,
         live: this.market.isLiveOffer(offer),
         price: offer.price,
-        tick: offer.tick.toNumber(),
+        tick: offer.tick,
       }),
     );
 

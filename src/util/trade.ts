@@ -14,7 +14,7 @@ type CleanUnitParams = {
   ba: Market.BA;
   targets: {
     offerId: number;
-    tick: ethers.BigNumber;
+    tick: number;
     gasreq: ethers.BigNumber;
     takerWants: ethers.BigNumber;
   }[];
@@ -39,7 +39,7 @@ class Trade {
     },
   ) {
     // validate parameters and setup tickPriceHelper
-    let fillVolume: Big, maxTick: BigNumber, fillWants: boolean;
+    let fillVolume: Big, maxTick: number, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
     const tickPriceHelper = new TickPriceHelper("asks", {
       base: baseToken,
@@ -67,9 +67,7 @@ class Trade {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
-        const limitPrice = tickPriceHelper.priceFromTick(
-          BigNumber.from(params.maxTick),
-        ); // This can result in small rounding differences
+        const limitPrice = tickPriceHelper.priceFromTick(params.maxTick); // This can result in small rounding differences
         const limitPriceWithSlippage = this.adjustForSlippage(
           limitPrice,
           slippage,
@@ -78,7 +76,7 @@ class Trade {
         maxTick = tickPriceHelper.tickFromPrice(limitPriceWithSlippage);
       } else {
         // if slippage is 0, we don't need to do anything
-        maxTick = BigNumber.from(params.maxTick);
+        maxTick = params.maxTick;
       }
     } else {
       const givesWithSlippage = this.adjustForSlippage(
@@ -124,7 +122,7 @@ class Trade {
       fromUnits: (amount: ethers.BigNumber) => Big;
     },
   ) {
-    let fillVolume: Big, maxTick: BigNumber, fillWants: boolean;
+    let fillVolume: Big, maxTick: number, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
     const tickPriceHelper = new TickPriceHelper("bids", {
       base: baseToken,
@@ -152,9 +150,7 @@ class Trade {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
       if (slippage > 0) {
-        const limitPrice = tickPriceHelper.priceFromTick(
-          BigNumber.from(params.maxTick),
-        ); // This can result in small rounding differences
+        const limitPrice = tickPriceHelper.priceFromTick(params.maxTick); // This can result in small rounding differences
         const priceWithSlippage = this.adjustForSlippage(
           limitPrice,
           slippage,
@@ -162,7 +158,7 @@ class Trade {
         );
         maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage);
       } else {
-        maxTick = BigNumber.from(params.maxTick);
+        maxTick = params.maxTick;
       }
     } else {
       const wantsWithSlippage = this.adjustForSlippage(
@@ -388,7 +384,7 @@ class Trade {
         return {
           offerId: t.offerId,
           takerWants: outbound_tkn.toUnits(t.takerWants),
-          tick: BigNumber.from(t.tick),
+          tick: t.tick,
           gasreq: BigNumber.from(t.gasreq),
         };
       },
@@ -484,7 +480,7 @@ class Trade {
       market,
       gasLowerBound,
     }: {
-      maxTick: ethers.BigNumber;
+      maxTick: number;
       fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
@@ -507,7 +503,7 @@ class Trade {
         outboundTkn: outboundTkn.id,
         inboundTkn: inboundTkn.id,
         fillWants: fillWants,
-        maxTick: maxTick.toString(),
+        maxTick: maxTick,
         fillVolume: fillVolume.toString(),
         orderType: orderType,
         gasLimit: overrides.gasLimit?.toString(),
@@ -582,7 +578,7 @@ class Trade {
       market,
       gasLowerBound,
     }: {
-      maxTick: ethers.BigNumber;
+      maxTick: number;
       fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;

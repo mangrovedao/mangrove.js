@@ -48,11 +48,11 @@ namespace Market {
         wants: Big;
       }
     | {
-        tick: Big;
+        tick: number;
         tickSpacing: Big;
       }
     | {
-        tick: Big;
+        tick: number;
       };
   export type BS = "buy" | "sell";
   export type MgvReader = typechain.MgvReader;
@@ -140,7 +140,7 @@ namespace Market {
       | { volume: Bigish; limitPrice: Bigish }
       | { total: Bigish; limitPrice: Bigish }
       | {
-          maxTick: ethers.BigNumberish;
+          maxTick: number;
           fillVolume: Bigish;
           fillWants?: boolean;
         }
@@ -157,7 +157,7 @@ namespace Market {
     targets: {
       offerId: number;
       takerWants: Bigish;
-      tick: Bigish;
+      tick: number;
       gasreq: number;
     }[];
     ba: Market.BA;
@@ -232,7 +232,7 @@ namespace Market {
     gasprice: number;
     maker: string;
     gasreq: number;
-    tick: BigNumber;
+    tick: number;
     price: Big;
     gives: Big;
     wants: Big;
@@ -305,7 +305,7 @@ namespace Market {
   export type Book = { asks: Semibook; bids: Semibook };
 
   export type VolumeEstimate = {
-    maxTickMatched: BigNumber | undefined; // undefined iff no offers matched
+    maxTickMatched: number | undefined; // undefined iff no offers matched
     estimatedVolume: Big;
     remainingFillVolume: Big;
   };
@@ -832,7 +832,7 @@ class Market {
    */
   async simulateGas(
     ba: Market.BA,
-    maxTick: BigNumber,
+    maxTick: number,
     fillVolume: BigNumber,
     fillWants: boolean,
   ): Promise<BigNumber> {

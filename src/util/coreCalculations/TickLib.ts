@@ -117,7 +117,7 @@ export type Tick = int;
 // library TickLib {
 
   export function inRange(tick: Tick): boolean {
-    return tick >= MIN_TICK && tick <= MAX_TICK;
+    return tick >= BigNumber.from(MIN_TICK) && tick <= BigNumber.from(MAX_TICK);
   }
 
   export function eq(tick1: Tick, tick2: Tick): boolean {
@@ -383,7 +383,7 @@ export type Tick = int;
     let man: uint; // return variable
     let exp: uint; // return variable
     const absTick: uint = tick.lt(0) ? uint(_neg_1.mul(tick)) : uint(tick);
-    _require(absTick.lte(uint(MAX_TICK)), "mgv/absTick/outOfBounds");
+    _require(absTick.lte(uint(BigNumber.from(MAX_TICK))), "mgv/absTick/outOfBounds");
 
     let extra_shift: int = _0;
     if (!absTick.and(_0x1).eq(0)) {

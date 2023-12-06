@@ -32,7 +32,7 @@ class PrettyPrint {
       return {
         id: obj.id,
         maker: obj.maker,
-        tick: obj.tick.toNumber(),
+        tick: obj.tick,
         gives: obj.gives.toString(),
         offer_gasbase: obj.offer_gasbase,
         gasreq: obj.gasreq,

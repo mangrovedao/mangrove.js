@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
 import TickPriceHelper from "../../util/tickPriceHelper";
 import { Bigish } from "../../types";
@@ -46,9 +45,7 @@ class GeometricKandelDistribution extends KandelDistribution {
   /** Gets the price ratio given by the baseQuoteTickOffset. */
   public getPriceRatio() {
     // This simply calculates 1.001^offset which will be the difference between prices.
-    return TickPriceHelper.rawRatioFromTick(
-      BigNumber.from(this.baseQuoteTickOffset),
-    );
+    return TickPriceHelper.rawRatioFromTick(this.baseQuoteTickOffset);
   }
 
   /** Split a distribution into chunks according to the maximum number of offers in a single chunk.

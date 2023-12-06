@@ -359,7 +359,7 @@ describe("Market integration tests suite", () => {
       const offerId = 23;
       const expectedGives = new Big(23);
 
-      const tick = BigNumber.from(23);
+      const tick = 23;
 
       const price = tickPriceHelper.priceFromTick(23);
 
@@ -401,7 +401,7 @@ describe("Market integration tests suite", () => {
       const offerId = 23;
       const expectedGives = new Big(0);
 
-      const tick = BigNumber.from(23);
+      const tick = 23;
 
       const offer: Market.Offer = {
         id: 0,
@@ -520,7 +520,7 @@ describe("Market integration tests suite", () => {
       });
       const mockedMarket = mockito.spy(market);
 
-      const tick = BigNumber.from(23);
+      const tick = 23;
 
       const semiBook = market.getSemibook("bids");
       const gives = new Big(12);
@@ -560,7 +560,7 @@ describe("Market integration tests suite", () => {
       const semiBook = market.getSemibook("asks");
 
       const gives = Big(12);
-      const tick = BigNumber.from(23);
+      const tick = 23;
 
       const offer: Market.Offer = {
         id: 0,
@@ -599,7 +599,7 @@ describe("Market integration tests suite", () => {
       const semiBook = mockito.mock(Semibook);
 
       const expectedGives = new Big(12);
-      const tick = BigNumber.from(23);
+      const tick = 23;
       const offer: Market.Offer = {
         id: 0,
         prev: undefined,
@@ -643,7 +643,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        maxTickMatched: BigNumber.from(0),
+        maxTickMatched: 0,
         estimatedVolume: new Big(12),
         remainingFillVolume: new Big(12),
       };
@@ -673,7 +673,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        maxTickMatched: BigNumber.from(0),
+        maxTickMatched: 0,
         estimatedVolume: new Big(12),
         remainingFillVolume: new Big(12),
       };
@@ -703,7 +703,7 @@ describe("Market integration tests suite", () => {
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
-        maxTickMatched: BigNumber.from(0),
+        maxTickMatched: 0,
         estimatedVolume: new Big(12),
         remainingFillVolume: new Big(12),
       };
@@ -904,7 +904,7 @@ describe("Market integration tests suite", () => {
 
     // make a buy, which we expect to provoke an OfferFail
     const buyPromises = await market.buy({
-      maxTick: "1",
+      maxTick: 1,
       fillVolume: "1.5e12",
     });
     const result = await buyPromises.result;
@@ -930,7 +930,7 @@ describe("Market integration tests suite", () => {
     const tx2 = await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
     await mgvTestUtil.waitForBlock(mgv, tx2.blockNumber);
     const buyPromises_ = await market.buy({
-      maxTick: "1",
+      maxTick: 1,
       fillVolume: "1.5e12",
     });
     const result_ = await buyPromises_.result;
@@ -970,7 +970,7 @@ describe("Market integration tests suite", () => {
       gives: rawMinGivesBase.mul(2),
     });
     const gave = askTickPriceHelper
-      .priceFromTick(BigNumber.from(1))
+      .priceFromTick(1)
       .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
@@ -1024,7 +1024,7 @@ describe("Market integration tests suite", () => {
     const result = await buyPromises.result;
     result.summary = result.summary as Market.OrderSummary;
     const gave = askTickPriceHelper
-      .priceFromTick(BigNumber.from(1))
+      .priceFromTick(1)
       .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -1096,7 +1096,7 @@ describe("Market integration tests suite", () => {
           const tradeParams: Market.TradeParams = {
             maxTick: TickPriceHelper.tickFromRawRatio(
               Big(0.000000000002).div(10),
-            ).toNumber(),
+            ),
             fillVolume: 10,
           };
           tradeParams.forceRoutingToMangroveOrder = forceRouting;
@@ -1197,7 +1197,7 @@ describe("Market integration tests suite", () => {
       mgv,
       outbound: market.base,
       inbound: market.quote,
-      tick: "1",
+      tick: 1,
       gives: "1.2",
     });
     await pro1;
@@ -1214,7 +1214,7 @@ describe("Market integration tests suite", () => {
       mgv,
       outbound: market.base,
       inbound: market.quote,
-      tick: "1",
+      tick: 1,
       gives: "1.2",
     });
     await pro2;
@@ -1231,7 +1231,7 @@ describe("Market integration tests suite", () => {
       mgv,
       outbound: market.base,
       inbound: market.quote,
-      tick: "1",
+      tick: 1,
       gives: "1.2",
     });
     await pro3;

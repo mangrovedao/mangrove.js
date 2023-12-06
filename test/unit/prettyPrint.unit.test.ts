@@ -4,7 +4,6 @@ import PrettyPrint from "../../src/util/prettyPrint";
 import { capture, spy } from "ts-mockito";
 import { Market } from "../../src";
 import Big from "big.js";
-import { BigNumber } from "ethers";
 
 describe("PrettyPrint Unit test suite", () => {
   describe("consoleOffers", () => {
@@ -13,7 +12,7 @@ describe("PrettyPrint Unit test suite", () => {
       //Arrange
       const spyPrint = spy(prettyPrint);
 
-      const tick = BigNumber.from(31);
+      const tick = 31;
       const price = Big(1.2);
       const gives = Big(12);
       const wants = price.mul(gives);
@@ -53,7 +52,7 @@ describe("PrettyPrint Unit test suite", () => {
       //Arrange
       const spyPrint = spy(prettyPrint);
 
-      const tick = BigNumber.from(31);
+      const tick = 31;
       const price = Big(1.2);
       const gives = Big(12);
       const wants = price.mul(gives);
@@ -92,7 +91,7 @@ describe("PrettyPrint Unit test suite", () => {
       //Arrange
       const prettyPrint = new PrettyPrint();
 
-      const tick = BigNumber.from(31);
+      const tick = 31;
       const price = Big(1.2);
       const gives = Big(12);
       const wants = price.mul(gives);

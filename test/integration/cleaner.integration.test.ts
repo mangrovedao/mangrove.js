@@ -6,7 +6,7 @@ chai.use(chaiAsPromised);
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { rawMinGivesBase } from "../../src/util/test/mgvIntegrationTestUtil";
 
-import Mangrove, { Market, TickPriceHelper } from "../../src";
+import Mangrove, { TickPriceHelper } from "../../src";
 
 import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
@@ -107,13 +107,13 @@ describe("Cleaner integration tests suite", () => {
           {
             offerId: asks[0].id,
             takerWants: asks[0].gives,
-            tick: asks[0].tick.toNumber(),
+            tick: asks[0].tick,
             gasreq: asks[0].gasreq,
           },
           {
             offerId: asks[1].id,
             takerWants: asks[1].gives,
-            tick: asks[1].tick.toNumber(),
+            tick: asks[1].tick,
             gasreq: asks[1].gasreq,
           },
         ],
@@ -194,7 +194,7 @@ describe("Cleaner integration tests suite", () => {
           {
             offerId: ask.id,
             takerWants: ask.gives,
-            tick: ask.tick.toNumber(),
+            tick: ask.tick,
             gasreq: ask.gasreq,
           },
         ],
@@ -274,7 +274,7 @@ describe("Cleaner integration tests suite", () => {
           {
             offerId: asks[0].id,
             takerWants: asks[0].gives,
-            tick: asks[0].tick.toNumber(),
+            tick: asks[0].tick,
             gasreq: asks[0].gasreq,
           },
         ],
@@ -344,7 +344,7 @@ describe("Cleaner integration tests suite", () => {
         {
           offerId: asks[0].id,
           takerWants: asks[0].gives,
-          tick: asks[0].tick.toNumber(),
+          tick: asks[0].tick,
           gasreq: asks[0].gasreq,
         },
       ],

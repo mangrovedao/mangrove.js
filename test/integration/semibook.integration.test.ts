@@ -12,7 +12,6 @@ import { Mangrove, Semibook } from "../../src";
 import { TransactionReceipt } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
-import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import { Density } from "../../src/util/Density";
 import * as DensityLib from "../../src/util/coreCalculations/DensityLib";
 
@@ -64,7 +63,7 @@ describe("Semibook integration tests suite", function () {
           outbound: "TokenA",
           inbound: "TokenB",
           gives: "1",
-          tick: "1",
+          tick: 1,
         }),
       );
 

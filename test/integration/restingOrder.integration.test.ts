@@ -329,7 +329,7 @@ describe("RestingOrder", () => {
       await w(tokenA.approveMangrove());
 
       const sellPromises = await market.sell({
-        maxTick: orderResult.restingOrder!.tick.toNumber(),
+        maxTick: orderResult.restingOrder!.tick,
         fillVolume: 1,
         fillWants: true,
       });
@@ -367,7 +367,7 @@ describe("RestingOrder", () => {
       );
 
       const sellPromises_ = await market.sell({
-        maxTick: orderResult.restingOrder!.tick.toNumber(),
+        maxTick: orderResult.restingOrder!.tick,
         fillVolume: 5,
         fillWants: true,
       });
@@ -444,7 +444,7 @@ describe("RestingOrder", () => {
       await w(tokenA.approveMangrove());
 
       const sellPromises = await market.sell({
-        maxTick: orderResult.restingOrder!.tick.toNumber(),
+        maxTick: orderResult.restingOrder!.tick,
         fillVolume: 10,
         fillWants: true,
       });

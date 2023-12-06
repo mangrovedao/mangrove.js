@@ -33,7 +33,7 @@ namespace LiquidityProvider {
 
   export type OfferParams =
     | ({ price: Bigish; volume: Bigish } & OptParams)
-    | ({ tick: Bigish; gives: Bigish } & OptParams)
+    | ({ tick: number; gives: Bigish } & OptParams)
     | ({ wants: Bigish; gives: Bigish } & OptParams);
 
   export type OfferActionResult = {
@@ -209,17 +209,17 @@ class LiquidityProvider {
     },
   ): {
     price: Big;
-    tick: ethers.BigNumber;
+    tick: number;
     gives: Big;
     gasreq?: number;
     gasprice?: number;
     fund?: Bigish;
   } {
     const tickPriceHelper = new TickPriceHelper(p.ba, market);
-    let tick: ethers.BigNumber, gives: Big, price: Big;
+    let tick: number, gives: Big, price: Big;
     if ("tick" in p) {
       // deduce price from tick & gives
-      tick = ethers.BigNumber.from(p.tick);
+      tick = p.tick;
       price = tickPriceHelper.priceFromTick(tick);
       gives = Big(p.gives);
     } else if ("price" in p) {
