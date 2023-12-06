@@ -4,6 +4,7 @@ import { describe, it } from "mocha";
 import GeometricKandelDistribution from "../../../../src/kandel/geometricKandel/geometricKandelDistribution";
 import { assertApproxEqAbs } from "../../../util/helpers";
 import GeometricKandelDistributionHelper from "../../../../src/kandel/geometricKandel/geometricKandelDistributionHelper";
+import { TokenCalculations } from "../../../../src/token";
 
 describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeometricKandelDistribution;
@@ -28,8 +29,11 @@ describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests s
           { tick: 4, gives: Big(5000), index: 3 },
         ],
       },
-      4,
-      6,
+      {
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(6, 6),
+        tickSpacing: 1,
+      },
     );
   });
 
@@ -52,10 +56,7 @@ describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests s
       it(`agrees with helper's calculator for baseQuoteTickOffset=${baseQuoteTickOffset}`, () => {
         // Arrange
         sut.baseQuoteTickOffset = baseQuoteTickOffset;
-        const helper = new GeometricKandelDistributionHelper(
-          sut.baseDecimals,
-          sut.quoteDecimals,
-        );
+        const helper = new GeometricKandelDistributionHelper(sut.market);
 
         // Act
         const priceRatio = sut.getPriceRatio();

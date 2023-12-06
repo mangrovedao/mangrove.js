@@ -6,7 +6,6 @@ import logger from "./logger";
 import TradeEventManagement, {
   OrderResultWithOptionalSummary,
 } from "./tradeEventManagement";
-import UnitCalculations from "./unitCalculations";
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 
@@ -23,28 +22,16 @@ type CleanUnitParams = {
 };
 
 class Trade {
-  mangroveUtils = new UnitCalculations();
   tradeEventManagement = new TradeEventManagement();
 
   getParamsForBuy(
     params: Market.TradeParams,
-    baseToken: {
-      decimals: number;
-      toUnits: (amount: Bigish) => ethers.BigNumber;
-    },
-    quoteToken: {
-      decimals: number;
-      toUnits: (amount: Bigish) => ethers.BigNumber;
-      fromUnits: (amount: ethers.BigNumber) => Big;
-    },
+    market: Market.KeyResolvedForCalculation,
   ) {
     // validate parameters and setup tickPriceHelper
     let fillVolume: Big, maxTick: number, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
-    const tickPriceHelper = new TickPriceHelper("asks", {
-      base: baseToken,
-      quote: quoteToken,
-    });
+    const tickPriceHelper = new TickPriceHelper("asks", market);
     if ("limitPrice" in params) {
       if (Big(params.limitPrice).lte(0)) {
         throw new Error("Cannot buy at or below price 0");
@@ -95,8 +82,8 @@ class Trade {
     return {
       maxTick,
       fillVolume: fillWants
-        ? baseToken.toUnits(fillVolume)
-        : quoteToken.toUnits(fillVolume),
+        ? market.base.toUnits(fillVolume)
+        : market.quote.toUnits(fillVolume),
       fillWants: fillWants,
     };
   }
@@ -112,22 +99,11 @@ class Trade {
 
   getParamsForSell(
     params: Market.TradeParams,
-    baseToken: {
-      decimals: number;
-      toUnits: (amount: Bigish) => ethers.BigNumber;
-    },
-    quoteToken: {
-      decimals: number;
-      toUnits: (amount: Bigish) => ethers.BigNumber;
-      fromUnits: (amount: ethers.BigNumber) => Big;
-    },
+    market: Market.KeyResolvedForCalculation,
   ) {
     let fillVolume: Big, maxTick: number, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
-    const tickPriceHelper = new TickPriceHelper("bids", {
-      base: baseToken,
-      quote: quoteToken,
-    });
+    const tickPriceHelper = new TickPriceHelper("bids", market);
     if ("limitPrice" in params) {
       if (Big(params.limitPrice).lte(0)) {
         throw new Error("Cannot buy at or below price 0");
@@ -176,8 +152,8 @@ class Trade {
 
     return {
       fillVolume: fillWants
-        ? quoteToken.toUnits(fillVolume)
-        : baseToken.toUnits(fillVolume),
+        ? market.quote.toUnits(fillVolume)
+        : market.base.toUnits(fillVolume),
       maxTick,
       fillWants: fillWants,
     };
@@ -241,8 +217,8 @@ class Trade {
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { maxTick, fillVolume, fillWants } =
       bs === "buy"
-        ? this.getParamsForBuy(params, market.base, market.quote)
-        : this.getParamsForSell(params, market.base, market.quote);
+        ? this.getParamsForBuy(params, market)
+        : this.getParamsForSell(params, market);
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
 
@@ -597,7 +573,7 @@ class Trade {
       this.getRestingOrderParams(restingParams);
     const overrides_ = {
       ...overrides,
-      value: provision ? market.mgv.toUnits(provision, 18) : 0,
+      value: provision ? market.mgv.nativeToken.toUnits(provision) : 0,
     };
 
     const ba = this.bsToBa(orderType);

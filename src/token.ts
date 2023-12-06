@@ -53,7 +53,76 @@ function convertToApproveArgs(arg: ApproveArgs): {
   return amount === undefined ? { overrides } : { amount, overrides };
 }
 
-class Token {
+/** Calculates to and from units for a token based on decimals */
+export class TokenCalculations {
+  /**
+   * @param decimals Number of decimals used by the token.
+   */
+  public constructor(
+    public decimals: number,
+    public displayedDecimals: number,
+  ) {}
+
+  /**
+   * Convert base/quote from internal amount to public amount.
+   * Uses each token's `decimals` parameter.
+   *
+   * @example
+   * ```
+   * const usdc = await mgv.token("USDC");
+   * token.fromUnits("1e7") // 10
+   * const dai = await mgv.token("DAI")
+   * market.fromUnits("1e18") // 1
+   * ```
+   */
+  fromUnits(amount: string | number | ethers.BigNumber): Big {
+    return UnitCalculations.fromUnits(amount, this.decimals);
+  }
+  /**
+   * Convert base/quote from public amount to internal contract amount.
+   * Uses each token's `decimals` parameter.
+   *
+   * If `bq` is `"base"`, will convert the base, the quote otherwise.
+   *
+   * @example
+   * ```
+   * const usdc = await mgv.token("USDC");
+   * token.toUnits(10) // 10e7 as ethers.BigNumber
+   * const dai = await mgv.token("DAI")
+   * market.toUnits(1) // 1e18 as ethers.BigNumber
+   * ```
+   */
+  toUnits(amount: Bigish): ethers.BigNumber {
+    return UnitCalculations.toUnits(amount, this.decimals);
+  }
+
+  /**
+   * Convert human-readable amounts to a string with the given
+   * number of decimal places. Defaults to the token's decimals places.
+   *
+   * @example
+   * ```
+   * token.toFixed("10.123"); // "10.12"
+   * token.toFixed(token.fromUnits("1e7"));
+   * ```
+   */
+  toFixed(amount: Bigish, decimals?: number): string {
+    if (typeof decimals === "undefined") {
+      decimals = this.displayedDecimals;
+    }
+    return Big(amount).toFixed(decimals);
+  }
+
+  /** Rounds an amount according to the token's decimals.
+   * @param amount The amount to round.
+   * @returns The rounded amount.
+   */
+  public round(amount: Big) {
+    return amount.round(this.decimals, Big.roundHalfUp);
+  }
+}
+
+class Token extends TokenCalculations {
   // Using most complete interface (burn, mint, blacklist etc.) to be able to access non standard ERC calls using ethers.js
   contract: typechain.TestToken;
 
@@ -72,12 +141,13 @@ class Token {
     public id: string,
     public address: string,
     public symbol: string | undefined,
-    public decimals: number,
+    decimals: number,
     public displayName: string | undefined,
-    public displayedDecimals: number,
+    displayedDecimals: number,
     public displayedAsPriceDecimals: number,
     public mgv: Mangrove,
   ) {
+    super(decimals, displayedDecimals);
     this.contract = typechain.TestToken__factory.connect(
       this.address,
       this.mgv.signer,
@@ -189,56 +259,6 @@ class Token {
       );
     }
     return configuration.addresses.getAddress(tokenId, network);
-  }
-
-  /**
-   * Convert base/quote from internal amount to public amount.
-   * Uses each token's `decimals` parameter.
-   *
-   * @example
-   * ```
-   * const usdc = await mgv.token("USDC");
-   * token.fromUnits("1e7") // 10
-   * const dai = await mgv.token("DAI")
-   * market.fromUnits("1e18") // 1
-   * ```
-   */
-  fromUnits(amount: string | number | ethers.BigNumber): Big {
-    return UnitCalculations.fromUnits(amount, this.decimals);
-  }
-  /**
-   * Convert base/quote from public amount to internal contract amount.
-   * Uses each token's `decimals` parameter.
-   *
-   * If `bq` is `"base"`, will convert the base, the quote otherwise.
-   *
-   * @example
-   * ```
-   * const usdc = await mgv.token("USDC");
-   * token.toUnits(10) // 10e7 as ethers.BigNumber
-   * const dai = await mgv.token("DAI")
-   * market.toUnits(1) // 1e18 as ethers.BigNumber
-   * ```
-   */
-  toUnits(amount: Bigish): ethers.BigNumber {
-    return UnitCalculations.toUnits(amount, this.decimals);
-  }
-
-  /**
-   * Convert human-readable amounts to a string with the given
-   * number of decimal places. Defaults to the token's decimals places.
-   *
-   * @example
-   * ```
-   * token.toFixed("10.123"); // "10.12"
-   * token.toFixed(token.fromUnits("1e7"));
-   * ```
-   */
-  toFixed(amount: Bigish, decimals?: number): string {
-    if (typeof decimals === "undefined") {
-      decimals = this.displayedDecimals;
-    }
-    return Big(amount).toFixed(decimals);
   }
 
   /**

@@ -142,11 +142,10 @@ describe("Cleaner integration tests suite", () => {
       `bounty should be greater than zero, but was ${result.summary.bounty!.toNumber()}`,
     );
     assert.deepStrictEqual(
-      mgv.fromUnits(result.summary.bounty!, 18).lt(0.001),
+      mgv.nativeToken.fromUnits(result.summary.bounty!).lt(0.001),
       true,
-      `bounty should be 0.0001, but was ${mgv.fromUnits(
+      `bounty should be 0.0001, but was ${mgv.nativeToken.fromUnits(
         result.summary.bounty!,
-        18,
       )}`,
     );
     // Verify book gets updated to reflect offers have failed and are removed
@@ -368,11 +367,10 @@ describe("Cleaner integration tests suite", () => {
       `bounty should be greater than zero, but was ${result.bounty.toNumber()}`,
     );
     assert.deepStrictEqual(
-      mgv.fromUnits(result.bounty, 18).lte(0.001),
+      mgv.nativeToken.fromUnits(result.bounty).lte(0.001),
       true,
-      `bounty should be less than 0.001, but was ${mgv.fromUnits(
+      `bounty should be less than 0.001, but was ${mgv.nativeToken.fromUnits(
         result.bounty,
-        18,
       )}`,
     );
     assert.deepStrictEqual(

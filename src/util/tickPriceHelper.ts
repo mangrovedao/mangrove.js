@@ -4,25 +4,18 @@ import Market from "../market";
 
 import Big from "big.js";
 import { Bigish } from "../types";
-import UnitCalculations from "./unitCalculations";
 import { MANTISSA_BITS, MIN_RATIO_EXP } from "./coreCalculations/Constants";
 
 class TickPriceHelper {
   ba: Market.BA;
-  market: {
-    base: { decimals: number };
-    quote: { decimals: number };
-  };
+  market: Market.KeyResolvedForCalculation;
 
   /**
    * Ctor
    * @param ba bids or asks
    * @param market the decimals for the market
    */
-  constructor(
-    ba: Market.BA,
-    market: { base: { decimals: number }; quote: { decimals: number } },
-  ) {
+  constructor(ba: Market.BA, market: Market.KeyResolvedForCalculation) {
     this.ba = ba;
     this.market = market;
   }
@@ -91,21 +84,15 @@ class TickPriceHelper {
    * @returns inbound amount.
    */
   inboundFromOutbound(tick: number, outboundAmount: Bigish, roundUp?: boolean) {
-    const rawOutbound = UnitCalculations.toUnits(
-      outboundAmount,
-      this.ba === "bids"
-        ? this.market.quote.decimals
-        : this.market.base.decimals,
-    );
+    const rawOutbound = (
+      this.ba === "bids" ? this.market.quote : this.market.base
+    ).toUnits(outboundAmount);
     const rawInbound = (
       roundUp ? TickLib.inboundFromOutboundUp : TickLib.inboundFromOutbound
     )(BigNumber.from(tick), rawOutbound);
-    return UnitCalculations.fromUnits(
-      rawInbound,
-      this.ba === "bids"
-        ? this.market.base.decimals
-        : this.market.quote.decimals,
-    );
+    return (
+      this.ba === "bids" ? this.market.base : this.market.quote
+    ).fromUnits(rawInbound);
   }
 
   /**
@@ -116,21 +103,15 @@ class TickPriceHelper {
    * @returns inbound amount.
    */
   outboundFromInbound(tick: number, inboundAmount: Bigish, roundUp?: boolean) {
-    const rawInbound = UnitCalculations.toUnits(
-      inboundAmount,
-      this.ba == "bids"
-        ? this.market.base.decimals
-        : this.market.quote.decimals,
-    );
+    const rawInbound = (
+      this.ba === "bids" ? this.market.base : this.market.quote
+    ).toUnits(inboundAmount);
     const rawOutbound = (
       roundUp ? TickLib.outboundFromInboundUp : TickLib.outboundFromInbound
     )(BigNumber.from(tick), rawInbound);
-    return UnitCalculations.fromUnits(
-      rawOutbound,
-      this.ba == "bids"
-        ? this.market.quote.decimals
-        : this.market.base.decimals,
-    );
+    return (
+      this.ba === "bids" ? this.market.quote : this.market.base
+    ).fromUnits(rawOutbound);
   }
 
   /**
@@ -140,18 +121,12 @@ class TickPriceHelper {
    * @returns raw offer list tick for volumes
    */
   tickFromVolumes(inboundVolume: Bigish, outboundVolume: Bigish): number {
-    const rawInbound = UnitCalculations.toUnits(
-      inboundVolume,
-      this.ba === "bids"
-        ? this.market.base.decimals
-        : this.market.quote.decimals,
-    );
-    const rawOutbound = UnitCalculations.toUnits(
-      outboundVolume,
-      this.ba === "bids"
-        ? this.market.quote.decimals
-        : this.market.base.decimals,
-    );
+    const rawInbound = (
+      this.ba === "bids" ? this.market.base : this.market.quote
+    ).toUnits(inboundVolume);
+    const rawOutbound = (
+      this.ba === "bids" ? this.market.quote : this.market.base
+    ).toUnits(outboundVolume);
     const tick = TickLib.tickFromVolumes(rawInbound, rawOutbound);
     return tick.toNumber();
   }

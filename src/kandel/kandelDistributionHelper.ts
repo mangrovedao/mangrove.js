@@ -18,24 +18,15 @@ export type OffersWithGives = {
 class KandelDistributionHelper {
   askTickPriceHelper: TickPriceHelper;
   bidTickPriceHelper: TickPriceHelper;
-  baseDecimals: number;
-  quoteDecimals: number;
+  market: Market.KeyResolvedForCalculation;
 
   /** Constructor
-   * @param baseDecimals The number of decimals for the base token.
-   * @param quoteDecimals The number of decimals for the quote token.
+   * @param market The key data about the market.
    */
-  public constructor(baseDecimals: number, quoteDecimals: number) {
-    this.askTickPriceHelper = new TickPriceHelper("asks", {
-      base: { decimals: baseDecimals },
-      quote: { decimals: quoteDecimals },
-    });
-    this.bidTickPriceHelper = new TickPriceHelper("bids", {
-      base: { decimals: baseDecimals },
-      quote: { decimals: quoteDecimals },
-    });
-    this.baseDecimals = baseDecimals;
-    this.quoteDecimals = quoteDecimals;
+  public constructor(market: Market.KeyResolvedForCalculation) {
+    this.market = market;
+    this.askTickPriceHelper = new TickPriceHelper("asks", market);
+    this.bidTickPriceHelper = new TickPriceHelper("bids", market);
   }
 
   /** Sorts an array in-place according to an index property in ascending order.
@@ -44,22 +35,6 @@ class KandelDistributionHelper {
    */
   public sortByIndex(list: { index: number }[]) {
     return list.sort((a, b) => a.index - b.index);
-  }
-
-  /** Rounds a base amount according to the token's decimals.
-   * @param base The base amount to round.
-   * @returns The rounded base amount.
-   */
-  public roundBase(base: Big) {
-    return base.round(this.baseDecimals, Big.roundHalfUp);
-  }
-
-  /** Rounds a quote amount according to the token's decimals.
-   * @param quote The quote amount to round.
-   * @returns The rounded quote amount.
-   */
-  public roundQuote(quote: Big) {
-    return quote.round(this.quoteDecimals, Big.roundHalfUp);
   }
 
   /** Uniformly changes values by a total amount without decreasing below a minimum for each value. A value already below minimum will not be changed.

@@ -64,6 +64,7 @@ describe("Kandel MaxOffersInChunk verification", () => {
           mgv.network.name,
           market.base.id,
           market.quote.id,
+          market.tickSpacing,
         ).maxOffersInRetractChunk;
     });
 

@@ -4,15 +4,21 @@ import { describe, it } from "mocha";
 import GeometricKandelDistributionHelper, {
   TickDistributionParams,
 } from "../../../../src/kandel/geometricKandel/geometricKandelDistributionHelper";
+import { TokenCalculations } from "../../../../src/token";
 
 describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit tests suite`, () => {
+  let sut: GeometricKandelDistributionHelper;
+  beforeEach(() => {
+    sut = new GeometricKandelDistributionHelper({
+      base: new TokenCalculations(4, 4),
+      quote: new TokenCalculations(6, 6),
+      tickSpacing: 1,
+    });
+  });
   describe(
     GeometricKandelDistributionHelper.prototype.getBaseQuoteTicksFromTick.name,
     () => {
       it("can get baseQuoteTicks from tick", () => {
-        // Arrange
-        const sut = new GeometricKandelDistributionHelper(4, 6);
-
         // Act
         const baseQuoteTicksForAsk = sut.getBaseQuoteTicksFromTick(
           "asks",
@@ -44,9 +50,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       .name,
     () => {
       it("can calculate based on price ratio", () => {
-        // Arrange
-        const sut = new GeometricKandelDistributionHelper(4, 6);
-
         // Act
         const actual = sut.calculateBaseQuoteTickOffset(Big(1.08));
 
@@ -55,9 +58,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("Fails if less than 1", () => {
-        // Arrange
-        const sut = new GeometricKandelDistributionHelper(4, 6);
-
         // Act/assert
         assert.throws(
           () => sut.calculateBaseQuoteTickOffset(Big(0.99)),
@@ -72,7 +72,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
     () => {
       it("calculates sames parameters for all combinations of minPrice, maxPrice, ratio, and pricePoints, and the similar tick-based parameters ", () => {
         // Arrange
-        const sut = new GeometricKandelDistributionHelper(4, 6);
         const stepSize = 1;
         const baseQuoteTickOffset = 769;
         const priceRatio = 1.08;
@@ -154,9 +153,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("fails if neither midBaseQuoteTick nor midPrice is given", () => {
-        // Arrange
-        const sut = new GeometricKandelDistributionHelper(4, 6);
-
         // Act/assert
         assert.throws(
           () =>
@@ -169,8 +165,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("can get 2 pricePoints from minPrice and maxPrice", () => {
-        const sut = new GeometricKandelDistributionHelper(4, 6);
-
         // Arrange/Act
         const params = sut.getTickDistributionParams({
           minPrice: "1455.3443267746625",
@@ -189,7 +183,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("throws error if not enough parameters are given", () => {
-        const sut = new GeometricKandelDistributionHelper(4, 6);
         assert.throws(
           () =>
             sut.getTickDistributionParams({
@@ -206,7 +199,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("throws error if only 1 price point", () => {
-        const sut = new GeometricKandelDistributionHelper(4, 6);
         assert.throws(
           () =>
             sut.getTickDistributionParams({
@@ -222,7 +214,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("throws if min/max too close", () => {
-        const sut = new GeometricKandelDistributionHelper(4, 6);
         assert.throws(
           () =>
             sut.getTickDistributionParams({
@@ -240,7 +231,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("throws if min too low", () => {
-        const sut = new GeometricKandelDistributionHelper(4, 6);
         assert.throws(
           () =>
             sut.getTickDistributionParams({
@@ -256,7 +246,6 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       });
 
       it("throws if max too high", () => {
-        const sut = new GeometricKandelDistributionHelper(4, 6);
         assert.throws(
           () =>
             sut.getTickDistributionParams({

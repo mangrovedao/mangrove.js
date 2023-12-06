@@ -13,7 +13,6 @@ import { toWei } from "../../util/helpers";
 import { KandelStrategies, Mangrove } from "../../../src";
 
 import { Big } from "big.js";
-import UnitCalculations from "../../../src/util/unitCalculations";
 import GeometricKandelInstance from "../../../src/kandel/geometricKandel/geometricKandelInstance";
 import {
   assertPricesApproxEq,
@@ -802,9 +801,8 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
           const recipient = await kandel.market.mgv.signer.getAddress();
           const baseBalance = await kandel.market.base.balanceOf(recipient);
           const quoteBalance = await kandel.market.base.balanceOf(recipient);
-          const nativeBalance = UnitCalculations.fromUnits(
+          const nativeBalance = mgv.nativeToken.fromUnits(
             await mgv.signer.getBalance(),
-            18,
           );
 
           // Act
@@ -824,9 +822,8 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
           );
           assert.ok(
             nativeBalance.lt(
-              UnitCalculations.fromUnits(
+              mgv.nativeToken.fromUnits(
                 await mgv.provider.getBalance(recipient),
-                18,
               ),
             ),
           );
@@ -892,9 +889,8 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         ).address;
         const baseBalance = await kandel.market.base.balanceOf(recipient);
         const quoteBalance = await kandel.market.base.balanceOf(recipient);
-        const nativeBalance = UnitCalculations.fromUnits(
+        const nativeBalance = mgv.nativeToken.fromUnits(
           await mgv.provider.getBalance(recipient),
-          18,
         );
 
         const kandelBaseBalance = await kandel.getBalance("asks");
@@ -950,10 +946,9 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         );
         assert.equal(
           nativeBalance.add(withdrawnFunds).toNumber(),
-          UnitCalculations.fromUnits(
-            await mgv.provider.getBalance(recipient),
-            18,
-          ).toNumber(),
+          mgv.nativeToken
+            .fromUnits(await mgv.provider.getBalance(recipient))
+            .toNumber(),
         );
         assert.equal(
           baseBalance.add(1).toNumber(),

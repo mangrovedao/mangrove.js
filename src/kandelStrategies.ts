@@ -92,20 +92,11 @@ class KandelStrategies {
    */
   public generator(market: Market) {
     return new GeometricKandelDistributionGenerator(
-      new GeometricKandelDistributionHelper(
-        market.base.decimals,
-        market.quote.decimals,
-      ),
-      new GeneralKandelDistributionHelper(
-        new KandelDistributionHelper(
-          market.base.decimals,
-          market.quote.decimals,
-        ),
-      ),
+      new GeometricKandelDistributionHelper(market),
+      new GeneralKandelDistributionHelper(new KandelDistributionHelper(market)),
       new GeometricKandelLib({
         address: market.mgv.getAddress("KandelLib"),
-        baseDecimals: market.base.decimals,
-        quoteDecimals: market.quote.decimals,
+        market: market,
         signer: market.mgv.signer,
       }),
     );

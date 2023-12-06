@@ -95,11 +95,11 @@ export const mochaHooks = {
 
     await tokenA.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18),
+      mgv.nativeToken.toUnits(10),
     );
     await tokenB.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18),
+      mgv.nativeToken.toUnits(10),
     );
 
     const tx = await mgv.fundMangrove(10, mgv.getAddress("SimpleTestMaker"));
@@ -142,6 +142,7 @@ export const mochaHooks = {
         Object.keys(result.pending).length ||
         Object.keys(result.queued).length
       ) {
+        // Since we do not always explicitly wait for txs to be mined there can easily be txs still to be mined, and this seems to interfere with revert/snapshot, so we wait for them to complete.
         console.log("txpool_content not empty... waiting...");
         console.log(JSON.stringify(result));
         await sleep(200);

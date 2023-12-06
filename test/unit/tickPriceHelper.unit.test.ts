@@ -15,12 +15,17 @@ import {
   MAX_TICK,
   MIN_TICK,
 } from "../../src/util/coreCalculations/Constants";
+import { TokenCalculations } from "../../src/token";
 
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
     args: {
       ba: Market.BA;
-      market: { base: { decimals: number }; quote: { decimals: number } };
+      market: {
+        base: { decimals: number };
+        quote: { decimals: number };
+        tickSpacing: number;
+      };
     };
     tick: number;
     price: Bigish;
@@ -31,6 +36,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 6 },
           quote: { decimals: 6 },
+          tickSpacing: 1,
         },
       },
       tick: 0,
@@ -42,6 +48,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 6 },
           quote: { decimals: 6 },
+          tickSpacing: 1,
         },
       },
       tick: 0,
@@ -53,6 +60,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 6 },
           quote: { decimals: 18 },
+          tickSpacing: 1,
         },
       },
       tick: 0,
@@ -64,6 +72,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 6 },
           quote: { decimals: 18 },
+          tickSpacing: 1,
         },
       },
       tick: 0,
@@ -75,6 +84,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 2 },
           quote: { decimals: 0 },
+          tickSpacing: 1,
         },
       },
       tick: 0,
@@ -86,6 +96,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 2 },
           quote: { decimals: 0 },
+          tickSpacing: 1,
         },
       },
       tick: 0,
@@ -97,6 +108,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 18 },
           quote: { decimals: 18 },
+          tickSpacing: 1,
         },
       },
       tick: 75171,
@@ -108,6 +120,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 18 },
           quote: { decimals: 18 },
+          tickSpacing: 1,
         },
       },
       tick: -75171,
@@ -119,6 +132,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 18 },
           quote: { decimals: 0 },
+          tickSpacing: 1,
         },
       },
       tick: 414486,
@@ -130,6 +144,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 0 },
           quote: { decimals: 18 },
+          tickSpacing: 1,
         },
       },
       tick: -414487,
@@ -139,11 +154,26 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
   const comparisonPrecision = 8;
 
+  function createKeyResolvedForCalculation(market: {
+    base: { decimals: number };
+    quote: { decimals: number };
+    tickSpacing: number;
+  }) {
+    return {
+      base: new TokenCalculations(market.base.decimals, 0),
+      quote: new TokenCalculations(market.quote.decimals, 0),
+      tickSpacing: market.tickSpacing,
+    };
+  }
+
   describe(TickPriceHelper.prototype.priceFromTick.name, () => {
     priceAndTickPairs.forEach(({ args, tick, price }) => {
       it(`returns price=${price} for tick ${tick} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} (${args.ba} semibook)`, () => {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
 
         // Act
         const result = tickPriceHelper.priceFromTick(tick);
@@ -160,8 +190,9 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     it("returns tick=0 for inboundVolume=1, outboundVolume=1 with base decimals: 6, quote decimals: 6 (bids semibook)", () => {
       // Arrange
       const tickPriceHelper = new TickPriceHelper("bids", {
-        base: { decimals: 6 },
-        quote: { decimals: 6 },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
+        tickSpacing: 1,
       });
 
       // Act
@@ -173,8 +204,9 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     it("returns tick=0 for inboundVolume=1, outboundVolume=1 with base decimals: 6, quote decimals: 6 (asks semibook)", () => {
       // Arrange
       const tickPriceHelper = new TickPriceHelper("asks", {
-        base: { decimals: 6 },
-        quote: { decimals: 6 },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
+        tickSpacing: 1,
       });
 
       // Act
@@ -188,7 +220,10 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     priceAndTickPairs.forEach(({ args, tick, price }) => {
       it(`returns tick=${tick} for price ${price} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} (${args.ba} semibook)) `, () => {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
 
         // Act
         const result = tickPriceHelper.tickFromPrice(price);
@@ -260,12 +295,14 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.1);
     //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio.toNumber()) < 0.1);
     const bidTickPriceHelper = new TickPriceHelper("bids", {
-      base: { decimals: baseDecimals },
-      quote: { decimals: quoteDecimals },
+      base: new TokenCalculations(baseDecimals, baseDecimals),
+      quote: new TokenCalculations(quoteDecimals, quoteDecimals),
+      tickSpacing: 1,
     });
     const askTickPriceHelper = new TickPriceHelper("asks", {
-      base: { decimals: baseDecimals },
-      quote: { decimals: quoteDecimals },
+      base: new TokenCalculations(baseDecimals, baseDecimals),
+      quote: new TokenCalculations(quoteDecimals, quoteDecimals),
+      tickSpacing: 1,
     });
 
     const calcAskTick = askTickPriceHelper.tickFromPrice(displayPrice);
@@ -418,7 +455,10 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     priceAndTickPairs.forEach(({ args, tick }) => {
       it(`returns tick=${tick} for priceFromTick(..., priceFromTick(..., ${tick}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} for ${args.ba} semibook`, () => {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
 
         // Act
         const result = tickPriceHelper.tickFromPrice(
@@ -435,7 +475,10 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     priceAndTickPairs.forEach(({ args, price }) => {
       it(`returns price=${price} for tickFromPrice(..., tickFromPrice(..., ${price}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} for ${args.ba} semibook`, () => {
         // Arrange
-        const tickPriceHelper = new TickPriceHelper(args.ba, args.market);
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
 
         // Act
         const resultPrice = tickPriceHelper.priceFromTick(
@@ -478,8 +521,9 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
           it(`${TickPriceHelper.prototype.inboundFromOutbound.name} ba=${ba} base=${base} quote=${quote} price=${price}`, () => {
             // Arrange
             const tickPriceHelper = new TickPriceHelper(ba, {
-              base: { decimals: baseDecimals },
-              quote: { decimals: quoteDecimals },
+              base: new TokenCalculations(baseDecimals, baseDecimals),
+              quote: new TokenCalculations(quoteDecimals, quoteDecimals),
+              tickSpacing: 1,
             });
             const [outbound, expectedInbound] =
               ba == "asks" ? [base, quote] : [quote, base];
@@ -505,8 +549,9 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
           it(`${TickPriceHelper.prototype.outboundFromInbound.name} ba=${ba} base=${base} quote=${quote} price=${price}`, () => {
             // Arrange
             const tickPriceHelper = new TickPriceHelper(ba, {
-              base: { decimals: baseDecimals },
-              quote: { decimals: quoteDecimals },
+              base: new TokenCalculations(baseDecimals, baseDecimals),
+              quote: new TokenCalculations(quoteDecimals, quoteDecimals),
+              tickSpacing: 1,
             });
             const [expectedOutbound, inbound] =
               ba == "asks" ? [base, quote] : [quote, base];

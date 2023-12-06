@@ -10,6 +10,7 @@ import {
 } from "../../src";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { approxEq } from "../util/helpers";
+import UnitCalculations from "../../src/util/unitCalculations";
 
 describe("OfferMaker integration test suite", () => {
   let mgv: Mangrove;
@@ -89,7 +90,7 @@ describe("OfferMaker integration test suite", () => {
     });
 
     assert.strictEqual(
-      mgv.toUnits(allowanceForLogic, 6).toString(),
+      UnitCalculations.toUnits(allowanceForLogic, 6).toString(),
       ethers.constants.MaxUint256.toString(),
       "allowance should be 2^256-1",
     );
@@ -128,7 +129,7 @@ describe("OfferMaker integration test suite", () => {
     });
 
     assert.strictEqual(
-      mgv.toUnits(allowanceForEOA, 6).toString(),
+      UnitCalculations.toUnits(allowanceForEOA, 6).toString(),
       ethers.constants.MaxUint256.toString(),
       "allowance should be 2^256-1",
     );
@@ -174,9 +175,8 @@ describe("OfferMaker integration test suite", () => {
       id,
     );
 
-    const provisionOfOfferWithCorrectDecimals = mgv.fromUnits(
+    const provisionOfOfferWithCorrectDecimals = mgv.nativeToken.fromUnits(
       provisionOfOffer!,
-      18,
     );
     assert.deepStrictEqual(
       provisionOfOfferWithCorrectDecimals.toNumber(),
@@ -240,7 +240,10 @@ describe("OfferMaker integration test suite", () => {
 
       /* FIXME the effectiveGasPrice returned by anvil is incorrect, so for now we do an approx estimate. */
       const diff2 = (await getBal()).sub(oldBal).add(txCost);
-      assert(approxEq(diff2, mgv.toUnits(10, 18), "0.001"), "wrong balance");
+      assert(
+        approxEq(diff2, mgv.nativeToken.toUnits(10), "0.001"),
+        "wrong balance",
+      );
     });
 
     it("pushes a new offer", async () => {
@@ -307,8 +310,8 @@ describe("OfferMaker integration test suite", () => {
       );
       assert(
         prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
-        `Maker was not refunded, prov: ${mgv
-          .toUnits(prov, 18)
+        `Maker was not refunded, prov: ${mgv.nativeToken
+          .toUnits(prov)
           .toString()} balance_before: ${prov_before_cancel}, balance_after: ${prov_after_cancel}`,
       );
       assert(

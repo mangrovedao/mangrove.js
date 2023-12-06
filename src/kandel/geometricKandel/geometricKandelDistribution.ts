@@ -1,6 +1,7 @@
 import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
 import TickPriceHelper from "../../util/tickPriceHelper";
 import { Bigish } from "../../types";
+import Market from "../../market";
 
 /** @title A geometric distribution of bids and ask for a geometric Kandel. */
 class GeometricKandelDistribution extends KandelDistribution {
@@ -19,8 +20,7 @@ class GeometricKandelDistribution extends KandelDistribution {
    * @param pricePoints The number of price points in the distribution.
    * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
    * @param offers The distribution of bids and asks.
-   * @param baseDecimals The number of decimals for the base token.
-   * @param quoteDecimals The number of decimals for the quote token.
+   * @param params.market The key data about the market.
    */
   public constructor(
     baseQuoteTickIndex0: number,
@@ -31,10 +31,9 @@ class GeometricKandelDistribution extends KandelDistribution {
     pricePoints: number,
     stepSize: number,
     offers: OfferDistribution,
-    baseDecimals: number,
-    quoteDecimals: number,
+    market: Market.KeyResolvedForCalculation,
   ) {
-    super(pricePoints, stepSize, offers, baseDecimals, quoteDecimals);
+    super(pricePoints, stepSize, offers, market);
     this.baseQuoteTickOffset = baseQuoteTickOffset;
     this.baseQuoteTickIndex0 = baseQuoteTickIndex0;
     this.bidGives = bidGives;

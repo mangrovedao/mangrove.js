@@ -20,6 +20,7 @@ import {
   assertSameTicks,
 } from "../generalKandelDistributionGenerator.unit.test";
 import GeneralKandelDistributionHelper from "../../../../src/kandel/generalKandelDistributionHelper";
+import { TokenCalculations } from "../../../../src/token";
 
 interface DistributionOffer {
   index: number;
@@ -210,16 +211,20 @@ export class KandelLibStub {
 }
 
 export function createGeneratorStub() {
+  const market = {
+    base: new TokenCalculations(4, 4),
+    quote: new TokenCalculations(6, 6),
+    tickSpacing: 1,
+  };
   return new GeometricKandelDistributionGenerator(
-    new GeometricKandelDistributionHelper(4, 6),
-    new GeneralKandelDistributionHelper(new KandelDistributionHelper(4, 6)),
+    new GeometricKandelDistributionHelper(market),
+    new GeneralKandelDistributionHelper(new KandelDistributionHelper(market)),
     new GeometricKandelLib({
       address: "0x0",
       signer: {} as ethers.Signer,
       kandelLibInstance:
         new KandelLibStub() as unknown as typechain.GeometricKandel,
-      baseDecimals: 4,
-      quoteDecimals: 6,
+      market,
     }),
   );
 }
@@ -227,8 +232,9 @@ export function createGeneratorStub() {
 describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeometricKandelDistributionGenerator;
   const market = {
-    base: { decimals: 4 },
-    quote: { decimals: 6 },
+    base: new TokenCalculations(4, 4),
+    quote: new TokenCalculations(6, 6),
+    tickSpacing: 1,
   };
   const askTickPriceHelper = new TickPriceHelper("asks", market);
   const bidTickPriceHelper = new TickPriceHelper("bids", market);

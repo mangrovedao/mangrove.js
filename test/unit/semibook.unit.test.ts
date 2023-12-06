@@ -6,6 +6,7 @@ import { BigNumber } from "ethers";
 import { anything, deepEqual, instance, mock, when } from "ts-mockito";
 import UnitCalculations from "../../src/util/unitCalculations";
 import MangroveEventSubscriber from "../../src/mangroveEventSubscriber";
+import { TokenCalculations } from "../../src/token";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
     it("returns false, when desiredVolume is undefined", async function () {
@@ -1066,16 +1067,22 @@ describe("Semibook unit test suite", () => {
         rawGives,
         baseTokenDecimals,
       );
-      when(baseTokenMock.fromUnits(rawGives)).thenReturn(expectedGives);
 
       const quoteTokenMock = mock(Token);
       when(quoteTokenMock.id).thenReturn("b");
       const quoteTokenDecimals = 1;
       when(quoteTokenMock.decimals).thenReturn(quoteTokenDecimals);
+      when(quoteTokenMock.toUnits(anything())).thenCall((x) =>
+        UnitCalculations.toUnits(x, quoteTokenDecimals),
+      );
+      when(baseTokenMock.fromUnits(anything())).thenCall((x) =>
+        UnitCalculations.fromUnits(x, baseTokenDecimals),
+      );
 
       const tickPriceHelper = new TickPriceHelper(marketSide, {
-        base: { decimals: baseTokenDecimals },
-        quote: { decimals: quoteTokenDecimals },
+        base: new TokenCalculations(baseTokenDecimals, baseTokenDecimals),
+        quote: new TokenCalculations(quoteTokenDecimals, quoteTokenDecimals),
+        tickSpacing: 1,
       });
 
       const mangroveEventSubscriberMock = mock(MangroveEventSubscriber);
@@ -1154,16 +1161,21 @@ describe("Semibook unit test suite", () => {
       when(quoteTokenMock.id).thenReturn("b");
       const quoteTokenDecimals = 1;
       when(quoteTokenMock.decimals).thenReturn(quoteTokenDecimals);
-
+      when(baseTokenMock.toUnits(anything())).thenCall((x) =>
+        UnitCalculations.toUnits(x, baseTokenDecimals),
+      );
+      when(quoteTokenMock.fromUnits(anything())).thenCall((x) =>
+        UnitCalculations.fromUnits(x, quoteTokenDecimals),
+      );
       const expectedGives = UnitCalculations.fromUnits(
         rawGives,
         quoteTokenDecimals,
       );
-      when(quoteTokenMock.fromUnits(rawGives)).thenReturn(expectedGives);
 
       const tickPriceHelper = new TickPriceHelper(marketSide, {
-        base: { decimals: baseTokenDecimals },
-        quote: { decimals: quoteTokenDecimals },
+        base: new TokenCalculations(baseTokenDecimals, baseTokenDecimals),
+        quote: new TokenCalculations(quoteTokenDecimals, quoteTokenDecimals),
+        tickSpacing: 1,
       });
 
       const mangroveEventSubscriberMock = mock(MangroveEventSubscriber);

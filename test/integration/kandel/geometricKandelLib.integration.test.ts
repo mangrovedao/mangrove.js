@@ -5,6 +5,7 @@ import { BigNumber, ethers } from "ethers";
 import UnitCalculations from "../../../src/util/unitCalculations";
 import configuration from "../../../src/configuration";
 import { createGeneratorStub } from "../../unit/kandel/geometricKandel/geometricKandelDistributionGenerator.unit.test";
+import { TokenCalculations } from "../../../src/token";
 
 describe(`${GeometricKandelLib.prototype.constructor.name} integration test suite`, () => {
   let stub: GeometricKandelLib;
@@ -19,8 +20,11 @@ describe(`${GeometricKandelLib.prototype.constructor.name} integration test suit
     lib = new GeometricKandelLib({
       address: configuration.addresses.getAddress("KandelLib", "local"),
       signer: signer,
-      baseDecimals: 4,
-      quoteDecimals: 6,
+      market: {
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(6, 6),
+        tickSpacing: 1,
+      },
     });
   });
 

@@ -20,7 +20,6 @@ import { Density } from "./util/Density";
 import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
-import UnitCalculations from "./util/unitCalculations";
 import { OfferFailEvent, OfferSuccessEvent } from "./types/typechain/IMangrove";
 import TickPriceHelper from "./util/tickPriceHelper";
 import { OfferWriteEventObject } from "./types/typechain/Mangrove";
@@ -538,10 +537,7 @@ class Semibook
     );
     return min.gt(0)
       ? min
-      : UnitCalculations.fromUnits(
-          1,
-          this.market.getOutboundInbound(this.ba).outbound_tkn.decimals,
-        );
+      : this.market.getOutboundInbound(this.ba).outbound_tkn.fromUnits(1);
   }
 
   async getMaxGasReq(): Promise<number | undefined> {
