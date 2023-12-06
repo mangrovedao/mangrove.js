@@ -1,7 +1,6 @@
 import * as ethers from "ethers";
 import { Bigish, typechain } from "../../types";
 
-import UnitCalculations from "../../util/unitCalculations";
 import { OfferDistribution } from "../kandelDistribution";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
 import Market from "../../market";
@@ -9,7 +8,7 @@ import Market from "../../market";
 /** @title Management of a single Kandel instance. */
 class GeometricKandelLib {
   kandelLib: typechain.GeometricKandel;
-  market: Market.DecimalsAndTickSpacing;
+  market: Market.KeyResolvedForCalculation;
 
   /** Creates a KandelLib object to perform static calls toward a KandelLib.
    * @param params The parameters used to create an instance.
@@ -22,7 +21,7 @@ class GeometricKandelLib {
   public constructor(params: {
     address: string;
     signer: ethers.Signer;
-    market: Market.DecimalsAndTickSpacing;
+    market: Market.KeyResolvedForCalculation;
     kandelLibInstance?: typechain.GeometricKandel;
   }) {
     this.kandelLib =
@@ -55,10 +54,10 @@ class GeometricKandelLib {
       params.baseQuoteTickOffset,
       params.firstAskIndex,
       params.bidGives
-        ? UnitCalculations.toUnits(params.bidGives, this.market.quote.decimals)
+        ? this.market.quote.toUnits(params.bidGives)
         : ethers.constants.MaxUint256,
       params.askGives
-        ? UnitCalculations.toUnits(params.askGives, this.market.base.decimals)
+        ? this.market.base.toUnits(params.askGives)
         : ethers.constants.MaxUint256,
       params.pricePoints,
       params.stepSize,
@@ -67,12 +66,12 @@ class GeometricKandelLib {
     return {
       bids: distribution.bids.map((o) => ({
         index: o.index.toNumber(),
-        gives: UnitCalculations.fromUnits(o.gives, this.market.quote.decimals),
+        gives: this.market.quote.fromUnits(o.gives),
         tick: o.tick.toNumber(),
       })),
       asks: distribution.asks.map((o) => ({
         index: o.index.toNumber(),
-        gives: UnitCalculations.fromUnits(o.gives, this.market.base.decimals),
+        gives: this.market.base.fromUnits(o.gives),
         tick: o.tick.toNumber(),
       })),
     };

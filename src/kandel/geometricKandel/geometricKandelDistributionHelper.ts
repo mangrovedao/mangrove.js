@@ -53,7 +53,7 @@ class GeometricKandelDistributionHelper {
   /** Constructor
    * @param market The key data about the market.
    */
-  public constructor(market: Market.DecimalsAndTickSpacing) {
+  public constructor(market: Market.KeyResolvedForCalculation) {
     this.helper = new KandelDistributionHelper(market);
   }
 

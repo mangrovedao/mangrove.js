@@ -1,6 +1,7 @@
 import assert from "assert";
 import { LiquidityProvider } from "../../src";
 import Big from "big.js";
+import { TokenCalculations } from "../../src/token";
 
 describe("Liquidity provider unit tests suite", () => {
   it("normalizeOfferParams, with gives, tick, asks and funding", async function () {
@@ -12,12 +13,8 @@ describe("Liquidity provider unit tests suite", () => {
         fund: 1,
       },
       {
-        base: {
-          decimals: 18,
-        },
-        quote: {
-          decimals: 18,
-        },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(18, 18),
         tickSpacing: 1,
       },
     );
@@ -34,12 +31,8 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 1,
       },
       {
-        base: {
-          decimals: 18,
-        },
-        quote: {
-          decimals: 18,
-        },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(18, 18),
         tickSpacing: 1,
       },
     );
@@ -57,12 +50,9 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 1,
       },
       {
-        base: {
-          decimals: 16,
-        },
-        quote: {
-          decimals: 18,
-        },
+        base: new TokenCalculations(16, 16),
+        quote: new TokenCalculations(18, 18),
+
         tickSpacing: 1,
       },
     );
@@ -80,12 +70,8 @@ describe("Liquidity provider unit tests suite", () => {
         price: 1,
       },
       {
-        base: {
-          decimals: 18,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -103,12 +89,8 @@ describe("Liquidity provider unit tests suite", () => {
         price: 1,
       },
       {
-        base: {
-          decimals: 18,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -126,12 +108,8 @@ describe("Liquidity provider unit tests suite", () => {
         price: 2,
       },
       {
-        base: {
-          decimals: 6,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -149,12 +127,8 @@ describe("Liquidity provider unit tests suite", () => {
         price: 2,
       },
       {
-        base: {
-          decimals: 6,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -172,12 +146,8 @@ describe("Liquidity provider unit tests suite", () => {
         price: 2,
       },
       {
-        base: {
-          decimals: 6,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -195,12 +165,8 @@ describe("Liquidity provider unit tests suite", () => {
         price: 2,
       },
       {
-        base: {
-          decimals: 6,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -218,12 +184,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 30,
       },
       {
-        base: {
-          decimals: 18,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -240,12 +202,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 30,
       },
       {
-        base: {
-          decimals: 18,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -262,12 +220,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 30000,
       },
       {
-        base: {
-          decimals: 18,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -286,12 +240,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 1,
       },
       {
-        base: {
-          decimals: 6,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -310,12 +260,9 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 10, // quote
       },
       {
-        base: {
-          decimals: 2,
-        },
-        quote: {
-          decimals: 1,
-        },
+        base: new TokenCalculations(2, 2),
+        quote: new TokenCalculations(1, 1),
+
         tickSpacing: 1,
       },
     );
@@ -334,12 +281,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 1.0001, // quote
       },
       {
-        base: {
-          decimals: 4,
-        },
-        quote: {
-          decimals: 4,
-        },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(4, 4),
         tickSpacing: 1,
       },
     );
@@ -358,12 +301,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 1.0001, // quote
       },
       {
-        base: {
-          decimals: 2,
-        },
-        quote: {
-          decimals: 4,
-        },
+        base: new TokenCalculations(2, 2),
+        quote: new TokenCalculations(4, 4),
         tickSpacing: 1,
       },
     );
@@ -382,12 +321,8 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 1.0001,
       },
       {
-        base: {
-          decimals: 4,
-        },
-        quote: {
-          decimals: 4,
-        },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(4, 4),
         tickSpacing: 1,
       },
     );
@@ -406,12 +341,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 100,
       },
       {
-        base: {
-          decimals: 4,
-        },
-        quote: {
-          decimals: 2,
-        },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(2, 2),
         tickSpacing: 1,
       },
     );
@@ -430,12 +361,9 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 1,
       },
       {
-        base: {
-          decimals: 6,
-        },
-        quote: {
-          decimals: 6,
-        },
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
+
         tickSpacing: 1,
       },
     );
@@ -454,12 +382,8 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 10, // quote
       },
       {
-        base: {
-          decimals: 2,
-        },
-        quote: {
-          decimals: 1,
-        },
+        base: new TokenCalculations(2, 2),
+        quote: new TokenCalculations(1, 1),
         tickSpacing: 1,
       },
     );
@@ -478,12 +402,8 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 10, // quote
       },
       {
-        base: {
-          decimals: 2,
-        },
-        quote: {
-          decimals: 1,
-        },
+        base: new TokenCalculations(2, 2),
+        quote: new TokenCalculations(1, 1),
         tickSpacing: 1,
       },
     );
@@ -502,12 +422,8 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 1.0001, // quote
       },
       {
-        base: {
-          decimals: 4,
-        },
-        quote: {
-          decimals: 4,
-        },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(4, 4),
         tickSpacing: 1,
       },
     );
@@ -526,12 +442,8 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 1.0001, // quote
       },
       {
-        base: {
-          decimals: 2,
-        },
-        quote: {
-          decimals: 4,
-        },
+        base: new TokenCalculations(2, 2),
+        quote: new TokenCalculations(4, 4),
         tickSpacing: 1,
       },
     );
@@ -550,12 +462,8 @@ describe("Liquidity provider unit tests suite", () => {
         wants: 1.0001,
       },
       {
-        base: {
-          decimals: 4,
-        },
-        quote: {
-          decimals: 4,
-        },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(4, 4),
         tickSpacing: 1,
       },
     );
@@ -574,12 +482,8 @@ describe("Liquidity provider unit tests suite", () => {
         gives: 100,
       },
       {
-        base: {
-          decimals: 4,
-        },
-        quote: {
-          decimals: 2,
-        },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(2, 2),
         tickSpacing: 1,
       },
     );

@@ -18,7 +18,6 @@ import GeometricKandelLib from "./geometricKandelLib";
 import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
 import GeneralKandelDistributionGenerator from "../generalKandelDistributionGenerator";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
-import UnitCalculations from "../../util/unitCalculations";
 
 /**
  * @notice Parameters specific to a geometric Kandel instance.
@@ -415,16 +414,10 @@ class GeometricKandelInstance extends CoreKandelInstance {
   getRawGives(bidGives: Bigish | undefined, askGives: Bigish | undefined) {
     return {
       rawBidGives: bidGives
-        ? UnitCalculations.toUnits(
-            bidGives,
-            this.distributionHelper.market.quote.decimals,
-          )
+        ? this.distributionHelper.market.quote.toUnits(bidGives)
         : ethers.constants.MaxUint256,
       rawAskGives: askGives
-        ? UnitCalculations.toUnits(
-            askGives,
-            this.distributionHelper.market.base.decimals,
-          )
+        ? this.distributionHelper.market.base.toUnits(askGives)
         : ethers.constants.MaxUint256,
     };
   }

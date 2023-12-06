@@ -8,7 +8,7 @@ import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
 import { TypedDataSigner } from "@ethersproject/abstract-signer";
-import { ApproveArgs } from "./token";
+import { ApproveArgs, TokenCalculations } from "./token";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -24,7 +24,6 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
 let canConstructMangrove = false;
 
 import type { Awaited } from "ts-essentials";
-import UnitCalculations from "./util/unitCalculations";
 import {
   BlockManager,
   ReliableProvider,
@@ -120,6 +119,7 @@ class Mangrove {
   shouldNotListenToNewEvents: boolean;
   olKeyHashToOLKeyStructMap: Map<string, OLKeyStruct> = new Map();
   olKeyStructToOlKeyHashMap: Map<string, string> = new Map();
+  nativeToken: TokenCalculations;
 
   public eventEmitter: EventEmitter;
 
@@ -275,6 +275,7 @@ class Mangrove {
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)",
       );
     }
+    this.nativeToken = new TokenCalculations(18, 18);
     this.eventEmitter = params.eventEmitter;
     const provider = params.signer.provider;
     if (!provider) {
@@ -575,41 +576,13 @@ class Mangrove {
     );
   }
 
-  /** Convert public token amount to internal token representation.
-   *
-   * For convenience, has a static and an instance version.
-   *
-   *  @example
-   *  ```
-   *  Mangrove.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
-   *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
-   *  ```
-   */
-  static toUnits(amount: Bigish, decimals: number): ethers.BigNumber {
-    return UnitCalculations.toUnits(amount, decimals);
-  }
-  toUnits(amount: Bigish, decimals: number): ethers.BigNumber {
-    return Mangrove.toUnits(amount, decimals);
-  }
-
-  /** Convert internal token amount to public token representation.
-   *
-   *  @example
-   *  ```
-   *  mgv.fromUnits("1e19",18) // 10
-   *  ```
-   */
-  fromUnits(amount: number | string | ethers.BigNumber, decimals: number): Big {
-    return UnitCalculations.fromUnits(amount, decimals);
-  }
-
   /** Provision available at mangrove for address given in argument, in ethers */
   async balanceOf(
     address: string,
     overrides: ethers.Overrides = {},
   ): Promise<Big> {
     const bal = await this.contract.balanceOf(address, overrides);
-    return this.fromUnits(bal, 18);
+    return this.nativeToken.fromUnits(bal);
   }
 
   fundMangrove(
@@ -617,7 +590,10 @@ class Mangrove {
     maker: string,
     overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
-    const _overrides = { value: this.toUnits(amount, 18), ...overrides };
+    const _overrides = {
+      value: this.nativeToken.toUnits(amount),
+      ...overrides,
+    };
     return this.contract["fund(address)"](maker, _overrides);
   }
 
@@ -625,7 +601,18 @@ class Mangrove {
     amount: Bigish,
     overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
-    return this.contract.withdraw(this.toUnits(amount, 18), overrides);
+    return this.contract.withdraw(this.nativeToken.toUnits(amount), overrides);
+  }
+
+  optValueToPayableOverride(
+    overrides: ethers.Overrides,
+    fund?: Bigish,
+  ): ethers.PayableOverrides {
+    if (fund) {
+      return { value: this.nativeToken.toUnits(fund), ...overrides };
+    } else {
+      return overrides;
+    }
   }
 
   async approveMangrove(
@@ -643,11 +630,10 @@ class Mangrove {
    * @returns the required provision, in ethers.
    */
   calculateOfferProvision(gasprice: number, gasreq: number, gasbase: number) {
-    return this.fromUnits(
-      this.toUnits(1, 6)
+    return this.nativeToken.fromUnits(
+      ethers.BigNumber.from(1e6)
         .mul(gasprice)
         .mul(gasreq + gasbase),
-      18,
     );
   }
 

@@ -2,13 +2,14 @@ import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
 import KandelDistributionHelper from "../../../src/kandel/kandelDistributionHelper";
+import { TokenCalculations } from "../../../src/token";
 
 describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suite`, () => {
   let sut: KandelDistributionHelper;
   beforeEach(() => {
     sut = new KandelDistributionHelper({
-      base: { decimals: 0 },
-      quote: { decimals: 0 },
+      base: new TokenCalculations(0, 0),
+      quote: new TokenCalculations(0, 0),
       tickSpacing: 1,
     });
   });

@@ -6,7 +6,6 @@ import logger from "./logger";
 import TradeEventManagement, {
   OrderResultWithOptionalSummary,
 } from "./tradeEventManagement";
-import UnitCalculations from "./unitCalculations";
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 
@@ -23,23 +22,11 @@ type CleanUnitParams = {
 };
 
 class Trade {
-  mangroveUtils = new UnitCalculations();
   tradeEventManagement = new TradeEventManagement();
 
   getParamsForBuy(
     params: Market.TradeParams,
-    market: {
-      base: {
-        decimals: number;
-        toUnits: (amount: Bigish) => ethers.BigNumber;
-      };
-      quote: {
-        decimals: number;
-        toUnits: (amount: Bigish) => ethers.BigNumber;
-        fromUnits: (amount: ethers.BigNumber) => Big;
-      };
-      tickSpacing: number;
-    },
+    market: Market.KeyResolvedForCalculation,
   ) {
     // validate parameters and setup tickPriceHelper
     let fillVolume: Big, maxTick: number, fillWants: boolean;
@@ -112,18 +99,7 @@ class Trade {
 
   getParamsForSell(
     params: Market.TradeParams,
-    market: {
-      base: {
-        decimals: number;
-        toUnits: (amount: Bigish) => ethers.BigNumber;
-      };
-      quote: {
-        decimals: number;
-        toUnits: (amount: Bigish) => ethers.BigNumber;
-        fromUnits: (amount: ethers.BigNumber) => Big;
-      };
-      tickSpacing: number;
-    },
+    market: Market.KeyResolvedForCalculation,
   ) {
     let fillVolume: Big, maxTick: number, fillWants: boolean;
     const slippage = this.validateSlippage(params.slippage);
@@ -597,7 +573,7 @@ class Trade {
       this.getRestingOrderParams(restingParams);
     const overrides_ = {
       ...overrides,
-      value: provision ? market.mgv.toUnits(provision, 18) : 0,
+      value: provision ? market.mgv.nativeToken.toUnits(provision) : 0,
     };
 
     const ba = this.bsToBa(orderType);

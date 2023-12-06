@@ -13,6 +13,7 @@ import TickPriceHelper from "../../../../src/util/tickPriceHelper";
 import { assertApproxEqRel } from "../../../util/helpers";
 import { createGeneratorStub } from "./geometricKandelDistributionGenerator.unit.test";
 import GeometricKandelDistributionHelper from "../../../../src/kandel/geometricKandel/geometricKandelDistributionHelper";
+import { TokenCalculations } from "../../../../src/token";
 
 describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`, () => {
   function getOfferId(offerType: Market.BA, index: number) {
@@ -133,8 +134,8 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
   let sut: GeometricKandelStatus;
   let generator: GeometricKandelDistributionGenerator;
   const market = {
-    base: { decimals: 4 },
-    quote: { decimals: 6 },
+    base: new TokenCalculations(4, 4),
+    quote: new TokenCalculations(6, 6),
     tickSpacing: 1,
   };
   const askTickPriceHelper = new TickPriceHelper("asks", market);

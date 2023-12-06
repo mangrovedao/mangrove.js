@@ -2,6 +2,7 @@ import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
 import KandelDistribution from "../../../src/kandel/kandelDistribution";
+import { TokenCalculations } from "../../../src/token";
 
 describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, () => {
   let sut: KandelDistribution;
@@ -22,8 +23,8 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
         ],
       },
       {
-        base: { decimals: 4 },
-        quote: { decimals: 6 },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );
@@ -81,8 +82,9 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
           asks: [{ gives: Big(0), tick: 1, index: 1 }],
         },
         {
-          base: { decimals: 4 },
-          quote: { decimals: 6 },
+          base: new TokenCalculations(4, 4),
+          quote: new TokenCalculations(6, 6),
+
           tickSpacing: 1,
         },
       );

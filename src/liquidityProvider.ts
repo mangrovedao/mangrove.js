@@ -203,7 +203,7 @@ class LiquidityProvider {
    */
   static normalizeOfferParams(
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
-    market: Market.DecimalsAndTickSpacing,
+    market: Market.KeyResolvedForCalculation,
   ): {
     price: Big;
     tick: number;
@@ -241,17 +241,6 @@ class LiquidityProvider {
     }
 
     return { tick: tick, gives: gives, price: price, fund: p.fund };
-  }
-
-  static optValueToPayableOverride(
-    overrides: ethers.Overrides,
-    fund?: Bigish,
-  ): ethers.PayableOverrides {
-    if (fund) {
-      return { value: Mangrove.toUnits(fund, 18), ...overrides };
-    } else {
-      return overrides;
-    }
   }
 
   /** Post a new ask */
@@ -308,7 +297,7 @@ class LiquidityProvider {
         tick,
         outbound_tkn.toUnits(gives),
         this.gasreq,
-        LiquidityProvider.optValueToPayableOverride(overrides, fund),
+        this.mgv.optValueToPayableOverride(overrides, fund),
       );
     } else {
       txPromise = this.mgv.contract.newOfferByTick(
@@ -321,7 +310,7 @@ class LiquidityProvider {
         outbound_tkn.toUnits(gives),
         this.gasreq,
         0, //gasprice
-        LiquidityProvider.optValueToPayableOverride(overrides, fund),
+        this.mgv.optValueToPayableOverride(overrides, fund),
       );
     }
 
@@ -440,7 +429,7 @@ class LiquidityProvider {
         outbound_tkn.toUnits(gives),
         id,
         this.gasreq,
-        LiquidityProvider.optValueToPayableOverride(overrides, fund),
+        this.mgv.optValueToPayableOverride(overrides, fund),
       );
     } else {
       txPromise = this.mgv.contract.updateOfferByTick(
@@ -454,7 +443,7 @@ class LiquidityProvider {
         0,
         0,
         id,
-        LiquidityProvider.optValueToPayableOverride(overrides, fund),
+        this.mgv.optValueToPayableOverride(overrides, fund),
       );
     }
 

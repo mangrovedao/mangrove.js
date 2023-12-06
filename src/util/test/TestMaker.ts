@@ -90,7 +90,7 @@ class TestMaker {
     });
     await contract.deployTransaction.wait();
 
-    const amount = Mangrove.toUnits(PROVISION_AMOUNT_IN_ETHERS, 18);
+    const amount = p.mgv.nativeToken.toUnits(PROVISION_AMOUNT_IN_ETHERS);
     const tx = await contract.provisionMgv(amount, { value: amount });
     await tx.wait();
 
@@ -155,7 +155,7 @@ class TestMaker {
       internalAmount: internalBal.add(outbound_tkn.toUnits(gives)),
     });
 
-    const payableOverrides = LiquidityProvider.optValueToPayableOverride(
+    const payableOverrides = this.mgv.optValueToPayableOverride(
       overrides,
       fund,
     );

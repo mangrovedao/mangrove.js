@@ -149,7 +149,7 @@ class OfferLogic {
     overrides: ethers.Overrides = {},
   ): Promise<TransactionResponse> {
     return this.contract.withdrawFromMangrove(
-      this.mgv.toUnits(amount, 18),
+      this.mgv.nativeToken.toUnits(amount),
       await this.mgv.signer.getAddress(),
       overrides,
     );
@@ -172,7 +172,7 @@ class OfferLogic {
       return Big(0);
     }
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
-    return this.mgv.fromUnits(
+    return this.mgv.nativeToken.fromUnits(
       await this.contract.provisionOf(
         {
           outbound_tkn: outbound_tkn.address,
@@ -181,7 +181,6 @@ class OfferLogic {
         },
         offerId,
       ),
-      18,
     );
   }
 

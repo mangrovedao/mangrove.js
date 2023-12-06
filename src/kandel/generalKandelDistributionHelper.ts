@@ -78,7 +78,7 @@ class GeneralKandelDistributionHelper {
         params.baseDelta,
         bases,
         params.minimumBasePerOffer,
-        this.helper.roundBase.bind(this.helper),
+        this.helper.market.base.round.bind(this.helper.market.base),
       );
 
     const { newValues: newQuotes, totalChange: totalQuoteChange } =
@@ -86,7 +86,7 @@ class GeneralKandelDistributionHelper {
         params.quoteDelta,
         quotes,
         params.minimumQuotePerOffer,
-        this.helper.roundQuote.bind(this.helper),
+        this.helper.market.quote.round.bind(this.helper.market.quote),
       );
 
     const distribution = new GeneralKandelDistribution(

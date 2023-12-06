@@ -95,11 +95,11 @@ export const mochaHooks = {
 
     await tokenA.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18),
+      mgv.nativeToken.toUnits(10),
     );
     await tokenB.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18),
+      mgv.nativeToken.toUnits(10),
     );
 
     const tx = await mgv.fundMangrove(10, mgv.getAddress("SimpleTestMaker"));

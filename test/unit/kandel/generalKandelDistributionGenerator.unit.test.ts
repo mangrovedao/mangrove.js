@@ -7,6 +7,7 @@ import { KandelDistribution, Market } from "../../../src";
 import { assertApproxEqRel } from "../../util/helpers";
 import { createGeneratorStub } from "./geometricKandel/geometricKandelDistributionGenerator.unit.test";
 import GeneralKandelDistributionHelper from "../../../src/kandel/generalKandelDistributionHelper";
+import { TokenCalculations } from "../../../src/token";
 
 export function assertIsRounded(distribution: KandelDistribution) {
   distribution.offers.asks.forEach((e) => {
@@ -103,8 +104,8 @@ describe(`${GeneralKandelDistributionGenerator.prototype.constructor.name} unit 
     sut = new GeneralKandelDistributionGenerator(
       new GeneralKandelDistributionHelper(
         new KandelDistributionHelper({
-          base: { decimals: 4 },
-          quote: { decimals: 6 },
+          base: new TokenCalculations(4, 4),
+          quote: new TokenCalculations(6, 6),
           tickSpacing: 1,
         }),
       ),

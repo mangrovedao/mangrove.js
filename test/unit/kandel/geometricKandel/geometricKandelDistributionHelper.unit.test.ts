@@ -4,13 +4,14 @@ import { describe, it } from "mocha";
 import GeometricKandelDistributionHelper, {
   TickDistributionParams,
 } from "../../../../src/kandel/geometricKandel/geometricKandelDistributionHelper";
+import { TokenCalculations } from "../../../../src/token";
 
 describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeometricKandelDistributionHelper;
   beforeEach(() => {
     sut = new GeometricKandelDistributionHelper({
-      base: { decimals: 4 },
-      quote: { decimals: 6 },
+      base: new TokenCalculations(4, 4),
+      quote: new TokenCalculations(6, 6),
       tickSpacing: 1,
     });
   });

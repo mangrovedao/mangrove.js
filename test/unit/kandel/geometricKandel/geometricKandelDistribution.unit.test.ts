@@ -4,6 +4,7 @@ import { describe, it } from "mocha";
 import GeometricKandelDistribution from "../../../../src/kandel/geometricKandel/geometricKandelDistribution";
 import { assertApproxEqAbs } from "../../../util/helpers";
 import GeometricKandelDistributionHelper from "../../../../src/kandel/geometricKandel/geometricKandelDistributionHelper";
+import { TokenCalculations } from "../../../../src/token";
 
 describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeometricKandelDistribution;
@@ -29,8 +30,8 @@ describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests s
         ],
       },
       {
-        base: { decimals: 4 },
-        quote: { decimals: 6 },
+        base: new TokenCalculations(4, 4),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       },
     );

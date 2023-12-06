@@ -4,6 +4,7 @@ import { describe, it } from "mocha";
 import KandelDistribution from "../../../src/kandel/kandelDistribution";
 import { bidsAsks } from "../../../src/util/test/mgvIntegrationTestUtil";
 import GeneralKandelDistribution from "../../../src/kandel/generalKandelDistribution";
+import { TokenCalculations } from "../../../src/token";
 
 describe(`${GeneralKandelDistribution.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeneralKandelDistribution;
@@ -24,7 +25,11 @@ describe(`${GeneralKandelDistribution.prototype.constructor.name} unit tests sui
             { tick: 4, gives: Big(5000), index: 3 },
           ],
         },
-        { base: { decimals: 4 }, quote: { decimals: 6 }, tickSpacing: 1 },
+        {
+          base: new TokenCalculations(4, 4),
+          quote: new TokenCalculations(6, 6),
+          tickSpacing: 1,
+        },
       ),
     );
   });
@@ -64,7 +69,11 @@ describe(`${GeneralKandelDistribution.prototype.constructor.name} unit tests sui
               { tick: 5, gives: Big(5000), index: 4 },
             ],
           },
-          { base: { decimals: 4 }, quote: { decimals: 6 }, tickSpacing: 1 },
+          {
+            base: new TokenCalculations(4, 4),
+            quote: new TokenCalculations(6, 6),
+            tickSpacing: 1,
+          },
         ),
       );
 
@@ -120,7 +129,11 @@ describe(`${GeneralKandelDistribution.prototype.constructor.name} unit tests sui
                 { tick: 4, gives: Big(askGives), index: 3 },
               ],
             },
-            { base: { decimals: 4 }, quote: { decimals: 6 }, tickSpacing: 1 },
+            {
+              base: new TokenCalculations(4, 4),
+              quote: new TokenCalculations(6, 6),
+              tickSpacing: 1,
+            },
           ),
         );
 

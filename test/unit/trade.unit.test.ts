@@ -8,6 +8,7 @@ import { Market, Token } from "../../src";
 import { Bigish } from "../../src/types";
 import Trade from "../../src/util/trade";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
+import { TokenCalculations } from "../../src/token";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForBuy", () => {
@@ -36,8 +37,8 @@ describe("Trade unit tests suite", () => {
       when(quoteToken.decimals).thenReturn(12);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
       const tickPriceHelper = new TickPriceHelper("asks", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -91,8 +92,8 @@ describe("Trade unit tests suite", () => {
       when(quoteToken.decimals).thenReturn(12);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
       const tickPriceHelper = new TickPriceHelper("asks", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -141,8 +142,8 @@ describe("Trade unit tests suite", () => {
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
       const tickPriceHelper = new TickPriceHelper("asks", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -193,8 +194,8 @@ describe("Trade unit tests suite", () => {
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
       const tickPriceHelper = new TickPriceHelper("asks", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -235,17 +236,8 @@ describe("Trade unit tests suite", () => {
         fillWants: false,
         slippage: slippage,
       };
-      const baseToken = {
-        decimals: 18,
-        toUnits: (v: Bigish) =>
-          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
-      };
-      const quoteToken = {
-        decimals: 18,
-        toUnits: (v: Bigish) =>
-          BigNumber.from(Big(v).mul(Big(10).pow(18)).toFixed(0)),
-        fromUnits: (v: BigNumber) => Big(v.toString()).div(Big(10).pow(18)),
-      };
+      const baseToken = new TokenCalculations(18, 18);
+      const quoteToken = new TokenCalculations(18, 18);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
       const tickPriceHelper = new TickPriceHelper("asks", {
@@ -331,8 +323,8 @@ describe("Trade unit tests suite", () => {
       when(quoteToken.decimals).thenReturn(12);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
       const tickPriceHelper = new TickPriceHelper("bids", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -381,8 +373,8 @@ describe("Trade unit tests suite", () => {
       when(baseToken.decimals).thenReturn(18);
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
       const tickPriceHelper = new TickPriceHelper("bids", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -431,8 +423,8 @@ describe("Trade unit tests suite", () => {
       );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
       const tickPriceHelper = new TickPriceHelper("bids", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -484,8 +476,8 @@ describe("Trade unit tests suite", () => {
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
       const tickPriceHelper = new TickPriceHelper("bids", {
-        base: { decimals: 18 },
-        quote: { decimals: 12 },
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
         tickSpacing: 1,
       });
 
@@ -527,21 +519,15 @@ describe("Trade unit tests suite", () => {
         slippage: slippage,
       };
       const baseTokenDecimals = 18;
-      const baseToken = {
-        decimals: baseTokenDecimals,
-        toUnits: (v: Bigish) =>
-          BigNumber.from(Big(v).mul(Big(10).pow(baseTokenDecimals)).toFixed(0)),
-      };
       const quoteTokenDecimals = 18;
-      const quoteToken = {
-        decimals: quoteTokenDecimals,
-        toUnits: (v: Bigish) =>
-          BigNumber.from(
-            Big(v).mul(Big(10).pow(quoteTokenDecimals)).toFixed(0),
-          ),
-        fromUnits: (v: BigNumber) =>
-          Big(v.toString()).div(Big(10).pow(quoteTokenDecimals)),
-      };
+      const baseToken = new TokenCalculations(
+        baseTokenDecimals,
+        baseTokenDecimals,
+      );
+      const quoteToken = new TokenCalculations(
+        quoteTokenDecimals,
+        quoteTokenDecimals,
+      );
       when(spyTrade.validateSlippage(slippage)).thenReturn(slippage);
 
       const tickPriceHelper = new TickPriceHelper("bids", {

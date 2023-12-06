@@ -20,6 +20,7 @@ import {
   assertSameTicks,
 } from "../generalKandelDistributionGenerator.unit.test";
 import GeneralKandelDistributionHelper from "../../../../src/kandel/generalKandelDistributionHelper";
+import { TokenCalculations } from "../../../../src/token";
 
 interface DistributionOffer {
   index: number;
@@ -211,8 +212,8 @@ export class KandelLibStub {
 
 export function createGeneratorStub() {
   const market = {
-    base: { decimals: 4 },
-    quote: { decimals: 6 },
+    base: new TokenCalculations(4, 4),
+    quote: new TokenCalculations(6, 6),
     tickSpacing: 1,
   };
   return new GeometricKandelDistributionGenerator(
@@ -231,8 +232,8 @@ export function createGeneratorStub() {
 describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeometricKandelDistributionGenerator;
   const market = {
-    base: { decimals: 4 },
-    quote: { decimals: 6 },
+    base: new TokenCalculations(4, 4),
+    quote: new TokenCalculations(6, 6),
     tickSpacing: 1,
   };
   const askTickPriceHelper = new TickPriceHelper("asks", market);

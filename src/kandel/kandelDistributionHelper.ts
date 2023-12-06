@@ -18,12 +18,12 @@ export type OffersWithGives = {
 class KandelDistributionHelper {
   askTickPriceHelper: TickPriceHelper;
   bidTickPriceHelper: TickPriceHelper;
-  market: Market.DecimalsAndTickSpacing;
+  market: Market.KeyResolvedForCalculation;
 
   /** Constructor
    * @param market The key data about the market.
    */
-  public constructor(market: Market.DecimalsAndTickSpacing) {
+  public constructor(market: Market.KeyResolvedForCalculation) {
     this.market = market;
     this.askTickPriceHelper = new TickPriceHelper("asks", market);
     this.bidTickPriceHelper = new TickPriceHelper("bids", market);
@@ -35,22 +35,6 @@ class KandelDistributionHelper {
    */
   public sortByIndex(list: { index: number }[]) {
     return list.sort((a, b) => a.index - b.index);
-  }
-
-  /** Rounds a base amount according to the token's decimals.
-   * @param base The base amount to round.
-   * @returns The rounded base amount.
-   */
-  public roundBase(base: Big) {
-    return base.round(this.market.base.decimals, Big.roundHalfUp);
-  }
-
-  /** Rounds a quote amount according to the token's decimals.
-   * @param quote The quote amount to round.
-   * @returns The rounded quote amount.
-   */
-  public roundQuote(quote: Big) {
-    return quote.round(this.market.quote.decimals, Big.roundHalfUp);
   }
 
   /** Uniformly changes values by a total amount without decreasing below a minimum for each value. A value already below minimum will not be changed.

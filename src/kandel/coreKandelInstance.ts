@@ -5,7 +5,6 @@ import * as KandelTypes from "../types/typechain/GeometricKandel";
 
 import Big from "big.js";
 import Market from "../market";
-import UnitCalculations from "../util/unitCalculations";
 import { ApproveArgs } from "../token";
 import KandelDistributionHelper, {
   OffersWithGives,
@@ -16,7 +15,6 @@ import KandelConfiguration from "./kandelConfiguration";
 import KandelSeeder from "./kandelSeeder";
 import GeneralKandelDistribution from "./generalKandelDistribution";
 import GeneralKandelDistributionGenerator from "./generalKandelDistributionGenerator";
-import LiquidityProvider from "../liquidityProvider";
 import GeneralKandelDistributionHelper from "./generalKandelDistributionHelper";
 
 // The market used by the Kandel instance or a factory function to create the market.
@@ -415,10 +413,10 @@ class CoreKandelInstance {
   }) {
     return {
       minimumBasePerOffer: params.minimumBasePerOffer
-        ? this.distributionHelper.roundBase(Big(params.minimumBasePerOffer))
+        ? this.market.base.round(Big(params.minimumBasePerOffer))
         : await this.getMinimumVolume("asks"),
       minimumQuotePerOffer: params.minimumQuotePerOffer
-        ? this.distributionHelper.roundQuote(Big(params.minimumQuotePerOffer))
+        ? this.market.quote.round(Big(params.minimumQuotePerOffer))
         : await this.getMinimumVolume("bids"),
     };
   }
@@ -707,7 +705,7 @@ class CoreKandelInstance {
         gasprice: rawParameters.gasprice,
       }));
 
-    const overridesWithFunds = LiquidityProvider.optValueToPayableOverride(
+    const overridesWithFunds = this.market.mgv.optValueToPayableOverride(
       overrides,
       funds,
     );
@@ -894,7 +892,7 @@ class CoreKandelInstance {
     const recipientAddress =
       params.recipientAddress ?? (await this.market.mgv.signer.getAddress());
     const freeWei = params.withdrawFunds
-      ? UnitCalculations.toUnits(params.withdrawFunds, 18)
+      ? this.market.mgv.nativeToken.toUnits(params.withdrawFunds)
       : ethers.constants.MaxUint256;
 
     const { txs, lastChunk } = await this.retractOfferChunks(

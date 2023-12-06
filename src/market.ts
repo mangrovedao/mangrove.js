@@ -1,7 +1,7 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
 import Mangrove from "./mangrove";
-import Token from "./token";
+import Token, { TokenCalculations } from "./token";
 import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
 import Trade from "./util/trade";
@@ -35,9 +35,9 @@ namespace Market {
   };
 
   /** Values needed for converting between ticks/prices/volumes, is a subset of @see KeyResolved */
-  export type DecimalsAndTickSpacing = {
-    base: { decimals: number };
-    quote: { decimals: number };
+  export type KeyResolvedForCalculation = {
+    base: TokenCalculations;
+    quote: TokenCalculations;
     tickSpacing: number;
   };
 
@@ -613,7 +613,7 @@ class Market {
       gasreq,
       gasprice,
     );
-    return this.mgv.fromUnits(prov, 18);
+    return this.mgv.nativeToken.fromUnits(prov);
   }
 
   /** Gets the amount of ethers necessary to provision a bid on the market.
