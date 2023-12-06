@@ -19,8 +19,11 @@ describe(`${GeometricKandelLib.prototype.constructor.name} integration test suit
     lib = new GeometricKandelLib({
       address: configuration.addresses.getAddress("KandelLib", "local"),
       signer: signer,
-      baseDecimals: 4,
-      quoteDecimals: 6,
+      market: {
+        base: { decimals: 4 },
+        quote: { decimals: 6 },
+        tickSpacing: 1,
+      },
     });
   });
 

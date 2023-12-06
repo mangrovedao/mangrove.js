@@ -4,13 +4,19 @@ import { describe, it } from "mocha";
 import KandelDistributionHelper from "../../../src/kandel/kandelDistributionHelper";
 
 describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suite`, () => {
+  let sut: KandelDistributionHelper;
+  beforeEach(() => {
+    sut = new KandelDistributionHelper({
+      base: { decimals: 0 },
+      quote: { decimals: 0 },
+      tickSpacing: 1,
+    });
+  });
+
   describe(
     KandelDistributionHelper.prototype.calculateMinimumInitialGives.name,
     () => {
       it("returns minimum on empty lists", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(0, 0);
-
         // Act
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
           Big(1),
@@ -25,9 +31,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
       });
 
       it("returns minimum if no prices affect it", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(0, 0);
-
         // Act
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
           Big(1),
@@ -42,9 +45,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
       });
 
       it("returns higher than minimum if dual at some price would be below its minimum", () => {
-        // Arrange
-        const sut = new KandelDistributionHelper(0, 0);
-
         const baseQuoteTicks = [Big(2000), Big(1000), Big(500), Big(4000)].map(
           (x) => sut.askTickPriceHelper.tickFromPrice(x),
         );
@@ -66,9 +66,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
   describe(KandelDistributionHelper.prototype.uniformlyDecrease.name, () => {
     it("can decrease uniformly if all sufficiently above limit", () => {
-      // Arrange
-      const sut = new KandelDistributionHelper(0, 0);
-
       // Act
       const result = sut.uniformlyDecrease(
         [Big(3), Big(2), Big(5), Big(2)],
@@ -86,9 +83,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
     });
 
     it("can decrease total amount if available, but respect limits", () => {
-      // Arrange
-      const sut = new KandelDistributionHelper(0, 0);
-
       // Act
       const result = sut.uniformlyDecrease(
         [Big(3), Big(2), Big(5), Big(2)],
@@ -106,9 +100,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
     });
 
     it("can decrease but not total amount if limits prevent", () => {
-      // Arrange
-      const sut = new KandelDistributionHelper(0, 0);
-
       // Act
       const result = sut.uniformlyDecrease(
         [Big(3), Big(2), Big(5), Big(2)],
@@ -126,9 +117,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
     });
 
     it("can round result", () => {
-      // Arrange
-      const sut = new KandelDistributionHelper(0, 0);
-
       // Act
       const result = sut.uniformlyDecrease(
         [Big(2), Big(2), Big(2)],
@@ -146,9 +134,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
     });
 
     it("does not go beyond limit due to rounding up", () => {
-      // Arrange
-      const sut = new KandelDistributionHelper(0, 0);
-
       // Act
       const result = sut.uniformlyDecrease(
         [Big(2.6), Big(2.6)],
@@ -168,9 +153,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
   describe(KandelDistributionHelper.prototype.uniformlyIncrease.name, () => {
     it("can increase uniformly", () => {
-      // Arrange
-      const sut = new KandelDistributionHelper(0, 0);
-
       // Act
       const result = sut.uniformlyIncrease(
         [Big(3), Big(2), Big(5), Big(2)],
@@ -187,9 +169,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
     });
 
     it("can round result", () => {
-      // Arrange
-      const sut = new KandelDistributionHelper(0, 0);
-
       // Act
       const result = sut.uniformlyIncrease(
         [Big(2), Big(2), Big(2)],
@@ -209,7 +188,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
   describe(KandelDistributionHelper.prototype.chunkIndices.name, () => {
     it("can chunk", () => {
       // Arrange/act
-      const chunks = new KandelDistributionHelper(0, 0).chunkIndices(1, 4, 2);
+      const chunks = sut.chunkIndices(1, 4, 2);
 
       // Assert
       assert.equal(chunks.length, 2);
@@ -221,11 +200,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
   describe(
     KandelDistributionHelper.prototype.chunkIndicesAroundMiddle.name,
     () => {
-      let sut: KandelDistributionHelper;
-      beforeEach(() => {
-        sut = new KandelDistributionHelper(0, 0);
-      });
-
       [undefined, 2].forEach((middle) => {
         it(`can chunk an uneven set with middle=${middle}`, () => {
           // Arrange/act
@@ -280,7 +254,6 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         { a: "3", index: 1 },
         { a: "0", index: 9 },
       ];
-      const sut = new KandelDistributionHelper(0, 0);
 
       // Act
       sut.sortByIndex(list);

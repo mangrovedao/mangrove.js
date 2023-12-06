@@ -21,8 +21,11 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
           { tick: 4, gives: Big(5000), index: 3 },
         ],
       },
-      4,
-      6,
+      {
+        base: { decimals: 4 },
+        quote: { decimals: 6 },
+        tickSpacing: 1,
+      },
     );
   });
   describe(
@@ -77,8 +80,11 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
           bids: [{ gives: Big(1), tick: 1, index: 0 }],
           asks: [{ gives: Big(0), tick: 1, index: 1 }],
         },
-        4,
-        6,
+        {
+          base: { decimals: 4 },
+          quote: { decimals: 6 },
+          tickSpacing: 1,
+        },
       );
 
       // Act/Assert

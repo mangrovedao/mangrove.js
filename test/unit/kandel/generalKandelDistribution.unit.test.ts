@@ -24,8 +24,7 @@ describe(`${GeneralKandelDistribution.prototype.constructor.name} unit tests sui
             { tick: 4, gives: Big(5000), index: 3 },
           ],
         },
-        4,
-        6,
+        { base: { decimals: 4 }, quote: { decimals: 6 }, tickSpacing: 1 },
       ),
     );
   });
@@ -65,8 +64,7 @@ describe(`${GeneralKandelDistribution.prototype.constructor.name} unit tests sui
               { tick: 5, gives: Big(5000), index: 4 },
             ],
           },
-          4,
-          6,
+          { base: { decimals: 4 }, quote: { decimals: 6 }, tickSpacing: 1 },
         ),
       );
 
@@ -122,8 +120,7 @@ describe(`${GeneralKandelDistribution.prototype.constructor.name} unit tests sui
                 { tick: 4, gives: Big(askGives), index: 3 },
               ],
             },
-            4,
-            6,
+            { base: { decimals: 4 }, quote: { decimals: 6 }, tickSpacing: 1 },
           ),
         );
 

@@ -18,6 +18,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 18,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 1.0001);
@@ -39,6 +40,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 18,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 1.0001);
@@ -61,6 +63,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 18,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), Big(0.010001).toNumber());
@@ -83,6 +86,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 1);
@@ -105,6 +109,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 1);
@@ -127,6 +132,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 2);
@@ -149,6 +155,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 2);
@@ -171,6 +178,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 2);
@@ -193,6 +201,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toNumber(), 2);
@@ -215,6 +224,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toFixed(4), (20 / 30).toFixed(4));
@@ -236,6 +246,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
     assert.equal(price.toFixed(4), (30 / 20).toFixed(4));
@@ -257,6 +268,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -280,6 +292,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -303,6 +316,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 1,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -326,6 +340,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -349,6 +364,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -372,6 +388,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -395,6 +412,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 2,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -418,6 +436,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 6,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -441,6 +460,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 1,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -464,6 +484,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 1,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -487,6 +508,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -510,6 +532,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -533,6 +556,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 4,
         },
+        tickSpacing: 1,
       },
     );
 
@@ -556,6 +580,7 @@ describe("Liquidity provider unit tests suite", () => {
         quote: {
           decimals: 2,
         },
+        tickSpacing: 1,
       },
     );
 

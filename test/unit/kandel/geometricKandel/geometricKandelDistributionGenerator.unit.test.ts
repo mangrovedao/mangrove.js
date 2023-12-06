@@ -210,16 +210,20 @@ export class KandelLibStub {
 }
 
 export function createGeneratorStub() {
+  const market = {
+    base: { decimals: 4 },
+    quote: { decimals: 6 },
+    tickSpacing: 1,
+  };
   return new GeometricKandelDistributionGenerator(
-    new GeometricKandelDistributionHelper(4, 6),
-    new GeneralKandelDistributionHelper(new KandelDistributionHelper(4, 6)),
+    new GeometricKandelDistributionHelper(market),
+    new GeneralKandelDistributionHelper(new KandelDistributionHelper(market)),
     new GeometricKandelLib({
       address: "0x0",
       signer: {} as ethers.Signer,
       kandelLibInstance:
         new KandelLibStub() as unknown as typechain.GeometricKandel,
-      baseDecimals: 4,
-      quoteDecimals: 6,
+      market,
     }),
   );
 }
@@ -229,6 +233,7 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
   const market = {
     base: { decimals: 4 },
     quote: { decimals: 6 },
+    tickSpacing: 1,
   };
   const askTickPriceHelper = new TickPriceHelper("asks", market);
   const bidTickPriceHelper = new TickPriceHelper("bids", market);

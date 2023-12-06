@@ -132,17 +132,16 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
 
   let sut: GeometricKandelStatus;
   let generator: GeometricKandelDistributionGenerator;
-  const askTickPriceHelper = new TickPriceHelper("asks", {
+  const market = {
     base: { decimals: 4 },
     quote: { decimals: 6 },
-  });
-  const bidTickPriceHelper = new TickPriceHelper("bids", {
-    base: { decimals: 4 },
-    quote: { decimals: 6 },
-  });
+    tickSpacing: 1,
+  };
+  const askTickPriceHelper = new TickPriceHelper("asks", market);
+  const bidTickPriceHelper = new TickPriceHelper("bids", market);
   beforeEach(() => {
     sut = new GeometricKandelStatus(
-      new GeometricKandelDistributionHelper(4, 6),
+      new GeometricKandelDistributionHelper(market),
     );
 
     generator = createGeneratorStub();

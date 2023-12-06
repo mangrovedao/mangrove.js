@@ -25,8 +25,7 @@ export type OfferDistribution = {
 /** @title A distribution of bids and ask for Kandel. */
 class KandelDistribution {
   offers: OfferDistribution;
-  baseDecimals: number;
-  quoteDecimals: number;
+  market: Market.KeyData;
   pricePoints: number;
   stepSize: number;
   helper: KandelDistributionHelper;
@@ -36,24 +35,21 @@ class KandelDistribution {
    * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
    * @param pricePoints The number of price points in the distribution.
    * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
-   * @param baseDecimals The number of decimals for the base token.
-   * @param quoteDecimals The number of decimals for the quote token.
+   * @param market The key data about the market.
    */
   public constructor(
     pricePoints: number,
     stepSize: number,
     offers: OfferDistribution,
-    baseDecimals: number,
-    quoteDecimals: number,
+    market: Market.KeyData,
   ) {
-    this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
+    this.helper = new KandelDistributionHelper(market);
     this.helper.sortByIndex(offers.asks);
     this.helper.sortByIndex(offers.bids);
     this.pricePoints = pricePoints;
     this.stepSize = stepSize;
     this.offers = offers;
-    this.baseDecimals = baseDecimals;
-    this.quoteDecimals = quoteDecimals;
+    this.market = market;
     this.verifyDistribution();
   }
 
@@ -72,7 +68,9 @@ class KandelDistribution {
       const gives = totalVolume
         .div(offerCount)
         .round(
-          offerType == "asks" ? this.baseDecimals : this.quoteDecimals,
+          offerType == "asks"
+            ? this.market.base.decimals
+            : this.market.quote.decimals,
           Big.roundDown,
         );
       if (gives.eq(0)) {

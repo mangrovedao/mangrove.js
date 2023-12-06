@@ -72,12 +72,10 @@ class GeometricKandelInstance extends CoreKandelInstance {
     const kandelLib = new GeometricKandelLib({
       address: market.mgv.getAddress("KandelLib"),
       signer: params.signer,
-      baseDecimals: market.base.decimals,
-      quoteDecimals: market.quote.decimals,
+      market,
     });
     const geometricDistributionHelper = new GeometricKandelDistributionHelper(
-      coreParams.distributionHelper.baseDecimals,
-      coreParams.distributionHelper.quoteDecimals,
+      coreParams.distributionHelper.market,
     );
     const geometricGenerator = new GeometricKandelDistributionGenerator(
       geometricDistributionHelper,
@@ -419,13 +417,13 @@ class GeometricKandelInstance extends CoreKandelInstance {
       rawBidGives: bidGives
         ? UnitCalculations.toUnits(
             bidGives,
-            this.distributionHelper.quoteDecimals,
+            this.distributionHelper.market.quote.decimals,
           )
         : ethers.constants.MaxUint256,
       rawAskGives: askGives
         ? UnitCalculations.toUnits(
             askGives,
-            this.distributionHelper.baseDecimals,
+            this.distributionHelper.market.base.decimals,
           )
         : ethers.constants.MaxUint256,
     };

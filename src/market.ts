@@ -34,6 +34,12 @@ namespace Market {
     tickSpacing: number;
   };
 
+  export type KeyData = {
+    base: { decimals: number };
+    quote: { decimals: number };
+    tickSpacing: number;
+  };
+
   export type KeyResolved = {
     base: Token;
     quote: Token;

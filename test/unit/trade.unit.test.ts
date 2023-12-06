@@ -38,14 +38,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("asks", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForBuy(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForBuy(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       //Assert
       assert.equal(
@@ -92,14 +93,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("asks", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForBuy(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForBuy(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -141,14 +143,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("asks", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForBuy(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForBuy(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -192,14 +195,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("asks", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForBuy(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForBuy(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -247,10 +251,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("asks", {
         base: baseToken,
         quote: quoteToken,
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForBuy(params, baseToken, quoteToken);
+      const result = trade.getParamsForBuy(params, {
+        base: baseToken,
+        quote: quoteToken,
+        tickSpacing: 1,
+      });
 
       //Assert
       const givesWithSlippage = Big(params.gives)
@@ -289,11 +298,11 @@ describe("Trade unit tests suite", () => {
 
       // Act
       assert.throws(() =>
-        trade.getParamsForBuy(
-          params,
-          instance(baseToken),
-          instance(quoteToken),
-        ),
+        trade.getParamsForBuy(params, {
+          base: instance(baseToken),
+          quote: instance(quoteToken),
+          tickSpacing: 1,
+        }),
       );
     });
   });
@@ -324,14 +333,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("bids", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForSell(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForSell(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -373,14 +383,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("bids", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForSell(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForSell(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -422,14 +433,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("bids", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForSell(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForSell(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -474,14 +486,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("bids", {
         base: { decimals: 18 },
         quote: { decimals: 12 },
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForSell(
-        params,
-        instance(baseToken),
-        instance(quoteToken),
-      );
+      const result = trade.getParamsForSell(params, {
+        base: instance(baseToken),
+        quote: instance(quoteToken),
+        tickSpacing: 1,
+      });
 
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -534,10 +547,15 @@ describe("Trade unit tests suite", () => {
       const tickPriceHelper = new TickPriceHelper("bids", {
         base: baseToken,
         quote: quoteToken,
+        tickSpacing: 1,
       });
 
       //Act
-      const result = trade.getParamsForSell(params, baseToken, quoteToken);
+      const result = trade.getParamsForSell(params, {
+        base: baseToken,
+        quote: quoteToken,
+        tickSpacing: 1,
+      });
 
       //Assert
       const wantsWithSlippage = Big(params.wants)
@@ -574,11 +592,11 @@ describe("Trade unit tests suite", () => {
 
       // Act
       assert.throws(() =>
-        trade.getParamsForSell(
-          params,
-          instance(baseToken),
-          instance(quoteToken),
-        ),
+        trade.getParamsForSell(params, {
+          base: instance(baseToken),
+          quote: instance(quoteToken),
+          tickSpacing: 1,
+        }),
       );
     });
   });

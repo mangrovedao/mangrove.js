@@ -11,23 +11,16 @@ class GeneralKandelDistribution extends KandelDistribution {
    * @param params.baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
    * @param params.pricePoints The number of price points in the distribution.
    * @param params.stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
-   * @param params.baseDecimals The number of decimals for the base token.
-   * @param params.quoteDecimals The number of decimals for the quote token.
+   * @param params.market The key data about the market.
+   *
    */
   public constructor(params: {
     pricePoints: number;
     stepSize: number;
     offers: OfferDistribution;
-    baseDecimals: number;
-    quoteDecimals: number;
+    market: Market.KeyData;
   }) {
-    super(
-      params.pricePoints,
-      params.stepSize,
-      params.offers,
-      params.baseDecimals,
-      params.quoteDecimals,
-    );
+    super(params.pricePoints, params.stepSize, params.offers, params.market);
   }
 
   /** Adds offers from lists to a chunk, including its dual; only adds each offer once.

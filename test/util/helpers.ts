@@ -148,6 +148,7 @@ export const newOffer = async (
     tick = new TickPriceHelper(ba, {
       base: { decimals: baseToken.decimals },
       quote: { decimals: quoteToken.decimals },
+      tickSpacing: 1,
     }).tickFromPrice(price);
   } else {
     const { outbound: outbound_tkn, inbound: inbound_tkn } = params;

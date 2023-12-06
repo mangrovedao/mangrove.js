@@ -9,20 +9,15 @@ import { MANTISSA_BITS, MIN_RATIO_EXP } from "./coreCalculations/Constants";
 
 class TickPriceHelper {
   ba: Market.BA;
-  market: {
-    base: { decimals: number };
-    quote: { decimals: number };
-  };
+  //FIXME use market.tickSpacing and TickLib.nearestBin to calculate prices and ticks with correct precision given the tick spacing - and extend tests
+  market: Market.KeyData;
 
   /**
    * Ctor
    * @param ba bids or asks
    * @param market the decimals for the market
    */
-  constructor(
-    ba: Market.BA,
-    market: { base: { decimals: number }; quote: { decimals: number } },
-  ) {
+  constructor(ba: Market.BA, market: Market.KeyData) {
     this.ba = ba;
     this.market = market;
   }

@@ -51,11 +51,10 @@ class GeometricKandelDistributionHelper {
   helper: KandelDistributionHelper;
 
   /** Constructor
-   * @param baseDecimals The number of decimals for the base token.
-   * @param quoteDecimals The number of decimals for the quote token.
+   * @param market The key data about the market.
    */
-  public constructor(baseDecimals: number, quoteDecimals: number) {
-    this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
+  public constructor(market: Market.KeyData) {
+    this.helper = new KandelDistributionHelper(market);
   }
 
   /** Gets the ticks for the geometric distribution based on a single known tick at an index.

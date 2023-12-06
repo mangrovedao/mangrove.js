@@ -92,10 +92,7 @@ class CoreKandelInstance {
       params.signer,
     );
 
-    const distributionHelper = new KandelDistributionHelper(
-      market.base.decimals,
-      market.quote.decimals,
-    );
+    const distributionHelper = new KandelDistributionHelper(market);
 
     const generalKandelDistributionHelper = new GeneralKandelDistributionHelper(
       distributionHelper,

@@ -1076,6 +1076,7 @@ describe("Semibook unit test suite", () => {
       const tickPriceHelper = new TickPriceHelper(marketSide, {
         base: { decimals: baseTokenDecimals },
         quote: { decimals: quoteTokenDecimals },
+        tickSpacing: 1,
       });
 
       const mangroveEventSubscriberMock = mock(MangroveEventSubscriber);
@@ -1164,6 +1165,7 @@ describe("Semibook unit test suite", () => {
       const tickPriceHelper = new TickPriceHelper(marketSide, {
         base: { decimals: baseTokenDecimals },
         quote: { decimals: quoteTokenDecimals },
+        tickSpacing: 1,
       });
 
       const mangroveEventSubscriberMock = mock(MangroveEventSubscriber);
