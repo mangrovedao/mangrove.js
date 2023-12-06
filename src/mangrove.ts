@@ -129,7 +129,7 @@ class Mangrove {
   /**
    * Creates an instance of the Mangrove Typescript object
    *
-   * @param {object} [options] Optional provider options.
+   * @param {Mangrove.CreateOptions | string} [options] Optional provider options
    *
    * @example
    * ```
@@ -144,6 +144,8 @@ class Mangrove {
    * * mnemonic: `horse battery ...`
    * * path: `m/44'/60'/0'/...`
    * * provider: url, provider object, or chain string
+   *
+   * @see {@link Mangrove.CreateOptions} for more details on optional provider parameters.
    *
    * @returns {Mangrove} Returns an instance mangrove.js
    */
@@ -238,6 +240,11 @@ class Mangrove {
     return mgv;
   }
 
+  /**
+   * Disconnect from Mangrove.
+   *
+   * Removes all listeners from the provider and stops the reliable provider.
+   */
   disconnect(): void {
     this.provider.removeAllListeners();
     if (this.reliableProvider) {
@@ -248,7 +255,6 @@ class Mangrove {
       contextInfo: "mangrove.base",
     });
   }
-  //TODO types in module namespace with same name as class
 
   constructor(params: {
     signer: Signer;
@@ -297,7 +303,6 @@ class Mangrove {
       "MangroveOrder",
       this.network.name,
     );
-    // this.orderContract = typechain.MangroveOrder__factory.connect(
     this.orderContract = typechain.MangroveOrder__factory.connect(
       orderAddress,
       this.signer,
@@ -405,7 +410,7 @@ class Mangrove {
   }
 
   /**
-   * Initialize reliable provider
+   * Initialize reliable provider.
    */
   private async initializeProvider(): Promise<void> {
     if (!this.reliableProvider) {
@@ -475,7 +480,8 @@ class Mangrove {
     }
   }
 
-  /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/
+  /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders.
+   */
   async liquidityProvider(
     p:
       | Market
@@ -528,6 +534,9 @@ class Mangrove {
     return Token.createTokenFromId(tokenId, this, options);
   }
 
+  /**
+   * Return token instance from address, fetching data (decimals) from chain if needed.
+   */
   async tokenFromAddress(address: string): Promise<Token> {
     return Token.createTokenFromAddress(address, this);
   }
