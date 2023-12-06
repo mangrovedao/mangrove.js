@@ -398,7 +398,7 @@ class Semibook
     const initialGives = Big(params.given);
     const maxTick = params.limitPrice
       ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
-      : MAX_TICK;
+      : MAX_TICK.toNumber();
 
     const { maxTickMatched, remainingFillVolume, totalGot, totalGave } =
       await this.simulateMarketOrder(maxTick, initialGives, buying);
@@ -410,11 +410,11 @@ class Semibook
 
   /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */
   async simulateMarketOrder(
-    maxTick: BigNumber,
+    maxTick: number,
     initialFillVolume: Big,
     fillWants: boolean,
   ): Promise<{
-    maxTickMatched?: BigNumber;
+    maxTickMatched?: number;
     remainingFillVolume: Big;
     totalGot: Big;
     totalGave: Big;
@@ -426,7 +426,7 @@ class Semibook
 
     const initialAccumulator = {
       stop: false,
-      maxTickMatched: undefined as BigNumber | undefined,
+      maxTickMatched: undefined as number | undefined,
       remainingFillVolume: initialFillVolume,
       got: Big(0),
       gave: Big(0),
@@ -451,7 +451,7 @@ class Semibook
         acc.offersConsidered += 1;
 
         // bad price
-        if (offer.tick.gt(maxTick)) {
+        if (offer.tick > maxTick) {
           acc.stop = true;
         } else {
           acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
@@ -1015,10 +1015,7 @@ class Semibook
         (chunk) =>
           chunk.length === 0
             ? true
-            : this.isPriceBetter(
-                desiredPrice,
-                chunk[chunk.length - 1].tick.toNumber(),
-              ),
+            : this.isPriceBetter(desiredPrice, chunk[chunk.length - 1].tick),
       );
     } else if ("desiredVolume" in options) {
       const desiredVolume = options.desiredVolume;
@@ -1153,7 +1150,8 @@ class Semibook
     const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
     const gives = outbound_tkn.fromUnits(raw.gives);
     const id = Semibook.rawIdToId(raw.id);
-    const price = this.tickPriceHelper.priceFromTick(raw.tick);
+    const tick = raw.tick.toNumber();
+    const price = this.tickPriceHelper.priceFromTick(tick);
 
     if (id === undefined) throw new Error("Offer ID is 0");
     return {
@@ -1161,10 +1159,10 @@ class Semibook
       gasprice: raw.gasprice.toNumber(),
       maker: raw.maker,
       gasreq: raw.gasreq.toNumber(),
-      tick: raw.tick,
-      gives: gives,
-      price: price,
-      wants: this.tickPriceHelper.inboundFromOutbound(raw.tick, gives),
+      tick,
+      gives,
+      price,
+      wants: this.tickPriceHelper.inboundFromOutbound(tick, gives),
       volume: this.market.getVolumeForGivesAndPrice(this.ba, gives, price),
     };
   }
@@ -1274,7 +1272,7 @@ class CacheIterator implements Semibook.CacheIterator {
         if (value.next !== undefined) {
           this.#latest = value.next;
         } else {
-          const nextBin = this.#binCache.get(value.tick.toNumber())?.next;
+          const nextBin = this.#binCache.get(value.tick)?.next;
           this.#latest =
             nextBin === undefined
               ? undefined
@@ -1337,26 +1335,26 @@ export class SemibookCacheOperations {
     }
 
     state.offerCache.set(offer.id, offer);
-    let bin = state.binCache.get(offer.tick.toNumber());
+    let bin = state.binCache.get(offer.tick);
 
     if (bin === undefined) {
       bin = {
         offers: [offer.id],
-        tick: offer.tick.toNumber(),
+        tick: offer.tick,
         prev: Array.from(state.binCache.keys())
-          .filter((tick) => tick < offer.tick.toNumber())
+          .filter((tick) => tick < offer.tick)
           .reduce(
             (acc, tick) => (acc == undefined ? tick : tick > acc ? tick : acc),
             undefined as number | undefined,
           ),
         next: Array.from(state.binCache.keys())
-          .filter((tick) => tick > offer.tick.toNumber())
+          .filter((tick) => tick > offer.tick)
           .reduce(
             (acc, tick) => (acc == undefined ? tick : tick < acc ? tick : acc),
             undefined as number | undefined,
           ),
       };
-      state.binCache.set(offer.tick.toNumber(), bin);
+      state.binCache.set(offer.tick, bin);
       if (bin.prev !== undefined) {
         const prevBin = state.binCache.get(bin.prev);
         if (prevBin) {
@@ -1386,7 +1384,7 @@ export class SemibookCacheOperations {
       (acc, tick) => (tick > acc ? tick : acc),
       MIN_TICK.toNumber(),
     );
-    if (offer.tick.toNumber() === worstTick) {
+    if (offer.tick === worstTick) {
       state.worstInCache = offer.id;
     }
 
@@ -1422,12 +1420,12 @@ export class SemibookCacheOperations {
 
     if (
       offer.next === undefined &&
-      state.binCache.get(offer.tick.toNumber())?.next === undefined
+      state.binCache.get(offer.tick)?.next === undefined
     ) {
       if (offer.prev !== undefined) {
         state.worstInCache = offer.prev;
       } else {
-        const prevBinTick = state.binCache.get(offer.tick.toNumber())?.prev;
+        const prevBinTick = state.binCache.get(offer.tick)?.prev;
         if (prevBinTick !== undefined) {
           const prevBin = state.binCache.get(prevBinTick);
           if (prevBin) {
@@ -1440,7 +1438,7 @@ export class SemibookCacheOperations {
     } else if (offer.next !== undefined) {
       this.getOfferFromCacheOrFail(state, offer.next).prev = offer.prev;
     }
-    const bin = state.binCache.get(offer.tick.toNumber());
+    const bin = state.binCache.get(offer.tick);
     const prevOffer =
       offer.prev === undefined ? undefined : state.offerCache.get(offer.prev);
     const prevBin = bin?.prev;
@@ -1448,7 +1446,7 @@ export class SemibookCacheOperations {
       if (offer.next !== undefined) {
         state.bestInCache = offer.next;
       } else {
-        const nextBinTick = state.binCache.get(offer.tick.toNumber())?.next;
+        const nextBinTick = state.binCache.get(offer.tick)?.next;
         if (nextBinTick !== undefined) {
           const nextBin = state.binCache.get(nextBinTick);
           if (nextBin) {
@@ -1468,7 +1466,7 @@ export class SemibookCacheOperations {
     if (bin !== undefined && bin.offers.length > 1) {
       bin.offers = bin.offers.filter((id) => id !== offer.id);
     } else if (bin !== undefined) {
-      state.binCache.delete(offer.tick.toNumber());
+      state.binCache.delete(offer.tick);
       if (bin.next !== undefined) {
         const nextBin = state.binCache.get(bin.next);
         if (nextBin) {

@@ -119,22 +119,18 @@ class GeometricKandelDistributionHelper {
       if (midPrice == undefined) {
         throw Error("midPrice or midBaseQuoteTick must be provided.");
       }
-      midBaseQuoteTick = this.helper.askTickPriceHelper
-        .tickFromPrice(midPrice)
-        .toNumber();
+      midBaseQuoteTick = this.helper.askTickPriceHelper.tickFromPrice(midPrice);
     }
     if (minBaseQuoteTick == undefined) {
       if (minPrice != undefined) {
-        minBaseQuoteTick = this.helper.askTickPriceHelper
-          .tickFromPrice(minPrice)
-          .toNumber();
+        minBaseQuoteTick =
+          this.helper.askTickPriceHelper.tickFromPrice(minPrice);
       }
     }
     if (maxBaseQuoteTick == undefined) {
       if (maxPrice != undefined) {
-        maxBaseQuoteTick = this.helper.askTickPriceHelper
-          .tickFromPrice(maxPrice)
-          .toNumber();
+        maxBaseQuoteTick =
+          this.helper.askTickPriceHelper.tickFromPrice(maxPrice);
       }
     }
     if (baseQuoteTickOffset == undefined) {

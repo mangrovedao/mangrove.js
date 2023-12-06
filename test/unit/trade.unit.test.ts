@@ -153,7 +153,7 @@ describe("Trade unit tests suite", () => {
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         tickPriceHelper
-          .priceFromTick(BigNumber.from(params.maxTick))
+          .priceFromTick(params.maxTick)
           .mul(100 + slippage)
           .div(100),
       );
@@ -204,7 +204,7 @@ describe("Trade unit tests suite", () => {
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         tickPriceHelper
-          .priceFromTick(BigNumber.from(params.maxTick))
+          .priceFromTick(params.maxTick)
           .mul(100 + slippage)
           .div(100),
       );
@@ -434,7 +434,7 @@ describe("Trade unit tests suite", () => {
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         tickPriceHelper
-          .priceFromTick(BigNumber.from(params.maxTick))
+          .priceFromTick(params.maxTick)
           .mul(100 - slippage)
           .div(100),
       );
@@ -486,7 +486,7 @@ describe("Trade unit tests suite", () => {
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         tickPriceHelper
-          .priceFromTick(BigNumber.from(params.maxTick))
+          .priceFromTick(params.maxTick)
           .mul(100 - slippage)
           .div(100),
       );

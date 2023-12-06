@@ -281,13 +281,9 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
         },
         expectedLiveOutOfRange: [],
         expectedMinPrice: Big(1000),
-        expectedMinBaseQuoteTick: askTickPriceHelper
-          .tickFromPrice(1000)
-          .toNumber(),
+        expectedMinBaseQuoteTick: askTickPriceHelper.tickFromPrice(1000),
         expectedMaxPrice: Big(32000),
-        expectedMaxBaseQuoteTick: askTickPriceHelper
-          .tickFromPrice(32000)
-          .toNumber(),
+        expectedMaxBaseQuoteTick: askTickPriceHelper.tickFromPrice(32000),
         expectedStatuses: expectedStatuses,
       });
     });
@@ -316,20 +312,20 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
           {
             offerType: "bids",
             index: 0,
-            tick: bidTickPriceHelper.tickFromPrice(1000).toNumber(),
+            tick: bidTickPriceHelper.tickFromPrice(1000),
             offerId: 43,
             live: false,
           },
           {
             offerType: "bids",
-            tick: bidTickPriceHelper.tickFromPrice(2000).toNumber(),
+            tick: bidTickPriceHelper.tickFromPrice(2000),
             index: 1,
             offerId: 42,
             live: true,
           },
           {
             offerType: "bids",
-            tick: bidTickPriceHelper.tickFromPrice(15000).toNumber(),
+            tick: bidTickPriceHelper.tickFromPrice(15000),
             index: 4,
             offerId: 55,
             live: true,
@@ -345,39 +341,31 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
           offerId: 42,
         },
         expectedMinPrice: Big(1000),
-        expectedMinBaseQuoteTick: askTickPriceHelper
-          .tickFromPrice(1000)
-          .toNumber(),
+        expectedMinBaseQuoteTick: askTickPriceHelper.tickFromPrice(1000),
         expectedMaxPrice: Big(32000),
-        expectedMaxBaseQuoteTick: askTickPriceHelper
-          .tickFromPrice(32000)
-          .toNumber(),
+        expectedMaxBaseQuoteTick: askTickPriceHelper.tickFromPrice(32000),
         expectedLiveOutOfRange: [],
         expectedStatuses: [
           {
             expectedLiveBid: true,
             expectedPrice: Big(1000),
-            expectedBaseQuoteTick: -bidTickPriceHelper
-              .tickFromPrice(1000)
-              .toNumber(),
+            expectedBaseQuoteTick: -bidTickPriceHelper.tickFromPrice(1000),
             bids: {
               live: false,
               offerId: 43,
               price: Big(1000),
-              tick: bidTickPriceHelper.tickFromPrice(1000).toNumber(),
+              tick: bidTickPriceHelper.tickFromPrice(1000),
             },
           },
           {
             expectedLiveBid: true,
             expectedPrice: Big(2000),
-            expectedBaseQuoteTick: -bidTickPriceHelper
-              .tickFromPrice(2000)
-              .toNumber(),
+            expectedBaseQuoteTick: -bidTickPriceHelper.tickFromPrice(2000),
             bids: {
               live: true,
               offerId: 42,
               price: Big(2000),
-              tick: bidTickPriceHelper.tickFromPrice(2000).toNumber(),
+              tick: bidTickPriceHelper.tickFromPrice(2000),
             },
           },
           {
@@ -398,7 +386,7 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
               live: true,
               offerId: 55,
               price: Big(15000),
-              tick: bidTickPriceHelper.tickFromPrice(15000).toNumber(),
+              tick: bidTickPriceHelper.tickFromPrice(15000),
             },
           },
           {
@@ -460,42 +448,42 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
             [
               {
                 offerType: "bids",
-                tick: bidTickPriceHelper.tickFromPrice(1000).toNumber(),
+                tick: bidTickPriceHelper.tickFromPrice(1000),
                 index: 0,
                 offerId: 42,
                 live: true,
               },
               {
                 offerType: "bids",
-                tick: bidTickPriceHelper.tickFromPrice(2000).toNumber(),
+                tick: bidTickPriceHelper.tickFromPrice(2000),
                 index: 1,
                 offerId: 43,
                 live: dead < 3,
               },
               {
                 offerType: "bids",
-                tick: bidTickPriceHelper.tickFromPrice(4000).toNumber(),
+                tick: bidTickPriceHelper.tickFromPrice(4000),
                 index: 2,
                 offerId: 44,
                 live: dead < 1,
               },
               {
                 offerType: "asks",
-                tick: askTickPriceHelper.tickFromPrice(8000).toNumber(),
+                tick: askTickPriceHelper.tickFromPrice(8000),
                 index: 3,
                 offerId: 45,
                 live: dead < 2,
               },
               {
                 offerType: "asks",
-                tick: askTickPriceHelper.tickFromPrice(16000).toNumber(),
+                tick: askTickPriceHelper.tickFromPrice(16000),
                 index: 4,
                 offerId: 46,
                 live: dead < 4,
               },
               {
                 offerType: "asks",
-                tick: askTickPriceHelper.tickFromPrice(32000).toNumber(),
+                tick: askTickPriceHelper.tickFromPrice(32000),
                 index: 5,
                 offerId: 47,
                 live: true,
@@ -549,14 +537,14 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
         [
           {
             offerType: "bids",
-            tick: bidTickPriceHelper.tickFromPrice(5000).toNumber(),
+            tick: bidTickPriceHelper.tickFromPrice(5000),
             index: 3,
             offerId: 42,
             live: true,
           },
           {
             offerType: "bids",
-            tick: bidTickPriceHelper.tickFromPrice(2000).toNumber(),
+            tick: bidTickPriceHelper.tickFromPrice(2000),
             index: 1,
             offerId: 43,
             live: true,
@@ -568,12 +556,8 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
       assertStatuses({
         expectedMinPrice: Big(1000),
         expectedMaxPrice: Big(2000),
-        expectedMinBaseQuoteTick: askTickPriceHelper
-          .tickFromPrice(1000)
-          .toNumber(),
-        expectedMaxBaseQuoteTick: askTickPriceHelper
-          .tickFromPrice(Big(2000))
-          .toNumber(),
+        expectedMinBaseQuoteTick: askTickPriceHelper.tickFromPrice(1000),
+        expectedMaxBaseQuoteTick: askTickPriceHelper.tickFromPrice(Big(2000)),
         expectedBaseOffer: {
           offerType: "bids",
           index: 1,
@@ -584,21 +568,17 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
           {
             expectedLiveBid: true,
             expectedPrice: Big(1000),
-            expectedBaseQuoteTick: -bidTickPriceHelper
-              .tickFromPrice(Big(1000))
-              .toNumber(),
+            expectedBaseQuoteTick: -bidTickPriceHelper.tickFromPrice(Big(1000)),
           },
           {
             expectedLiveBid: true,
             expectedPrice: Big(2000),
-            expectedBaseQuoteTick: -bidTickPriceHelper
-              .tickFromPrice(Big(2000))
-              .toNumber(),
+            expectedBaseQuoteTick: -bidTickPriceHelper.tickFromPrice(Big(2000)),
             bids: {
               live: true,
               offerId: 43,
               price: Big(2000),
-              tick: bidTickPriceHelper.tickFromPrice(Big(2000)).toNumber(),
+              tick: bidTickPriceHelper.tickFromPrice(Big(2000)),
             },
           },
         ],

@@ -676,16 +676,16 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
       const minBase = await kandel.getMinimumVolumeForIndex({
         offerType: "asks",
         index: 0,
-        tick: kandel.generalKandelDistributionGenerator.generalDistributionHelper.helper.askTickPriceHelper
-          .tickFromPrice(1000)
-          .toNumber(),
+        tick: kandel.generalKandelDistributionGenerator.generalDistributionHelper.helper.askTickPriceHelper.tickFromPrice(
+          1000,
+        ),
       });
       const minQuote = await kandel.getMinimumVolumeForIndex({
         offerType: "bids",
         index: 0,
-        tick: kandel.generalKandelDistributionGenerator.generalDistributionHelper.helper.bidTickPriceHelper
-          .tickFromPrice(1000)
-          .toNumber(),
+        tick: kandel.generalKandelDistributionGenerator.generalDistributionHelper.helper.bidTickPriceHelper.tickFromPrice(
+          1000,
+        ),
       });
 
       // Assert

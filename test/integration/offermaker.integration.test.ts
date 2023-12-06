@@ -375,7 +375,7 @@ describe("OfferMaker integration test suite", () => {
 
       const asks = onchain_lp.asks();
       assert.deepStrictEqual(
-        asks[0].tick.toNumber(),
+        asks[0].tick,
         12,
         "offer should have updated tick",
       );

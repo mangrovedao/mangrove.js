@@ -1,5 +1,6 @@
 # Next version
 
+- fix: Change tick and tickSpacing to be number type
 - feat!: Rename tick parameters of 'Market.simulateGas' and 'Semibook.simulateMarketOrder' to 'maxTick'.
 
 # 2.0.0-12

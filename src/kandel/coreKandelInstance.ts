@@ -25,7 +25,7 @@ export type MarketOrMarketFactory =
   | ((
       baseAddress: string,
       quoteAddress: string,
-      tickSpacing: ethers.BigNumberish,
+      tickSpacing: number,
     ) => Promise<Market>);
 
 /**
@@ -82,7 +82,7 @@ class CoreKandelInstance {
         ? await params.market(
             await kandel.BASE(),
             await kandel.QUOTE(),
-            (await kandel.TICK_SPACING()).toString(),
+            (await kandel.TICK_SPACING()).toNumber(),
           )
         : params.market;
 

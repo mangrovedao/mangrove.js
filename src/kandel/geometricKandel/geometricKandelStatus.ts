@@ -132,9 +132,9 @@ class GeometricKandelStatus {
     offers: OffersWithLiveness,
   ): Statuses {
     const midBaseQuoteTick =
-      this.geometricDistributionHelper.helper.askTickPriceHelper
-        .tickFromPrice(midPrice)
-        .toNumber();
+      this.geometricDistributionHelper.helper.askTickPriceHelper.tickFromPrice(
+        midPrice,
+      );
 
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
     const offersInRange = offers.filter((x) => x.index < pricePoints);

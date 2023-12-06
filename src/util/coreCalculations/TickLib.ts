@@ -117,7 +117,7 @@ export type Tick = int;
 // library TickLib {
 
   export function inRange(tick: Tick): boolean {
-    return tick >= MIN_TICK && tick <= MAX_TICK;
+    return tick.gte(MIN_TICK) && tick.lte(MAX_TICK);
   }
 
   export function eq(tick1: Tick, tick2: Tick): boolean {

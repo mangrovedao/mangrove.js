@@ -169,7 +169,7 @@ describe("Semibook unit test suite", () => {
         price: Big(1),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
@@ -197,7 +197,7 @@ describe("Semibook unit test suite", () => {
         wants: Big(1),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
@@ -211,7 +211,7 @@ describe("Semibook unit test suite", () => {
         price: Big(1),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(1),
+        tick: 1,
         offer_gasbase: 1000,
         volume: Big(42),
       };
@@ -235,16 +235,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer1.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id],
         prev: undefined,
-        next: offer2.tick.toNumber(),
+        next: offer2.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id],
-        prev: offer1.tick.toNumber(),
+        prev: offer1.tick,
         next: undefined,
       });
     });
@@ -262,11 +262,11 @@ describe("Semibook unit test suite", () => {
         price: Big(1),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(1),
+        tick: 1,
         offer_gasbase: 1000,
         volume: Big(42),
       };
-      const offer2 = { ...offer1, id: 2, tick: BigNumber.from(0) };
+      const offer2 = { ...offer1, id: 2, tick: 0 };
       const state: Semibook.State = {
         offerCache: new Map(),
         binCache: new Map(),
@@ -287,17 +287,17 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer1.next, undefined);
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id],
-        prev: offer2.tick.toNumber(),
+        prev: offer2.tick,
         next: undefined,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id],
         prev: undefined,
-        next: offer1.tick.toNumber(),
+        next: offer1.tick,
       });
     });
 
@@ -314,19 +314,19 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(2),
+        tick: 2,
       };
 
       const state: Semibook.State = {
@@ -352,22 +352,22 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offer3.next, undefined);
       assert.deepStrictEqual(offer3.prev, undefined);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id],
         prev: undefined,
-        next: offer2.tick.toNumber(),
+        next: offer2.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id],
-        prev: offer1.tick.toNumber(),
-        next: offer3.tick.toNumber(),
+        prev: offer1.tick,
+        next: offer3.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer3.tick.toNumber()), {
-        tick: offer3.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer3.tick), {
+        tick: offer3.tick,
         offers: [offer3.id],
-        prev: offer2.tick.toNumber(),
+        prev: offer2.tick,
         next: undefined,
       });
     });
@@ -385,24 +385,24 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(2),
+        tick: 2,
       };
       const offer4: Market.Offer = {
         ...offer1,
         id: 4,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
 
       const state: Semibook.State = {
@@ -432,22 +432,22 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer3.prev, undefined);
       assert.deepStrictEqual(offer4.next, undefined);
       assert.deepStrictEqual(offer4.prev, offer2.id);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id],
         prev: undefined,
-        next: offer2.tick.toNumber(),
+        next: offer2.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id, offer4.id],
-        prev: offer1.tick.toNumber(),
-        next: offer3.tick.toNumber(),
+        prev: offer1.tick,
+        next: offer3.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer3.tick.toNumber()), {
-        tick: offer3.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer3.tick), {
+        tick: offer3.tick,
         offers: [offer3.id],
-        prev: offer2.tick.toNumber(),
+        prev: offer2.tick,
         next: undefined,
       });
     });
@@ -465,19 +465,19 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
 
       const state: Semibook.State = {
@@ -504,16 +504,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offer3.next, undefined);
       assert.deepStrictEqual(offer3.prev, offer2.id);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id],
         prev: undefined,
-        next: offer2.tick.toNumber(),
+        next: offer2.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id, offer3.id],
-        prev: offer1.tick.toNumber(),
+        prev: offer1.tick,
         next: undefined,
       });
     });
@@ -531,19 +531,19 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(0),
+        tick: 0,
       };
 
       const state: Semibook.State = {
@@ -571,16 +571,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offer3.next, undefined);
       assert.deepStrictEqual(offer3.prev, offer1.id);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id, offer3.id],
         prev: undefined,
-        next: offer2.tick.toNumber(),
+        next: offer2.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id],
-        prev: offer1.tick.toNumber(),
+        prev: offer1.tick,
         next: undefined,
       });
     });
@@ -598,7 +598,7 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
@@ -620,7 +620,7 @@ describe("Semibook unit test suite", () => {
       const offer: Market.Offer = {
         ...offer1,
         id: 6,
-        tick: BigNumber.from(-1),
+        tick: -1,
       };
 
       const isInserted = book.insertOffer(state, offer, options);
@@ -643,7 +643,7 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
@@ -666,7 +666,7 @@ describe("Semibook unit test suite", () => {
         ...offer1,
         id: 6,
         price: Big(0),
-        tick: BigNumber.from(0),
+        tick: 0,
       };
 
       const isInserted = book.insertOffer(state, offer, options);
@@ -709,20 +709,20 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
 
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
 
       const state: Semibook.State = {
@@ -748,16 +748,16 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id],
         prev: undefined,
-        next: offer2.tick.toNumber(),
+        next: offer2.tick,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id],
-        prev: offer1.tick.toNumber(),
+        prev: offer1.tick,
         next: undefined,
       });
     });
@@ -775,20 +775,20 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(0),
+        tick: 0,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(0),
+        tick: 0,
       };
 
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
 
       const state: Semibook.State = {
@@ -814,16 +814,13 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offer2.prev, offer1.id);
       assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id, offer2.id],
         prev: undefined,
         next: undefined,
       });
-      assert.deepStrictEqual(
-        state.binCache.get(offer3.tick.toNumber()),
-        undefined,
-      );
+      assert.deepStrictEqual(state.binCache.get(offer3.tick), undefined);
     });
 
     it("removes offer from non empty book, offer is worst offer, has others at same tick", () => {
@@ -839,20 +836,20 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(1),
+        tick: 1,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(0),
+        tick: 0,
       };
 
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(0),
+        tick: 0,
       };
 
       const state: Semibook.State = {
@@ -878,17 +875,17 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.prev, undefined);
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id],
-        prev: offer2.tick.toNumber(),
+        prev: offer2.tick,
         next: undefined,
       });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick.toNumber()), {
-        tick: offer2.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
+        tick: offer2.tick,
         offers: [offer2.id],
         prev: undefined,
-        next: offer1.tick.toNumber(),
+        next: offer1.tick,
       });
     });
 
@@ -905,20 +902,20 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(1),
+        tick: 1,
         offer_gasbase: 1000,
         volume: Big(42),
       };
       const offer2: Market.Offer = {
         ...offer1,
         id: 2,
-        tick: BigNumber.from(1),
+        tick: 1,
       };
 
       const offer3: Market.Offer = {
         ...offer1,
         id: 3,
-        tick: BigNumber.from(0),
+        tick: 0,
       };
 
       const state: Semibook.State = {
@@ -944,16 +941,13 @@ describe("Semibook unit test suite", () => {
       assert.deepStrictEqual(offer2.prev, offer1.id);
       assert.deepStrictEqual(offer2.next, undefined);
       assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick.toNumber()), {
-        tick: offer1.tick.toNumber(),
+      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
+        tick: offer1.tick,
         offers: [offer1.id, offer2.id],
         prev: undefined,
         next: undefined,
       });
-      assert.deepStrictEqual(
-        state.binCache.get(offer3.tick.toNumber()),
-        undefined,
-      );
+      assert.deepStrictEqual(state.binCache.get(offer3.tick), undefined);
     });
 
     it("removes last offer in book", () => {
@@ -969,7 +963,7 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(2),
+        tick: 2,
         offer_gasbase: 1000,
         volume: Big(42),
       };
@@ -1025,7 +1019,7 @@ describe("Semibook unit test suite", () => {
         price: Big(0),
         next: undefined,
         prev: undefined,
-        tick: BigNumber.from(2),
+        tick: 2,
         offer_gasbase: 1000,
         volume: Big(42),
       };
@@ -1048,7 +1042,7 @@ describe("Semibook unit test suite", () => {
 
   describe("rawOfferSlimToOfferSlim", () => {
     const rawGives = BigNumber.from(2);
-    const rawTick = BigNumber.from(1);
+    const rawTick = 1;
 
     const rawOffer = {
       id: BigNumber.from(1),
@@ -1056,7 +1050,7 @@ describe("Semibook unit test suite", () => {
       maker: "maker",
       gasreq: BigNumber.from(0),
       gives: rawGives,
-      tick: rawTick,
+      tick: BigNumber.from(rawTick),
     };
 
     it("returns offer with correct values for bids", async function () {
@@ -1138,7 +1132,7 @@ describe("Semibook unit test suite", () => {
         maker: rawOffer.maker,
         gasreq: rawOffer.gasreq.toNumber(),
         gives: expectedGives,
-        tick: rawOffer.tick,
+        tick: rawOffer.tick.toNumber(),
         price: expectedPrice,
         wants: expectedPrice.mul(expectedGives).round(),
         volume: expectedVolume,
@@ -1227,7 +1221,7 @@ describe("Semibook unit test suite", () => {
         gasreq: rawOffer.gasreq.toNumber(),
         gives: expectedGives,
         wants: expectedPrice.mul(expectedGives).round(),
-        tick: rawOffer.tick,
+        tick: rawOffer.tick.toNumber(),
         price: expectedPrice,
         volume: expectedVolume,
       };

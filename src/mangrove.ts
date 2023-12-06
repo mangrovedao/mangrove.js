@@ -482,7 +482,7 @@ class Mangrove {
       | {
           base: string;
           quote: string;
-          tickSpacing: ethers.BigNumberish;
+          tickSpacing: number;
           bookOptions?: Market.BookOptions;
         },
   ): Promise<LiquidityProvider> {
@@ -914,7 +914,7 @@ class Mangrove {
       return {
         base,
         quote,
-        tickSpacing: tickSpacing,
+        tickSpacing: tickSpacing.toNumber(),
         asksConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
               data[base.address].configs[quote.address],

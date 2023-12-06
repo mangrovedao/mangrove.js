@@ -10,7 +10,6 @@ import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelIns
 import GeometricKandelDistributionHelper from "./kandel/geometricKandel/geometricKandelDistributionHelper";
 import GeneralKandelDistributionHelper from "./kandel/generalKandelDistributionHelper";
 import configuration from "./configuration";
-import { BigNumberish } from "ethers";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -53,16 +52,12 @@ class KandelStrategies {
       | ((
           baseAddress: string,
           quoteAddress: string,
-          tickSpacing: BigNumberish,
+          tickSpacing: number,
         ) => Promise<Market>);
   }) {
     const market =
       params.market ??
-      ((
-        baseAddress: string,
-        quoteAddress: string,
-        tickSpacing: BigNumberish,
-      ) => {
+      ((baseAddress: string, quoteAddress: string, tickSpacing: number) => {
         const baseToken = configuration.tokens.getTokenIdFromAddress(
           baseAddress,
           this.mgv.network.name,

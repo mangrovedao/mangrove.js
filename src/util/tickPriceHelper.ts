@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber } from "ethers";
 import * as TickLib from "./coreCalculations/TickLib";
 import Market from "../market";
 
@@ -32,7 +32,7 @@ class TickPriceHelper {
    * @param tick tick to calculate price for
    * @returns price at tick (not to be confused with offer list ratio).
    */
-  priceFromTick(tick: BigNumberish): Big {
+  priceFromTick(tick: number): Big {
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
     Big.DP = 300;
@@ -60,7 +60,7 @@ class TickPriceHelper {
    * @returns raw offer list tick for price
    */
   // TODO: Consider allowing the user to control whether to round up or down.
-  tickFromPrice(price: Bigish): BigNumber {
+  tickFromPrice(price: Bigish): number {
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
     Big.DP = 300;
@@ -90,11 +90,7 @@ class TickPriceHelper {
    * @param roundUp whether to round up (true) or down (falsy)
    * @returns inbound amount.
    */
-  inboundFromOutbound(
-    tick: BigNumberish,
-    outboundAmount: Bigish,
-    roundUp?: boolean,
-  ) {
+  inboundFromOutbound(tick: number, outboundAmount: Bigish, roundUp?: boolean) {
     const rawOutbound = UnitCalculations.toUnits(
       outboundAmount,
       this.ba === "bids"
@@ -119,11 +115,7 @@ class TickPriceHelper {
    * @param roundUp whether to round up (true) or down (falsy)
    * @returns inbound amount.
    */
-  outboundFromInbound(
-    tick: BigNumberish,
-    inboundAmount: Bigish,
-    roundUp?: boolean,
-  ) {
+  outboundFromInbound(tick: number, inboundAmount: Bigish, roundUp?: boolean) {
     const rawInbound = UnitCalculations.toUnits(
       inboundAmount,
       this.ba == "bids"
@@ -147,7 +139,7 @@ class TickPriceHelper {
    * @param outboundVolume outbound amount to calculate the tick for
    * @returns raw offer list tick for volumes
    */
-  tickFromVolumes(inboundVolume: Bigish, outboundVolume: Bigish): BigNumber {
+  tickFromVolumes(inboundVolume: Bigish, outboundVolume: Bigish): number {
     const rawInbound = UnitCalculations.toUnits(
       inboundVolume,
       this.ba === "bids"
@@ -161,7 +153,7 @@ class TickPriceHelper {
         : this.market.base.decimals,
     );
     const tick = TickLib.tickFromVolumes(rawInbound, rawOutbound);
-    return tick;
+    return tick.toNumber();
   }
 
   // Helper functions for converting between ticks and ratios as Big instead of the special format used by TickLib.
@@ -175,7 +167,7 @@ class TickPriceHelper {
    * @param tick tick to calculate the ratio for
    * @returns ratio as a Big.
    */
-  static rawRatioFromTick(tick: BigNumberish): Big {
+  static rawRatioFromTick(tick: number): Big {
     const { man, exp } = TickLib.ratioFromTick(BigNumber.from(tick));
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
@@ -194,9 +186,9 @@ class TickPriceHelper {
    * @param ratio ratio to calculate the tick for
    * @returns a tick that approximates the given ratio.
    */
-  static tickFromRawRatio(ratio: Big): BigNumber {
+  static tickFromRawRatio(ratio: Big): number {
     const { man, exp } = TickPriceHelper.rawRatioToMantissaExponent(ratio);
-    return TickLib.tickFromRatio(man, exp);
+    return TickLib.tickFromRatio(man, exp).toNumber();
   }
 
   static rawRatioToMantissaExponent(ratio: Big): {

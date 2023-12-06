@@ -684,14 +684,14 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
           .filter((x) => x.offerType == "bids")
           .map(({ offer, index }) => ({
             index,
-            tick: offer.tick.toNumber(),
+            tick: offer.tick,
             gives: offer.gives,
           })),
         asks: offers
           .filter((x) => x.offerType == "bids")
           .map(({ offer, index }) => ({
             index,
-            tick: offer.tick.toNumber(),
+            tick: offer.tick,
             gives: offer.gives,
           })),
       };

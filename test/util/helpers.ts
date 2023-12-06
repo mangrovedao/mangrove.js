@@ -94,7 +94,7 @@ export type BaseOfferData = {
 };
 
 export type TickOfferData = BaseOfferData & {
-  tick: BigNumberish;
+  tick: number;
 };
 
 export type PriceOfferData = BaseOfferData & {
@@ -108,7 +108,7 @@ export const newOffer = async (
   params: { mgv: Mangrove } & BaseOfferData &
     (
       | {
-          tick: BigNumberish;
+          tick: number;
           outbound: string | Token;
           inbound: string | Token;
         }
@@ -126,7 +126,7 @@ export const newOffer = async (
 ): Promise<ContractTransaction> => {
   const mgv = params.mgv;
   const { gives, gasreq, gasprice } = params;
-  let tick: BigNumber;
+  let tick: number;
   let outboundToken: Token;
   let inboundToken: Token;
   if ("price" in params) {
@@ -151,7 +151,7 @@ export const newOffer = async (
     }).tickFromPrice(price);
   } else {
     const { outbound: outbound_tkn, inbound: inbound_tkn } = params;
-    tick = BigNumber.from(params.tick);
+    tick = params.tick;
     outboundToken = await getToken(outbound_tkn, mgv);
     inboundToken = await getToken(inbound_tkn, mgv);
   }
