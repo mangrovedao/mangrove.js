@@ -84,7 +84,6 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
         {
           base: new TokenCalculations(4, 4),
           quote: new TokenCalculations(6, 6),
-
           tickSpacing: 1,
         },
       );
