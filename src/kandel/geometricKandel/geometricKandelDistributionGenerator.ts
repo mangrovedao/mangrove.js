@@ -35,12 +35,11 @@ class GeometricKandelDistributionGenerator {
       baseQuoteTickOffset,
       midBaseQuoteTick,
       pricePoints,
-      generateFromMid,
     } = tickDistributionParams;
 
     const { baseQuoteTickIndex0, firstAskIndex } =
       this.calculateFirstOfferIndexAndFirstAskIndex(
-        generateFromMid,
+        params.generateFromMid,
         minBaseQuoteTick,
         midBaseQuoteTick,
         baseQuoteTickOffset,
