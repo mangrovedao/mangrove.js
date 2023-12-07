@@ -51,12 +51,9 @@ describe("Semibook integration tests suite", function () {
     mgvAdmin.disconnect();
   });
 
-  // FIXME: Test cache invariants
-
   describe("offerInfo", () => {
     it("returns offer from cache, when offer is in cache", async function () {
       // Put one offer on asks
-      // TODO: Can we explicitly get the id of this offer?
       const tx = await waitForTransaction(
         newOffer({
           mgv,
@@ -98,7 +95,7 @@ describe("Semibook integration tests suite", function () {
         base: "TokenA",
         quote: "TokenB",
         tickSpacing: 1,
-        bookOptions: { maxOffers: 0 },
+        bookOptions: { targetNumberOfTicks: 0 },
       });
       const asksSemibook = market.getSemibook("asks");
       const offer = await asksSemibook.offerInfo(1);
@@ -300,7 +297,7 @@ describe("Semibook integration tests suite", function () {
             base: "TokenA",
             quote: "TokenB",
             tickSpacing: 1,
-            bookOptions: { maxOffers: 0 },
+            bookOptions: { targetNumberOfTicks: 0 },
           });
           const semibook = market.getSemibook("asks");
 
@@ -341,7 +338,7 @@ describe("Semibook integration tests suite", function () {
             base: "TokenA",
             quote: "TokenB",
             tickSpacing: 1,
-            bookOptions: { maxOffers: 1 },
+            bookOptions: { targetNumberOfTicks: 1 },
           });
           const semibook = market.getSemibook("asks");
 
@@ -393,7 +390,7 @@ describe("Semibook integration tests suite", function () {
             base: "TokenA",
             quote: "TokenB",
             tickSpacing: 1,
-            bookOptions: { maxOffers: 1 },
+            bookOptions: { targetNumberOfTicks: 1 },
           });
           const semibook = market.getSemibook("asks");
 
@@ -905,6 +902,160 @@ describe("Semibook integration tests suite", function () {
   });
 
   describe("initialization options", () => {
+    describe("Option.targetNumberOfTicks", () => {
+      async function createOffer(tickAndGives: number) {
+        const tx = await waitForTransaction(
+          newOffer({
+            mgv,
+            outbound: "TokenA",
+            inbound: "TokenB",
+            gives: tickAndGives,
+            tick: tickAndGives,
+          }),
+        );
+
+        await mgvTestUtil.waitForBlock(mgv, tx!.blockNumber);
+      }
+      async function createOffers(count: number) {
+        if (count < 1) {
+          throw new Error("count must be positive");
+        }
+        for (let i = 1; i <= count; i++) {
+          await createOffer(i);
+        }
+      }
+
+      it("does not fail if offer list is empty", async function () {
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 1,
+            chunkSize: 1,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(0);
+        expect(semibook.getLatestState().isComplete).to.equal(true);
+      });
+
+      it("fetches only one chunk if the first contains the target number of ticks", async function () {
+        await createOffers(2);
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 1,
+            chunkSize: 1,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(1);
+        expect(semibook.getLatestState().binCache.size).to.equal(1);
+        expect(semibook.getLatestState().isComplete).to.equal(false);
+      });
+
+      it("fetches only one chunk but more ticks if the first chunk contains more than the target number of ticks", async function () {
+        await createOffers(2);
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 1,
+            chunkSize: 2,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(2);
+        expect(semibook.getLatestState().binCache.size).to.equal(2);
+        expect(semibook.getLatestState().isComplete).to.equal(true);
+      });
+
+      it("fetches multiple chunks until at least target number of ticks have been fetched, then stops", async function () {
+        await createOffers(3);
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 2,
+            chunkSize: 1,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(2);
+        expect(semibook.getLatestState().binCache.size).to.equal(2);
+        expect(semibook.getLatestState().isComplete).to.equal(false);
+      });
+
+      it("fetches multiple chunks until at least target number of ticks have been fetched, then stops, ignoring partially fetched extra ticks", async function () {
+        // ticks and offers: [1 -> [1,5,6], 2 -> [2], 3 -> [3], 4 -> [4,7]]
+        //                    ^- chunk1 -^  ^-------- chunk 2 --------^
+        await createOffers(4);
+        // Create extra offers at tick 1
+        await createOffer(1);
+        await createOffer(1);
+        // Create extra offer at tick 4
+        await createOffer(4);
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 2,
+            chunkSize: 3,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(3 + 1 + 1);
+        expect(semibook.getLatestState().binCache.size).to.equal(3);
+        expect(semibook.getLatestState().isComplete).to.equal(false);
+      });
+
+      it("fetches multiple chunks until at least target number of ticks have been fetched, detects end of offer list", async function () {
+        await createOffers(2);
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 2,
+            chunkSize: 1,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(2);
+        expect(semibook.getLatestState().binCache.size).to.equal(2);
+        expect(semibook.getLatestState().isComplete).to.equal(true);
+      });
+
+      it("fetches multiple chunks until end of offer list", async function () {
+        await createOffers(2);
+
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 3,
+            chunkSize: 1,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(2);
+        expect(semibook.getLatestState().binCache.size).to.equal(2);
+        expect(semibook.getLatestState().isComplete).to.equal(true);
+      });
+    });
+
     describe("Option.desiredPrice", () => {
       it("does not fail if offer list is empty", async function () {
         const market = await mgv.market({
@@ -1275,20 +1426,13 @@ describe("Semibook integration tests suite", function () {
         });
 
         it("fetches only one chunk if it has sufficient volume", async function () {
-          const market = await mgv.market({
-            base: "TokenA",
-            quote: "TokenB",
-            tickSpacing: 1,
-          });
-          const semibook = market.getSemibook("asks");
-          const tick = semibook.tickPriceHelper.tickFromPrice(1.001);
           await waitForTransaction(
             newOffer({
               mgv,
               outbound: "TokenA",
               inbound: "TokenB",
               gives: "2",
-              tick,
+              tick: 0,
             }),
           );
           const tx = await waitForTransaction(
@@ -1297,7 +1441,7 @@ describe("Semibook integration tests suite", function () {
               outbound: "TokenA",
               inbound: "TokenB",
               gives: "1",
-              tick,
+              tick: 1,
             }),
           );
           await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
@@ -1306,7 +1450,7 @@ describe("Semibook integration tests suite", function () {
             provider: mgv.provider,
           });
 
-          const market2 = await newMgv.market({
+          const market = await newMgv.market({
             base: "TokenA",
             quote: "TokenB",
             tickSpacing: 1,
@@ -1320,8 +1464,8 @@ describe("Semibook integration tests suite", function () {
             },
           });
 
-          const semibook2 = market2.getSemibook("asks");
-          expect(semibook2.size()).to.equal(1);
+          const semibook = market.getSemibook("asks");
+          expect(semibook.size()).to.equal(1);
         });
 
         it("stops fetching when sufficient volume has been fetched", async function () {

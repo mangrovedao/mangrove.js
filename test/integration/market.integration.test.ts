@@ -1447,7 +1447,7 @@ describe("Market integration tests suite", () => {
     }[];
     /* Start testing */
 
-    const book = await market.requestBook({ maxOffers: 6 });
+    const book = await market.requestBook({ targetNumberOfTicks: 6 });
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }: { bids: Bs; asks: Bs }) => {

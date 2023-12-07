@@ -3,6 +3,10 @@
 - feat: Thread tickSpacing through code to be able to use it in tick/price calculations.
 - fix: Change tick and tickSpacing to be number type
 - feat!: Rename tick parameters of 'Market.simulateGas' and 'Semibook.simulateMarketOrder' to 'maxTick'.
+- fix: Semibook now maintains consistency. After the upgrade to Mangrove v2, the cache could become inconsistent as it was not ensuring that added offers were an extension of the prefix held in the case.
+- feat: Semibook cache now holds complete tick bins: If one offer with a given tick is in the cache, all offers with that tick is in the cache.
+- feat!: The `maxOffers` option in `CacheContentOptions` has been replaced with a new option: `targetNumberOfTicks`. When loading from chain, the cache will load until at least this number of ticks is in the cache. The default is `Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS`.
+- feat!: A new default value `Semibook.DEFAULT_CHUNK_SIZE` has been introduced for `CacheContentOptions.chunkSize`.
 
 # 2.0.0-12
 

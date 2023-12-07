@@ -54,7 +54,7 @@ describe("RestingOrder", () => {
         base: "TokenA",
         quote: "TokenB",
         tickSpacing: 1,
-        bookOptions: { maxOffers: 30 },
+        bookOptions: { targetNumberOfTicks: 30 },
       });
 
       //check that contract responds
@@ -86,7 +86,7 @@ describe("RestingOrder", () => {
         base: "TokenA",
         quote: "TokenB",
         tickSpacing: 1,
-        bookOptions: { maxOffers: 30 },
+        bookOptions: { targetNumberOfTicks: 30 },
       });
 
       const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
