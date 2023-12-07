@@ -52,7 +52,6 @@ class TickPriceHelper {
    * @param price price to calculate tick for
    * @returns raw offer list tick for price
    */
-  // TODO: Consider allowing the user to control whether to round up or down.
   tickFromPrice(price: Bigish): number {
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;

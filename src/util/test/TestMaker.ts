@@ -223,7 +223,7 @@ class TestMaker {
       }
     };
 
-    market.subscribe(callback); // TODO: subscribe/once ?
+    market.subscribe(callback);
 
     return promise.finally(() => market.unsubscribe(callback));
   }

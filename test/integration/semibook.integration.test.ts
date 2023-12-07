@@ -51,8 +51,6 @@ describe("Semibook integration tests suite", function () {
     mgvAdmin.disconnect();
   });
 
-  // FIXME: Test cache invariants
-
   describe("offerInfo", () => {
     it("returns offer from cache, when offer is in cache", async function () {
       // Put one offer on asks

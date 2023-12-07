@@ -964,7 +964,7 @@ class Market {
    * as the volumes that were requested by the taker.
    *
    * * `mgvData` : extra data from mangrove and the maker
-   * contract. See the [Mangrove contracts documentation](#TODO) for the list of possible status codes.
+   * contract. Please refer to the [Mangrove contracts documentation](https://docs.mangrove.exchange/MgvDoc/#MgvOfferTaking/statusCodes) for the list of possible status codes.
    *
    * `opts` may specify the maximum of offers to read initially, and the chunk
    * size used when querying the reader contract (always ran locally).

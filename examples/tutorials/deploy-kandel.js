@@ -29,7 +29,6 @@ const kandelStrategies = new KandelStrategies(mgv);
 // Retrieve default configuration for the selected market
 const config = kandelStrategies.configuration.getConfig(market);
 
-//FIXME: add KandelLib manually until address packages are updated
 const kandelLibAddress = (await kandelStrategies.farm.getKandels())[0]
   .kandelAddress;
 addressesConfiguration.setAddress(

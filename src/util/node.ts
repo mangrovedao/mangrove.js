@@ -1,4 +1,3 @@
-// TODO do not distribute this in browser build
 /* Run an anvil node, deploy a toy ENS contract, execute a script against it, gather its list of deployed contracts.
  
   This is a Mangrove.js utility for its internal tests. It can also be used in standalone.
@@ -126,7 +125,6 @@ export type serverType = {
 
 export type nodeType = {
   connect(): Promise<serverType>;
-  // FIXME remove optionality here
   watchAllToyENSEntries?: () => Promise<DevNode.fetchedContract[]>;
 };
 
@@ -349,10 +347,6 @@ export const nodeWithComputedArgv = async (
     connect() {
       return connect(params as computeArgvType);
     },
-    // FIXME restore this utility fn
-    // watchAllToyENSEntries() {
-    //   return devNode.watchAllToyENSEntries(params.provider);
-    // },
   };
 };
 

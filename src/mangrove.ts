@@ -890,8 +890,8 @@ class Mangrove {
       }
     });
 
-    // TODO: Consider fetching missing decimals/symbols in one Multicall and dispatch to Token initializations instead of firing multiple RPC calls.
-    //       However, viem (and maybe ethers6) automatically batches multiple read requests as a multicall, so not sure this is worth pursuing.
+    // NOTE: Consider fetching missing decimals/symbols in one Multicall and dispatch to Token initializations instead of firing multiple RPC calls.
+    // However, viem (and maybe ethers6) automatically batches multiple read requests as a multicall, so not sure this is worth pursuing.
     const addresses = Object.keys(data);
     await Promise.all(
       addresses.map(async (address) => {

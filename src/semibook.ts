@@ -180,7 +180,6 @@ namespace Semibook {
  * - Prices are in terms of quote tokens per base token
  * - Volumes are in terms of base tokens
  */
-// TODO: Document invariants
 class Semibook
   extends StateLogSubscriber<Semibook.State, Market.BookSubscriptionEvent>
   implements Iterable<Market.Offer>
@@ -547,7 +546,6 @@ class Semibook
         ? this.options.maxOffers
         : Semibook.DEFAULT_MAX_OFFERS;
     let offerNum = 0;
-    // TODO: The implementation of the following predicate is work-in-progress
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const countOfferForMaxGasPredicate = (_o: Market.Offer) => {
       offerNum++;
