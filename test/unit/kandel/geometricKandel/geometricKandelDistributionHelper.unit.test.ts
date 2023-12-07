@@ -77,6 +77,17 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
         assert.equal(actual, 769);
       });
 
+      it("calculates an offset that is a multiple of tickSpacing", () => {
+        // Arrange
+        sut.helper.market.tickSpacing = 7;
+
+        // Act
+        const actual = sut.calculateBaseQuoteTickOffset(Big(1.08));
+
+        // Assert
+        assert.equal(actual, 770);
+      });
+
       it("Fails if less than 1", () => {
         // Act/assert
         assert.throws(
@@ -90,7 +101,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
   describe(
     GeometricKandelDistributionHelper.prototype.getTickDistributionParams.name,
     () => {
-      it("calculates sames parameters for all combinations of minPrice, maxPrice, ratio, and pricePoints, and the similar tick-based parameters ", () => {
+      it("calculates sames parameters for all combinations of minPrice, maxPrice, ratio, and pricePoints, and the similar tick-based parameters with tickSpacing=1", () => {
         // Arrange
         const baseQuoteTickOffset = 769;
         const priceRatio = 1.08;
@@ -100,6 +111,85 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
         const midBaseQuoteTick = 117453;
         const minPrice = Big(1001);
         const maxPrice = Big(1587.841870262581);
+        const midPrice = Big(1260.971712);
+
+        const expectedParams = {
+          baseQuoteTickOffset,
+          minBaseQuoteTick,
+          midBaseQuoteTick,
+          pricePoints,
+        };
+
+        // Act/assert
+        assert.deepStrictEqual(
+          sut.getTickDistributionParams({
+            minPrice,
+            maxPrice,
+            priceRatio,
+            midPrice,
+          }),
+          expectedParams,
+        );
+        assert.deepStrictEqual(
+          sut.getTickDistributionParams({
+            minPrice,
+            maxPrice,
+            pricePoints,
+            midPrice,
+          }),
+          expectedParams,
+        );
+        assert.deepStrictEqual(
+          sut.getTickDistributionParams({
+            minPrice,
+            priceRatio,
+            pricePoints,
+            midPrice,
+          }),
+          expectedParams,
+        );
+        assert.deepStrictEqual(
+          sut.getTickDistributionParams({
+            maxPrice,
+            priceRatio,
+            pricePoints,
+            midPrice,
+          }),
+          expectedParams,
+        );
+
+        assert.deepStrictEqual(
+          sut.getTickDistributionParams({
+            minBaseQuoteTick,
+            maxBaseQuoteTick,
+            baseQuoteTickOffset,
+            midBaseQuoteTick,
+          }),
+          expectedParams,
+        );
+
+        assert.deepStrictEqual(
+          sut.getTickDistributionParams({
+            minBaseQuoteTick,
+            maxBaseQuoteTick,
+            pricePoints,
+            midBaseQuoteTick,
+          }),
+          expectedParams,
+        );
+      });
+
+      it("calculates sames parameters for all combinations of minPrice, maxPrice, ratio, and pricePoints, and the similar tick-based parameters with tickSpacing=7", () => {
+        // Arrange
+        sut.helper.market.tickSpacing = 7;
+        const baseQuoteTickOffset = 770;
+        const priceRatio = 1.08;
+        const pricePoints = 7;
+        const maxBaseQuoteTick = 119770;
+        const minBaseQuoteTick = 115150;
+        const midBaseQuoteTick = 117453;
+        const minPrice = Big(1001);
+        const maxPrice = Big(1589);
         const midPrice = Big(1260.971712);
 
         const expectedParams = {
