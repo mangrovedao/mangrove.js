@@ -194,19 +194,6 @@ class CoreKandelInstance {
     };
   }
 
-  /** Convert public Kandel parameters to internal representation.
-   * @param parameters The Kandel parameters.
-   * @returns The raw parameters using internal representation.
-   */
-  protected getRawParameters(parameters: KandelParameters) {
-    return {
-      gasprice: parameters.gasprice,
-      gasreq: parameters.gasreq,
-      stepSize: parameters.stepSize,
-      pricePoints: parameters.pricePoints,
-    };
-  }
-
   /** Gets new Kandel parameters based on current and some overrides. If gasprice is not set, the current gasprice and cover factor is used.
    * @param parameters The Kandel parameters to override, those left out will keep their current value.
    * @param distributionPricePoints The number of price points of the Kandel distribution.
@@ -690,12 +677,11 @@ class CoreKandelInstance {
     overrides: ethers.Overrides = {},
   ) {
     const parameterOverrides = params.parameters ?? {};
-    const parameters = await this.getParametersWithOverrides(
+    const rawParameters = await this.getParametersWithOverrides(
       parameterOverrides,
       params.distribution?.pricePoints,
       params.distribution?.stepSize,
     );
-    const rawParameters = this.getRawParameters(parameters);
 
     const funds =
       params.funds ??
