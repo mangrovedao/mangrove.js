@@ -289,11 +289,6 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     );
     assert.equal(rawBidRatio.toString(), Big(1).div(rawAskRatio).toString());
 
-    assert.equal(rawAskTick, TickPriceHelper.tickFromRawRatio(rawAskRatio));
-    assert.equal(rawBidTick, TickPriceHelper.tickFromRawRatio(rawBidRatio));
-    // The following are slow, but they work
-    //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.1);
-    //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio.toNumber()) < 0.1);
     const bidTickPriceHelper = new TickPriceHelper("bids", {
       base: new TokenCalculations(baseDecimals, baseDecimals),
       quote: new TokenCalculations(quoteDecimals, quoteDecimals),
@@ -304,6 +299,12 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       quote: new TokenCalculations(quoteDecimals, quoteDecimals),
       tickSpacing: 1,
     });
+
+    assert.equal(rawAskTick, askTickPriceHelper.tickFromRawRatio(rawAskRatio));
+    assert.equal(rawBidTick, bidTickPriceHelper.tickFromRawRatio(rawBidRatio));
+    // The following are slow, but they work
+    //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.1);
+    //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio.toNumber()) < 0.1);
 
     const calcAskTick = askTickPriceHelper.tickFromPrice(displayPrice);
     const calcBidTick = bidTickPriceHelper.tickFromPrice(displayPrice);
@@ -578,14 +579,24 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
   });
 
-  describe(TickPriceHelper.rawRatioFromTick.name, () => {
+  describe(TickPriceHelper.prototype.rawRatioFromTick.name, () => {
+    let sut: TickPriceHelper;
+
+    beforeEach(() => {
+      sut = new TickPriceHelper("asks", {
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(18, 18),
+        tickSpacing: 1,
+      });
+    });
+
     it("should return the correct ratio for tick, MAX_TICK", () => {
-      const result = TickPriceHelper.rawRatioFromTick(MAX_TICK.toNumber());
+      const result = sut.rawRatioFromTick(MAX_TICK.toNumber());
       assert.deepStrictEqual(result, Big(MAX_RATIO_MANTISSA.toString())); // biggest ratio
     });
 
     it("should return the correct ratio for tick, MIN_TICK", () => {
-      const result = TickPriceHelper.rawRatioFromTick(MIN_TICK.toNumber());
+      const result = sut.rawRatioFromTick(MIN_TICK.toNumber());
       const dp = Big.DP;
       Big.DP = 42;
       assert.deepStrictEqual(
@@ -596,12 +607,12 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct ratio for tick, 0", () => {
-      const result = TickPriceHelper.rawRatioFromTick(0);
+      const result = sut.rawRatioFromTick(0);
       assert.deepStrictEqual(result, Big("1")); // tick 0 = price 1
     });
 
     it("should return the correct ratio for tick, 1 ", () => {
-      const result = TickPriceHelper.rawRatioFromTick(1);
+      const result = sut.rawRatioFromTick(1);
       assert.deepStrictEqual(
         result.minus(Big("1.0001")).abs().gt(0) && result.lt(1.0001),
         true,
@@ -610,28 +621,48 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
   });
 
-  describe(TickPriceHelper.tickFromRawRatio.name, () => {
+  describe(TickPriceHelper.prototype.tickFromRawRatio.name, () => {
+    let sut: TickPriceHelper;
+
+    beforeEach(() => {
+      sut = new TickPriceHelper("asks", {
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(18, 18),
+        tickSpacing: 1,
+      });
+    });
+
     it("should return the correct tick for ratio, MAX_TICK", () => {
-      const maxRatio = TickPriceHelper.rawRatioFromTick(MAX_TICK.toNumber());
-      const result = TickPriceHelper.tickFromRawRatio(maxRatio);
+      const maxRatio = sut.rawRatioFromTick(MAX_TICK.toNumber());
+      const result = sut.tickFromRawRatio(maxRatio);
       assert.deepStrictEqual(result, MAX_TICK.toNumber());
     });
 
     it("should return the correct tick for ratio, MIN_TICK", () => {
-      const minRatio = TickPriceHelper.rawRatioFromTick(MIN_TICK.toNumber());
-      const result = TickPriceHelper.tickFromRawRatio(minRatio);
+      const minRatio = sut.rawRatioFromTick(MIN_TICK.toNumber());
+      const result = sut.tickFromRawRatio(minRatio);
       assert.deepStrictEqual(result, MIN_TICK.toNumber());
     });
 
     it("should return the correct tick for ratio = 1", () => {
-      const result = TickPriceHelper.tickFromRawRatio(Big(1));
+      const result = sut.tickFromRawRatio(Big(1));
       assert.deepStrictEqual(result, 0);
     });
   });
 
   describe("ratioToRawRatio", () => {
+    let sut: TickPriceHelper;
+
+    beforeEach(() => {
+      sut = new TickPriceHelper("asks", {
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(18, 18),
+        tickSpacing: 1,
+      });
+    });
+
     it("should return the correct mantissa and exponent for price, MAX_TICK", () => {
-      const ratio = TickPriceHelper.rawRatioFromTick(MAX_TICK.toNumber());
+      const ratio = sut.rawRatioFromTick(MAX_TICK.toNumber());
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(MAX_TICK));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
@@ -639,7 +670,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, MIN_TICK", () => {
-      const ratio = TickPriceHelper.rawRatioFromTick(MIN_TICK.toNumber());
+      const ratio = sut.rawRatioFromTick(MIN_TICK.toNumber());
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(MIN_TICK));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man.toString(), man.toString());
@@ -647,7 +678,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = 1", () => {
-      const ratio = TickPriceHelper.rawRatioFromTick(1);
+      const ratio = sut.rawRatioFromTick(1);
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
 
@@ -656,7 +687,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = 0", () => {
-      const ratio = TickPriceHelper.rawRatioFromTick(0);
+      const ratio = sut.rawRatioFromTick(0);
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(0));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
@@ -664,7 +695,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = -1", () => {
-      const ratio = TickPriceHelper.rawRatioFromTick(-1);
+      const ratio = sut.rawRatioFromTick(-1);
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(-1));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
@@ -672,7 +703,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = 1000", () => {
-      const ratio = TickPriceHelper.rawRatioFromTick(1000);
+      const ratio = sut.rawRatioFromTick(1000);
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1000));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
@@ -680,7 +711,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = -1000", () => {
-      const ratio = TickPriceHelper.rawRatioFromTick(-1000);
+      const ratio = sut.rawRatioFromTick(-1000);
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(-1000));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);

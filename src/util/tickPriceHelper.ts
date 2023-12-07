@@ -30,7 +30,7 @@ class TickPriceHelper {
     const dp = Big.DP;
     Big.DP = 300;
 
-    const offerListRatioFromTick = TickPriceHelper.rawRatioFromTick(tick);
+    const offerListRatioFromTick = this.rawRatioFromTick(tick);
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
       this.market.base.decimals - this.market.quote.decimals,
@@ -71,7 +71,7 @@ class TickPriceHelper {
         : priceAdjustedForDecimals;
 
     // TickLib.getTickFromPrice expects a ratio of rawInbound/rawOutbound, which is now available in offerListRatio
-    const tick = TickPriceHelper.tickFromRawRatio(offerListRatio);
+    const tick = this.tickFromRawRatio(offerListRatio);
     Big.DP = dp;
     return tick;
   }
@@ -142,7 +142,7 @@ class TickPriceHelper {
    * @param tick tick to calculate the ratio for
    * @returns ratio as a Big.
    */
-  static rawRatioFromTick(tick: number): Big {
+  public rawRatioFromTick(tick: number): Big {
     const { man, exp } = TickLib.ratioFromTick(BigNumber.from(tick));
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
@@ -161,7 +161,7 @@ class TickPriceHelper {
    * @param ratio ratio to calculate the tick for
    * @returns a tick that approximates the given ratio.
    */
-  static tickFromRawRatio(ratio: Big): number {
+  public tickFromRawRatio(ratio: Big): number {
     const { man, exp } = TickPriceHelper.rawRatioToMantissaExponent(ratio);
     return TickLib.tickFromRatio(man, exp).toNumber();
   }

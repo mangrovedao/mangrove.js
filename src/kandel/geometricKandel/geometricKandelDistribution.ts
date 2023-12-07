@@ -44,7 +44,9 @@ class GeometricKandelDistribution extends KandelDistribution {
   /** Gets the price ratio given by the baseQuoteTickOffset. */
   public getPriceRatio() {
     // This simply calculates 1.001^offset which will be the difference between prices.
-    return TickPriceHelper.rawRatioFromTick(this.baseQuoteTickOffset);
+    return this.helper.askTickPriceHelper.rawRatioFromTick(
+      this.baseQuoteTickOffset,
+    );
   }
 
   /** Split a distribution into chunks according to the maximum number of offers in a single chunk.
