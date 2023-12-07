@@ -5,10 +5,12 @@ import Market from "../../market";
 
 /** @title A geometric distribution of bids and ask for a geometric Kandel. */
 class GeometricKandelDistribution extends KandelDistribution {
+  // The parameters used to create the distribution.
   baseQuoteTickIndex0: number;
   baseQuoteTickOffset: number;
   bidGives: Bigish | undefined;
   askGives: Bigish | undefined;
+  // Note firstAskIndex may not be the same as this.getFirstLiveAskIndex() which is also affected by other parameters (in practice using either for invoking generation should yield the same result)
   firstAskIndex: number;
 
   /** Constructor
