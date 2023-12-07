@@ -14,7 +14,7 @@ class GeometricKandelDistribution extends KandelDistribution {
   /** Constructor
    * @param baseQuoteTickIndex0 The base quote tick index of the first price point.
    * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
-   * @param firstAskIndex The index of the first ask in the distribution.
+   * @param firstAskIndex The index of the first live ask in the distribution.
    * @param bidGives The amount of quote to give for each bid (undefined means derive from constant ask gives)
    * @param askGives The amount of base to give for each ask (undefined means derive from constant bid gives)
    * @param pricePoints The number of price points in the distribution.
@@ -39,6 +39,7 @@ class GeometricKandelDistribution extends KandelDistribution {
     this.bidGives = bidGives;
     this.askGives = askGives;
     this.firstAskIndex = firstAskIndex;
+    this.verifyDistribution();
   }
 
   /** Gets the price ratio given by the baseQuoteTickOffset. */
@@ -60,6 +61,37 @@ class GeometricKandelDistribution extends KandelDistribution {
       maxOffersInChunk,
       this.getFirstLiveAskIndex(),
     );
+  }
+
+  /** Verifies the distribution is valid.
+   * @remarks Throws if the distribution is invalid.
+   */
+  public verifyDistribution() {
+    super.verifyDistribution();
+    if (this.baseQuoteTickOffset % this.market.tickSpacing != 0) {
+      throw Error(
+        `baseQuoteTickOffset=${this.baseQuoteTickOffset} is not a multiple of tickSpacing=${this.market.tickSpacing}.`,
+      );
+    }
+    if (this.offers.bids[0].tick != -this.baseQuoteTickIndex0) {
+      throw Error(
+        `Bid at tick index 0 is not equal to -baseQuoteTickIndex0=-${this.baseQuoteTickIndex0}.`,
+      );
+    }
+    for (let i = 1; i < this.offers.asks.length; i++) {
+      if (
+        this.offers.asks[i].tick !=
+        this.offers.asks[i - 1].tick + this.baseQuoteTickOffset
+      ) {
+        throw Error(`Asks are not in geometric progression.`);
+      }
+      if (
+        this.offers.bids[i].tick !=
+        this.offers.bids[i - 1].tick - this.baseQuoteTickOffset
+      ) {
+        throw Error(`Bids are not in geometric progression.`);
+      }
+    }
   }
 }
 

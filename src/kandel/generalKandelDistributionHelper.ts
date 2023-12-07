@@ -43,14 +43,12 @@ class GeneralKandelDistributionHelper {
       })),
     };
 
-    return new GeneralKandelDistribution(
-      new KandelDistribution(
-        distribution.pricePoints,
-        distribution.stepSize,
-        offers,
-        this.helper.market,
-      ),
-    );
+    return new GeneralKandelDistribution({
+      pricePoints: distribution.pricePoints,
+      stepSize: distribution.stepSize,
+      offers,
+      market: this.helper.market,
+    });
   }
 
   /** Creates a new distribution with uniformly changed volume.
@@ -89,25 +87,23 @@ class GeneralKandelDistributionHelper {
         this.helper.market.quote.round.bind(this.helper.market.quote),
       );
 
-    const distribution = new GeneralKandelDistribution(
-      new KandelDistribution(
-        params.distribution.pricePoints,
-        params.distribution.stepSize,
-        {
-          bids: params.distribution.offers.bids.map((o, i) => ({
-            index: o.index,
-            tick: o.tick,
-            gives: newQuotes[i],
-          })),
-          asks: params.distribution.offers.asks.map((o, i) => ({
-            index: o.index,
-            tick: o.tick,
-            gives: newBases[i],
-          })),
-        },
-        params.distribution.market,
-      ),
-    );
+    const distribution = new GeneralKandelDistribution({
+      pricePoints: params.distribution.pricePoints,
+      stepSize: params.distribution.stepSize,
+      offers: {
+        bids: params.distribution.offers.bids.map((o, i) => ({
+          index: o.index,
+          tick: o.tick,
+          gives: newQuotes[i],
+        })),
+        asks: params.distribution.offers.asks.map((o, i) => ({
+          index: o.index,
+          tick: o.tick,
+          gives: newBases[i],
+        })),
+      },
+      market: params.distribution.market,
+    });
     return { distribution, totalBaseChange, totalQuoteChange };
   }
 }
