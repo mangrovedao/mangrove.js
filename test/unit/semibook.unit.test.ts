@@ -6,6 +6,7 @@ import { BigNumber } from "ethers";
 import { anything, deepEqual, instance, mock, when } from "ts-mockito";
 import UnitCalculations from "../../src/util/unitCalculations";
 import MangroveEventSubscriber from "../../src/mangroveEventSubscriber";
+import { expect } from "chai";
 import { TokenCalculations } from "../../src/token";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
@@ -147,897 +148,6 @@ describe("Semibook unit test suite", () => {
       const result = Semibook.getIsVolumeDesiredForBids(opts);
       // Assert
       assert.equal(result, true);
-    });
-  });
-
-  describe("insertOffer", () => {
-    it("inserts offer in empty book", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      const offer: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(1),
-        price: Big(1),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      //Act
-      book.insertOffer(state, offer);
-      // Assert
-      assert.equal(state.offerCache.size, 1);
-      assert.equal(state.binCache.size, 1);
-      assert.deepStrictEqual(state.bestInCache, offer.id);
-      assert.deepStrictEqual(state.worstInCache, offer.id);
-      assert.deepStrictEqual(offer.next, undefined);
-      assert.deepStrictEqual(offer.prev, undefined);
-    });
-
-    it("inserts offer in non empty book, offer is worse", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        price: Big(1),
-        wants: Big(1),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        id: 2,
-        maker: "0x2",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(2),
-        wants: Big(2),
-        price: Big(1),
-        next: undefined,
-        prev: undefined,
-        tick: 1,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-
-      //Act
-      book.insertOffer(state, offer2);
-
-      // Assert
-      assert.equal(state.offerCache.size, 2);
-      assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id],
-        prev: undefined,
-        next: offer2.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
-        next: undefined,
-      });
-    });
-
-    it("inserts offer in non empty book, offer is better", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(1),
-        price: Big(1),
-        next: undefined,
-        prev: undefined,
-        tick: 1,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2 = { ...offer1, id: 2, tick: 0 };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-
-      //Act
-      book.insertOffer(state, offer2);
-
-      // Assert
-      assert.equal(state.offerCache.size, 2);
-      assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id],
-        prev: offer2.tick,
-        next: undefined,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id],
-        prev: undefined,
-        next: offer1.tick,
-      });
-    });
-
-    it("inserts offer in non empty book, offer is in the middle", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 1,
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 2,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer3);
-
-      //Act
-      book.insertOffer(state, offer2);
-
-      // Assert
-      assert.equal(state.offerCache.size, 3);
-      assert.equal(state.binCache.size, 3);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer3.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer3.next, undefined);
-      assert.deepStrictEqual(offer3.prev, undefined);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id],
-        prev: undefined,
-        next: offer2.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
-        next: offer3.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer3.tick), {
-        tick: offer3.tick,
-        offers: [offer3.id],
-        prev: offer2.tick,
-        next: undefined,
-      });
-    });
-
-    it("inserts offer in non empty book, offer is in the middle at an already existing tick", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 1,
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 2,
-      };
-      const offer4: Market.Offer = {
-        ...offer1,
-        id: 4,
-        tick: 1,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-      book.insertOffer(state, offer3);
-
-      //Act
-      book.insertOffer(state, offer4);
-
-      // Assert
-      assert.equal(state.offerCache.size, 4);
-      assert.equal(state.binCache.size, 3);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer3.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer2.next, offer4.id);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer3.next, undefined);
-      assert.deepStrictEqual(offer3.prev, undefined);
-      assert.deepStrictEqual(offer4.next, undefined);
-      assert.deepStrictEqual(offer4.prev, offer2.id);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id],
-        prev: undefined,
-        next: offer2.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id, offer4.id],
-        prev: offer1.tick,
-        next: offer3.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer3.tick), {
-        tick: offer3.tick,
-        offers: [offer3.id],
-        prev: offer2.tick,
-        next: undefined,
-      });
-    });
-
-    it("inserts offer in non empty book, offer is at worse tick, tick already exist", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 1,
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 1,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-
-      //Act
-      book.insertOffer(state, offer3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 3);
-      assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer3.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer2.next, offer3.id);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer3.next, undefined);
-      assert.deepStrictEqual(offer3.prev, offer2.id);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id],
-        prev: undefined,
-        next: offer2.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id, offer3.id],
-        prev: offer1.tick,
-        next: undefined,
-      });
-    });
-
-    it("inserts offer in non empty book, offer is at a better tick, tick already exist", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 1,
-      };
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 0,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-
-      //Act
-      book.insertOffer(state, offer3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 3);
-      assert.equal(state.binCache.size, 2);
-
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
-      assert.deepStrictEqual(offer1.next, offer3.id);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer3.next, undefined);
-      assert.deepStrictEqual(offer3.prev, offer1.id);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id, offer3.id],
-        prev: undefined,
-        next: offer2.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
-        next: undefined,
-      });
-    });
-
-    it("inserting offer exceeds maxOffer size, offer is not worst offer", () => {
-      ///Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      const options = { maxOffers: 5 };
-      for (let i = 0; i < options.maxOffers; i++) {
-        const offer: Market.Offer = { ...offer1, id: i };
-        book.insertOffer(state, offer, options);
-      }
-
-      //Act
-      const offer: Market.Offer = {
-        ...offer1,
-        id: 6,
-        tick: -1,
-      };
-
-      const isInserted = book.insertOffer(state, offer, options);
-
-      // Assert
-      assert.equal(state.offerCache.size, 5);
-      assert.equal(isInserted, true);
-    });
-
-    it("inserting offer exceeds maxOffer size, offer is worst offer", () => {
-      ///Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      const options = { maxOffers: 5 };
-      for (let i = 0; i < options.maxOffers; i++) {
-        const offer: Market.Offer = { ...offer1, id: i };
-        book.insertOffer(state, offer, options);
-      }
-
-      //Act
-      const offer: Market.Offer = {
-        ...offer1,
-        id: 6,
-        price: Big(0),
-        tick: 0,
-      };
-
-      const isInserted = book.insertOffer(state, offer, options);
-
-      // Assert
-      assert.equal(state.offerCache.size, 5);
-      assert.equal(isInserted, false);
-    });
-  });
-
-  describe("removeOffer", () => {
-    it("removes offer from empty book", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: 0,
-        worstInCache: 0,
-      };
-      //Act
-      const offerRemoved = book.removeOffer(state, 1);
-
-      // Assert
-      assert.equal(state.offerCache.size, 0);
-      assert.equal(state.binCache.size, 0);
-      assert.equal(offerRemoved, undefined);
-    });
-
-    it("removes offer from non empty book, offer is best offer, has others at same tick", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 1,
-      };
-
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 1,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-      book.insertOffer(state, offer3);
-
-      //Act
-      const offerRemoved = book.removeOffer(state, 3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 2);
-      assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id],
-        prev: undefined,
-        next: offer2.tick,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id],
-        prev: offer1.tick,
-        next: undefined,
-      });
-    });
-
-    it("removes offer from non empty book, offer is best offer, does not have others at same tick", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(1),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 0,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 0,
-      };
-
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 1,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-      book.insertOffer(state, offer3);
-
-      //Act
-      const offerRemoved = book.removeOffer(state, 3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 2);
-      assert.equal(state.binCache.size, 1);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
-      assert.deepStrictEqual(offer1.next, offer2.id);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offer2.prev, offer1.id);
-      assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id, offer2.id],
-        prev: undefined,
-        next: undefined,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer3.tick), undefined);
-    });
-
-    it("removes offer from non empty book, offer is worst offer, has others at same tick", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(2),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 1,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 0,
-      };
-
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 0,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-      book.insertOffer(state, offer3);
-
-      //Act
-      const offerRemoved = book.removeOffer(state, 3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 2);
-      assert.equal(state.binCache.size, 2);
-      assert.deepStrictEqual(state.bestInCache, offer2.id);
-      assert.deepStrictEqual(state.worstInCache, offer1.id);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer1.next, undefined);
-      assert.deepStrictEqual(offer2.prev, undefined);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id],
-        prev: offer2.tick,
-        next: undefined,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer2.tick), {
-        tick: offer2.tick,
-        offers: [offer2.id],
-        prev: undefined,
-        next: offer1.tick,
-      });
-    });
-
-    it("removes offer from non empty book, offer is worst offer, has others at same tick", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer1: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 1,
-        gasreq: 1,
-        gives: Big(2),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 1,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const offer2: Market.Offer = {
-        ...offer1,
-        id: 2,
-        tick: 1,
-      };
-
-      const offer3: Market.Offer = {
-        ...offer1,
-        id: 3,
-        tick: 0,
-      };
-
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer1);
-      book.insertOffer(state, offer2);
-      book.insertOffer(state, offer3);
-
-      //Act
-      const offerRemoved = book.removeOffer(state, 3);
-
-      // Assert
-      assert.equal(state.offerCache.size, 2);
-      assert.equal(state.binCache.size, 1);
-      assert.deepStrictEqual(state.bestInCache, offer1.id);
-      assert.deepStrictEqual(state.worstInCache, offer2.id);
-      assert.deepStrictEqual(offer1.prev, undefined);
-      assert.deepStrictEqual(offer1.next, offer2.id);
-      assert.deepStrictEqual(offer2.prev, offer1.id);
-      assert.deepStrictEqual(offer2.next, undefined);
-      assert.deepStrictEqual(offerRemoved, offer3);
-      assert.deepStrictEqual(state.binCache.get(offer1.tick), {
-        tick: offer1.tick,
-        offers: [offer1.id, offer2.id],
-        prev: undefined,
-        next: undefined,
-      });
-      assert.deepStrictEqual(state.binCache.get(offer3.tick), undefined);
-    });
-
-    it("removes last offer in book", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 2,
-        gasreq: 1,
-        gives: Big(2),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 2,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      book.insertOffer(state, offer);
-
-      //Act
-      const offerRemoved = book.removeOffer(state, 1);
-
-      // Assert
-      assert.equal(state.offerCache.size, 0);
-      assert.equal(state.binCache.size, 0);
-      assert.deepStrictEqual(state.bestInCache, undefined);
-      assert.deepStrictEqual(state.worstInCache, undefined);
-      assert.deepStrictEqual(offerRemoved, offer);
-    });
-  });
-
-  describe("getOfferFromCacheOrFail", () => {
-    it("throws error when offer is not in cache", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-      //Act
-
-      // Assert
-      assert.throws(
-        () => book.getOfferFromCacheOrFail(state, 1),
-        new Error(`Offer 1 is not in cache`),
-      );
-    });
-
-    it("returns offer when offer is in cache", () => {
-      //Arrange
-      const book = new SemibookCacheOperations();
-      const offer: Market.Offer = {
-        id: 1,
-        maker: "0x1",
-        gasprice: 2,
-        gasreq: 1,
-        gives: Big(2),
-        wants: Big(0),
-        price: Big(0),
-        next: undefined,
-        prev: undefined,
-        tick: 2,
-        offer_gasbase: 1000,
-        volume: Big(42),
-      };
-      const state: Semibook.State = {
-        offerCache: new Map(),
-        binCache: new Map(),
-        bestInCache: undefined,
-        worstInCache: undefined,
-      };
-
-      book.insertOffer(state, offer);
-
-      //Act
-      const result = book.getOfferFromCacheOrFail(state, 1);
-
-      // Assert
-      assert.deepStrictEqual(result, offer);
     });
   });
 
@@ -1242,5 +352,1171 @@ describe("Semibook unit test suite", () => {
 
       assert.deepEqual(result, expectedOffer);
     });
+  });
+
+  describe(SemibookCacheOperations.name, () => {
+    const cacheOperations = new SemibookCacheOperations();
+
+    function createEmptyState(): Semibook.State {
+      return {
+        offerCache: new Map(),
+        binCache: new Map(),
+        bestBinInCache: undefined,
+        worstBinInCache: undefined,
+        isComplete: false,
+      };
+    }
+
+    function makeOffer({
+      id,
+      tick,
+    }: {
+      id: number;
+      tick: number;
+    }): Market.Offer {
+      return {
+        id,
+        tick,
+        maker: `0x${id}`,
+        gasprice: id,
+        gasreq: id,
+        gives: Big(id),
+        price: Big(id),
+        wants: Big(id),
+        next: undefined,
+        prev: undefined,
+        offer_gasbase: id,
+        volume: Big(id),
+      };
+    }
+
+    function makeBinOffers({
+      tick,
+      count,
+      fromId,
+    }: {
+      tick: number;
+      count: number;
+      fromId: number;
+    }): Market.Offer[] {
+      const result: Market.Offer[] = [];
+      let prev: Market.Offer | undefined = undefined;
+      for (let id = fromId; id < fromId + count; ++id) {
+        const offer = makeOffer({ id, tick });
+        offer.prev = prev?.id;
+        if (prev !== undefined) {
+          prev.next = offer.id;
+        }
+        prev = offer;
+        result.push(offer);
+      }
+      return result;
+    }
+
+    describe(SemibookCacheOperations.prototype.markComplete.name, () => {
+      it("marks incomplete cache as complete", () => {
+        // Arrange
+        const state = createEmptyState();
+
+        // Act
+        cacheOperations.markComplete(state);
+
+        // Assert
+        expect(state.isComplete).to.equal(true);
+      });
+
+      it("cannot mark already complete cache as complete", () => {
+        // Arrange
+        const state = createEmptyState();
+        cacheOperations.markComplete(state);
+
+        // Act & Assert
+        expect(() => cacheOperations.markComplete(state)).to.throw();
+      });
+    });
+
+    describe(SemibookCacheOperations.prototype.insertCompleteBin.name, () => {
+      it("cannot insert bin into complete cache", () => {
+        // Arrange
+        const state = createEmptyState();
+        cacheOperations.markComplete(state);
+        const tick = 0;
+        const offers = makeBinOffers({ tick, count: 1, fromId: 1 });
+
+        // Act & Assert
+        expect(() =>
+          cacheOperations.insertCompleteBin(state, offers),
+        ).to.throw();
+      });
+
+      describe("incomplete empty cache", () => {
+        let state: Semibook.State;
+        beforeEach(() => {
+          state = createEmptyState();
+        });
+
+        it("inserts singleton bin", () => {
+          // Arrange
+          const tick = 0;
+          const offers = makeBinOffers({ tick, count: 1, fromId: 1 });
+
+          // Act
+          cacheOperations.insertCompleteBin(state, offers);
+
+          // Assert
+          expect(state.isComplete).to.equal(false);
+
+          expect([...state.offerCache.entries()]).to.deep.equal(
+            offers.map((o) => [o.id, o]),
+          );
+
+          expect(state.binCache.size).to.equal(1);
+          expect(state.binCache.get(tick)).to.deep.equal({
+            tick: tick,
+            offerCount: offers.length,
+            firstOfferId: offers[0].id,
+            lastOfferId: offers[offers.length - 1].id,
+            prev: undefined,
+            next: undefined,
+          });
+
+          expect(state.bestBinInCache).to.be.equal(state.binCache.get(tick));
+          expect(state.worstBinInCache).to.be.equal(state.binCache.get(tick));
+        });
+
+        it("inserts bin with multiple (3) offers", () => {
+          // Arrange
+          const tick = 0;
+          const offers = makeBinOffers({ tick, count: 3, fromId: 1 });
+
+          // Act
+          cacheOperations.insertCompleteBin(state, offers);
+
+          // Assert
+          expect(state.isComplete).to.equal(false);
+
+          expect([...state.offerCache.entries()]).to.deep.equal(
+            offers.map((o) => [o.id, o]),
+          );
+
+          expect(state.binCache.size).to.equal(1);
+          expect(state.binCache.get(tick)).to.deep.equal({
+            tick: tick,
+            offerCount: offers.length,
+            firstOfferId: offers[0].id,
+            lastOfferId: offers[offers.length - 1].id,
+            prev: undefined,
+            next: undefined,
+          });
+
+          expect(state.bestBinInCache).to.be.equal(state.binCache.get(tick));
+          expect(state.worstBinInCache).to.be.equal(state.binCache.get(tick));
+        });
+      });
+
+      describe("incomplete cache with one bin", () => {
+        let state: Semibook.State;
+        let existingBin: Semibook.Bin;
+        let existingOffers: Market.Offer[];
+        beforeEach(() => {
+          state = createEmptyState();
+
+          const tick = 0;
+          existingOffers = makeBinOffers({ tick, count: 1, fromId: 1 });
+          cacheOperations.insertCompleteBin(state, existingOffers);
+          existingBin = state.binCache.get(tick)!;
+        });
+
+        it("cannot insert bin with lower tick (cache invariant violation)", () => {
+          // Arrange
+          const tick = existingBin.tick - 1;
+          const offers = makeBinOffers({
+            tick,
+            count: 1,
+            fromId: existingBin.lastOfferId + 1,
+          });
+
+          // Act & Assert
+          expect(() =>
+            cacheOperations.insertCompleteBin(state, offers),
+          ).to.throw();
+        });
+
+        it("cannot insert bin with same tick (cache invariant violation)", () => {
+          // Arrange
+          const tick = existingBin.tick;
+          const offers = makeBinOffers({
+            tick,
+            count: 1,
+            fromId: existingBin.lastOfferId + 1,
+          });
+
+          // Act & Assert
+          expect(() =>
+            cacheOperations.insertCompleteBin(state, offers),
+          ).to.throw();
+        });
+
+        it("insert bin with higher tick", () => {
+          // Arrange
+          const tick = existingBin.tick + 1;
+          const offers = makeBinOffers({
+            tick,
+            count: 1,
+            fromId: existingBin.lastOfferId + 1,
+          });
+
+          // Act
+          cacheOperations.insertCompleteBin(state, offers);
+
+          // Assert
+          expect(state.isComplete).to.equal(false);
+
+          expect([...state.offerCache.entries()]).to.deep.equal(
+            [...existingOffers, ...offers].map((o) => [o.id, o]),
+          );
+
+          expect(state.binCache.size).to.equal(2);
+          expect(state.binCache.get(tick)).to.deep.equal({
+            tick: tick,
+            offerCount: offers.length,
+            firstOfferId: offers[0].id,
+            lastOfferId: offers[offers.length - 1].id,
+            prev: existingBin,
+            next: undefined,
+          });
+          expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+            ...existingBin,
+            prev: undefined,
+            next: state.binCache.get(tick),
+          });
+
+          expect(state.bestBinInCache).to.be.equal(existingBin);
+          expect(state.worstBinInCache).to.be.equal(state.binCache.get(tick));
+        });
+      });
+
+      describe("incomplete cache with multiple (3) bins", () => {
+        let state: Semibook.State;
+        let existingBins: Semibook.Bin[];
+        let existingOffersList: Market.Offer[][];
+        beforeEach(() => {
+          state = createEmptyState();
+
+          existingBins = [];
+          existingOffersList = [];
+          for (let i = 0; i < 3; ++i) {
+            const tick = i * 2;
+            existingOffersList[i] = makeBinOffers({
+              tick,
+              count: 1,
+              fromId: i + 1,
+            });
+            cacheOperations.insertCompleteBin(state, existingOffersList[i]);
+            existingBins[i] = state.binCache.get(tick)!;
+          }
+        });
+
+        it("cannot insert bin with lower tick (cache invariant violation)", () => {
+          // Arrange
+          const tick = existingBins[0].tick - 1;
+          const offers = makeBinOffers({
+            tick,
+            count: 1,
+            fromId: state.worstBinInCache!.lastOfferId + 1,
+          });
+
+          // Act & Assert
+          expect(() =>
+            cacheOperations.insertCompleteBin(state, offers),
+          ).to.throw();
+        });
+
+        it("cannot insert bin with inbetween tick (cache invariant violation)", () => {
+          // Arrange
+          const tick = existingBins[0].tick + 1;
+          const offers = makeBinOffers({
+            tick,
+            count: 1,
+            fromId: state.worstBinInCache!.lastOfferId + 1,
+          });
+
+          // Act & Assert
+          expect(() =>
+            cacheOperations.insertCompleteBin(state, offers),
+          ).to.throw();
+        });
+
+        it("cannot insert bin with existing tick (cache invariant violation)", () => {
+          // Arrange
+          const tick = existingBins[1].tick;
+          const offers = makeBinOffers({
+            tick,
+            count: 1,
+            fromId: state.worstBinInCache!.lastOfferId + 1,
+          });
+
+          // Act & Assert
+          expect(() =>
+            cacheOperations.insertCompleteBin(state, offers),
+          ).to.throw();
+        });
+
+        it("insert bin with higher tick", () => {
+          // Arrange
+          const tick = existingBins[existingBins.length - 1].tick + 1;
+          const offers = makeBinOffers({
+            tick,
+            count: 1,
+            fromId: state.worstBinInCache!.lastOfferId + 1,
+          });
+
+          // Act
+          cacheOperations.insertCompleteBin(state, offers);
+
+          // Assert
+          expect(state.isComplete).to.equal(false);
+
+          expect(state.offerCache.size).to.equal(
+            existingOffersList.reduce((prev, curr) => curr.length + prev, 0) +
+              offers.length,
+          );
+          expect([...state.offerCache.entries()]).to.deep.equal(
+            [...existingOffersList.flat(), ...offers].map((o) => [o.id, o]),
+          );
+
+          expect(state.binCache.size).to.equal(existingBins.length + 1);
+          expect(state.binCache.get(tick)).to.deep.equal({
+            tick: tick,
+            offerCount: offers.length,
+            firstOfferId: offers[0].id,
+            lastOfferId: offers[offers.length - 1].id,
+            prev: existingBins[existingBins.length - 1],
+            next: undefined,
+          });
+          for (let i = 0; i < existingBins.length; ++i) {
+            expect(state.binCache.get(existingBins[i].tick)).to.deep.equal({
+              ...existingBins[i],
+              prev: i == 0 ? undefined : existingBins[i - 1],
+              next:
+                i == existingBins.length - 1
+                  ? state.binCache.get(tick)
+                  : existingBins[i + 1],
+            });
+          }
+
+          expect(state.bestBinInCache).to.be.equal(existingBins[0]);
+          expect(state.worstBinInCache).to.be.equal(state.binCache.get(tick));
+        });
+      });
+    });
+
+    describe(
+      SemibookCacheOperations.prototype.insertOfferDueToEvent.name,
+      () => {
+        [true, false].map((isComplete) => {
+          const isCompleteStr = isComplete ? "complete" : "incomplete";
+          describe(`${isCompleteStr} cache`, () => {
+            describe(`${isCompleteStr} empty cache`, () => {
+              let state: Semibook.State;
+              beforeEach(() => {
+                state = createEmptyState();
+                if (isComplete) {
+                  cacheOperations.markComplete(state);
+                }
+              });
+
+              if (isComplete) {
+                it("insert creates new bin", () => {
+                  // Arrange
+                  const tick = 0;
+                  const offer = makeOffer({ tick, id: 1 });
+
+                  // Act
+                  cacheOperations.insertOfferDueToEvent(state, offer);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(true);
+
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    [offer].map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(1);
+                  expect(state.binCache.get(tick)).to.deep.equal({
+                    tick: tick,
+                    offerCount: 1,
+                    firstOfferId: offer.id,
+                    lastOfferId: offer.id,
+                    prev: undefined,
+                    next: undefined,
+                  });
+
+                  expect(state.bestBinInCache).to.be.equal(
+                    state.binCache.get(tick),
+                  );
+                  expect(state.worstBinInCache).to.be.equal(
+                    state.binCache.get(tick),
+                  );
+                });
+              } else {
+                it("insert is ignored", () => {
+                  // Arrange
+                  const tick = 0;
+                  const offer = makeOffer({ tick, id: 1 });
+
+                  // Act
+                  cacheOperations.insertOfferDueToEvent(state, offer);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(false);
+
+                  expect(state.offerCache.size).to.equal(0);
+
+                  expect(state.binCache.size).to.equal(0);
+
+                  expect(state.bestBinInCache).to.be.undefined;
+                  expect(state.worstBinInCache).to.be.undefined;
+                });
+              }
+            });
+
+            describe(`${isCompleteStr} cache with one bin`, () => {
+              let state: Semibook.State;
+              let existingBin: Semibook.Bin;
+              let existingOffers: Market.Offer[];
+              beforeEach(() => {
+                state = createEmptyState();
+
+                const tick = 0;
+                existingOffers = makeBinOffers({ tick, count: 1, fromId: 1 });
+                cacheOperations.insertCompleteBin(state, existingOffers);
+                if (isComplete) {
+                  cacheOperations.markComplete(state);
+                }
+                existingBin = state.binCache.get(tick)!;
+              });
+
+              it("offer inserted at lower tick creates new bin", () => {
+                // Arrange
+                const tick = existingBin.tick - 1;
+                const offer = makeOffer({
+                  tick,
+                  id: existingBin.lastOfferId + 1,
+                });
+
+                // Act
+                cacheOperations.insertOfferDueToEvent(state, offer);
+
+                // Assert
+                expect(state.isComplete).to.equal(isComplete);
+
+                expect([...state.offerCache.entries()]).to.deep.equal(
+                  [...existingOffers, offer].map((o) => [o.id, o]),
+                );
+
+                expect(state.binCache.size).to.equal(2);
+                expect(state.binCache.get(tick)).to.deep.equal({
+                  tick: tick,
+                  offerCount: 1,
+                  firstOfferId: offer.id,
+                  lastOfferId: offer.id,
+                  prev: undefined,
+                  next: existingBin,
+                });
+                expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+                  ...existingBin,
+                  prev: state.binCache.get(tick),
+                  next: undefined,
+                });
+
+                expect(state.bestBinInCache).to.be.equal(
+                  state.binCache.get(tick),
+                );
+                expect(state.worstBinInCache).to.be.equal(existingBin);
+              });
+
+              it("offer inserted at same tick is added to the end of the bin", () => {
+                // Arrange
+                const tick = existingBin.tick;
+                const offer = makeOffer({
+                  tick,
+                  id: existingBin.lastOfferId + 1,
+                });
+
+                // Act
+                cacheOperations.insertOfferDueToEvent(state, offer);
+
+                // Assert
+                expect([...state.offerCache.entries()]).to.deep.equal(
+                  [...existingOffers, offer].map((o) => [o.id, o]),
+                );
+
+                expect(state.binCache.size).to.equal(1);
+                expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+                  ...existingBin,
+                  firstOfferId: existingOffers[0].id,
+                  lastOfferId: offer.id,
+                  offerCount: existingOffers.length + 1,
+                  prev: undefined,
+                  next: undefined,
+                });
+
+                expect(state.bestBinInCache).to.be.equal(existingBin);
+                expect(state.worstBinInCache).to.be.equal(existingBin);
+              });
+
+              if (isComplete) {
+                it("offer inserted at higher tick creates new bin", () => {
+                  // Arrange
+                  const tick = existingBin.tick + 1;
+                  const offer = makeOffer({
+                    tick,
+                    id: existingBin.lastOfferId + 1,
+                  });
+
+                  // Act
+                  cacheOperations.insertOfferDueToEvent(state, offer);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(true);
+
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    [...existingOffers, offer].map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(2);
+                  expect(state.binCache.get(tick)).to.deep.equal({
+                    tick: tick,
+                    offerCount: 1,
+                    firstOfferId: offer.id,
+                    lastOfferId: offer.id,
+                    prev: existingBin,
+                    next: undefined,
+                  });
+                  expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+                    ...existingBin,
+                    prev: undefined,
+                    next: state.binCache.get(tick),
+                  });
+
+                  expect(state.bestBinInCache).to.be.equal(existingBin);
+                  expect(state.worstBinInCache).to.be.equal(
+                    state.binCache.get(tick),
+                  );
+                });
+              } else {
+                it("offer inserted at higher tick is ignored", () => {
+                  // Arrange
+                  const tick = existingBin.tick + 1;
+                  const offer = makeOffer({
+                    tick,
+                    id: existingBin.lastOfferId + 1,
+                  });
+
+                  // Act
+                  cacheOperations.insertOfferDueToEvent(state, offer);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(false);
+
+                  expect(state.offerCache.size).to.equal(existingOffers.length);
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    existingOffers.map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(1);
+                  expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+                    ...existingBin,
+                    firstOfferId: existingOffers[0].id,
+                    lastOfferId: existingOffers[existingOffers.length - 1].id,
+                    offerCount: existingOffers.length,
+                    prev: undefined,
+                    next: undefined,
+                  });
+
+                  expect(state.bestBinInCache).to.be.equal(existingBin);
+                  expect(state.worstBinInCache).to.be.equal(existingBin);
+                });
+              }
+            });
+
+            describe(`${isCompleteStr} cache with multiple (3) bins`, () => {
+              let state: Semibook.State;
+              let existingBins: Semibook.Bin[];
+              let existingOffersList: Market.Offer[][];
+              beforeEach(() => {
+                state = createEmptyState();
+
+                existingBins = [];
+                existingOffersList = [];
+                for (let i = 0; i < 3; ++i) {
+                  const tick = i * 2;
+                  existingOffersList[i] = makeBinOffers({
+                    tick,
+                    count: 1,
+                    fromId: i + 1,
+                  });
+                  cacheOperations.insertCompleteBin(
+                    state,
+                    existingOffersList[i],
+                  );
+                  existingBins[i] = state.binCache.get(tick)!;
+                }
+
+                if (isComplete) {
+                  cacheOperations.markComplete(state);
+                }
+              });
+
+              it("offer inserted at lower tick creates new bin", () => {
+                // Arrange
+                const tick = existingBins[0].tick - 1;
+                const offer = makeOffer({
+                  tick,
+                  id: existingBins[existingBins.length - 1].lastOfferId + 1,
+                });
+
+                // Act
+                cacheOperations.insertOfferDueToEvent(state, offer);
+
+                // Assert
+                expect(state.isComplete).to.equal(isComplete);
+
+                expect([...state.offerCache.entries()]).to.deep.equal(
+                  [...existingOffersList.flat(), offer].map((o) => [o.id, o]),
+                );
+
+                expect(state.binCache.size).to.equal(existingBins.length + 1);
+                expect(state.binCache.get(tick)).to.deep.equal({
+                  tick: tick,
+                  offerCount: 1,
+                  firstOfferId: offer.id,
+                  lastOfferId: offer.id,
+                  prev: undefined,
+                  next: existingBins[0],
+                });
+                for (let i = 0; i < existingBins.length; ++i) {
+                  expect(
+                    state.binCache.get(existingBins[i].tick),
+                  ).to.deep.equal({
+                    ...existingBins[i],
+                    prev:
+                      i == 0 ? state.binCache.get(tick) : existingBins[i - 1],
+                    next:
+                      i == existingBins.length - 1
+                        ? undefined
+                        : existingBins[i + 1],
+                  });
+                }
+
+                expect(state.bestBinInCache).to.be.equal(
+                  state.binCache.get(tick),
+                );
+                expect(state.worstBinInCache).to.be.equal(
+                  existingBins[existingBins.length - 1],
+                );
+              });
+
+              it("offer inserted at inbetween tick creates new bin", () => {
+                // Arrange
+                const tick = existingBins[0].tick + 1;
+                const offer = makeOffer({
+                  tick,
+                  id: existingBins[existingBins.length - 1].lastOfferId + 1,
+                });
+
+                // Act
+                cacheOperations.insertOfferDueToEvent(state, offer);
+
+                // Assert
+                expect(state.isComplete).to.equal(isComplete);
+
+                expect([...state.offerCache.entries()]).to.deep.equal(
+                  [...existingOffersList.flat(), offer].map((o) => [o.id, o]),
+                );
+
+                expect(state.binCache.size).to.equal(existingBins.length + 1);
+                expect(state.binCache.get(tick)).to.deep.equal({
+                  tick: tick,
+                  offerCount: 1,
+                  firstOfferId: offer.id,
+                  lastOfferId: offer.id,
+                  prev: existingBins[0],
+                  next: existingBins[1],
+                });
+                for (let i = 0; i < existingBins.length; ++i) {
+                  expect(
+                    state.binCache.get(existingBins[i].tick),
+                  ).to.deep.equal({
+                    ...existingBins[i],
+                    prev:
+                      i == 0
+                        ? undefined
+                        : i == 1
+                          ? state.binCache.get(tick)
+                          : existingBins[i - 1],
+                    next:
+                      i == 0 ? state.binCache.get(tick) : existingBins[i + 1],
+                  });
+                }
+
+                expect(state.bestBinInCache).to.be.equal(existingBins[0]);
+                expect(state.worstBinInCache).to.be.equal(
+                  existingBins[existingBins.length - 1],
+                );
+              });
+
+              it("offer inserted at existing tick is added to the end of the bin", () => {
+                // Arrange
+                const tick = existingBins[1].tick;
+                const offer = makeOffer({
+                  tick,
+                  id: existingBins[existingBins.length - 1].lastOfferId + 1,
+                });
+
+                const binBefore = { ...state.binCache.get(tick)! };
+
+                // Act
+                cacheOperations.insertOfferDueToEvent(state, offer);
+
+                // Assert
+                expect(state.isComplete).to.equal(isComplete);
+
+                expect(state.offerCache.size).to.equal(
+                  existingOffersList.reduce(
+                    (prev, curr) => curr.length + prev,
+                    0,
+                  ) + 1,
+                );
+                expect([...state.offerCache.entries()]).to.deep.equal(
+                  [...existingOffersList.flat(), offer].map((o) => [o.id, o]),
+                );
+
+                expect(state.binCache.size).to.equal(existingBins.length);
+                expect(state.binCache.get(tick)).to.deep.equal({
+                  ...binBefore,
+                  lastOfferId: offer.id,
+                  offerCount: binBefore.offerCount + 1,
+                });
+
+                expect(state.bestBinInCache).to.be.equal(existingBins[0]);
+                expect(state.worstBinInCache).to.be.equal(
+                  existingBins[existingBins.length - 1],
+                );
+              });
+
+              if (isComplete) {
+                it("offer inserted at higher tick creates new bin", () => {
+                  // Arrange
+                  const tick = existingBins[existingBins.length - 1].tick + 1;
+                  const offer = makeOffer({
+                    tick,
+                    id: existingBins[existingBins.length - 1].lastOfferId + 1,
+                  });
+
+                  // Act
+                  cacheOperations.insertOfferDueToEvent(state, offer);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(true);
+
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    [...existingOffersList.flat(), offer].map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(existingBins.length + 1);
+                  expect(state.binCache.get(tick)).to.deep.equal({
+                    tick: tick,
+                    offerCount: 1,
+                    firstOfferId: offer.id,
+                    lastOfferId: offer.id,
+                    prev: existingBins[existingBins.length - 1],
+                    next: undefined,
+                  });
+                  for (let i = 0; i < existingBins.length; ++i) {
+                    expect(
+                      state.binCache.get(existingBins[i].tick),
+                    ).to.deep.equal({
+                      ...existingBins[i],
+                      next:
+                        i == existingBins.length - 1
+                          ? state.binCache.get(tick)
+                          : existingBins[i + 1],
+                    });
+                  }
+
+                  expect(state.bestBinInCache).to.be.equal(existingBins[0]);
+                  expect(state.worstBinInCache).to.be.equal(
+                    state.binCache.get(tick),
+                  );
+                });
+              } else {
+                it("offer inserted at higher tick is ignored", () => {
+                  // Arrange
+                  const tick = existingBins[existingBins.length - 1].tick + 1;
+                  const offer = makeOffer({
+                    tick,
+                    id: existingBins[existingBins.length - 1].lastOfferId + 1,
+                  });
+
+                  const binsBefore = existingBins.map((bin) => ({ ...bin }));
+
+                  // Act
+                  cacheOperations.insertOfferDueToEvent(state, offer);
+
+                  // Assert
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    existingOffersList.flat().map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(existingBins.length);
+                  for (let i = 0; i < existingBins.length; ++i) {
+                    expect(
+                      state.binCache.get(existingBins[i].tick),
+                    ).to.deep.equal(binsBefore[i]);
+                  }
+
+                  expect(state.bestBinInCache).to.be.equal(existingBins[0]);
+                  expect(state.worstBinInCache).to.be.equal(
+                    existingBins[existingBins.length - 1],
+                  );
+                });
+              }
+            });
+          });
+        });
+      },
+    );
+
+    describe(
+      SemibookCacheOperations.prototype.removeOfferDueToEvent.name,
+      () => {
+        [true, false].map((isComplete) => {
+          const isCompleteStr = isComplete ? "complete" : "incomplete";
+          describe(`${isCompleteStr} cache`, () => {
+            describe(`${isCompleteStr} empty cache`, () => {
+              let state: Semibook.State;
+              beforeEach(() => {
+                state = createEmptyState();
+                if (isComplete) {
+                  cacheOperations.markComplete(state);
+                }
+              });
+
+              [true, false].map((allowUnknownId) => {
+                if (isComplete && !allowUnknownId) {
+                  it("cannot remove offer from complete, empty cache when allowUnknownId = false", () => {
+                    // Arrange
+                    const offerId = 1;
+
+                    // Act & Assert
+                    expect(() =>
+                      cacheOperations.removeOfferDueToEvent(
+                        state,
+                        offerId,
+                        allowUnknownId,
+                      ),
+                    ).to.throw();
+                  });
+                } else {
+                  it(`remove from ${isCompleteStr}, empty cache is ignored when allowUnknownId = ${allowUnknownId}`, () => {
+                    // Arrange
+                    const offerId = 1;
+
+                    // Act
+                    cacheOperations.removeOfferDueToEvent(
+                      state,
+                      offerId,
+                      allowUnknownId,
+                    );
+
+                    // Assert
+                    expect(state.isComplete).to.equal(isComplete);
+
+                    expect(state.offerCache.size).to.equal(0);
+
+                    expect(state.binCache.size).to.equal(0);
+
+                    expect(state.bestBinInCache).to.be.undefined;
+                    expect(state.worstBinInCache).to.be.undefined;
+                  });
+                }
+              });
+            });
+
+            describe(`${isCompleteStr} cache with one bin`, () => {
+              let state: Semibook.State;
+              let existingBin: Semibook.Bin;
+              let existingOffers: Market.Offer[];
+
+              describe("bin has one offer", () => {
+                beforeEach(() => {
+                  state = createEmptyState();
+
+                  const tick = 0;
+                  existingOffers = makeBinOffers({ tick, count: 1, fromId: 1 });
+                  cacheOperations.insertCompleteBin(state, existingOffers);
+                  if (isComplete) {
+                    cacheOperations.markComplete(state);
+                  }
+                  existingBin = state.binCache.get(tick)!;
+                });
+
+                [true, false].map((allowUnknownId) => {
+                  if (isComplete && !allowUnknownId) {
+                    it("cannot remove unknown offer from complete cache when allowUnknownId = false", () => {
+                      // Arrange
+                      const offerId = existingBin.lastOfferId + 1;
+
+                      // Act & Assert
+                      expect(() =>
+                        cacheOperations.removeOfferDueToEvent(
+                          state,
+                          offerId,
+                          allowUnknownId,
+                        ),
+                      ).to.throw();
+                    });
+                  } else {
+                    it(`remove from ${isCompleteStr} cache is ignored when allowUnknownId = ${allowUnknownId}`, () => {
+                      // Arrange
+                      const offerId = existingBin.lastOfferId + 1;
+
+                      // Act
+                      cacheOperations.removeOfferDueToEvent(
+                        state,
+                        offerId,
+                        allowUnknownId,
+                      );
+
+                      // Assert
+                      expect(state.isComplete).to.equal(isComplete);
+
+                      expect([...state.offerCache.entries()]).to.deep.equal(
+                        existingOffers.map((o) => [o.id, o]),
+                      );
+
+                      expect(state.binCache.size).to.equal(1);
+                      expect(
+                        state.binCache.get(existingBin.tick),
+                      ).to.deep.equal({
+                        ...existingBin,
+                        firstOfferId: existingOffers[0].id,
+                        lastOfferId:
+                          existingOffers[existingOffers.length - 1].id,
+                        offerCount: existingOffers.length,
+                        prev: undefined,
+                        next: undefined,
+                      });
+
+                      expect(state.bestBinInCache).to.be.equal(existingBin);
+                      expect(state.worstBinInCache).to.be.equal(existingBin);
+                    });
+                  }
+                });
+
+                it("remove offer ID removes offer and bin", () => {
+                  // Arrange
+                  const offerId = existingOffers[0].id;
+
+                  // Act
+                  cacheOperations.removeOfferDueToEvent(state, offerId);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(isComplete);
+
+                  expect(state.offerCache.size).to.equal(0);
+
+                  expect(state.binCache.size).to.equal(0);
+
+                  expect(state.bestBinInCache).to.be.undefined;
+                  expect(state.worstBinInCache).to.be.undefined;
+                });
+              });
+
+              describe("bin has multiple (3) offers", () => {
+                beforeEach(() => {
+                  state = createEmptyState();
+
+                  const tick = 0;
+                  existingOffers = makeBinOffers({ tick, count: 3, fromId: 1 });
+                  cacheOperations.insertCompleteBin(state, existingOffers);
+                  if (isComplete) {
+                    cacheOperations.markComplete(state);
+                  }
+                  existingBin = state.binCache.get(tick)!;
+                });
+
+                it("removes first offer ID", () => {
+                  // Arrange
+                  const offerId = existingOffers[0].id;
+
+                  // Act
+                  cacheOperations.removeOfferDueToEvent(state, offerId);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(isComplete);
+
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    existingOffers
+                      .filter((o) => o.id != offerId)
+                      .map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(1);
+                  expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+                    ...existingBin,
+                    firstOfferId: existingOffers[1].id,
+                    lastOfferId: existingOffers[existingOffers.length - 1].id,
+                    offerCount: existingOffers.length - 1,
+                    prev: undefined,
+                    next: undefined,
+                  });
+
+                  expect(state.bestBinInCache).to.be.equal(existingBin);
+                  expect(state.worstBinInCache).to.be.equal(existingBin);
+                });
+
+                it("removes middle offer ID", () => {
+                  // Arrange
+                  const offerId = existingOffers[1].id;
+
+                  // Act
+                  cacheOperations.removeOfferDueToEvent(state, offerId);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(isComplete);
+
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    existingOffers
+                      .filter((o) => o.id != offerId)
+                      .map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(1);
+                  expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+                    ...existingBin,
+                    firstOfferId: existingOffers[0].id,
+                    lastOfferId: existingOffers[existingOffers.length - 1].id,
+                    offerCount: existingOffers.length - 1,
+                    prev: undefined,
+                    next: undefined,
+                  });
+
+                  expect(state.bestBinInCache).to.be.equal(existingBin);
+                  expect(state.worstBinInCache).to.be.equal(existingBin);
+                });
+
+                it("removes last offer ID", () => {
+                  // Arrange
+                  const offerId = existingOffers[existingOffers.length - 1].id;
+
+                  // Act
+                  cacheOperations.removeOfferDueToEvent(state, offerId);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(isComplete);
+
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    existingOffers
+                      .filter((o) => o.id != offerId)
+                      .map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(1);
+                  expect(state.binCache.get(existingBin.tick)).to.deep.equal({
+                    ...existingBin,
+                    firstOfferId: existingOffers[0].id,
+                    lastOfferId: existingOffers[existingOffers.length - 2].id,
+                    offerCount: existingOffers.length - 1,
+                    prev: undefined,
+                    next: undefined,
+                  });
+
+                  expect(state.bestBinInCache).to.be.equal(existingBin);
+                  expect(state.worstBinInCache).to.be.equal(existingBin);
+                });
+              });
+            });
+
+            describe(`${isCompleteStr} cache with multiple (3) bins, each bin has one offer`, () => {
+              let state: Semibook.State;
+              let existingBins: Semibook.Bin[];
+              let existingOffersList: Market.Offer[][];
+              beforeEach(() => {
+                state = createEmptyState();
+
+                existingBins = [];
+                existingOffersList = [];
+                for (let i = 0; i < 3; ++i) {
+                  const tick = i * 2;
+                  existingOffersList[i] = makeBinOffers({
+                    tick,
+                    count: 1,
+                    fromId: i + 1,
+                  });
+                  cacheOperations.insertCompleteBin(
+                    state,
+                    existingOffersList[i],
+                  );
+                  existingBins[i] = state.binCache.get(tick)!;
+                }
+                if (isComplete) {
+                  cacheOperations.markComplete(state);
+                }
+              });
+
+              [0, 1, 2].forEach((binIndex) => {
+                it(`removes offer from ${
+                  binIndex == 0 ? "first" : binIndex == 1 ? "middle" : "last"
+                } bin`, () => {
+                  // Arrange
+                  const offerId = existingOffersList[binIndex][0].id;
+
+                  // Act
+                  cacheOperations.removeOfferDueToEvent(state, offerId);
+
+                  // Assert
+                  expect(state.isComplete).to.equal(isComplete);
+
+                  expect([...state.offerCache.entries()]).to.deep.equal(
+                    [
+                      ...existingOffersList
+                        .flat()
+                        .filter((o) => o.id != offerId),
+                    ].map((o) => [o.id, o]),
+                  );
+
+                  expect(state.binCache.size).to.equal(existingBins.length - 1);
+                  expect(state.binCache.get(existingBins[binIndex].tick)).to.be
+                    .undefined;
+                  const remainingBins = existingBins.filter(
+                    (_, i) => i != binIndex,
+                  );
+                  for (let i = 0; i < remainingBins.length; ++i) {
+                    expect(
+                      state.binCache.get(remainingBins[i].tick),
+                    ).to.deep.equal({
+                      ...remainingBins[i],
+                      prev: i == 0 ? undefined : remainingBins[i - 1],
+                      next:
+                        i == remainingBins.length - 1
+                          ? undefined
+                          : remainingBins[i + 1],
+                    });
+                  }
+
+                  expect(state.bestBinInCache).to.be.equal(remainingBins[0]);
+                  expect(state.worstBinInCache).to.be.equal(
+                    remainingBins[remainingBins.length - 1],
+                  );
+                });
+              });
+            });
+          });
+        });
+      },
+    );
   });
 });

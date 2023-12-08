@@ -23,7 +23,8 @@ let canConstructMarket = false;
 const MAX_MARKET_ORDER_GAS = 10000000;
 
 export const bookOptsDefault: Market.BookOptions = {
-  maxOffers: Semibook.DEFAULT_MAX_OFFERS,
+  targetNumberOfTicks: Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS,
+  chunkSize: Semibook.DEFAULT_CHUNK_SIZE,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -200,16 +201,18 @@ namespace Market {
   /**
    * Options that specify what the cache fetches and retains.
    *
-   * `maxOffers`, `desiredPrice`, and `desiredVolume` are mutually exclusive.
-   * If none of these are specified, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
+   * `targetNumberOfTicks`, `desiredPrice`, and `desiredVolume` are mutually exclusive.
+   * If none of these are specified, the default is `targetNumberOfTicks` = `Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS`.
    */
   export type CacheContentsOptions =
     | {
-        /** The maximum number of offers to store in the cache.
+        /** The number of ticks the cache should ideally hold.
          *
-         * `maxOffers, `desiredPrice`, and `desiredVolume` are mutually exclusive.
+         * When loading from chain, the cache will load until at least this number of ticks is in the cache.
+         *
+         * `targetNumberOfTicks, `desiredPrice`, and `desiredVolume` are mutually exclusive.
          */
-        maxOffers?: number;
+        targetNumberOfTicks?: number;
       }
     | {
         /** The price that is expected to be used in calls to the market.
@@ -230,7 +233,7 @@ namespace Market {
   export type BookOptions = CacheContentsOptions & {
     /** The number of offers to fetch in one call.
      *
-     * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
+     * Defaults to `Semibook.DEFAULT_CHUNK_SIZE`. */
     chunkSize?: number;
   };
 
@@ -470,9 +473,9 @@ class Market {
           desiredPrice: opts.desiredPrice,
           chunkSize: opts.chunkSize,
         };
-      } else if ("maxOffers" in opts) {
+      } else if ("targetNumberOfTicks" in opts) {
         return {
-          maxOffers: opts.maxOffers,
+          targetNumberOfTicks: opts.targetNumberOfTicks,
           chunkSize: opts.chunkSize,
         };
       } else {

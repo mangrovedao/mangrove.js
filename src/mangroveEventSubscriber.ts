@@ -32,11 +32,13 @@ class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent
   }
 
   static optionsIdentifier(options: Semibook.Options) {
-    return `${"maxOffers" in options ? options.maxOffers : "undefined"}_${
-      "desiredPrice" in options ? options.desiredPrice : "undefined"
-    }_${"desiredVolume" in options ? options.desiredVolume : "undefined"}_${
-      options.chunkSize
-    }`;
+    return `${
+      "targetNumberOfTicks" in options
+        ? options.targetNumberOfTicks
+        : "undefined"
+    }_${"desiredPrice" in options ? options.desiredPrice : "undefined"}_${
+      "desiredVolume" in options ? options.desiredVolume : "undefined"
+    }_${options.chunkSize}`;
   }
 
   public async enableSubscriptions() {

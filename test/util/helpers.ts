@@ -171,6 +171,59 @@ export const newOffer = async (
   );
 };
 
+export const retractOffer = async (
+  params: { mgv: Mangrove; offerId: number; deprovision?: boolean } & (
+    | {
+        outbound: string | Token;
+        inbound: string | Token;
+      }
+    | ({
+        ba: "bids" | "asks";
+      } & (
+        | { market: Market }
+        | {
+            base: string | Token;
+            quote: string | Token;
+          }
+      ))
+  ),
+): Promise<ContractTransaction> => {
+  const mgv = params.mgv;
+  let outboundToken: Token;
+  let inboundToken: Token;
+  if ("ba" in params) {
+    let base: string | Token;
+    let quote: string | Token;
+    if ("market" in params) {
+      base = params.market.base;
+      quote = params.market.quote;
+    } else {
+      base = params.base;
+      quote = params.quote;
+    }
+
+    const { ba } = params;
+    const baseToken = await getToken(base, mgv);
+    const quoteToken = await getToken(quote, mgv);
+    outboundToken = ba === "asks" ? baseToken : quoteToken;
+    inboundToken = ba === "asks" ? quoteToken : baseToken;
+  } else {
+    const { outbound: outbound_tkn, inbound: inbound_tkn } = params;
+    outboundToken = await getToken(outbound_tkn, mgv);
+    inboundToken = await getToken(inbound_tkn, mgv);
+  }
+
+  return mgv.contract.retractOffer(
+    {
+      outbound_tkn: outboundToken.address,
+      inbound_tkn: inboundToken.address,
+      tickSpacing: 1,
+    },
+    params.offerId,
+    params.deprovision || false,
+  );
+};
+
 async function getToken(token: string | Token, mgv: Mangrove): Promise<Token> {
   return typeof token === "string" ? await mgv.token(token) : token;
 }
