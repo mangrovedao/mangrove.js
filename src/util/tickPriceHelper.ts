@@ -168,7 +168,7 @@ class TickPriceHelper {
    */
   private nearestRepresentableTick(tick: BigNumber): BigNumber {
     return TickLib.nearestBin(
-      BigNumber.from(tick),
+      tick,
       BigNumber.from(this.market.tickSpacing),
     ).mul(this.market.tickSpacing);
   }
