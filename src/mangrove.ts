@@ -65,6 +65,8 @@ namespace Mangrove {
     gasprice: number;
     gasmax: number;
     dead: boolean;
+    maxRecursionDepth: number;
+    maxGasreqForFailingOffers: number;
   };
 
   export type SimplePermitData = {
@@ -687,6 +689,8 @@ class Mangrove {
       gasprice: config.gasprice.toNumber(),
       gasmax: config.gasmax.toNumber(),
       dead: config.dead,
+      maxRecursionDepth: config.maxRecursionDepth.toNumber(),
+      maxGasreqForFailingOffers: config.maxGasreqForFailingOffers.toNumber(),
     };
   }
 
