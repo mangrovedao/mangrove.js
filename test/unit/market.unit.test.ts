@@ -5,6 +5,7 @@ import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
+import { TokenCalculations } from "../../src/token";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -118,7 +119,11 @@ describe("Market unit tests suite", () => {
         offer_gasbase: 1000,
         gives,
         wants: priceBig.mul(gives).round(),
-        tick: TickPriceHelper.tickFromRawRatio(priceBig),
+        tick: new TickPriceHelper("asks", {
+          base: new TokenCalculations(0, 0),
+          quote: new TokenCalculations(0, 0),
+          tickSpacing: 1,
+        }).tickFromRawRatio(priceBig),
         price: Big(price),
         volume: Big(42),
       };

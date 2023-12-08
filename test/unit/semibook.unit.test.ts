@@ -213,6 +213,7 @@ describe("Semibook unit test suite", () => {
       when(marketMock.mgv).thenReturn(instance(mangroveMock));
       when(marketMock.base).thenReturn(instance(baseTokenMock));
       when(marketMock.quote).thenReturn(instance(quoteTokenMock));
+      when(marketMock.tickSpacing).thenReturn(1);
       when(marketMock.getOutboundInbound(marketSide)).thenReturn({
         outbound_tkn: instance(baseTokenMock),
         inbound_tkn: instance(quoteTokenMock),
@@ -306,6 +307,7 @@ describe("Semibook unit test suite", () => {
       when(marketMock.mgv).thenReturn(instance(mangroveMock));
       when(marketMock.base).thenReturn(instance(baseTokenMock));
       when(marketMock.quote).thenReturn(instance(quoteTokenMock));
+      when(marketMock.tickSpacing).thenReturn(1);
       when(marketMock.getOutboundInbound(marketSide)).thenReturn({
         outbound_tkn: instance(quoteTokenMock),
         inbound_tkn: instance(baseTokenMock),

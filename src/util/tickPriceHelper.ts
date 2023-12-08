@@ -22,7 +22,7 @@ class TickPriceHelper {
 
   /**
    * Calculates the price at a given raw offer list tick.
-   * @param tick tick to calculate price for
+   * @param tick tick to calculate price for (is coerced to nearest bin)
    * @returns price at tick (not to be confused with offer list ratio).
    */
   priceFromTick(tick: number): Big {
@@ -30,7 +30,7 @@ class TickPriceHelper {
     const dp = Big.DP;
     Big.DP = 300;
 
-    const offerListRatioFromTick = TickPriceHelper.rawRatioFromTick(tick);
+    const offerListRatioFromTick = this.rawRatioFromTick(tick);
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
       this.market.base.decimals - this.market.quote.decimals,
@@ -48,9 +48,9 @@ class TickPriceHelper {
   }
 
   /**
-   * Calculates the raw offer list tick at a given order book price (not to be confused with offer list ratio).
+   * Calculates the raw offer list tick (coerced to nearest bin) at a given order book price (not to be confused with offer list ratio).
    * @param price price to calculate tick for
-   * @returns raw offer list tick for price
+   * @returns raw offer list tick (coerced to nearest bin) for price
    */
   // TODO: Consider allowing the user to control whether to round up or down.
   tickFromPrice(price: Bigish): number {
@@ -71,25 +71,35 @@ class TickPriceHelper {
         : priceAdjustedForDecimals;
 
     // TickLib.getTickFromPrice expects a ratio of rawInbound/rawOutbound, which is now available in offerListRatio
-    const tick = TickPriceHelper.tickFromRawRatio(offerListRatio);
+    const tick = this.tickFromRawRatio(offerListRatio);
     Big.DP = dp;
     return tick;
   }
 
   /**
+   * Coerces a price to a representable price on a tick. Note that due to rounding, coercing a coerced price may yield a price on an adjacent tick.
+   * @param price price to coerce
+   * @returns the price coerced to nearest representable tick */
+  coercePrice(price: Bigish): Big {
+    const tick = this.tickFromPrice(price);
+    return this.priceFromTick(tick);
+  }
+
+  /**
    * Calculates the inbound amount from an outbound amount at a given tick.
-   * @param tick tick to calculate the amount for
+   * @param tick tick to calculate the amount for (coerced to nearest bin)
    * @param outboundAmount amount to calculate the inbound amount for
    * @param roundUp whether to round up (true) or down (falsy)
    * @returns inbound amount.
    */
   inboundFromOutbound(tick: number, outboundAmount: Bigish, roundUp?: boolean) {
+    const bin = this.nearestRepresentableTick(BigNumber.from(tick));
     const rawOutbound = (
       this.ba === "bids" ? this.market.quote : this.market.base
     ).toUnits(outboundAmount);
     const rawInbound = (
       roundUp ? TickLib.inboundFromOutboundUp : TickLib.inboundFromOutbound
-    )(BigNumber.from(tick), rawOutbound);
+    )(bin, rawOutbound);
     return (
       this.ba === "bids" ? this.market.base : this.market.quote
     ).fromUnits(rawInbound);
@@ -97,28 +107,29 @@ class TickPriceHelper {
 
   /**
    * Calculates the outbound amount from an inbound amount at a given tick.
-   * @param tick tick to calculate the amount for
+   * @param tick tick to calculate the amount for (coerced to nearest bin)
    * @param inboundAmount amount to calculate the outbound amount for
    * @param roundUp whether to round up (true) or down (falsy)
    * @returns inbound amount.
    */
   outboundFromInbound(tick: number, inboundAmount: Bigish, roundUp?: boolean) {
+    const bin = this.nearestRepresentableTick(BigNumber.from(tick));
     const rawInbound = (
       this.ba === "bids" ? this.market.base : this.market.quote
     ).toUnits(inboundAmount);
     const rawOutbound = (
       roundUp ? TickLib.outboundFromInboundUp : TickLib.outboundFromInbound
-    )(BigNumber.from(tick), rawInbound);
+    )(bin, rawInbound);
     return (
       this.ba === "bids" ? this.market.quote : this.market.base
     ).fromUnits(rawOutbound);
   }
 
   /**
-   * Calculates the tick from inbound and outbound volumes.
+   * Calculates the tick (coerced to nearest bin) from inbound and outbound volumes.
    * @param inboundVolume inbound amount to calculate the tick for
    * @param outboundVolume outbound amount to calculate the tick for
-   * @returns raw offer list tick for volumes
+   * @returns raw offer list tick (coerced to nearest bin) for volumes
    */
   tickFromVolumes(inboundVolume: Bigish, outboundVolume: Bigish): number {
     const rawInbound = (
@@ -128,22 +139,51 @@ class TickPriceHelper {
       this.ba === "bids" ? this.market.quote : this.market.base
     ).toUnits(outboundVolume);
     const tick = TickLib.tickFromVolumes(rawInbound, rawOutbound);
-    return tick.toNumber();
+    const bin = this.nearestRepresentableTick(tick);
+    return bin.toNumber();
   }
 
   // Helper functions for converting between ticks and ratios as Big instead of the special format used by TickLib.
   // In TickLib, ratios are represented as a mantissa and exponent such that ratio = mantissa * 2^(-exponent).
+
+  /** Coerce a tick to its nearest bin
+   * @param tick tick to coerce
+   * @return tick coerced to its nearest bin
+   */
+  public coerceTick(tick: number): number {
+    return this.nearestRepresentableTick(BigNumber.from(tick)).toNumber();
+  }
+
+  /** Check if tick is exact, as in it does not change when coerced due to tick spacing
+   * @param tick tick to check
+   * @returns true if tick is exact; otherwise, false
+   */
+  public isTickExact(tick: number): boolean {
+    return this.nearestRepresentableTick(BigNumber.from(tick)).eq(tick);
+  }
+
+  /** Coerce a tick to its nearest bin
+   * @param tick tick to coerce
+   * @returns tick coerced to its nearest bin
+   */
+  private nearestRepresentableTick(tick: BigNumber): BigNumber {
+    return TickLib.nearestBin(
+      tick,
+      BigNumber.from(this.market.tickSpacing),
+    ).mul(this.market.tickSpacing);
+  }
 
   /**
    * Calculates the raw ratio as a Big with big precision.
    *
    * NB: Raw ratios do not take token decimals into account.
    *
-   * @param tick tick to calculate the ratio for
+   * @param tick tick to calculate the ratio for (coerced to nearest bin)
    * @returns ratio as a Big.
    */
-  static rawRatioFromTick(tick: number): Big {
-    const { man, exp } = TickLib.ratioFromTick(BigNumber.from(tick));
+  public rawRatioFromTick(tick: number): Big {
+    const bin = this.nearestRepresentableTick(BigNumber.from(tick));
+    const { man, exp } = TickLib.ratioFromTick(bin);
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
     Big.DP = 300;
@@ -153,17 +193,19 @@ class TickPriceHelper {
   }
 
   /**
-   * Converts a raw ratio as a Big to a tick.
+   * Converts a raw ratio as a Big to a tick (coerced to nearest bin).
    *
    * NB: Raw ratios do not take token decimals into account.
    * NB: This is a lossy conversions since ticks are discrete and ratios are not.
    *
    * @param ratio ratio to calculate the tick for
-   * @returns a tick that approximates the given ratio.
+   * @returns a tick (coerced to nearest bin) that approximates the given ratio.
    */
-  static tickFromRawRatio(ratio: Big): number {
+  public tickFromRawRatio(ratio: Big): number {
     const { man, exp } = TickPriceHelper.rawRatioToMantissaExponent(ratio);
-    return TickLib.tickFromRatio(man, exp).toNumber();
+    const tick = TickLib.tickFromRatio(man, exp);
+    const bin = this.nearestRepresentableTick(tick);
+    return bin.toNumber();
   }
 
   static rawRatioToMantissaExponent(ratio: Big): {

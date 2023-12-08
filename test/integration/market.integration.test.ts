@@ -1094,9 +1094,11 @@ describe("Market integration tests suite", () => {
           });
 
           const tradeParams: Market.TradeParams = {
-            maxTick: TickPriceHelper.tickFromRawRatio(
-              Big(0.000000000002).div(10),
-            ),
+            maxTick: market
+              .getBook()
+              .asks.tickPriceHelper.tickFromRawRatio(
+                Big(0.000000000002).div(10),
+              ),
             fillVolume: 10,
           };
           tradeParams.forceRoutingToMangroveOrder = forceRouting;
