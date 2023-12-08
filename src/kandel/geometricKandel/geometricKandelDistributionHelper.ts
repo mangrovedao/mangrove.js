@@ -90,13 +90,13 @@ class GeometricKandelDistributionHelper {
     if (priceRatio.lte(Big(1))) {
       throw Error("priceRatio must be larger than 1");
     }
-    // Intentionally use raw TickLib as these are raw values
-    return TickLib.tickFromVolumes(
-      BigNumber.from(
-        Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed(0),
-      ),
-      ethers.constants.WeiPerEther,
-    ).toNumber();
+
+    return this.helper.askTickPriceHelper.tickFromVolumes(
+      this.helper.market.quote
+        .fromUnits(ethers.constants.WeiPerEther)
+        .mul(priceRatio),
+      this.helper.market.base.fromUnits(ethers.constants.WeiPerEther),
+    );
   }
 
   /** Gets tick based parameters for a distribution based on tick or price params.
