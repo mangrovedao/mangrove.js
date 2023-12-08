@@ -8,8 +8,8 @@ const _2pow32 = Big(2).pow(32);
  * Utility wrapper around raw Density values from Mangrove.
  */
 export class Density {
-  #rawDensity: BigNumber;
-  #outboundDecimals: number;
+  rawDensity: BigNumber;
+  outboundDecimals: number;
 
   /**
    * Construct a wrapper around a raw Density from Mangrove.
@@ -18,11 +18,11 @@ export class Density {
    * @param outboundDecimals number of decimals for the outbound token
    */
   constructor(rawDensity: BigNumberish, outboundDecimals: number) {
-    this.#rawDensity = BigNumber.from(rawDensity);
-    if (!this.#rawDensity.and(DensityLib.MASK).eq(this.#rawDensity)) {
+    this.rawDensity = BigNumber.from(rawDensity);
+    if (!this.rawDensity.and(DensityLib.MASK).eq(this.rawDensity)) {
       throw new Error("Given density is too big");
     }
-    this.#outboundDecimals = outboundDecimals;
+    this.outboundDecimals = outboundDecimals;
   }
 
   /**
@@ -50,8 +50,8 @@ export class Density {
    */
   eq(density: Density): boolean {
     return (
-      this.#rawDensity.eq(density.#rawDensity) &&
-      this.#outboundDecimals === density.#outboundDecimals
+      this.rawDensity.eq(density.rawDensity) &&
+      this.outboundDecimals === density.outboundDecimals
     );
   }
 
@@ -61,7 +61,7 @@ export class Density {
    * @returns the density formatted as a 'mantissa * 2^exponent' string
    */
   toString(): string {
-    return Density.toString(this.#rawDensity);
+    return Density.toString(this.rawDensity);
   }
 
   /**
@@ -101,7 +101,7 @@ export class Density {
    * @returns true if the density is zero; false otherwise
    */
   isZero(): boolean {
-    return this.#rawDensity.isZero();
+    return this.rawDensity.isZero();
   }
 
   /**
@@ -112,8 +112,8 @@ export class Density {
    */
   getRequiredOutboundForGas(gas: BigNumberish): Big {
     return Big(
-      DensityLib.multiplyUp(this.#rawDensity, BigNumber.from(gas)).toString(),
-    ).div(Big(10).pow(this.#outboundDecimals));
+      DensityLib.multiplyUp(this.rawDensity, BigNumber.from(gas)).toString(),
+    ).div(Big(10).pow(this.outboundDecimals));
   }
 
   /**
@@ -123,7 +123,7 @@ export class Density {
    * @returns the maximum amount of gas an offer may require for the given raw amount of outbound tokens
    */
   getMaximumGasForRawOutbound(rawOutboundAmt: BigNumberish): BigNumber {
-    const density96X32 = DensityLib.to96X32(this.#rawDensity);
+    const density96X32 = DensityLib.to96X32(this.rawDensity);
     const densityDecimal = Big(density96X32.toString()).div(_2pow32);
     return BigNumber.from(
       Big(BigNumber.from(rawOutboundAmt).toString())

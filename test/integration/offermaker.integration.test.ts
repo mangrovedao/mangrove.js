@@ -191,7 +191,7 @@ describe("OfferMaker integration test suite", () => {
     } logic`, async () => {
       // Arrange
       const lp = eoaLP ? eoa_lp : onchain_lp;
-      const mgvGasprice = (await mgv.config()).gasprice;
+      const mgvGasprice = mgv.config().gasprice;
       const provision = await lp.computeAskProvision();
       const { id } = await lp.newAsk({
         tick: 10,
@@ -209,7 +209,7 @@ describe("OfferMaker integration test suite", () => {
       const expectedInitialProvision = mgv.calculateOfferProvision(
         mgvGasprice,
         lp.gasreq,
-        (await lp.market.getSemibook("asks").getConfig()).offer_gasbase,
+        lp.market.getSemibook("asks").getConfig().offer_gasbase,
       );
       assert.equal(provision.toNumber(), expectedInitialProvision.toNumber());
       assert.equal(

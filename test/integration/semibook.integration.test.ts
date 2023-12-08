@@ -105,63 +105,6 @@ describe("Semibook integration tests suite", function () {
   });
 
   describe("getConfig", () => {
-    it("returns the config of a block, when given blocknumber", async function () {
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      const semibook = market.getSemibook("asks");
-      const fee = 1;
-      const density = DensityLib.paramsTo96X32_centiusd(
-        BigNumber.from(market.base.decimals),
-        BigNumber.from(1),
-        BigNumber.from(1800 * 100),
-        BigNumber.from(1 * 100),
-        BigNumber.from(3),
-      );
-      const gasbase = 3000;
-      const active = await waitForTransaction(
-        mgvAdmin.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          fee,
-          density,
-          gasbase,
-        ),
-      );
-      await waitForTransaction(
-        mgvAdmin.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          3,
-          BigNumber.from("4000000000000000000"),
-          1,
-        ),
-      );
-      const config = await semibook.getConfig(active.blockNumber);
-
-      expect(config.fee).to.be.eq(
-        fee,
-        `fee should be ${fee}, but is ${config.fee}`,
-      );
-      const densityFrom96X32 = Density.from96X32(density, market.base.decimals);
-      expect(densityFrom96X32.eq(config.density)).to.be.eq(
-        true,
-        `density should be ${densityFrom96X32}, but is ${config.density.toString()}`,
-      );
-      expect(config.offer_gasbase).to.be.eq(
-        gasbase,
-        `offer_gasbase should be ${gasbase}, but is ${config.offer_gasbase}`,
-      );
-    });
-
     it("returns the config of the latest block as Mangrove.RawConfig, when given no blocknumber", async function () {
       const market = await mgv.market({
         base: "TokenA",
@@ -197,7 +140,7 @@ describe("Semibook integration tests suite", function () {
         BigNumber.from(1 * 100),
         BigNumber.from(3),
       );
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         mgvAdmin.contract.activate(
           {
             outbound_tkn: market.base.address,
@@ -209,7 +152,10 @@ describe("Semibook integration tests suite", function () {
           gasbase,
         ),
       );
-      const config = await semibook.getConfig();
+
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
+      const config = semibook.config();
 
       expect(config.fee).to.be.eq(fee);
       const newDensityFrom96X32 = Density.from96X32(
@@ -1570,7 +1516,7 @@ describe("Semibook integration tests suite", function () {
       );
 
       // Act
-      const minVolume = await semibook.getMinimumVolume(offerGasreq);
+      const minVolume = semibook.getMinimumVolume(offerGasreq);
 
       // Assert
       assert.equal(
@@ -1586,7 +1532,7 @@ describe("Semibook integration tests suite", function () {
         quote: "TokenB",
         tickSpacing: 1,
       });
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         mgvAdmin.contract.setDensity96X32(
           {
             outbound_tkn: market.base.address,
@@ -1598,8 +1544,10 @@ describe("Semibook integration tests suite", function () {
       );
       const semibook = market.getSemibook("asks");
 
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
       // Act
-      const minVolume = await semibook.getMinimumVolume(0);
+      const minVolume = semibook.getMinimumVolume(0);
 
       // Assert
       assert.equal("1", market.base.toUnits(minVolume).toString());

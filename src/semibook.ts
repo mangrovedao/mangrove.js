@@ -173,6 +173,7 @@ namespace Semibook {
    * - isComplete                                                         =>  all offers in the offer list are in the cache
    */
   export type State = {
+    localConfig: Mangrove.LocalConfig; // local config for the offer list
     offerCache: Map<number, Market.Offer>; // offer ID -> Offer
     binCache: Map<number, Semibook.Bin>; // tick -> Bin
     bestBinInCache: Semibook.Bin | undefined; // best/first bin in the offer list iff #binCache is non-empty
@@ -185,6 +186,11 @@ namespace Semibook {
       bins: Map<number, Market.Offer[]>; // tick -> offers
       endOfListReached: boolean; // whether the end of the offer list was reached
     },
+    LogSubscriber.Error
+  >;
+
+  export type FetchConfigResult = Result<
+    Mangrove.LocalConfigFull,
     LogSubscriber.Error
   >;
 
@@ -216,9 +222,6 @@ class Semibook
   readonly options: Semibook.ResolvedOptions; // complete and validated
   readonly #cacheOperations: SemibookCacheOperations =
     new SemibookCacheOperations();
-
-  // offer gasbase is stored as part of the semibook since it is used each time an offer is written to be able to calculate locked provision for that offer
-  #offer_gasbase = 0; // initialized in stateInitialize
 
   #eventListeners: Map<Semibook.EventListener, boolean> = new Map();
 
@@ -259,7 +262,6 @@ class Semibook
 
   copy(state: Semibook.State): Semibook.State {
     // State has cyclic references which clone doesn't support, so we handle references manually
-    const clonedOfferCache = clone(state.offerCache);
     const clonedBinCache = new Map<number, Semibook.Bin>();
 
     for (const [tick, bin] of state.binCache) {
@@ -291,8 +293,17 @@ class Semibook
         ? undefined
         : clonedBinCache.get(state.worstBinInCache.tick);
 
+    const clonedLocalConfig = {
+      ...state.localConfig,
+      density: new Density(
+        state.localConfig.density.rawDensity,
+        state.localConfig.density.outboundDecimals,
+      ),
+    };
+
     return {
-      offerCache: clonedOfferCache,
+      localConfig: clonedLocalConfig,
+      offerCache: clone(state.offerCache),
       binCache: clonedBinCache,
       bestBinInCache: clonedBestBinInCache,
       worstBinInCache: clonedWorstBinInCache,
@@ -365,22 +376,31 @@ class Semibook
    * density is converted to public token units per gas used
    * fee *remains* in basis points of the token being bought
    */
-  async getConfig(blockNumber?: number): Promise<Mangrove.LocalConfig> {
-    const { outbound_tkn, inbound_tkn } = Market.getOutboundInbound(
-      this.ba,
-      this.market.base,
-      this.market.quote,
-    );
-    const local = await this.market.mgv.readerContract.localUnpacked(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: this.market.tickSpacing,
-      },
-      { blockTag: blockNumber },
-    );
+  config(): Mangrove.LocalConfig {
+    return this.getLatestState().localConfig;
+  }
 
-    return this.rawLocalConfigToLocalConfig(local);
+  async #fetchConfig(
+    block: BlockManager.BlockWithoutParentHash,
+  ): Promise<Semibook.FetchConfigResult> {
+    try {
+      const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
+        this.ba,
+      );
+      const localRaw = await this.market.mgv.readerContract.localUnpacked(
+        {
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
+          tickSpacing: this.market.tickSpacing,
+        },
+        { blockTag: block.number },
+      );
+      const local = this.rawLocalConfigToLocalConfig(localRaw);
+
+      return { error: undefined, ok: local };
+    } catch (e) {
+      return { error: "FailedInitialize", ok: undefined };
+    }
   }
 
   /** Sign permit data for buying outbound_tkn with spender's inbound_tkn
@@ -559,13 +579,11 @@ class Semibook
 
     Big.RM = previousBigRm;
 
-    const { offer_gasbase } = await this.getConfig();
-
     // Assume up to offer_gasbase is used also for the bad price call, and
     // the last offer (which could be first, if taking little) needs up to gasreq*64/63 for makerPosthook
     const gas = res.totalGasreq
       .add(BigNumber.from(res.lastGasreq).div(63))
-      .add(offer_gasbase * Math.max(res.offersConsidered, 1));
+      .add(state.localConfig.offer_gasbase * Math.max(res.offersConsidered, 1));
 
     return { ...res, gas };
   }
@@ -592,8 +610,8 @@ class Semibook
    * @param gasreq The gas requirement for the offer.
    * @returns The minimum volume required to stay above density limit.
    */
-  async getMinimumVolume(gasreq: number) {
-    const config = await this.getConfig();
+  getMinimumVolume(gasreq: number) {
+    const config = this.config();
     const min = config.density.getRequiredOutboundForGas(
       gasreq + config.offer_gasbase,
     );
@@ -777,21 +795,27 @@ class Semibook
     block: BlockManager.BlockWithoutParentHash,
   ): Promise<LogSubscriber.ErrorOrState<Semibook.State>> {
     try {
-      const localConfig = await this.getConfig(block.number); // TODO: make this reorg resistant too, but it's HIGHLY unlikely that we encounter an issue here
-      this.#offer_gasbase = localConfig.offer_gasbase;
+      const localConfigResult = await this.#fetchConfig(block);
+
+      if (localConfigResult.error) {
+        return { error: localConfigResult.error, ok: undefined };
+      }
+
+      const localConfig = localConfigResult.ok;
 
       /**
        * To ensure consistency in this cache, everything is initially fetched from a specific block,
        * we expect $fetchOfferListPrefix to return error if reorg is detected
        */
-      const result = await this.#fetchOfferListPrefix(block);
+      const offerListPrefixResult = await this.#fetchOfferListPrefix(block);
 
-      if (result.error) {
-        return { error: result.error, ok: undefined };
+      if (offerListPrefixResult.error) {
+        return { error: offerListPrefixResult.error, ok: undefined };
       }
-      const { bins, endOfListReached } = result.ok;
+      const { bins, endOfListReached } = offerListPrefixResult.ok;
 
       const state: Semibook.State = {
+        localConfig,
         offerCache: new Map(),
         binCache: new Map(),
         bestBinInCache: undefined,
@@ -844,7 +868,7 @@ class Semibook
 
         // After removing the offer (a noop if the offer was not in local cache), we try to reinsert it.
         offer = {
-          offer_gasbase: this.#offer_gasbase,
+          offer_gasbase: state.localConfig.offer_gasbase,
           next: undefined, // offers are always inserted at the end of the list
           prev: undefined, // prev will be set when the offer is inserted into the cache iff the previous offer exists in the cache
           ...this.rawOfferSlimToOfferSlim(event.args),
@@ -942,20 +966,79 @@ class Semibook
         break;
       }
 
-      case "SetGasbase":
-        this.#offer_gasbase = event.args.offer_gasbase.toNumber();
+      case "SetActive":
+        this.#cacheOperations.setActive(state, event.args.value);
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
               cbArg: {
                 type: event.name,
                 ba: this.ba,
+                active: state.localConfig.active,
               },
               event,
               ethersLog: log,
             }),
         );
         break;
+
+      case "SetFee":
+        this.#cacheOperations.setFee(state, event.args.value.toNumber());
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                fee: state.localConfig.fee,
+              },
+              event,
+              ethersLog: log,
+            }),
+        );
+        break;
+
+      case "SetGasbase":
+        this.#cacheOperations.setGasbase(
+          state,
+          event.args.offer_gasbase.toNumber(),
+        );
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                offerGasbase: state.localConfig.offer_gasbase,
+              },
+              event,
+              ethersLog: log,
+            }),
+        );
+        break;
+
+      case "SetDensity96X32":
+        this.#cacheOperations.setDensity(
+          state,
+          Density.from96X32(
+            event.args.value,
+            this.market.getOutboundInbound(this.ba).outbound_tkn.decimals,
+          ),
+        );
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                density: state.localConfig.density,
+              },
+              event,
+              ethersLog: log,
+            }),
+        );
+        break;
+
       default:
         throw Error(`Unknown event ${event}`);
     }
@@ -1194,7 +1277,7 @@ class Semibook
 
   rawLocalConfigToLocalConfig(
     local: Mangrove.RawConfig["_local"],
-  ): Mangrove.LocalConfig {
+  ): Mangrove.LocalConfigFull {
     const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
     return Semibook.rawLocalConfigToLocalConfig(local, outbound_tkn.decimals);
   }
@@ -1202,7 +1285,7 @@ class Semibook
   static rawLocalConfigToLocalConfig(
     local: Mangrove.RawConfig["_local"],
     outboundDecimals: number,
-  ): Mangrove.LocalConfig {
+  ): Mangrove.LocalConfigFull {
     return {
       active: local.active,
       fee: local.fee.toNumber(),
@@ -1523,6 +1606,26 @@ export class SemibookCacheOperations {
     }
 
     return offer;
+  }
+
+  // Set the active state of the semibook.
+  setActive(state: Semibook.State, active: boolean): void {
+    state.localConfig.active = active;
+  }
+
+  // Set the fee of the semibook.
+  setFee(state: Semibook.State, fee: number): void {
+    state.localConfig.fee = fee;
+  }
+
+  // Set the gasbase of the semibook.
+  setGasbase(state: Semibook.State, gasbase: number): void {
+    state.localConfig.offer_gasbase = gasbase;
+  }
+
+  // Set the density of the semibook.
+  setDensity(state: Semibook.State, density: Density): void {
+    state.localConfig.density = density;
   }
 
   #createBinWithOffer(

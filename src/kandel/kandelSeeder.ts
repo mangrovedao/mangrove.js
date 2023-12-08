@@ -154,7 +154,7 @@ class KandelSeeder {
    * @returns The gasprice for the Kandel type multiplied by the buffer factor.
    */
   public async getBufferedGasprice(gaspriceFactor: number, gasprice?: number) {
-    return gaspriceFactor * (gasprice ?? (await this.mgv.config()).gasprice);
+    return gaspriceFactor * (gasprice ?? this.mgv.config().gasprice);
   }
 
   /** Determines the required provision for the distribution prior to sowing based on the number of price points.
@@ -199,7 +199,7 @@ class KandelSeeder {
     factor?: number;
   }) {
     const gasreq = await this.getDefaultGasreq(params.onAave);
-    return await this.getMinimumVolumeForGasreq({ ...params, gasreq });
+    return this.getMinimumVolumeForGasreq({ ...params, gasreq });
   }
 
   /** Determines the minimum recommended volume for an offer of the given type to avoid density issues.
@@ -210,7 +210,7 @@ class KandelSeeder {
    * @param params.gasreq The gasreq to use.
    * @returns The minimum recommended volume.
    */
-  public async getMinimumVolumeForGasreq(params: {
+  public getMinimumVolumeForGasreq(params: {
     market: Market;
     offerType: Market.BA;
     factor?: number;
@@ -218,16 +218,15 @@ class KandelSeeder {
   }) {
     const config = this.configuration.getConfig(params.market);
 
-    return (
-      await params.market
-        .getSemibook(params.offerType)
-        .getMinimumVolume(params.gasreq)
-    ).mul(
-      params.factor ??
-        (params.offerType == "asks"
-          ? config.minimumBasePerOfferFactor
-          : config.minimumQuotePerOfferFactor),
-    );
+    return params.market
+      .getSemibook(params.offerType)
+      .getMinimumVolume(params.gasreq)
+      .mul(
+        params.factor ??
+          (params.offerType == "asks"
+            ? config.minimumBasePerOfferFactor
+            : config.minimumQuotePerOfferFactor),
+      );
   }
 }
 

@@ -17,6 +17,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
+import { Density } from "./util/Density";
 
 let canConstructMarket = false;
 
@@ -132,7 +133,10 @@ namespace Market {
     | ({ name: "OfferSuccess" } & TCM.OfferSuccessEvent)
     | ({ name: "OfferSuccessWithPosthookData" } & TCM.OfferSuccessEvent)
     | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
-    | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
+    | ({ name: "SetActive" } & TCM.SetActiveEvent)
+    | ({ name: "SetFee" } & TCM.SetFeeEvent)
+    | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent)
+    | ({ name: "SetDensity96X32" } & TCM.SetDensity96X32Event);
 
   export type OrderRoute = "Mangrove" | "MangroveOrder";
 
@@ -267,33 +271,56 @@ namespace Market {
 
   export type BookSubscriptionCbArgument = {
     ba: Market.BA;
-    offerId?: number;
-    offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
-    | { type: "OfferWrite" }
     | {
-        type: "OfferFail";
-        taker: string;
-        takerWants: Big;
-        takerGives: Big;
-        mgvData: string;
+        type: "SetActive";
+        active: boolean;
       }
     | {
-        type: "OfferFailWithPosthookData";
-        taker: string;
-        takerWants: Big;
-        takerGives: Big;
-        mgvData: string;
+        type: "SetFee";
+        fee: number;
       }
-    | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
     | {
-        type: "OfferSuccessWithPosthookData";
-        taker: string;
-        takerWants: Big;
-        takerGives: Big;
+        type: "SetGasbase";
+        offerGasbase: number;
       }
-    | { type: "OfferRetract" }
-    | { type: "SetGasbase" }
+    | {
+        type: "SetDensity96X32";
+        density: Density;
+      }
+    | ({
+        offerId?: number;
+        offer?: Offer; // if undefined, offer was not found/inserted in local cache
+      } & (
+        | { type: "OfferWrite" }
+        | {
+            type: "OfferFail";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+            mgvData: string;
+          }
+        | {
+            type: "OfferFailWithPosthookData";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+            mgvData: string;
+          }
+        | {
+            type: "OfferSuccess";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+          }
+        | {
+            type: "OfferSuccessWithPosthookData";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+          }
+        | { type: "OfferRetract" }
+      ))
   );
 
   export type MarketCallback<T> = (
@@ -383,7 +410,7 @@ class Market {
     } else {
       await market.#initialize(params.bookOptions);
     }
-    const config = await market.config();
+    const config = market.config();
     const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
       market.mgv.network.name,
     );
@@ -579,8 +606,8 @@ class Market {
     };
   }
 
-  async isActive(): Promise<boolean> {
-    const config = await this.config();
+  isActive(): boolean {
+    const config = this.config();
     return config.asks.active && config.bids.active;
   }
 
@@ -815,7 +842,7 @@ class Market {
 
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = this.getSemibook(this.trade.bsToBa(bs));
-    const { density, offer_gasbase } = await semibook.getConfig();
+    const { density, offer_gasbase } = semibook.config();
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
     const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
@@ -917,15 +944,13 @@ class Market {
    * density is converted to public token units per gas used
    * fee *remains* in basis points of the token being bought
    */
-  async config(): Promise<{
+  config(): {
     asks: Mangrove.LocalConfig;
     bids: Mangrove.LocalConfig;
-  }> {
-    const asksConfigPromise = this.getSemibook("asks").getConfig();
-    const bidsConfigPromise = this.getSemibook("bids").getConfig();
+  } {
     return {
-      asks: await asksConfigPromise,
-      bids: await bidsConfigPromise,
+      asks: this.getSemibook("asks").config(),
+      bids: this.getSemibook("bids").config(),
     };
   }
 
