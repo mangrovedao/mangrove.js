@@ -28,6 +28,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       };
     };
     tick: number;
+    coercedTick?: number;
     price: Bigish;
   }[] = [
     {
@@ -36,7 +37,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 6 },
           quote: { decimals: 6 },
-          tickSpacing: 1,
+          tickSpacing: 100,
         },
       },
       tick: 0,
@@ -48,7 +49,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 6 },
           quote: { decimals: 6 },
-          tickSpacing: 1,
+          tickSpacing: 100,
         },
       },
       tick: 0,
@@ -108,11 +109,24 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         market: {
           base: { decimals: 18 },
           quote: { decimals: 18 },
-          tickSpacing: 1,
+          tickSpacing: 3,
         },
       },
       tick: 75171,
       price: Big("1838.534691561"),
+    },
+    {
+      args: {
+        ba: "asks",
+        market: {
+          base: { decimals: 18 },
+          quote: { decimals: 18 },
+          tickSpacing: 4,
+        },
+      },
+      tick: 75171,
+      coercedTick: 75172,
+      price: Big("1838.7185"),
     },
     {
       args: {
@@ -168,7 +182,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
   describe(TickPriceHelper.prototype.priceFromTick.name, () => {
     priceAndTickPairs.forEach(({ args, tick, price }) => {
-      it(`returns price=${price} for tick ${tick} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} (${args.ba} semibook)`, () => {
+      it(`returns price=${price} for tick ${tick} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing: ${args.market.tickSpacing} (${args.ba} semibook)`, () => {
         // Arrange
         const tickPriceHelper = new TickPriceHelper(
           args.ba,
@@ -206,6 +220,20 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       const tickPriceHelper = new TickPriceHelper("asks", {
         base: new TokenCalculations(6, 6),
         quote: new TokenCalculations(6, 6),
+        tickSpacing: 100,
+      });
+
+      // Act
+      const result = tickPriceHelper.tickFromVolumes(2, 1);
+      // Assert
+      assert.equal(7000, result);
+    });
+
+    it("returns tick=0 for inboundVolume=1, outboundVolume=1 with base decimals: 6, quote decimals: 6 (asks semibook)", () => {
+      // Arrange
+      const tickPriceHelper = new TickPriceHelper("asks", {
+        base: new TokenCalculations(6, 6),
+        quote: new TokenCalculations(6, 6),
         tickSpacing: 1,
       });
 
@@ -217,8 +245,8 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
   });
 
   describe(TickPriceHelper.prototype.tickFromPrice.name, () => {
-    priceAndTickPairs.forEach(({ args, tick, price }) => {
-      it(`returns tick=${tick} for price ${price} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} (${args.ba} semibook)) `, () => {
+    priceAndTickPairs.forEach(({ args, tick, coercedTick, price }) => {
+      it(`returns tick=${tick} for price ${price} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing=${args.market.tickSpacing} (${args.ba} semibook)) `, () => {
         // Arrange
         const tickPriceHelper = new TickPriceHelper(
           args.ba,
@@ -228,7 +256,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         // Act
         const result = tickPriceHelper.tickFromPrice(price);
         // Assert
-        assert.equal(tick, result);
+        assert.equal(coercedTick ?? tick, result);
       });
     });
   });
@@ -454,7 +482,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
   describe("tickFromPrice is inverse of priceFromTick (up to tick-step)", () => {
     priceAndTickPairs.forEach(({ args, tick }) => {
-      it(`returns tick=${tick} for priceFromTick(..., priceFromTick(..., ${tick}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} for ${args.ba} semibook`, () => {
+      it(`returns tick=${tick} for priceFromTick(..., priceFromTick(..., ${tick}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing: ${args.market.tickSpacing} for ${args.ba} semibook`, () => {
         // Arrange
         const tickPriceHelper = new TickPriceHelper(
           args.ba,
@@ -474,7 +502,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
   describe("priceFromTick is inverse of tickFromPrice (up to tick-step)", () => {
     priceAndTickPairs.forEach(({ args, price }) => {
-      it(`returns price=${price} for tickFromPrice(..., tickFromPrice(..., ${price}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals} for ${args.ba} semibook`, () => {
+      it(`returns price=${price} for tickFromPrice(..., tickFromPrice(..., ${price}))) with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing: ${args.market.tickSpacing} for ${args.ba} semibook`, () => {
         // Arrange
         const tickPriceHelper = new TickPriceHelper(
           args.ba,
@@ -487,11 +515,17 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         const resultPriceTickPlusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price) + (args.ba == "bids" ? -1 : 1),
+          tickPriceHelper.tickFromPrice(price) +
+            (args.ba == "bids"
+              ? -args.market.tickSpacing
+              : args.market.tickSpacing),
         );
 
         const resultPriceTickMinusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price) + (args.ba == "bids" ? 1 : -1),
+          tickPriceHelper.tickFromPrice(price) +
+            (args.ba == "bids"
+              ? args.market.tickSpacing
+              : -args.market.tickSpacing),
         );
 
         const roundedPrice = Big(price).round(comparisonPrecision);
@@ -508,6 +542,53 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
   });
 
+  describe(TickPriceHelper.prototype.coercePrice.name, () => {
+    priceAndTickPairs.forEach(({ args, price }) => {
+      it(`coerces prices price=${price} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing: ${args.market.tickSpacing} for ${args.ba} semibook`, () => {
+        // Arrange
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
+
+        // Act
+        const result = tickPriceHelper.coercePrice(price);
+        tickPriceHelper.market.tickSpacing = 1;
+        const priceRoundTrip = tickPriceHelper.priceFromTick(
+          tickPriceHelper.tickFromPrice(result),
+        );
+
+        // Assert - since price is coerced it should not change on a roundtrip - except off by one tick
+        assertApproxEqRel(priceRoundTrip.toString(), result.toString(), 0.0001);
+      });
+    });
+  });
+
+  describe(TickPriceHelper.prototype.coerceTick.name, () => {
+    priceAndTickPairs.forEach(({ args, tick }) => {
+      it(`coerces ticks tick=${tick} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing: ${args.market.tickSpacing} for ${args.ba} semibook`, () => {
+        // Arrange
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
+
+        // Act
+        const result = tickPriceHelper.coerceTick(tick);
+
+        // Assert - since price is coerced it should not change on a roundtrip
+        assert.ok(
+          result % args.market.tickSpacing == 0,
+          "tick should be multiple of tickSpacing",
+        );
+        assert.ok(
+          tickPriceHelper.isTickExact(result),
+          "coerced tick should be exact",
+        );
+      });
+    });
+  });
+
   describe(TickPriceHelper.prototype.inboundFromOutbound.name, () => {
     [
       [1, 2],
@@ -515,16 +596,17 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     ].forEach(([baseDecimals, quoteDecimals]) => {
       bidsAsks.forEach((ba) => {
         [
-          [1, 2, 2],
-          [2, 1, 0.5],
-          [6, 3, 0.5],
-        ].forEach(([base, quote, price]) => {
-          it(`${TickPriceHelper.prototype.inboundFromOutbound.name} ba=${ba} base=${base} quote=${quote} price=${price}`, () => {
+          [1, 2, 2, 1],
+          [2, 1, 0.5, 1],
+          [6, 3, 0.5, 1],
+          [6, 3, 0.5, 100],
+        ].forEach(([base, quote, price, tickSpacing]) => {
+          it(`${TickPriceHelper.prototype.inboundFromOutbound.name} ba=${ba} base=${base} quote=${quote} price=${price} tickSpacing=${tickSpacing}`, () => {
             // Arrange
             const tickPriceHelper = new TickPriceHelper(ba, {
               base: new TokenCalculations(baseDecimals, baseDecimals),
               quote: new TokenCalculations(quoteDecimals, quoteDecimals),
-              tickSpacing: 1,
+              tickSpacing,
             });
             const [outbound, expectedInbound] =
               ba == "asks" ? [base, quote] : [quote, base];
@@ -547,12 +629,12 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             assertApproxEqAbs(resultUp, expectedInbound, 0.1);
           });
 
-          it(`${TickPriceHelper.prototype.outboundFromInbound.name} ba=${ba} base=${base} quote=${quote} price=${price}`, () => {
+          it(`${TickPriceHelper.prototype.outboundFromInbound.name} ba=${ba} base=${base} quote=${quote} price=${price} tickSpacing=${tickSpacing}`, () => {
             // Arrange
             const tickPriceHelper = new TickPriceHelper(ba, {
               base: new TokenCalculations(baseDecimals, baseDecimals),
               quote: new TokenCalculations(quoteDecimals, quoteDecimals),
-              tickSpacing: 1,
+              tickSpacing,
             });
             const [expectedOutbound, inbound] =
               ba == "asks" ? [base, quote] : [quote, base];
@@ -611,12 +693,23 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       assert.deepStrictEqual(result, Big("1")); // tick 0 = price 1
     });
 
-    it("should return the correct ratio for tick, 1 ", () => {
+    it("should return the correct ratio for tick, 1, tickSpacing=1", () => {
       const result = sut.rawRatioFromTick(1);
       assert.deepStrictEqual(
         result.minus(Big("1.0001")).abs().gt(0) && result.lt(1.0001),
         true,
-        `ratio should be slightly less than 1.0001 but is ${result}, do to man and exp cannot express 1.0001`,
+        `ratio should be slightly less than 1.0001 but is ${result}, due to man and exp cannot express 1.0001`,
+      );
+    });
+
+    it("should return the correct ratio for tick, 1, tickSpacing=2", () => {
+      sut.market.tickSpacing = 2;
+      const result = sut.rawRatioFromTick(1);
+      assertApproxEqAbs(
+        result,
+        Big("1.0001").pow(2),
+        0.0001,
+        `ratio should be slightly less than 1.0001^2 but is ${result}, due to man and exp cannot express 1.0001^2`,
       );
     });
   });
@@ -644,9 +737,15 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       assert.deepStrictEqual(result, MIN_TICK.toNumber());
     });
 
-    it("should return the correct tick for ratio = 1", () => {
-      const result = sut.tickFromRawRatio(Big(1));
-      assert.deepStrictEqual(result, 0);
+    it("should return the correct tick for ratio = 1.0001, tickSpacing=1", () => {
+      const result = sut.tickFromRawRatio(Big(1.0001));
+      assert.deepStrictEqual(result, 1);
+    });
+
+    it("should return the correct tick for ratio = 1.0001, tickSpacing=2", () => {
+      sut.market.tickSpacing = 2;
+      const result = sut.tickFromRawRatio(Big(1.0001));
+      assert.deepStrictEqual(result, 2);
     });
   });
 
@@ -702,9 +801,23 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       assert.deepStrictEqual(result.exp, exp);
     });
 
-    it("should return the correct mantissa and exponent for price, tick = 1000", () => {
+    it("should return the correct mantissa and exponent for price, tick = 1000, tickSpacing=1", () => {
       const ratio = sut.rawRatioFromTick(1000);
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1000));
+      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+      assert.deepStrictEqual(result.man, man);
+      assert.deepStrictEqual(result.exp, exp);
+    });
+
+    it("should return the correct mantissa and exponent for price, tick = 1000, tickSpacing=7", () => {
+      sut.market.tickSpacing = 7;
+      const ratio = sut.rawRatioFromTick(1000);
+      const { man, exp } = TickLib.ratioFromTick(
+        TickLib.nearestBin(
+          BigNumber.from(1000),
+          BigNumber.from(sut.market.tickSpacing),
+        ).mul(sut.market.tickSpacing),
+      );
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
       assert.deepStrictEqual(result.exp, exp);
