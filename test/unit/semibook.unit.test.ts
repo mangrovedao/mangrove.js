@@ -8,6 +8,7 @@ import UnitCalculations from "../../src/util/unitCalculations";
 import MangroveEventSubscriber from "../../src/mangroveEventSubscriber";
 import { expect } from "chai";
 import { TokenCalculations } from "../../src/token";
+import { Density } from "../../src/util/Density";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
     it("returns false, when desiredVolume is undefined", async function () {
@@ -359,6 +360,12 @@ describe("Semibook unit test suite", () => {
 
     function createEmptyState(): Semibook.State {
       return {
+        localConfig: {
+          active: true,
+          fee: 0,
+          density: new Density(0, 0),
+          offer_gasbase: 1,
+        },
         offerCache: new Map(),
         binCache: new Map(),
         bestBinInCache: undefined,
@@ -1518,5 +1525,62 @@ describe("Semibook unit test suite", () => {
         });
       },
     );
+
+    describe(SemibookCacheOperations.prototype.setActive.name, () => {
+      [true, false].map((isActive) => {
+        it(`sets active to ${isActive}`, () => {
+          // Arrange
+          const state = createEmptyState();
+
+          // Act
+          cacheOperations.setActive(state, isActive);
+
+          // Assert
+          expect(state.localConfig.active).to.equal(isActive);
+        });
+      });
+    });
+
+    describe(SemibookCacheOperations.prototype.setFee.name, () => {
+      it("sets fee", () => {
+        // Arrange
+        const state = createEmptyState();
+        const fee = 10;
+
+        // Act
+        cacheOperations.setFee(state, fee);
+
+        // Assert
+        expect(state.localConfig.fee).to.equal(fee);
+      });
+    });
+
+    describe(SemibookCacheOperations.prototype.setGasbase.name, () => {
+      it("sets gasbase", () => {
+        // Arrange
+        const state = createEmptyState();
+        const gasbase = 10;
+
+        // Act
+        cacheOperations.setGasbase(state, gasbase);
+
+        // Assert
+        expect(state.localConfig.offer_gasbase).to.equal(gasbase);
+      });
+    });
+
+    describe(SemibookCacheOperations.prototype.setDensity.name, () => {
+      it("sets density", () => {
+        // Arrange
+        const state = createEmptyState();
+        const density = new Density(1, 2);
+
+        // Act
+        cacheOperations.setDensity(state, density);
+
+        // Assert
+        expect(state.localConfig.density).to.equal(density);
+      });
+    });
   });
 });

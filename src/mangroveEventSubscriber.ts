@@ -15,8 +15,10 @@ const BookSubscriptionEventsSet = new Set([
   "OfferSuccess",
   "OfferSuccessWithPosthookData",
   "OfferRetract",
-  "SetGasbase",
   "SetActive",
+  "SetFee",
+  "SetGasbase",
+  "SetDensity96X32",
 ]);
 
 class MangroveEventSubscriber extends LogSubscriber<Market.BookSubscriptionEvent> {
