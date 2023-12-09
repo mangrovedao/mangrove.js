@@ -104,6 +104,22 @@ export type PriceOfferData = BaseOfferData & {
 
 export type OfferData = TickOfferData | PriceOfferData;
 
+export const createTickPriceHelper = async (params: {
+  mgv: Mangrove;
+  ba: "bids" | "asks";
+  base: string | Token;
+  quote: string | Token;
+  tickSpacing: number;
+}): Promise<TickPriceHelper> => {
+  const baseToken = await getToken(params.base, params.mgv);
+  const quoteToken = await getToken(params.quote, params.mgv);
+  return new TickPriceHelper(params.ba, {
+    base: baseToken,
+    quote: quoteToken,
+    tickSpacing: params.tickSpacing,
+  });
+};
+
 export const newOffer = async (
   params: { mgv: Mangrove } & BaseOfferData &
     (
@@ -222,6 +238,48 @@ export const retractOffer = async (
     params.offerId,
     params.deprovision || false,
   );
+};
+
+export const setFee = async (
+  params: { fee: number } & (
+    | { marketAdmin: Market }
+    | {
+        mgvAdmin: Mangrove;
+        base: string | Token;
+        quote: string | Token;
+        tickSpacing: number;
+      }
+  ),
+): Promise<ContractTransaction[]> => {
+  let marketAsAdmin: Market;
+  if ("mgvAdmin" in params) {
+    marketAsAdmin = await params.mgvAdmin.market({
+      base: params.base,
+      quote: params.quote,
+      tickSpacing: params.tickSpacing,
+    });
+  } else {
+    marketAsAdmin = params.marketAdmin;
+  }
+
+  return [
+    await marketAsAdmin.mgv.contract.setFee(
+      {
+        outbound_tkn: marketAsAdmin.base.address,
+        inbound_tkn: marketAsAdmin.quote.address,
+        tickSpacing: marketAsAdmin.tickSpacing,
+      },
+      params.fee,
+    ),
+    await marketAsAdmin.mgv.contract.setFee(
+      {
+        outbound_tkn: marketAsAdmin.quote.address,
+        inbound_tkn: marketAsAdmin.base.address,
+        tickSpacing: marketAsAdmin.tickSpacing,
+      },
+      params.fee,
+    ),
+  ];
 };
 
 async function getToken(token: string | Token, mgv: Mangrove): Promise<Token> {

@@ -344,6 +344,7 @@ namespace Market {
   export type VolumeEstimate = {
     maxTickMatched: number | undefined; // undefined iff no offers matched
     estimatedVolume: Big;
+    estimatedFee: Big;
     remainingFillVolume: Big;
   };
 }
