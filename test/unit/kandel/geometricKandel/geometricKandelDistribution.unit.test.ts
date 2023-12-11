@@ -67,4 +67,55 @@ describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests s
       });
     });
   });
+
+  describe(
+    GeometricKandelDistribution.prototype.verifyDistribution.name,
+    () => {
+      it("fails if baseQuoteTickOffset is not a multiple of tickSpacing", () => {
+        // Arrange
+        sut.offers.asks.forEach((o) => (o.tick *= 2));
+        sut.offers.bids.forEach((o) => (o.tick *= 2));
+        sut.market.tickSpacing = 2;
+        // Act/Assert
+        assert.throws(
+          () => sut.verifyDistribution(),
+          new Error(
+            "baseQuoteTickOffset=1 is not a multiple of tickSpacing=2.",
+          ),
+        );
+      });
+
+      it("fails if baseQuoteTickIndex0 is wrong", () => {
+        // Arrange
+        sut.baseQuoteTickIndex0 = 42;
+        // Act/Assert
+        assert.throws(
+          () => sut.verifyDistribution(),
+          new Error(
+            "Bid at tick index 0 is not equal to -baseQuoteTickIndex0=-42.",
+          ),
+        );
+      });
+
+      it("fails if asks are not in geometric progression", () => {
+        // Arrange
+        sut.offers.asks[1].tick = 42;
+        // Act/Assert
+        assert.throws(
+          () => sut.verifyDistribution(),
+          new Error("Asks are not in geometric progression."),
+        );
+      });
+
+      it("fails if bids are not in geometric progression", () => {
+        // Arrange
+        sut.offers.bids[1].tick = 42;
+        // Act/Assert
+        assert.throws(
+          () => sut.verifyDistribution(),
+          new Error("Bids are not in geometric progression."),
+        );
+      });
+    },
+  );
 });

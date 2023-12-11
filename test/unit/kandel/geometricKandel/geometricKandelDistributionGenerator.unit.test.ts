@@ -283,32 +283,34 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
         // do not generate from mid...
 
         // mid before min should yield no bids
-        [0, 1, -10, 1, 10, 1, 0],
+        [0, 1, -10, 1, 10, 1, 1, 1],
+        // mid before min should yield no bids
+        [0, 1, -10, 1, 10, 4, 1, 4],
         // mid at min should yield a bid
-        [0, 2, 2, 1, 10, 2, 1],
+        [0, 2, 2, 1, 10, 1, 2, 1],
         // mid above min with room for bids should yield bids and shift asks
-        [0, 2, 6, 1, 10, 2, 5],
+        [0, 2, 6, 1, 10, 1, 2, 5],
         // mid above min with room for bids should yield bids and shift asks, except for too few price points
-        [0, 2, 6, 1, 4, 2, 4],
-        [0, 2, 6, 1, 3, 2, 3],
+        [0, 2, 6, 1, 4, 1, 2, 4],
+        [0, 2, 6, 1, 3, 1, 2, 3],
         // mid above min with too much room for bids should yield all bids and no asks
-        [0, 2, 10, 1, 2, 2, 2],
+        [0, 2, 10, 1, 2, 1, 2, 2],
 
         // mid above min with room for bids but odd offset should yield bids and shift asks
-        [0, 2, 7, 3, 10, 2, 2],
+        [0, 2, 7, 3, 10, 1, 2, 2],
 
         // generate from mid...
         // mid before min should yield no bids
-        [1, 1, -10, 1, 10, 1, 0],
+        [1, 1, -10, 1, 10, 1, 1, 1],
         // mid at min should yield a bids
-        [1, 2, 2, 1, 10, 2, 1],
+        [1, 2, 2, 1, 10, 1, 2, 1],
         // mid above min with room for bids should yield bids and shift asks
-        [1, 2, 6, 1, 10, 2, 5],
+        [1, 2, 6, 1, 10, 1, 2, 5],
         // mid above min with room for bids should yield bids and shift asks, except for too few price points
-        [1, 2, 6, 1, 4, 3, 4],
-        [1, 2, 6, 1, 3, 4, 3],
+        [1, 2, 6, 1, 4, 1, 3, 4],
+        [1, 2, 6, 1, 3, 1, 4, 3],
         // mid above min with room for bids but odd offset should yield bids and shift asks
-        [1, 2, 7, 3, 10, 4, 2],
+        [1, 2, 7, 3, 10, 1, 4, 2],
       ].forEach(
         ([
           generateFromMid,
@@ -316,10 +318,11 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
           midBaseQuoteTick,
           baseQuoteTickOffset,
           pricePoints,
+          stepSize,
           expectedIndex0,
           expectedFirstAskIndex,
         ]) => {
-          it(`calculates the right value for fromMid=${generateFromMid} min=${minBaseQuoteTick} mid=${midBaseQuoteTick} offset=${baseQuoteTickOffset} pricePoints=${pricePoints}`, () => {
+          it(`calculates the right value for fromMid=${generateFromMid} min=${minBaseQuoteTick} mid=${midBaseQuoteTick} offset=${baseQuoteTickOffset} pricePoints=${pricePoints} stepSize=${stepSize}`, () => {
             // Act
             const result = sut.calculateFirstOfferIndexAndFirstAskIndex(
               !!generateFromMid,
@@ -327,6 +330,7 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
               midBaseQuoteTick,
               baseQuoteTickOffset,
               pricePoints,
+              stepSize,
             );
 
             // Assert
