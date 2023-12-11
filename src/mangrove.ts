@@ -23,7 +23,6 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
    use Mangrove.connect to make sure the network is reached during construction */
 let canConstructMangrove = false;
 
-import type { Awaited } from "ts-essentials";
 import {
   BlockManager,
   ReliableProvider,
@@ -34,7 +33,6 @@ import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
 import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
-import { LocalUnpackedStructOutput } from "./types/typechain/MgvReader";
 import { OLKeyStruct } from "./types/typechain/Mangrove";
 import { Density } from "./util/Density";
 
@@ -49,6 +47,9 @@ namespace Mangrove {
     fee: number;
     density: Density;
     offer_gasbase: number;
+  };
+
+  export type LocalConfigFull = LocalConfig & {
     lock: boolean;
     last: number | undefined;
     binPosInLeaf: number;
@@ -65,6 +66,8 @@ namespace Mangrove {
     gasprice: number;
     gasmax: number;
     dead: boolean;
+    maxRecursionDepth: number;
+    maxGasreqForFailingOffers: number;
   };
 
   export type SimplePermitData = {
@@ -121,7 +124,8 @@ class Mangrove {
   olKeyStructToOlKeyHashMap: Map<string, string> = new Map();
   nativeToken: TokenCalculations;
 
-  public eventEmitter: EventEmitter;
+  eventEmitter: EventEmitter;
+  _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
 
   static devNode: DevNode;
   static typechain = typechain;
@@ -203,6 +207,31 @@ class Mangrove {
         onError: onEthersError(eventEmitter),
       };
     }
+
+    const multicallContract = typechain.Multicall2__factory.connect(
+      Mangrove.getAddress("Multicall2", network.name),
+      signer,
+    );
+
+    const address = Mangrove.getAddress("Mangrove", network.name);
+    const contract = typechain.IMangrove__factory.connect(address, signer);
+
+    const readerAddress = Mangrove.getAddress("MgvReader", network.name);
+    const readerContract = typechain.MgvReader__factory.connect(
+      readerAddress,
+      signer,
+    );
+
+    const orderAddress = Mangrove.getAddress("MangroveOrder", network.name);
+    const orderContract = typechain.MangroveOrder__factory.connect(
+      orderAddress,
+      signer,
+    );
+
+    const config = Mangrove.rawConfigToConfig(
+      await readerContract.globalUnpacked(),
+    );
+
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
@@ -222,6 +251,12 @@ class Mangrove {
           }
         : undefined,
       shouldNotListenToNewEvents: options.shouldNotListenToNewEvents,
+      multicallContract,
+      address,
+      contract,
+      readerContract,
+      orderContract,
+      config,
     });
 
     await mgv.initializeProvider();
@@ -269,6 +304,12 @@ class Mangrove {
       wsUrl: string;
     };
     shouldNotListenToNewEvents?: boolean;
+    multicallContract: typechain.Multicall2;
+    address: string;
+    contract: typechain.IMangrove;
+    readerContract: typechain.MgvReader;
+    orderContract: typechain.MangroveOrder;
+    config: Mangrove.GlobalConfig;
   }) {
     if (!canConstructMangrove) {
       throw Error(
@@ -285,29 +326,12 @@ class Mangrove {
     this.signer = params.signer;
     this.network = params.network;
     this._readOnly = params.readOnly;
-    this.multicallContract = typechain.Multicall2__factory.connect(
-      Mangrove.getAddress("Multicall2", this.network.name),
-      this.signer,
-    );
-    this.address = Mangrove.getAddress("Mangrove", this.network.name);
-    this.contract = typechain.IMangrove__factory.connect(
-      this.address,
-      this.signer,
-    );
-    const readerAddress = Mangrove.getAddress("MgvReader", this.network.name);
-    this.readerContract = typechain.MgvReader__factory.connect(
-      readerAddress,
-      this.signer,
-    );
-
-    const orderAddress = Mangrove.getAddress(
-      "MangroveOrder",
-      this.network.name,
-    );
-    this.orderContract = typechain.MangroveOrder__factory.connect(
-      orderAddress,
-      this.signer,
-    );
+    this.multicallContract = params.multicallContract;
+    this.address = params.address;
+    this.contract = params.contract;
+    this.readerContract = params.readerContract;
+    this.orderContract = params.orderContract;
+    this._config = params.config;
 
     this.shouldNotListenToNewEvents = false;
     if (params.shouldNotListenToNewEvents) {
@@ -675,18 +699,33 @@ class Mangrove {
   }
 
   /**
-   * Return global Mangrove config
+   * Return global Mangrove config from cache.
    */
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async config(): Promise<Mangrove.GlobalConfig> {
-    const config = await this.readerContract.globalUnpacked();
+  config(): Mangrove.GlobalConfig {
+    return this._config;
+  }
+
+  /**
+   * Return global Mangrove config from chain.
+   */
+  async fetchConfig(): Promise<Mangrove.GlobalConfig> {
+    return Mangrove.rawConfigToConfig(
+      await this.readerContract.globalUnpacked(),
+    );
+  }
+
+  static rawConfigToConfig(
+    rawConfig: Mangrove.RawConfig["_global"],
+  ): Mangrove.GlobalConfig {
     return {
-      monitor: config.monitor,
-      useOracle: config.useOracle,
-      notify: config.notify,
-      gasprice: config.gasprice.toNumber(),
-      gasmax: config.gasmax.toNumber(),
-      dead: config.dead,
+      monitor: rawConfig.monitor,
+      useOracle: rawConfig.useOracle,
+      notify: rawConfig.notify,
+      gasprice: rawConfig.gasprice.toNumber(),
+      gasmax: rawConfig.gasmax.toNumber(),
+      dead: rawConfig.dead,
+      maxRecursionDepth: rawConfig.maxRecursionDepth.toNumber(),
+      maxGasreqForFailingOffers: rawConfig.maxGasreqForFailingOffers.toNumber(),
     };
   }
 
@@ -876,7 +915,7 @@ class Mangrove {
       string,
       {
         token: Token;
-        configs: Record<string, LocalUnpackedStructOutput>;
+        configs: Record<string, Mangrove.RawConfig["_local"]>;
       }
     > = {};
 

@@ -175,31 +175,17 @@ describe("Market integration tests suite", () => {
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
       const bids: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(true);
     });
@@ -211,7 +197,7 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
       assert.ok(
-        !(await market.isActive()),
+        !market.isActive(),
         "market is not existing and thus not active",
       );
     });
@@ -229,31 +215,17 @@ describe("Market integration tests suite", () => {
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
       const bids: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(false);
     });
@@ -271,31 +243,17 @@ describe("Market integration tests suite", () => {
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
       const bids: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(false);
     });
@@ -313,31 +271,17 @@ describe("Market integration tests suite", () => {
         fee: 0,
         density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
       const bids: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
         density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        last: undefined,
-        binPosInLeaf: 1,
-        root: 1,
-        level1: BigNumber.from(1),
-        level2: BigNumber.from(1),
-        level3: BigNumber.from(1),
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(false);
     });
@@ -439,12 +383,12 @@ describe("Market integration tests suite", () => {
           tickSpacing: 1,
         });
         const gasreq = 10000;
-        const config = await market.config();
+        const config = market.config();
         const gasbase = (ba == "asks" ? config.asks : config.bids)
           .offer_gasbase;
 
         const mgvProvision = mgv.calculateOfferProvision(
-          gasprice ?? (await mgv.config()).gasprice,
+          gasprice ?? mgv.config().gasprice,
           gasreq,
           gasbase,
         );
@@ -460,12 +404,12 @@ describe("Market integration tests suite", () => {
           : market.getBidProvision(gasreq, gasprice));
         const offersProvision = market.mgv.calculateOffersProvision([
           {
-            gasprice: gasprice ?? (await mgv.config()).gasprice,
+            gasprice: gasprice ?? mgv.config().gasprice,
             gasreq,
             gasbase,
           },
           {
-            gasprice: gasprice ?? (await mgv.config()).gasprice,
+            gasprice: gasprice ?? mgv.config().gasprice,
             gasreq,
             gasbase,
           },
@@ -780,10 +724,10 @@ describe("Market integration tests suite", () => {
       id: 1,
       prev: undefined,
       next: undefined,
-      gasprice: (await mgv.config()).gasprice,
+      gasprice: mgv.config().gasprice,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      offer_gasbase: (await market.config()).asks.offer_gasbase,
+      offer_gasbase: market.config().asks.offer_gasbase,
       tick: tick,
       gives: asksGives,
       price: askPrice,
@@ -811,10 +755,10 @@ describe("Market integration tests suite", () => {
       id: 1,
       prev: undefined,
       next: undefined,
-      gasprice: (await mgv.config()).gasprice,
+      gasprice: mgv.config().gasprice,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      offer_gasbase: (await market.config()).bids.offer_gasbase,
+      offer_gasbase: market.config().bids.offer_gasbase,
       tick: bidTick,
       gives: bidsGives,
       wants: bidTickHelper.inboundFromOutbound(bidTick, bidsGives),
@@ -1166,16 +1110,20 @@ describe("Market integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
-    await mgvAsAdmin.contract.setFee(
-      {
-        outbound_tkn: market.base.address,
-        inbound_tkn: market.quote.address,
-        tickSpacing: market.tickSpacing,
-      },
-      fee,
+    const tx = await waitForTransaction(
+      mgvAsAdmin.contract.setFee(
+        {
+          outbound_tkn: market.base.address,
+          inbound_tkn: market.quote.address,
+          tickSpacing: market.tickSpacing,
+        },
+        fee,
+      ),
     );
 
-    const config = await market.config();
+    await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
+    const config = market.config();
     assert.strictEqual(config.asks.fee, fee, "wrong fee");
     mgvAsAdmin.disconnect();
   });
@@ -1414,7 +1362,7 @@ describe("Market integration tests suite", () => {
 
     // Add price/volume, prev/next, +extra info to expected book.
     // Volume always in base, price always in quote/base.
-    const config = await market.config();
+    const config = market.config();
     const complete = (isAsk: boolean, ary: typeof bids) => {
       return ary.map((ofr, i) => {
         const _config = config[isAsk ? "asks" : "bids"];

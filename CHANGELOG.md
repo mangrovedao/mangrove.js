@@ -5,8 +5,11 @@
 - feat!: Rename tick parameters of 'Market.simulateGas' and 'Semibook.simulateMarketOrder' to 'maxTick'.
 - fix: Semibook now maintains consistency. After the upgrade to Mangrove v2, the cache could become inconsistent as it was not ensuring that added offers were an extension of the prefix held in the case.
 - feat: Semibook cache now holds complete tick bins: If one offer with a given tick is in the cache, all offers with that tick is in the cache.
-- feat!: The `maxOffers` option in `CacheContentOptions` has been replaced with a new option: `targetNumberOfTicks`. When loading from chain, the cache will load until at least this number of ticks is in the cache. The default is `Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS`.
-- feat!: A new default value `Semibook.DEFAULT_CHUNK_SIZE` has been introduced for `CacheContentOptions.chunkSize`.
+- feat!: The 'maxOffers' option in 'CacheContentOptions' has been replaced with a new option: 'targetNumberOfTicks'. When loading from chain, the cache will load until at least this number of ticks is in the cache. The default is 'Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS'.
+- feat!: A new default value 'Semibook.DEFAULT_CHUNK_SIZE' has been introduced for 'CacheContentOptions.chunkSize'.
+- feat!: Mangrove and Semibook configs are now cached on 'connect' and (for Semibook) updated by events. The methods to read configs are no longer async and naming has been made consistent: 'Mangrove.config()', 'Market.config()', and 'Semibook.config()'.
+- feat: Two missing global config fields have been added: 'maxRecursionDepth' and 'maxGasreqForFailingOffers'.
+- feat!: All order book events now carry the relevant data for the event. And events that are not related to offers do not carry offer data.
 
 # 2.0.0-12
 
