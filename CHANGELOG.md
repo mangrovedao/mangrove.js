@@ -10,6 +10,8 @@
 - feat!: Mangrove and Semibook configs are now cached on 'connect' and (for Semibook) updated by events. The methods to read configs are no longer async and naming has been made consistent: 'Mangrove.config()', 'Market.config()', and 'Semibook.config()'.
 - feat: Two missing global config fields have been added: 'maxRecursionDepth' and 'maxGasreqForFailingOffers'.
 - feat!: All order book events now carry the relevant data for the event. And events that are not related to offers do not carry offer data.
+- feat: The market order simulation used to estimate volumes and gas has been updated to match Mangrove v2's market order logic.
+- feat!: 'Market.estimateVolume' now also estimates fees and returns it in a new 'estimatedFee' field. The existing 'estimatedVolume' field is exclusive of fees and thus represents the true amount the taker can expect to receive/pay.
 
 # 2.0.0-12
 

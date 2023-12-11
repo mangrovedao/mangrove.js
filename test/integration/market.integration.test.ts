@@ -7,7 +7,9 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import {
   rawMinGivesBase,
   rawMinGivesQuote,
+  waitForBlock,
   waitForTransaction,
+  waitForTransactions,
 } from "../../src/util/test/mgvIntegrationTestUtil";
 
 import assert from "assert";
@@ -589,36 +591,7 @@ describe("Market integration tests suite", () => {
       const volumeEstimate: Market.VolumeEstimate = {
         maxTickMatched: 0,
         estimatedVolume: new Big(12),
-        remainingFillVolume: new Big(12),
-      };
-      mockito
-        .when(mockedMarket.estimateVolume(mockito.anything()))
-        .thenResolve(volumeEstimate);
-
-      // Act
-      const result = await market.estimateVolumeToReceive(params);
-      const paramsUsed = mockito.capture(mockedMarket.estimateVolume).last();
-
-      // Assert
-      expect(paramsUsed[0].to).to.be.eq("sell");
-      expect(result).to.be.eq(volumeEstimate);
-    });
-
-    it("return estimate value for sell", async function () {
-      // Arrange
-      const market = await mgv.market({
-        base: "TokenB",
-        quote: "TokenA",
-        tickSpacing: 1,
-      });
-      const mockedMarket = mockito.spy(market);
-      const params: Market.DirectionlessVolumeParams = {
-        what: "quote",
-        given: "",
-      };
-      const volumeEstimate: Market.VolumeEstimate = {
-        maxTickMatched: 0,
-        estimatedVolume: new Big(12),
+        estimatedFee: new Big(1),
         remainingFillVolume: new Big(12),
       };
       mockito
@@ -649,6 +622,7 @@ describe("Market integration tests suite", () => {
       const volumeEstimate: Market.VolumeEstimate = {
         maxTickMatched: 0,
         estimatedVolume: new Big(12),
+        estimatedFee: new Big(1),
         remainingFillVolume: new Big(12),
       };
       mockito
@@ -841,7 +815,7 @@ describe("Market integration tests suite", () => {
     const tx = await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+    await waitForBlock(market.mgv, tx.blockNumber);
 
     const events = [await queue.get()];
     expect(events).to.have.lengthOf(1);
@@ -872,7 +846,7 @@ describe("Market integration tests suite", () => {
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
     const tx2 = await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
-    await mgvTestUtil.waitForBlock(mgv, tx2.blockNumber);
+    await waitForBlock(mgv, tx2.blockNumber);
     const buyPromises_ = await market.buy({
       maxTick: 1,
       fillVolume: "1.5e12",
@@ -1008,7 +982,7 @@ describe("Market integration tests suite", () => {
       gives: rawMinGivesQuote,
     });
 
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+    await waitForBlock(market.mgv, tx.blockNumber);
 
     const sellPromises = await market.sell({
       fillVolume: "0.0001",
@@ -1099,33 +1073,26 @@ describe("Market integration tests suite", () => {
   });
 
   it("gets config", async function () {
-    const mgvAsAdmin = await Mangrove.connect({
-      provider: this.server.url,
-      privateKey: this.accounts.deployer.key,
-    });
-
-    const fee = 13;
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
       tickSpacing: 1,
     });
-    const tx = await waitForTransaction(
-      mgvAsAdmin.contract.setFee(
-        {
-          outbound_tkn: market.base.address,
-          inbound_tkn: market.quote.address,
-          tickSpacing: market.tickSpacing,
-        },
-        fee,
-      ),
-    );
 
-    await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+    const fee = 13;
+    const txs = await waitForTransactions(
+      helpers.setFee({
+        mgvAdmin,
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+        fee,
+      }),
+    );
+    await waitForBlock(mgv, txs[txs.length - 1].blockNumber);
 
     const config = market.config();
     assert.strictEqual(config.asks.fee, fee, "wrong fee");
-    mgvAsAdmin.disconnect();
   });
 
   it("updates OB", async function () {
@@ -1188,39 +1155,148 @@ describe("Market integration tests suite", () => {
     //TODO add to after
   });
 
-  it("crudely simulates market buy", async function () {
-    const market = await mgv.market({
-      base: "TokenA",
-      quote: "TokenB",
-      tickSpacing: 1,
+  [0, 123].map((fee) => {
+    it(`crudely simulates market buy, fee = ${fee} bps ~ ${
+      fee / 100
+    }%`, async function () {
+      const txs = await waitForTransactions(
+        helpers.setFee({
+          mgvAdmin,
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          fee,
+        }),
+      );
+
+      await waitForBlock(mgv, txs[txs.length - 1].blockNumber);
+
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
+
+      const price = market.getSemibook("asks").tickPriceHelper.coercePrice(4);
+
+      await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.3",
+          price,
+        }),
+      );
+      const tx = await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.25",
+          price,
+        }),
+      );
+
+      await waitForBlock(mgv, tx.blockNumber);
+
+      const baseVolume = 0.5;
+      const volumeEstimate = await market.estimateVolume({
+        given: baseVolume,
+        what: "base",
+        to: "buy",
+      });
+
+      // estimated volume is in quote = inbound token and the fee is taken in base = outbound token
+      const expectedEstimatedVolume = price.mul(baseVolume).toNumber();
+      const expectedEstimatedFee = (baseVolume * fee) / 10_000;
+
+      const estimatedVolume = volumeEstimate!.estimatedVolume.toNumber();
+      expect(estimatedVolume).to.be.approximately(
+        expectedEstimatedVolume,
+        0.0001,
+        "estimatedVolume is incorrect",
+      );
+
+      const estimatedFee = volumeEstimate!.estimatedFee.toNumber();
+      expect(estimatedFee).to.be.approximately(
+        expectedEstimatedFee,
+        0.0001,
+        "estimatedFee is incorrect",
+      );
     });
 
-    const done = new Deferred();
-    let estimatedVolume = 0;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    market.subscribe(async (evt) => {
-      if (market.getBook().asks.size() === 2) {
-        const { estimatedVolume: estimated } = await market.estimateVolume({
-          given: "2",
-          what: "quote",
-          to: "sell",
-        });
-        estimatedVolume = estimated.toNumber();
-        done.resolve();
-      }
-    });
+    it(`crudely simulates market sell, fee = ${fee} bps ~ ${
+      fee / 100
+    }%`, async function () {
+      const txs = await waitForTransactions(
+        helpers.setFee({
+          mgvAdmin,
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          fee,
+        }),
+      );
 
-    await helpers
-      .newOffer({ mgv, market, ba: "asks", gives: "0.3", price: 4 })
-      .then((tx) => tx.wait());
-    await helpers
-      .newOffer({ mgv, market, ba: "asks", gives: "0.25", price: 4 })
-      .then((tx) => tx.wait());
-    await done.promise;
-    assert.ok(
-      Math.abs(estimatedVolume! - 0.5) < 0.0001,
-      `estimatedVolume should be ~0.5, got ${estimatedVolume}`,
-    );
+      await waitForBlock(mgv, txs[txs.length - 1].blockNumber);
+
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
+
+      const price = market.getSemibook("asks").tickPriceHelper.coercePrice(4);
+      await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.3",
+          price,
+        }),
+      );
+      const tx = await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.25",
+          price,
+        }),
+      );
+
+      await waitForBlock(mgv, tx.blockNumber);
+
+      const quoteVolume = 2;
+      const volumeEstimate = await market.estimateVolume({
+        given: quoteVolume,
+        what: "quote",
+        to: "sell",
+      });
+
+      // estimated volume is in base = outbound token and the fee is taken in base
+      const expectedEstimatedVolumeIncludingFee = Big(2).div(price).toNumber();
+      const expectedEstimatedFee =
+        (expectedEstimatedVolumeIncludingFee * fee) / 10_000;
+      const expectedEstimatedVolume =
+        expectedEstimatedVolumeIncludingFee - expectedEstimatedFee;
+
+      const estimatedVolume = volumeEstimate!.estimatedVolume.toNumber();
+      expect(estimatedVolume).to.be.approximately(
+        expectedEstimatedVolume,
+        0.0001,
+        "estimatedVolume is incorrect",
+      );
+
+      const estimatedFee = volumeEstimate!.estimatedFee.toNumber();
+      expect(estimatedFee).to.be.approximately(
+        expectedEstimatedFee,
+        0.0001,
+        "estimatedFee is incorrect",
+      );
+    });
   });
 
   it("gets OB", async function () {
@@ -1459,7 +1535,7 @@ describe("Market integration tests suite", () => {
       newOffer({ mgv, market, ba: "asks", ...asks[0] }),
     );
 
-    await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
+    await waitForBlock(market.mgv, lastTx.blockNumber);
     const asksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
       limitPrice: 1,

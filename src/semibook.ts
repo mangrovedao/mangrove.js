@@ -473,116 +473,183 @@ class Semibook
     // normalize params, if no limit given then:
     // if 'buying N units' set max sell to max(uint256),
     // if 'selling N units' set buy desire to 0
-    const initialGives = Big(params.given);
+    const initialVolume = Big(params.given);
     const maxTick = params.limitPrice
       ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
       : MAX_TICK.toNumber();
 
-    const { maxTickMatched, remainingFillVolume, totalGot, totalGave } =
-      await this.simulateMarketOrder(maxTick, initialGives, buying);
+    const { totalGot, totalGave, feePaid, fillVolume, maxTickMatched } =
+      await this.simulateMarketOrder(maxTick, initialVolume, buying);
 
     const estimatedVolume = buying ? totalGave : totalGot;
 
-    return { maxTickMatched, estimatedVolume, remainingFillVolume };
+    return {
+      maxTickMatched,
+      estimatedVolume: estimatedVolume,
+      remainingFillVolume: fillVolume,
+      estimatedFee: feePaid,
+    };
   }
 
-  /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */
+  /**
+   * Reproduces the logic of Mangrove's generalMarketOrder function faithfully
+   * with the exception of:
+   *
+   * - the overflow protections due to bounds on input sizes.
+   * - offers are assumed not to fail.
+   */
   async simulateMarketOrder(
     maxTick: number,
-    initialFillVolume: Big,
+    fillVolume: Big,
     fillWants: boolean,
   ): Promise<{
-    maxTickMatched?: number;
-    remainingFillVolume: Big;
     totalGot: Big;
     totalGave: Big;
+    feePaid: Big;
+    fillVolume: Big;
+    maxTickMatched?: number;
     gas: BigNumber;
   }> {
-    // reproduce solidity behavior
-    const previousBigRm = Big.RM;
-    Big.RM = Big.roundDown;
+    // require(fillVolume <= MAX_SAFE_VOLUME, "mgv/mOrder/fillVolume/tooBig");
+    // require(maxTick.inRange(), "mgv/mOrder/tick/outOfRange");
 
-    const initialAccumulator = {
-      stop: false,
-      maxTickMatched: undefined as number | undefined,
-      remainingFillVolume: initialFillVolume,
-      got: Big(0),
-      gave: Big(0),
+    const state = this.getLatestState();
+
+    const local = state.localConfig;
+    const global = this.market.mgv.config();
+
+    // This corresponds to the MultiOrder mor struct in generalMarketOrder.
+    let mor = {
       totalGot: Big(0),
       totalGave: Big(0),
+      // totalPenalty: Not used as offers are assumed not to fail
+      // taker: Not used
+      fillWants: fillWants,
+      fillVolume: fillVolume,
+      feePaid: Big(0),
+      // leaf: Not used
+      maxTick: maxTick,
+      // maxGasreqForFailingOffers: Not used as offers are assumed not to fail
+      // gasreqForFailingOffers: Not used as offers are assumed not to fail
+      maxRecursionDepth: global.maxRecursionDepth,
+
+      // Additional bookkeeping, not part of the original MultiOrder struct
+      stop: false,
+      maxTickMatched: undefined as number | undefined,
       offersConsidered: 0,
       totalGasreq: BigNumber.from(0),
-      lastGasreq: 0,
+      gas: BigNumber.from(0),
     };
-    const state = this.getLatestState();
-    const res = await this.#foldLeftUntil(
+
+    // This corresponds to the SingleOrder sor struct in generalMarketOrder.
+    const sor = {
+      // olKey: implicit for this Semibook
+      // offerId: not used as full offer is available
+      // offer: provided by foldLeftUntil
+      takerWants: Big(0),
+      takerGives: Big(0),
+      // offerDetail: included in offer
+      global: global,
+      local: local,
+    };
+
+    mor = await this.#foldLeftUntil(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.lastSeenEventBlock!,
       state,
-      initialAccumulator,
-      (acc) => {
-        return !(!acc.stop && acc.remainingFillVolume.gt(0));
-      },
-      (offer, acc) => {
-        const fillVolume = acc.remainingFillVolume;
+      mor,
+      (acc) => acc.stop,
+      (offer, mor) => {
+        // This corresponds to the offer matching if-stmt in internalMarketOrder.
+        // Differences:
+        // 1/ In the Solidity code, 'offer' can be all zeros to signal the end of the offer list.
+        //    Here, foldLeftUntil will stop when there are no more offers, so zero offers need
+        //    not be handled explicitly.
+        // 2/ gasreqForFailingOffers is not taken into account here, since we assume offers do not fail.
+        if (
+          mor.fillVolume.gt(0) &&
+          offer.tick <= mor.maxTick && // && sor.offerId > 0
+          mor.maxRecursionDepth > 0 // && mor.gasreqForFailingOffers <= mor.maxGasreqForFailingOffers
+        ) {
+          // Extra bookkeeping, not part of the original internalMarketOrder function
+          mor.offersConsidered += 1;
+          mor.maxTickMatched = offer.tick;
+          mor.totalGasreq = mor.totalGasreq.add(offer.gasreq);
+          mor.gas = mor.gas.add(offer.gasreq).add(local.offer_gasbase);
 
-        acc.offersConsidered += 1;
+          mor.maxRecursionDepth--;
 
-        // bad price
-        if (offer.tick > maxTick) {
-          acc.stop = true;
-        } else {
-          acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
-          acc.lastGasreq = offer.gasreq;
-          const offerWants = this.tickPriceHelper.inboundFromOutbound(
-            offer.tick,
-            offer.gives,
-          );
+          // function execute
+          const fillVolume = mor.fillVolume;
+          const offerGives = offer.gives;
+          const offerWants = offer.wants;
+
           if (
-            (fillWants && fillVolume.gt(offer.gives)) ||
-            (!fillWants && fillVolume.gt(offerWants))
+            (mor.fillWants && offerGives.lte(fillVolume)) ||
+            (!mor.fillWants && offerWants.lte(fillVolume))
           ) {
-            acc.got = offer.gives;
-            acc.gave = offerWants;
+            sor.takerWants = offerGives;
+            sor.takerGives = offerWants;
           } else {
-            if (fillWants) {
-              acc.got = fillVolume;
-              const product = fillVolume.mul(offerWants);
-              /* Reproduce the mangrove round-up of takerGives using Big's rounding mode. */
-              Big.RM = Big.roundUp;
-              acc.gave = product.div(offer.gives);
-              Big.RM = Big.roundDown;
+            if (mor.fillWants) {
+              sor.takerGives = this.tickPriceHelper.inboundFromOutbound(
+                offer.tick,
+                fillVolume,
+                true,
+              );
+              sor.takerWants = fillVolume;
             } else {
-              acc.gave = fillVolume;
-              if (offerWants.eq(0)) {
-                acc.got = offer.gives;
-              } else {
-                acc.got = fillVolume.mul(offer.gives).div(offerWants);
-              }
+              sor.takerWants = this.tickPriceHelper.outboundFromInbound(
+                offer.tick,
+                fillVolume,
+                false,
+              );
+              sor.takerGives = fillVolume;
             }
           }
-        }
-        if (!acc.stop) {
-          acc.maxTickMatched = offer.tick;
-          acc.totalGot = acc.totalGot.add(acc.got);
-          acc.totalGave = acc.totalGave.add(acc.gave);
-          acc.remainingFillVolume = initialFillVolume.sub(
-            fillWants ? acc.totalGot : acc.totalGave,
+
+          mor.totalGot = mor.totalGot.add(sor.takerWants);
+          // require(mor.totalGot >= sor.takerWants, "mgv/totalGot/overflow");
+          mor.totalGave = mor.totalGave.add(sor.takerGives);
+          // require(mor.totalGave >= sor.takerGives, "mgv/totalGave/overflow");
+          // end function execute
+
+          const takerWants = sor.takerWants;
+          const takerGives = sor.takerGives;
+          mor.fillVolume = mor.fillVolume.sub(
+            mor.fillWants ? takerWants : takerGives,
           );
+        } else {
+          mor.stop = true;
+
+          // payTakerMinusFees is called here in the Solidity code
+          // but foldLeftUntil may stop before this if we reach the end of the offer list.
+          // Therefore the payTakerMinusFees logic is moved to after foldLeftUntil.
         }
-        return acc;
+
+        return mor;
       },
     );
 
+    // function payTakerMinusFees
+    // Reproduce Solidity rounding behavior
+    const previousBigRm = Big.RM;
+    const previousBigDp = Big.DP;
+    Big.RM = Big.roundDown;
+    Big.DP = this.market.getOutboundInbound(this.ba).outbound_tkn.decimals;
+    const concreteFee = mor.totalGot.mul(sor.local.fee).div(10_000);
+    Big.DP = previousBigDp;
     Big.RM = previousBigRm;
+    if (concreteFee.gt(0)) {
+      mor.totalGot = mor.totalGot.sub(concreteFee);
+      mor.feePaid = concreteFee;
+    }
+    // end function payTakerMinusFees
 
-    // Assume up to offer_gasbase is used also for the bad price call, and
-    // the last offer (which could be first, if taking little) needs up to gasreq*64/63 for makerPosthook
-    const gas = res.totalGasreq
-      .add(BigNumber.from(res.lastGasreq).div(63))
-      .add(state.localConfig.offer_gasbase * Math.max(res.offersConsidered, 1));
+    // Assumes offer_gasbase is used also for the last call to internalMarketOrder where no offer is executed.
+    mor.gas = mor.gas.add(local.offer_gasbase);
 
-    return { ...res, gas };
+    return mor;
   }
 
   /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
@@ -1135,6 +1202,12 @@ class Semibook
       );
     } else if ("desiredVolume" in options) {
       const desiredVolume = options.desiredVolume;
+      if (Big(desiredVolume.given).eq(0)) {
+        return {
+          error: undefined,
+          ok: { bins: new Map(), endOfListReached: false },
+        };
+      }
       const getOfferVolume = (offer: Market.Offer) => {
         if (desiredVolume.to === "buy") {
           return offer.gives;
@@ -1159,6 +1232,12 @@ class Semibook
       );
     } else {
       const targetNumberOfTicks = options.targetNumberOfTicks;
+      if (targetNumberOfTicks === 0) {
+        return {
+          error: undefined,
+          ok: { bins: new Map(), endOfListReached: false },
+        };
+      }
       return await this.#fetchOfferListPrefixUntil(
         block,
         fromId,
