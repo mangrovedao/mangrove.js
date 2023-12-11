@@ -478,7 +478,7 @@ class Semibook
       ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
       : MAX_TICK.toNumber();
 
-    const { totalGot, totalGave, feePaid, maxTickMatched } =
+    const { totalGot, totalGave, feePaid, fillVolume, maxTickMatched } =
       await this.simulateMarketOrder(maxTick, initialVolume, buying);
 
     const estimatedVolume = buying ? totalGave : totalGot;
@@ -486,7 +486,7 @@ class Semibook
     return {
       maxTickMatched,
       estimatedVolume: estimatedVolume,
-      remainingFillVolume: initialVolume.sub(estimatedVolume),
+      remainingFillVolume: fillVolume,
       estimatedFee: feePaid,
     };
   }
@@ -506,6 +506,7 @@ class Semibook
     totalGot: Big;
     totalGave: Big;
     feePaid: Big;
+    fillVolume: Big;
     maxTickMatched?: number;
     gas: BigNumber;
   }> {
