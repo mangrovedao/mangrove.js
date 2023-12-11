@@ -128,10 +128,12 @@ export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
 
 /** Mangrove order configuration for a specific chain.
  * @param restingOrderGasreq The gasreq for a resting order using the MangroveOrder contract.
+ * @param restingOrderGaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
  * @param takeGasOverhead The overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove.
  */
 export type MangroveOrderNetworkConfiguration = {
   restingOrderGasreq: number;
+  restingOrderGaspriceFactor: number;
   takeGasOverhead: number;
 };
 
@@ -551,6 +553,17 @@ export const mangroveOrderConfiguration = {
       config.mangroveOrder.restingOrderGasreq;
     if (!value) {
       throw Error("No restingOrderGasreq configured");
+    }
+    return value;
+  },
+
+  /** Gets the factor to multiply the gasprice by. This is used to ensure that the offers do not fail to be reposted even if Mangrove's gasprice increases up to this. */
+  getRestingOrderGaspriceFactor: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.restingOrderGaspriceFactor ??
+      config.mangroveOrder.restingOrderGaspriceFactor;
+    if (!value) {
+      throw Error("No restingOrderGaspriceFactor configured");
     }
     return value;
   },

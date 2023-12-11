@@ -1,5 +1,9 @@
 # Next version
 
+# 2.0.0-13
+
+- fix: Calculate default offer provision for MangroveOrder based on a gasprice factor if provision is not provided.
+- fix: Export entire configuration instead of only address and token configuration.
 - feat: Thread tickSpacing through code to be able to use it in tick/price calculations.
 - fix: Change tick and tickSpacing to be number type
 - feat!: Rename tick parameters of 'Market.simulateGas' and 'Semibook.simulateMarketOrder' to 'maxTick'.
