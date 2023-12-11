@@ -1,8 +1,7 @@
-import * as TickLib from "../../util/coreCalculations/TickLib";
 import Market from "../../market";
 import { MAX_TICK, MIN_TICK } from "../../util/coreCalculations/Constants";
 import Big from "big.js";
-import { BigNumber, ethers } from "ethers";
+import { ethers } from "ethers";
 import { Bigish } from "../../types";
 import KandelDistributionHelper from "../kandelDistributionHelper";
 
@@ -23,7 +22,7 @@ export type PriceDistributionParams = {
   generateFromMid: boolean;
 };
 
-/** Tick and offset parameters for calculating a geometric price distribution.
+/** Tick and offset parameters for calculating a geometric price distribution. Parameters should conform to tickSpacing of the market (i.e. be divisible by it).
  * @param minBaseQuoteTick The minimum base quote tick in the distribution.
  * @param maxBaseQuoteTick The maximum base quote tick in the distribution (used to derive minTick).
  * @param baseQuoteTickOffset The number of ticks to jump between two price points.
@@ -72,6 +71,12 @@ class GeometricKandelDistributionHelper {
     baseQuoteTickOffset: number,
     pricePoints: number,
   ) {
+    if (baseQuoteTickOffset % this.helper.market.tickSpacing != 0) {
+      throw Error("baseQuoteTickOffset must be a multiple of the tickSpacing");
+    }
+    if (tickAtIndex % this.helper.market.tickSpacing != 0) {
+      throw Error("tickAtIndex must be a multiple of the tickSpacing");
+    }
     if (offerType === "bids") {
       tickAtIndex = -tickAtIndex;
     }
@@ -90,13 +95,13 @@ class GeometricKandelDistributionHelper {
     if (priceRatio.lte(Big(1))) {
       throw Error("priceRatio must be larger than 1");
     }
-    // Intentionally use raw TickLib as these are raw values
-    return TickLib.tickFromVolumes(
-      BigNumber.from(
-        Big(ethers.constants.WeiPerEther.toString()).mul(priceRatio).toFixed(0),
-      ),
-      ethers.constants.WeiPerEther,
-    ).toNumber();
+
+    return this.helper.askTickPriceHelper.tickFromVolumes(
+      this.helper.market.quote
+        .fromUnits(ethers.constants.WeiPerEther)
+        .mul(priceRatio),
+      this.helper.market.base.fromUnits(ethers.constants.WeiPerEther),
+    );
   }
 
   /** Gets tick based parameters for a distribution based on tick or price params.
@@ -104,8 +109,8 @@ class GeometricKandelDistributionHelper {
    * @returns The tick based parameters, @see TickDistributionParams
    */
   public getTickDistributionParams(
-    params: DistributionParams,
-  ): TickDistributionParams {
+    params: Omit<Omit<DistributionParams, "stepSize">, "generateFromMid">,
+  ) {
     let {
       minBaseQuoteTick,
       maxBaseQuoteTick,
@@ -158,9 +163,12 @@ class GeometricKandelDistributionHelper {
         baseQuoteTickOffset == undefined &&
         pricePoints != undefined
       ) {
-        baseQuoteTickOffset = Math.floor(
-          (maxBaseQuoteTick - minBaseQuoteTick) / (pricePoints - 1),
-        );
+        baseQuoteTickOffset =
+          Math.floor(
+            (maxBaseQuoteTick - minBaseQuoteTick) /
+              (pricePoints - 1) /
+              this.helper.market.tickSpacing,
+          ) * this.helper.market.tickSpacing;
       } else if (
         minBaseQuoteTick != undefined &&
         maxBaseQuoteTick == undefined &&
@@ -197,14 +205,19 @@ class GeometricKandelDistributionHelper {
       );
     }
 
+    if (minBaseQuoteTick % this.helper.market.tickSpacing != 0) {
+      throw Error("minBaseQuoteTick must be a multiple of tickSpacing");
+    }
+    if (baseQuoteTickOffset % this.helper.market.tickSpacing != 0) {
+      throw Error("baseQuoteTickOffset must be a multiple of tickSpacing");
+    }
+
+    // We do not return maxBaseQuoteTick as the derived values may not end up hitting it exactly.
     return {
-      minBaseQuoteTick: minBaseQuoteTick,
-      maxBaseQuoteTick: maxBaseQuoteTick,
+      minBaseQuoteTick,
       baseQuoteTickOffset,
-      midBaseQuoteTick: midBaseQuoteTick,
+      midBaseQuoteTick,
       pricePoints,
-      generateFromMid: params.generateFromMid,
-      stepSize: params.stepSize,
     };
   }
 }

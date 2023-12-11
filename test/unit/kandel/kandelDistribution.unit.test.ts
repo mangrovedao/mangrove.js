@@ -120,4 +120,68 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
       });
     },
   );
+
+  describe(KandelDistribution.prototype.verifyDistribution.name, () => {
+    it("fails on wrong number of bids", () => {
+      sut.offers.bids.push({ index: 0, gives: Big(0), tick: 0 });
+      assert.throws(
+        () => sut.verifyDistribution(),
+        Error(
+          "Invalid distribution: number of bids does not match number of price points and step size",
+        ),
+      );
+    });
+    it("fails on wrong number of asks", () => {
+      sut.offers.asks.push({ index: 0, gives: Big(0), tick: 0 });
+      assert.throws(
+        () => sut.verifyDistribution(),
+        Error(
+          "Invalid distribution: number of asks does not match number of price points and step size",
+        ),
+      );
+    });
+    it("fails if bid indices are not ascending", () => {
+      sut.offers.bids[0].index = 2;
+      assert.throws(
+        () => sut.verifyDistribution(),
+        Error("Invalid distribution: bid indices are not ascending"),
+      );
+    });
+    it("fails if ask indices are not ascending", () => {
+      sut.offers.asks[0].index = 10;
+      assert.throws(
+        () => sut.verifyDistribution(),
+        Error("Invalid distribution: ask indices are not ascending"),
+      );
+    });
+    it("fails if bid tick is not a multiple of tick spacing", () => {
+      sut.market.tickSpacing = 2;
+      sut.offers.bids[0].tick = 1;
+      assert.throws(
+        () => sut.verifyDistribution(),
+        Error(
+          "Invalid distribution: bid tick is not a multiple of tick spacing",
+        ),
+      );
+    });
+    it("fails if ask tick is not a multiple of tick spacing", () => {
+      sut.market.tickSpacing = 2;
+      sut.offers.bids.forEach((x) => (x.tick *= sut.market.tickSpacing));
+      sut.offers.asks[0].tick = 1;
+      assert.throws(
+        () => sut.verifyDistribution(),
+        Error(
+          "Invalid distribution: ask tick is not a multiple of tick spacing",
+        ),
+      );
+    });
+    it("fails if live bid comes after live ask", () => {
+      sut.offers.asks[0].gives = Big(10000);
+      sut.offers.bids[sut.offers.bids.length - 1].gives = Big(10000);
+      assert.throws(
+        () => sut.verifyDistribution(),
+        Error("Invalid distribution: live bids should come before live asks"),
+      );
+    });
+  });
 });

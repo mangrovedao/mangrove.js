@@ -35,16 +35,16 @@ class GeometricKandelDistributionGenerator {
       baseQuoteTickOffset,
       midBaseQuoteTick,
       pricePoints,
-      generateFromMid,
     } = tickDistributionParams;
 
     const { baseQuoteTickIndex0, firstAskIndex } =
       this.calculateFirstOfferIndexAndFirstAskIndex(
-        generateFromMid,
+        params.generateFromMid,
         minBaseQuoteTick,
         midBaseQuoteTick,
         baseQuoteTickOffset,
         pricePoints,
+        params.stepSize,
       );
 
     return {
@@ -52,7 +52,7 @@ class GeometricKandelDistributionGenerator {
       pricePoints,
       firstAskIndex,
       baseQuoteTickIndex0,
-      stepSize: tickDistributionParams.stepSize,
+      stepSize: params.stepSize,
     };
   }
 
@@ -62,6 +62,7 @@ class GeometricKandelDistributionGenerator {
    * @param midBaseQuoteTick The mid-price as base quote tick used to determine when to switch from bids to asks.
    * @param baseQuoteTickOffset The number of ticks to jump between two price points.
    * @param pricePoints The number of price points in the distribution.
+   * @param stepSize The step size used when transporting funds from an offer to its dual.
    * @returns The tick of the lowest priced price point and the index of the first ask
    * @dev if midBaseQuoteTick becomes a tick, then it is arbitrarily chosen to be a bid to simplify the math. So, if mid==min then firstAskIndex is 1. To have no bids, mid should be strictly less than min.
    */
@@ -71,11 +72,12 @@ class GeometricKandelDistributionGenerator {
     midBaseQuoteTick: number,
     baseQuoteTickOffset: number,
     pricePoints: number,
+    stepSize: number,
   ) {
     // If mid is before min, then the floor will be negative 1 or less, and the max makes it go to 0.
     // If there is exactly zero or below 1 room, it will end up at 1 to allow a single bid at index 0.
     const firstAskIndex = Math.max(
-      0,
+      stepSize,
       Math.min(
         pricePoints,
         Math.floor(

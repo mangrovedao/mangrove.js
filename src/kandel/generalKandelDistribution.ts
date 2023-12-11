@@ -21,6 +21,7 @@ class GeneralKandelDistribution extends KandelDistribution {
     market: Market.KeyResolvedForCalculation;
   }) {
     super(params.pricePoints, params.stepSize, params.offers, params.market);
+    this.verifyDistribution();
   }
 
   /** Adds offers from lists to a chunk, including its dual; only adds each offer once.

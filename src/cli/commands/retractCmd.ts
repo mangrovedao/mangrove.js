@@ -34,7 +34,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
     base: argv.base,
     quote: argv.quote,
     tickSpacing: argv.tickSpacing,
-    bookOptions: { maxOffers: 200 },
+    bookOptions: { targetNumberOfTicks: 200 },
   });
 
   const makerAddress = wallet.address;
