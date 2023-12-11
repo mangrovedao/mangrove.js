@@ -157,6 +157,27 @@ namespace Market {
     summary: CleanSummary;
   };
 
+  export type RetractMangroveOrderResult = void;
+
+  /**
+   * A transaction that has been submitted to a market.
+   *
+   * Market operations return this type so that the caller can track the state of the
+   * low-level transaction that has been submitted as well as the result of the market operation.
+   */
+  export type Transaction<TResult> = {
+    /** The result of the market transaction.
+     *
+     * Resolves when the transaction has been included on-chain.
+     *
+     * Rejects if the transaction fails.
+     */
+    result: Promise<TResult>;
+
+    /** The low-level transaction that has been submitted to the chain. */
+    response: Promise<ethers.ContractTransaction>;
+  };
+
   export type OrderRoute = "Mangrove" | "MangroveOrder";
 
   /**
@@ -906,10 +927,7 @@ class Market {
   buy(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {},
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     return this.trade.order("buy", params, this, overrides);
   }
 
@@ -936,10 +954,7 @@ class Market {
   sell(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {},
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     return this.trade.order("sell", params, this, overrides);
   }
 
@@ -963,6 +978,22 @@ class Market {
   async gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
     const v = await this.trade.estimateGas("sell", params, this);
     return v ?? BigNumber.from(0);
+  }
+
+  /** Retract a resting order posted by MangroveOrder.
+   *
+   * @param ba whether the offer is a bid or ask
+   * @param id the offer id
+   * @param deprovision whether to deprovision the offer. If true, the offer's provision will be returned to the maker's balance on Mangrove.
+   * @param overrides overrides for the transaction
+   */
+  async retractRestingOrder(
+    ba: Market.BA,
+    id: number,
+    deprovision = false,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.RetractMangroveOrderResult>> {
+    return this.trade.retractRestingOrder(this, ba, id, deprovision, overrides);
   }
 
   /**
