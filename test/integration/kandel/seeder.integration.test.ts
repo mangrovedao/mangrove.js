@@ -98,7 +98,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
           );
           return;
         }
-        const { kandelPromise } = await seeder.sow(seed);
+        const { result: kandelPromise } = await seeder.sow(seed);
         const kandel = await kandelPromise;
 
         // Assert
@@ -153,7 +153,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
       2,
       10000,
     );
-    const { kandelPromise } = await seeder.sow(seed);
+    const { result: kandelPromise } = await seeder.sow(seed);
     const kandel = await kandelPromise;
     await kandel.setGasprice(20000);
 
