@@ -2747,12 +2747,12 @@ __metadata:
   linkType: hard
 
 "dir-compare@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "dir-compare@npm:4.0.0"
+  version: 4.2.0
+  resolution: "dir-compare@npm:4.2.0"
   dependencies:
-    minimatch: ^3.0.4
+    minimatch: ^3.0.5
     p-limit: "^3.1.0 "
-  checksum: 54d7620453d239c8c64cb8ca54e8ca6ea3f9f9633eb2923f1143f0822b4bb63702029d8d18570186b950d4e1a7575691a0730b3e22f3fa3d2102c1279562091a
+  checksum: 138ee3c7716f45c1dc100efdf6b9517459428f1cb83fecda1f0dc633326d911a01f6456ff68333f916209649321c70fa004f448f137531664582ecddde4e2601
   languageName: node
   linkType: hard
 
