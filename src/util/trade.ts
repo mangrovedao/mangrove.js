@@ -630,7 +630,7 @@ class Trade {
           tick: maxTick,
           fillVolume: fillVolume,
           fillWants: fillWants,
-          restingOrder: restingOrderParams ? true : false,
+          restingOrder: !!restingOrderParams,
           expiryDate: expiryDate,
           offerId:
             restingParams?.offerId === undefined ? 0 : restingParams.offerId,
