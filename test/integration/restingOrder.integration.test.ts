@@ -130,38 +130,72 @@ describe("RestingOrder", () => {
       mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
     });
 
-    it("simple resting order, with no forceRoutingToMangroveOrder", async () => {
-      const provision = await orderLP.computeBidProvision();
+    ["default", "provideFactor", "provided"].forEach((provisionOption) => {
+      it(`simple resting order, with no forceRoutingToMangroveOrder and provisionOption=${provisionOption}`, async () => {
+        const provision =
+          provisionOption === "provided"
+            ? await orderLP.computeBidProvision()
+            : undefined;
+        await orderLP.computeBidProvision();
 
-      await w(tokenB.approve(router.address));
-      await w(tokenA.approve(router.address));
+        await w(tokenB.approve(router.address));
+        await w(tokenA.approve(router.address));
 
-      const buyPromises = await orderLP.market.buy({
-        limitPrice: 1,
-        volume: 20,
-        restingOrder: { provision: provision },
+        const buyPromises = await orderLP.market.buy({
+          limitPrice: 1,
+          volume: 20,
+          restingOrder: {
+            provision: provision,
+            restingOrderGaspriceFactor:
+              provisionOption === "provideFactor" ? 7 : undefined,
+          },
+        });
+        const tx = await waitForTransaction(buyPromises.response);
+        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
+        const orderResult = await buyPromises.result;
+        orderResult.summary = orderResult.summary as Market.OrderSummary;
+        assert(
+          // 2.5% fee configured in mochaHooks.js
+          orderResult.summary.totalGot!.eq(10 * 0.975),
+          `Taker received an incorrect amount ${orderResult.summary.totalGot}`,
+        );
+        assert(
+          orderResult.summary.totalGave!.sub(10).abs().lt(0.001),
+          `Taker gave an incorrect amount ${orderResult.summary.totalGave}`,
+        );
+        assert(
+          orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+          "Resting order was not posted",
+        );
+        assert(
+          orderResult.summary.partialFill,
+          "Order should have been partially filled",
+        );
+        assert(
+          orderResult.summary.bounty!.eq(0),
+          "No offer should have failed",
+        );
+
+        const actualProvision =
+          await orderLP.logic?.retrieveLockedProvisionForOffer(
+            orderLP.market,
+            "bids",
+            orderResult.restingOrder?.id,
+          );
+        const expectedProvision =
+          provisionOption === "provided"
+            ? provision
+            : await orderLP.computeOfferProvision("bids", {
+                gasprice:
+                  mgv.config().gasprice *
+                  (provisionOption === "provideFactor" ? 7 : 5),
+              });
+        assert.equal(
+          actualProvision?.toString(),
+          expectedProvision?.toString(),
+        );
       });
-
-      const orderResult = await buyPromises.result;
-      orderResult.summary = orderResult.summary as Market.OrderSummary;
-      assert(
-        // 2.5% fee configured in mochaHooks.js
-        orderResult.summary.totalGot!.eq(10 * 0.975),
-        `Taker received an incorrect amount ${orderResult.summary.totalGot}`,
-      );
-      assert(
-        orderResult.summary.totalGave!.sub(10).abs().lt(0.001),
-        `Taker gave an incorrect amount ${orderResult.summary.totalGave}`,
-      );
-      assert(
-        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-        "Resting order was not posted",
-      );
-      assert(
-        orderResult.summary.partialFill,
-        "Order should have been partially filled",
-      );
-      assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
 
     it("simple resting order, with forceRoutingToMangroveOrder:true", async () => {
@@ -407,146 +441,162 @@ describe("RestingOrder", () => {
       assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
 
-    it("resting order, using existing offer", async () => {
-      const provision = await orderLP.computeBidProvision();
+    [true, false].forEach((addProvision) => {
+      it(`resting order, using existing offer with addProvision=${addProvision}`, async () => {
+        await w(tokenB.approve(router.address));
+        await w(tokenA.approve(router.address));
 
-      await w(tokenB.approve(router.address));
-      await w(tokenA.approve(router.address));
+        const market: Market = orderLP.market;
 
-      const market: Market = orderLP.market;
+        const buyPromises = await market.buy({
+          limitPrice: 1, // tokenA
+          volume: 20, // tokenB
+          restingOrder: {},
+        });
+        const orderResult = await buyPromises.result;
+        const tx = await waitForTransaction(buyPromises.response);
+        await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+        assert(
+          orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+          "Resting order was not posted",
+        );
+        assert(
+          orderResult.restingOrder
+            ? orderResult.restingOrder.gives.sub(10).abs().lt(0.001)
+            : false,
+          `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`,
+        );
+        assert(
+          orderResult.restingOrder
+            ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
+            : false,
+          `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toNumber()}`,
+        );
+        const firstProvision =
+          await orderLP.logic?.retrieveLockedProvisionForOffer(
+            orderLP.market,
+            "bids",
+            orderResult.restingOrder?.id,
+          );
 
-      const buyPromises = await market.buy({
-        limitPrice: 1, // tokenA
-        volume: 20, // tokenB
-        restingOrder: {
-          provision: provision,
-        },
+        // taking resting offer
+
+        await w(tokenB.approveMangrove());
+        await w(tokenA.approveMangrove());
+
+        const sellPromises = await market.sell({
+          maxTick: orderResult.restingOrder!.tick,
+          fillVolume: 10,
+          fillWants: true,
+        });
+        const result = await sellPromises.result;
+        result.summary = result.summary as Market.OrderSummary;
+        const tx2 = await waitForTransaction(sellPromises.response);
+
+        await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
+
+        // 2,5% fee configured in mochaHooks.js
+        assert(
+          result.summary
+            .totalGot!.minus(10 * 0.975)
+            .abs()
+            .lt(0.001),
+          `Taker received an incorrect amount ${result.summary.totalGot}`,
+        );
+        assert(
+          !(await orderLP.market.isLive(
+            "bids",
+            orderResult.restingOrder ? orderResult.restingOrder.id : 0,
+          )),
+          "Residual should not still be in the book",
+        );
+
+        const provision = await orderLP.computeBidProvision();
+        const buyAgainPromises = await market.buy({
+          limitPrice: 1, // tokenA
+          volume: 20, // tokenB
+          restingOrder: {
+            provision: addProvision ? provision : undefined,
+            offerId: orderResult.restingOrder!.id,
+          },
+        });
+        const orderAgainResult = await buyAgainPromises.result;
+        const tx3 = await waitForTransaction(buyAgainPromises.response);
+        await mgvTestUtil.waitForBlock(market.mgv, tx3.blockNumber);
+
+        assert(
+          await orderLP.market.isLive("bids", orderResult.restingOrder!.id),
+          "Residual should be in the book again, on same offerId",
+        );
+
+        assert.deepStrictEqual(
+          orderAgainResult.restingOrder!.id,
+          orderResult.restingOrder!.id,
+          "OfferId should be the same",
+        );
+
+        assert.deepStrictEqual(
+          orderAgainResult.restingOrder,
+          orderAgainResult.offerWrites[0].offer,
+          "Resting order was not correct",
+        );
+
+        const secondProvision =
+          await orderLP.logic?.retrieveLockedProvisionForOffer(
+            orderLP.market,
+            "bids",
+            orderResult.restingOrder?.id,
+          );
+        assert.equal(
+          secondProvision?.toString(),
+          firstProvision?.add(addProvision ? provision : 0).toString(),
+        );
       });
-      const orderResult = await buyPromises.result;
-      const tx = await waitForTransaction(buyPromises.response);
-      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-      assert(
-        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-        "Resting order was not posted",
-      );
-      assert(
-        orderResult.restingOrder
-          ? orderResult.restingOrder.gives.sub(10).abs().lt(0.001)
-          : false,
-        `orderResult.restingOrder.gives: ${orderResult.restingOrder?.gives}, should be 10`,
-      );
-      assert(
-        orderResult.restingOrder
-          ? orderResult.restingOrder.price.sub(1).abs().lt(0.001)
-          : false,
-        `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toNumber()}`,
-      );
 
-      // taking resting offer
+      it("retract resting order", async () => {
+        const provision = await orderLP.computeBidProvision();
 
-      await w(tokenB.approveMangrove());
-      await w(tokenA.approveMangrove());
+        await w(tokenB.approve(router.address));
+        await w(tokenA.approve(router.address));
 
-      const sellPromises = await market.sell({
-        maxTick: orderResult.restingOrder!.tick,
-        fillVolume: 10,
-        fillWants: true,
-      });
-      const result = await sellPromises.result;
-      result.summary = result.summary as Market.OrderSummary;
-      const tx2 = await waitForTransaction(sellPromises.response);
+        const buyPromises = await orderLP.market.buy({
+          limitPrice: 1,
+          volume: 20,
+          restingOrder: { provision: provision },
+        });
 
-      await mgvTestUtil.waitForBlock(market.mgv, tx2.blockNumber);
+        const buyTxReceipt = await waitForTransaction(buyPromises.response);
 
-      // 2,5% fee configured in mochaHooks.js
-      assert(
-        result.summary
-          .totalGot!.minus(10 * 0.975)
-          .abs()
-          .lt(0.001),
-        `Taker received an incorrect amount ${result.summary.totalGot}`,
-      );
-      assert(
-        !(await orderLP.market.isLive(
+        const orderResult = await buyPromises.result;
+        orderResult.summary = orderResult.summary as Market.OrderSummary;
+
+        assert(
+          orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+          "Resting order was not posted",
+        );
+
+        await waitForBlock(mgv, buyTxReceipt.blockNumber);
+
+        expect(
+          [...orderLP.market.getSemibook("bids")].map((o) => o.id),
+        ).to.contain(orderResult.restingOrder!.id);
+
+        const retractPromises = await orderLP.market.retractRestingOrder(
           "bids",
-          orderResult.restingOrder ? orderResult.restingOrder.id : 0,
-        )),
-        "Residual should not still be in the book",
-      );
+          orderResult.restingOrder!.id,
+        );
+        const retractTxReceipt = await waitForTransaction(
+          retractPromises.response,
+        );
+        assert(retractTxReceipt.blockNumber > 0, "Retract tx was not mined");
+        await retractPromises.result;
 
-      const buyAgainPromises = await market.buy({
-        limitPrice: 1, // tokenA
-        volume: 20, // tokenB
-        restingOrder: {
-          provision: provision,
-          offerId: orderResult.restingOrder!.id,
-        },
+        await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+        expect(
+          [...orderLP.market.getSemibook("bids")].map((o) => o.id),
+        ).to.not.contain(orderResult.restingOrder!.id);
       });
-      const orderAgainResult = await buyAgainPromises.result;
-      const tx3 = await waitForTransaction(buyAgainPromises.response);
-      await mgvTestUtil.waitForBlock(market.mgv, tx3.blockNumber);
-
-      assert(
-        await orderLP.market.isLive("bids", orderResult.restingOrder!.id),
-        "Residual should be in the book again, on same offerId",
-      );
-
-      assert.deepStrictEqual(
-        orderAgainResult.restingOrder!.id,
-        orderResult.restingOrder!.id,
-        "OfferId should be the same",
-      );
-
-      assert.deepStrictEqual(
-        orderAgainResult.restingOrder,
-        orderAgainResult.offerWrites[0].offer,
-        "Resting order was not correct",
-      );
-    });
-
-    it("retract resting order", async () => {
-      const provision = await orderLP.computeBidProvision();
-
-      await w(tokenB.approve(router.address));
-      await w(tokenA.approve(router.address));
-
-      const buyPromises = await orderLP.market.buy({
-        limitPrice: 1,
-        volume: 20,
-        restingOrder: { provision: provision },
-      });
-
-      const buyTxReceipt = await waitForTransaction(buyPromises.response);
-
-      const orderResult = await buyPromises.result;
-      orderResult.summary = orderResult.summary as Market.OrderSummary;
-
-      assert(
-        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-        "Resting order was not posted",
-      );
-
-      await waitForBlock(mgv, buyTxReceipt.blockNumber);
-
-      expect(
-        [...orderLP.market.getSemibook("bids")].map((o) => o.id),
-      ).to.contain(orderResult.restingOrder!.id);
-
-      const retractPromises = await orderLP.market.retractRestingOrder(
-        "bids",
-        orderResult.restingOrder!.id,
-      );
-      const retractTxReceipt = await waitForTransaction(
-        retractPromises.response,
-      );
-      assert(retractTxReceipt.blockNumber > 0, "Retract tx was not mined");
-      await retractPromises.result;
-
-      await waitForBlock(mgv, retractTxReceipt.blockNumber);
-
-      expect(
-        [...orderLP.market.getSemibook("bids")].map((o) => o.id),
-      ).to.not.contain(orderResult.restingOrder!.id);
     });
   });
 });
