@@ -156,6 +156,9 @@ namespace Market {
     summary: CleanSummary;
   };
 
+  /**
+   * Type for events emitted by the Mangrove market.
+   */
   export type BookSubscriptionEvent =
     | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
     | ({ name: "OfferFail" } & TCM.OfferFailEvent)
@@ -179,7 +182,7 @@ namespace Market {
    * @param gasLowerBound the minimum gas to use for the trade.
    * @param restingOrder whether to create a resting order, and if so, the parameters for the resting order.
    *
-   * The following parameters specify the kind of trade to be executed in a variety of ways:
+   * The remaining parameters specify the kind of trade to be executed in one of the following ways:
    *
    * * `{volume, limitPrice}` the volume of base token to buy or sell, and the limit price to accept.
    * * `{total, limitPrice}` the total amount of quote token to spend or receive, and the limit price to accept.
@@ -251,8 +254,15 @@ namespace Market {
     /** Whether `given` is the market's base or quote. */
     what: "base" | "quote";
   };
+
+  /**
+   * Specification of how much volume to (potentially) trade on the market, without specifying the direction of the trade.
+   */
   export type DirectionlessVolumeParams = Omit<VolumeParams, "to">;
 
+  /**
+   * Optional parameters for connecting to a Mangrove market - gives optional parameters for how the book cache behaves (see {@link Market.BookOptions}), and the timing of when the market is initialized.
+   */
   export type OptionalParams = {
     bookOptions: Market.BookOptions;
     noInit: boolean;
@@ -331,6 +341,9 @@ namespace Market {
     export type Details = _BookReturns[3];
   }
 
+  /**
+   * The arguments passed to a an order book event callback function - see {@link Market.subscribe}.
+   */
   export type BookSubscriptionCbArgument = {
     ba: Market.BA;
     offerId?: number;
@@ -362,13 +375,28 @@ namespace Market {
     | { type: "SetGasbase" }
   );
 
+  /**
+   * A callback function that is called when an order book event occurs.
+   */
   export type MarketCallback<T> = (
     cbArg: BookSubscriptionCbArgument,
     event?: BookSubscriptionEvent,
     ethersLog?: ethers.providers.Log,
   ) => T | Promise<T>;
+
+  /**
+   * A type for {@link MarketCallback} that is stored in a map.
+   */
   export type StorableMarketCallback = MarketCallback<any>;
+
+  /**
+   * A filter function that can be used to filter order book events.
+   */
   export type MarketFilter = MarketCallback<boolean>;
+
+  /**
+   * A subscription parameter that specifies how a subscription to order book events should behave.
+   */
   export type SubscriptionParam =
     | { type: "multiple" }
     | {
@@ -378,8 +406,14 @@ namespace Market {
         filter?: (...a: any[]) => boolean | Promise<boolean>;
       };
 
+  /**
+   * Order books - an asks semibook and a bids semibook.
+   */
   export type Book = { asks: Semibook; bids: Semibook };
 
+  /**
+   * A volume estimate for a trade.
+   */
   export type VolumeEstimate = {
     maxTickMatched: number | undefined; // undefined iff no offers matched
     estimatedVolume: Big;
@@ -468,9 +502,9 @@ class Market {
   }
 
   /**
-   * Initialize a new `params.base`:`params.quote` market.
+   * Initialize a new market.
    *
-   * `params.mgv` will be used as mangrove instance.
+   * @param params A set of parameters identifying the `params.base`:`params.quote` market on Mangrove to connect to.
    */
   private constructor(
     params: {
@@ -517,6 +551,9 @@ class Market {
     this.#bidsSemibook.removeEventListener(this.bidsCb);
   }
 
+  /**
+   * Initialize the market.
+   */
   initialize(): Promise<void> {
     if (typeof this.#initClosure === "undefined") {
       throw new Error("Cannot initialize already initialized market.");
@@ -577,6 +614,11 @@ class Market {
     this.#bidsSemibook = await bidsPromise;
   }
 
+  /**
+   * Get the configuration of the specified offer list of the market.
+   * @param ba bids or asks
+   * @returns The configuration of the specified offer list of the market.
+   */
   getOLKey(ba: Market.BA): OLKeyStruct {
     return ba === "asks" ? this.olKeyBaseQuote : this.olKeyQuoteBase;
   }
@@ -612,7 +654,7 @@ class Market {
   }
 
   /**
-   * Return the semibooks of this market.
+   * Return the two semibooks of this market.
    *
    * Asks are standing offers to sell base and buy quote.
    * Bids are standing offers to buy base and sell quote.
@@ -813,18 +855,14 @@ class Market {
     });
   }
 
-  //TODO:
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
    *
-   * Parameters can be of the form:
-   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`.
-   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`.
-   * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
+   * @param params Trade parameters - see {@link Market.TradeParams}.
+   * @param overrides ethers overrides for the transaction.
+   * @returns a promise that resolves to the transaction response and the result of the trade.
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order , e.g.,
-   * to account for gas.
+   * @remarks
    *
    * Will stop if
    * - book is empty, or
@@ -847,17 +885,14 @@ class Market {
     return this.trade.order("buy", params, this, overrides);
   }
 
-  //TODO:
   /**
    * Market sell order. Will attempt to sell base token for quote tokens.
-   * Params can be of the form:
-   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`.
-   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`.
-   * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order, e.g.,
-   * to account for gas.
+   * @param params Trade parameters - see {@link Market.TradeParams}.
+   * @param overrides ethers overrides for the transaction.
+   * @returns a promise that resolves to the transaction response and the result of the trade.
+   *
+   * @remarks
    *
    * Will stop if
    * - book is empty, or
@@ -921,8 +956,15 @@ class Market {
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.cleanerContract.cleanByImpersonation`.
-   * Params are:
+   * Gets parameters to send to function `market.mgv.cleanerContract.cleanByImpersonation`.
+   *
+   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate
+   *
+   * @returns a promise that resolves to the raw parameters to send to the cleaner contract
+   *
+   * @remarks
+   *
+   * In more detail, the parameters should be an object with the following fields:
    * `targets`: an array of
    *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
@@ -937,6 +979,12 @@ class Market {
     return this.trade.getRawCleanParams(params, this);
   }
 
+  /**
+   * Estimate amount of gas for a buy or sell order for the given volume.
+   * @param bs buy or sell
+   * @param volume volume to trade
+   * @returns an estimate of the gas required for the trade
+   */
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = this.getSemibook(this.trade.bsToBa(bs));
     const { density, offer_gasbase } = await semibook.getConfig();
@@ -958,7 +1006,7 @@ class Market {
     return maxMarketOrderGas;
   }
 
-  /** Uses the @see semibook.simulateMarketOrder to simulate the gas required for a market order. An overhead of 50% is added to account for changes to the book and failing offers.
+  /** Uses {@link Semibook.simulateMarketOrder} to simulate the gas required for a market order. An overhead of 50% is added to account for changes to the book and failing offers.
    * @param ba: bids or asks
    * @param gives: amount of inbound token to give to the makers
    * @param wants: amount of outbound token to receive from the makers
@@ -991,18 +1039,19 @@ class Market {
   }
 
   /**
-   * Volume estimator.
+   * Volume estimation for buying or selling:
    *
-   * if you say `estimateVolume({given:100,what:"base",to:"buy"})`,
+   * If you say `estimateVolume({given:100,what:"base",to:"buy"})`,
    *
-   * it will give you an estimate of how much quote token you would have to
-   * spend to get 100 base tokens.
+   * an estimate of how much quote token you would have to spend to get 100 base tokens will be returned.
    *
-   * if you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
+   * If you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
    *
-   * it will given you an estimate of how much base tokens you'd have to buy in
-   * order to spend 10 quote tokens.
-   * */
+   * an estimate of how much base tokens you'd have to buy in order to spend 10 quote tokens will be returned.
+   *
+   * @param params Parameters for the volume estimation - see {@link Market.VolumeParams}
+   * @returns a promise that resolves to the volume estimation.
+   */
   async estimateVolume(
     params: Market.VolumeParams,
   ): Promise<Market.VolumeEstimate> {
@@ -1016,30 +1065,41 @@ class Market {
     }
   }
 
-  /* Convenience method: estimate volume to be received given an amount of base/quote you are ready to spend. */
+  /** Convenience method: Estimate volume to be received given an amount of base/quote you are ready to spend.
+   *
+   * @param params Parameters for the volume estimation - see {@link Market.DirectionlessVolumeParams}
+   * @returns a promise that resolves to the volume estimation.
+   *
+   * @see {@link estimateVolume}
+   */
   async estimateVolumeToReceive(
     params: Market.DirectionlessVolumeParams,
   ): Promise<Market.VolumeEstimate> {
     return this.estimateVolume({ ...params, to: "sell" });
   }
 
-  /* Convenience method: estimate volume to be spent given an amount of base/quote you want to receive. */
+  /** Convenience method: Estimate volume to be spent given an amount of base/quote you want to receive.
+   *
+   * @param params Parameters for the volume estimation - see {@link Market.DirectionlessVolumeParams}
+   * @returns a promise that resolves to the volume estimation.
+   *
+   * @see {@link estimateVolume}
+   */
   async estimateVolumeToSpend(
     params: Market.DirectionlessVolumeParams,
   ): Promise<Market.VolumeEstimate> {
     return this.estimateVolume({ ...params, to: "buy" });
   }
 
-  /* Convenience method to estimate volume */
-
   /**
    * Return config local to a market.
-   * Returned object is of the form
-   * `{bids,asks}` where bids and asks are of type `localConfig`
-   * Notes:
-   * Amounts are converted to plain numbers.
-   * density is converted to public token units per gas used
-   * fee *remains* in basis points of the token being bought
+   * @returns The config for the asks and bids side of the market.
+   *
+   * @remarks
+   *
+   * * Amounts are converted to plain numbers.
+   * * density is converted to public token units per gas used
+   * * fee *remains* in basis points of the token being bought
    */
   async config(): Promise<{
     asks: Mangrove.LocalConfig;
@@ -1072,8 +1132,12 @@ class Market {
   /**
    * Subscribe to order book updates.
    *
-   * `cb` gets called whenever the order book is updated.
-   *  Its first argument `event` is a summary of the event. It has the following properties:
+   * @param cb a callback, which gets called whenever the order book is updated.
+   *
+   * @remarks
+   *
+   * The first argument of cb, `event`, is a summary of the event.
+   * It has the following properties:
    *
    * * `type` the type of change. May be: * `"OfferWrite"`: an offer was
    * inserted  or moved in the book.  * `"OfferFail"`, `"OfferSuccess"`,
@@ -1124,12 +1188,15 @@ class Market {
     });
   }
 
-  /* Stop calling a user-provided function on book-related events. */
+  /** Stop calling a user-provided callback function on book-related events. */
   unsubscribe(cb: Market.StorableMarketCallback): void {
     this.#subscriptions.delete(cb);
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @returns the outbound and inbound tokens.
+   */
   getOutboundInbound(ba: Market.BA): {
     outbound_tkn: Token;
     inbound_tkn: Token;
@@ -1137,7 +1204,12 @@ class Market {
     return Market.getOutboundInbound(ba, this.base, this.quote);
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @param base base token
+   * @param quote quote token
+   * @returns the outbound and inbound tokens.
+   */
   static getOutboundInbound(
     ba: Market.BA,
     base: Token,
@@ -1152,7 +1224,12 @@ class Market {
     };
   }
 
-  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
+  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @param gives amount of token to give
+   * @param wants amount of token to receive
+   * @returns the base and quote volumes.
+   */
   static getBaseQuoteVolumes(
     ba: Market.BA,
     gives: Big,
@@ -1174,7 +1251,12 @@ class Market {
     return ba === "asks" ? wants.div(price) : wants.mul(price);
   }
 
-  /** Determine gives and wants from a volume (in base) and a price depending on whether you're working with bids or asks. */
+  /** Determine gives and wants from a volume (in base) and a price depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @param volume volume of the offer
+   * @param price price of the offer
+   * @returns the gives and wants
+   */
   static getGivesWantsForVolumeAtPrice(
     ba: Market.BA,
     volume: Big,
@@ -1188,6 +1270,13 @@ class Market {
     };
   }
 
+  /**
+   * Determine the volume of an offer from the amount of token to give and the price.
+   * @param ba bids or asks
+   * @param gives amount of token to give
+   * @param price price of the offer
+   * @returns the volume of the offer.
+   */
   getVolumeForGivesAndPrice(ba: Market.BA, gives: Big, price: Big): Big {
     return ba === "asks" ? gives : gives.div(price);
   }
@@ -1201,7 +1290,10 @@ class Market {
     ]);
   }
 
-  /** Determine the first decimal place where the smallest price difference between neighboring offers is visible. */
+  /** Determine the first decimal place where the smallest price difference between neighboring offers is visible.
+   * @param offers offers to consider
+   * @returns the first decimal place where the smallest price difference between neighboring offers is visible.
+   */
   static getDisplayDecimalsForPriceDifferences(offers: Market.Offer[]): number {
     if (offers.length <= 1) {
       return 0;
