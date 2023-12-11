@@ -24,6 +24,9 @@ type CleanUnitParams = {
 class Trade {
   tradeEventManagement = new TradeEventManagement();
 
+  /**
+   * Get raw parameters to send to Mangrove for a buy order for the given trade and market parameters.
+   */
   getParamsForBuy(
     params: Market.TradeParams,
     market: Market.KeyResolvedForCalculation,
@@ -88,6 +91,13 @@ class Trade {
     };
   }
 
+  /**
+   * Adjust a price for slippage.
+   * @param value price to adjust
+   * @param slippage slippage in percentage points
+   * @param orderType buy or sell
+   * @returns price adjusted for slippage
+   */
   private adjustForSlippage(
     value: Big,
     slippage: number,
@@ -97,6 +107,9 @@ class Trade {
     return value.mul(100 + adjustment).div(100);
   }
 
+  /**
+   * Get raw parameters to send to Mangrove for a sell order for the given trade and market parameters.
+   */
   getParamsForSell(
     params: Market.TradeParams,
     market: Market.KeyResolvedForCalculation,
@@ -214,6 +227,13 @@ class Trade {
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
+  /**
+   * Get raw parameters to send to Mangrove for a buy or sell order for the given trade and market parameters.
+   * @param bs buy or sell
+   * @param params trade parameters - see {@link Market.TradeParams}
+   * @param market market to trade on
+   * @returns raw parameters for a market order to send to Mangrove
+   */
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { maxTick, fillVolume, fillWants } =
       bs === "buy"
@@ -239,26 +259,13 @@ class Trade {
   }
 
   /**
-   * Market buy/sell order. Will attempt to buy/sell base token for quote tokens.
-   * Params can be of the form:
-   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`.
-   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`.
-   * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
+   * Market order. Will attempt to buy or sell base token using quote tokens.
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order, e.g.,
-   * to account for gas.
-   *
-   * Will stop if
-   * - book is empty, or
-   * - price no longer good, or
-   * - `wants` tokens have been bought.
-   *
-   * @example
-   * ```
-   * const market = await mgv.market({base:"USDC",quote:"DAI"}
-   * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
-   * ```
+   * @param bs whether to buy or sell base token
+   * @param params trade parameters - see {@link Market.TradeParams}
+   * @param market the market to trade on
+   * @param overrides ethers overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the trade
    */
   order(
     bs: Market.BS,
@@ -343,15 +350,13 @@ class Trade {
   }
 
   /**
-   * Clean specific offers.
-   * Params are:
-   * `targets`: an array of
-   *    `offerId`: the offer to be cleaned
-   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `tick`: the of the offer to be cleaned
-   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned
-   * `ba`: whether to clean `asks` or `bids`
-   * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
+   * Clean a set of given offers.
+   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
+   * @param market: the market to clean on
+   * @param overrides: ethers overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the cleaning.
+   *
+   * @see {@link Market.CleanParams} for a more thorough description of cleaning parameters.
    */
   async clean(
     params: Market.CleanParams,
@@ -377,15 +382,15 @@ class Trade {
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.contract.cleanByImpersonation`.
-   * Params are:
-   * `targets`: an array of
-   *    `offerId`: the offer to be cleaned
-   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `tick`: the of the offer to be cleaned
-   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned
-   * `ba`: whether to clean `asks` or `bids`
-   * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
+   * Gets parameters to send to function `market.mgv.cleanerContract.cleanByImpersonation`.
+   *
+   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
+   * @param market: the market to clean on
+   * @returns a promise that resolves to the raw parameters to send to the cleaner contract
+   *
+   * @remarks
+   *
+   * @see {@link Market.CleanParams} for a more thorough description of cleaning parameters.
    */
   async getRawCleanParams(
     params: Market.CleanParams,
@@ -413,6 +418,12 @@ class Trade {
     );
   }
 
+  /**
+   * Estimate amount of gas for a buy or sell order for the given volume.
+   * @param bs buy or sell
+   * @param volume volume to trade
+   * @returns an estimate of the gas required for the trade
+   */
   async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { fillVolume, orderType } = this.getRawParams(bs, params, market);
 
@@ -431,6 +442,12 @@ class Trade {
     }
   }
 
+  /** Simulate the gas required for a market order.
+   * @param ba buy or sell
+   * @param params trade parameters - see {@link Market.TradeParams}
+   * @param market the market to trade on
+   * @returns an estimate of the gas required for the trade
+   */
   async simulateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { maxTick, fillVolume, fillWants, orderType } = this.getRawParams(
       bs,
@@ -577,6 +594,13 @@ class Trade {
     return result;
   }
 
+  /**
+   * Low level resting order.
+   *
+   * Returns a promise for market order result after 1 confirmation.
+   *
+   * Will throw on same conditions as ethers.js `transaction.wait`.
+   */
   async mangroveOrder(
     {
       maxTick,
