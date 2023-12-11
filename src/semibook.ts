@@ -473,26 +473,21 @@ class Semibook
     // normalize params, if no limit given then:
     // if 'buying N units' set max sell to max(uint256),
     // if 'selling N units' set buy desire to 0
-    const initialGives = Big(params.given);
+    const initialVolume = Big(params.given);
     const maxTick = params.limitPrice
       ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
       : MAX_TICK.toNumber();
 
-    const {
-      maxTickMatched,
-      remainingFillVolume,
-      totalGot,
-      totalGave,
-      feePaid,
-    } = await this.simulateMarketOrder(maxTick, initialGives, buying);
+    const { totalGot, totalGave, feePaid, maxTickMatched } =
+      await this.simulateMarketOrder(maxTick, initialVolume, buying);
 
     const estimatedVolume = buying ? totalGave : totalGot;
 
     return {
       maxTickMatched,
-      estimatedVolume,
+      estimatedVolume: estimatedVolume,
+      remainingFillVolume: initialVolume.sub(estimatedVolume),
       estimatedFee: feePaid,
-      remainingFillVolume,
     };
   }
 
@@ -508,11 +503,10 @@ class Semibook
     fillVolume: Big,
     fillWants: boolean,
   ): Promise<{
-    maxTickMatched?: number;
-    remainingFillVolume: Big;
     totalGot: Big;
     totalGave: Big;
     feePaid: Big;
+    maxTickMatched?: number;
     gas: BigNumber;
   }> {
     // require(fillVolume <= MAX_SAFE_VOLUME, "mgv/mOrder/fillVolume/tooBig");
@@ -543,7 +537,7 @@ class Semibook
       maxTickMatched: undefined as number | undefined,
       offersConsidered: 0,
       totalGasreq: BigNumber.from(0),
-      lastGasreq: 0,
+      gas: BigNumber.from(0),
     };
 
     // This corresponds to the SingleOrder sor struct in generalMarketOrder.
@@ -580,7 +574,7 @@ class Semibook
           mor.offersConsidered += 1;
           mor.maxTickMatched = offer.tick;
           mor.totalGasreq = mor.totalGasreq.add(offer.gasreq);
-          mor.lastGasreq = offer.gasreq;
+          mor.gas = mor.gas.add(offer.gasreq).add(local.offer_gasbase);
 
           mor.maxRecursionDepth--;
 
@@ -652,11 +646,9 @@ class Semibook
     // end function payTakerMinusFees
 
     // Assumes offer_gasbase is used also for the last call to internalMarketOrder where no offer is executed.
-    const gas = mor.totalGasreq.add(
-      local.offer_gasbase * (mor.offersConsidered + 1),
-    );
+    mor.gas = mor.gas.add(local.offer_gasbase);
 
-    return { ...mor, gas, remainingFillVolume: mor.fillVolume };
+    return mor;
   }
 
   /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
