@@ -74,7 +74,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
           liquiditySharing: false,
           onAave: onAave,
         })
-      ).kandelPromise
+      ).result
     ).address;
 
     return kandelStrategies.instance({ address: kandelAddress, market });

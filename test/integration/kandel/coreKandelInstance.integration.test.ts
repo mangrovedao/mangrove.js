@@ -73,7 +73,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
           liquiditySharing: false,
           onAave: onAave,
         })
-      ).kandelPromise
+      ).result
     ).address;
 
     return kandelStrategies.instance({ address: kandelAddress, market });

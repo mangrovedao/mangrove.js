@@ -59,7 +59,10 @@ class KandelSeeder {
   /** Create a new Kandel instance.
    * @param seed The parameters for sowing the Kandel instance.
    */
-  public async sow(seed: KandelSeed, overrides: ethers.Overrides = {}) {
+  public async sow(
+    seed: KandelSeed,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<GeometricKandelInstance>> {
     if (seed.liquiditySharing && !seed.onAave) {
       throw Error(
         "Liquidity sharing is only supported for AaveKandel instances.",
@@ -89,7 +92,7 @@ class KandelSeeder {
       });
     };
 
-    return { response, kandelPromise: func(response) };
+    return { response, result: func(response) };
   }
 
   /** Gets the Kandel instance created in a transaction via sow.

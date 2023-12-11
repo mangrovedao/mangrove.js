@@ -88,7 +88,7 @@ describe("Kandel MaxOffersInChunk verification", () => {
           liquiditySharing: false,
           onAave: onAave,
         })
-      ).kandelPromise;
+      ).result;
 
       // Make approvals to include deposits in cost
       await waitForTransactions(await kandel.approveIfHigher());

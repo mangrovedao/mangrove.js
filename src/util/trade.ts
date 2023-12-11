@@ -265,10 +265,7 @@ class Trade {
     params: Market.TradeParams,
     market: Market,
     overrides: ethers.Overrides = {},
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     const { maxTick, fillVolume, fillWants, restingOrderParams, orderType } =
       this.getRawParams(bs, params, market);
     switch (orderType) {
@@ -302,6 +299,47 @@ class Trade {
       default:
         throw new Error(`Unknown order type ${orderType}`);
     }
+  }
+
+  /** Retract a resting order posted by MangroveOrder.
+   *
+   * @param ba whether the offer is a bid or ask
+   * @param id the offer id
+   * @param deprovision whether to deprovision the offer. If true, the offer's provision will be returned to the maker's balance on Mangrove.
+   * @param overrides overrides for the transaction
+   */
+  async retractRestingOrder(
+    market: Market,
+    ba: Market.BA,
+    id: number,
+    deprovision = false,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
+    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+
+    let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
+
+    // retract offer
+    txPromise = market.mgv.orderContract.retractOffer(
+      {
+        outbound_tkn: outbound_tkn.address,
+        inbound_tkn: inbound_tkn.address,
+        tickSpacing: market.tickSpacing,
+      },
+      id,
+      deprovision,
+      overrides,
+    );
+
+    logger.debug("Retracting MangroveOrder offer", {
+      contextInfo: "mangrove.retractMangroveOrder",
+      data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
+    });
+
+    return {
+      result: txPromise.then((receipt) => receipt.wait()).then(() => {}),
+      response: txPromise,
+    };
   }
 
   /**
@@ -464,10 +502,7 @@ class Trade {
       gasLowerBound: ethers.BigNumberish;
     },
     overrides: ethers.Overrides,
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     const [outboundTkn, inboundTkn] =
       orderType === "buy"
         ? [market.base, market.quote]
@@ -565,10 +600,7 @@ class Trade {
       gasLowerBound: ethers.BigNumberish;
     },
     overrides: ethers.Overrides,
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     const { postRestingOrder, provision } =
       this.getRestingOrderParams(restingParams);
     const overrides_ = {

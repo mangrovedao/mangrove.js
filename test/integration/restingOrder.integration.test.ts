@@ -1,5 +1,6 @@
 // Integration tests for SimpleMaker.ts
 import { afterEach, beforeEach, describe, it } from "mocha";
+import { expect } from "chai";
 
 import { utils } from "ethers";
 
@@ -16,7 +17,10 @@ import { AbstractRouter } from "../../src/types/typechain";
 
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { Big } from "big.js";
-import { waitForTransaction } from "../../src/util/test/mgvIntegrationTestUtil";
+import {
+  waitForBlock,
+  waitForTransaction,
+} from "../../src/util/test/mgvIntegrationTestUtil";
 import configuration from "../../src/configuration";
 
 //pretty-print when using console.log
@@ -498,6 +502,51 @@ describe("RestingOrder", () => {
         orderAgainResult.offerWrites[0].offer,
         "Resting order was not correct",
       );
+    });
+
+    it("retract resting order", async () => {
+      const provision = await orderLP.computeBidProvision();
+
+      await w(tokenB.approve(router.address));
+      await w(tokenA.approve(router.address));
+
+      const buyPromises = await orderLP.market.buy({
+        limitPrice: 1,
+        volume: 20,
+        restingOrder: { provision: provision },
+      });
+
+      const buyTxReceipt = await waitForTransaction(buyPromises.response);
+
+      const orderResult = await buyPromises.result;
+      orderResult.summary = orderResult.summary as Market.OrderSummary;
+
+      assert(
+        orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+        "Resting order was not posted",
+      );
+
+      await waitForBlock(mgv, buyTxReceipt.blockNumber);
+
+      expect(
+        [...orderLP.market.getSemibook("bids")].map((o) => o.id),
+      ).to.contain(orderResult.restingOrder!.id);
+
+      const retractPromises = await orderLP.market.retractRestingOrder(
+        "bids",
+        orderResult.restingOrder!.id,
+      );
+      const retractTxReceipt = await waitForTransaction(
+        retractPromises.response,
+      );
+      assert(retractTxReceipt.blockNumber > 0, "Retract tx was not mined");
+      await retractPromises.result;
+
+      await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+      expect(
+        [...orderLP.market.getSemibook("bids")].map((o) => o.id),
+      ).to.not.contain(orderResult.restingOrder!.id);
     });
   });
 });

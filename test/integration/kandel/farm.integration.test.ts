@@ -68,7 +68,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
         liquiditySharing: false,
         onAave: false,
       })
-    ).kandelPromise;
+    ).result;
 
     await (
       await seeder.sow({
@@ -76,7 +76,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
         liquiditySharing: false,
         onAave: false,
       })
-    ).kandelPromise;
+    ).result;
 
     await (
       await seeder.sow({
@@ -84,7 +84,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
         liquiditySharing: false,
         onAave: false,
       })
-    ).kandelPromise;
+    ).result;
 
     await (
       await seeder.sow({
@@ -92,7 +92,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
         liquiditySharing: false,
         onAave: true,
       })
-    ).kandelPromise;
+    ).result;
 
     // other maker
     const otherSeeder = new KandelStrategies(mgvAdmin).seeder;
@@ -102,7 +102,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
         liquiditySharing: false,
         onAave: true,
       })
-    ).kandelPromise;
+    ).result;
   });
 
   afterEach(async () => {
