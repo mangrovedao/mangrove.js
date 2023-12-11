@@ -132,7 +132,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
             await distribution.getRequiredProvision({
               market,
               gasreq: params.gasreq,
-              gasprice: (await mgv.config()).gasprice * 2,
+              gasprice: mgv.config().gasprice * 2,
             })
           ).toNumber(),
         );

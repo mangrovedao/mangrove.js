@@ -25,6 +25,11 @@ export class Density {
     this.#outboundDecimals = outboundDecimals;
   }
 
+  /** Create a copy of this Density object. */
+  clone(): Density {
+    return new Density(this.#rawDensity, this.#outboundDecimals);
+  }
+
   /**
    * Factory method for creating a Density object from a 96X32 density.
    *

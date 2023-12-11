@@ -4,16 +4,23 @@ import { expect } from "chai";
 import { afterEach, beforeEach, describe, it } from "mocha";
 
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-import { assertApproxEqAbs, newOffer, toWei } from "../util/helpers";
+import {
+  assertApproxEqAbs,
+  createTickPriceHelper,
+  newOffer,
+  toWei,
+} from "../util/helpers";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
-import { Mangrove, Semibook } from "../../src";
+import { Mangrove, Market, Semibook, TickPriceHelper } from "../../src";
 
 import { TransactionReceipt } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import { Density } from "../../src/util/Density";
 import * as DensityLib from "../../src/util/coreCalculations/DensityLib";
+import { Bigish } from "../../src/types";
+import { waitForBlock } from "../../src/util/test/mgvIntegrationTestUtil";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -64,7 +71,7 @@ describe("Semibook integration tests suite", function () {
         }),
       );
 
-      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+      await waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
@@ -89,7 +96,7 @@ describe("Semibook integration tests suite", function () {
           tick: 1,
         }),
       );
-      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+      await waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
@@ -105,63 +112,6 @@ describe("Semibook integration tests suite", function () {
   });
 
   describe("getConfig", () => {
-    it("returns the config of a block, when given blocknumber", async function () {
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      const semibook = market.getSemibook("asks");
-      const fee = 1;
-      const density = DensityLib.paramsTo96X32_centiusd(
-        BigNumber.from(market.base.decimals),
-        BigNumber.from(1),
-        BigNumber.from(1800 * 100),
-        BigNumber.from(1 * 100),
-        BigNumber.from(3),
-      );
-      const gasbase = 3000;
-      const active = await waitForTransaction(
-        mgvAdmin.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          fee,
-          density,
-          gasbase,
-        ),
-      );
-      await waitForTransaction(
-        mgvAdmin.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          3,
-          BigNumber.from("4000000000000000000"),
-          1,
-        ),
-      );
-      const config = await semibook.getConfig(active.blockNumber);
-
-      expect(config.fee).to.be.eq(
-        fee,
-        `fee should be ${fee}, but is ${config.fee}`,
-      );
-      const densityFrom96X32 = Density.from96X32(density, market.base.decimals);
-      expect(densityFrom96X32.eq(config.density)).to.be.eq(
-        true,
-        `density should be ${densityFrom96X32}, but is ${config.density.toString()}`,
-      );
-      expect(config.offer_gasbase).to.be.eq(
-        gasbase,
-        `offer_gasbase should be ${gasbase}, but is ${config.offer_gasbase}`,
-      );
-    });
-
     it("returns the config of the latest block as Mangrove.RawConfig, when given no blocknumber", async function () {
       const market = await mgv.market({
         base: "TokenA",
@@ -197,7 +147,7 @@ describe("Semibook integration tests suite", function () {
         BigNumber.from(1 * 100),
         BigNumber.from(3),
       );
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         mgvAdmin.contract.activate(
           {
             outbound_tkn: market.base.address,
@@ -209,14 +159,17 @@ describe("Semibook integration tests suite", function () {
           gasbase,
         ),
       );
-      const config = await semibook.getConfig();
+
+      await waitForBlock(mgv, tx.blockNumber);
+
+      const config = semibook.config();
 
       expect(config.fee).to.be.eq(fee);
       const newDensityFrom96X32 = Density.from96X32(
         newDensity,
         market.base.decimals,
       );
-      expect(config.density.eq(newDensityFrom96X32)).to.be.eq(
+      expect(config.density.eq(newDensityFrom96X32)).to.equal(
         true,
         `Expected ${config.density.toString()} to be equal to ${newDensityFrom96X32.toString()}`,
       );
@@ -243,7 +196,7 @@ describe("Semibook integration tests suite", function () {
         }),
       );
 
-      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+      await waitForBlock(mgv, tx.blockNumber);
 
       const bestInCache = market.getSemibook("asks").getBestInCache();
       expect(bestInCache).to.be.eq(1);
@@ -261,7 +214,7 @@ describe("Semibook integration tests suite", function () {
           tick: 1,
         }),
       );
-      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+      await waitForBlock(mgv, tx.blockNumber);
 
       const market = await mgv.market({
         base: "TokenA",
@@ -275,630 +228,615 @@ describe("Semibook integration tests suite", function () {
   });
 
   describe("estimateVolume", () => {
+    let askTickPriceHelper: TickPriceHelper;
+
+    beforeEach(async function () {
+      askTickPriceHelper = await createTickPriceHelper({
+        mgv,
+        ba: "asks",
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
+    });
+
+    function getExpectedEstimates(params: {
+      given: Bigish;
+      to: "buy" | "sell";
+      price: Bigish;
+      fee: number;
+      expectedRemainingFillVolume: Bigish;
+    }) {
+      const given = Big(params.given);
+      const expectedRemainingFillVolume = Big(
+        params.expectedRemainingFillVolume,
+      );
+      const price = Big(params.price);
+      const fee = params.fee;
+
+      if (params.to === "buy") {
+        const baseVolume = given.sub(expectedRemainingFillVolume);
+        const quoteVolume = baseVolume.mul(price);
+        return {
+          expectedFee: baseVolume.mul(fee).div(10_000),
+          expectedVolume: quoteVolume,
+        };
+      } else {
+        const quoteVolume = given.sub(expectedRemainingFillVolume);
+        const baseVolume = quoteVolume.div(price);
+        const expectedFee = baseVolume.mul(fee).div(10_000);
+        return {
+          expectedFee,
+          expectedVolume: quoteVolume.div(price).sub(expectedFee),
+        };
+      }
+    }
+
+    function assertApproxEq(params: {
+      volumeEstimate: Market.VolumeEstimate;
+      expectedVolume: Bigish;
+      expectedFee: Bigish;
+      expectedRemainingFillVolume: Bigish;
+      maxTickMatched?: number;
+    }) {
+      assertApproxEqAbs(
+        params.volumeEstimate.estimatedVolume,
+        params.expectedVolume,
+        0.001,
+        "estimatedVolume is wrong",
+      );
+      assertApproxEqAbs(
+        params.volumeEstimate.remainingFillVolume,
+        params.expectedRemainingFillVolume,
+        0.001,
+        "remainingFillVolume is wrong",
+      );
+      assertApproxEqAbs(
+        params.volumeEstimate.estimatedFee,
+        params.expectedFee,
+        0.001,
+        "expectedFee is wrong",
+      );
+      assert.equal(
+        params.volumeEstimate.maxTickMatched,
+        params.maxTickMatched,
+        "maxTickMatched is wrong",
+      );
+    }
+
     (["buy", "sell"] as const).forEach((to) =>
-      describe(`estimateVolume({to: ${to}}) - cache tests`, () => {
-        it("returns all given as residue when cache and offer list is empty", async function () {
-          const market = await mgv.market({
-            base: "TokenA",
-            quote: "TokenB",
-            tickSpacing: 1,
+      describe(`estimateVolume({to: ${to}})`, () => {
+        describe("cache tests", () => {
+          it("returns all given as residue when cache and offer list is empty", async function () {
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+              bookOptions: { targetNumberOfTicks: 0 },
+            });
+            const semibook = market.getSemibook("asks");
+            const volume = await semibook.estimateVolume({ given: 1, to });
+            expect(volume).to.deep.equal({
+              maxTickMatched: undefined,
+              estimatedVolume: Big(0),
+              estimatedFee: Big(0),
+              remainingFillVolume: Big(1),
+            });
           });
-          const semibook = market.getSemibook("asks");
-          const volume = await semibook.estimateVolume({ given: 1, to });
-          expect(volume).to.deep.equal({
-            maxTickMatched: undefined,
-            estimatedVolume: Big(0),
-            remainingFillVolume: Big(1),
+
+          it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
+            const tick = askTickPriceHelper.tickFromPrice(1);
+
+            // Post 2 asks
+            let tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: "1",
+                tick,
+              }),
+            );
+            tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: "1",
+                tick,
+              }),
+            );
+
+            await waitForBlock(mgv, tx.blockNumber);
+
+            // Connect to market but do not load offers
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+              bookOptions: { targetNumberOfTicks: 0, chunkSize: 1 },
+            });
+            const semibook = market.getSemibook("asks");
+            expect(semibook.size()).to.equal(0);
+
+            const price = semibook.tickPriceHelper.priceFromTick(tick);
+            const given = 1;
+
+            const expectedRemainingFillVolume = 0;
+            const { expectedVolume, expectedFee } = getExpectedEstimates({
+              given,
+              to,
+              price,
+              fee: semibook.config().fee,
+              expectedRemainingFillVolume,
+            });
+
+            const volume = await semibook.estimateVolume({ given, to });
+
+            assertApproxEqAbs(
+              volume.estimatedVolume,
+              expectedVolume,
+              0.001,
+              "estimatedVolume is wrong",
+            );
+            assertApproxEqAbs(
+              volume.remainingFillVolume,
+              expectedRemainingFillVolume,
+              0.001,
+              "remainingFillVolume is wrong",
+            );
+            assertApproxEqAbs(
+              volume.estimatedFee,
+              expectedFee,
+              0.001,
+              "expectedFee is wrong",
+            );
+          });
+
+          it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
+            const tick = askTickPriceHelper.tickFromPrice(1);
+            // Post 2 asks at different ticks
+            let tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: "1",
+                tick,
+              }),
+            );
+            tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: "1",
+                tick: tick + 1,
+              }),
+            );
+
+            await waitForBlock(mgv, tx.blockNumber);
+
+            // Connect to market but only load 1 offer
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+              bookOptions: { targetNumberOfTicks: 1, chunkSize: 1 },
+            });
+            const semibook = market.getSemibook("asks");
+            expect(semibook.size()).to.equal(1);
+
+            // Price difference between the two ticks is negligible
+            const price = semibook.tickPriceHelper.priceFromTick(tick);
+            const given = 2;
+
+            const expectedRemainingFillVolume = 0;
+            const { expectedVolume, expectedFee } = getExpectedEstimates({
+              given,
+              to,
+              price,
+              fee: semibook.config().fee,
+              expectedRemainingFillVolume,
+            });
+
+            const volume = await semibook.estimateVolume({ given, to });
+
+            assertApproxEqAbs(
+              volume.estimatedVolume,
+              expectedVolume,
+              0.001,
+              "estimatedVolume is wrong",
+            );
+            assertApproxEqAbs(
+              volume.remainingFillVolume,
+              expectedRemainingFillVolume,
+              0.001,
+              "remainingFillVolume is wrong",
+            );
+            assertApproxEqAbs(
+              volume.estimatedFee,
+              expectedFee,
+              0.001,
+              "expectedFee is wrong",
+            );
+          });
+
+          it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
+            const tick = askTickPriceHelper.tickFromPrice(1);
+            // Post 2 asks at different ticks
+            let tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: "1",
+                tick,
+              }),
+            );
+            tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: "1",
+                tick: tick + 1,
+              }),
+            );
+
+            await waitForBlock(mgv, tx.blockNumber);
+
+            // Connect to market but only load 1 offer
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+              bookOptions: { targetNumberOfTicks: 1, chunkSize: 1 },
+            });
+            const semibook = market.getSemibook("asks");
+            expect(semibook.size()).to.equal(1);
+
+            // Price difference between the two ticks is negligible
+            const price = semibook.tickPriceHelper.priceFromTick(tick);
+            const given = 3;
+
+            const expectedRemainingFillVolume = 1;
+            const { expectedVolume, expectedFee } = getExpectedEstimates({
+              given,
+              to,
+              price,
+              fee: semibook.config().fee,
+              expectedRemainingFillVolume,
+            });
+
+            const volume = await semibook.estimateVolume({ given, to });
+
+            assertApproxEqAbs(
+              volume.estimatedVolume,
+              expectedVolume,
+              0.001,
+              "estimatedVolume is wrong",
+            );
+            assertApproxEqAbs(
+              volume.remainingFillVolume,
+              expectedRemainingFillVolume,
+              0.001,
+              "remainingFillVolume is wrong",
+            );
+            assertApproxEqAbs(
+              volume.estimatedFee,
+              expectedFee,
+              0.001,
+              "expectedFee is wrong",
+            );
           });
         });
 
-        it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
-          const market = await mgv.market({
-            base: "TokenA",
-            quote: "TokenB",
-            tickSpacing: 1,
-            bookOptions: { targetNumberOfTicks: 0 },
+        describe("calculation tests", () => {
+          it("returns zero when given is zero", async function () {
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+            });
+            const semibook = market.getSemibook("asks");
+
+            const tick = semibook.tickPriceHelper.tickFromPrice(2);
+            const tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: "1",
+                tick,
+              }),
+            );
+
+            await waitForBlock(mgv, tx.blockNumber);
+
+            const volumeEstimate = await semibook.estimateVolume({
+              given: 0,
+              to,
+            });
+
+            assertApproxEq({
+              volumeEstimate,
+              expectedVolume: 0,
+              expectedFee: 0,
+              expectedRemainingFillVolume: 0,
+              maxTickMatched: undefined,
+            });
           });
-          const semibook = market.getSemibook("asks");
 
-          const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
+          it("reversed market: returns zero when given is zero", async function () {
+            const market = await mgv.market({
+              base: "TokenB",
+              quote: "TokenA",
+              tickSpacing: 1,
+            });
+            const semibook = market.getSemibook("asks");
 
-          // Put one offer on asks
-          const tx = await waitForTransaction(
-            newOffer({
-              mgv,
-              outbound: "TokenA",
-              inbound: "TokenB",
-              gives: "1",
-              tick: tick,
-            }),
-          );
+            const tick = semibook.tickPriceHelper.tickFromPrice(2);
+            const tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenB",
+                inbound: "TokenA",
+                gives: "1",
+                tick,
+              }),
+            );
 
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+            await waitForBlock(mgv, tx.blockNumber);
 
-          const volume = await semibook.estimateVolume({ given: 1, to });
+            const volumeEstimate = await semibook.estimateVolume({
+              given: 0,
+              to,
+            });
 
-          assertApproxEqAbs(
-            volume.estimatedVolume,
-            1,
-            0.001,
-            "estimatedVolume should be 1",
-          );
-          assertApproxEqAbs(
-            volume.remainingFillVolume,
-            0,
-            0.001,
-            "remainingFillVolume should be 0",
-          );
-        });
-
-        it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
-          // Load 1 offer in cache
-          const market = await mgv.market({
-            base: "TokenA",
-            quote: "TokenB",
-            tickSpacing: 1,
-            bookOptions: { targetNumberOfTicks: 1 },
+            assertApproxEq({
+              volumeEstimate,
+              expectedVolume: 0,
+              expectedFee: 0,
+              expectedRemainingFillVolume: 0,
+              maxTickMatched: undefined,
+            });
           });
-          const semibook = market.getSemibook("asks");
 
-          const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
+          it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+            });
 
-          const ask1 = await (
-            await newOffer({
-              mgv,
-              outbound: "TokenA",
-              inbound: "TokenB",
-              gives: "1",
-              tick: tick,
-            })
-          ).wait();
+            const semibook = market.getSemibook("asks");
 
-          // Put one offer on asks
-          await mgvTestUtil.waitForBlock(mgv, ask1.blockNumber);
+            const offerPrice = 2;
+            const offerGives = 1;
+            const offerTick =
+              semibook.tickPriceHelper.tickFromPrice(offerPrice);
+            const tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: offerGives,
+                tick: offerTick,
+              }),
+            );
 
-          const ask2 = await (
-            await newOffer({
-              mgv,
-              outbound: "TokenA",
-              inbound: "TokenB",
-              gives: "2",
-              tick: tick,
-            })
-          ).wait();
+            await waitForBlock(mgv, tx.blockNumber);
 
-          await mgvTestUtil.waitForBlock(mgv, ask2.blockNumber);
+            const expectedRemainingFillVolume = 1;
 
-          const volume = await semibook.estimateVolume({ given: 2, to });
+            const price = semibook.tickPriceHelper.priceFromTick(offerTick);
+            const given =
+              (to === "buy" ? offerGives : offerGives * offerPrice) +
+              expectedRemainingFillVolume;
 
-          assertApproxEqAbs(
-            volume.estimatedVolume,
-            2,
-            0.001,
-            "estimatedVolume should be 2",
-          );
-          assertApproxEqAbs(
-            volume.remainingFillVolume,
-            0,
-            0.001,
-            "remainingFillVolume should be 0",
-          );
-        });
+            const { expectedVolume, expectedFee } = getExpectedEstimates({
+              given,
+              to,
+              price,
+              fee: semibook.config().fee,
+              expectedRemainingFillVolume,
+            });
 
-        it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
-          const market = await mgv.market({
-            base: "TokenA",
-            quote: "TokenB",
-            tickSpacing: 1,
-            bookOptions: { targetNumberOfTicks: 1 },
+            const volumeEstimate = await semibook.estimateVolume({ given, to });
+
+            assertApproxEq({
+              volumeEstimate,
+              expectedVolume,
+              expectedFee,
+              expectedRemainingFillVolume,
+              maxTickMatched: offerTick,
+            });
           });
-          const semibook = market.getSemibook("asks");
 
-          const tick = semibook.tickPriceHelper.tickFromVolumes(1, 1);
-          // Put two offers on asks
-          const offer1 = await (
-            await newOffer({
-              mgv,
-              outbound: "TokenA",
-              inbound: "TokenB",
-              gives: "1",
-              tick,
-            })
-          ).wait();
+          it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+            });
+            const semibook = market.getSemibook("asks");
 
-          await mgvTestUtil.waitForBlock(mgv, offer1.blockNumber);
+            const offer1Price = 2;
+            const offer1Gives = 1;
+            const offer1Tick =
+              semibook.tickPriceHelper.tickFromPrice(offer1Price);
+            await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: offer1Gives,
+                tick: offer1Tick,
+              }),
+            );
+            const offer2Price = 2;
+            const offer2Gives = 1;
+            const offer2Tick =
+              semibook.tickPriceHelper.tickFromPrice(offer2Price);
+            const tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: offer2Gives,
+                tick: offer2Tick,
+              }),
+            );
 
-          const offer2 = await (
-            await newOffer({
-              mgv,
-              outbound: "TokenA",
-              inbound: "TokenB",
-              gives: "1",
-              tick,
-            })
-          ).wait();
+            await waitForBlock(mgv, tx.blockNumber);
 
-          await mgvTestUtil.waitForBlock(mgv, offer2.blockNumber);
+            const expectedRemainingFillVolume = 1;
 
-          const volume = await semibook.estimateVolume({ given: 3, to });
+            // Total price will be the average of the offers since they give the same amounts
+            const price = semibook.tickPriceHelper
+              .priceFromTick(offer1Tick)
+              .add(semibook.tickPriceHelper.priceFromTick(offer2Tick))
+              .div(2);
+            const given =
+              (to === "buy"
+                ? offer1Gives + offer2Gives
+                : offer1Gives * offer1Price + offer2Gives * offer2Price) +
+              expectedRemainingFillVolume;
 
-          assertApproxEqAbs(
-            volume.estimatedVolume,
-            2,
-            0.001,
-            "estimatedVolume should be 2",
-          );
-          assertApproxEqAbs(
-            volume.remainingFillVolume,
-            1,
-            0.001,
-            "remainingFillVolume should be 1",
-          );
+            const { expectedVolume, expectedFee } = getExpectedEstimates({
+              given,
+              to,
+              price,
+              fee: semibook.config().fee,
+              expectedRemainingFillVolume,
+            });
+
+            const volumeEstimate = await semibook.estimateVolume({ given, to });
+
+            assertApproxEq({
+              volumeEstimate,
+              expectedVolume,
+              expectedFee,
+              expectedRemainingFillVolume,
+              maxTickMatched: offer2Tick,
+            });
+          });
+
+          it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+            });
+            const semibook = market.getSemibook("asks");
+
+            const offerPrice = 2;
+            const offerGives = 2;
+            const offerTick =
+              semibook.tickPriceHelper.tickFromPrice(offerPrice);
+            const tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: offerGives,
+                tick: offerTick,
+              }),
+            );
+
+            await waitForBlock(mgv, tx.blockNumber);
+
+            const expectedRemainingFillVolume = 0;
+
+            const price = semibook.tickPriceHelper.priceFromTick(offerTick);
+            const given =
+              (to === "buy" ? offerGives : offerGives * offerPrice) - 1;
+
+            const { expectedVolume, expectedFee } = getExpectedEstimates({
+              given,
+              to,
+              price,
+              fee: semibook.config().fee,
+              expectedRemainingFillVolume,
+            });
+
+            const volumeEstimate = await semibook.estimateVolume({ given, to });
+
+            assertApproxEq({
+              volumeEstimate,
+              expectedVolume,
+              expectedFee,
+              expectedRemainingFillVolume,
+              maxTickMatched: offerTick,
+            });
+          });
+
+          it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
+            const market = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 1,
+            });
+
+            const semibook = market.getSemibook("asks");
+
+            const offersPrice = 2;
+            const offer1Gives = 1;
+            const offersTick =
+              semibook.tickPriceHelper.tickFromPrice(offersPrice);
+            await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: offer1Gives,
+                tick: offersTick,
+              }),
+            );
+            const offer2Gives = 2;
+            const tx = await waitForTransaction(
+              newOffer({
+                mgv,
+                outbound: "TokenA",
+                inbound: "TokenB",
+                gives: offer2Gives,
+                tick: offersTick,
+              }),
+            );
+
+            await waitForBlock(mgv, tx.blockNumber);
+
+            const expectedRemainingFillVolume = 0;
+
+            // Both offers have same price
+            const price = semibook.tickPriceHelper.priceFromTick(offersTick);
+            const given =
+              (to === "buy"
+                ? offer1Gives + offer2Gives
+                : offer1Gives * offersPrice + offer2Gives * offersPrice) - 1;
+
+            const { expectedVolume, expectedFee } = getExpectedEstimates({
+              given,
+              to,
+              price,
+              fee: semibook.config().fee,
+              expectedRemainingFillVolume,
+            });
+
+            const volumeEstimate = await semibook.estimateVolume({ given, to });
+
+            assertApproxEq({
+              volumeEstimate,
+              expectedVolume,
+              expectedFee,
+              expectedRemainingFillVolume,
+              maxTickMatched: offersTick,
+            });
+          });
         });
       }),
     );
-
-    describe("estimateVolume({to: buy}) - calculation tests", () => {
-      it("returns zero when given is zero", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-
-        const semibook = market.getSemibook("asks");
-
-        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick,
-          }),
-        );
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-        const volume = await semibook.estimateVolume({ given: 0, to: "buy" });
-        assert.deepStrictEqual(
-          volume.estimatedVolume.toFixed(),
-          "0",
-          "estimatedVolume should be 0",
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "0",
-          "remainingFillVolume should be 0",
-        );
-      });
-
-      it("reversed market: returns zero when given is zero", async function () {
-        const market = await mgv.market({
-          base: "TokenB",
-          quote: "TokenA",
-          tickSpacing: 1,
-        });
-        const semibook = market.getSemibook("asks");
-        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenB",
-            inbound: "TokenA",
-            gives: "1",
-            tick: tick,
-          }),
-        );
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-        const volume = await semibook.estimateVolume({ given: 0, to: "buy" });
-
-        assert.deepStrictEqual(
-          volume.estimatedVolume.toFixed(),
-          "0",
-          "estimatedVolume should be 0",
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "0",
-          "remainingFillVolume should be 0",
-        );
-      });
-
-      it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-
-        const semibook = market.getSemibook("asks");
-        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-        const volume = await semibook.estimateVolume({ given: 2, to: "buy" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick.toString(),
-          `tick should be ${tick.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.sub(2).abs().lt(0.001),
-          true,
-          `estimatedVolume should be 2, but is ${volume.estimatedVolume.toFixed()}`,
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "1",
-          "remainingFillVolume should be 1",
-        );
-      });
-
-      it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-
-        const semibook = market.getSemibook("asks");
-
-        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick: tick1,
-          }),
-        );
-
-        const tick2 = semibook.tickPriceHelper.tickFromVolumes(3, 1);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick: tick2,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-        const volume = await semibook.estimateVolume({ given: 3, to: "buy" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick2.toString(),
-          `tick should be ${tick2.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.sub(5).abs().lt(0.001),
-          true,
-          `estimatedVolume should be 5, but is ${volume.estimatedVolume.toFixed()}`,
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "1",
-          "remainingFillVolume should be 1",
-        );
-      });
-
-      it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-
-        const semibook = market.getSemibook("asks");
-
-        const tick = semibook.tickPriceHelper.tickFromVolumes(4, 2);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "2",
-            tick,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-        const volume = await semibook.estimateVolume({ given: 1, to: "buy" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick.toString(),
-          `tick should be ${tick.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.sub(2).abs().lt(0.001),
-          true,
-          `estimatedVolume should be 2, but is ${volume.estimatedVolume.toFixed()}`,
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "0",
-          "remainingFillVolume should be 0",
-        );
-      });
-
-      it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-
-        const semibook = market.getSemibook("asks");
-
-        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick: tick1,
-          }),
-        );
-        const tick2 = semibook.tickPriceHelper.tickFromVolumes(4, 2);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "2",
-            tick: tick2,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-        const volume = await semibook.estimateVolume({ given: 2, to: "buy" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick2.toString(),
-          `tick should be ${tick2.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.sub(4).abs().lt(0.001),
-          true,
-          "estimatedVolume should be 4",
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "0",
-          "remainingFillVolume should be 0",
-        );
-      });
-    });
-
-    describe("estimateVolume({to: sell}) - calculation tests", () => {
-      it("returns zero when given is zero", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-        const semibook = market.getSemibook("asks");
-
-        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-        const volume = await semibook.estimateVolume({ given: 0, to: "sell" });
-
-        assert.deepStrictEqual(
-          volume.estimatedVolume.toFixed(),
-          "0",
-          `estimatedVolume should be 0, but is ${volume.estimatedVolume.toFixed()}`,
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "0",
-          `remainingFillVolume should be 0, but is ${volume.remainingFillVolume.toFixed()}`,
-        );
-      });
-
-      it("estimates all available volume when offer list has 1 offer with insufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-
-        const semibook = market.getSemibook("asks");
-
-        const tick = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-        const volume = await semibook.estimateVolume({ given: 3, to: "sell" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick.toString(),
-          `tick should be ${tick.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.toFixed(),
-          "1",
-          "estimatedVolume should be 1",
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.sub(1).abs().lt(0.001),
-          true,
-          "remainingFillVolume should be 1",
-        );
-      });
-
-      it("estimates all available volume when offer list has multiple offers with insufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-        const semibook = market.getSemibook("asks");
-
-        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick: tick1,
-          }),
-        );
-        const tick2 = semibook.tickPriceHelper.tickFromVolumes(3, 1);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick: tick2,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-        const volume = await semibook.estimateVolume({ given: 6, to: "sell" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick2.toString(),
-          `tick should be ${tick2.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.toFixed(),
-          "2",
-          "estimatedVolume should be 2",
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.sub(1).abs().lt(0.001),
-          true,
-          `remainingFillVolume should be 1, but is ${volume.remainingFillVolume.toFixed()}`,
-        );
-      });
-
-      it("estimates volume and no residue when offer list has 1 offer with sufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-        const semibook = market.getSemibook("asks");
-
-        const tick = semibook.tickPriceHelper.tickFromVolumes(4, 2);
-
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "2",
-            tick,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-        const volume = await semibook.estimateVolume({ given: 2, to: "sell" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick.toString(),
-          `tick should be ${tick.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.sub(1).abs().lt(0.001),
-          true,
-          "estimatedVolume should be 1",
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "0",
-          "remainingFillVolume should be 0",
-        );
-      });
-
-      it("estimates volume and no residue when offer list has multiple offers which together have sufficient volume", async function () {
-        const market = await mgv.market({
-          base: "TokenA",
-          quote: "TokenB",
-          tickSpacing: 1,
-        });
-
-        const semibook = market.getSemibook("asks");
-
-        const tick1 = semibook.tickPriceHelper.tickFromVolumes(2, 1);
-        await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "1",
-            tick: tick1,
-          }),
-        );
-        const tick2 = semibook.tickPriceHelper.tickFromVolumes(4, 2);
-        const tx = await waitForTransaction(
-          newOffer({
-            mgv,
-            outbound: "TokenA",
-            inbound: "TokenB",
-            gives: "2",
-            tick: tick2,
-          }),
-        );
-
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
-
-        const volume = await semibook.estimateVolume({ given: 3, to: "sell" });
-        assert.deepStrictEqual(
-          volume.maxTickMatched?.toString(),
-          tick2.toString(),
-          `tick should be ${tick2.toString()}`,
-        );
-        assert.deepStrictEqual(
-          volume.estimatedVolume.sub(1.5).abs().lt(0.001),
-          true,
-          "estimatedVolume should be 1.5",
-        );
-        assert.deepStrictEqual(
-          volume.remainingFillVolume.toFixed(),
-          "0",
-          "remainingFillVolume should be 0",
-        );
-      });
-    });
   });
 
   describe("initialization options", () => {
@@ -914,7 +852,7 @@ describe("Semibook integration tests suite", function () {
           }),
         );
 
-        await mgvTestUtil.waitForBlock(mgv, tx!.blockNumber);
+        await waitForBlock(mgv, tx!.blockNumber);
       }
       async function createOffers(count: number) {
         if (count < 1) {
@@ -1090,7 +1028,7 @@ describe("Semibook integration tests suite", function () {
             tick: 2,
           }),
         );
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+        await waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
@@ -1125,7 +1063,7 @@ describe("Semibook integration tests suite", function () {
           }),
         );
 
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+        await waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
@@ -1177,7 +1115,7 @@ describe("Semibook integration tests suite", function () {
             tick: 4,
           }),
         );
-        await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+        await waitForBlock(mgv, tx.blockNumber);
 
         const market = await mgv.market({
           base: "TokenA",
@@ -1252,7 +1190,7 @@ describe("Semibook integration tests suite", function () {
               tick: tick2,
             }),
           );
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+          await waitForBlock(mgv, tx.blockNumber);
 
           expect(semibook.size()).to.equal(2);
         });
@@ -1284,7 +1222,7 @@ describe("Semibook integration tests suite", function () {
               tick: tick1,
             })
           ).wait();
-          await mgvTestUtil.waitForBlock(mgv, offer1.blockNumber);
+          await waitForBlock(mgv, offer1.blockNumber);
 
           const tick2 = semibook.tickPriceHelper.tickFromPrice(1.002);
           await newOffer({
@@ -1335,7 +1273,7 @@ describe("Semibook integration tests suite", function () {
               tick: 4,
             }),
           );
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+          await waitForBlock(mgv, tx.blockNumber);
 
           const market = await mgv.market({
             base: "TokenA",
@@ -1401,7 +1339,7 @@ describe("Semibook integration tests suite", function () {
               tick,
             }),
           );
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+          await waitForBlock(mgv, tx.blockNumber);
 
           const newMgv = await Mangrove.connect({
             provider: mgv.provider,
@@ -1444,7 +1382,7 @@ describe("Semibook integration tests suite", function () {
               tick: 1,
             }),
           );
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+          await waitForBlock(mgv, tx.blockNumber);
 
           const newMgv = await Mangrove.connect({
             provider: mgv.provider,
@@ -1526,7 +1464,7 @@ describe("Semibook integration tests suite", function () {
               tick: tick1,
             }),
           );
-          await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+          await waitForBlock(mgv, tx.blockNumber);
 
           const newMgv = await Mangrove.connect({
             provider: mgv.provider,
@@ -1570,7 +1508,7 @@ describe("Semibook integration tests suite", function () {
       );
 
       // Act
-      const minVolume = await semibook.getMinimumVolume(offerGasreq);
+      const minVolume = semibook.getMinimumVolume(offerGasreq);
 
       // Assert
       assert.equal(
@@ -1586,7 +1524,7 @@ describe("Semibook integration tests suite", function () {
         quote: "TokenB",
         tickSpacing: 1,
       });
-      await waitForTransaction(
+      const tx = await waitForTransaction(
         mgvAdmin.contract.setDensity96X32(
           {
             outbound_tkn: market.base.address,
@@ -1598,8 +1536,10 @@ describe("Semibook integration tests suite", function () {
       );
       const semibook = market.getSemibook("asks");
 
+      await waitForBlock(mgv, tx.blockNumber);
+
       // Act
-      const minVolume = await semibook.getMinimumVolume(0);
+      const minVolume = semibook.getMinimumVolume(0);
 
       // Assert
       assert.equal("1", market.base.toUnits(minVolume).toString());
@@ -1694,7 +1634,7 @@ describe("Semibook integration tests suite", function () {
 
       // wait for offer(s) to be recorded in OB
       if (lastTx) {
-        await mgvTestUtil.waitForBlock(mgv, lastTx.blockNumber);
+        await waitForBlock(mgv, lastTx.blockNumber);
       }
 
       const actualAsksMaxGasReq = await market.getBook().asks.getMaxGasReq();

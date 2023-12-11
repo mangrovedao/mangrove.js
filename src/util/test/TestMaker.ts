@@ -187,7 +187,7 @@ class TestMaker {
     return this.#constructPromise(
       this.market,
       (_cbArg, _bookEvent, _ethersLog) => ({
-        id: _cbArg.offerId as number,
+        id: _cbArg.type == "OfferWrite" ? (_cbArg.offerId as number) : 0,
         event: _ethersLog as Log,
       }),
       txPromise,

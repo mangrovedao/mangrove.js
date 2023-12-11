@@ -173,6 +173,7 @@ namespace Semibook {
    * - isComplete                                                         =>  all offers in the offer list are in the cache
    */
   export type State = {
+    localConfig: Mangrove.LocalConfig; // local config for the offer list
     offerCache: Map<number, Market.Offer>; // offer ID -> Offer
     binCache: Map<number, Semibook.Bin>; // tick -> Bin
     bestBinInCache: Semibook.Bin | undefined; // best/first bin in the offer list iff #binCache is non-empty
@@ -185,6 +186,11 @@ namespace Semibook {
       bins: Map<number, Market.Offer[]>; // tick -> offers
       endOfListReached: boolean; // whether the end of the offer list was reached
     },
+    LogSubscriber.Error
+  >;
+
+  export type FetchConfigResult = Result<
+    Mangrove.LocalConfigFull,
     LogSubscriber.Error
   >;
 
@@ -216,9 +222,6 @@ class Semibook
   readonly options: Semibook.ResolvedOptions; // complete and validated
   readonly #cacheOperations: SemibookCacheOperations =
     new SemibookCacheOperations();
-
-  // offer gasbase is stored as part of the semibook since it is used each time an offer is written to be able to calculate locked provision for that offer
-  #offer_gasbase = 0; // initialized in stateInitialize
 
   #eventListeners: Map<Semibook.EventListener, boolean> = new Map();
 
@@ -259,7 +262,6 @@ class Semibook
 
   copy(state: Semibook.State): Semibook.State {
     // State has cyclic references which clone doesn't support, so we handle references manually
-    const clonedOfferCache = clone(state.offerCache);
     const clonedBinCache = new Map<number, Semibook.Bin>();
 
     for (const [tick, bin] of state.binCache) {
@@ -291,8 +293,14 @@ class Semibook
         ? undefined
         : clonedBinCache.get(state.worstBinInCache.tick);
 
+    const clonedLocalConfig = {
+      ...state.localConfig,
+      density: state.localConfig.density.clone(),
+    };
+
     return {
-      offerCache: clonedOfferCache,
+      localConfig: clonedLocalConfig,
+      offerCache: clone(state.offerCache),
       binCache: clonedBinCache,
       bestBinInCache: clonedBestBinInCache,
       worstBinInCache: clonedWorstBinInCache,
@@ -365,22 +373,31 @@ class Semibook
    * density is converted to public token units per gas used
    * fee *remains* in basis points of the token being bought
    */
-  async getConfig(blockNumber?: number): Promise<Mangrove.LocalConfig> {
-    const { outbound_tkn, inbound_tkn } = Market.getOutboundInbound(
-      this.ba,
-      this.market.base,
-      this.market.quote,
-    );
-    const local = await this.market.mgv.readerContract.localUnpacked(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: this.market.tickSpacing,
-      },
-      { blockTag: blockNumber },
-    );
+  config(): Mangrove.LocalConfig {
+    return this.getLatestState().localConfig;
+  }
 
-    return this.rawLocalConfigToLocalConfig(local);
+  async #fetchConfig(
+    block: BlockManager.BlockWithoutParentHash,
+  ): Promise<Semibook.FetchConfigResult> {
+    try {
+      const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
+        this.ba,
+      );
+      const localRaw = await this.market.mgv.readerContract.localUnpacked(
+        {
+          outbound_tkn: outbound_tkn.address,
+          inbound_tkn: inbound_tkn.address,
+          tickSpacing: this.market.tickSpacing,
+        },
+        { blockTag: block.number },
+      );
+      const local = this.rawLocalConfigToLocalConfig(localRaw);
+
+      return { error: undefined, ok: local };
+    } catch (e) {
+      return { error: "FailedInitialize", ok: undefined };
+    }
   }
 
   /** Sign permit data for buying outbound_tkn with spender's inbound_tkn
@@ -456,118 +473,183 @@ class Semibook
     // normalize params, if no limit given then:
     // if 'buying N units' set max sell to max(uint256),
     // if 'selling N units' set buy desire to 0
-    const initialGives = Big(params.given);
+    const initialVolume = Big(params.given);
     const maxTick = params.limitPrice
       ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
       : MAX_TICK.toNumber();
 
-    const { maxTickMatched, remainingFillVolume, totalGot, totalGave } =
-      await this.simulateMarketOrder(maxTick, initialGives, buying);
+    const { totalGot, totalGave, feePaid, fillVolume, maxTickMatched } =
+      await this.simulateMarketOrder(maxTick, initialVolume, buying);
 
     const estimatedVolume = buying ? totalGave : totalGot;
 
-    return { maxTickMatched, estimatedVolume, remainingFillVolume };
+    return {
+      maxTickMatched,
+      estimatedVolume: estimatedVolume,
+      remainingFillVolume: fillVolume,
+      estimatedFee: feePaid,
+    };
   }
 
-  /* Reproduces the logic of MgvOfferTaking's internalMarketOrder & execute functions faithfully minus the overflow protections due to bounds on input sizes. */
+  /**
+   * Reproduces the logic of Mangrove's generalMarketOrder function faithfully
+   * with the exception of:
+   *
+   * - the overflow protections due to bounds on input sizes.
+   * - offers are assumed not to fail.
+   */
   async simulateMarketOrder(
     maxTick: number,
-    initialFillVolume: Big,
+    fillVolume: Big,
     fillWants: boolean,
   ): Promise<{
-    maxTickMatched?: number;
-    remainingFillVolume: Big;
     totalGot: Big;
     totalGave: Big;
+    feePaid: Big;
+    fillVolume: Big;
+    maxTickMatched?: number;
     gas: BigNumber;
   }> {
-    // reproduce solidity behavior
-    const previousBigRm = Big.RM;
-    Big.RM = Big.roundDown;
+    // require(fillVolume <= MAX_SAFE_VOLUME, "mgv/mOrder/fillVolume/tooBig");
+    // require(maxTick.inRange(), "mgv/mOrder/tick/outOfRange");
 
-    const initialAccumulator = {
-      stop: false,
-      maxTickMatched: undefined as number | undefined,
-      remainingFillVolume: initialFillVolume,
-      got: Big(0),
-      gave: Big(0),
+    const state = this.getLatestState();
+
+    const local = state.localConfig;
+    const global = this.market.mgv.config();
+
+    // This corresponds to the MultiOrder mor struct in generalMarketOrder.
+    let mor = {
       totalGot: Big(0),
       totalGave: Big(0),
+      // totalPenalty: Not used as offers are assumed not to fail
+      // taker: Not used
+      fillWants: fillWants,
+      fillVolume: fillVolume,
+      feePaid: Big(0),
+      // leaf: Not used
+      maxTick: maxTick,
+      // maxGasreqForFailingOffers: Not used as offers are assumed not to fail
+      // gasreqForFailingOffers: Not used as offers are assumed not to fail
+      maxRecursionDepth: global.maxRecursionDepth,
+
+      // Additional bookkeeping, not part of the original MultiOrder struct
+      stop: false,
+      maxTickMatched: undefined as number | undefined,
       offersConsidered: 0,
       totalGasreq: BigNumber.from(0),
-      lastGasreq: 0,
+      gas: BigNumber.from(0),
     };
-    const state = this.getLatestState();
-    const res = await this.#foldLeftUntil(
+
+    // This corresponds to the SingleOrder sor struct in generalMarketOrder.
+    const sor = {
+      // olKey: implicit for this Semibook
+      // offerId: not used as full offer is available
+      // offer: provided by foldLeftUntil
+      takerWants: Big(0),
+      takerGives: Big(0),
+      // offerDetail: included in offer
+      global: global,
+      local: local,
+    };
+
+    mor = await this.#foldLeftUntil(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.lastSeenEventBlock!,
       state,
-      initialAccumulator,
-      (acc) => {
-        return !(!acc.stop && acc.remainingFillVolume.gt(0));
-      },
-      (offer, acc) => {
-        const fillVolume = acc.remainingFillVolume;
+      mor,
+      (acc) => acc.stop,
+      (offer, mor) => {
+        // This corresponds to the offer matching if-stmt in internalMarketOrder.
+        // Differences:
+        // 1/ In the Solidity code, 'offer' can be all zeros to signal the end of the offer list.
+        //    Here, foldLeftUntil will stop when there are no more offers, so zero offers need
+        //    not be handled explicitly.
+        // 2/ gasreqForFailingOffers is not taken into account here, since we assume offers do not fail.
+        if (
+          mor.fillVolume.gt(0) &&
+          offer.tick <= mor.maxTick && // && sor.offerId > 0
+          mor.maxRecursionDepth > 0 // && mor.gasreqForFailingOffers <= mor.maxGasreqForFailingOffers
+        ) {
+          // Extra bookkeeping, not part of the original internalMarketOrder function
+          mor.offersConsidered += 1;
+          mor.maxTickMatched = offer.tick;
+          mor.totalGasreq = mor.totalGasreq.add(offer.gasreq);
+          mor.gas = mor.gas.add(offer.gasreq).add(local.offer_gasbase);
 
-        acc.offersConsidered += 1;
+          mor.maxRecursionDepth--;
 
-        // bad price
-        if (offer.tick > maxTick) {
-          acc.stop = true;
-        } else {
-          acc.totalGasreq = acc.totalGasreq.add(offer.gasreq);
-          acc.lastGasreq = offer.gasreq;
-          const offerWants = this.tickPriceHelper.inboundFromOutbound(
-            offer.tick,
-            offer.gives,
-          );
+          // function execute
+          const fillVolume = mor.fillVolume;
+          const offerGives = offer.gives;
+          const offerWants = offer.wants;
+
           if (
-            (fillWants && fillVolume.gt(offer.gives)) ||
-            (!fillWants && fillVolume.gt(offerWants))
+            (mor.fillWants && offerGives.lte(fillVolume)) ||
+            (!mor.fillWants && offerWants.lte(fillVolume))
           ) {
-            acc.got = offer.gives;
-            acc.gave = offerWants;
+            sor.takerWants = offerGives;
+            sor.takerGives = offerWants;
           } else {
-            if (fillWants) {
-              acc.got = fillVolume;
-              const product = fillVolume.mul(offerWants);
-              /* Reproduce the mangrove round-up of takerGives using Big's rounding mode. */
-              Big.RM = Big.roundUp;
-              acc.gave = product.div(offer.gives);
-              Big.RM = Big.roundDown;
+            if (mor.fillWants) {
+              sor.takerGives = this.tickPriceHelper.inboundFromOutbound(
+                offer.tick,
+                fillVolume,
+                true,
+              );
+              sor.takerWants = fillVolume;
             } else {
-              acc.gave = fillVolume;
-              if (offerWants.eq(0)) {
-                acc.got = offer.gives;
-              } else {
-                acc.got = fillVolume.mul(offer.gives).div(offerWants);
-              }
+              sor.takerWants = this.tickPriceHelper.outboundFromInbound(
+                offer.tick,
+                fillVolume,
+                false,
+              );
+              sor.takerGives = fillVolume;
             }
           }
-        }
-        if (!acc.stop) {
-          acc.maxTickMatched = offer.tick;
-          acc.totalGot = acc.totalGot.add(acc.got);
-          acc.totalGave = acc.totalGave.add(acc.gave);
-          acc.remainingFillVolume = initialFillVolume.sub(
-            fillWants ? acc.totalGot : acc.totalGave,
+
+          mor.totalGot = mor.totalGot.add(sor.takerWants);
+          // require(mor.totalGot >= sor.takerWants, "mgv/totalGot/overflow");
+          mor.totalGave = mor.totalGave.add(sor.takerGives);
+          // require(mor.totalGave >= sor.takerGives, "mgv/totalGave/overflow");
+          // end function execute
+
+          const takerWants = sor.takerWants;
+          const takerGives = sor.takerGives;
+          mor.fillVolume = mor.fillVolume.sub(
+            mor.fillWants ? takerWants : takerGives,
           );
+        } else {
+          mor.stop = true;
+
+          // payTakerMinusFees is called here in the Solidity code
+          // but foldLeftUntil may stop before this if we reach the end of the offer list.
+          // Therefore the payTakerMinusFees logic is moved to after foldLeftUntil.
         }
-        return acc;
+
+        return mor;
       },
     );
 
+    // function payTakerMinusFees
+    // Reproduce Solidity rounding behavior
+    const previousBigRm = Big.RM;
+    const previousBigDp = Big.DP;
+    Big.RM = Big.roundDown;
+    Big.DP = this.market.getOutboundInbound(this.ba).outbound_tkn.decimals;
+    const concreteFee = mor.totalGot.mul(sor.local.fee).div(10_000);
+    Big.DP = previousBigDp;
     Big.RM = previousBigRm;
+    if (concreteFee.gt(0)) {
+      mor.totalGot = mor.totalGot.sub(concreteFee);
+      mor.feePaid = concreteFee;
+    }
+    // end function payTakerMinusFees
 
-    const { offer_gasbase } = await this.getConfig();
+    // Assumes offer_gasbase is used also for the last call to internalMarketOrder where no offer is executed.
+    mor.gas = mor.gas.add(local.offer_gasbase);
 
-    // Assume up to offer_gasbase is used also for the bad price call, and
-    // the last offer (which could be first, if taking little) needs up to gasreq*64/63 for makerPosthook
-    const gas = res.totalGasreq
-      .add(BigNumber.from(res.lastGasreq).div(63))
-      .add(offer_gasbase * Math.max(res.offersConsidered, 1));
-
-    return { ...res, gas };
+    return mor;
   }
 
   /** Returns `true` if `price` is better than `referencePrice`; Otherwise, `false` is returned.
@@ -592,8 +674,8 @@ class Semibook
    * @param gasreq The gas requirement for the offer.
    * @returns The minimum volume required to stay above density limit.
    */
-  async getMinimumVolume(gasreq: number) {
-    const config = await this.getConfig();
+  getMinimumVolume(gasreq: number) {
+    const config = this.config();
     const min = config.density.getRequiredOutboundForGas(
       gasreq + config.offer_gasbase,
     );
@@ -777,21 +859,27 @@ class Semibook
     block: BlockManager.BlockWithoutParentHash,
   ): Promise<LogSubscriber.ErrorOrState<Semibook.State>> {
     try {
-      const localConfig = await this.getConfig(block.number); // TODO: make this reorg resistant too, but it's HIGHLY unlikely that we encounter an issue here
-      this.#offer_gasbase = localConfig.offer_gasbase;
+      const localConfigResult = await this.#fetchConfig(block);
+
+      if (localConfigResult.error) {
+        return { error: localConfigResult.error, ok: undefined };
+      }
+
+      const localConfig = localConfigResult.ok;
 
       /**
        * To ensure consistency in this cache, everything is initially fetched from a specific block,
        * we expect $fetchOfferListPrefix to return error if reorg is detected
        */
-      const result = await this.#fetchOfferListPrefix(block);
+      const offerListPrefixResult = await this.#fetchOfferListPrefix(block);
 
-      if (result.error) {
-        return { error: result.error, ok: undefined };
+      if (offerListPrefixResult.error) {
+        return { error: offerListPrefixResult.error, ok: undefined };
       }
-      const { bins, endOfListReached } = result.ok;
+      const { bins, endOfListReached } = offerListPrefixResult.ok;
 
       const state: Semibook.State = {
+        localConfig,
         offerCache: new Map(),
         binCache: new Map(),
         bestBinInCache: undefined,
@@ -844,7 +932,7 @@ class Semibook
 
         // After removing the offer (a noop if the offer was not in local cache), we try to reinsert it.
         offer = {
-          offer_gasbase: this.#offer_gasbase,
+          offer_gasbase: state.localConfig.offer_gasbase,
           next: undefined, // offers are always inserted at the end of the list
           prev: undefined, // prev will be set when the offer is inserted into the cache iff the previous offer exists in the cache
           ...this.rawOfferSlimToOfferSlim(event.args),
@@ -942,20 +1030,79 @@ class Semibook
         break;
       }
 
-      case "SetGasbase":
-        this.#offer_gasbase = event.args.offer_gasbase.toNumber();
+      case "SetActive":
+        this.#cacheOperations.setActive(state, event.args.value);
         Array.from(this.#eventListeners.keys()).forEach(
           (listener) =>
             void listener({
               cbArg: {
                 type: event.name,
                 ba: this.ba,
+                active: state.localConfig.active,
               },
               event,
               ethersLog: log,
             }),
         );
         break;
+
+      case "SetFee":
+        this.#cacheOperations.setFee(state, event.args.value.toNumber());
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                fee: state.localConfig.fee,
+              },
+              event,
+              ethersLog: log,
+            }),
+        );
+        break;
+
+      case "SetGasbase":
+        this.#cacheOperations.setGasbase(
+          state,
+          event.args.offer_gasbase.toNumber(),
+        );
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                offerGasbase: state.localConfig.offer_gasbase,
+              },
+              event,
+              ethersLog: log,
+            }),
+        );
+        break;
+
+      case "SetDensity96X32":
+        this.#cacheOperations.setDensity(
+          state,
+          Density.from96X32(
+            event.args.value,
+            this.market.getOutboundInbound(this.ba).outbound_tkn.decimals,
+          ),
+        );
+        Array.from(this.#eventListeners.keys()).forEach(
+          (listener) =>
+            void listener({
+              cbArg: {
+                type: event.name,
+                ba: this.ba,
+                density: state.localConfig.density,
+              },
+              event,
+              ethersLog: log,
+            }),
+        );
+        break;
+
       default:
         throw Error(`Unknown event ${event}`);
     }
@@ -1055,6 +1202,12 @@ class Semibook
       );
     } else if ("desiredVolume" in options) {
       const desiredVolume = options.desiredVolume;
+      if (Big(desiredVolume.given).eq(0)) {
+        return {
+          error: undefined,
+          ok: { bins: new Map(), endOfListReached: false },
+        };
+      }
       const getOfferVolume = (offer: Market.Offer) => {
         if (desiredVolume.to === "buy") {
           return offer.gives;
@@ -1079,6 +1232,12 @@ class Semibook
       );
     } else {
       const targetNumberOfTicks = options.targetNumberOfTicks;
+      if (targetNumberOfTicks === 0) {
+        return {
+          error: undefined,
+          ok: { bins: new Map(), endOfListReached: false },
+        };
+      }
       return await this.#fetchOfferListPrefixUntil(
         block,
         fromId,
@@ -1194,7 +1353,7 @@ class Semibook
 
   rawLocalConfigToLocalConfig(
     local: Mangrove.RawConfig["_local"],
-  ): Mangrove.LocalConfig {
+  ): Mangrove.LocalConfigFull {
     const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
     return Semibook.rawLocalConfigToLocalConfig(local, outbound_tkn.decimals);
   }
@@ -1202,7 +1361,7 @@ class Semibook
   static rawLocalConfigToLocalConfig(
     local: Mangrove.RawConfig["_local"],
     outboundDecimals: number,
-  ): Mangrove.LocalConfig {
+  ): Mangrove.LocalConfigFull {
     return {
       active: local.active,
       fee: local.fee.toNumber(),
@@ -1523,6 +1682,26 @@ export class SemibookCacheOperations {
     }
 
     return offer;
+  }
+
+  // Set the active state of the semibook.
+  setActive(state: Semibook.State, active: boolean): void {
+    state.localConfig.active = active;
+  }
+
+  // Set the fee of the semibook.
+  setFee(state: Semibook.State, fee: number): void {
+    state.localConfig.fee = fee;
+  }
+
+  // Set the gasbase of the semibook.
+  setGasbase(state: Semibook.State, gasbase: number): void {
+    state.localConfig.offer_gasbase = gasbase;
+  }
+
+  // Set the density of the semibook.
+  setDensity(state: Semibook.State, density: Density): void {
+    state.localConfig.density = density;
   }
 
   #createBinWithOffer(
