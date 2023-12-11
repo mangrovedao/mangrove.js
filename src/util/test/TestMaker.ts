@@ -19,7 +19,7 @@ import { Log } from "@ethersproject/providers";
   $ ts-node --skipProject
   > import {Mangrove,TestMaker} from './src'
   > const mgv = await Mangrove.connect(); // localhost:8545 by default
-  > const tm = await TestMaker.create({mgv,base:"TokenA",quote:"TokenB"});
+  > const tm = await TestMaker.create({mgv,base:"TokenA",quote:"TokenB",tickSpacing:1});
   > await tm.newOffer({ba:"asks",wants:1,gives:1,shouldRevert:true});
   > // We posted an offer.
   > // * Notice the shouldRevert:true
@@ -132,11 +132,12 @@ class TestMaker {
       this.market,
     );
 
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const { outbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const olKey = this.market.getOLKey(p.ba);
 
     // ensure mangrove is approved
     await this.approveMgv(outbound_tkn.address);
-    await this.approveMgv(inbound_tkn.address);
+    await this.approveMgv(olKey.inbound_tkn);
 
     if (!(this.mgv.provider instanceof ethers.providers.JsonRpcProvider)) {
       throw new Error("TestMaker requires a JsonRpcProvider");
@@ -170,11 +171,7 @@ class TestMaker {
     const txPromise = this.contract[
       "newOfferByTickWithFunding((address,address,uint256),int256,uint256,uint256,uint256,uint256,(bool,string))"
     ](
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: this.market.tickSpacing,
-      },
+      olKey,
       tick,
       outbound_tkn.toUnits(gives),
       p.gasreq as number,

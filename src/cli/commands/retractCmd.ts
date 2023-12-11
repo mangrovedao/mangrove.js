@@ -77,29 +77,17 @@ async function retractAllFromOfferList(
   console.log(
     `Retracting from '${ba}' list...        (offer count: ${offerList.length})`,
   );
-  const { inbound_tkn, outbound_tkn } = market.getOutboundInbound(ba);
+  const olKey = market.getOLKey(ba);
   const retractTxPromises: Promise<void>[] = [];
   for (const offer of offerList) {
     if (offer.maker == makerAddress) {
       const provision = await market.mgv.contract.callStatic.retractOffer(
-        {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
-          tickSpacing: market.tickSpacing,
-        },
+        olKey,
         offer.id,
         deprovision,
       );
       const txPromise = market.mgv.contract
-        .retractOffer(
-          {
-            outbound_tkn: outbound_tkn.address,
-            inbound_tkn: inbound_tkn.address,
-            tickSpacing: market.tickSpacing,
-          },
-          offer.id,
-          deprovision,
-        )
+        .retractOffer(olKey, offer.id, deprovision)
         .then((tx) => tx.wait())
         .then((txReceipt) => {
           let msg = `* Offer ${chalk.gray(offer.id.toString())} retracted`;

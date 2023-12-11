@@ -253,8 +253,7 @@ namespace Market {
 
   export type RawCleanParams = {
     ba: Market.BA;
-    outboundTkn: string;
-    inboundTkn: string;
+    olKey: OLKeyStruct;
     targets: MgvLib.CleanTargetStruct[];
     taker: string;
   };
@@ -797,13 +796,8 @@ class Market {
   ): Promise<Big> {
     // 0 makes calculation use mgv gasprice
     gasprice ??= 0;
-    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
     const prov = await this.mgv.readerContract.getProvision(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: this.tickSpacing,
-      },
+      this.getOLKey(ba),
       gasreq,
       gasprice,
     );

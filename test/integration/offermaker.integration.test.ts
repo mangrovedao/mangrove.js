@@ -165,13 +165,8 @@ describe("OfferMaker integration test suite", () => {
       fund: provision,
     });
 
-    const { outbound_tkn, inbound_tkn } = lp.market.getOutboundInbound("asks");
     const provisionOfOffer = await lp.contract?.provisionOf(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: lp.market.tickSpacing,
-      },
+      lp.market.getOLKey("asks"),
       id,
     );
 
@@ -339,13 +334,9 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("fails, when trying to create an offer on a closed market", async () => {
-      const base = onchain_lp.market.base.address;
-      const quote = onchain_lp.market.quote.address;
-      const closeTx = await mgvAdmin.contract.deactivate({
-        outbound_tkn: base,
-        inbound_tkn: quote,
-        tickSpacing: 1,
-      });
+      const closeTx = await mgvAdmin.contract.deactivate(
+        onchain_lp.market.getOLKey("asks"),
+      );
       await closeTx.wait();
 
       const prov = await onchain_lp.computeBidProvision();
@@ -398,13 +389,9 @@ describe("OfferMaker integration test suite", () => {
         fund: prov,
       });
 
-      const base = onchain_lp.market.base.address;
-      const quote = onchain_lp.market.quote.address;
-      const closeTx = await mgvAdmin.contract.deactivate({
-        outbound_tkn: base,
-        inbound_tkn: quote,
-        tickSpacing: 1,
-      });
+      const closeTx = await mgvAdmin.contract.deactivate(
+        onchain_lp.market.getOLKey("asks"),
+      );
       await closeTx.wait();
 
       const updatePromise = onchain_lp.updateAsk(ofrId, {

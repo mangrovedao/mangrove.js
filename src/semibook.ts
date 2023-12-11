@@ -20,7 +20,11 @@ import { Density } from "./util/Density";
 import logger from "./util/logger";
 import Trade from "./util/trade";
 import { Result } from "./util/types";
-import { OfferFailEvent, OfferSuccessEvent } from "./types/typechain/IMangrove";
+import {
+  OLKeyStruct,
+  OfferFailEvent,
+  OfferSuccessEvent,
+} from "./types/typechain/IMangrove";
 import TickPriceHelper from "./util/tickPriceHelper";
 import { OfferWriteEventObject } from "./types/typechain/Mangrove";
 
@@ -228,6 +232,7 @@ class Semibook
   tradeManagement: Trade = new Trade();
 
   optionsIdentifier: string;
+  olKey: OLKeyStruct;
 
   static async connect(
     market: Market,
@@ -343,15 +348,8 @@ class Semibook
       return cachedOffer;
     }
 
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
-      this.ba,
-    );
     const [offer, details] = await this.market.mgv.readerContract.offerInfo(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: this.market.tickSpacing,
-      },
+      this.olKey,
       offerId,
     );
     return {
@@ -381,15 +379,8 @@ class Semibook
     block: BlockManager.BlockWithoutParentHash,
   ): Promise<Semibook.FetchConfigResult> {
     try {
-      const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
-        this.ba,
-      );
       const localRaw = await this.market.mgv.readerContract.localUnpacked(
-        {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
-          tickSpacing: this.market.tickSpacing,
-        },
+        this.olKey,
         { blockTag: block.number },
       );
       const local = this.rawLocalConfigToLocalConfig(localRaw);
@@ -405,14 +396,10 @@ class Semibook
   permit(
     data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">,
   ) {
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
-      this.ba,
-    );
-
     return this.market.mgv.permit({
       ...data,
-      outbound_tkn: outbound_tkn.address,
-      inbound_tkn: inbound_tkn.address,
+      outbound_tkn: this.olKey.outbound_tkn,
+      inbound_tkn: this.olKey.inbound_tkn,
     });
   }
 
@@ -851,6 +838,7 @@ class Semibook
     this.market = market;
     this.ba = ba;
     this.tickPriceHelper = new TickPriceHelper(ba, market);
+    this.olKey = market.getOLKey(ba);
 
     this.#eventListeners.set(eventListener, true);
   }
@@ -1259,10 +1247,6 @@ class Semibook
     ) => boolean, // Should return `true` when fetching should stop
     ignoreFirstOffer = false, // Should be `true` when `fromId` is the last offer in the cache
   ): Promise<Semibook.FetchOfferListResult> {
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
-      this.ba,
-    );
-
     let currentTick: number | undefined = undefined;
     let bin: Market.Offer[] = [];
     const bins: Map<number, Market.Offer[]> = new Map();
@@ -1275,11 +1259,7 @@ class Semibook
           OfferUnpackedStructOutput[],
           OfferDetailUnpackedStructOutput[],
         ] = await this.market.mgv.readerContract.offerList(
-          {
-            outbound_tkn: outbound_tkn.address,
-            inbound_tkn: inbound_tkn.address,
-            tickSpacing: this.market.tickSpacing,
-          },
+          this.olKey,
           Semibook.idToRawId(fromId),
           chunkSize ?? Semibook.DEFAULT_CHUNK_SIZE,
           { blockTag: block.number },
