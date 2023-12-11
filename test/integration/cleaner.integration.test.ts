@@ -11,7 +11,6 @@ import Mangrove, { TickPriceHelper } from "../../src";
 import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
 import assert from "assert";
-import { OLKeyStruct } from "../../src/types/typechain/Mangrove";
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
   return `<Big>${this.toString()}`; // previously just Big.prototype.toString;
@@ -349,11 +348,7 @@ describe("Cleaner integration tests suite", () => {
       ],
     });
 
-    const olKey: OLKeyStruct = {
-      outbound_tkn: raw.outboundTkn,
-      inbound_tkn: raw.inboundTkn,
-      tickSpacing: 1,
-    };
+    const olKey = raw.olKey;
 
     const result = await market.mgv.contract.callStatic.cleanByImpersonation(
       olKey,

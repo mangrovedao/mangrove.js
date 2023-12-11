@@ -215,19 +215,6 @@ export const logBalances = async (
   console.groupEnd();
 };
 
-export const getTokens = (
-  market: Market,
-  ba: Market.BA,
-): {
-  inboundToken: Token;
-  outboundToken: Token;
-} => {
-  return {
-    inboundToken: ba === "asks" ? market.quote : market.base,
-    outboundToken: ba === "asks" ? market.base : market.quote,
-  };
-};
-
 export type NewOffer = {
   market: Market;
   ba: Market.BA;
@@ -386,20 +373,20 @@ export const postNewOffer = async ({
   shouldFail = false,
   shouldRevert = false,
 }: NewOffer) => {
-  const { inboundToken, outboundToken } = getTokens(market, ba);
+  const olKey = market.getOLKey(ba);
 
   // we start by making sure that Mangrove is approved (for infinite fund withdrawal)
   // and that we have funds (going below the minting limit for ERC20's)
   await waitForTransaction(
     maker.connectedContracts.testMaker.approveMgv(
-      outboundToken.address,
+      olKey.outbound_tkn,
       ethers.constants.MaxUint256,
       { gasLimit: 100_000 },
     ),
   );
 
   await rawMint(
-    outboundToken,
+    market.getOutboundInbound(ba).outbound_tkn,
     maker.connectedContracts.testMaker.address,
     BigNumber.from(gives).mul(2),
   );
@@ -414,16 +401,7 @@ export const postNewOffer = async ({
   return await waitForTransaction(
     maker.connectedContracts.testMaker[
       "newOfferByTick((address,address,uint256),int256,uint256,uint256)"
-    ](
-      {
-        outbound_tkn: outboundToken.address,
-        inbound_tkn: inboundToken.address,
-        tickSpacing: market.tickSpacing,
-      },
-      tick,
-      gives,
-      gasreq,
-    ),
+    ](olKey, tick, gives, gasreq),
   ); // (base address, quote address, wants, gives, gasreq)
 };
 

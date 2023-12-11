@@ -315,17 +315,13 @@ class Trade {
     deprovision = false,
     overrides: ethers.Overrides = {},
   ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const olKey = market.getOLKey(ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
 
     // retract offer
     txPromise = market.mgv.orderContract.retractOffer(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: market.tickSpacing,
-      },
+      olKey,
       id,
       deprovision,
       overrides,
@@ -503,16 +499,15 @@ class Trade {
     },
     overrides: ethers.Overrides,
   ): Promise<Market.Transaction<Market.OrderResult>> {
-    const [outboundTkn, inboundTkn] =
-      orderType === "buy"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
+    const olKey = market.getOLKey(this.bsToBa(orderType));
+    orderType === "buy"
+      ? [market.base, market.quote]
+      : [market.quote, market.base];
 
     logger.debug("Creating market order", {
       contextInfo: "market.marketOrder",
       data: {
-        outboundTkn: outboundTkn.id,
-        inboundTkn: inboundTkn.id,
+        olKey: olKey,
         fillWants: fillWants,
         maxTick: maxTick,
         fillVolume: fillVolume.toString(),
@@ -526,17 +521,7 @@ class Trade {
       market.mgv.contract.estimateGas.marketOrderByTick,
       gasLowerBound,
       overrides,
-      [
-        {
-          outbound_tkn: outboundTkn.address,
-          inbound_tkn: inboundTkn.address,
-          tickSpacing: market.tickSpacing,
-        },
-        maxTick,
-        fillVolume,
-        fillWants,
-        overrides,
-      ],
+      [olKey, maxTick, fillVolume, fillWants, overrides],
     );
 
     const result = this.responseToMarketOrderResult(
@@ -612,7 +597,7 @@ class Trade {
         }
       : overrides;
 
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const olKey = market.getOLKey(ba);
 
     const response = this.createTxWithOptionalGasEstimation(
       market.mgv.orderContract.take,
@@ -621,11 +606,7 @@ class Trade {
       overrides_,
       [
         {
-          olKey: {
-            outbound_tkn: outbound_tkn.address,
-            inbound_tkn: inbound_tkn.address,
-            tickSpacing: market.tickSpacing,
-          },
+          olKey: olKey,
           fillOrKill: fillOrKill,
           tick: maxTick,
           fillVolume: fillVolume,
@@ -792,16 +773,12 @@ class Trade {
     unitParams: CleanUnitParams,
     market: Market,
   ): Promise<Market.RawCleanParams> {
-    const [outboundTkn, inboundTkn] =
-      unitParams.ba === "asks"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
+    const olKey = market.getOLKey(unitParams.ba);
 
     logger.debug("Creating cleans", {
       contextInfo: "market.clean",
       data: {
-        outboundTkn: outboundTkn.id,
-        inboundTkn: inboundTkn.id,
+        olKey: olKey,
       },
     });
 
@@ -820,8 +797,7 @@ class Trade {
 
     return {
       ba: unitParams.ba,
-      outboundTkn: outboundTkn.address,
-      inboundTkn: inboundTkn.address,
+      olKey: olKey,
       targets: _targets,
       taker: unitParams.taker,
     };
@@ -845,11 +821,7 @@ class Trade {
     const cleanFunction = market.mgv.contract.cleanByImpersonation;
 
     const response = cleanFunction(
-      {
-        outbound_tkn: raw.outboundTkn,
-        inbound_tkn: raw.inboundTkn,
-        tickSpacing: market.tickSpacing,
-      },
+      raw.olKey,
       raw.targets,
       raw.taker,
       overrides,

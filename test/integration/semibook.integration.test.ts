@@ -129,16 +129,7 @@ describe("Semibook integration tests suite", function () {
       );
       const gasbase = 3000;
       await waitForTransaction(
-        mgvAdmin.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          3,
-          density,
-          1,
-        ),
+        mgvAdmin.contract.activate(market.getOLKey("asks"), 3, density, 1),
       );
       const newDensity = DensityLib.paramsTo96X32_centiusd(
         BigNumber.from(market.base.decimals),
@@ -149,11 +140,7 @@ describe("Semibook integration tests suite", function () {
       );
       const tx = await waitForTransaction(
         mgvAdmin.contract.activate(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
+          market.getOLKey("asks"),
           fee,
           newDensity,
           gasbase,
@@ -1525,14 +1512,7 @@ describe("Semibook integration tests suite", function () {
         tickSpacing: 1,
       });
       const tx = await waitForTransaction(
-        mgvAdmin.contract.setDensity96X32(
-          {
-            outbound_tkn: market.base.address,
-            inbound_tkn: market.quote.address,
-            tickSpacing: 1,
-          },
-          0,
-        ),
+        mgvAdmin.contract.setDensity96X32(market.getOLKey("asks"), 0),
       );
       const semibook = market.getSemibook("asks");
 

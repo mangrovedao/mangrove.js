@@ -282,18 +282,15 @@ class LiquidityProvider {
       this.market,
     );
 
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const { outbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const olKey = this.market.getOLKey(p.ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
 
     // send offer
     if (this.contract) {
       txPromise = this.contract.newOffer(
-        {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
-          tickSpacing: this.market.tickSpacing,
-        },
+        olKey,
         tick,
         outbound_tkn.toUnits(gives),
         this.gasreq,
@@ -301,11 +298,7 @@ class LiquidityProvider {
       );
     } else {
       txPromise = this.mgv.contract.newOfferByTick(
-        {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
-          tickSpacing: this.market.tickSpacing,
-        },
+        olKey,
         tick,
         outbound_tkn.toUnits(gives),
         this.gasreq,
@@ -413,18 +406,15 @@ class LiquidityProvider {
       p,
       this.market,
     );
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const { outbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const olKey = this.market.getOLKey(p.ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
 
     // update offer
     if (this.contract) {
       txPromise = this.contract.updateOffer(
-        {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
-          tickSpacing: this.market.tickSpacing,
-        },
+        olKey,
         tick,
         outbound_tkn.toUnits(gives),
         id,
@@ -433,11 +423,7 @@ class LiquidityProvider {
       );
     } else {
       txPromise = this.mgv.contract.updateOfferByTick(
-        {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
-          tickSpacing: this.market.tickSpacing,
-        },
+        olKey,
         tick,
         outbound_tkn.toUnits(gives),
         0,
@@ -487,22 +473,13 @@ class LiquidityProvider {
     deprovision = false,
     overrides: ethers.Overrides = {},
   ): Promise<void> {
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(ba);
+    const olKey = this.market.getOLKey(ba);
     const retracter = this.contract ?? this.mgv.contract;
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
 
     // retract offer
-    txPromise = retracter.retractOffer(
-      {
-        outbound_tkn: outbound_tkn.address,
-        inbound_tkn: inbound_tkn.address,
-        tickSpacing: this.market.tickSpacing,
-      },
-      id,
-      deprovision,
-      overrides,
-    );
+    txPromise = retracter.retractOffer(olKey, id, deprovision, overrides);
 
     logger.debug(`Cancel offer`, {
       contextInfo: "mangrove.maker",
