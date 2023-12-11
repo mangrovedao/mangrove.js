@@ -295,10 +295,7 @@ class Semibook
 
     const clonedLocalConfig = {
       ...state.localConfig,
-      density: new Density(
-        state.localConfig.density.rawDensity,
-        state.localConfig.density.outboundDecimals,
-      ),
+      density: state.localConfig.density.clone(),
     };
 
     return {
