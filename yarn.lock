@@ -1542,9 +1542,9 @@ __metadata:
   linkType: hard
 
 "@types/node-cleanup@npm:^2.1.2":
-  version: 2.1.4
-  resolution: "@types/node-cleanup@npm:2.1.4"
-  checksum: 8d36a221b5900dc40f31e77f1df1816579b09afefdf5e7f8f409b5cdddf015b96ab1a4685a23a7609293d38f6c62186668fa0221dd47d030309ca919a80d230f
+  version: 2.1.5
+  resolution: "@types/node-cleanup@npm:2.1.5"
+  checksum: 050e55bf2ccf9ea5500907aa40867cf1108f0938ccd4a69c31666827c3dec241eab3e5dd77c4b41bb172a09582ac95e84dd8c7e3835e7172e1fdd96fbbdeb416
   languageName: node
   linkType: hard
 
