@@ -1177,29 +1177,35 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
 
-      const done = new Deferred();
-      let volumeEstimate: Market.VolumeEstimate | undefined;
-      const baseVolume = 0.5;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      market.subscribe(async (evt) => {
-        if (market.getBook().asks.size() === 2) {
-          volumeEstimate = await market.estimateVolume({
-            given: baseVolume,
-            what: "base",
-            to: "buy",
-          });
-          done.resolve();
-        }
-      });
-
       const price = market.getSemibook("asks").tickPriceHelper.coercePrice(4);
-      await helpers
-        .newOffer({ mgv, market, ba: "asks", gives: "0.3", price })
-        .then((tx) => tx.wait());
-      await helpers
-        .newOffer({ mgv, market, ba: "asks", gives: "0.25", price })
-        .then((tx) => tx.wait());
-      await done.promise;
+
+      await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.3",
+          price,
+        }),
+      );
+      const tx = await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.25",
+          price,
+        }),
+      );
+
+      await waitForBlock(mgv, tx.blockNumber);
+
+      const baseVolume = 0.5;
+      const volumeEstimate = await market.estimateVolume({
+        given: baseVolume,
+        what: "base",
+        to: "buy",
+      });
 
       // estimated volume is in quote = inbound token and the fee is taken in base = outbound token
       const expectedEstimatedVolume = price.mul(baseVolume).toNumber();
@@ -1241,29 +1247,34 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
 
-      const done = new Deferred();
-      let volumeEstimate: Market.VolumeEstimate | undefined;
-      const quoteVolume = 2;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      market.subscribe(async (evt) => {
-        if (market.getBook().asks.size() === 2) {
-          volumeEstimate = await market.estimateVolume({
-            given: quoteVolume,
-            what: "quote",
-            to: "sell",
-          });
-          done.resolve();
-        }
-      });
-
       const price = market.getSemibook("asks").tickPriceHelper.coercePrice(4);
-      await helpers
-        .newOffer({ mgv, market, ba: "asks", gives: "0.3", price })
-        .then((tx) => tx.wait());
-      await helpers
-        .newOffer({ mgv, market, ba: "asks", gives: "0.25", price })
-        .then((tx) => tx.wait());
-      await done.promise;
+      await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.3",
+          price,
+        }),
+      );
+      const tx = await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.25",
+          price,
+        }),
+      );
+
+      await waitForBlock(mgv, tx.blockNumber);
+
+      const quoteVolume = 2;
+      const volumeEstimate = await market.estimateVolume({
+        given: quoteVolume,
+        what: "quote",
+        to: "sell",
+      });
 
       // estimated volume is in base = outbound token and the fee is taken in base
       const expectedEstimatedVolumeIncludingFee = Big(2).div(price).toNumber();
