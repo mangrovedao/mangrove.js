@@ -81,6 +81,14 @@ describe("Configuration unit tests suite", () => {
       152001,
     );
     assert.equal(
+      configuration.mangroveOrder.getRestingOrderGaspriceFactor("local"),
+      5,
+    );
+    assert.equal(
+      configuration.mangroveOrder.getRestingOrderGaspriceFactor("maticmum"),
+      6,
+    );
+    assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("local"),
       330000,
     );

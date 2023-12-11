@@ -601,14 +601,17 @@ class Trade {
     },
     overrides: ethers.Overrides,
   ): Promise<Market.Transaction<Market.OrderResult>> {
-    const { postRestingOrder, provision } =
-      this.getRestingOrderParams(restingParams);
-    const overrides_ = {
-      ...overrides,
-      value: provision ? market.mgv.nativeToken.toUnits(provision) : 0,
-    };
-
     const ba = this.bsToBa(orderType);
+    const restingOrderParams = restingParams
+      ? await this.getRestingOrderParams(restingParams, market, ba)
+      : undefined;
+    const overrides_ = restingOrderParams
+      ? {
+          ...overrides,
+          value: market.mgv.nativeToken.toUnits(restingOrderParams.provision),
+        }
+      : overrides;
+
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
 
     const response = this.createTxWithOptionalGasEstimation(
@@ -626,16 +629,14 @@ class Trade {
           fillOrKill: fillOrKill,
           tick: maxTick,
           fillVolume: fillVolume,
-          fillWants: orderType === "buy",
-          restingOrder: postRestingOrder,
+          fillWants: fillWants,
+          restingOrder: !!restingOrderParams,
           expiryDate: expiryDate,
           offerId:
             restingParams?.offerId === undefined ? 0 : restingParams.offerId,
-          restingOrderGasreq:
-            restingParams?.restingOrderGasreq ??
-            configuration.mangroveOrder.getRestingOrderGasreq(
-              market.mgv.network.name,
-            ),
+          restingOrderGasreq: restingOrderParams
+            ? restingOrderParams.restingOrderGasreq
+            : 0,
         },
         overrides_,
       ],
@@ -711,18 +712,56 @@ class Trade {
     } else return result;
   }
 
-  getRestingOrderParams(params: Market.RestingOrderParams | undefined): {
-    provision: Bigish;
-    postRestingOrder: boolean;
-  } {
-    if (params) {
-      return {
-        provision: params.provision,
-        postRestingOrder: true,
-      };
-    } else {
-      return { provision: 0, postRestingOrder: false };
+  /** Determines the parameters for a resting order which can be provided via default configuration value.
+   * @param params The resting order params. @see Market.RestingOrderParams.
+   * @param market The market.
+   * @param ba The BA of the taker order; the resting order will be the opposite.
+   * @returns The resting order parameters.
+   */
+  public async getRestingOrderParams(
+    params: Market.RestingOrderParams,
+    market: Market,
+    ba: Market.BA,
+  ): Promise<{
+    provision: Big.BigSource;
+    restingOrderGasreq: number;
+    gaspriceFactor: number;
+    restingOrderBa: string;
+  }> {
+    const gaspriceFactor =
+      params.restingOrderGaspriceFactor ??
+      configuration.mangroveOrder.getRestingOrderGaspriceFactor(
+        market.mgv.network.name,
+      );
+    const restingOrderGasreq =
+      params.restingOrderGasreq ??
+      configuration.mangroveOrder.getRestingOrderGasreq(
+        market.mgv.network.name,
+      );
+
+    const restingOrderBa = ba === "asks" ? "bids" : "asks";
+    let provision = params.provision;
+    if (!provision) {
+      const mangroveOrder = market.mgv.offerLogic(
+        market.mgv.orderContract.address,
+      );
+      provision = await mangroveOrder.getMissingProvision(
+        market,
+        restingOrderBa,
+        restingOrderGasreq,
+        {
+          id: params?.offerId,
+          gasprice: market.mgv.config().gasprice * gaspriceFactor,
+        },
+      );
     }
+
+    return {
+      provision,
+      restingOrderGasreq,
+      gaspriceFactor,
+      restingOrderBa,
+    };
   }
 
   initialResult(

@@ -20,7 +20,6 @@ import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
-import { Deferred } from "../../src/util";
 import { Density } from "../../src/util/Density";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
@@ -1060,7 +1059,7 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 126278;
+                expectedLimit = 126242;
               } else {
                 expectedLimit = 43475;
               }

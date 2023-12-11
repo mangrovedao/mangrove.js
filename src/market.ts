@@ -224,9 +224,10 @@ namespace Market {
     );
 
   export type RestingOrderParams = {
-    provision: Bigish;
+    provision?: Bigish;
     offerId?: number;
     restingOrderGasreq?: number;
+    restingOrderGaspriceFactor?: number;
   };
 
   /**

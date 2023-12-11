@@ -171,16 +171,9 @@ class OfferLogic {
     if (!offerId) {
       return Big(0);
     }
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const olKey = market.getOLKey(ba);
     return this.mgv.nativeToken.fromUnits(
-      await this.contract.provisionOf(
-        {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
-          tickSpacing: market.tickSpacing,
-        },
-        offerId,
-      ),
+      await this.contract.provisionOf(olKey, offerId),
     );
   }
 
