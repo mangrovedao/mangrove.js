@@ -314,7 +314,7 @@ class Trade {
     id: number,
     deprovision = false,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.RetractMangroveOrderResult>> {
+  ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;

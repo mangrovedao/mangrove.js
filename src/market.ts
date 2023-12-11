@@ -157,7 +157,12 @@ namespace Market {
     summary: CleanSummary;
   };
 
-  export type RetractMangroveOrderResult = void;
+  /**
+   * Retract resting order results.
+   *
+   * No data is returned, but the transaction may fail.
+   */
+  export type RetractRestingOrderResult = void;
 
   /**
    * A transaction that has been submitted to a market.
@@ -992,7 +997,7 @@ class Market {
     id: number,
     deprovision = false,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.RetractMangroveOrderResult>> {
+  ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
     return this.trade.retractRestingOrder(this, ba, id, deprovision, overrides);
   }
 
