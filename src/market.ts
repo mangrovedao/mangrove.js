@@ -185,6 +185,71 @@ namespace Market {
 
   export type OrderRoute = "Mangrove" | "MangroveOrder";
 
+  export const mangroveOrderTypes = [
+    "GTC",
+    "GTCE",
+    "PO",
+    "IOC",
+    "FOK",
+  ] as const;
+
+  /**
+   * Type of order
+   *
+   * @param GTC Good till cancelled: this order will do a market order and create a resting order if it is not filled.
+   * * If an expiry date is specified, the order will renege at the expiry date.
+   * @param GTCE Good till cancelled enforced: this order will do a market order and create a resting order if it is not filled.
+   * * If posting the resting order fails, the market order will be reverted.
+   * @param PO Post only: this order will not do a market order, but will only create a resting order.
+   * @param IOC Immediate or cancel: this order will do a market order, but will not create a resting order.
+   * @param FOK Fill or kill: this order will do a market order, but will not create a resting order.
+   * * If the order is not filled completely, it will be reverted.
+   */
+  export type MangroveOrderType = (typeof mangroveOrderTypes)[number];
+
+  export type WithRestingOrderTypes = "GTC" | "GTCE" | "PO";
+
+  /**
+   * Parameters for trading With potential resting order.
+   * @param orderType Type of order
+   * @param expiryDate Expiry date of the order, in seconds since unix epoch. If 0, the order will not expire.
+   * @param restingParams Parameters for the resting order, must be defined.
+   */
+  export type WithRestingOrderParams = {
+    orderType: WithRestingOrderTypes;
+    expiryDate: number;
+    restingParams: Market.RestingOrderParams;
+  };
+
+  export type WithoutRestingOrderTypes = "IOC" | "FOK";
+
+  /**
+   * Parameters for trading without resting order.
+   * @param orderType Type of order
+   * @param expiryDate undefined since there will be no resting order.
+   * @param restingParams undefined since there will be no resting order.
+   */
+  export type WithoutRestingOrderParams = {
+    orderType: WithoutRestingOrderTypes;
+    expiryDate: undefined;
+    restingParams: undefined;
+  };
+
+  /**
+   * Parameters for trading on a market, with a potential resting order.
+   * This is a union of {@link WithRestingOrderParams} and {@link WithoutRestingOrderParams}.
+   */
+  export type RawMangroveOrderParams = {
+    side: Market.BS;
+    maxTick: number;
+    fillVolume: ethers.BigNumber;
+    fillWants: boolean;
+    takerGivesLogic: string;
+    takerWantsLogic: string;
+    market: Market;
+    gasLowerBound: ethers.BigNumberish;
+  } & (WithRestingOrderParams | WithoutRestingOrderParams);
+
   /**
    * Parameters for trading on a market.
    *
@@ -192,8 +257,9 @@ namespace Market {
    *
    * @param forceRoutingToMangroveOrder: whether to force routing to MangroveOrder, even if the market is not active.
    * @param slippage the maximum slippage to accept, in % of the amount of quote token.
-   * @param fillOrKill whether to fill the order completely or not at all.
    * @param expiryDate the expiry date of the order, in seconds since unix epoch.
+   * @param takerGivesLogic the logic contract to use for the taker to give tokens (this logic will also be applied for the resting order).
+   * @param takerWantsLogic the logic contract to use for the taker to receive tokens (this logic will also be applied for the resting order).
    * @param gasLowerBound the minimum gas to use for the trade.
    * @param restingOrder whether to create a resting order, and if so, the parameters for the resting order.
    *
@@ -207,12 +273,11 @@ namespace Market {
   export type TradeParams = {
     forceRoutingToMangroveOrder?: boolean;
     slippage?: number;
-    fillOrKill?: boolean;
-    expiryDate?: number;
+    takerGivesLogic?: string;
+    takerWantsLogic?: string;
     gasLowerBound?: ethers.BigNumberish;
-  } & {
-    restingOrder?: RestingOrderParams;
-  } & (
+  } & (WithRestingOrderParams | WithoutRestingOrderParams) &
+    (
       | { volume: Bigish; limitPrice: Bigish }
       | { total: Bigish; limitPrice: Bigish }
       | {

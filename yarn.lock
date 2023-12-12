@@ -1268,14 +1268,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@npm:next":
-  version: 0.0.2-7
-  resolution: "@mangrovedao/mangrove-strats@npm:0.0.2-7"
+"@mangrovedao/mangrove-strats@portal:/Users/maxenceraballand/Documents/mangrove/mangrove-strats::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@mangrovedao/mangrove-strats@portal:/Users/maxenceraballand/Documents/mangrove/mangrove-strats::locator=%40mangrovedao%2Fmangrove.js%40workspace%3A."
   dependencies:
     "@mangrovedao/mangrove-core": next
-  checksum: 42cc7b7ad26d8f483b1883febed3168b81d29bb60352a80e8c951d47c5930fbecdec70a6a178924125a8389600188cdf45de009f700bd042c5889ba0eb3e82df
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@mangrovedao/mangrove.js@workspace:.":
   version: 0.0.0-use.local
@@ -1290,7 +1289,7 @@ __metadata:
     "@mangrovedao/context-addresses": next
     "@mangrovedao/mangrove-core": next
     "@mangrovedao/mangrove-deployments": next
-    "@mangrovedao/mangrove-strats": next
+    "@mangrovedao/mangrove-strats": "mangrovedao/mangrove-strats#feat/skipMarketOrderOption"
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^11.1.2
     "@types/big.js": ^6.1.6

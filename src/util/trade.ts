@@ -227,14 +227,25 @@ class Trade {
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
+  needsMarketOrder(
+    orderType: Market.MangroveOrderType,
+  ): orderType is Market.WithRestingOrderTypes {
+    return this.fromOrderTypeToBN(orderType).lt(3);
+  }
+
   /**
    * Get raw parameters to send to Mangrove for a buy or sell order for the given trade and market parameters.
    * @param bs buy or sell
    * @param params trade parameters - see {@link Market.TradeParams}
    * @param market market to trade on
    * @returns raw parameters for a market order to send to Mangrove
+   * @throws if an order type requiring a resting order is given but no resting order parameters are provided
    */
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
+    const needsMarketOrder = this.needsMarketOrder(params.orderType);
+    if (needsMarketOrder && !params.restingParams)
+      throw new Error("Market order needs resting order params");
+
     const { maxTick, fillVolume, fillWants } =
       bs === "buy"
         ? this.getParamsForBuy(params, market)
@@ -243,11 +254,23 @@ class Trade {
       "restingOrder" in params ? params.restingOrder : null;
 
     const orderType =
-      !!params.fillOrKill ||
-      !!restingOrderParams ||
-      !!params.forceRoutingToMangroveOrder
-        ? "restingOrder"
-        : "marketOrder";
+      needsMarketOrder || (!params.takerGivesLogic && !params.takerWantsLogic)
+        ? "marketOrder"
+        : "restingOrder";
+
+    const advancedParams = (needsMarketOrder
+      ? {
+          restingParams: restingOrderParams,
+          orderType: params.orderType,
+          expiryDate: params.expiryDate,
+        }
+      : {
+          restingParams: undefined,
+          orderType: params.orderType,
+          expiryDate: undefined,
+        }) as unknown as
+      | Market.WithRestingOrderParams
+      | Market.WithoutRestingOrderParams;
 
     return {
       maxTick,
@@ -255,6 +278,7 @@ class Trade {
       fillWants,
       restingOrderParams,
       orderType,
+      advancedParams,
     };
   }
 
@@ -273,7 +297,7 @@ class Trade {
     market: Market,
     overrides: ethers.Overrides = {},
   ): Promise<Market.Transaction<Market.OrderResult>> {
-    const { maxTick, fillVolume, fillWants, restingOrderParams, orderType } =
+    const { maxTick, fillVolume, fillWants, orderType, advancedParams } =
       this.getRawParams(bs, params, market);
     switch (orderType) {
       case "restingOrder":
@@ -281,13 +305,13 @@ class Trade {
           {
             maxTick,
             fillVolume,
-            orderType: bs,
+            side: bs,
             fillWants: fillWants,
-            expiryDate: params.expiryDate ?? 0,
-            restingParams: restingOrderParams ?? undefined,
             market: market,
-            fillOrKill: params.fillOrKill ? params.fillOrKill : false,
             gasLowerBound: params.gasLowerBound ?? 0,
+            takerGivesLogic: params.takerGivesLogic ?? "0x0",
+            takerWantsLogic: params.takerWantsLogic ?? "0x0",
+            ...advancedParams,
           },
           overrides,
         );
@@ -579,6 +603,9 @@ class Trade {
     return result;
   }
 
+  fromOrderTypeToBN(orderType: Market.MangroveOrderType) {
+    return BigNumber.from(Market.mangroveOrderTypes.indexOf(orderType));
+  }
   /**
    * Low level resting order.
    *
@@ -588,29 +615,21 @@ class Trade {
    */
   async mangroveOrder(
     {
+      side,
       maxTick,
-      fillVolume,
       orderType,
+      fillVolume,
       fillWants,
-      fillOrKill,
       expiryDate,
       restingParams,
+      takerGivesLogic,
+      takerWantsLogic,
       market,
       gasLowerBound,
-    }: {
-      maxTick: number;
-      fillVolume: ethers.BigNumber;
-      orderType: Market.BS;
-      fillWants: boolean;
-      fillOrKill: boolean;
-      expiryDate: number;
-      restingParams: Market.RestingOrderParams | undefined;
-      market: Market;
-      gasLowerBound: ethers.BigNumberish;
-    },
+    }: Market.RawMangroveOrderParams,
     overrides: ethers.Overrides,
   ): Promise<Market.Transaction<Market.OrderResult>> {
-    const ba = this.bsToBa(orderType);
+    const ba = this.bsToBa(side);
     const restingOrderParams = restingParams
       ? await this.getRestingOrderParams(restingParams, market, ba)
       : undefined;
@@ -622,6 +641,7 @@ class Trade {
       : overrides;
 
     const olKey = market.getOLKey(ba);
+    const rawOrderType = this.fromOrderTypeToBN(orderType);
 
     const response = this.createTxWithOptionalGasEstimation(
       market.mgv.orderContract.take,
@@ -630,25 +650,23 @@ class Trade {
       overrides_,
       [
         {
-          olKey: olKey,
-          fillOrKill: fillOrKill,
+          olKey,
           tick: maxTick,
-          fillVolume: fillVolume,
-          fillWants: fillWants,
-          restingOrder: !!restingOrderParams,
-          expiryDate: expiryDate,
-          offerId:
-            restingParams?.offerId === undefined ? 0 : restingParams.offerId,
-          restingOrderGasreq: restingOrderParams
-            ? restingOrderParams.restingOrderGasreq
-            : 0,
+          orderType: rawOrderType,
+          fillVolume,
+          fillWants,
+          expiryDate: expiryDate ?? 0,
+          offerId: restingParams?.offerId ?? 0,
+          restingOrderGasreq: restingOrderParams?.restingOrderGasreq ?? 0,
+          takerGivesLogic,
+          takerWantsLogic,
         },
         overrides_,
       ],
     );
     const result = this.responseToMangroveOrderResult(
       response,
-      orderType,
+      side,
       fillWants,
       fillVolume,
       market,
