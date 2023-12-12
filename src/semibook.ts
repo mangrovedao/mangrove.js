@@ -2,7 +2,7 @@ import { Log } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber, ethers } from "ethers";
 import clone from "just-clone";
-import { Mangrove, Market, Token } from ".";
+import { Mangrove, Market } from ".";
 
 import {
   BlockManager,
@@ -666,9 +666,7 @@ class Semibook
     const min = config.density.getRequiredOutboundForGas(
       gasreq + config.offer_gasbase,
     );
-    return min.gt(0)
-      ? min
-      : this.market.getOutboundInbound(this.ba).outbound_tkn.fromUnits(1);
+    return min.gt(0) ? min : this.tickPriceHelper.outboundFromRaw(1);
   }
 
   async getMaxGasReq(): Promise<number | undefined> {
@@ -904,10 +902,6 @@ class Semibook
     let offer: Market.Offer;
     let removedOffer: Market.Offer | undefined;
 
-    const { outbound_tkn, inbound_tkn } = this.market.getOutboundInbound(
-      this.ba,
-    );
-
     switch (event.name) {
       case "OfferWrite": {
         const id = Semibook.rawIdToId(event.args.id);
@@ -946,26 +940,12 @@ class Semibook
       }
 
       case "OfferFail": {
-        removedOffer = this.#handleOfferFail(
-          event,
-          removedOffer,
-          state,
-          outbound_tkn,
-          inbound_tkn,
-          log,
-        );
+        removedOffer = this.#handleOfferFail(event, removedOffer, state, log);
         break;
       }
 
       case "OfferFailWithPosthookData": {
-        removedOffer = this.#handleOfferFail(
-          event,
-          removedOffer,
-          state,
-          outbound_tkn,
-          inbound_tkn,
-          log,
-        );
+        removedOffer = this.#handleOfferFail(event, removedOffer, state, log);
         break;
       }
 
@@ -974,8 +954,6 @@ class Semibook
           event,
           removedOffer,
           state,
-          outbound_tkn,
-          inbound_tkn,
           log,
         );
         break;
@@ -986,8 +964,6 @@ class Semibook
           event,
           removedOffer,
           state,
-          outbound_tkn,
-          inbound_tkn,
           log,
         );
         break;
@@ -1074,7 +1050,7 @@ class Semibook
           state,
           Density.from96X32(
             event.args.value,
-            this.market.getOutboundInbound(this.ba).outbound_tkn.decimals,
+            this.tickPriceHelper.outbound.decimals,
           ),
         );
         Array.from(this.#eventListeners.keys()).forEach(
@@ -1104,8 +1080,6 @@ class Semibook
     } & OfferFailEvent,
     removedOffer: Market.Offer | undefined,
     state: Semibook.State,
-    outbound_tkn: Token,
-    inbound_tkn: Token,
     log: Log,
   ) {
     const id = Semibook.rawIdToId(event.args.id);
@@ -1121,8 +1095,12 @@ class Semibook
             taker: event.args.taker,
             offer: removedOffer,
             offerId: id,
-            takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-            takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+            takerWants: this.tickPriceHelper.outboundFromRaw(
+              event.args.takerWants,
+            ),
+            takerGives: this.tickPriceHelper.inboundFromRaw(
+              event.args.takerGives,
+            ),
             mgvData: ethers.utils.parseBytes32String(event.args.mgvData),
           },
           event,
@@ -1138,8 +1116,6 @@ class Semibook
     } & OfferSuccessEvent,
     removedOffer: Market.Offer | undefined,
     state: Semibook.State,
-    outbound_tkn: Token,
-    inbound_tkn: Token,
     log: Log,
   ) {
     const id = Semibook.rawIdToId(event.args.id);
@@ -1155,8 +1131,12 @@ class Semibook
             taker: event.args.taker,
             offer: removedOffer,
             offerId: id,
-            takerWants: outbound_tkn.fromUnits(event.args.takerWants),
-            takerGives: inbound_tkn.fromUnits(event.args.takerGives),
+            takerWants: this.tickPriceHelper.outboundFromRaw(
+              event.args.takerWants,
+            ),
+            takerGives: this.tickPriceHelper.inboundFromRaw(
+              event.args.takerGives,
+            ),
           },
           event,
           ethersLog: log,
@@ -1334,8 +1314,10 @@ class Semibook
   rawLocalConfigToLocalConfig(
     local: Mangrove.RawConfig["_local"],
   ): Mangrove.LocalConfigFull {
-    const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
-    return Semibook.rawLocalConfigToLocalConfig(local, outbound_tkn.decimals);
+    return Semibook.rawLocalConfigToLocalConfig(
+      local,
+      this.tickPriceHelper.outbound.decimals,
+    );
   }
 
   static rawLocalConfigToLocalConfig(
@@ -1358,8 +1340,7 @@ class Semibook
   }
 
   rawOfferSlimToOfferSlim(raw: Semibook.RawOfferSlim): Market.OfferSlim {
-    const { outbound_tkn } = this.market.getOutboundInbound(this.ba);
-    const gives = outbound_tkn.fromUnits(raw.gives);
+    const gives = this.tickPriceHelper.outboundFromRaw(raw.gives);
     const id = Semibook.rawIdToId(raw.id);
     const tick = raw.tick.toNumber();
     const price = this.tickPriceHelper.priceFromTick(tick);
@@ -1374,7 +1355,7 @@ class Semibook
       gives,
       price,
       wants: this.tickPriceHelper.inboundFromOutbound(tick, gives),
-      volume: this.market.getVolumeForGivesAndPrice(this.ba, gives, price),
+      volume: this.tickPriceHelper.volumeForGivesAndPrice(gives, price),
     };
   }
 

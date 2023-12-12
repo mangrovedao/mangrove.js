@@ -97,10 +97,12 @@ class GeometricKandelDistributionHelper {
     }
 
     return this.helper.askTickPriceHelper.tickFromVolumes(
-      this.helper.market.quote
-        .fromUnits(ethers.constants.WeiPerEther)
+      this.helper.askTickPriceHelper
+        .inboundFromRaw(ethers.constants.WeiPerEther)
         .mul(priceRatio),
-      this.helper.market.base.fromUnits(ethers.constants.WeiPerEther),
+      this.helper.askTickPriceHelper.outboundFromRaw(
+        ethers.constants.WeiPerEther,
+      ),
     );
   }
 

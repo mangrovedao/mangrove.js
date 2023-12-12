@@ -866,7 +866,7 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
-    const askTickPriceHelper = new TickPriceHelper("asks", market);
+    const askTickPriceHelper = market.getSemibook("asks").tickPriceHelper;
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -888,7 +888,7 @@ describe("Market integration tests suite", () => {
     });
     const gave = askTickPriceHelper
       .priceFromTick(1)
-      .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
+      .mul(askTickPriceHelper.outboundFromRaw(rawMinGivesBase))
       .toNumber();
     const buyPromises = await market.buy({
       maxTick: 1,
@@ -899,7 +899,7 @@ describe("Market integration tests suite", () => {
     expect(result.successes).to.have.lengthOf(1);
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes[0].got.toNumber()).to.be.equal(
-      market.base.fromUnits(rawMinGivesBase).toNumber(),
+      askTickPriceHelper.outboundFromRaw(rawMinGivesBase).toNumber(),
     );
     expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
     expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);
@@ -912,7 +912,7 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
-    const askTickPriceHelper = new TickPriceHelper("asks", market);
+    const askTickPriceHelper = market.getSemibook("asks").tickPriceHelper;
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -942,12 +942,12 @@ describe("Market integration tests suite", () => {
     result.summary = result.summary as Market.OrderSummary;
     const gave = askTickPriceHelper
       .priceFromTick(1)
-      .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
+      .mul(askTickPriceHelper.outboundFromRaw(rawMinGivesBase))
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
     expect(result.successes[0].got.toNumber()).to.be.equal(
-      market.base.fromUnits(rawMinGivesBase).toNumber(),
+      askTickPriceHelper.outboundFromRaw(rawMinGivesBase).toNumber(),
     );
     expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
     expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);

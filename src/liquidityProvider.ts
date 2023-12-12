@@ -282,7 +282,7 @@ class LiquidityProvider {
       this.market,
     );
 
-    const { outbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const tickPriceHelper = this.market.getSemibook(p.ba).tickPriceHelper;
     const olKey = this.market.getOLKey(p.ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
@@ -292,7 +292,7 @@ class LiquidityProvider {
       txPromise = this.contract.newOffer(
         olKey,
         tick,
-        outbound_tkn.toUnits(gives),
+        tickPriceHelper.rawOutbound(gives),
         this.gasreq,
         this.mgv.optValueToPayableOverride(overrides, fund),
       );
@@ -300,7 +300,7 @@ class LiquidityProvider {
       txPromise = this.mgv.contract.newOfferByTick(
         olKey,
         tick,
-        outbound_tkn.toUnits(gives),
+        tickPriceHelper.rawOutbound(gives),
         this.gasreq,
         0, //gasprice
         this.mgv.optValueToPayableOverride(overrides, fund),
@@ -406,7 +406,7 @@ class LiquidityProvider {
       p,
       this.market,
     );
-    const { outbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const tickPriceHelper = this.market.getSemibook(p.ba).tickPriceHelper;
     const olKey = this.market.getOLKey(p.ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
@@ -416,7 +416,7 @@ class LiquidityProvider {
       txPromise = this.contract.updateOffer(
         olKey,
         tick,
-        outbound_tkn.toUnits(gives),
+        tickPriceHelper.rawOutbound(gives),
         id,
         this.gasreq,
         this.mgv.optValueToPayableOverride(overrides, fund),
@@ -425,7 +425,7 @@ class LiquidityProvider {
       txPromise = this.mgv.contract.updateOfferByTick(
         olKey,
         tick,
-        outbound_tkn.toUnits(gives),
+        tickPriceHelper.rawOutbound(gives),
         0,
         0,
         id,

@@ -4,11 +4,14 @@ import { Bigish, typechain } from "../../types";
 import { OfferDistribution } from "../kandelDistribution";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
 import Market from "../../market";
+import TickPriceHelper from "../../util/tickPriceHelper";
 
 /** @title Management of a single Kandel instance. */
 class GeometricKandelLib {
   kandelLib: typechain.GeometricKandel;
   market: Market.KeyResolvedForCalculation;
+  askTickPriceHelper: TickPriceHelper;
+  bidTickPriceHelper: TickPriceHelper;
 
   /** Creates a KandelLib object to perform static calls toward a KandelLib.
    * @param params The parameters used to create an instance.
@@ -27,8 +30,9 @@ class GeometricKandelLib {
     this.kandelLib =
       params.kandelLibInstance ??
       typechain.GeometricKandel__factory.connect(params.address, params.signer);
-
     this.market = params.market;
+    this.askTickPriceHelper = new TickPriceHelper("asks", params.market);
+    this.bidTickPriceHelper = new TickPriceHelper("bids", params.market);
   }
 
   public async createPartialGeometricDistribution(params: {
@@ -54,10 +58,10 @@ class GeometricKandelLib {
       params.baseQuoteTickOffset,
       params.firstAskIndex,
       params.bidGives
-        ? this.market.quote.toUnits(params.bidGives)
+        ? this.bidTickPriceHelper.rawOutbound(params.bidGives)
         : ethers.constants.MaxUint256,
       params.askGives
-        ? this.market.base.toUnits(params.askGives)
+        ? this.askTickPriceHelper.rawOutbound(params.askGives)
         : ethers.constants.MaxUint256,
       params.pricePoints,
       params.stepSize,
@@ -66,12 +70,12 @@ class GeometricKandelLib {
     return {
       bids: distribution.bids.map((o) => ({
         index: o.index.toNumber(),
-        gives: this.market.quote.fromUnits(o.gives),
+        gives: this.bidTickPriceHelper.outboundFromRaw(o.gives),
         tick: o.tick.toNumber(),
       })),
       asks: distribution.asks.map((o) => ({
         index: o.index.toNumber(),
-        gives: this.market.base.fromUnits(o.gives),
+        gives: this.askTickPriceHelper.outboundFromRaw(o.gives),
         tick: o.tick.toNumber(),
       })),
     };

@@ -310,12 +310,16 @@ class CoreKandelInstance {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
       {
         bids: distribution.bids.map((o) => ({
-          gives: this.market.quote.toUnits(o.gives),
+          gives: this.distributionHelper.bidTickPriceHelper.rawOutbound(
+            o.gives,
+          ),
           index: o.index,
           tick: o.tick,
         })),
         asks: distribution.asks.map((o) => ({
-          gives: this.market.base.toUnits(o.gives),
+          gives: this.distributionHelper.askTickPriceHelper.rawOutbound(
+            o.gives,
+          ),
           index: o.index,
           tick: o.tick,
         })),

@@ -1327,17 +1327,6 @@ class Market {
     };
   }
 
-  /**
-   * Determine the volume of an offer from the amount of token to give and the price.
-   * @param ba bids or asks
-   * @param gives amount of token to give
-   * @param price price of the offer
-   * @returns the volume of the offer.
-   */
-  getVolumeForGivesAndPrice(ba: Market.BA, gives: Big, price: Big): Big {
-    return ba === "asks" ? gives : gives.div(price);
-  }
-
   /** Determine the first decimal place where the smallest price difference between neighboring offers in the order book cache is visible. */
   getDisplayDecimalsForPriceDifferences(): number {
     const books = this.getBook();

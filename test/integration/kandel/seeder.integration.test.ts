@@ -181,7 +181,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
       it(`minimumVolume uses config and calculates correct value offerType=${offerType} onAave=${onAave}`, async () => {
         // Arrange
         const offerGasreq = await seeder.getDefaultGasreq(onAave);
-        const { outbound_tkn } = market.getOutboundInbound(offerType);
+        const tickPriceHelper = market.getSemibook(offerType).tickPriceHelper;
         const readerMinVolume = await mgv.readerContract.minVolume(
           market.getOLKey(offerType),
           offerGasreq,
@@ -191,7 +191,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
             ? seeder.configuration.getConfig(market).minimumBasePerOfferFactor
             : seeder.configuration.getConfig(market).minimumQuotePerOfferFactor;
         const expectedVolume = factor.mul(
-          outbound_tkn.fromUnits(readerMinVolume),
+          tickPriceHelper.outboundFromRaw(readerMinVolume),
         );
 
         // Act

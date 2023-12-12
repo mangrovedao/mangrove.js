@@ -1,14 +1,16 @@
 import assert from "assert";
 import Mangrove, { Semibook, Market, Token, TickPriceHelper } from "../../src";
+import { ProviderNetwork } from "../../src/eth";
 import { SemibookCacheOperations } from "../../src/semibook";
 import Big from "big.js";
-import { BigNumber } from "ethers";
-import { anything, deepEqual, instance, mock, when } from "ts-mockito";
+import { BigNumber, ethers } from "ethers";
+import { anything, instance, mock, when } from "ts-mockito";
 import UnitCalculations from "../../src/util/unitCalculations";
 import MangroveEventSubscriber from "../../src/mangroveEventSubscriber";
 import { expect } from "chai";
-import { TokenCalculations } from "../../src/token";
 import { Density } from "../../src/util/Density";
+import { Provider } from "@ethersproject/providers";
+import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 describe("Semibook unit test suite", () => {
   describe("getIsVolumeDesiredForAsks", () => {
     it("returns false, when desiredVolume is undefined", async function () {
@@ -153,49 +155,26 @@ describe("Semibook unit test suite", () => {
   });
 
   describe("rawOfferSlimToOfferSlim", () => {
-    const rawGives = BigNumber.from(2);
-    const rawTick = 1;
+    const rawGives = BigNumber.from(3);
+    const rawTick = 99;
 
     const rawOffer = {
       id: BigNumber.from(1),
       gasprice: BigNumber.from(2),
       maker: "maker",
-      gasreq: BigNumber.from(0),
+      gasreq: BigNumber.from(42),
       gives: rawGives,
       tick: BigNumber.from(rawTick),
     };
 
-    it("returns offer with correct values for bids", async function () {
-      //Arrange
-      const marketSide: Market.BA = "bids";
-
-      const baseTokenMock = mock(Token);
-      when(baseTokenMock.id).thenReturn("a");
-      const baseTokenDecimals: number = 3;
-      when(baseTokenMock.decimals).thenReturn(baseTokenDecimals);
-
-      const expectedGives = UnitCalculations.fromUnits(
-        rawGives,
-        baseTokenDecimals,
-      );
-
-      const quoteTokenMock = mock(Token);
-      when(quoteTokenMock.id).thenReturn("b");
-      const quoteTokenDecimals = 1;
-      when(quoteTokenMock.decimals).thenReturn(quoteTokenDecimals);
-      when(quoteTokenMock.toUnits(anything())).thenCall((x) =>
-        UnitCalculations.toUnits(x, quoteTokenDecimals),
-      );
-      when(baseTokenMock.fromUnits(anything())).thenCall((x) =>
-        UnitCalculations.fromUnits(x, baseTokenDecimals),
-      );
-
-      const tickPriceHelper = new TickPriceHelper(marketSide, {
-        base: new TokenCalculations(baseTokenDecimals, baseTokenDecimals),
-        quote: new TokenCalculations(quoteTokenDecimals, quoteTokenDecimals),
-        tickSpacing: 1,
-      });
-
+    function createMangroveMock() {
+      const mangroveNetworkMock = mock<ProviderNetwork>();
+      when(mangroveNetworkMock.name).thenReturn("foo");
+      const providerMock = mock(Provider);
+      when(providerMock._isProvider).thenReturn(true);
+      const signerMock = mock(ethers.Signer);
+      when(signerMock._isSigner).thenReturn(true);
+      when(signerMock.provider).thenReturn(instance(providerMock));
       const mangroveEventSubscriberMock = mock(MangroveEventSubscriber);
       when(
         mangroveEventSubscriberMock.getSemibook(
@@ -209,149 +188,112 @@ describe("Semibook unit test suite", () => {
       when(mangroveMock.mangroveEventSubscriber).thenReturn(
         instance(mangroveEventSubscriberMock),
       );
+      when(mangroveMock.network).thenReturn(instance(mangroveNetworkMock));
+      when(mangroveMock.signer).thenReturn(instance(signerMock));
 
-      const marketMock = mock(Market);
-      when(marketMock.mgv).thenReturn(instance(mangroveMock));
-      when(marketMock.base).thenReturn(instance(baseTokenMock));
-      when(marketMock.quote).thenReturn(instance(quoteTokenMock));
-      when(marketMock.tickSpacing).thenReturn(1);
-      when(marketMock.getOutboundInbound(marketSide)).thenReturn({
-        outbound_tkn: instance(baseTokenMock),
-        inbound_tkn: instance(quoteTokenMock),
-      });
+      return mangroveMock;
+    }
 
-      const semibook = await Semibook.connect(
-        instance(marketMock),
-        marketSide,
-        async () => {},
-        {},
-      );
-
-      const expectedPrice = tickPriceHelper.priceFromTick(rawTick);
-
-      // key difference between bids and asks here; for bids, we have volume = gives / price
-      const expectedVolume = expectedGives.div(expectedPrice);
-
-      // necessary to compare Big numbers with deepEqual in when() to have mock match expected values
-      when(
-        marketMock.getVolumeForGivesAndPrice(
-          marketSide,
-          deepEqual(expectedGives),
-          deepEqual(expectedPrice),
-        ),
-      ).thenReturn(expectedVolume);
-
-      //Act
-      const result = semibook.rawOfferSlimToOfferSlim(rawOffer);
-
-      //Assert
-      const expectedOffer: Market.OfferSlim = {
-        id: rawOffer.id.toNumber(),
-        gasprice: rawOffer.gasprice.toNumber(),
-        maker: rawOffer.maker,
-        gasreq: rawOffer.gasreq.toNumber(),
-        gives: expectedGives,
-        tick: rawOffer.tick.toNumber(),
-        price: expectedPrice,
-        wants: expectedPrice.mul(expectedGives).round(),
-        volume: expectedVolume,
+    async function createTokenStubs(
+      mgv: Mangrove,
+      baseDecimals: number,
+      quoteDecimals: number,
+    ) {
+      return {
+        base: await Token.createTokenFromId("TokenA", mgv, {
+          decimals: baseDecimals,
+          address: "0x0000000000000000000000000000",
+          displayedAsPriceDecimals: baseDecimals,
+          displayedDecimals: baseDecimals,
+          displayName: "A",
+          symbol: "A",
+        }),
+        quote: await Token.createTokenFromId("TokenB", mgv, {
+          decimals: quoteDecimals,
+          address: "0x0000000000000000000000000000",
+          displayedAsPriceDecimals: quoteDecimals,
+          displayedDecimals: quoteDecimals,
+          displayName: "B",
+          symbol: "B",
+        }),
       };
+    }
 
-      assert.deepEqual(result, expectedOffer);
-    });
-
-    it("returns offer with correct values for asks", async function () {
-      //Arrange
-      const marketSide: Market.BA = "asks";
-
-      const baseTokenMock = mock(Token);
-      when(baseTokenMock.id).thenReturn("a");
-      const baseTokenDecimals: number = 3;
-      when(baseTokenMock.decimals).thenReturn(baseTokenDecimals);
-
-      const quoteTokenMock = mock(Token);
-      when(quoteTokenMock.id).thenReturn("b");
-      const quoteTokenDecimals = 1;
-      when(quoteTokenMock.decimals).thenReturn(quoteTokenDecimals);
-      when(baseTokenMock.toUnits(anything())).thenCall((x) =>
-        UnitCalculations.toUnits(x, baseTokenDecimals),
-      );
-      when(quoteTokenMock.fromUnits(anything())).thenCall((x) =>
-        UnitCalculations.fromUnits(x, quoteTokenDecimals),
-      );
-      const expectedGives = UnitCalculations.fromUnits(
-        rawGives,
-        quoteTokenDecimals,
-      );
-
-      const tickPriceHelper = new TickPriceHelper(marketSide, {
-        base: new TokenCalculations(baseTokenDecimals, baseTokenDecimals),
-        quote: new TokenCalculations(quoteTokenDecimals, quoteTokenDecimals),
-        tickSpacing: 1,
-      });
-
-      const mangroveEventSubscriberMock = mock(MangroveEventSubscriber);
-      when(
-        mangroveEventSubscriberMock.getSemibook(
-          anything(),
-          anything(),
-          anything(),
-        ),
-      ).thenReturn(undefined);
-
-      const mangroveMock = mock(Mangrove);
-      when(mangroveMock.mangroveEventSubscriber).thenReturn(
-        instance(mangroveEventSubscriberMock),
-      );
-
+    function createMarketMock(
+      mgv: Mangrove,
+      base: Token,
+      quote: Token,
+      tickSpacing: number,
+    ) {
       const marketMock = mock(Market);
-      when(marketMock.mgv).thenReturn(instance(mangroveMock));
-      when(marketMock.base).thenReturn(instance(baseTokenMock));
-      when(marketMock.quote).thenReturn(instance(quoteTokenMock));
-      when(marketMock.tickSpacing).thenReturn(1);
-      when(marketMock.getOutboundInbound(marketSide)).thenReturn({
-        outbound_tkn: instance(quoteTokenMock),
-        inbound_tkn: instance(baseTokenMock),
+      when(marketMock.mgv).thenReturn(mgv);
+      when(marketMock.base).thenReturn(base);
+      when(marketMock.quote).thenReturn(quote);
+      when(marketMock.tickSpacing).thenReturn(tickSpacing);
+      return marketMock;
+    }
+
+    bidsAsks.forEach((ba) => {
+      it(`returns offer with correct values for ${ba}`, async function () {
+        //Arrange
+        const mangroveMock = createMangroveMock();
+        const { base, quote } = await createTokenStubs(
+          instance(mangroveMock),
+          3,
+          1,
+        );
+        const marketMock = createMarketMock(
+          instance(mangroveMock),
+          base,
+          quote,
+          1,
+        );
+
+        const semibook = await Semibook.connect(
+          instance(marketMock),
+          ba,
+          async () => {},
+          {},
+        );
+
+        //Act
+        const result = semibook.rawOfferSlimToOfferSlim(rawOffer);
+
+        //Assert
+        const tickPriceHelper = new TickPriceHelper(ba, {
+          base,
+          quote,
+          tickSpacing: instance(marketMock).tickSpacing,
+        });
+        const expectedPrice = tickPriceHelper.priceFromTick(rawTick);
+
+        const expectedGives = UnitCalculations.fromUnits(
+          rawGives,
+          ba == "bids" ? quote.decimals : base.decimals,
+        );
+        // key difference between bids and asks here; for bids, we have volume = gives / price, for asks, we have volume = gives
+        const expectedVolume =
+          ba == "bids" ? expectedGives.div(expectedPrice) : expectedGives;
+        const expectedWants =
+          ba == "bids"
+            ? expectedGives.div(expectedPrice).round(base.decimals)
+            : expectedPrice.mul(expectedGives).round(quote.decimals);
+
+        const expectedOffer: Market.OfferSlim = {
+          id: rawOffer.id.toNumber(),
+          gasprice: rawOffer.gasprice.toNumber(),
+          maker: rawOffer.maker,
+          gasreq: rawOffer.gasreq.toNumber(),
+          gives: expectedGives,
+          tick: rawOffer.tick.toNumber(),
+          price: expectedPrice,
+          wants: expectedWants,
+
+          volume: expectedVolume,
+        };
+
+        assert.deepEqual(result, expectedOffer);
       });
-
-      const semibook = await Semibook.connect(
-        instance(marketMock),
-        marketSide,
-        async () => {},
-        {},
-      );
-
-      const expectedPrice = tickPriceHelper.priceFromTick(rawTick);
-
-      // key difference between bids and asks here; for asks, we have volume = gives
-      const expectedVolume = expectedGives;
-
-      // necessary to compare Big numbers with deepEqual in when() to have mock match expected values
-      when(
-        marketMock.getVolumeForGivesAndPrice(
-          marketSide,
-          deepEqual(expectedGives),
-          deepEqual(expectedPrice),
-        ),
-      ).thenReturn(expectedVolume);
-
-      //Act
-      const result = semibook.rawOfferSlimToOfferSlim(rawOffer);
-
-      //Assert
-      const expectedOffer: Market.OfferSlim = {
-        id: rawOffer.id.toNumber(),
-        gasprice: rawOffer.gasprice.toNumber(),
-        maker: rawOffer.maker,
-        gasreq: rawOffer.gasreq.toNumber(),
-        gives: expectedGives,
-        wants: expectedPrice.mul(expectedGives).round(),
-        tick: rawOffer.tick.toNumber(),
-        price: expectedPrice,
-        volume: expectedVolume,
-      };
-
-      assert.deepEqual(result, expectedOffer);
     });
   });
 
