@@ -110,58 +110,6 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  describe("getOutboundInbound", () => {
-    it("returns base as outbound and quote as inbound, when asks", async function () {
-      //Arrange
-      const quote = await mgv.token("TokenB");
-      const base = await mgv.token("TokenA");
-      //Act
-      const result = Market.getOutboundInbound("asks", base, quote);
-      //Assert
-      assert.equal(quote, result.inbound_tkn);
-      assert.equal(base, result.outbound_tkn);
-    });
-
-    it("returns base as inbound and quote as outbound, when bids", async function () {
-      //Arrange
-      const quote = await mgv.token("TokenB");
-      const base = await mgv.token("TokenA");
-      //Act
-      const result = Market.getOutboundInbound("bids", base, quote);
-      //Assert
-      assert.equal(base, result.inbound_tkn);
-      assert.equal(quote, result.outbound_tkn);
-    });
-
-    it("returns this.base as outbound and this.quote as inbound, when asks", async function () {
-      // Arrange
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      // Act
-      const result = market.getOutboundInbound("asks");
-      // Assert
-      assert.equal(result.outbound_tkn.id, "TokenA");
-      assert.equal(result.inbound_tkn.id, "TokenB");
-    });
-
-    it("returns this.base as inbound and this.quote as outbound, when bids", async function () {
-      // Arrange
-      const market = await mgv.market({
-        base: "TokenA",
-        quote: "TokenB",
-        tickSpacing: 1,
-      });
-      // Act
-      const result = market.getOutboundInbound("bids");
-      // Assert
-      assert.equal(result.inbound_tkn.id, "TokenA");
-      assert.equal(result.outbound_tkn.id, "TokenB");
-    });
-  });
-
   describe("isActive", () => {
     it("returns true, when asks and bids are active", async function () {
       // Arrange

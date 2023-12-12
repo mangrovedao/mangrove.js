@@ -1250,37 +1250,6 @@ class Market {
     this.#subscriptions.delete(cb);
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks.
-   * @param ba bids or asks
-   * @returns the outbound and inbound tokens.
-   */
-  getOutboundInbound(ba: Market.BA): {
-    outbound_tkn: Token;
-    inbound_tkn: Token;
-  } {
-    return Market.getOutboundInbound(ba, this.base, this.quote);
-  }
-
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks.
-   * @param ba bids or asks
-   * @param base base token
-   * @param quote quote token
-   * @returns the outbound and inbound tokens.
-   */
-  static getOutboundInbound(
-    ba: Market.BA,
-    base: Token,
-    quote: Token,
-  ): {
-    outbound_tkn: Token;
-    inbound_tkn: Token;
-  } {
-    return {
-      outbound_tkn: ba === "asks" ? base : quote,
-      inbound_tkn: ba === "asks" ? quote : base,
-    };
-  }
-
   /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks.
    * @param ba bids or asks
    * @param gives amount of token to give

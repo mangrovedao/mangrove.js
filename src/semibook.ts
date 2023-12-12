@@ -623,7 +623,7 @@ class Semibook
     const previousBigRm = Big.RM;
     const previousBigDp = Big.DP;
     Big.RM = Big.roundDown;
-    Big.DP = this.market.getOutboundInbound(this.ba).outbound_tkn.decimals;
+    Big.DP = this.tickPriceHelper.outbound.decimals;
     const concreteFee = mor.totalGot.mul(sor.local.fee).div(10_000);
     Big.DP = previousBigDp;
     Big.RM = previousBigRm;

@@ -132,11 +132,11 @@ class TestMaker {
       this.market,
     );
 
-    const { outbound_tkn } = this.market.getOutboundInbound(p.ba);
+    const outbound_tkn = this.market.getSemibook(p.ba).tickPriceHelper.outbound;
     const olKey = this.market.getOLKey(p.ba);
 
     // ensure mangrove is approved
-    await this.approveMgv(outbound_tkn.address);
+    await this.approveMgv(olKey.outbound_tkn);
     await this.approveMgv(olKey.inbound_tkn);
 
     if (!(this.mgv.provider instanceof ethers.providers.JsonRpcProvider)) {
@@ -145,13 +145,15 @@ class TestMaker {
     const url = this.mgv.provider.connection.url;
 
     // Ensure maker has the right amount of tokens
-    const internalBal = await outbound_tkn.contract.balanceOf(
-      this.contract.address,
+    const tokenContract = typechain.TestToken__factory.connect(
+      olKey.outbound_tkn,
+      this.mgv.signer,
     );
+    const internalBal = await tokenContract.balanceOf(this.contract.address);
     await (
       await (await node({ url: url, spawn: false, deploy: false })).connect()
     ).deal({
-      token: outbound_tkn.address,
+      token: olKey.outbound_tkn,
       account: this.contract.address,
       internalAmount: internalBal.add(outbound_tkn.toUnits(gives)),
     });

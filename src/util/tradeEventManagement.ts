@@ -4,7 +4,7 @@ import { BaseContract, BigNumber } from "ethers";
 import { LogDescription } from "ethers/lib/utils";
 import Market from "../market";
 import Semibook from "../semibook";
-import Token from "../token";
+import { TokenCalculations } from "../token";
 import {
   OfferFailEvent,
   OfferFailWithPosthookDataEvent,
@@ -51,7 +51,7 @@ class TradeEventManagement {
         restingOrderId?: number;
       };
     },
-    fillToken: Token,
+    fillToken: TokenCalculations,
   ): Market.OrderSummary {
     if (
       (!event.args.tick && !event.args.maxTick) ||
@@ -74,7 +74,11 @@ class TradeEventManagement {
     };
   }
 
-  createSuccessFromEvent(evt: OfferSuccessEvent, got: Token, gave: Token) {
+  createSuccessFromEvent(
+    evt: OfferSuccessEvent,
+    got: TokenCalculations,
+    gave: TokenCalculations,
+  ) {
     const success = {
       offerId: evt.args.id.toNumber(),
       got: got.fromUnits(evt.args.takerWants),
@@ -83,7 +87,11 @@ class TradeEventManagement {
     return success;
   }
 
-  createTradeFailureFromEvent(evt: OfferFailEvent, got: Token, gave: Token) {
+  createTradeFailureFromEvent(
+    evt: OfferFailEvent,
+    got: TokenCalculations,
+    gave: TokenCalculations,
+  ) {
     const tradeFailure = {
       offerId: evt.args.id.toNumber(),
       reason: evt.args.mgvData,
@@ -134,7 +142,7 @@ class TradeEventManagement {
 
   createSummaryFromOrderSummaryEvent(
     evt: MangroveOrderStartEvent,
-    fillToken: Token,
+    fillToken: TokenCalculations,
   ): Market.OrderSummary {
     return this.createSummaryFromEvent(
       {
@@ -183,7 +191,7 @@ class TradeEventManagement {
     result: OrderResultWithOptionalSummary,
     market: Market,
   ) {
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const { outbound, inbound } = market.getSemibook(ba).tickPriceHelper;
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
       case "CleanStart": {
@@ -219,7 +227,7 @@ class TradeEventManagement {
         }
         result.summary = this.createSummaryFromEvent(
           evt as OrderStartEvent,
-          fillWants ? inbound_tkn : outbound_tkn,
+          fillWants ? inbound : outbound,
         );
         break;
       }
@@ -231,7 +239,7 @@ class TradeEventManagement {
         this.numberOfOrderStart--;
         //last OrderComplete is ours so it overrides previous summaries if any
         if (result.summary != undefined && "tick" in result.summary) {
-          result.summary.fee = outbound_tkn.fromUnits(
+          result.summary.fee = outbound.fromUnits(
             (evt as OrderCompleteEvent).args.fee,
           );
           result.summary.totalGot = result.successes
@@ -242,10 +250,8 @@ class TradeEventManagement {
             Big(0),
           );
           result.summary.partialFill = partialFillFunc(
-            outbound_tkn.toUnits(
-              result.summary.totalGot.add(result.summary.fee),
-            ),
-            inbound_tkn.toUnits(result.summary.totalGave),
+            outbound.toUnits(result.summary.totalGot.add(result.summary.fee)),
+            inbound.toUnits(result.summary.totalGave),
           );
           result.summary.bounty = result.tradeFailures.reduce(
             (acc, current) => acc.add(current.penalty ?? 0),
@@ -262,8 +268,8 @@ class TradeEventManagement {
         result.successes.push(
           this.createSuccessFromEvent(
             evt as OfferSuccessEvent,
-            outbound_tkn,
-            inbound_tkn,
+            outbound,
+            inbound,
           ),
         );
         break;
@@ -280,8 +286,8 @@ class TradeEventManagement {
         result.successes.push(
           this.createSuccessFromEvent(
             evt as OfferSuccessEvent,
-            outbound_tkn,
-            inbound_tkn,
+            outbound,
+            inbound,
           ),
         );
         break;
@@ -293,8 +299,8 @@ class TradeEventManagement {
         result.tradeFailures.push(
           this.createTradeFailureFromEvent(
             evt as OfferFailEvent,
-            outbound_tkn,
-            inbound_tkn,
+            outbound,
+            inbound,
           ),
         );
         break;
@@ -311,8 +317,8 @@ class TradeEventManagement {
         result.tradeFailures.push(
           this.createTradeFailureFromEvent(
             evt as OfferFailEvent,
-            outbound_tkn,
-            inbound_tkn,
+            outbound,
+            inbound,
           ),
         );
         break;
@@ -348,7 +354,7 @@ class TradeEventManagement {
   ) {
     if (evt.args?.taker && receipt.from !== evt.args.taker) return;
 
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
+    const { outbound, inbound } = market.getSemibook(ba).tickPriceHelper;
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
       case "MangroveOrderStart": {
@@ -361,7 +367,7 @@ class TradeEventManagement {
           ...result.summary,
           ...this.createSummaryFromOrderSummaryEvent(
             evt as MangroveOrderStartEvent,
-            fillWants ? inbound_tkn : outbound_tkn,
+            fillWants ? inbound : outbound,
           ),
           totalGot: result.summary!.totalGot,
           totalGave: result.summary!.totalGave,

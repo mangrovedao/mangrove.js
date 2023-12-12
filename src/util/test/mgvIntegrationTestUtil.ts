@@ -385,12 +385,6 @@ export const postNewOffer = async ({
     ),
   );
 
-  await rawMint(
-    market.getOutboundInbound(ba).outbound_tkn,
-    maker.connectedContracts.testMaker.address,
-    BigNumber.from(gives).mul(2),
-  );
-
   await waitForTransaction(
     maker.connectedContracts.testMaker.shouldFail(shouldFail),
   );

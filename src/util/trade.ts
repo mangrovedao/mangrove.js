@@ -392,13 +392,13 @@ class Trade {
     params: Market.CleanParams,
     market: Market,
   ): Promise<Market.RawCleanParams> {
-    const { outbound_tkn } = market.getOutboundInbound(params.ba);
-
     const _targets = params.targets.map<CleanUnitParams["targets"][number]>(
       (t) => {
         return {
           offerId: t.offerId,
-          takerWants: outbound_tkn.toUnits(t.takerWants),
+          takerWants: market
+            .getSemibook(params.ba)
+            .tickPriceHelper.rawOutbound(t.takerWants),
           tick: t.tick,
           gasreq: BigNumber.from(t.gasreq),
         };
