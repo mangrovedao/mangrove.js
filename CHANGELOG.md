@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-14
+
 - fix: increaseAllowance will not fail if allowance becomes larger than 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
 - fix: increaseAllowance will consider large values infinite like other approval functions.
 - fix: all token approval functions now cap the allowance to 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
