@@ -21,7 +21,7 @@ class TickPriceHelper {
   }
 
   /** Gets the outbound token */
-  getOutbound() {
+  #getOutbound() {
     return Market.getOutboundInbound(
       this.ba,
       this.market.base,
@@ -30,7 +30,7 @@ class TickPriceHelper {
   }
 
   /** Gets the inbound token */
-  getInbound() {
+  #getInbound() {
     return Market.getOutboundInbound(
       this.ba,
       this.market.base,
@@ -112,11 +112,11 @@ class TickPriceHelper {
    */
   inboundFromOutbound(tick: number, outboundAmount: Bigish, roundUp?: boolean) {
     const bin = this.nearestRepresentableTick(BigNumber.from(tick));
-    const rawOutbound = this.getOutbound().toUnits(outboundAmount);
+    const rawOutbound = this.#getOutbound().toUnits(outboundAmount);
     const rawInbound = (
       roundUp ? TickLib.inboundFromOutboundUp : TickLib.inboundFromOutbound
     )(bin, rawOutbound);
-    return this.getInbound().fromUnits(rawInbound);
+    return this.#getInbound().fromUnits(rawInbound);
   }
 
   /**
@@ -128,11 +128,11 @@ class TickPriceHelper {
    */
   outboundFromInbound(tick: number, inboundAmount: Bigish, roundUp?: boolean) {
     const bin = this.nearestRepresentableTick(BigNumber.from(tick));
-    const rawInbound = this.getInbound().toUnits(inboundAmount);
+    const rawInbound = this.#getInbound().toUnits(inboundAmount);
     const rawOutbound = (
       roundUp ? TickLib.outboundFromInboundUp : TickLib.outboundFromInbound
     )(bin, rawInbound);
-    return this.getOutbound().fromUnits(rawOutbound);
+    return this.#getOutbound().fromUnits(rawOutbound);
   }
 
   /**
@@ -152,8 +152,8 @@ class TickPriceHelper {
    * @returns raw offer list tick (coerced to nearest bin) for volumes
    */
   tickFromVolumes(inboundVolume: Bigish, outboundVolume: Bigish): number {
-    const rawInbound = this.getInbound().toUnits(inboundVolume);
-    const rawOutbound = this.getOutbound().toUnits(outboundVolume);
+    const rawInbound = this.#getInbound().toUnits(inboundVolume);
+    const rawOutbound = this.#getOutbound().toUnits(outboundVolume);
     const tick = TickLib.tickFromVolumes(rawInbound, rawOutbound);
     const bin = this.nearestRepresentableTick(tick);
     return bin.toNumber();
