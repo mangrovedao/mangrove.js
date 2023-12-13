@@ -2,7 +2,7 @@ import Big from "big.js";
 import * as ethers from "ethers";
 import { BaseContract, BigNumber } from "ethers";
 import { LogDescription } from "ethers/lib/utils";
-import Market from "../market";
+import Market, { mangroveOrderTypes } from "../market";
 import Semibook from "../semibook";
 import Token from "../token";
 import {
@@ -42,35 +42,39 @@ class TradeEventManagement {
       args: {
         olKeyHash: string;
         taker: string;
-        fillOrKill?: boolean;
-        tick?: BigNumber;
-        maxTick?: BigNumber;
+        orderType?: Market.MangroveOrderType;
         fillVolume: BigNumber;
         fillWants: boolean;
-        restingOrder?: boolean;
         restingOrderId?: number;
-      };
+        takerGivesLogic?: string;
+        takerWantsLogic?: string;
+      } & (
+        | {
+            tick: BigNumber;
+          }
+        | {
+            maxTick: BigNumber;
+          }
+      );
     },
     fillToken: Token,
   ): Market.OrderSummary {
-    if (
-      (!event.args.tick && !event.args.maxTick) ||
-      (event.args.tick && event.args.maxTick)
-    ) {
-      throw new Error("Exactly one of tick or maxTick must be provided");
-    }
     return {
       taker: event.args.taker,
       olKeyHash: event.args.olKeyHash,
-      fillOrKill: event.args.fillOrKill,
-      tick: event.args.tick?.toNumber() ?? event.args.maxTick?.toNumber() ?? 0,
+      tick:
+        "tick" in event.args
+          ? event.args.tick.toNumber()
+          : event.args.maxTick.toNumber(),
+      orderType: event.args.orderType,
       fillVolume: fillToken.fromUnits(event.args.fillVolume),
       fillWants: event.args.fillWants,
-      restingOrder: event.args.restingOrder,
       restingOrderId: event.args.restingOrderId,
       partialFill: false,
       totalGot: Big(0),
       totalGave: Big(0),
+      takerGivesLogic: event.args.takerGivesLogic,
+      takerWantsLogic: event.args.takerWantsLogic,
     };
   }
 
@@ -141,12 +145,19 @@ class TradeEventManagement {
         args: {
           olKeyHash: evt.args.olKeyHash,
           taker: evt.args.taker,
-          fillOrKill: evt.args.fillOrKill,
           tick: evt.args.tick,
           fillVolume: evt.args.fillVolume,
           fillWants: evt.args.fillWants,
-          restingOrder: evt.args.restingOrder,
+          orderType: mangroveOrderTypes[evt.args.orderType],
           restingOrderId: Semibook.rawIdToId(evt.args.offerId),
+          takerGivesLogic:
+            BigInt(evt.args.takerGivesLogic) === 0n
+              ? undefined
+              : evt.args.takerGivesLogic,
+          takerWantsLogic:
+            BigInt(evt.args.takerWantsLogic) === 0n
+              ? undefined
+              : evt.args.takerWantsLogic,
         },
       },
       fillToken,

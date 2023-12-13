@@ -100,12 +100,13 @@ namespace Market {
   export type OrderSummary = {
     olKeyHash: string;
     taker: string;
-    fillOrKill?: boolean;
+    orderType?: MangroveOrderType;
     tick: number;
     fillVolume: Big;
     fillWants: boolean;
-    restingOrder?: boolean;
     restingOrderId?: number;
+    takerWantsLogic?: string;
+    takerGivesLogic?: string;
     fee?: Big;
     totalGot: Big;
     totalGave: Big;
