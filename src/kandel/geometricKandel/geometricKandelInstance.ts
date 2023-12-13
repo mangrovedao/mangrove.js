@@ -414,10 +414,18 @@ class GeometricKandelInstance extends CoreKandelInstance {
   getRawGives(bidGives: Bigish | undefined, askGives: Bigish | undefined) {
     return {
       rawBidGives: bidGives
-        ? this.distributionHelper.market.quote.toUnits(bidGives)
+        ? Market.getOutboundInbound(
+            "bids",
+            this.distributionHelper.market.base,
+            this.distributionHelper.market.quote,
+          ).outbound_tkn.toUnits(bidGives)
         : ethers.constants.MaxUint256,
       rawAskGives: askGives
-        ? this.distributionHelper.market.base.toUnits(askGives)
+        ? Market.getOutboundInbound(
+            "asks",
+            this.distributionHelper.market.base,
+            this.distributionHelper.market.quote,
+          ).outbound_tkn.toUnits(askGives)
         : ethers.constants.MaxUint256,
     };
   }

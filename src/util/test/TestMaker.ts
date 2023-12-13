@@ -136,7 +136,7 @@ class TestMaker {
     const olKey = this.market.getOLKey(p.ba);
 
     // ensure mangrove is approved
-    await this.approveMgv(outbound_tkn.address);
+    await this.approveMgv(olKey.outbound_tkn);
     await this.approveMgv(olKey.inbound_tkn);
 
     if (!(this.mgv.provider instanceof ethers.providers.JsonRpcProvider)) {
@@ -151,7 +151,7 @@ class TestMaker {
     await (
       await (await node({ url: url, spawn: false, deploy: false })).connect()
     ).deal({
-      token: outbound_tkn.address,
+      token: olKey.outbound_tkn,
       account: this.contract.address,
       internalAmount: internalBal.add(outbound_tkn.toUnits(gives)),
     });

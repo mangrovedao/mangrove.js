@@ -7,8 +7,8 @@ import { Bigish } from "../types";
 import { MANTISSA_BITS, MIN_RATIO_EXP } from "./coreCalculations/Constants";
 
 class TickPriceHelper {
-  ba: Market.BA;
-  market: Market.KeyResolvedForCalculation;
+  readonly ba: Market.BA;
+  readonly market: Market.KeyResolvedForCalculation;
 
   /**
    * Ctor
@@ -18,6 +18,24 @@ class TickPriceHelper {
   constructor(ba: Market.BA, market: Market.KeyResolvedForCalculation) {
     this.ba = ba;
     this.market = market;
+  }
+
+  /** Gets the outbound token */
+  #getOutbound() {
+    return Market.getOutboundInbound(
+      this.ba,
+      this.market.base,
+      this.market.quote,
+    ).outbound_tkn;
+  }
+
+  /** Gets the inbound token */
+  #getInbound() {
+    return Market.getOutboundInbound(
+      this.ba,
+      this.market.base,
+      this.market.quote,
+    ).inbound_tkn;
   }
 
   /**
@@ -94,15 +112,11 @@ class TickPriceHelper {
    */
   inboundFromOutbound(tick: number, outboundAmount: Bigish, roundUp?: boolean) {
     const bin = this.nearestRepresentableTick(BigNumber.from(tick));
-    const rawOutbound = (
-      this.ba === "bids" ? this.market.quote : this.market.base
-    ).toUnits(outboundAmount);
+    const rawOutbound = this.#getOutbound().toUnits(outboundAmount);
     const rawInbound = (
       roundUp ? TickLib.inboundFromOutboundUp : TickLib.inboundFromOutbound
     )(bin, rawOutbound);
-    return (
-      this.ba === "bids" ? this.market.base : this.market.quote
-    ).fromUnits(rawInbound);
+    return this.#getInbound().fromUnits(rawInbound);
   }
 
   /**
@@ -114,15 +128,21 @@ class TickPriceHelper {
    */
   outboundFromInbound(tick: number, inboundAmount: Bigish, roundUp?: boolean) {
     const bin = this.nearestRepresentableTick(BigNumber.from(tick));
-    const rawInbound = (
-      this.ba === "bids" ? this.market.base : this.market.quote
-    ).toUnits(inboundAmount);
+    const rawInbound = this.#getInbound().toUnits(inboundAmount);
     const rawOutbound = (
       roundUp ? TickLib.outboundFromInboundUp : TickLib.outboundFromInbound
     )(bin, rawInbound);
-    return (
-      this.ba === "bids" ? this.market.quote : this.market.base
-    ).fromUnits(rawOutbound);
+    return this.#getOutbound().fromUnits(rawOutbound);
+  }
+
+  /**
+   * Determine the volume of an offer from the amount of token to give and the price.
+   * @param gives amount of token to give
+   * @param price price of the offer
+   * @returns the volume of the offer.
+   */
+  volumeForGivesAndPrice(gives: Bigish, price: Bigish): Big {
+    return this.ba === "asks" ? Big(gives) : Big(gives).div(price);
   }
 
   /**
@@ -132,12 +152,8 @@ class TickPriceHelper {
    * @returns raw offer list tick (coerced to nearest bin) for volumes
    */
   tickFromVolumes(inboundVolume: Bigish, outboundVolume: Bigish): number {
-    const rawInbound = (
-      this.ba === "bids" ? this.market.base : this.market.quote
-    ).toUnits(inboundVolume);
-    const rawOutbound = (
-      this.ba === "bids" ? this.market.quote : this.market.base
-    ).toUnits(outboundVolume);
+    const rawInbound = this.#getInbound().toUnits(inboundVolume);
+    const rawOutbound = this.#getOutbound().toUnits(outboundVolume);
     const tick = TickLib.tickFromVolumes(rawInbound, rawOutbound);
     const bin = this.nearestRepresentableTick(tick);
     return bin.toNumber();

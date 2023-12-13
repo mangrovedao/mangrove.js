@@ -589,6 +589,42 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
   });
 
+  describe(TickPriceHelper.prototype.volumeForGivesAndPrice.name, () => {
+    it("calculates volume for gives and price for bids", () => {
+      // Arrange
+      const tickPriceHelper = new TickPriceHelper(
+        "bids",
+        createKeyResolvedForCalculation({
+          base: { decimals: 1 },
+          quote: { decimals: 2 },
+          tickSpacing: 2,
+        }),
+      );
+      // Act
+      const volume = tickPriceHelper.volumeForGivesAndPrice(100, 2);
+
+      // Assert
+      assert.equal(volume.toNumber(), 50);
+    });
+
+    it("calculates volume for gives and price for asks", () => {
+      // Arrange
+      const tickPriceHelper = new TickPriceHelper(
+        "asks",
+        createKeyResolvedForCalculation({
+          base: { decimals: 1 },
+          quote: { decimals: 2 },
+          tickSpacing: 2,
+        }),
+      );
+      // Act
+      const volume = tickPriceHelper.volumeForGivesAndPrice(100, 2);
+
+      // Assert
+      assert.equal(volume.toNumber(), 100);
+    });
+  });
+
   describe(TickPriceHelper.prototype.inboundFromOutbound.name, () => {
     [
       [1, 2],

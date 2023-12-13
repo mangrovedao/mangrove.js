@@ -96,11 +96,14 @@ class GeometricKandelDistributionHelper {
       throw Error("priceRatio must be larger than 1");
     }
 
+    const { outbound_tkn, inbound_tkn } = Market.getOutboundInbound(
+      "asks",
+      this.helper.market.base,
+      this.helper.market.quote,
+    );
     return this.helper.askTickPriceHelper.tickFromVolumes(
-      this.helper.market.quote
-        .fromUnits(ethers.constants.WeiPerEther)
-        .mul(priceRatio),
-      this.helper.market.base.fromUnits(ethers.constants.WeiPerEther),
+      inbound_tkn.fromUnits(ethers.constants.WeiPerEther).mul(priceRatio),
+      outbound_tkn.fromUnits(ethers.constants.WeiPerEther),
     );
   }
 

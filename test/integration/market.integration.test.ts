@@ -866,7 +866,7 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
-    const askTickPriceHelper = new TickPriceHelper("asks", market);
+    const askTickPriceHelper = market.getSemibook("asks").tickPriceHelper;
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -912,7 +912,7 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
 
-    const askTickPriceHelper = new TickPriceHelper("asks", market);
+    const askTickPriceHelper = market.getSemibook("asks").tickPriceHelper;
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);

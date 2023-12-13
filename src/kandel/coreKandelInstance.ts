@@ -277,7 +277,7 @@ class CoreKandelInstance {
    * @returns The outbound token.
    */
   public getOutboundToken(offerType: Market.BA) {
-    return offerType == "asks" ? this.market.base : this.market.quote;
+    return this.market.getOutboundInbound(offerType).outbound_tkn;
   }
 
   /** Gets the Mangrove offer id for a Kandel index.
@@ -310,12 +310,16 @@ class CoreKandelInstance {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
       {
         bids: distribution.bids.map((o) => ({
-          gives: this.market.quote.toUnits(o.gives),
+          gives: this.market
+            .getOutboundInbound("bids")
+            .outbound_tkn.toUnits(o.gives),
           index: o.index,
           tick: o.tick,
         })),
         asks: distribution.asks.map((o) => ({
-          gives: this.market.base.toUnits(o.gives),
+          gives: this.market
+            .getOutboundInbound("asks")
+            .outbound_tkn.toUnits(o.gives),
           index: o.index,
           tick: o.tick,
         })),
