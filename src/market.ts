@@ -1267,13 +1267,13 @@ class Market {
    * @param quote quote token
    * @returns the outbound and inbound tokens.
    */
-  static getOutboundInbound(
+  static getOutboundInbound<T>(
     ba: Market.BA,
-    base: Token,
-    quote: Token,
+    base: T,
+    quote: T,
   ): {
-    outbound_tkn: Token;
-    inbound_tkn: Token;
+    outbound_tkn: T;
+    inbound_tkn: T;
   } {
     return {
       outbound_tkn: ba === "asks" ? base : quote,
@@ -1325,17 +1325,6 @@ class Market {
       gives,
       wants,
     };
-  }
-
-  /**
-   * Determine the volume of an offer from the amount of token to give and the price.
-   * @param ba bids or asks
-   * @param gives amount of token to give
-   * @param price price of the offer
-   * @returns the volume of the offer.
-   */
-  getVolumeForGivesAndPrice(ba: Market.BA, gives: Big, price: Big): Big {
-    return ba === "asks" ? gives : gives.div(price);
   }
 
   /** Determine the first decimal place where the smallest price difference between neighboring offers in the order book cache is visible. */

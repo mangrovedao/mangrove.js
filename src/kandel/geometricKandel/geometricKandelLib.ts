@@ -47,6 +47,16 @@ class GeometricKandelLib {
         "Either initialAskGives or initialBidGives must be provided.",
       );
     }
+    const asksOutbound = Market.getOutboundInbound(
+      "asks",
+      this.market.base,
+      this.market.quote,
+    ).outbound_tkn;
+    const bidsOutbound = Market.getOutboundInbound(
+      "bids",
+      this.market.base,
+      this.market.quote,
+    ).outbound_tkn;
     const distribution = await this.kandelLib.createDistribution(
       params.from,
       params.to,
@@ -54,10 +64,10 @@ class GeometricKandelLib {
       params.baseQuoteTickOffset,
       params.firstAskIndex,
       params.bidGives
-        ? this.market.quote.toUnits(params.bidGives)
+        ? bidsOutbound.toUnits(params.bidGives)
         : ethers.constants.MaxUint256,
       params.askGives
-        ? this.market.base.toUnits(params.askGives)
+        ? asksOutbound.toUnits(params.askGives)
         : ethers.constants.MaxUint256,
       params.pricePoints,
       params.stepSize,
@@ -66,12 +76,12 @@ class GeometricKandelLib {
     return {
       bids: distribution.bids.map((o) => ({
         index: o.index.toNumber(),
-        gives: this.market.quote.fromUnits(o.gives),
+        gives: bidsOutbound.fromUnits(o.gives),
         tick: o.tick.toNumber(),
       })),
       asks: distribution.asks.map((o) => ({
         index: o.index.toNumber(),
-        gives: this.market.base.fromUnits(o.gives),
+        gives: asksOutbound.fromUnits(o.gives),
         tick: o.tick.toNumber(),
       })),
     };

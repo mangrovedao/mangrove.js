@@ -1374,7 +1374,7 @@ class Semibook
       gives,
       price,
       wants: this.tickPriceHelper.inboundFromOutbound(tick, gives),
-      volume: this.market.getVolumeForGivesAndPrice(this.ba, gives, price),
+      volume: this.tickPriceHelper.volumeForGivesAndPrice(gives, price),
     };
   }
 
