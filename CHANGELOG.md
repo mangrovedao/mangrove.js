@@ -1,5 +1,9 @@
 # Next version
 
+- fix: increaseAllowance will not fail if allowance becomes larger than 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
+- fix: increaseAllowance will consider large values infinite like other approval functions.
+- fix: all token approval functions respect now cap the allowance to 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
+
 # 2.0.0-13
 
 - fix: Calculate default offer provision for MangroveOrder based on a gasprice factor if provision is not provided.

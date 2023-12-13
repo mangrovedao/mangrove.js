@@ -47,14 +47,14 @@ describe("MGV Token integration tests suite", () => {
     assert.equal(allowance2.toNumber(), 100, "allowance should be 100");
   });
 
-  it("allowanceInfinite is true if infinite allowance ", async function () {
+  it("allowanceInfinite is true if infinite allowance", async function () {
     const usdc = await mgv.token("USDC");
     assert.ok(!(await usdc.allowanceInfinite()));
     await waitForTransaction(usdc.approveMangrove());
     assert.ok(await usdc.allowanceInfinite());
   });
 
-  it("allowanceInfinite is true if allowance is 2^200 + 1 ", async function () {
+  it("allowanceInfinite is true if allowance is 2^200 + 1", async function () {
     const usdc = await mgv.token("USDC");
     assert.ok(!(await usdc.allowanceInfinite()));
     await waitForTransaction(
@@ -66,7 +66,7 @@ describe("MGV Token integration tests suite", () => {
     assert.ok(await usdc.allowanceInfinite());
   });
 
-  it("allowanceInfinite is false if allowance is 2^200 ", async function () {
+  it("allowanceInfinite is false if allowance is 2^200", async function () {
     const usdc = await mgv.token("USDC");
     assert.ok(!(await usdc.allowanceInfinite()));
     await waitForTransaction(
@@ -86,6 +86,22 @@ describe("MGV Token integration tests suite", () => {
     assert.equal(
       allowance.toNumber(),
       200,
+      "allowance should be the final value",
+    );
+  });
+
+  it("approve respects MaxUint256", async function () {
+    const usdc = await mgv.token("USDC");
+    await waitForTransaction(
+      await usdc.approve(
+        mgv.address,
+        usdc.fromUnits(ethers.BigNumber.from(2).pow(300)),
+      ),
+    );
+    const allowance = await usdc.allowance();
+    assert.equal(
+      usdc.toUnits(allowance).toString(),
+      ethers.constants.MaxUint256.toString(),
       "allowance should be the final value",
     );
   });
@@ -136,6 +152,21 @@ describe("MGV Token integration tests suite", () => {
     );
   });
 
+  it("approveIfHigher respects MaxUint256", async function () {
+    const usdc = await mgv.token("USDC");
+
+    await waitForOptionalTransaction(
+      await usdc.approveIfHigher(mgv.address, Big(2).pow(300)),
+    );
+
+    const allowance = await usdc.allowance();
+    assert.equal(
+      usdc.toUnits(allowance).toString(),
+      ethers.constants.MaxUint256.toString(),
+      "allowance should updated to the highest",
+    );
+  });
+
   it("increaseApproval increases except when at max", async function () {
     const usdc = await mgv.token("USDC");
 
@@ -166,6 +197,60 @@ describe("MGV Token integration tests suite", () => {
       await usdc.increaseApproval(mgv.address),
       undefined,
       "no tx should be generated",
+    );
+  });
+
+  it("increaseApproval increases except when at soft max", async function () {
+    const usdc = await mgv.token("USDC");
+
+    await waitForOptionalTransaction(
+      await usdc.increaseApproval(
+        mgv.address,
+        usdc.fromUnits(ethers.BigNumber.from(2).pow(200).add(1)),
+      ),
+    );
+    const maxAllowance = await usdc.allowance();
+    assert.equal(
+      maxAllowance.toString(),
+      usdc.fromUnits(ethers.BigNumber.from(2).pow(200).add(1)).toString(),
+      "allowance should updated to large value",
+    );
+
+    assert.equal(
+      await usdc.increaseApproval(mgv.address, 50),
+      undefined,
+      "no tx should be generated due to soft infinite",
+    );
+  });
+
+  it("increaseApproval respects MaxUint256", async function () {
+    const usdc = await mgv.token("USDC");
+
+    await waitForOptionalTransaction(
+      await usdc.increaseApproval(
+        mgv.address,
+        usdc.fromUnits(ethers.BigNumber.from(2).pow(200).sub(1)),
+      ),
+    );
+    const allowance = await usdc.allowance();
+    assert.equal(
+      allowance.toString(),
+      usdc.fromUnits(ethers.BigNumber.from(2).pow(200).sub(1)),
+      "allowance should updated to large value",
+    );
+
+    await waitForOptionalTransaction(
+      await usdc.increaseApproval(
+        mgv.address,
+        usdc.fromUnits(ethers.BigNumber.from(2).pow(300)),
+      ),
+    );
+    const maxAllowance = await usdc.allowance();
+
+    assert.equal(
+      usdc.toUnits(maxAllowance).toString(),
+      ethers.constants.MaxUint256.toString(),
+      "allowance should updated to max",
     );
   });
 
