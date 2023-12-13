@@ -28,6 +28,8 @@ export const bookOptsDefault: Market.BookOptions = {
   chunkSize: Semibook.DEFAULT_CHUNK_SIZE,
 };
 
+export const mangroveOrderTypes = ["GTC", "GTCE", "PO", "IOC", "FOK"] as const;
+
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
   /** Parameters to identify a market on Mangrove.
@@ -184,14 +186,6 @@ namespace Market {
   };
 
   export type OrderRoute = "Mangrove" | "MangroveOrder";
-
-  export const mangroveOrderTypes = [
-    "GTC",
-    "GTCE",
-    "PO",
-    "IOC",
-    "FOK",
-  ] as const;
 
   /**
    * Type of order

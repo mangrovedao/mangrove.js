@@ -1,6 +1,6 @@
 import Big from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import Market from "../market";
+import Market, { mangroveOrderTypes } from "../market";
 import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement, {
@@ -604,7 +604,7 @@ class Trade {
   }
 
   fromOrderTypeToBN(orderType: Market.MangroveOrderType) {
-    return BigNumber.from(Market.mangroveOrderTypes.indexOf(orderType));
+    return BigNumber.from(mangroveOrderTypes.indexOf(orderType));
   }
   /**
    * Low level resting order.
