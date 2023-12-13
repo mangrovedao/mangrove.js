@@ -274,7 +274,7 @@ class Token extends TokenCalculations {
   }
 
   /**
-   * Returns whether allowance of `owner` given to `spender` is more than 2^200.
+   * Returns whether allowance of `owner` given to `spender` is high enough to be considered infinite (above 2^200)
    * If `owner` is not specified, defaults to current signer.
    * If `spender` is not specified, defaults to Mangrove instance.
    */
@@ -282,6 +282,11 @@ class Token extends TokenCalculations {
     const rawAllowance = await this.getRawAllowance({
       spender: params.spender,
     });
+    return this.isSoftInfinite(rawAllowance);
+  }
+
+  /** Determines if raw allowance is high enough to be considered infinite (above 2^200). */
+  private isSoftInfinite(rawAllowance: ethers.BigNumber) {
     return rawAllowance.gt(ethers.BigNumber.from(2).pow(200));
   }
 
@@ -318,8 +323,14 @@ class Token extends TokenCalculations {
 
   private getRawApproveAmount(amount?: Bigish): ethers.BigNumber {
     return amount != undefined
-      ? this.toUnits(amount)
+      ? this.capRawApproveAmount(this.toUnits(amount))
       : ethers.constants.MaxUint256;
+  }
+
+  private capRawApproveAmount(rawAmount: ethers.BigNumber): ethers.BigNumber {
+    return rawAmount.gt(ethers.constants.MaxUint256)
+      ? ethers.constants.MaxUint256
+      : rawAmount;
   }
 
   /** Sets the allowance for the spender if it is not infinite. Cannot be used to reduce from infinite.
@@ -347,27 +358,22 @@ class Token extends TokenCalculations {
     }
   }
 
-  /** Increases the allowance for the spender unless it is already max.
+  /** Increases the allowance for the spender unless it is already considered infinite (above 2^200).
    * @param spender The spender to approve
    * @param arg The approval arguments
    */
   async increaseApproval(spender: string, arg: ApproveArgs = {}) {
     const rawAllowance = await this.getRawAllowance({ spender });
-    if (rawAllowance.eq(ethers.constants.MaxUint256)) {
+    // We choose to consider large values infinite to avoid re-approving for tokens that subtract from the allowance on each transfer.
+    // This also means that approving, e.g., MaxUint256, will only happen when allowance drops below 2^200.
+    if (this.isSoftInfinite(rawAllowance)) {
       return;
     }
 
     const args = convertToApproveArgs(arg);
     const rawAmount = this.getRawApproveAmount(args.amount);
-    if (rawAmount.eq(ethers.constants.MaxUint256)) {
-      return this.contract.approve(spender, rawAmount, args.overrides);
-    } else {
-      return this.contract.approve(
-        spender,
-        rawAllowance.add(rawAmount),
-        args.overrides,
-      );
-    }
+    const newAmount = this.capRawApproveAmount(rawAllowance.add(rawAmount));
+    return this.contract.approve(spender, newAmount, args.overrides);
   }
 
   /**
