@@ -5,6 +5,7 @@ import { typechain } from "./types";
 import { Mangrove, Market } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import Big from "big.js";
+import { isAddress } from "ethers/lib/utils";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 /**
@@ -28,10 +29,14 @@ class OfferLogic {
 
   /**
    * @note Returns this logic's router. If logic has no router this call will return `undefined`
+   * @param owner The supposed caller or owner of the logic
    * @returns the router ethers.js contract responding to the `AbstractRouter` abi.
    */
-  async router(): Promise<typechain.AbstractRouter | undefined> {
-    const router_address = await this.contract.router();
+  async router(owner: string): Promise<typechain.AbstractRouter | undefined> {
+    if (!isAddress(owner)) {
+      throw new Error("owner is not a valid address");
+    }
+    const router_address = await this.contract.router(owner);
     if (router_address != ethers.constants.AddressZero) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
@@ -41,10 +46,11 @@ class OfferLogic {
   }
 
   /** Determines whether the offer logic has a router
+   * @param owner The supposed caller or owner of the logic
    * @returns True if the offer logic has a router, false otherwise.
    */
-  public async hasRouter() {
-    return (await this.contract.router()) != ethers.constants.AddressZero;
+  public async hasRouter(owner: string) {
+    return (await this.contract.router(owner)) != ethers.constants.AddressZero;
   }
 
   /**
@@ -118,14 +124,19 @@ class OfferLogic {
    * @param overrides The ethers overrides to use when calling the activate function.
    * @returns The transaction used to activate the OfferLogic.
    * */
-  activate(
+  async activate(
     tokenSymbolsOrIds: string[],
     overrides: ethers.Overrides = {},
-  ): Promise<TransactionResponse> {
+  ): Promise<TransactionResponse[]> {
     const tokenAddresses = tokenSymbolsOrIds.map((symbolOrId) =>
       this.mgv.getTokenAddress(symbolOrId),
     );
-    return this.contract.activate(tokenAddresses, overrides);
+    const results: TransactionResponse[] = [];
+    // return this.contract.activate(tokenAddresses, overrides);
+    for (const tokenAddress of tokenAddresses) {
+      results.push(await this.contract.activate(tokenAddress, overrides));
+    }
+    return results;
   }
 
   /** Retrieves the provision available on Mangrove for the offer logic, in ethers */
