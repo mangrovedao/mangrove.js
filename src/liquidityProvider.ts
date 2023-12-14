@@ -141,7 +141,7 @@ class LiquidityProvider {
         ? this.market.mgv.calculateOfferProvision(
             offerInfo.gasprice,
             offerInfo.gasreq,
-            offerInfo.offer_gasbase,
+            offerInfo.gasbase,
           )
         : Big(0);
       return this.market.getMissingProvision(

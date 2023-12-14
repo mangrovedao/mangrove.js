@@ -338,7 +338,7 @@ describe("Semibook unit test suite", () => {
         wants: Big(id),
         next: undefined,
         prev: undefined,
-        offer_gasbase: id,
+        gasbase: id,
         volume: Big(id),
       };
     }

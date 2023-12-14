@@ -343,7 +343,7 @@ namespace Market {
   export type Offer = OfferSlim & {
     next: number | undefined;
     prev: number | undefined;
-    offer_gasbase: number;
+    gasbase: number;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-namespace

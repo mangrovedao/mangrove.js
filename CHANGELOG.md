@@ -1,5 +1,6 @@
 # Next version
 
+- fix!: rename offer_gasbase on offer structures to gasbase
 - fix!: align return value of kandelInstance.getOffers() with new structure
 - fix!: rename populateGeneralChunk to populateGeneralChunks
 - feat: expose lastLiveBidIndex from Kandel distribution.

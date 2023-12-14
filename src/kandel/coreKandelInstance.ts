@@ -555,7 +555,7 @@ class CoreKandelInstance {
     return KandelDistribution.mapOffers(offers, (x) => ({
       gasprice: x.gasprice,
       gasreq: x.gasreq,
-      gasbase: x.offer_gasbase,
+      gasbase: x.gasbase,
     }));
   }
 

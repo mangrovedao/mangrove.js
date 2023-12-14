@@ -353,7 +353,7 @@ class Semibook
       offerId,
     );
     return {
-      offer_gasbase: details.kilo_offer_gasbase.toNumber() * 1000,
+      gasbase: details.kilo_offer_gasbase.toNumber() * 1000,
       next: Semibook.rawIdToId(offer.next),
       prev: Semibook.rawIdToId(offer.prev),
       ...this.rawOfferSlimToOfferSlim({
@@ -920,7 +920,7 @@ class Semibook
 
         // After removing the offer (a noop if the offer was not in local cache), we try to reinsert it.
         offer = {
-          offer_gasbase: state.localConfig.offer_gasbase,
+          gasbase: state.localConfig.offer_gasbase,
           next: undefined, // offers are always inserted at the end of the list
           prev: undefined, // prev will be set when the offer is inserted into the cache iff the previous offer exists in the cache
           ...this.rawOfferSlimToOfferSlim(event.args),
@@ -1270,7 +1270,7 @@ class Semibook
           const offer = rawOffers[index];
           const detail = rawOfferDetails[index];
           return {
-            offer_gasbase: detail.kilo_offer_gasbase.toNumber() * 1000,
+            gasbase: detail.kilo_offer_gasbase.toNumber() * 1000,
             next: Semibook.rawIdToId(offer.next),
             prev: Semibook.rawIdToId(offer.prev),
             ...this.rawOfferSlimToOfferSlim({

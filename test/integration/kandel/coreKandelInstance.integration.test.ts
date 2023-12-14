@@ -546,7 +546,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         (x) => ({
           gasreq: x.gasreq,
           gasprice: x.gasprice,
-          gasbase: x.offer_gasbase,
+          gasbase: x.gasbase,
         }),
       );
 
@@ -580,7 +580,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         (x) => ({
           gasreq: x.gasreq,
           gasprice: x.gasprice,
-          gasbase: x.offer_gasbase,
+          gasbase: x.gasbase,
         }),
       );
 
@@ -620,7 +620,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         (x) => ({
           gasreq: x.gasreq,
           gasprice: x.gasprice,
-          gasbase: x.offer_gasbase,
+          gasbase: x.gasbase,
         }),
       );
       const oldGasprice = (await kandel.getParameters()).gasprice;

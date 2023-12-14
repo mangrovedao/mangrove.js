@@ -116,7 +116,7 @@ describe("Market unit tests suite", () => {
         gasprice: 1,
         maker: "",
         gasreq: 1,
-        offer_gasbase: 1000,
+        gasbase: 1000,
         gives,
         wants: priceBig.mul(gives).round(),
         tick: new TickPriceHelper("asks", {
