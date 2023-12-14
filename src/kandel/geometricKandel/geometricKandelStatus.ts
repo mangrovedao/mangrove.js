@@ -3,17 +3,15 @@ import Market from "../../market";
 import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
 
 /** Offers with their price, liveness, and Kandel index.
- * @param offerType Whether the offer is a bid or an ask.
  * @param tick The tick of the offer.
  * @param index The index of the price point in Kandel.
- * @param offerId The Mangrove offer id of the offer.
+ * @param id The Mangrove offer id of the offer.
  * @param live Whether the offer is live.
  */
 export type OffersWithLiveness = {
-  offerType: Market.BA;
   tick: number;
   index: number;
-  offerId: number;
+  id: number;
   live: boolean;
 }[];
 
@@ -24,11 +22,11 @@ export type OffersWithLiveness = {
  * @param expectedBaseQuoteTick The expected ask tick of the offer (negate for bids) based on extrapolation from a live offer near the mid price.
  * @param asks The status of the current ask at the price point or undefined if there never was an ask at this point.
  * @param asks.live Whether the offer is live.
- * @param asks.offerId The Mangrove offer id.
+ * @param asks.id The Mangrove offer id.
  * @param asks.price The actual price of the offer.
  * @param bids The status of the current bid at the price point or undefined if there is no bid.
  * @param bids.live Whether the offer is live.
- * @param bids.offerId The Mangrove offer id.
+ * @param bids.id The Mangrove offer id.
  * @param bids.price The actual price of the offer.
  */
 export type OfferStatus = {
@@ -40,7 +38,7 @@ export type OfferStatus = {
     | undefined
     | {
         live: boolean;
-        offerId: number;
+        id: number;
         tick: number;
         price: Big;
       };
@@ -48,7 +46,7 @@ export type OfferStatus = {
     | undefined
     | {
         live: boolean;
-        offerId: number;
+        id: number;
         tick: number;
         price: Big;
       };
@@ -67,13 +65,13 @@ export type Statuses = {
   statuses: OfferStatus[];
   liveOutOfRange: {
     offerType: Market.BA;
-    offerId: number;
+    id: number;
     index: number;
   }[];
   baseOffer: {
     offerType: Market.BA;
     index: number;
-    offerId: number;
+    id: number;
   };
   minPrice: Big;
   maxPrice: Big;
@@ -133,7 +131,7 @@ class GeometricKandelStatus {
     baseQuoteTickOffset: number,
     pricePoints: number,
     stepSize: number,
-    offers: OffersWithLiveness,
+    offers: { bids: OffersWithLiveness; asks: OffersWithLiveness },
   ): Statuses {
     const midBaseQuoteTick =
       this.geometricDistributionHelper.helper.askTickPriceHelper.tickFromPrice(
@@ -141,7 +139,12 @@ class GeometricKandelStatus {
       );
 
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
-    const offersInRange = offers.filter((x) => x.index < pricePoints);
+    const allOffers = offers.bids
+      .map((x) => ({ ...x, offerType: "bids" as Market.BA }))
+      .concat(
+        offers.asks.map((x) => ({ ...x, offerType: "asks" as Market.BA })),
+      );
+    const offersInRange = allOffers.filter((x) => x.index < pricePoints);
     if (offersInRange.length == 0) {
       throw Error("Unable to determine distribution: no offers in range exist");
     }
@@ -179,18 +182,18 @@ class GeometricKandelStatus {
           ),
         asks: undefined as
           | undefined
-          | { live: boolean; offerId: number; tick: number; price: Big },
+          | { live: boolean; id: number; tick: number; price: Big },
         bids: undefined as
           | undefined
-          | { live: boolean; offerId: number; tick: number; price: Big },
+          | { live: boolean; id: number; tick: number; price: Big },
       };
     });
 
     // Merge with actual statuses
-    offersInRange.forEach(({ offerType, index, live, offerId, tick }) => {
+    offersInRange.forEach(({ offerType, index, live, id, tick }) => {
       statuses[index][offerType] = {
         live,
-        offerId,
+        id,
         price: (offerType == "asks"
           ? this.geometricDistributionHelper.helper.askTickPriceHelper
           : this.geometricDistributionHelper.helper.bidTickPriceHelper
@@ -228,10 +231,10 @@ class GeometricKandelStatus {
     // In case retract and withdraw was not invoked prior to re-populate, then some live offers can
     // be outside range. But this will not happen with correct usage of the contract.
     // Dead offers outside range can happen if range is shrunk and is not an issue and not reported.
-    const liveOutOfRange = offers
+    const liveOutOfRange = allOffers
       .filter((x) => x.index >= pricePoints && x.live)
-      .map(({ offerType, offerId, index }) => {
-        return { offerType, offerId, index };
+      .map(({ offerType, id, index }) => {
+        return { offerType, id, index };
       });
 
     const minBaseQuoteTick = expectedBaseQuoteTicks[0];
@@ -243,7 +246,7 @@ class GeometricKandelStatus {
       baseOffer: {
         offerType: offer.offerType,
         index: offer.index,
-        offerId: offer.offerId,
+        id: offer.id,
       },
       minPrice:
         this.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(

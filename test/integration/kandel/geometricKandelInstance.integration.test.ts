@@ -424,13 +424,13 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
       // Assert
       // remove offer ids
       const cleanedStatuses1 = JSON.parse(
-        JSON.stringify(statuses1, (k, v) => (k === "offerId" ? undefined : v)),
+        JSON.stringify(statuses1, (k, v) => (k === "id" ? undefined : v)),
       );
       const cleanedStatuses2 = JSON.parse(
-        JSON.stringify(statuses2, (k, v) => (k === "offerId" ? undefined : v)),
+        JSON.stringify(statuses2, (k, v) => (k === "id" ? undefined : v)),
       );
       const cleanedStatuses3 = JSON.parse(
-        JSON.stringify(statuses3, (k, v) => (k === "offerId" ? undefined : v)),
+        JSON.stringify(statuses3, (k, v) => (k === "id" ? undefined : v)),
       );
 
       assertApproxEqRel(
