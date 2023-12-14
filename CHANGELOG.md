@@ -1,6 +1,7 @@
 # Next version
 
-- fix: wrong price ratio from offset calculation fixed.
+- feat: return offset and price ratio from Kandel status.
+- fix: wrong price ratio from offset calculation in Kandel fixed.
 
 # 2.0.0-14
 

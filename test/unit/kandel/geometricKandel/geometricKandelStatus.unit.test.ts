@@ -72,6 +72,8 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
         tick: number;
       };
     }[];
+    expectedBaseQuoteTickOffset: number;
+    expectedPriceRatio: Big;
     expectedMinPrice: Big;
     expectedMinBaseQuoteTick: number;
     expectedMaxPrice: Big;
@@ -101,6 +103,15 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
     assertApproxEqRel(
       params.expectedMinPrice.toNumber(),
       params.statuses.minPrice.toNumber(),
+      0.01,
+    );
+    assert.equal(
+      params.expectedBaseQuoteTickOffset,
+      params.statuses.baseQuoteTickOffset,
+    );
+    assertApproxEqRel(
+      params.expectedPriceRatio,
+      params.statuses.priceRatio,
       0.01,
     );
     params.expectedStatuses.forEach((x, i) => {
@@ -285,6 +296,11 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
         expectedMaxPrice: Big(32000),
         expectedMaxBaseQuoteTick: askTickPriceHelper.tickFromPrice(32000),
         expectedStatuses: expectedStatuses,
+        expectedBaseQuoteTickOffset:
+          sut.geometricDistributionHelper.calculateBaseQuoteTickOffset(
+            priceRatio,
+          ),
+        expectedPriceRatio: originalDistribution.getPriceRatio(),
       });
     });
 
@@ -345,6 +361,11 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
         expectedMaxPrice: Big(32000),
         expectedMaxBaseQuoteTick: askTickPriceHelper.tickFromPrice(32000),
         expectedLiveOutOfRange: [],
+        expectedBaseQuoteTickOffset: baseQuoteTickOffset,
+        expectedPriceRatio:
+          sut.geometricDistributionHelper.getPriceRatioFromBaseQuoteOffset(
+            baseQuoteTickOffset,
+          ),
         expectedStatuses: [
           {
             expectedLiveBid: true,
@@ -564,6 +585,11 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
           offerId: 43,
         },
         expectedLiveOutOfRange: [{ offerType: "bids", index: 3, offerId: 42 }],
+        expectedBaseQuoteTickOffset: baseQuoteTickOffset,
+        expectedPriceRatio:
+          sut.geometricDistributionHelper.getPriceRatioFromBaseQuoteOffset(
+            baseQuoteTickOffset,
+          ),
         expectedStatuses: [
           {
             expectedLiveBid: true,

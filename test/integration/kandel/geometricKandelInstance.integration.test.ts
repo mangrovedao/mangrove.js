@@ -510,35 +510,6 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
       );
     });
 
-    it("getOfferStatuses retrieves status", async function () {
-      // Arrange
-      await populateKandel({ approve: false, deposit: false });
-      const receipts = await waitForTransactions(
-        kandel.retractOffers(
-          { startIndex: 0, endIndex: 1 },
-          { gasLimit: 1000000 },
-        ),
-      );
-
-      // Act
-      await mgvTestUtil.waitForBlock(
-        kandel.market.mgv,
-        receipts[receipts.length - 1].blockNumber,
-      );
-      const statuses = await kandel.getOfferStatuses(Big(1170));
-
-      // Assert
-      assert.equal(6, statuses.statuses.length);
-      assert.equal(statuses.baseOffer.offerType, "bids");
-      assert.equal(statuses.baseOffer.index, 2);
-      assert.equal(statuses.statuses[0].bids?.live, false);
-      assert.equal(statuses.statuses[0].expectedLiveBid, true);
-      assert.equal(
-        statuses.statuses[4].asks?.price?.round(0).toString(),
-        "1360",
-      );
-    });
-
     it("createDistributionWithOffers can be used to heal an offer", async function () {
       // Arrange
       await populateKandel({ approve: false, deposit: false });

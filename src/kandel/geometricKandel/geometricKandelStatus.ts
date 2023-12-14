@@ -60,6 +60,8 @@ export type OfferStatus = {
  * @param baseOffer The live offer that is selected near the mid price and used to calculate expected prices.
  * @param minPrice The minimum price of the offers. This is the price of the offer at index 0 if it is live; otherwise, the expected price at index 0.
  * @param maxPrice The maximum price of the offers. This is the price of the offer at index pricePoints - 1 if it is live; otherwise, the expected price at index pricePoints - 1.
+ * @param priceRatio The price ratio calculated based on the baseQuoteTickOffset
+ * @param baseQuoteTickOffset The offset in ticks between two price points of the geometric distribution.
  */
 export type Statuses = {
   statuses: OfferStatus[];
@@ -77,6 +79,8 @@ export type Statuses = {
   maxPrice: Big;
   minBaseQuoteTick: number;
   maxBaseQuoteTick: number;
+  priceRatio: Big;
+  baseQuoteTickOffset: number;
 };
 
 /** @title Helper for getting status about a geometric Kandel instance. */
@@ -251,6 +255,11 @@ class GeometricKandelStatus {
         ),
       minBaseQuoteTick,
       maxBaseQuoteTick,
+      baseQuoteTickOffset,
+      priceRatio:
+        this.geometricDistributionHelper.getPriceRatioFromBaseQuoteOffset(
+          baseQuoteTickOffset,
+        ),
     };
   }
 }
