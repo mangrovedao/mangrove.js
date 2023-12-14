@@ -1,5 +1,7 @@
 # Next version
 
+- fix: wrong price ratio from offset calculation fixed.
+
 # 2.0.0-14
 
 - fix: increaseAllowance will not fail if allowance becomes larger than 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.

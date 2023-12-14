@@ -107,6 +107,14 @@ class GeometricKandelDistributionHelper {
     );
   }
 
+  /** Gets the price ratio given by the baseQuoteTickOffset.
+   * @param baseQuoteTickOffset The base quote tick offset.
+   * @returns The price ratio.
+   */
+  public getPriceRatioFromBaseQuoteOffset(baseQuoteTickOffset: number) {
+    return this.helper.askTickPriceHelper.rawRatioFromTick(baseQuoteTickOffset);
+  }
+
   /** Gets tick based parameters for a distribution based on tick or price params.
    * @param params The distribution parameters, @see DistributionParams
    * @returns The tick based parameters, @see TickDistributionParams

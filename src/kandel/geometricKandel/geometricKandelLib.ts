@@ -4,6 +4,7 @@ import { Bigish, typechain } from "../../types";
 import { OfferDistribution } from "../kandelDistribution";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
 import Market from "../../market";
+import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
 
 /** @title Management of a single Kandel instance. */
 class GeometricKandelLib {
@@ -102,6 +103,7 @@ class GeometricKandelLib {
       to: params.pricePoints,
     });
     return new GeometricKandelDistribution(
+      new GeometricKandelDistributionHelper(this.market),
       params.baseQuoteTickIndex0,
       params.baseQuoteTickOffset,
       params.firstAskIndex,

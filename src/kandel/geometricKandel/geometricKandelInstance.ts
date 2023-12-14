@@ -110,16 +110,17 @@ class GeometricKandelInstance extends CoreKandelInstance {
     this.geometricStatus = params.kandelStatus;
   }
 
-  /** Gets the base quote tick offset stored on the contract. */
+  /** Gets the base quote tick offset stored on the contract and the equivalent price ratio. */
   public async getBaseQuoteTickOffset() {
     const baseQuoteTickOffset =
       await this.geometricKandel.baseQuoteTickOffset();
 
     return {
       baseQuoteTickOffset: baseQuoteTickOffset.toNumber(),
-      priceRatio: this.distributionHelper.askTickPriceHelper.priceFromTick(
-        baseQuoteTickOffset.toNumber(),
-      ),
+      priceRatio:
+        this.geometricGenerator.geometricDistributionHelper.getPriceRatioFromBaseQuoteOffset(
+          baseQuoteTickOffset.toNumber(),
+        ),
     };
   }
 
