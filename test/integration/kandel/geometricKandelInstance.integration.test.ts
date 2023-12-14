@@ -539,7 +539,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
         asks: [],
       };
       receipts = await waitForTransactions(
-        kandel.populateGeneralChunk({
+        kandel.populateGeneralChunks({
           distributionChunks: [singleOfferDistributionChunk],
         }),
       );

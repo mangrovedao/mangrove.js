@@ -786,7 +786,7 @@ class CoreKandelInstance {
    * @param overrides The ethers overrides to use when calling the populateChunk function.
    * @returns The transaction(s) used to populate the offers.
    */
-  public async populateGeneralChunk(
+  public async populateGeneralChunks(
     params: {
       distribution?: GeneralKandelDistribution;
       maxOffersInChunk?: number;

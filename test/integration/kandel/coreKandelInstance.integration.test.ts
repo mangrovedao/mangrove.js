@@ -859,7 +859,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
 
           // Act
           await waitForTransactions(
-            await kandel.populateGeneralChunk({
+            await kandel.populateGeneralChunks({
               distribution: generalDistribution,
               maxOffersInChunk: inChunks ? 2 : 80,
             }),
