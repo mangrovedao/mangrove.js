@@ -1,5 +1,6 @@
 # Next version
 
+- feat: expose lastLiveBidIndex from Kandel distribution.
 - feat: return offset and price ratio from Kandel status.
 - fix: wrong price ratio from offset calculation in Kandel fixed.
 

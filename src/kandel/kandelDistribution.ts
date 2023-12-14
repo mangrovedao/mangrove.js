@@ -170,6 +170,17 @@ class KandelDistribution {
     );
   }
 
+  /** Gets the index of the last live ask in the distribution. If there are no live bids, then -1 is returned.
+   * @returns The index of the last live ask in the distribution. If there are no live bids, then -1 is returned.
+   */
+  public getLastLiveBidIndex() {
+    return (
+      this.getLiveOffers("bids")
+        .reverse()
+        .find(() => true)?.index ?? -1
+    );
+  }
+
   /** Gets the required volume of base and quote for the distribution to be fully provisioned.
    * @returns The offered volume of base and quote for the distribution to be fully provisioned.
    */
@@ -221,10 +232,7 @@ class KandelDistribution {
         }
       }
     }
-    const lastLiveBidIndex =
-      this.getLiveOffers("bids")
-        .reverse()
-        .find(() => true)?.index ?? 0;
+    const lastLiveBidIndex = this.getLastLiveBidIndex();
     if (this.getFirstLiveAskIndex() < lastLiveBidIndex) {
       throw new Error(
         "Invalid distribution: live bids should come before live asks",
