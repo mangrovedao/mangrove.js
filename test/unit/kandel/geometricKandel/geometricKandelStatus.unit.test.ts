@@ -169,21 +169,13 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
   );
 
   function getOffersWithPrices(distribution: KandelDistribution) {
-    return {
-      asks: distribution.offers.asks.map((x) => ({
-        offerType: "asks" as Market.BA,
-        index: x.index,
-        live: x.gives.gt(0),
-        id: getOfferId("asks", x.index),
-        tick: x.tick,
-      })),
-      bids: distribution.offers.bids.map((x) => ({
-        index: x.index,
-        live: x.gives.gt(0),
-        id: getOfferId("bids", x.index),
-        tick: x.tick,
-      })),
-    };
+    return KandelDistribution.mapOffers(distribution.offers, (x, ba) => ({
+      offerType: ba,
+      index: x.index,
+      live: x.gives.gt(0),
+      id: getOfferId(ba, x.index),
+      tick: x.tick,
+    }));
   }
 
   describe(GeometricKandelStatus.prototype.getOfferStatuses.name, () => {

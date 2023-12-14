@@ -1,5 +1,4 @@
 import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
-import TickPriceHelper from "../../util/tickPriceHelper";
 import { Bigish } from "../../types";
 import Market from "../../market";
 import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";

@@ -308,22 +308,11 @@ class CoreKandelInstance {
    */
   public getRawDistribution(distribution: OfferDistribution) {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
-      {
-        bids: distribution.bids.map((o) => ({
-          gives: this.market
-            .getOutboundInbound("bids")
-            .outbound_tkn.toUnits(o.gives),
-          index: o.index,
-          tick: o.tick,
-        })),
-        asks: distribution.asks.map((o) => ({
-          gives: this.market
-            .getOutboundInbound("asks")
-            .outbound_tkn.toUnits(o.gives),
-          index: o.index,
-          tick: o.tick,
-        })),
-      };
+      KandelDistribution.mapOffers(distribution, (o, ba) => ({
+        gives: this.market.getOutboundInbound(ba).outbound_tkn.toUnits(o.gives),
+        index: o.index,
+        tick: o.tick,
+      }));
 
     return rawDistribution;
   }
@@ -351,18 +340,11 @@ class CoreKandelInstance {
   /** Retrieves all offers for the Kandel instance by querying the market. */
   public async getOffers() {
     const offerIds = await this.getOfferIds();
-
     const books = this.market.getBook();
-    const offerInfo = async (
-      ba: Market.BA,
-      x: { offerId: number; index: number },
-    ) => {
+    return await KandelDistribution.mapAsyncOffers(offerIds, async (x, ba) => {
       const offer = await books[ba].offerInfo(x.offerId);
       return { ...offer, index: x.index, live: this.market.isLiveOffer(offer) };
-    };
-    return await CoreKandelInstance.mapAsyncOffers(offerIds, (ba, x) =>
-      offerInfo(ba, x),
-    );
+    });
   }
 
   /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
@@ -566,30 +548,11 @@ class CoreKandelInstance {
     );
   }
 
-  static async mapAsyncOffers<T, R>(
-    offers: { asks: T[]; bids: T[] },
-    f: (ba: Market.BA, x: T) => Promise<R>,
-  ) {
-    return {
-      bids: await Promise.all(offers.bids.map((x) => f("bids", x))),
-      asks: await Promise.all(offers.asks.map((x) => f("asks", x))),
-    };
-  }
-  static mapOffers<T, R>(
-    offers: { asks: T[]; bids: T[] },
-    f: (ba: Market.BA, x: T) => R,
-  ) {
-    return {
-      bids: offers.bids.map((x) => f("bids", x)),
-      asks: offers.asks.map((x) => f("asks", x)),
-    };
-  }
-
   /** Retrieves provision parameters for all offers for the Kandel instance by querying the market.  */
   private async getOffersProvisionParams() {
     const offers = await this.getOffers();
 
-    return CoreKandelInstance.mapOffers(offers, (ba, x) => ({
+    return KandelDistribution.mapOffers(offers, (x) => ({
       gasprice: x.gasprice,
       gasreq: x.gasreq,
       gasbase: x.offer_gasbase,

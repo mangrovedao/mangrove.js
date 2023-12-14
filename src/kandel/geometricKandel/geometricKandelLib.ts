@@ -1,7 +1,7 @@
 import * as ethers from "ethers";
 import { Bigish, typechain } from "../../types";
 
-import { OfferDistribution } from "../kandelDistribution";
+import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
 import Market from "../../market";
 import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
@@ -74,18 +74,11 @@ class GeometricKandelLib {
       params.stepSize,
     );
 
-    return {
-      bids: distribution.bids.map((o) => ({
-        index: o.index.toNumber(),
-        gives: bidsOutbound.fromUnits(o.gives),
-        tick: o.tick.toNumber(),
-      })),
-      asks: distribution.asks.map((o) => ({
-        index: o.index.toNumber(),
-        gives: asksOutbound.fromUnits(o.gives),
-        tick: o.tick.toNumber(),
-      })),
-    };
+    return KandelDistribution.mapOffers(distribution, (o, ba) => ({
+      index: o.index.toNumber(),
+      gives: (ba === "bids" ? bidsOutbound : asksOutbound).fromUnits(o.gives),
+      tick: o.tick.toNumber(),
+    }));
   }
 
   public async createFullGeometricDistribution(params: {

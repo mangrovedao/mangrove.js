@@ -10,7 +10,7 @@ import {
 
 import { toWei } from "../../util/helpers";
 
-import { KandelStrategies, Mangrove } from "../../../src";
+import { KandelDistribution, KandelStrategies, Mangrove } from "../../../src";
 
 import { Big } from "big.js";
 import GeometricKandelInstance from "../../../src/kandel/geometricKandel/geometricKandelInstance";
@@ -541,7 +541,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         distribution,
       });
 
-      const indexerOffers = CoreKandelInstance.mapOffers(
+      const indexerOffers = KandelDistribution.mapOffers(
         await kandel.getOffers(),
         (x) => ({
           gasreq: x.gasreq,
@@ -575,7 +575,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         distribution,
       });
 
-      const indexerOffers = CoreKandelInstance.mapOffers(
+      const indexerOffers = KandelDistribution.mapOffers(
         await kandel.getOffers(),
         (x) => ({
           gasreq: x.gasreq,
@@ -615,7 +615,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         distribution,
       });
 
-      const indexerOffers = CoreKandelInstance.mapOffers(
+      const indexerOffers = KandelDistribution.mapOffers(
         await kandel.getOffers(),
         (x) => ({
           gasreq: x.gasreq,
