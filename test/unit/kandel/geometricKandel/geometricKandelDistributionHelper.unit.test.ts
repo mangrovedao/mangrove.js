@@ -3,6 +3,7 @@ import { Big } from "big.js";
 import { describe, it } from "mocha";
 import GeometricKandelDistributionHelper from "../../../../src/kandel/geometricKandel/geometricKandelDistributionHelper";
 import { TokenCalculations } from "../../../../src/token";
+import { assertApproxEqAbs } from "../../../util/helpers";
 
 describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeometricKandelDistributionHelper;
@@ -94,6 +95,24 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
           () => sut.calculateBaseQuoteTickOffset(Big(0.99)),
           new Error("priceRatio must be larger than 1"),
         );
+      });
+    },
+  );
+
+  describe(
+    GeometricKandelDistributionHelper.prototype.getPriceRatioFromBaseQuoteOffset
+      .name,
+    () => {
+      [6931, 1, 789].forEach((baseQuoteTickOffset) => {
+        it(`agrees with calculateBaseQuoteTickOffset for baseQuoteTickOffset=${baseQuoteTickOffset}`, () => {
+          // Act
+          const priceRatio =
+            sut.getPriceRatioFromBaseQuoteOffset(baseQuoteTickOffset);
+
+          // Assert
+          const actualOffset = sut.calculateBaseQuoteTickOffset(priceRatio);
+          assertApproxEqAbs(actualOffset, baseQuoteTickOffset, 1);
+        });
       });
     },
   );

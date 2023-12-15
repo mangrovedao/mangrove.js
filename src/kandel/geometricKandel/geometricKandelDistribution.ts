@@ -1,7 +1,7 @@
 import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
-import TickPriceHelper from "../../util/tickPriceHelper";
 import { Bigish } from "../../types";
 import Market from "../../market";
+import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
 
 /** @title A geometric distribution of bids and ask for a geometric Kandel. */
 class GeometricKandelDistribution extends KandelDistribution {
@@ -12,6 +12,7 @@ class GeometricKandelDistribution extends KandelDistribution {
   askGives: Bigish | undefined;
   // Note firstAskIndex may not be the same as this.getFirstLiveAskIndex() which is also affected by other parameters (in practice using either for invoking generation should yield the same result)
   firstAskIndex: number;
+  geometricHelper: GeometricKandelDistributionHelper;
 
   /** Constructor
    * @param baseQuoteTickIndex0 The base quote tick index of the first price point.
@@ -25,6 +26,7 @@ class GeometricKandelDistribution extends KandelDistribution {
    * @param params.market The key data about the market.
    */
   public constructor(
+    geometricHelper: GeometricKandelDistributionHelper,
     baseQuoteTickIndex0: number,
     baseQuoteTickOffset: number,
     firstAskIndex: number,
@@ -36,6 +38,7 @@ class GeometricKandelDistribution extends KandelDistribution {
     market: Market.KeyResolvedForCalculation,
   ) {
     super(pricePoints, stepSize, offers, market);
+    this.geometricHelper = geometricHelper;
     this.baseQuoteTickOffset = baseQuoteTickOffset;
     this.baseQuoteTickIndex0 = baseQuoteTickIndex0;
     this.bidGives = bidGives;
@@ -47,7 +50,7 @@ class GeometricKandelDistribution extends KandelDistribution {
   /** Gets the price ratio given by the baseQuoteTickOffset. */
   public getPriceRatio() {
     // This simply calculates 1.001^offset which will be the difference between prices.
-    return this.helper.askTickPriceHelper.rawRatioFromTick(
+    return this.geometricHelper.getPriceRatioFromBaseQuoteOffset(
       this.baseQuoteTickOffset,
     );
   }

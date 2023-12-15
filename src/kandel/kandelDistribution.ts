@@ -121,16 +121,15 @@ class KandelDistribution {
    * @returns An offer distribution adorned with prices of offers.
    */
   public getOffersWithPrices() {
-    return {
-      asks: this.getOffers("asks").map((x) => ({
+    return KandelDistribution.mapOffers(
+      { asks: this.getOffers("asks"), bids: this.getOffers("bids") },
+      (x, ba) => ({
         ...x,
-        price: this.helper.askTickPriceHelper.priceFromTick(x.tick),
-      })),
-      bids: this.getOffers("bids").map((x) => ({
-        ...x,
-        price: this.helper.bidTickPriceHelper.priceFromTick(x.tick),
-      })),
-    };
+        price: this.helper[
+          ba === "bids" ? "bidTickPriceHelper" : "askTickPriceHelper"
+        ].priceFromTick(x.tick),
+      }),
+    );
   }
 
   /** Calculates the gives for bids and asks based on the available volume for the distribution.
@@ -167,6 +166,17 @@ class KandelDistribution {
     return (
       this.getLiveOffers("asks").find((o) => o.gives.gt(0))?.index ??
       this.pricePoints
+    );
+  }
+
+  /** Gets the index of the last live ask in the distribution. If there are no live bids, then -1 is returned.
+   * @returns The index of the last live ask in the distribution. If there are no live bids, then -1 is returned.
+   */
+  public getLastLiveBidIndex() {
+    return (
+      this.getLiveOffers("bids")
+        .reverse()
+        .find(() => true)?.index ?? -1
     );
   }
 
@@ -221,10 +231,7 @@ class KandelDistribution {
         }
       }
     }
-    const lastLiveBidIndex =
-      this.getLiveOffers("bids")
-        .reverse()
-        .find(() => true)?.index ?? 0;
+    const lastLiveBidIndex = this.getLastLiveBidIndex();
     if (this.getFirstLiveAskIndex() < lastLiveBidIndex) {
       throw new Error(
         "Invalid distribution: live bids should come before live asks",
@@ -267,6 +274,28 @@ class KandelDistribution {
       this.offers.bids.map((x) => x.tick),
       this.offers.asks.map((x) => x.tick),
     );
+  }
+
+  /** Maps bids and asks arrays to a new value using an async function */
+  static async mapAsyncOffers<T, R>(
+    offers: { bids: T[]; asks: T[] },
+    f: (x: T, ba: Market.BA) => Promise<R>,
+  ) {
+    return {
+      bids: await Promise.all(offers.bids.map((x) => f(x, "bids"))),
+      asks: await Promise.all(offers.asks.map((x) => f(x, "asks"))),
+    };
+  }
+
+  /** Maps bids and asks arrays to a new value using a function */
+  static mapOffers<T, R>(
+    offers: { bids: T[]; asks: T[] },
+    f: (x: T, ba: Market.BA) => R,
+  ) {
+    return {
+      bids: offers.bids.map((x) => f(x, "bids")),
+      asks: offers.asks.map((x) => f(x, "asks")),
+    };
   }
 }
 

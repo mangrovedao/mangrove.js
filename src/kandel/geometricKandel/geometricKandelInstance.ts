@@ -110,16 +110,17 @@ class GeometricKandelInstance extends CoreKandelInstance {
     this.geometricStatus = params.kandelStatus;
   }
 
-  /** Gets the base quote tick offset stored on the contract. */
+  /** Gets the base quote tick offset stored on the contract and the equivalent price ratio. */
   public async getBaseQuoteTickOffset() {
     const baseQuoteTickOffset =
       await this.geometricKandel.baseQuoteTickOffset();
 
     return {
       baseQuoteTickOffset: baseQuoteTickOffset.toNumber(),
-      priceRatio: this.distributionHelper.askTickPriceHelper.priceFromTick(
-        baseQuoteTickOffset.toNumber(),
-      ),
+      priceRatio:
+        this.geometricGenerator.geometricDistributionHelper.getPriceRatioFromBaseQuoteOffset(
+          baseQuoteTickOffset.toNumber(),
+        ),
     };
   }
 
@@ -172,16 +173,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
    * @returns The status of all offers.
    */
   public async getOfferStatuses(midPrice: Bigish) {
-    const offers = (await this.getOffers()).map(
-      ({ offer, offerId, index, offerType }) => ({
-        offerType,
-        offerId,
-        index,
-        live: this.market.isLiveOffer(offer),
-        price: offer.price,
-        tick: offer.tick,
-      }),
-    );
+    const offers = await this.getOffers();
 
     return this.getOfferStatusFromOffers({ midPrice, offers });
   }
@@ -197,7 +189,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
    */
   public async getOfferStatusFromOffers(params: {
     midPrice: Bigish;
-    offers: OffersWithLiveness;
+    offers: { bids: OffersWithLiveness; asks: OffersWithLiveness };
   }) {
     const parameters = await this.getParameters();
     const { baseQuoteTickOffset } = await this.getBaseQuoteTickOffset();

@@ -1,5 +1,12 @@
 # Next version
 
+- fix!: rename offer_gasbase on offer structures to gasbase
+- fix!: align return value of kandelInstance.getOffers() with new structure
+- fix!: rename populateGeneralChunk to populateGeneralChunks
+- feat: expose lastLiveBidIndex from Kandel distribution.
+- feat: return offset and price ratio from Kandel status.
+- fix: wrong price ratio from offset calculation in Kandel fixed.
+
 # 2.0.0-14
 
 - fix: increaseAllowance will not fail if allowance becomes larger than 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.

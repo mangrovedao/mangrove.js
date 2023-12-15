@@ -10,7 +10,7 @@ import {
 
 import { toWei } from "../../util/helpers";
 
-import { KandelStrategies, Mangrove } from "../../../src";
+import { KandelDistribution, KandelStrategies, Mangrove } from "../../../src";
 
 import { Big } from "big.js";
 import GeometricKandelInstance from "../../../src/kandel/geometricKandel/geometricKandelInstance";
@@ -541,11 +541,14 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         distribution,
       });
 
-      const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
-        gasreq: offer.gasreq,
-        gasprice: offer.gasprice,
-        gasbase: offer.offer_gasbase,
-      }));
+      const indexerOffers = KandelDistribution.mapOffers(
+        await kandel.getOffers(),
+        (x) => ({
+          gasreq: x.gasreq,
+          gasprice: x.gasprice,
+          gasbase: x.gasbase,
+        }),
+      );
 
       // Act
       const lockedProvisionFromOffers =
@@ -572,11 +575,14 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         distribution,
       });
 
-      const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
-        gasreq: offer.gasreq,
-        gasprice: offer.gasprice,
-        gasbase: offer.offer_gasbase,
-      }));
+      const indexerOffers = KandelDistribution.mapOffers(
+        await kandel.getOffers(),
+        (x) => ({
+          gasreq: x.gasreq,
+          gasprice: x.gasprice,
+          gasbase: x.gasbase,
+        }),
+      );
 
       // Act
       const params = {
@@ -609,11 +615,14 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         distribution,
       });
 
-      const indexerOffers = (await kandel.getOffers()).map(({ offer }) => ({
-        gasreq: offer.gasreq,
-        gasprice: offer.gasprice,
-        gasbase: offer.offer_gasbase,
-      }));
+      const indexerOffers = KandelDistribution.mapOffers(
+        await kandel.getOffers(),
+        (x) => ({
+          gasreq: x.gasreq,
+          gasprice: x.gasprice,
+          gasbase: x.gasbase,
+        }),
+      );
       const oldGasprice = (await kandel.getParameters()).gasprice;
 
       // Act
@@ -677,23 +686,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       );
 
       // Create a distribution for the live offers
-      const offers = await kandel.getOffers();
-      const explicitOffers = {
-        bids: offers
-          .filter((x) => x.offerType == "bids")
-          .map(({ offer, index }) => ({
-            index,
-            tick: offer.tick,
-            gives: offer.gives,
-          })),
-        asks: offers
-          .filter((x) => x.offerType == "bids")
-          .map(({ offer, index }) => ({
-            index,
-            tick: offer.tick,
-            gives: offer.gives,
-          })),
-      };
+      const explicitOffers = await kandel.getOffers();
 
       const existingDistribution = await kandel.createDistributionWithOffers({
         explicitOffers,
@@ -769,9 +762,10 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         it(`retractOffers can withdraw select offers inChunks=${inChunks}`, async () => {
           // Arrange
           await populateKandel({ approve: true, deposit: true });
-          const deadOffersBefore = (await kandel.getOffers()).filter(
-            (x) => !kandel.market.isLiveOffer(x.offer),
-          ).length;
+          const offersBefore = await kandel.getOffers();
+          const deadOffersBefore = offersBefore.asks
+            .concat(offersBefore.bids)
+            .filter((x) => !x.live).length;
 
           // Act
           const receipts = await waitForTransactions(
@@ -788,9 +782,10 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
             kandel.market.mgv,
             receipts[receipts.length - 1].blockNumber,
           );
-          const deadOffers = (await kandel.getOffers()).filter(
-            (x) => !kandel.market.isLiveOffer(x.offer),
-          ).length;
+          const offers = await kandel.getOffers();
+          const deadOffers = offers.asks
+            .concat(offers.bids)
+            .filter((x) => !x.live).length;
           assert.equal(deadOffers, deadOffersBefore + 2);
         });
 
@@ -859,7 +854,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
 
           // Act
           await waitForTransactions(
-            await kandel.populateGeneralChunk({
+            await kandel.populateGeneralChunks({
               distribution: generalDistribution,
               maxOffersInChunk: inChunks ? 2 : 80,
             }),
@@ -880,9 +875,10 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       it(`retractAndWithdraw can withdraw expected offers and amounts to other address`, async () => {
         // Arrange
         await populateKandel({ approve: true, deposit: true });
-        const deadOffersBefore = (await kandel.getOffers()).filter(
-          (x) => !kandel.market.isLiveOffer(x.offer),
-        ).length;
+        const offersBefore = await kandel.getOffers();
+        const deadOffersBefore = offersBefore.asks
+          .concat(offersBefore.bids)
+          .filter((x) => !x.live).length;
 
         const recipient = (
           await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker)
@@ -934,9 +930,10 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
           (await kandel.getBalance("bids")).toNumber(),
           kandelQuoteBalance.sub(1000).toNumber(),
         );
-        const deadOffers = (await kandel.getOffers()).filter(
-          (x) => !kandel.market.isLiveOffer(x.offer),
-        ).length;
+        const offers = await kandel.getOffers();
+        const deadOffers = offers.bids
+          .concat(offers.asks)
+          .filter((x) => !x.live).length;
         assert.equal(deadOffers, deadOffersBefore + 2);
         assert.equal(
           (await kandel.offerLogic.getMangroveBalance()).toNumber(),

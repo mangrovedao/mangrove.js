@@ -3,7 +3,7 @@ import { Big } from "big.js";
 import { describe, it } from "mocha";
 import KandelDistributionHelper from "../../../../src/kandel/kandelDistributionHelper";
 import GeometricKandelDistributionGenerator from "../../../../src/kandel/geometricKandel/geometricKandelDistributionGenerator";
-import { Market, ethers, typechain } from "../../../../src";
+import { KandelDistribution, Market, ethers, typechain } from "../../../../src";
 import GeometricKandelLib from "../../../../src/kandel/geometricKandel/geometricKandelLib";
 import { BigNumber, BigNumberish } from "ethers";
 import { DirectWithBidsAndAsksDistribution } from "../../../../src/types/typechain/Kandel";
@@ -195,18 +195,11 @@ export class KandelLibStub {
       BigNumber.from(pricePoints).toNumber(),
       BigNumber.from(stepSize).toNumber(),
     );
-    return {
-      asks: distribution.asks.map((x) => ({
-        index: BigNumber.from(x.index),
-        tick: BigNumber.from(x.tick),
-        gives: BigNumber.from(x.gives),
-      })),
-      bids: distribution.bids.map((x) => ({
-        index: BigNumber.from(x.index),
-        tick: BigNumber.from(x.tick),
-        gives: BigNumber.from(x.gives),
-      })),
-    };
+    return KandelDistribution.mapOffers(distribution, (x) => ({
+      index: BigNumber.from(x.index),
+      tick: BigNumber.from(x.tick),
+      gives: BigNumber.from(x.gives),
+    }));
   }
 }
 

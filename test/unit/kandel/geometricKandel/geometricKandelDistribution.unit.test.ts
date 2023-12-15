@@ -9,7 +9,13 @@ import { TokenCalculations } from "../../../../src/token";
 describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests suite`, () => {
   let sut: GeometricKandelDistribution;
   beforeEach(() => {
+    const market = {
+      base: new TokenCalculations(4, 4),
+      quote: new TokenCalculations(6, 6),
+      tickSpacing: 1,
+    };
     sut = new GeometricKandelDistribution(
+      new GeometricKandelDistributionHelper(market),
       1,
       1,
       3,
@@ -29,11 +35,7 @@ describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests s
           { tick: 4, gives: Big(5000), index: 3 },
         ],
       },
-      {
-        base: new TokenCalculations(4, 4),
-        quote: new TokenCalculations(6, 6),
-        tickSpacing: 1,
-      },
+      market,
     );
   });
 
@@ -52,19 +54,18 @@ describe(`${GeometricKandelDistribution.prototype.constructor.name} unit tests s
   });
 
   describe(GeometricKandelDistribution.prototype.getPriceRatio.name, () => {
-    [6931, 1, 789].forEach((baseQuoteTickOffset) => {
-      it(`agrees with helper's calculator for baseQuoteTickOffset=${baseQuoteTickOffset}`, () => {
-        // Arrange
-        sut.baseQuoteTickOffset = baseQuoteTickOffset;
-        const helper = new GeometricKandelDistributionHelper(sut.market);
+    it(`agrees with helper's calculator`, () => {
+      // Arrange
+      sut.baseQuoteTickOffset = 42;
+      const helper = new GeometricKandelDistributionHelper(sut.market);
 
-        // Act
-        const priceRatio = sut.getPriceRatio();
+      // Act
+      const priceRatio = sut.getPriceRatio();
 
-        // Assert
-        const actualOffset = helper.calculateBaseQuoteTickOffset(priceRatio);
-        assertApproxEqAbs(actualOffset, baseQuoteTickOffset, 1);
-      });
+      // Assert
+      const actualOffset = helper.calculateBaseQuoteTickOffset(priceRatio);
+
+      assertApproxEqAbs(actualOffset, 42, 1);
     });
   });
 

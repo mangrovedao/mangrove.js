@@ -30,18 +30,14 @@ class GeneralKandelDistributionHelper {
         }
       | KandelDistribution,
   ) {
-    const offers = {
-      bids: explicitOffers.bids.map(({ index, tick, gives }) => ({
+    const offers = KandelDistribution.mapOffers(
+      explicitOffers,
+      ({ index, tick, gives }) => ({
         index,
         tick,
         gives: Big(gives),
-      })),
-      asks: explicitOffers.asks.map(({ index, tick, gives }) => ({
-        index,
-        tick,
-        gives: Big(gives),
-      })),
-    };
+      }),
+    );
 
     return new GeneralKandelDistribution({
       pricePoints: distribution.pricePoints,

@@ -98,6 +98,33 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
     });
   });
 
+  describe(KandelDistribution.prototype.getLastLiveBidIndex.name, () => {
+    it("is correct when no live bids", () => {
+      // Arrange
+      sut = new KandelDistribution(
+        2,
+        1,
+        {
+          bids: [{ gives: Big(0), tick: 1, index: 0 }],
+          asks: [{ gives: Big(1), tick: 1, index: 1 }],
+        },
+        {
+          base: new TokenCalculations(4, 4),
+          quote: new TokenCalculations(6, 6),
+          tickSpacing: 1,
+        },
+      );
+
+      // Act/Assert
+      assert.equal(sut.getLastLiveBidIndex(), -1);
+    });
+
+    it("is correct when some live bids", () => {
+      // Act/Assert
+      assert.equal(sut.getLastLiveBidIndex(), 1);
+    });
+  });
+
   describe(
     KandelDistribution.prototype.getOfferedVolumeForDistribution.name,
     () => {

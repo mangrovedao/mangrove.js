@@ -308,22 +308,11 @@ class CoreKandelInstance {
    */
   public getRawDistribution(distribution: OfferDistribution) {
     const rawDistribution: KandelTypes.DirectWithBidsAndAsksDistribution.DistributionStruct =
-      {
-        bids: distribution.bids.map((o) => ({
-          gives: this.market
-            .getOutboundInbound("bids")
-            .outbound_tkn.toUnits(o.gives),
-          index: o.index,
-          tick: o.tick,
-        })),
-        asks: distribution.asks.map((o) => ({
-          gives: this.market
-            .getOutboundInbound("asks")
-            .outbound_tkn.toUnits(o.gives),
-          index: o.index,
-          tick: o.tick,
-        })),
-      };
+      KandelDistribution.mapOffers(distribution, (o, ba) => ({
+        gives: this.market.getOutboundInbound(ba).outbound_tkn.toUnits(o.gives),
+        index: o.index,
+        tick: o.tick,
+      }));
 
     return rawDistribution;
   }
@@ -332,28 +321,30 @@ class CoreKandelInstance {
    * @returns The Mangrove offer ids for all offers along with their offer type and Kandel index.
    */
   public async getOfferIds() {
-    return (
+    const result: {
+      bids: { offerId: number; index: number }[];
+      asks: { offerId: number; index: number }[];
+    } = { bids: [], asks: [] };
+    (
       await this.kandel.queryFilter(this.kandel.filters.SetIndexMapping())
-    ).map((x) => {
-      return {
-        offerType: this.UintToOfferType(x.args.ba),
+    ).forEach((x) => {
+      result[this.UintToOfferType(x.args.ba)].push({
         offerId: x.args.offerId.toNumber(),
         index: x.args.index.toNumber(),
-      };
+      });
     });
+
+    return result;
   }
 
   /** Retrieves all offers for the Kandel instance by querying the market. */
   public async getOffers() {
     const offerIds = await this.getOfferIds();
-    return await Promise.all(
-      offerIds.map(async (x) => {
-        const offer = await this.market
-          .getSemibook(x.offerType)
-          .offerInfo(x.offerId);
-        return { ...x, offer: offer };
-      }),
-    );
+    const books = this.market.getBook();
+    return await KandelDistribution.mapAsyncOffers(offerIds, async (x, ba) => {
+      const offer = await books[ba].offerInfo(x.offerId);
+      return { ...offer, index: x.index, live: this.market.isLiveOffer(offer) };
+    });
   }
 
   /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
@@ -559,10 +550,12 @@ class CoreKandelInstance {
 
   /** Retrieves provision parameters for all offers for the Kandel instance by querying the market.  */
   private async getOffersProvisionParams() {
-    return (await this.getOffers()).map((x) => ({
-      gasprice: x.offer.gasprice,
-      gasreq: x.offer.gasreq,
-      gasbase: x.offer.offer_gasbase,
+    const offers = await this.getOffers();
+
+    return KandelDistribution.mapOffers(offers, (x) => ({
+      gasprice: x.gasprice,
+      gasreq: x.gasreq,
+      gasbase: x.gasbase,
     }));
   }
 
@@ -575,16 +568,22 @@ class CoreKandelInstance {
   }
 
   /** Calculates the provision locked for a set of offers based on the given parameters
-   * @param existingOffers[] the offers to calculate provision for.
-   * @param existingOffers[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
-   * @param existingOffers[].gasreq the gas requirement for the offer.
-   * @param existingOffers[].gasbase the offer list's offer_gasbase.
+   * @param existingOffers the offers to calculate provision for.
+   * @param existingOffers.bids[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers.bids[].gasreq the gas requirement for the offer.
+   * @param existingOffers.bids[].gasbase the offer list's offer_gasbase.
+   * @param existingOffers.asks[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
+   * @param existingOffers.asks[].gasreq the gas requirement for the offer.
+   * @param existingOffers.asks[].gasbase the offer list's offer_gasbase.
    * @returns the locked provision, in ethers.
    */
-  public getLockedProvisionFromOffers(
-    existingOffers: { gasprice: number; gasreq: number; gasbase: number }[],
-  ) {
-    return this.market.mgv.calculateOffersProvision(existingOffers);
+  public getLockedProvisionFromOffers(existingOffers: {
+    bids: { gasprice: number; gasreq: number; gasbase: number }[];
+    asks: { gasprice: number; gasreq: number; gasbase: number }[];
+  }) {
+    return this.market.mgv.calculateOffersProvision(
+      existingOffers.bids.concat(existingOffers.asks),
+    );
   }
 
   /** Gets the missing provision based on provision already available on Mangrove, potentially locked by existing offers. It assumes all locked provision will be made available via deprovision or due to offers being replaced.
@@ -630,7 +629,10 @@ class CoreKandelInstance {
       bidCount?: number;
       askCount?: number;
     },
-    existingOffers: { gasprice: number; gasreq: number; gasbase: number }[],
+    existingOffers: {
+      bids: { gasprice: number; gasreq: number; gasbase: number }[];
+      asks: { gasprice: number; gasreq: number; gasbase: number }[];
+    },
   ) {
     const lockedProvision = this.getLockedProvisionFromOffers(existingOffers);
     const availableBalance = await this.offerLogic.getMangroveBalance();
@@ -786,7 +788,7 @@ class CoreKandelInstance {
    * @param overrides The ethers overrides to use when calling the populateChunk function.
    * @returns The transaction(s) used to populate the offers.
    */
-  public async populateGeneralChunk(
+  public async populateGeneralChunks(
     params: {
       distribution?: GeneralKandelDistribution;
       maxOffersInChunk?: number;
