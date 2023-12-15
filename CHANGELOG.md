@@ -1,5 +1,8 @@
 # Next version
 
+- Update licenses:
+  - All code is now licensed under the MIT License.
+
 # 2.0.0-15
 
 - fix!: rename offer_gasbase on offer structures to gasbase
