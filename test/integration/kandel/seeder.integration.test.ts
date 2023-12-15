@@ -114,7 +114,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
           "wrong reserve",
         );
         assert.equal(
-          await kandel.offerLogic.hasRouter(),
+          await kandel.offerLogic.hasRouter(this.accounts.tester.address),
           onAave,
           "router should only be there for aave",
         );

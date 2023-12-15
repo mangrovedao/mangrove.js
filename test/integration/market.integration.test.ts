@@ -781,7 +781,11 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ maxTick: bidTick, fillVolume: "1.3" });
+    await market.sell({
+      maxTick: bidTick,
+      fillVolume: "1.3",
+      orderType: "IOC",
+    });
 
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
@@ -823,6 +827,7 @@ describe("Market integration tests suite", () => {
     const buyPromises = await market.buy({
       maxTick: 1,
       fillVolume: "1.5e12",
+      orderType: "IOC",
     });
     const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(1);
@@ -849,6 +854,7 @@ describe("Market integration tests suite", () => {
     const buyPromises_ = await market.buy({
       maxTick: 1,
       fillVolume: "1.5e12",
+      orderType: "IOC",
     });
     const result_ = await buyPromises_.result;
     expect(result_.tradeFailures).to.have.lengthOf(0);
@@ -893,6 +899,7 @@ describe("Market integration tests suite", () => {
     const buyPromises = await market.buy({
       maxTick: 1,
       fillVolume: 10,
+      orderType: "IOC",
     });
     const result = await buyPromises.result;
 
@@ -937,6 +944,7 @@ describe("Market integration tests suite", () => {
       forceRoutingToMangroveOrder: false,
       maxTick: 1,
       fillVolume: 10,
+      orderType: "IOC",
     });
     const result = await buyPromises.result;
     result.summary = result.summary as Market.OrderSummary;
@@ -986,6 +994,7 @@ describe("Market integration tests suite", () => {
     const sellPromises = await market.sell({
       fillVolume: "0.0001",
       maxTick: MAX_TICK.toNumber(),
+      orderType: "IOC",
     });
     const result = await sellPromises.result;
 
@@ -1017,6 +1026,7 @@ describe("Market integration tests suite", () => {
                 Big(0.000000000002).div(10),
               ),
             fillVolume: 10,
+            orderType: "IOC",
           };
           tradeParams.forceRoutingToMangroveOrder = forceRouting;
           tradeParams.gasLowerBound = gasLowerBound;
@@ -1024,7 +1034,9 @@ describe("Market integration tests suite", () => {
 
           if (forceRouting) {
             const orderLogic = mgvAdmin.offerLogic(mgv.orderContract.address);
-            const router = await orderLogic.contract.router();
+            const router = await orderLogic.contract.router(
+              this.accounts.tester.address,
+            );
             await market.quote.approve(router);
             await market.base.approve(router);
 
@@ -1503,6 +1515,7 @@ describe("Market integration tests suite", () => {
     const gasEstimate = await market.gasEstimateSell({
       volume: market.quote.fromUnits(1),
       limitPrice: 1,
+      orderType: "IOC",
     });
 
     // we need to use BigNumber.isBigNumber() function to test variable type
@@ -1522,6 +1535,7 @@ describe("Market integration tests suite", () => {
     const emptyBookAsksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
       limitPrice: 1,
+      orderType: "IOC",
     });
 
     /* create asks */
@@ -1538,6 +1552,7 @@ describe("Market integration tests suite", () => {
     const asksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
       limitPrice: 1,
+      orderType: "IOC",
     });
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate
@@ -1568,6 +1583,7 @@ describe("Market integration tests suite", () => {
       const params: Market.TradeParams = {
         maxTick: 1,
         fillVolume: 1,
+        orderType: "IOC",
       };
 
       await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);

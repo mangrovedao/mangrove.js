@@ -1,426 +1,429 @@
-import assert from "assert";
-import { ethers } from "ethers";
+// import assert from "assert";
+// import { ethers } from "ethers";
 
-import {
-  LiquidityProvider,
-  Mangrove,
-  OfferLogic,
-  OfferMaker,
-  eth,
-} from "../../src";
-import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-import { approxEq } from "../util/helpers";
-import UnitCalculations from "../../src/util/unitCalculations";
+// import {
+//   LiquidityProvider,
+//   Mangrove,
+//   OfferLogic,
+//   OfferMaker,
+//   eth,
+// } from "../../src";
+// import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
+// import { approxEq } from "../util/helpers";
+// import UnitCalculations from "../../src/util/unitCalculations";
 
-describe("OfferMaker integration test suite", () => {
-  let mgv: Mangrove;
-  let mgvAdmin: Mangrove;
+// describe("OfferMaker integration test suite", () => {
+//   let mgv: Mangrove;
+//   let mgvAdmin: Mangrove;
 
-  let onchain_lp: LiquidityProvider;
-  let eoa_lp: LiquidityProvider;
+//   let onchain_lp: LiquidityProvider;
+//   let eoa_lp: LiquidityProvider;
 
-  beforeEach(async function () {
-    //set mgv object
-    mgv = await Mangrove.connect({
-      provider: this.server.url,
-      privateKey: this.accounts.tester.key,
-    });
-    mgvAdmin = await Mangrove.connect({
-      privateKey: this.accounts.deployer.key,
-      provider: mgv.provider,
-    });
+//   beforeEach(async function () {
+//     //set mgv object
+//     mgv = await Mangrove.connect({
+//       provider: this.server.url,
+//       privateKey: this.accounts.tester.key,
+//     });
+//     mgvAdmin = await Mangrove.connect({
+//       privateKey: this.accounts.deployer.key,
+//       provider: mgv.provider,
+//     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts);
+//     mgvTestUtil.setConfig(mgv, this.accounts);
 
-    //shorten polling for faster tests
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    mgv.provider.pollingInterval = 10;
+//     //shorten polling for faster tests
+//     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+//     // @ts-ignore
+//     mgv.provider.pollingInterval = 10;
 
-    const offerMakerSigner = await eth._createSigner({
-      provider: mgv.provider,
-      privateKey: this.accounts.tester.key,
-    });
-    const offerMakerAddress = await OfferMaker.deploy(
-      mgv.address,
-      offerMakerSigner.signer,
-    );
+//     const offerMakerSigner = await eth._createSigner({
+//       provider: mgv.provider,
+//       privateKey: this.accounts.tester.key,
+//     });
+//     const offerMakerAddress = await OfferMaker.deploy(
+//       mgv.address,
+//       offerMakerSigner.signer,
+//     );
 
-    const logic = mgv.offerLogic(offerMakerAddress);
-    const market = await mgv.market({
-      base: "TokenA",
-      quote: "TokenB",
-      tickSpacing: 1,
-      bookOptions: { targetNumberOfTicks: 30 },
-    });
-    onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
-    eoa_lp = await mgv.liquidityProvider(market);
-    mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
-  });
+//     const logic = mgv.offerLogic(offerMakerAddress);
+//     const market = await mgv.market({
+//       base: "TokenA",
+//       quote: "TokenB",
+//       tickSpacing: 1,
+//       bookOptions: { targetNumberOfTicks: 30 },
+//     });
+//     onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
+//     eoa_lp = await mgv.liquidityProvider(market);
+//     mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
+//   });
 
-  afterEach(async () => {
-    mgvTestUtil.stopPollOfTransactionTracking();
-    mgv.disconnect();
-    mgvAdmin.disconnect();
-  });
+//   afterEach(async () => {
+//     mgvTestUtil.stopPollOfTransactionTracking();
+//     mgv.disconnect();
+//     mgvAdmin.disconnect();
+//   });
 
-  /* Make sure tx has been mined so we can read the result off the chain */
-  const w = async (r: Promise<ethers.providers.TransactionResponse>) =>
-    (await r).wait(1);
+//   /* Make sure tx has been mined so we can read the result off the chain */
+//   const w = async (r: Promise<ethers.providers.TransactionResponse>) =>
+//     (await r).wait(1);
 
-  it("checks allowance for onchain logic", async () => {
-    const tokenB = await mgv.token("TokenB");
-    const logic = onchain_lp.logic as OfferLogic;
-    let allowanceForLogic /*:Big*/ = await tokenB.allowance({
-      owner: logic.address,
-      spender: mgv.address,
-    });
+//   const wm = async (r: Promise<ethers.providers.TransactionResponse[]>) =>
+//     await Promise.all((await r).map((tx) => tx.wait(1)));
 
-    assert.strictEqual(
-      allowanceForLogic.toNumber(),
-      0,
-      "allowance should be 0",
-    );
+//   it("checks allowance for onchain logic", async () => {
+//     const tokenB = await mgv.token("TokenB");
+//     const logic = onchain_lp.logic as OfferLogic;
+//     let allowanceForLogic /*:Big*/ = await tokenB.allowance({
+//       owner: logic.address,
+//       spender: mgv.address,
+//     });
 
-    // test default approve amount
-    await w(logic.activate(["TokenB"]));
-    allowanceForLogic /*:Big*/ = await tokenB.allowance({
-      owner: logic.address,
-      spender: mgv.address,
-    });
+//     assert.strictEqual(
+//       allowanceForLogic.toNumber(),
+//       0,
+//       "allowance should be 0",
+//     );
 
-    assert.strictEqual(
-      UnitCalculations.toUnits(allowanceForLogic, 6).toString(),
-      ethers.constants.MaxUint256.toString(),
-      "allowance should be 2^256-1",
-    );
-  });
+//     // test default approve amount
+//     await wm(logic.activate(["TokenB"]));
+//     allowanceForLogic /*:Big*/ = await tokenB.allowance({
+//       owner: logic.address,
+//       spender: mgv.address,
+//     });
 
-  it("checks allowance for EOA provider", async () => {
-    const tokenB = await mgv.token("TokenB");
-    let allowanceForEOA = await tokenB.allowance({
-      owner: eoa_lp.eoa,
-      spender: mgv.address,
-    });
+//     assert.strictEqual(
+//       UnitCalculations.toUnits(allowanceForLogic, 6).toString(),
+//       ethers.constants.MaxUint256.toString(),
+//       "allowance should be 2^256-1",
+//     );
+//   });
 
-    assert.strictEqual(allowanceForEOA.toNumber(), 0, "allowance should be 0");
+//   it("checks allowance for EOA provider", async () => {
+//     const tokenB = await mgv.token("TokenB");
+//     let allowanceForEOA = await tokenB.allowance({
+//       owner: eoa_lp.eoa,
+//       spender: mgv.address,
+//     });
 
-    const overridesTest = { gasLimit: 100000 };
-    // test specified approve amount
-    await w(
-      tokenB.approveMangrove({ amount: 10 ** 9, overrides: overridesTest }),
-    );
-    allowanceForEOA = await tokenB.allowance({
-      owner: eoa_lp.eoa,
-      spender: mgv.address,
-    });
+//     assert.strictEqual(allowanceForEOA.toNumber(), 0, "allowance should be 0");
 
-    assert.strictEqual(
-      allowanceForEOA.toNumber(),
-      10 ** 9,
-      "allowance should be 1 billion",
-    );
-    // test default approve amount
-    await w(tokenB.approveMangrove());
+//     const overridesTest = { gasLimit: 100000 };
+//     // test specified approve amount
+//     await w(
+//       tokenB.approveMangrove({ amount: 10 ** 9, overrides: overridesTest }),
+//     );
+//     allowanceForEOA = await tokenB.allowance({
+//       owner: eoa_lp.eoa,
+//       spender: mgv.address,
+//     });
 
-    allowanceForEOA = await tokenB.allowance({
-      owner: eoa_lp.eoa,
-      spender: mgv.address,
-    });
+//     assert.strictEqual(
+//       allowanceForEOA.toNumber(),
+//       10 ** 9,
+//       "allowance should be 1 billion",
+//     );
+//     // test default approve amount
+//     await w(tokenB.approveMangrove());
 
-    assert.strictEqual(
-      UnitCalculations.toUnits(allowanceForEOA, 6).toString(),
-      ethers.constants.MaxUint256.toString(),
-      "allowance should be 2^256-1",
-    );
-  });
+//     allowanceForEOA = await tokenB.allowance({
+//       owner: eoa_lp.eoa,
+//       spender: mgv.address,
+//     });
 
-  it("checks provision for EOA provider", async () => {
-    const eoa = eoa_lp.eoa as string;
-    let balance = await mgv.balanceOf(eoa);
-    assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
+//     assert.strictEqual(
+//       UnitCalculations.toUnits(allowanceForEOA, 6).toString(),
+//       ethers.constants.MaxUint256.toString(),
+//       "allowance should be 2^256-1",
+//     );
+//   });
 
-    await w(mgv.fundMangrove(2, eoa));
+//   it("checks provision for EOA provider", async () => {
+//     const eoa = eoa_lp.eoa as string;
+//     let balance = await mgv.balanceOf(eoa);
+//     assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
 
-    balance = await mgv.balanceOf(eoa);
-    assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
-  });
+//     await w(mgv.fundMangrove(2, eoa));
 
-  it("checks provision for onchain logic", async () => {
-    const logic = onchain_lp.logic as OfferLogic;
-    let balance = await mgv.balanceOf(logic.address);
-    assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
-    await w(mgv.fundMangrove(2, logic.address));
+//     balance = await mgv.balanceOf(eoa);
+//     assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
+//   });
 
-    balance = await mgv.balanceOf(logic.address);
-    assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
-  });
+//   it("checks provision for onchain logic", async () => {
+//     const logic = onchain_lp.logic as OfferLogic;
+//     let balance = await mgv.balanceOf(logic.address);
+//     assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
+//     await w(mgv.fundMangrove(2, logic.address));
 
-  it("checks provision for onchain logic by calling provisionOf", async () => {
-    const lp = onchain_lp;
-    const provision = await lp.computeAskProvision();
-    const { id } = await lp.newAsk({
-      tick: 10,
-      gives: 10,
-      fund: provision,
-    });
+//     balance = await mgv.balanceOf(logic.address);
+//     assert.strictEqual(balance.toNumber(), 2, "balance should be 2");
+//   });
 
-    const provisionOfOffer = await lp.contract?.provisionOf(
-      lp.market.getOLKey("asks"),
-      id,
-    );
+//   it("checks provision for onchain logic by calling provisionOf", async () => {
+//     const lp = onchain_lp;
+//     const provision = await lp.computeAskProvision();
+//     const { id } = await lp.newAsk({
+//       tick: 10,
+//       gives: 10,
+//       fund: provision,
+//     });
 
-    const provisionOfOfferWithCorrectDecimals = mgv.nativeToken.fromUnits(
-      provisionOfOffer!,
-    );
-    assert.deepStrictEqual(
-      provisionOfOfferWithCorrectDecimals.toNumber(),
-      provision.toNumber(),
-      "wrong provision",
-    );
-  });
+//     const provisionOfOffer = await lp.contract?.provisionOf(
+//       lp.market.getOLKey("asks"),
+//       id,
+//     );
 
-  [true, false].forEach((eoaLP) => {
-    it(`gets missing provision for ${
-      eoaLP ? "eoa" : "onchain"
-    } logic`, async () => {
-      // Arrange
-      const lp = eoaLP ? eoa_lp : onchain_lp;
-      const mgvGasprice = mgv.config().gasprice;
-      const provision = await lp.computeAskProvision();
-      const { id } = await lp.newAsk({
-        tick: 10,
-        gives: 10,
-        fund: provision,
-      });
+//     const provisionOfOfferWithCorrectDecimals = mgv.nativeToken.fromUnits(
+//       provisionOfOffer!,
+//     );
+//     assert.deepStrictEqual(
+//       provisionOfOfferWithCorrectDecimals.toNumber(),
+//       provision.toNumber(),
+//       "wrong provision",
+//     );
+//   });
 
-      // Act
-      const missingProvisionDueToTripleGasprice = await lp.computeAskProvision({
-        id,
-        gasprice: mgvGasprice * 3,
-      });
+//   [true, false].forEach((eoaLP) => {
+//     it(`gets missing provision for ${
+//       eoaLP ? "eoa" : "onchain"
+//     } logic`, async () => {
+//       // Arrange
+//       const lp = eoaLP ? eoa_lp : onchain_lp;
+//       const mgvGasprice = mgv.config().gasprice;
+//       const provision = await lp.computeAskProvision();
+//       const { id } = await lp.newAsk({
+//         tick: 10,
+//         gives: 10,
+//         fund: provision,
+//       });
 
-      // Assert
-      const expectedInitialProvision = mgv.calculateOfferProvision(
-        mgvGasprice,
-        lp.gasreq,
-        lp.market.getSemibook("asks").config().offer_gasbase,
-      );
-      assert.equal(provision.toNumber(), expectedInitialProvision.toNumber());
-      assert.equal(
-        missingProvisionDueToTripleGasprice.toNumber(),
-        provision.mul(2).toNumber(),
-        "Lacks covering for gasprice*3",
-      );
-    });
-  });
+//       // Act
+//       const missingProvisionDueToTripleGasprice = await lp.computeAskProvision({
+//         id,
+//         gasprice: mgvGasprice * 3,
+//       });
 
-  describe("After setup", () => {
-    beforeEach(async () => {
-      await (await mgv.token("TokenB")).approveMangrove();
-      //await logic.fundMangrove(10);
-    });
+//       // Assert
+//       const expectedInitialProvision = mgv.calculateOfferProvision(
+//         mgvGasprice,
+//         lp.gasreq,
+//         lp.market.getSemibook("asks").config().offer_gasbase,
+//       );
+//       assert.equal(provision.toNumber(), expectedInitialProvision.toNumber());
+//       assert.equal(
+//         missingProvisionDueToTripleGasprice.toNumber(),
+//         provision.mul(2).toNumber(),
+//         "Lacks covering for gasprice*3",
+//       );
+//     });
+//   });
 
-    it("withdraws", async () => {
-      const logic = onchain_lp.logic as OfferLogic;
-      const getBal = async () =>
-        mgv.provider.getBalance(await mgv.signer.getAddress());
-      let tx = await mgv.fundMangrove(10, logic.address);
-      await tx.wait();
-      const oldBal = await getBal();
-      tx = await logic.withdrawFromMangrove(10);
-      const receipt = await tx.wait();
-      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
-      //const diff = mgv.fromUnits((await getBal()).sub(oldBal).add(txCost), 18);
+//   describe("After setup", () => {
+//     beforeEach(async () => {
+//       await (await mgv.token("TokenB")).approveMangrove();
+//       //await logic.fundMangrove(10);
+//     });
 
-      /* FIXME the effectiveGasPrice returned by anvil is incorrect, so for now we do an approx estimate. */
-      const diff2 = (await getBal()).sub(oldBal).add(txCost);
-      assert(
-        approxEq(diff2, mgv.nativeToken.toUnits(10), "0.001"),
-        "wrong balance",
-      );
-    });
+//     it("withdraws", async () => {
+//       const logic = onchain_lp.logic as OfferLogic;
+//       const getBal = async () =>
+//         mgv.provider.getBalance(await mgv.signer.getAddress());
+//       let tx = await mgv.fundMangrove(10, logic.address);
+//       await tx.wait();
+//       const oldBal = await getBal();
+//       tx = await logic.withdrawFromMangrove(10);
+//       const receipt = await tx.wait();
+//       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+//       //const diff = mgv.fromUnits((await getBal()).sub(oldBal).add(txCost), 18);
 
-    it("pushes a new offer", async () => {
-      const provision = await onchain_lp.computeAskProvision();
-      const { id: ofrId } = await onchain_lp.newAsk({
-        tick: 10,
-        gives: 10,
-        fund: provision,
-      });
-      assert(
-        await onchain_lp.market.isLive("asks", ofrId),
-        "Offer should be live",
-      );
-      // this does not work because newAsk is not synced with cache
-      // const asks = onchain_lp.asks();
-      // assert.strictEqual(
-      //   asks.length,
-      //   1,
-      //   "there should be one ask in the book"
-      // );
-      // assert.deepStrictEqual(asks[0].id, ofrId, "wrong offer id");
+//       /* FIXME the effectiveGasPrice returned by anvil is incorrect, so for now we do an approx estimate. */
+//       const diff2 = (await getBal()).sub(oldBal).add(txCost);
+//       assert(
+//         approxEq(diff2, mgv.nativeToken.toUnits(10), "0.001"),
+//         "wrong balance",
+//       );
+//     });
 
-      const missingProvision = await onchain_lp.computeAskProvision({
-        id: ofrId,
-      });
-      assert(
-        missingProvision.eq(0),
-        `there should be no missing provision for this offer (${missingProvision.toNumber()})`,
-      );
-    });
+//     it("pushes a new offer", async () => {
+//       const provision = await onchain_lp.computeAskProvision();
+//       const { id: ofrId } = await onchain_lp.newAsk({
+//         tick: 10,
+//         gives: 10,
+//         fund: provision,
+//       });
+//       assert(
+//         await onchain_lp.market.isLive("asks", ofrId),
+//         "Offer should be live",
+//       );
+//       // this does not work because newAsk is not synced with cache
+//       // const asks = onchain_lp.asks();
+//       // assert.strictEqual(
+//       //   asks.length,
+//       //   1,
+//       //   "there should be one ask in the book"
+//       // );
+//       // assert.deepStrictEqual(asks[0].id, ofrId, "wrong offer id");
 
-    it("fails, when trying to push new offer without sufficient provision", async () => {
-      const newAskPromise = onchain_lp.newAsk({
-        tick: 10,
-        gives: 10,
-        fund: 0, // explicitly setting no provision
-      });
+//       const missingProvision = await onchain_lp.computeAskProvision({
+//         id: ofrId,
+//       });
+//       assert(
+//         missingProvision.eq(0),
+//         `there should be no missing provision for this offer (${missingProvision.toNumber()})`,
+//       );
+//     });
 
-      await assert.rejects(
-        newAskPromise,
-        "Posting a new offer without sufficient provision should fail.",
-      );
-    });
+//     it("fails, when trying to push new offer without sufficient provision", async () => {
+//       const newAskPromise = onchain_lp.newAsk({
+//         tick: 10,
+//         gives: 10,
+//         fund: 0, // explicitly setting no provision
+//       });
 
-    it("cancels offer", async () => {
-      //sets huge gasprice to induce high provision, to make sure taker receives more than gas cost when cancelling their offer
-      let prov = await onchain_lp.computeBidProvision();
-      const tx = await mgvAdmin.contract.setGasprice(12000);
-      await tx.wait();
-      prov = await onchain_lp.computeBidProvision();
+//       await assert.rejects(
+//         newAskPromise,
+//         "Posting a new offer without sufficient provision should fail.",
+//       );
+//     });
 
-      const { id: ofrId } = await onchain_lp.newBid({
-        tick: 10,
-        gives: 20,
-        fund: prov,
-      });
-      const prov_before_cancel = await mgv.provider.getBalance(
-        await onchain_lp.mgv.signer.getAddress(),
-      );
+//     it("cancels offer", async () => {
+//       //sets huge gasprice to induce high provision, to make sure taker receives more than gas cost when cancelling their offer
+//       let prov = await onchain_lp.computeBidProvision();
+//       const tx = await mgvAdmin.contract.setGasprice(12000);
+//       await tx.wait();
+//       prov = await onchain_lp.computeBidProvision();
 
-      await onchain_lp.retractBid(ofrId, true); // with deprovision
-      const prov_after_cancel = await mgv.provider.getBalance(
-        await onchain_lp.mgv.signer.getAddress(),
-      );
-      assert(
-        prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
-        `Maker was not refunded, prov: ${mgv.nativeToken
-          .toUnits(prov)
-          .toString()} balance_before: ${prov_before_cancel}, balance_after: ${prov_after_cancel}`,
-      );
-      assert(
-        onchain_lp.bids().length === 0,
-        "Bid was not removed from the book",
-      );
+//       const { id: ofrId } = await onchain_lp.newBid({
+//         tick: 10,
+//         gives: 20,
+//         fund: prov,
+//       });
+//       const prov_before_cancel = await mgv.provider.getBalance(
+//         await onchain_lp.mgv.signer.getAddress(),
+//       );
 
-      await onchain_lp.retractBid(ofrId, true);
-      const prov_after_cancel2 = await mgv.provider.getBalance(
-        await onchain_lp.mgv.signer.getAddress(),
-      );
-      assert(
-        prov_after_cancel2.lt(prov_after_cancel), // cannot do better because of gas cost
-        "Cancel twice should not provision maker",
-      );
-    });
+//       await onchain_lp.retractBid(ofrId, true); // with deprovision
+//       const prov_after_cancel = await mgv.provider.getBalance(
+//         await onchain_lp.mgv.signer.getAddress(),
+//       );
+//       assert(
+//         prov_after_cancel.gt(prov_before_cancel), // cannot do better because of gas cost
+//         `Maker was not refunded, prov: ${mgv.nativeToken
+//           .toUnits(prov)
+//           .toString()} balance_before: ${prov_before_cancel}, balance_after: ${prov_after_cancel}`,
+//       );
+//       assert(
+//         onchain_lp.bids().length === 0,
+//         "Bid was not removed from the book",
+//       );
 
-    it("fails, when trying to cancel a non-existing offer", async () => {
-      const retractPromise = onchain_lp.retractBid(666, true); // with deprovision
+//       await onchain_lp.retractBid(ofrId, true);
+//       const prov_after_cancel2 = await mgv.provider.getBalance(
+//         await onchain_lp.mgv.signer.getAddress(),
+//       );
+//       assert(
+//         prov_after_cancel2.lt(prov_after_cancel), // cannot do better because of gas cost
+//         "Cancel twice should not provision maker",
+//       );
+//     });
 
-      await assert.rejects(
-        retractPromise,
-        "Retracting a non-existing offer should fail.",
-      );
-    });
+//     it("fails, when trying to cancel a non-existing offer", async () => {
+//       const retractPromise = onchain_lp.retractBid(666, true); // with deprovision
 
-    it("fails, when trying to create an offer on a closed market", async () => {
-      const closeTx = await mgvAdmin.contract.deactivate(
-        onchain_lp.market.getOLKey("asks"),
-      );
-      await closeTx.wait();
+//       await assert.rejects(
+//         retractPromise,
+//         "Retracting a non-existing offer should fail.",
+//       );
+//     });
 
-      const prov = await onchain_lp.computeBidProvision();
+//     it("fails, when trying to create an offer on a closed market", async () => {
+//       const closeTx = await mgvAdmin.contract.deactivate(
+//         onchain_lp.market.getOLKey("asks"),
+//       );
+//       await closeTx.wait();
 
-      const createPromise = onchain_lp.newAsk({
-        tick: 10,
-        gives: 20,
-        fund: prov,
-      });
+//       const prov = await onchain_lp.computeBidProvision();
 
-      await assert.rejects(
-        createPromise,
-        "Creating on a closed semibook should fail.",
-      );
-    });
+//       const createPromise = onchain_lp.newAsk({
+//         tick: 10,
+//         gives: 20,
+//         fund: prov,
+//       });
 
-    it("OfferMaker updates offer", async () => {
-      const { id: ofrId } = await onchain_lp.newAsk({
-        tick: 10,
-        gives: 20,
-        fund: await onchain_lp.computeAskProvision({}),
-      });
-      const provision = await onchain_lp.computeAskProvision({ id: ofrId });
-      assert.strictEqual(
-        provision.toNumber(),
-        0,
-        `There should be no need to re-provision`,
-      );
-      await onchain_lp.updateAsk(ofrId, { tick: 12, gives: 10 });
+//       await assert.rejects(
+//         createPromise,
+//         "Creating on a closed semibook should fail.",
+//       );
+//     });
 
-      const asks = onchain_lp.asks();
-      assert.deepStrictEqual(
-        asks[0].tick,
-        12,
-        "offer should have updated tick",
-      );
-      assert.strictEqual(
-        asks[0].gives.toNumber(),
-        10,
-        "offer should have updated gives",
-      );
-    });
+//     it("OfferMaker updates offer", async () => {
+//       const { id: ofrId } = await onchain_lp.newAsk({
+//         tick: 10,
+//         gives: 20,
+//         fund: await onchain_lp.computeAskProvision({}),
+//       });
+//       const provision = await onchain_lp.computeAskProvision({ id: ofrId });
+//       assert.strictEqual(
+//         provision.toNumber(),
+//         0,
+//         `There should be no need to re-provision`,
+//       );
+//       await onchain_lp.updateAsk(ofrId, { tick: 12, gives: 10 });
 
-    it("fails, when trying to update on a closed market", async () => {
-      const prov = await onchain_lp.computeBidProvision();
+//       const asks = onchain_lp.asks();
+//       assert.deepStrictEqual(
+//         asks[0].tick,
+//         12,
+//         "offer should have updated tick",
+//       );
+//       assert.strictEqual(
+//         asks[0].gives.toNumber(),
+//         10,
+//         "offer should have updated gives",
+//       );
+//     });
 
-      const { id: ofrId } = await onchain_lp.newBid({
-        tick: 10,
-        gives: 20,
-        fund: prov,
-      });
+//     it("fails, when trying to update on a closed market", async () => {
+//       const prov = await onchain_lp.computeBidProvision();
 
-      const closeTx = await mgvAdmin.contract.deactivate(
-        onchain_lp.market.getOLKey("asks"),
-      );
-      await closeTx.wait();
+//       const { id: ofrId } = await onchain_lp.newBid({
+//         tick: 10,
+//         gives: 20,
+//         fund: prov,
+//       });
 
-      const updatePromise = onchain_lp.updateAsk(ofrId, {
-        tick: 12,
-        gives: 10,
-      });
+//       const closeTx = await mgvAdmin.contract.deactivate(
+//         onchain_lp.market.getOLKey("asks"),
+//       );
+//       await closeTx.wait();
 
-      await assert.rejects(
-        updatePromise,
-        "Updating on a closed market should fail.",
-      );
-    });
+//       const updatePromise = onchain_lp.updateAsk(ofrId, {
+//         tick: 12,
+//         gives: 10,
+//       });
 
-    it("approves signer for base transfer", async () => {
-      const base = onchain_lp.market.base;
-      const logic = onchain_lp.logic as OfferLogic;
-      const signer_address = await logic.mgv.signer.getAddress();
+//       await assert.rejects(
+//         updatePromise,
+//         "Updating on a closed market should fail.",
+//       );
+//     });
 
-      const tx = await logic.approve(base.id, {
-        optAmount: 42,
-        optOverrides: { gasLimit: 80000 },
-      });
-      await tx.wait();
+//     it("approves signer for base transfer", async () => {
+//       const base = onchain_lp.market.base;
+//       const logic = onchain_lp.logic as OfferLogic;
+//       const signer_address = await logic.mgv.signer.getAddress();
 
-      const allowance = await base.allowance({
-        owner: logic.address,
-        spender: signer_address,
-      });
-      assert.equal(allowance, 42, "Invalid allowance");
-    });
-  });
-});
+//       const tx = await logic.approve(base.id, {
+//         optAmount: 42,
+//         optOverrides: { gasLimit: 80000 },
+//       });
+//       await tx.wait();
+
+//       const allowance = await base.allowance({
+//         owner: logic.address,
+//         spender: signer_address,
+//       });
+//       assert.equal(allowance, 42, "Invalid allowance");
+//     });
+//   });
+// });

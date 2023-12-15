@@ -69,6 +69,8 @@ describe("RestingOrder", () => {
   describe("Resting order integration tests suite", () => {
     /* Make sure tx has been mined so we can read the result off the chain */
     const w = async (r: Promise<TransactionResponse>) => (await r).wait(1);
+    const wm = async (r: Promise<TransactionResponse[]>) =>
+      await Promise.all((await r).map((tx) => tx.wait(1)));
 
     beforeEach(async function () {
       //set mgv object
@@ -97,9 +99,11 @@ describe("RestingOrder", () => {
         mgv.network.name,
       );
       orderLP = await LiquidityProvider.connect(orderLogic, gasreq, market);
-      router = (await orderLogic.router()) as AbstractRouter;
+      router = (await orderLogic.router(
+        this.accounts.tester.address,
+      )) as AbstractRouter;
 
-      await w(orderLogic.activate(["TokenA", "TokenB"]));
+      await wm(orderLogic.activate(["TokenA", "TokenB"]));
 
       // minting As and Bs for test runner
       const me = await mgv.signer.getAddress();
@@ -144,7 +148,8 @@ describe("RestingOrder", () => {
         const buyPromises = await orderLP.market.buy({
           limitPrice: 1,
           volume: 20,
-          restingOrder: {
+          orderType: "GTC",
+          restingParams: {
             provision: provision,
             restingOrderGaspriceFactor:
               provisionOption === "provideFactor" ? 7 : undefined,
@@ -208,7 +213,8 @@ describe("RestingOrder", () => {
         forceRoutingToMangroveOrder: true,
         limitPrice: 1,
         volume: 20,
-        restingOrder: { provision: provision },
+        orderType: "GTC",
+        restingParams: { provision: provision },
       });
       const orderResult = await buyPromises.result;
       orderResult.summary = orderResult.summary as Market.OrderSummary;
@@ -242,7 +248,8 @@ describe("RestingOrder", () => {
         forceRoutingToMangroveOrder: false,
         limitPrice: 1, // tokenA
         volume: 20, // tokenB
-        restingOrder: { provision: provision },
+        orderType: "GTC",
+        restingParams: { provision: provision },
       });
       const orderResult = await buyPromises.result;
       orderResult.summary = orderResult.summary as Market.OrderSummary;
@@ -274,6 +281,7 @@ describe("RestingOrder", () => {
         forceRoutingToMangroveOrder: true,
         limitPrice: 1, // tokenA
         volume: 5, // tokenB
+        orderType: "IOC",
       });
       const orderResult = await buyPromises.result;
       orderResult.summary = orderResult.summary as Market.OrderSummary;
@@ -310,7 +318,8 @@ describe("RestingOrder", () => {
         expiryDate:
           (await mgv.provider.getBlock(mgv.provider.getBlockNumber()))
             .timestamp + 5,
-        restingOrder: {
+        orderType: "GTC",
+        restingParams: {
           provision: provisionWithOverride,
           restingOrderGasreq: restingOrderGasreqOverride,
         },
@@ -324,7 +333,7 @@ describe("RestingOrder", () => {
         "Resting order was not posted",
       );
       const olKeyHash = mgv.getOlKeyHash(market.getOLKey("bids"));
-      const ttl = await mgv.orderContract.expiring(
+      const ttl = await mgv.orderContract.reneging(
         olKeyHash!,
         orderResult.restingOrder ? orderResult.restingOrder.id : 0,
       );
@@ -370,6 +379,7 @@ describe("RestingOrder", () => {
         maxTick: orderResult.restingOrder!.tick,
         fillVolume: 1,
         fillWants: true,
+        orderType: "IOC",
       });
       const result = await sellPromises.result;
       result.summary = result.summary as Market.OrderSummary;
@@ -397,7 +407,7 @@ describe("RestingOrder", () => {
       await (mgv.provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
 
       assert(
-        ttl.lt(
+        ttl[0].lt(
           (await mgv.provider.getBlock(mgv.provider.getBlockNumber()))
             .timestamp,
         ),
@@ -408,6 +418,7 @@ describe("RestingOrder", () => {
         maxTick: orderResult.restingOrder!.tick,
         fillVolume: 5,
         fillWants: true,
+        orderType: "IOC",
       });
       const result_ = await sellPromises_.result;
       assert(result_.summary.bounty!.gt(0), "Order should have reneged");
@@ -421,6 +432,7 @@ describe("RestingOrder", () => {
         forceRoutingToMangroveOrder: true,
         limitPrice: 1, // tokenA
         volume: 5, // tokenB
+        orderType: "IOC",
       });
       const orderResult = await buyPromises.result;
       orderResult.summary = orderResult.summary as Market.OrderSummary;
@@ -451,7 +463,8 @@ describe("RestingOrder", () => {
         const buyPromises = await market.buy({
           limitPrice: 1, // tokenA
           volume: 20, // tokenB
-          restingOrder: {},
+          restingParams: {},
+          orderType: "GTC",
         });
         const orderResult = await buyPromises.result;
         const tx = await waitForTransaction(buyPromises.response);
@@ -488,6 +501,7 @@ describe("RestingOrder", () => {
           maxTick: orderResult.restingOrder!.tick,
           fillVolume: 10,
           fillWants: true,
+          orderType: "IOC",
         });
         const result = await sellPromises.result;
         result.summary = result.summary as Market.OrderSummary;
@@ -515,7 +529,8 @@ describe("RestingOrder", () => {
         const buyAgainPromises = await market.buy({
           limitPrice: 1, // tokenA
           volume: 20, // tokenB
-          restingOrder: {
+          orderType: "GTC",
+          restingParams: {
             provision: addProvision ? provision : undefined,
             offerId: orderResult.restingOrder!.id,
           },
@@ -562,7 +577,8 @@ describe("RestingOrder", () => {
         const buyPromises = await orderLP.market.buy({
           limitPrice: 1,
           volume: 20,
-          restingOrder: { provision: provision },
+          orderType: "GTC",
+          restingParams: { provision: provision },
         });
 
         const buyTxReceipt = await waitForTransaction(buyPromises.response);

@@ -243,7 +243,7 @@ class Trade {
    */
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const needsMarketOrder = this.needsMarketOrder(params.orderType);
-    if (needsMarketOrder && !params.restingParams)
+    if (needsMarketOrder && !("restingParams" in params))
       throw new Error("Market order needs resting order params");
 
     const { maxTick, fillVolume, fillWants } =
@@ -262,7 +262,7 @@ class Trade {
       ? {
           restingParams: restingOrderParams,
           orderType: params.orderType,
-          expiryDate: params.expiryDate,
+          expiryDate: "expiryDate" in params ? params.expiryDate : undefined,
         }
       : {
           restingParams: undefined,
@@ -620,19 +620,19 @@ class Trade {
       orderType,
       fillVolume,
       fillWants,
-      expiryDate,
-      restingParams,
       takerGivesLogic,
       takerWantsLogic,
       market,
       gasLowerBound,
+      ...rest
     }: Market.RawMangroveOrderParams,
     overrides: ethers.Overrides,
   ): Promise<Market.Transaction<Market.OrderResult>> {
     const ba = this.bsToBa(side);
-    const restingOrderParams = restingParams
-      ? await this.getRestingOrderParams(restingParams, market, ba)
-      : undefined;
+    const restingOrderParams =
+      "restingParams" in rest
+        ? await this.getRestingOrderParams(rest.restingParams, market, ba)
+        : undefined;
     const overrides_ = restingOrderParams
       ? {
           ...overrides,
@@ -642,6 +642,9 @@ class Trade {
 
     const olKey = market.getOLKey(ba);
     const rawOrderType = this.fromOrderTypeToBN(orderType);
+
+    const offerId =
+      "restingParams" in rest ? rest.restingParams.offerId : undefined;
 
     const response = this.createTxWithOptionalGasEstimation(
       market.mgv.orderContract.take,
@@ -655,8 +658,8 @@ class Trade {
           orderType: rawOrderType,
           fillVolume,
           fillWants,
-          expiryDate: expiryDate ?? 0,
-          offerId: restingParams?.offerId ?? 0,
+          expiryDate: "expiryDate" in rest ? rest.expiryDate ?? 0 : 0,
+          offerId: offerId ?? 0,
           restingOrderGasreq: restingOrderParams?.restingOrderGasreq ?? 0,
           takerGivesLogic,
           takerWantsLogic,
@@ -670,7 +673,7 @@ class Trade {
       fillWants,
       fillVolume,
       market,
-      restingParams?.offerId,
+      offerId,
     );
     // if resting order was not posted, result.summary is still undefined.
     return { result, response };

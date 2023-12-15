@@ -18,13 +18,20 @@ describe("TradeEventManagement unit tests suite", () => {
     args: {
       olKeyHash: string;
       taker: string;
-      fillOrKill?: boolean;
-      tick?: BigNumber;
-      maxTick?: BigNumber;
+      orderType?: Market.MangroveOrderType;
       fillVolume: BigNumber;
       fillWants: boolean;
-      restingOrder?: boolean;
-    };
+      restingOrderId?: number;
+      takerGivesLogic?: string;
+      takerWantsLogic?: string;
+    } & (
+      | {
+          tick: BigNumber;
+        }
+      | {
+          maxTick: BigNumber;
+        }
+    );
   };
   describe("createSummary", () => {
     it("return summary with partialFill as true, when partialFill func returns true", async function () {

@@ -19,6 +19,7 @@ describe("Trade unit tests suite", () => {
       const limitPrice: Bigish = 20;
       const slippage = 3;
       const params: Market.TradeParams = {
+        orderType: "IOC",
         limitPrice,
         volume: 30,
         slippage: slippage,
@@ -79,6 +80,7 @@ describe("Trade unit tests suite", () => {
         limitPrice,
         total: 30,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -131,6 +133,7 @@ describe("Trade unit tests suite", () => {
         maxTick: 30,
         fillVolume: 20,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -183,6 +186,7 @@ describe("Trade unit tests suite", () => {
         fillVolume: 20,
         fillWants: false,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -235,6 +239,7 @@ describe("Trade unit tests suite", () => {
         gives: 30,
         fillWants: false,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = new TokenCalculations(18, 18);
       const quoteToken = new TokenCalculations(18, 18);
@@ -284,6 +289,7 @@ describe("Trade unit tests suite", () => {
         limitPrice: price,
         volume: 30,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -310,6 +316,7 @@ describe("Trade unit tests suite", () => {
         limitPrice,
         volume: 30,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -360,6 +367,7 @@ describe("Trade unit tests suite", () => {
         limitPrice,
         total: 30,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -412,6 +420,7 @@ describe("Trade unit tests suite", () => {
         fillVolume: 20,
         maxTick: 30,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -464,6 +473,7 @@ describe("Trade unit tests suite", () => {
         maxTick: 30,
         fillWants: true,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);
@@ -517,6 +527,7 @@ describe("Trade unit tests suite", () => {
         gives: 30,
         fillWants: false,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseTokenDecimals = 18;
       const quoteTokenDecimals = 18;
@@ -572,6 +583,7 @@ describe("Trade unit tests suite", () => {
         limitPrice: price,
         volume: 30,
         slippage: slippage,
+        orderType: "IOC",
       };
       const baseToken = mock(Token);
       const quoteToken = mock(Token);

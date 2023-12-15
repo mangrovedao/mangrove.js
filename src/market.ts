@@ -212,7 +212,7 @@ namespace Market {
    */
   export type WithRestingOrderParams = {
     orderType: WithRestingOrderTypes;
-    expiryDate: number;
+    expiryDate?: number;
     restingParams: Market.RestingOrderParams;
   };
 
@@ -226,8 +226,6 @@ namespace Market {
    */
   export type WithoutRestingOrderParams = {
     orderType: WithoutRestingOrderTypes;
-    expiryDate: undefined;
-    restingParams: undefined;
   };
 
   /**
