@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-15
+
 - fix!: rename offer_gasbase on offer structures to gasbase
 - fix!: align return value of kandelInstance.getOffers() with new structure
 - fix!: rename populateGeneralChunk to populateGeneralChunks
