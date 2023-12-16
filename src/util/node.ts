@@ -288,7 +288,7 @@ const connect = async (params: computeArgvType | serverParamsType) => {
 
   /* Track node snapshot ids for easy snapshot/revert */
   let lastSnapshotId: string;
-  let snapshotBlockNumber: number;
+  let lastSnapshotBlockNumber: number;
 
   return {
     ...spawnInfo,
@@ -298,15 +298,18 @@ const connect = async (params: computeArgvType | serverParamsType) => {
     deploy: params.deploy ? undefined : deployFn,
     snapshot: async () => {
       lastSnapshotId = await params.provider.send("evm_snapshot", []);
-      snapshotBlockNumber = await params.provider.getBlockNumber();
+      lastSnapshotBlockNumber = await params.provider.getBlockNumber();
       return lastSnapshotId;
     },
     revert: async (snapshotId = lastSnapshotId) => {
       await params.provider.send("evm_revert", [snapshotId]);
       const blockNumberAfterRevert = await params.provider.getBlockNumber();
-      if (blockNumberAfterRevert != snapshotBlockNumber) {
+      if (
+        snapshotId == lastSnapshotId &&
+        blockNumberAfterRevert != lastSnapshotBlockNumber
+      ) {
         throw Error(
-          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`,
+          `evm_revert did not revert to expected block number ${lastSnapshotBlockNumber} but to ${blockNumberAfterRevert}`,
         );
       }
     },

@@ -36,6 +36,7 @@ export type hookInfo = {
     arbitrager: account;
   };
   server?: serverType;
+  snapshotId?: string;
   closeCurrentProxy?: () => Promise<void>;
 };
 
@@ -106,7 +107,7 @@ export const mochaHooks = {
     // making sure that last one is mined before snapshot is taken, anvil may snapshot too early otherwise
     await tx.wait();
     mgv.disconnect();
-    await hook.server.snapshot();
+    hook.snapshotId = await hook.server.snapshot();
   },
 
   async beforeEachImpl(hook: hookInfo) {
@@ -194,9 +195,7 @@ export const mochaHooks = {
       // Note, this is updated on this global instance, so a test should never read it inside an non-awaited async request
       hook.server.url = `http://${serverParams.host}:${currentProxyPort}`;
 
-      await hook.server.revert();
-      // revert removes the old snapshot, a new snapshot is therefore needed. https://github.com/foundry-rs/foundry/blob/6262fbec64021463fd403204039201983effa00d/evm/src/executor/fork/database.rs#L117
-      await hook.server.snapshot();
+      await hook.server.revert(hook.snapshotId);
     }
   },
 
