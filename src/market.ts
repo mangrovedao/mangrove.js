@@ -338,11 +338,13 @@ namespace Market {
   };
 
   /**
-   * Offers in the book cache, with a given gasbase, and optional pointers to the next and previous offer.
+   * Offers in the book cache, with a given gasbase and pointers to the next and
+   * previous offer at the same tick; `undefined` means no such offer, ie, the
+   * offer is first or last at the tick.
    */
   export type Offer = OfferSlim & {
-    next: number | undefined;
-    prev: number | undefined;
+    nextAtTick: number | undefined;
+    prevAtTick: number | undefined;
     gasbase: number;
   };
 

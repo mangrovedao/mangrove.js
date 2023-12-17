@@ -354,8 +354,8 @@ class Semibook
     );
     return {
       gasbase: details.kilo_offer_gasbase.toNumber() * 1000,
-      next: Semibook.rawIdToId(offer.next),
-      prev: Semibook.rawIdToId(offer.prev),
+      nextAtTick: Semibook.rawIdToId(offer.next),
+      prevAtTick: Semibook.rawIdToId(offer.prev),
       ...this.rawOfferSlimToOfferSlim({
         id: Semibook.idToRawId(offerId),
         ...offer,
@@ -921,8 +921,8 @@ class Semibook
         // After removing the offer (a noop if the offer was not in local cache), we try to reinsert it.
         offer = {
           gasbase: state.localConfig.offer_gasbase,
-          next: undefined, // offers are always inserted at the end of the list
-          prev: undefined, // prev will be set when the offer is inserted into the cache iff the previous offer exists in the cache
+          nextAtTick: undefined, // offers are always inserted at the end of the list
+          prevAtTick: undefined, // prev will be set when the offer is inserted into the cache iff the previous offer exists in the cache
           ...this.rawOfferSlimToOfferSlim(event.args),
         };
 
@@ -1271,8 +1271,8 @@ class Semibook
           const detail = rawOfferDetails[index];
           return {
             gasbase: detail.kilo_offer_gasbase.toNumber() * 1000,
-            next: Semibook.rawIdToId(offer.next),
-            prev: Semibook.rawIdToId(offer.prev),
+            nextAtTick: Semibook.rawIdToId(offer.next),
+            prevAtTick: Semibook.rawIdToId(offer.prev),
             ...this.rawOfferSlimToOfferSlim({
               id: offerId,
               ...offer,
@@ -1306,7 +1306,7 @@ class Semibook
         // Was the last processed offer the last offer in a bin?
         if (offers.length > 0) {
           const lastOffer = offers[offers.length - 1];
-          if (lastOffer.next === undefined) {
+          if (lastOffer.nextAtTick === undefined) {
             bins.set(lastOffer.tick, bin);
             shouldStop ||= processBin(lastOffer.tick, bin, bins);
             currentTick = undefined;
@@ -1473,8 +1473,8 @@ class CacheIterator implements Semibook.CacheIterator {
           ? undefined
           : this.#offerCache.get(this.#latestOfferId);
       if (value !== undefined) {
-        if (value.next !== undefined) {
-          this.#latestOfferId = value.next;
+        if (value.nextAtTick !== undefined) {
+          this.#latestOfferId = value.nextAtTick;
         } else {
           const nextBin = this.#binCache.get(value.tick)?.next;
           this.#latestOfferId = nextBin?.firstOfferId;
@@ -1572,7 +1572,7 @@ export class SemibookCacheOperations {
     }
     state.worstBinInCache = bin;
 
-    // offer.prev and offer.next are already set when they were fetched from chain
+    // offer.prev and offer.nextAtTick are already set when they were fetched from chain
     for (const offer of offers) {
       state.offerCache.set(offer.id, offer);
     }
@@ -1595,8 +1595,8 @@ export class SemibookCacheOperations {
     let bin = state.binCache.get(offer.tick);
     if (bin !== undefined) {
       // Insert offer at the end of the existing bin
-      state.offerCache.get(bin.lastOfferId)!.next = offer.id;
-      offer.prev = bin.lastOfferId;
+      state.offerCache.get(bin.lastOfferId)!.nextAtTick = offer.id;
+      offer.prevAtTick = bin.lastOfferId;
       bin.lastOfferId = offer.id;
       bin.offerCount++;
     } else {
@@ -1646,17 +1646,17 @@ export class SemibookCacheOperations {
       }
     } else {
       // Remove the offer from the bin
-      const prevOffer = state.offerCache.get(offer.prev!);
-      const nextOffer = state.offerCache.get(offer.next!);
+      const prevOffer = state.offerCache.get(offer.prevAtTick!);
+      const nextOffer = state.offerCache.get(offer.nextAtTick!);
       if (prevOffer === undefined) {
         bin.firstOfferId = nextOffer!.id; // since the bin has multiple offers && prevOffer == undefined  =>  nextOffer !== undefined
       } else {
-        prevOffer.next = offer.next;
+        prevOffer.nextAtTick = offer.nextAtTick;
       }
       if (nextOffer === undefined) {
         bin.lastOfferId = prevOffer!.id; // since the bin has multiple offers && nextOffer == undefined  =>  prevOffer !== undefined
       } else {
-        nextOffer.prev = offer.prev;
+        nextOffer.prevAtTick = offer.prevAtTick;
       }
       bin.offerCount--;
     }

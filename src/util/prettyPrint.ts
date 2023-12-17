@@ -38,8 +38,8 @@ class PrettyPrint {
         gasreq: obj.gasreq,
         gasprice: obj.gasprice,
         price: obj.price.toFixed(10),
-        prev: obj.prev,
-        next: obj.next,
+        prevAtTick: obj.prevAtTick,
+        nextAtTick: obj.nextAtTick,
       };
     });
     console.table(offersArray, filter);

@@ -19,8 +19,8 @@ describe("PrettyPrint Unit test suite", () => {
 
       const offer: Market.Offer = {
         id: 1,
-        prev: 2,
-        next: 3,
+        prevAtTick: 2,
+        nextAtTick: 3,
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
@@ -59,8 +59,8 @@ describe("PrettyPrint Unit test suite", () => {
 
       const offer: Market.Offer = {
         id: 1,
-        prev: 2,
-        next: 3,
+        prevAtTick: 2,
+        nextAtTick: 3,
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
@@ -98,8 +98,8 @@ describe("PrettyPrint Unit test suite", () => {
 
       const offer: Market.Offer = {
         id: 1,
-        prev: 2,
-        next: 3,
+        prevAtTick: 2,
+        nextAtTick: 3,
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
