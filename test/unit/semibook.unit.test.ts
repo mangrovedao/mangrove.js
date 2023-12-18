@@ -336,8 +336,8 @@ describe("Semibook unit test suite", () => {
         gives: Big(id),
         price: Big(id),
         wants: Big(id),
-        next: undefined,
-        prev: undefined,
+        nextAtTick: undefined,
+        prevAtTick: undefined,
         gasbase: id,
         volume: Big(id),
       };
@@ -353,14 +353,14 @@ describe("Semibook unit test suite", () => {
       fromId: number;
     }): Market.Offer[] {
       const result: Market.Offer[] = [];
-      let prev: Market.Offer | undefined = undefined;
+      let prevAtTick: Market.Offer | undefined = undefined;
       for (let id = fromId; id < fromId + count; ++id) {
         const offer = makeOffer({ id, tick });
-        offer.prev = prev?.id;
-        if (prev !== undefined) {
-          prev.next = offer.id;
+        offer.prevAtTick = prevAtTick?.id;
+        if (prevAtTick !== undefined) {
+          prevAtTick.nextAtTick = offer.id;
         }
-        prev = offer;
+        prevAtTick = offer;
         result.push(offer);
       }
       return result;

@@ -111,8 +111,8 @@ describe("Market unit tests suite", () => {
       const priceBig = Big(price);
       return {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 1,
         maker: "",
         gasreq: 1,

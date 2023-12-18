@@ -310,8 +310,8 @@ describe("Market integration tests suite", () => {
 
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
@@ -350,8 +350,8 @@ describe("Market integration tests suite", () => {
 
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
@@ -471,8 +471,8 @@ describe("Market integration tests suite", () => {
       const gives = new Big(12);
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
@@ -509,8 +509,8 @@ describe("Market integration tests suite", () => {
 
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
@@ -547,8 +547,8 @@ describe("Market integration tests suite", () => {
       const tick = 23;
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
@@ -695,8 +695,8 @@ describe("Market integration tests suite", () => {
 
     const offer1 = {
       id: 1,
-      prev: undefined,
-      next: undefined,
+      prevAtTick: undefined,
+      nextAtTick: undefined,
       gasprice: mgv.config().gasprice,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
@@ -726,8 +726,8 @@ describe("Market integration tests suite", () => {
 
     const offer2 = {
       id: 1,
-      prev: undefined,
-      next: undefined,
+      prevAtTick: undefined,
+      nextAtTick: undefined,
       gasprice: mgv.config().gasprice,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
@@ -1445,11 +1445,11 @@ describe("Market integration tests suite", () => {
         const nextOfferTick = ary[i + 1]?.tick ?? -2;
         return {
           ...ofr,
-          prev:
+          prevAtTick:
             prevOfferTick == ofr.tick
               ? (ary[i - 1]?.id as number | undefined)
               : undefined,
-          next:
+          nextAtTick:
             nextOfferTick == ofr.tick
               ? (ary[i + 1]?.id as number | undefined)
               : undefined,
