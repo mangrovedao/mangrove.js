@@ -50,7 +50,7 @@ jobs:
           FOUNDRY_OUT: "~/.foundry/build-out"
         run: yarn run test:coverage
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ steps.build.conclusion == 'success' && (success() || failure())}}
         with:
           name: test-results
