@@ -681,7 +681,7 @@ function createContractVersionPattern(contractPackageVersion: string) {
   const preleaseComponents = semver.prerelease(contractPackageVersion);
   if (preleaseComponents === null) {
     // For release versions of contract packages, we match any deployment of the same major version, _excluding_ prereleases.
-    return `^${contractPackageVersion}`;
+    return `^${semver.major(contractPackageVersion)}.0.0`;
   } else {
     // For pre-release versions of contract packages, we match any deployment of the same major version, _including_ prereleases.
     // This is achieved by replacing the last prelease component by 0 and using the caret '^' pattern.
