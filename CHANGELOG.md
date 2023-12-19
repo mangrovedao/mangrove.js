@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-17
+
 - fix: Correctly match any contract deployment of the same major version as the contract package version
 
 # 2.0.0-16
