@@ -91,7 +91,7 @@ function revert(message: string): void {
 
 // # TickLib.sol
 
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: MIT
 // pragma solidity ^0.8.17;
 
 // import {Bin} from "@mgv/lib/core/TickTreeLib.sol";

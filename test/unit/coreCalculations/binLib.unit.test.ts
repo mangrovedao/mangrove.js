@@ -19,7 +19,7 @@ const _1 = BigNumber.from(1);
 
 // # DynamicTicks.t.sol
 
-// SPDX-License-Identifier:	AGPL-3.0
+// SPDX-License-Identifier: MIT
 
 // pragma solidity ^0.8.10;
 

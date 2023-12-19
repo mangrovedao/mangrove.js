@@ -3,7 +3,7 @@
   "version": "2.0.0-16",
   "author": "Mangrove DAO",
   "description": "A Typescript SDK for the Mangrove Protocol.",
-  "license": "(BSD-2-Clause OR BSD-3-Clause)",
+  "license": "MIT",
   "main": "dist/nodejs/index.js",
   "browser": "dist/browser/mangrove.min.js",
   "scripts": {
