@@ -13,7 +13,11 @@ import {
   OfferLogic,
   mgvTestUtil,
 } from "../../src";
-import { AbstractRouter } from "../../src/types/typechain";
+import {
+  AbstractRouter,
+  RouterProxyFactory,
+  RouterProxyFactory__factory,
+} from "../../src/types/typechain";
 
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { Big } from "big.js";
@@ -22,6 +26,7 @@ import {
   waitForTransaction,
 } from "../../src/util/test/mgvIntegrationTestUtil";
 import configuration from "../../src/configuration";
+import { sleep } from "../util/helpers";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -35,6 +40,8 @@ describe("RestingOrder", () => {
   let orderLogic: OfferLogic;
   let orderLP: LiquidityProvider;
   let router: AbstractRouter;
+  let proxyFactory: RouterProxyFactory;
+  let smartRouterImplementation: string;
 
   afterEach(async () => {
     mgv.disconnect();
@@ -88,6 +95,15 @@ describe("RestingOrder", () => {
       // @ts-ignore
       mgv.provider.pollingInterval = 10;
       orderLogic = mgv.offerLogic(mgv.orderContract.address);
+      const _proxyAddress = await mgv.orderContract.ROUTER_FACTORY();
+      proxyFactory = RouterProxyFactory__factory.connect(
+        _proxyAddress,
+        mgv.signer,
+      );
+      smartRouterImplementation =
+        await mgv.orderContract.ROUTER_IMPLEMENTATION();
+      const me = await mgv.signer.getAddress();
+
       const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
@@ -99,14 +115,14 @@ describe("RestingOrder", () => {
         mgv.network.name,
       );
       orderLP = await LiquidityProvider.connect(orderLogic, gasreq, market);
-      router = (await orderLogic.router(
-        this.accounts.tester.address,
-      )) as AbstractRouter;
+      router = (await orderLogic.router(me)) as AbstractRouter;
+
+      await w(proxyFactory.deployProxy(me, smartRouterImplementation));
+      await w(router.bind(mgv.orderContract.address));
 
       await wm(orderLogic.activate(["TokenA", "TokenB"]));
 
       // minting As and Bs for test runner
-      const me = await mgv.signer.getAddress();
       await w(tokenA.contract.mintTo(me, utils.parseUnits("100", 18)));
       await w(tokenB.contract.mintTo(me, utils.parseUnits("100", 18)));
 
@@ -155,10 +171,13 @@ describe("RestingOrder", () => {
               provisionOption === "provideFactor" ? 7 : undefined,
           },
         });
+
         const tx = await waitForTransaction(buyPromises.response);
+
         await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
 
         const orderResult = await buyPromises.result;
+
         orderResult.summary = orderResult.summary as Market.OrderSummary;
         assert(
           // 2.5% fee configured in mochaHooks.js
