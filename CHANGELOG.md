@@ -1,5 +1,7 @@
 # Next version
 
+- fix: Correctly match any contract deployment of the same major version as the contract package version
+
 # 2.0.0-16
 
 - Change @mangrovedao/mangrove-core dependency from 'next' to '^2.0.2'
