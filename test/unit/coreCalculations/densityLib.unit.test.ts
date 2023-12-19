@@ -43,7 +43,7 @@ const type_uint_max = ethers.constants.MaxUint256;
 
 // # Density.t.sol
 
-// SPDX-License-Identifier:	MIT
+// SPDX-License-Identifier: MIT
 
 // those tests should be run with -vv so correct gas estimates are shown
 
