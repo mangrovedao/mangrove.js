@@ -71,6 +71,7 @@ describe(`${GeneralKandelDistributionHelper.prototype.constructor.name} unit tes
               sut.helper.askTickPriceHelper.inboundFromOutbound(
                 o.tick,
                 o.gives,
+                "roundDown",
               ),
             ).gte(Big(9000)),
             "ask quote should be above minimum",
@@ -83,7 +84,7 @@ describe(`${GeneralKandelDistributionHelper.prototype.constructor.name} unit tes
           );
           assert.ok(
             sut.helper.bidTickPriceHelper
-              .inboundFromOutbound(o.tick, o.gives)
+              .inboundFromOutbound(o.tick, o.gives, "roundDown")
               .gte(Big(1)),
             "bid base should be above minimum",
           );

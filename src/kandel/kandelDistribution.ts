@@ -127,7 +127,9 @@ class KandelDistribution {
         ...x,
         price: this.helper[
           ba === "bids" ? "bidTickPriceHelper" : "askTickPriceHelper"
-        ].priceFromTick(x.tick),
+        ]
+          // Rounding does not matter since tick should already be binned
+          .priceFromTick(x.tick, "roundUp"),
       }),
     );
   }

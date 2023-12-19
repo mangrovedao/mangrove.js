@@ -157,7 +157,7 @@ class KandelDistributionHelper {
       const minimumBaseFromQuote = this.bidTickPriceHelper.inboundFromOutbound(
         maxBidTick,
         minimumQuotePerOffer,
-        true,
+        "roundUp",
       );
       askGives = minimumBaseFromQuote.gt(minimumBasePerOffer)
         ? minimumBaseFromQuote
@@ -168,7 +168,7 @@ class KandelDistributionHelper {
       const minimumQuoteFromBase = this.askTickPriceHelper.inboundFromOutbound(
         maxAskTick,
         minimumBasePerOffer,
-        true,
+        "roundUp",
       );
       bidGives = minimumQuoteFromBase.gt(minimumQuotePerOffer)
         ? minimumQuoteFromBase

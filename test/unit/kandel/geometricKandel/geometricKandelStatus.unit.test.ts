@@ -594,5 +594,33 @@ describe(`${GeometricKandelStatus.prototype.constructor.name} unit tests suite`,
         statuses,
       });
     });
+
+    [true, false].forEach((roundUpScenario) => {
+      it(`rounds mid price to nearest (roundUpScenario=${roundUpScenario})`, () => {
+        // Arrange
+        const midPrice =
+          sut.geometricDistributionHelper.helper.bidTickPriceHelper.priceFromTick(
+            roundUpScenario ? 6 : 8,
+          );
+        const offerTick = 7;
+        sut.geometricDistributionHelper.helper.askTickPriceHelper.market.tickSpacing = 7;
+
+        // Act
+        const statuses = sut.getOfferStatuses(midPrice, 770, 2, 1, {
+          bids: [
+            {
+              tick: offerTick,
+              index: 0,
+              id: 42,
+              live: true,
+            },
+          ],
+          asks: [],
+        });
+
+        // Assert
+        assert.equal(statuses.statuses[0].expectedLiveBid, true);
+      });
+    });
   });
 });

@@ -94,7 +94,7 @@ describe("Semibook unit test suite", () => {
       assert.equal(result, false);
     });
 
-    it("returns false, when what is base and to is buy ", async function () {
+    it("returns false, when what is base and to is buy", async function () {
       //Arrange
       const opts: Market.BookOptions = {
         desiredVolume: {
@@ -109,7 +109,7 @@ describe("Semibook unit test suite", () => {
       assert.equal(result, false);
     });
 
-    it("returns true, when what is base and to is sell ", async function () {
+    it("returns true, when what is base and to is sell", async function () {
       //Arrange
       const opts: Market.BookOptions = {
         desiredVolume: {
@@ -124,7 +124,7 @@ describe("Semibook unit test suite", () => {
       assert.equal(result, true);
     });
 
-    it("returns false, when what is quote and to is sell ", async function () {
+    it("returns false, when what is quote and to is sell", async function () {
       //Arrange
       const opts: Market.BookOptions = {
         desiredVolume: {
@@ -139,7 +139,7 @@ describe("Semibook unit test suite", () => {
       assert.equal(result, false);
     });
 
-    it("returns true, when what is quote and to is buy ", async function () {
+    it("returns true, when what is quote and to is buy", async function () {
       //Arrange
       const opts: Market.BookOptions = {
         desiredVolume: {

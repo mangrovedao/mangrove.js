@@ -555,7 +555,9 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
         assertConstantGives(distribution, "asks", 1);
         distribution.getLiveOffers("asks").forEach((d) => {
           assertApproxEqRel(
-            askTickPriceHelper.inboundFromOutbound(d.tick, d.gives).toNumber(),
+            askTickPriceHelper
+              .inboundFromOutbound(d.tick, d.gives, "roundDown")
+              .toNumber(),
             minPrice.mul(priceRatio.pow(d.index)).toNumber(),
             0.01,
             `wrong quote at ${d.index}`,
@@ -596,7 +598,9 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
         distribution.getLiveOffers("asks").forEach((d, i) => {
           assert.equal(d.gives.toNumber(), 1, `wrong base at ${i}`);
           assertApproxEqRel(
-            askTickPriceHelper.inboundFromOutbound(d.tick, d.gives).toNumber(),
+            askTickPriceHelper
+              .inboundFromOutbound(d.tick, d.gives, "roundDown")
+              .toNumber(),
             minPrice.mul(priceRatio.pow(d.index)).toNumber(),
             0.01,
             `wrong quote at ${d.index}`,
@@ -604,7 +608,9 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
         });
         distribution.getLiveOffers("bids").forEach((d, i) => {
           assertApproxEqRel(
-            bidTickPriceHelper.inboundFromOutbound(d.tick, d.gives).toNumber(),
+            bidTickPriceHelper
+              .inboundFromOutbound(d.tick, d.gives, "roundDown")
+              .toNumber(),
             1,
             0.01,
             `wrong base at ${i}`,
@@ -635,7 +641,9 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
         assertConstantWants(distribution, "asks", 1000);
         distribution.getLiveOffers("bids").forEach((d) => {
           assertApproxEqRel(
-            bidTickPriceHelper.inboundFromOutbound(d.tick, d.gives).toNumber(),
+            bidTickPriceHelper
+              .inboundFromOutbound(d.tick, d.gives, "roundDown")
+              .toNumber(),
             d.gives.div(minPrice.mul(priceRatio.pow(d.index)).toNumber()),
             0.01,
             `wrong bid wants at ${d.index}`,
@@ -645,7 +653,7 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
           assertApproxEqRel(
             d.gives.toNumber(),
             askTickPriceHelper
-              .inboundFromOutbound(d.tick, d.gives)
+              .inboundFromOutbound(d.tick, d.gives, "roundDown")
               .div(minPrice.mul(priceRatio.pow(d.index)).toNumber()),
             0.01,
             `wrong ask gives at ${d.index}`,

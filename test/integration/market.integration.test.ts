@@ -319,7 +319,11 @@ describe("Market integration tests suite", () => {
         gives: expectedGives,
         tick,
         price,
-        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
+        wants: tickPriceHelper.inboundFromOutbound(
+          tick,
+          expectedGives,
+          "roundDown",
+        ),
         volume: expectedGives,
       };
       mockito
@@ -359,7 +363,11 @@ describe("Market integration tests suite", () => {
         gives: expectedGives,
         tick,
         price: tickPriceHelper.priceFromTick(tick),
-        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
+        wants: tickPriceHelper.inboundFromOutbound(
+          tick,
+          expectedGives,
+          "roundDown",
+        ),
         volume: expectedGives,
       };
       mockito
@@ -480,7 +488,11 @@ describe("Market integration tests suite", () => {
         gives,
         tick,
         price: semiBook.tickPriceHelper.priceFromTick(tick),
-        wants: semiBook.tickPriceHelper.inboundFromOutbound(tick, gives),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(
+          tick,
+          gives,
+          "roundDown",
+        ),
         volume: new Big(42),
       };
       mockito
@@ -518,7 +530,11 @@ describe("Market integration tests suite", () => {
         gives,
         tick,
         price: semiBook.tickPriceHelper.priceFromTick(tick),
-        wants: semiBook.tickPriceHelper.inboundFromOutbound(tick, gives),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(
+          tick,
+          gives,
+          "roundDown",
+        ),
         volume: new Big(42),
       };
       mockito
@@ -556,7 +572,11 @@ describe("Market integration tests suite", () => {
         gives: expectedGives,
         tick,
         price: tickPriceHelper.priceFromTick(tick),
-        wants: tickPriceHelper.inboundFromOutbound(tick, expectedGives),
+        wants: tickPriceHelper.inboundFromOutbound(
+          tick,
+          expectedGives,
+          "roundDown",
+        ),
         volume: expectedGives,
       };
       mockito
@@ -704,7 +724,7 @@ describe("Market integration tests suite", () => {
       tick: tick,
       gives: asksGives,
       price: askPrice,
-      wants: askTickHelper.inboundFromOutbound(tick, asksGives),
+      wants: askTickHelper.inboundFromOutbound(tick, asksGives, "roundDown"),
       volume: asksGives,
     };
 
@@ -734,7 +754,7 @@ describe("Market integration tests suite", () => {
       gasbase: market.config().bids.offer_gasbase,
       tick: bidTick,
       gives: bidsGives,
-      wants: bidTickHelper.inboundFromOutbound(bidTick, bidsGives),
+      wants: bidTickHelper.inboundFromOutbound(bidTick, bidsGives, "roundDown"),
       price: bidPrice,
       volume: bidsGives.div(bidPrice),
     };
@@ -1015,6 +1035,7 @@ describe("Market integration tests suite", () => {
               .getBook()
               .asks.tickPriceHelper.tickFromRawRatio(
                 Big(0.000000000002).div(10),
+                "roundDown",
               ),
             fillVolume: 10,
           };
@@ -1176,7 +1197,9 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
 
-      const price = market.getSemibook("asks").tickPriceHelper.coercePrice(4);
+      const price = market
+        .getSemibook("asks")
+        .tickPriceHelper.coercePrice(4, "roundDown");
 
       await waitForTransaction(
         await helpers.newOffer({
@@ -1246,7 +1269,9 @@ describe("Market integration tests suite", () => {
         tickSpacing: 1,
       });
 
-      const price = market.getSemibook("asks").tickPriceHelper.coercePrice(4);
+      const price = market
+        .getSemibook("asks")
+        .tickPriceHelper.coercePrice(4, "roundDown");
       await waitForTransaction(
         await helpers.newOffer({
           mgv,

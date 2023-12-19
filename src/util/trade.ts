@@ -44,7 +44,7 @@ class Trade {
         slippage,
         "buy",
       );
-      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage);
+      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         fillWants = true;
@@ -57,13 +57,21 @@ class Trade {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
-        const limitPrice = tickPriceHelper.priceFromTick(params.maxTick); // This can result in small rounding differences
+        // round down to not exceed the price
+        const limitPrice = tickPriceHelper.priceFromTick(
+          params.maxTick,
+          "roundDown",
+        );
         const limitPriceWithSlippage = this.adjustForSlippage(
           limitPrice,
           slippage,
           "buy",
         );
-        maxTick = tickPriceHelper.tickFromPrice(limitPriceWithSlippage);
+        // round down to not exceed the price
+        maxTick = tickPriceHelper.tickFromPrice(
+          limitPriceWithSlippage,
+          "roundDown",
+        );
       } else {
         // if slippage is 0, we don't need to do anything
         maxTick = params.maxTick;
@@ -76,9 +84,11 @@ class Trade {
       );
       fillWants = params.fillWants ?? true;
       fillVolume = fillWants ? Big(params.wants) : givesWithSlippage;
+      // round down to not exceed price expectations
       maxTick = tickPriceHelper.tickFromVolumes(
         givesWithSlippage,
         params.wants,
+        "roundDown",
       );
     }
 
@@ -126,7 +136,8 @@ class Trade {
         slippage,
         "sell",
       );
-      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage);
+      // round down to not exceed the price
+      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         fillWants = false;
@@ -139,13 +150,18 @@ class Trade {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
       if (slippage > 0) {
-        const limitPrice = tickPriceHelper.priceFromTick(params.maxTick); // This can result in small rounding differences
+        // Round up since a higher price is better for sell
+        const limitPrice = tickPriceHelper.priceFromTick(
+          params.maxTick,
+          "roundUp",
+        );
         const priceWithSlippage = this.adjustForSlippage(
           limitPrice,
           slippage,
           "sell",
         );
-        maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage);
+        // round down to not exceed the price expectations
+        maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       } else {
         maxTick = params.maxTick;
       }
@@ -157,9 +173,11 @@ class Trade {
       );
       fillWants = params.fillWants ?? false;
       fillVolume = fillWants ? wantsWithSlippage : Big(params.gives);
+      // round down to not exceed the price expectations
       maxTick = tickPriceHelper.tickFromVolumes(
         params.gives,
         wantsWithSlippage,
+        "roundDown",
       );
     }
 
@@ -397,7 +415,8 @@ class Trade {
     }
 
     if ("price" in params && params.price !== undefined) {
-      tick = tickPriceHelper.tickFromPrice(Big(params.price));
+      // round up to ensure we get at least the price we want for the offer.
+      tick = tickPriceHelper.tickFromPrice(Big(params.price), "roundUp");
     }
 
     if ("gives" in params && params.gives !== undefined) {
@@ -405,16 +424,22 @@ class Trade {
     }
 
     if ("volume" in params && params.volume !== undefined) {
+      // round down so that we do not give more than we expect
       gives =
         ba === "asks"
           ? Big(params.volume)
-          : tickPriceHelper.outboundFromInbound(tick, params.volume);
+          : tickPriceHelper.outboundFromInbound(
+              tick,
+              params.volume,
+              "roundDown",
+            );
     }
 
     if ("total" in params && params.total !== undefined) {
+      // round down so that we do not give more than we expect
       gives =
         ba === "asks"
-          ? tickPriceHelper.outboundFromInbound(tick, params.total)
+          ? tickPriceHelper.outboundFromInbound(tick, params.total, "roundDown")
           : Big(params.total);
     }
 

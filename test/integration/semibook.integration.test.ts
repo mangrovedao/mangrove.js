@@ -1401,7 +1401,11 @@ describe("Semibook integration tests suite", function () {
           });
           const semibook = market.getSemibook("asks");
 
-          const tick5 = semibook.tickPriceHelper.tickFromVolumes(1, 5);
+          const tick5 = semibook.tickPriceHelper.tickFromVolumes(
+            1,
+            5,
+            "roundDown",
+          );
           await waitForTransaction(
             newOffer({
               mgv,
@@ -1411,7 +1415,11 @@ describe("Semibook integration tests suite", function () {
               tick: tick5,
             }),
           );
-          const tick4 = semibook.tickPriceHelper.tickFromVolumes(1, 4);
+          const tick4 = semibook.tickPriceHelper.tickFromVolumes(
+            1,
+            4,
+            "roundDown",
+          );
           await waitForTransaction(
             newOffer({
               mgv,
@@ -1421,7 +1429,11 @@ describe("Semibook integration tests suite", function () {
               tick: tick4,
             }),
           );
-          const tick3 = semibook.tickPriceHelper.tickFromVolumes(1, 3);
+          const tick3 = semibook.tickPriceHelper.tickFromVolumes(
+            1,
+            3,
+            "roundDown",
+          );
           await waitForTransaction(
             newOffer({
               mgv,
@@ -1431,7 +1443,11 @@ describe("Semibook integration tests suite", function () {
               tick: tick3,
             }),
           );
-          const tick2 = semibook.tickPriceHelper.tickFromVolumes(1, 2);
+          const tick2 = semibook.tickPriceHelper.tickFromVolumes(
+            1,
+            2,
+            "roundDown",
+          );
           await waitForTransaction(
             newOffer({
               mgv,
@@ -1441,7 +1457,11 @@ describe("Semibook integration tests suite", function () {
               tick: tick2,
             }),
           );
-          const tick1 = semibook.tickPriceHelper.tickFromVolumes(1, 1);
+          const tick1 = semibook.tickPriceHelper.tickFromVolumes(
+            1,
+            1,
+            "roundDown",
+          );
           const tx = await waitForTransaction(
             newOffer({
               mgv,

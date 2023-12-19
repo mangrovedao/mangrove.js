@@ -173,7 +173,7 @@ describe("Trade unit tests suite", () => {
       );
     });
 
-    it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has tick, fillVolume and fillWants ", async function () {
+    it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has tick, fillVolume and fillWants", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -225,7 +225,7 @@ describe("Trade unit tests suite", () => {
       assert.equal(result.fillWants, params.fillWants);
     });
 
-    it("returns gives adjusted for slippage as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has gives, wants and fillWants ", async function () {
+    it("returns gives adjusted for slippage as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has gives, wants and fillWants", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -260,6 +260,7 @@ describe("Trade unit tests suite", () => {
       const expectedTick = tickPriceHelper.tickFromVolumes(
         givesWithSlippage,
         params.wants,
+        "roundDown",
       );
 
       assert.equal(
@@ -507,7 +508,7 @@ describe("Trade unit tests suite", () => {
       assert.equal(result.fillWants, true);
     });
 
-    it("returns fillVolume as gives, tick corrected for slippage and fillWants as fillWants, when params has gives, wants and fillWants ", async function () {
+    it("returns fillVolume as gives, tick corrected for slippage and fillWants as fillWants, when params has gives, wants and fillWants", async function () {
       //Arrange
       const trade = new Trade();
       const spyTrade = spy(trade);
@@ -550,6 +551,7 @@ describe("Trade unit tests suite", () => {
       const expectedTick = tickPriceHelper.tickFromVolumes(
         params.gives,
         wantsWithSlippage,
+        "roundDown",
       );
 
       assert.equal(

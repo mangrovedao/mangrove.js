@@ -92,7 +92,9 @@ export function assertConstantWants(
       : distribution.helper.bidTickPriceHelper;
   const values = distribution
     .getLiveOffers(offerType)
-    .map((x) => tickPriceHelper.inboundFromOutbound(x.tick, x.gives));
+    .map((x) =>
+      tickPriceHelper.inboundFromOutbound(x.tick, x.gives, "roundDown"),
+    );
   for (let i = 0; i < values.length; ++i) {
     assertApproxEqRel(expectedValue, values[i], 0.01);
   }

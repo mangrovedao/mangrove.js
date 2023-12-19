@@ -101,9 +101,11 @@ class GeometricKandelDistributionHelper {
       this.helper.market.base,
       this.helper.market.quote,
     );
+    // round down to ensure ratio is not exceeded
     return this.helper.askTickPriceHelper.tickFromVolumes(
       inbound_tkn.fromUnits(ethers.constants.WeiPerEther).mul(priceRatio),
       outbound_tkn.fromUnits(ethers.constants.WeiPerEther),
+      "roundDown",
     );
   }
 
@@ -112,7 +114,12 @@ class GeometricKandelDistributionHelper {
    * @returns The price ratio.
    */
   public getPriceRatioFromBaseQuoteOffset(baseQuoteTickOffset: number) {
-    return this.helper.askTickPriceHelper.rawRatioFromTick(baseQuoteTickOffset);
+    // Intentionally using raw ratio as we do not want decimals scaling
+    // Rounding is irrelevant as tick already respects tick spacing - if it did have an effect, then rounding up to be the inverse of rounding down in the inverse operation seems reasonable.
+    return this.helper.askTickPriceHelper.rawRatioFromTick(
+      baseQuoteTickOffset,
+      "roundUp",
+    );
   }
 
   /** Gets tick based parameters for a distribution based on tick or price params.
@@ -134,18 +141,28 @@ class GeometricKandelDistributionHelper {
       if (midPrice == undefined) {
         throw Error("midPrice or midBaseQuoteTick must be provided.");
       }
-      midBaseQuoteTick = this.helper.askTickPriceHelper.tickFromPrice(midPrice);
+      // Round to nearest as that seems fair to both sides
+      midBaseQuoteTick = this.helper.askTickPriceHelper.tickFromPrice(
+        midPrice,
+        "nearest",
+      );
     }
     if (minBaseQuoteTick == undefined) {
       if (minPrice != undefined) {
-        minBaseQuoteTick =
-          this.helper.askTickPriceHelper.tickFromPrice(minPrice);
+        // Round up to make sure we stay inside boundary given by price
+        minBaseQuoteTick = this.helper.askTickPriceHelper.tickFromPrice(
+          minPrice,
+          "roundUp",
+        );
       }
     }
     if (maxBaseQuoteTick == undefined) {
       if (maxPrice != undefined) {
-        maxBaseQuoteTick =
-          this.helper.askTickPriceHelper.tickFromPrice(maxPrice);
+        // Round down to make sure we stay inside boundary given by price
+        maxBaseQuoteTick = this.helper.askTickPriceHelper.tickFromPrice(
+          maxPrice,
+          "roundDown",
+        );
       }
     }
     if (baseQuoteTickOffset == undefined) {

@@ -112,12 +112,15 @@ export class Density {
   /**
    * Get the minimum amount of outbound tokens required for the given amount of gas.
    *
-   * @param gas the amount of gas to calculate the required outbound for
+   * @param gasreq the amount of gas to calculate the required outbound for
    * @returns the minimum amount of outbound tokens required for the given amount of gas
    */
-  getRequiredOutboundForGas(gas: BigNumberish): Big {
+  getRequiredOutboundForGasreq(gasreq: BigNumberish): Big {
     return Big(
-      DensityLib.multiplyUp(this.#rawDensity, BigNumber.from(gas)).toString(),
+      DensityLib.multiplyUp(
+        this.#rawDensity,
+        BigNumber.from(gasreq),
+      ).toString(),
     ).div(Big(10).pow(this.#outboundDecimals));
   }
 
