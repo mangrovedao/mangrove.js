@@ -55,7 +55,7 @@ const type_uint_max = ethers.constants.MaxUint256;
 
 // # TickAndBin.t.sol
 
-// SPDX-License-Identifier:	MIT
+// SPDX-License-Identifier: MIT
 
 // pragma solidity ^0.8.10;
 
