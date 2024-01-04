@@ -308,8 +308,129 @@ class Trade {
     }
   }
 
+  /** Update a resting order posted by MangroveOrder.
+   *
+   * @param market the market to retract the order on
+   * @param ba whether the offer is a bid or ask
+   * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
+   * @param overrides overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the update.
+   */
+  async updateRestingOrder(
+    market: Market,
+    ba: Market.BA,
+    params: Market.UpdateRestingOrderParams,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.UpdateRestingOrderResult>> {
+    const olKey = market.getOLKey(ba);
+
+    const restingOrderParams = await this.getRestingOrderParams(
+      params,
+      market,
+      ba,
+    );
+    const overrides_ = {
+      ...overrides,
+      value: market.mgv.nativeToken.toUnits(restingOrderParams.provision),
+    };
+
+    const { gives, tick } = await this.getRawUpdateRestingOrderParams(
+      params,
+      market,
+      ba,
+    );
+
+    // update offer
+    const txPromise = market.mgv.orderContract.updateOffer(
+      olKey,
+      tick,
+      gives,
+      restingOrderParams.restingOrderGasreq,
+      params.offerId,
+      overrides_,
+    );
+
+    logger.debug("Updating MangroveOrder offer", {
+      contextInfo: "mangrove.updateMangroveOrder",
+      data: { id: params.offerId, ba: ba, gives, tick, overrides: overrides_ },
+    });
+
+    return {
+      result: txPromise.then((receipt) => receipt.wait()).then(() => {}),
+      response: txPromise,
+    };
+  }
+
+  /**
+   * Gets parameters to send to function `market.mgv.orderContract.updateOffer`.
+   *
+   * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
+   * @param market the market to retract the order on
+   * @param ba whether the offer is a bid or ask
+   * @returns a promise that resolves to the raw parameters to send to the MangroveOrder contract
+   *
+   * @remarks
+   *
+   * @see {@link Market.CleanParams} for a more thorough description of cleaning parameters.
+   */
+  async getRawUpdateRestingOrderParams(
+    params: Market.UpdateRestingOrderParams,
+    market: Market,
+    ba: Market.BA,
+  ): Promise<{ gives: BigNumber; tick: number }> {
+    const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
+
+    // Get the current offer data
+    const id = params.offerId;
+    const offer =
+      ba === "asks" ? await market.askInfo(id) : await market.bidInfo(id);
+    if (offer === undefined) {
+      throw Error(`No offer in market with id ${id}.`);
+    }
+    if (offer.maker !== market.mgv.orderContract.address) {
+      throw Error(
+        `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
+      );
+    }
+
+    let tick = offer.tick;
+    let gives = offer.gives;
+
+    if ("tick" in params && params.tick !== undefined) {
+      tick = params.tick;
+    }
+
+    if ("price" in params && params.price !== undefined) {
+      tick = tickPriceHelper.tickFromPrice(Big(params.price));
+    }
+
+    if ("gives" in params && params.gives !== undefined) {
+      gives = Big(params.gives);
+    }
+
+    if ("volume" in params && params.volume !== undefined) {
+      gives =
+        ba === "asks"
+          ? Big(params.volume)
+          : tickPriceHelper.outboundFromInbound(tick, params.volume);
+    }
+
+    if ("total" in params && params.total !== undefined) {
+      gives =
+        ba === "asks"
+          ? tickPriceHelper.outboundFromInbound(tick, params.total)
+          : Big(params.total);
+    }
+
+    const givesRaw =
+      ba === "asks" ? market.base.toUnits(gives) : market.quote.toUnits(gives);
+
+    return { gives: givesRaw, tick };
+  }
+
   /** Retract a resting order posted by MangroveOrder.
    *
+   * @param market the market to retract the order on
    * @param ba whether the offer is a bid or ask
    * @param id the offer id
    * @param deprovision whether to deprovision the offer. If true, the offer's provision will be returned to the maker's balance on Mangrove.

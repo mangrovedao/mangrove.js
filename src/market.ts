@@ -158,6 +158,13 @@ namespace Market {
   };
 
   /**
+   * Update resting order results.
+   *
+   * No data is returned, but the transaction may fail.
+   */
+  export type UpdateRestingOrderResult = void;
+
+  /**
    * Retract resting order results.
    *
    * No data is returned, but the transaction may fail.
@@ -229,6 +236,21 @@ namespace Market {
     restingOrderGasreq?: number;
     restingOrderGaspriceFactor?: number;
   };
+
+  /** Parameters for updating an existing resting order. */
+  export type UpdateRestingOrderParams = {
+    offerId: number;
+  } & (
+    | { gives: Bigish }
+    | { tick: number }
+    | { gives: Bigish; tick: number }
+    | { price: Bigish }
+    | { volume: Bigish }
+    | { total: Bigish }
+    | { price: Bigish; volume: Bigish }
+    | { price: Bigish; total: Bigish }
+  ) &
+    Omit<RestingOrderParams, "offerId">;
 
   /**
    * Parameters for cleaning a set of offers.
@@ -980,6 +1002,21 @@ class Market {
   async gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
     const v = await this.trade.estimateGas("sell", params, this);
     return v ?? BigNumber.from(0);
+  }
+
+  /** Update a resting order posted by MangroveOrder.
+   *
+   * @param ba whether the offer is a bid or ask
+   * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
+   * @param overrides overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the update.
+   */
+  async updateRestingOrder(
+    ba: Market.BA,
+    params: Market.UpdateRestingOrderParams,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.UpdateRestingOrderResult>> {
+    return this.trade.updateRestingOrder(this, ba, params, overrides);
   }
 
   /** Retract a resting order posted by MangroveOrder.
