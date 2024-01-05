@@ -20,7 +20,7 @@ describe("Trade unit tests suite", () => {
       market = {
         base: new TokenCalculations(18, 18),
         quote: new TokenCalculations(12, 12),
-        tickSpacing: 1,
+        tickSpacing: 100,
       };
       trade = new Trade();
       tickPriceHelper = new TickPriceHelper("asks", market);
@@ -42,6 +42,7 @@ describe("Trade unit tests suite", () => {
         Big(params.limitPrice)
           .mul(100 + slippage)
           .div(100),
+        "roundDown",
       );
 
       assert.equal(
@@ -72,6 +73,7 @@ describe("Trade unit tests suite", () => {
         Big(params.limitPrice)
           .mul(100 + slippage)
           .div(100),
+        "roundDown",
       );
 
       assert.equal(
@@ -102,6 +104,7 @@ describe("Trade unit tests suite", () => {
           .priceFromTick(params.maxTick)
           .mul(100 + slippage)
           .div(100),
+        "roundDown",
       );
 
       assert.equal(
@@ -133,6 +136,7 @@ describe("Trade unit tests suite", () => {
           .priceFromTick(params.maxTick)
           .mul(100 + slippage)
           .div(100),
+        "roundDown",
       );
 
       assert.equal(
@@ -204,7 +208,7 @@ describe("Trade unit tests suite", () => {
       market = {
         base: new TokenCalculations(18, 18),
         quote: new TokenCalculations(12, 12),
-        tickSpacing: 1,
+        tickSpacing: 100,
       };
       trade = new Trade();
       tickPriceHelper = new TickPriceHelper("bids", market);
@@ -283,9 +287,10 @@ describe("Trade unit tests suite", () => {
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         tickPriceHelper
-          .priceFromTick(params.maxTick)
+          .priceFromTick(params.maxTick, "roundUp")
           .mul(100 - slippage)
           .div(100),
+        "roundDown",
       );
 
       assert.equal(
@@ -314,9 +319,10 @@ describe("Trade unit tests suite", () => {
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
         tickPriceHelper
-          .priceFromTick(params.maxTick)
+          .priceFromTick(params.maxTick, "roundUp")
           .mul(100 - slippage)
           .div(100),
+        "roundDown",
       );
 
       assert.equal(
