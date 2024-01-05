@@ -421,6 +421,89 @@ describe("Trade unit tests suite", () => {
     });
   });
 
+  describe("getRawUpdateRestingOrderParams", () => {
+    let market: Market.KeyResolvedForCalculation;
+    let trade: Trade;
+    beforeEach(() => {
+      market = {
+        base: new TokenCalculations(18, 18),
+        quote: new TokenCalculations(12, 12),
+        tickSpacing: 100,
+      };
+      trade = new Trade();
+    });
+
+    it("rounds price and volume correctly for bids", async function () {
+      //Arrange
+      const params: Market.UpdateRestingOrderParams = {
+        price: 20,
+        volume: 30,
+        offerId: 1,
+      };
+      const tickPriceHelper = new TickPriceHelper("bids", market);
+
+      //Act
+      const result = trade.getRawUpdateRestingOrderParams(
+        params,
+        market,
+        "bids",
+        42,
+        Big(1),
+      );
+
+      //Assert
+      assert.equal(
+        result.tick,
+        tickPriceHelper.tickFromPrice(params.price, "roundUp"),
+      );
+      assert.equal(
+        result.gives.toString(),
+        market.quote
+          .toUnits(
+            tickPriceHelper.outboundFromInbound(
+              result.tick,
+              params.volume,
+              "roundDown",
+            ),
+          )
+          .toString(),
+      );
+    });
+
+    it("rounds price and total correctly for asks", async function () {
+      //Arrange
+      const params: Market.UpdateRestingOrderParams = {
+        price: 20,
+        total: 30,
+        offerId: 1,
+      };
+      const tickPriceHelper = new TickPriceHelper("asks", market);
+
+      //Act
+      const result = trade.getRawUpdateRestingOrderParams(
+        params,
+        market,
+        "asks",
+        42,
+        Big(1),
+      );
+
+      //Assert
+      assert.equal(
+        result.tick,
+        tickPriceHelper.tickFromPrice(params.price, "roundUp"),
+      );
+      assert.equal(
+        result.gives.toString(),
+        market.base.toUnits(
+          tickPriceHelper
+            .outboundFromInbound(result.tick, params.total, "roundDown")
+            .toString(),
+        ),
+      );
+    });
+  });
+
   describe("isPriceBetter", () => {
     it("Uses “lt“ when ba = asks", async function () {
       // Arrange

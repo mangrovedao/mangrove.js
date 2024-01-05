@@ -352,10 +352,25 @@ class Trade {
       value: market.mgv.nativeToken.toUnits(restingOrderParams.provision),
     };
 
-    const { gives, tick } = await this.getRawUpdateRestingOrderParams(
+    // Get the current offer data
+    const id = params.offerId;
+    const offer =
+      ba === "asks" ? await market.askInfo(id) : await market.bidInfo(id);
+    if (offer === undefined) {
+      throw Error(`No offer in market with id ${id}.`);
+    }
+    if (offer.maker !== market.mgv.orderContract.address) {
+      throw Error(
+        `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
+      );
+    }
+
+    const { gives, tick } = this.getRawUpdateRestingOrderParams(
       params,
       market,
       ba,
+      offer.tick,
+      offer.gives,
     );
 
     // update offer
@@ -385,30 +400,16 @@ class Trade {
    * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
    * @param market the market to retract the order on
    * @param ba whether the offer is a bid or ask
-   * @returns a promise that resolves to the raw parameters to send to the MangroveOrder contract
+   * @returns the raw parameters to send to the MangroveOrder contract
    */
-  async getRawUpdateRestingOrderParams(
+  getRawUpdateRestingOrderParams(
     params: Market.UpdateRestingOrderParams,
-    market: Market,
+    market: Market.KeyResolvedForCalculation,
     ba: Market.BA,
-  ): Promise<{ gives: BigNumber; tick: number }> {
-    const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
-
-    // Get the current offer data
-    const id = params.offerId;
-    const offer =
-      ba === "asks" ? await market.askInfo(id) : await market.bidInfo(id);
-    if (offer === undefined) {
-      throw Error(`No offer in market with id ${id}.`);
-    }
-    if (offer.maker !== market.mgv.orderContract.address) {
-      throw Error(
-        `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
-      );
-    }
-
-    let tick = offer.tick;
-    let gives = offer.gives;
+    tick: number,
+    gives: Big,
+  ): { gives: BigNumber; tick: number } {
+    const tickPriceHelper = new TickPriceHelper(ba, market);
 
     if ("tick" in params && params.tick !== undefined) {
       tick = params.tick;
