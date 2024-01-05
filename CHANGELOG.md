@@ -1,5 +1,11 @@
 # Next version
 
+- Add Sepolia support by bumping the following packages:
+  - @mangrovedao/mangrove-core to v2.0.3
+  - @mangrovedao/mangrove-strats to v1.0.2
+  - @mangrovedao/context-addresses to v1.0.1
+  - @mangrovedao/mangrove-deployments to v1.0.2
+
 # 2.0.0-18
 
 - feat: Add 'Market.updateRestingOrder' function which allows updating resting orders posted by 'MangroveOrder'
