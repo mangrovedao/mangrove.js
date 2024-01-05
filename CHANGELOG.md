@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-18
+
 - feat: Add 'Market.updateRestingOrder' function which allows updating resting orders posted by 'MangroveOrder'
 
 # 2.0.0-17
