@@ -633,7 +633,7 @@ describe("RestingOrder", () => {
         beforeEach(async () => {
           initialTick = orderLP.market
             .getSemibook(ba)
-            .tickPriceHelper.tickFromPrice(initialPrice);
+            .tickPriceHelper.tickFromPrice(initialPrice, "nearest");
           const provision =
             ba === "bids"
               ? await orderLP.computeBidProvision()

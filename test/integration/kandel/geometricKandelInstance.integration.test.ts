@@ -649,6 +649,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
         index: 0,
         tick: kandel.generalKandelDistributionGenerator.generalDistributionHelper.helper.askTickPriceHelper.tickFromPrice(
           1000,
+          "nearest",
         ),
       });
       const minQuote = await kandel.getMinimumVolumeForIndex({
@@ -656,6 +657,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
         index: 0,
         tick: kandel.generalKandelDistributionGenerator.generalDistributionHelper.helper.bidTickPriceHelper.tickFromPrice(
           1000,
+          "nearest",
         ),
       });
 

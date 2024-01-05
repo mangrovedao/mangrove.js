@@ -968,7 +968,7 @@ describe(`${GeometricKandelDistributionGenerator.prototype.constructor.name} uni
             tick: (offerType == "asks"
               ? sut.geometricDistributionHelper.helper.askTickPriceHelper
               : sut.geometricDistributionHelper.helper.bidTickPriceHelper
-            ).tickFromPrice(4000),
+            ).tickFromPrice(4000, "nearest"),
             stepSize: 1,
             pricePoints: 10,
             baseQuoteTickOffset:

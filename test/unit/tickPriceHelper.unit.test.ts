@@ -192,7 +192,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         // Act
-        const result = tickPriceHelper.priceFromTick(tick);
+        const result = tickPriceHelper.priceFromTick(tick, "nearest");
         // Assert
         assert.equal(
           result.toPrecision(comparisonPrecision).toString(),
@@ -263,7 +263,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         // Act
-        const result = tickPriceHelper.tickFromPrice(price);
+        const result = tickPriceHelper.tickFromPrice(price, "nearest");
         // Assert
         assert.equal(coercedTick ?? tick, result);
       });
@@ -349,8 +349,14 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.1);
     //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio.toNumber()) < 0.1);
 
-    const calcAskTick = askTickPriceHelper.tickFromPrice(displayPrice);
-    const calcBidTick = bidTickPriceHelper.tickFromPrice(displayPrice);
+    const calcAskTick = askTickPriceHelper.tickFromPrice(
+      displayPrice,
+      "nearest",
+    );
+    const calcBidTick = bidTickPriceHelper.tickFromPrice(
+      displayPrice,
+      "nearest",
+    );
 
     // relate tickFromPrice to tickFromVolumes
     const calcAskTickFromVolumes = askTickPriceHelper.tickFromVolumes(
@@ -386,8 +392,14 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       "rawBidTick not equal to bid tick calculated from price",
     );
 
-    const calcAskPrice = askTickPriceHelper.priceFromTick(rawAskTick);
-    const calcBidPrice = bidTickPriceHelper.priceFromTick(rawBidTick);
+    const calcAskPrice = askTickPriceHelper.priceFromTick(
+      rawAskTick,
+      "nearest",
+    );
+    const calcBidPrice = bidTickPriceHelper.priceFromTick(
+      rawBidTick,
+      "nearest",
+    );
 
     assertApproxEqAbs(displayPrice, calcAskPrice.toNumber(), 0.01);
     assertApproxEqAbs(displayPrice, calcBidPrice.toNumber(), 0.01);
@@ -510,7 +522,8 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
         // Act
         const result = tickPriceHelper.tickFromPrice(
-          tickPriceHelper.priceFromTick(tick),
+          tickPriceHelper.priceFromTick(tick, "nearest"),
+          "nearest",
         );
 
         // Assert
@@ -530,21 +543,24 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
         // Act
         const resultPrice = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price),
+          tickPriceHelper.tickFromPrice(price, "nearest"),
+          "nearest",
         );
 
         const resultPriceTickPlusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price) +
+          tickPriceHelper.tickFromPrice(price, "nearest") +
             (args.ba == "bids"
               ? -args.market.tickSpacing
               : args.market.tickSpacing),
+          "nearest",
         );
 
         const resultPriceTickMinusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price) +
+          tickPriceHelper.tickFromPrice(price, "nearest") +
             (args.ba == "bids"
               ? args.market.tickSpacing
               : -args.market.tickSpacing),
+          "nearest",
         );
 
         const roundedPrice = Big(price).round(comparisonPrecision);
@@ -574,7 +590,8 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         const result = tickPriceHelper.coercePrice(price, "nearest");
         tickPriceHelper.market.tickSpacing = 1;
         const priceRoundTrip = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(result),
+          tickPriceHelper.tickFromPrice(result, "nearest"),
+          "nearest",
         );
 
         // Assert - since price is coerced it should not change on a roundtrip - except off by one tick
@@ -682,7 +699,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             const [outbound, expectedInbound] =
               ba == "asks" ? [base, quote] : [quote, base];
 
-            const tick = tickPriceHelper.tickFromPrice(price);
+            const tick = tickPriceHelper.tickFromPrice(price, "nearest");
             // Act
             const result = tickPriceHelper.inboundFromOutbound(
               tick,
@@ -714,7 +731,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             const [expectedOutbound, inbound] =
               ba == "asks" ? [base, quote] : [quote, base];
 
-            const tick = tickPriceHelper.tickFromPrice(price);
+            const tick = tickPriceHelper.tickFromPrice(price, "nearest");
             // Act
             const result = tickPriceHelper.outboundFromInbound(
               tick,

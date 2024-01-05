@@ -269,7 +269,7 @@ describe("Semibook unit test suite", () => {
           quote,
           tickSpacing: instance(marketMock).tickSpacing,
         });
-        const expectedPrice = tickPriceHelper.priceFromTick(rawTick);
+        const expectedPrice = tickPriceHelper.priceFromTick(rawTick, "nearest");
 
         const expectedGives = UnitCalculations.fromUnits(
           rawGives,

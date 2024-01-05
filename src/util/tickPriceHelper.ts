@@ -6,7 +6,7 @@ import Big from "big.js";
 import { Bigish } from "../types";
 import { MANTISSA_BITS, MIN_RATIO_EXP } from "./coreCalculations/Constants";
 
-/** roundDown rounds toward zero. roundUp rounds away from zero, and nearest tries to round to the nearest being towards or away from zero. Default is nearest. */
+/** roundDown rounds toward zero. roundUp rounds away from zero, and nearest tries to round to the nearest being towards or away from zero. */
 export type RoundingMode = "nearest" | "roundDown" | "roundUp";
 
 class TickPriceHelper {
@@ -44,18 +44,15 @@ class TickPriceHelper {
   /**
    * Calculates the price at a given raw offer list tick.
    * @param tick tick to calculate price for (is coerced to nearest bin)
-   * @param roundingMode the rounding mode for coercing tick to a representable tick. @see RoundingMode, default is nearest. Up is to a higher price, down is to a lower price.
+   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}. Up is to a higher price, down is to a lower price.
    * @returns price at tick (not to be confused with offer list ratio).
    */
-  priceFromTick(tick: number, roundingMode?: RoundingMode): Big {
+  priceFromTick(tick: number, roundingMode: RoundingMode): Big {
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
     Big.DP = 300;
 
-    const offerListRatioFromTick = this.rawRatioFromTick(
-      tick,
-      roundingMode ?? "nearest",
-    );
+    const offerListRatioFromTick = this.rawRatioFromTick(tick, roundingMode);
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
       this.market.base.decimals - this.market.quote.decimals,
@@ -75,10 +72,10 @@ class TickPriceHelper {
   /**
    * Calculates the raw offer list tick (coerced to nearest bin) at a given order book price (not to be confused with offer list ratio).
    * @param price price to calculate tick for
-   * @param roundingMode @see RoundingMode, default is nearest. Lower is to a lower tick, higher is to a higher tick.
+   * @param roundingMode See {@link RoundingMode} Lower is to a lower tick, higher is to a higher tick.
    * @returns raw offer list tick (coerced to nearest bin) for price
    */
-  tickFromPrice(price: Bigish, roundingMode?: RoundingMode): number {
+  tickFromPrice(price: Bigish, roundingMode: RoundingMode): number {
     // Increase decimals due to pow and division potentially needing more than the default 20.
     const dp = Big.DP;
     Big.DP = 300;
@@ -95,10 +92,7 @@ class TickPriceHelper {
         : priceAdjustedForDecimals;
 
     // TickLib.getTickFromPrice expects a ratio of rawInbound/rawOutbound, which is now available in offerListRatio
-    const tick = this.tickFromRawRatio(
-      offerListRatio,
-      roundingMode ?? "nearest",
-    );
+    const tick = this.tickFromRawRatio(offerListRatio, roundingMode);
     Big.DP = dp;
     return tick;
   }
@@ -106,7 +100,7 @@ class TickPriceHelper {
   /**
    * Coerces a price to a representable price on a tick. Note that due to rounding, coercing a coerced price may yield a price on an adjacent tick.
    * @param price price to coerce
-   * @param roundingMode @see RoundingMode, default is nearest.
+   * @param roundingMode See {@link RoundingMode}
    * @returns the price coerced to nearest representable tick */
   coercePrice(price: Bigish, roundingMode: RoundingMode): Big {
     let tick = this.tickFromPrice(price, roundingMode);
@@ -129,7 +123,7 @@ class TickPriceHelper {
    * Calculates the inbound amount from an outbound amount at a given tick.
    * @param tick tick to calculate the amount for (coerced to nearest bin)
    * @param outboundAmount amount to calculate the inbound amount for
-   * @param roundingMode @see RoundingMode, default is nearest.
+   * @param roundingMode See {@link RoundingMode}.
    * @returns inbound amount.
    */
   inboundFromOutbound(
@@ -154,7 +148,7 @@ class TickPriceHelper {
    * Calculates the outbound amount from an inbound amount at a given tick.
    * @param tick tick to calculate the amount for (coerced to nearest bin)
    * @param inboundAmount amount to calculate the outbound amount for
-   * @param roundingMode @see RoundingMode, default is nearest.
+   * @param roundingMode See {@link RoundingMode}
    * @returns inbound amount.
    */
   outboundFromInbound(
@@ -189,7 +183,7 @@ class TickPriceHelper {
    * Calculates the tick (coerced to nearest bin) from inbound and outbound volumes.
    * @param inboundVolume inbound amount to calculate the tick for
    * @param outboundVolume outbound amount to calculate the tick for
-   * @param roundingMode @see RoundingMode, default is nearest. Lower is to a lower tick, higher is to a higher tick.
+   * @param roundingMode See {@link RoundingMode}. Lower is to a lower tick, higher is to a higher tick.
    * @returns raw offer list tick (coerced to nearest bin) for volumes
    */
   tickFromVolumes(
@@ -232,7 +226,7 @@ class TickPriceHelper {
 
   /** Coerce a tick to its nearest bin
    * @param tick tick to coerce
-   * @param roundingMode @see RoundingMode, default is nearest. Lower is to a lower tick, higher is to a higher tick.
+   * @param roundingMode See {@link RoundingMode}. Lower is to a lower tick, higher is to a higher tick.
    * @return tick coerced to its nearest bin
    */
   public coerceTick(tick: number, roundingMode: RoundingMode): number {
@@ -254,7 +248,7 @@ class TickPriceHelper {
 
   /** Coerce a tick to its nearest bin
    * @param tick tick to coerce
-   * @param roundingMode the rounding mode for coercing tick to a representable tick. @see RoundingMode, default is nearest.
+   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}
    * @returns tick coerced to its nearest bin
    */
   private nearestRepresentableTick(
@@ -295,7 +289,7 @@ class TickPriceHelper {
    * NB: Raw ratios do not take token decimals into account.
    *
    * @param tick tick to calculate the ratio for (coerced to nearest bin)
-   * @param roundingMode the rounding mode for coercing tick to a representable tick. @see RoundingMode, default is nearest.
+   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}
    * @returns ratio as a Big.
    */
   public rawRatioFromTick(tick: number, roundingMode: RoundingMode): Big {
@@ -319,7 +313,7 @@ class TickPriceHelper {
    * NB: This is a lossy conversions since ticks are discrete and ratios are not.
    *
    * @param rawRatio inbound/outbound ratio to calculate the tick for
-   * @param roundingMode the rounding mode for coercing tick to a representable tick. @see RoundingMode, default is nearest.
+   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}
    * @returns a tick (coerced to nearest bin) that approximates the given ratio.
    */
   public tickFromRawRatio(rawRatio: Big, roundingMode: RoundingMode): number {

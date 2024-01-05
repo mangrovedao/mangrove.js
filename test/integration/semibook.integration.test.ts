@@ -312,7 +312,7 @@ describe("Semibook integration tests suite", function () {
           });
 
           it("returns correct estimate and residue when cache is empty and offer list is not", async function () {
-            const tick = askTickPriceHelper.tickFromPrice(1);
+            const tick = askTickPriceHelper.tickFromPrice(1, "nearest");
 
             // Post 2 asks
             let tx = await waitForTransaction(
@@ -346,7 +346,10 @@ describe("Semibook integration tests suite", function () {
             const semibook = market.getSemibook("asks");
             expect(semibook.size()).to.equal(0);
 
-            const price = semibook.tickPriceHelper.priceFromTick(tick);
+            const price = semibook.tickPriceHelper.priceFromTick(
+              tick,
+              "nearest",
+            );
             const given = 1;
 
             const expectedRemainingFillVolume = 0;
@@ -381,7 +384,7 @@ describe("Semibook integration tests suite", function () {
           });
 
           it("returns correct estimate and residue when cache is partial and insufficient while offer list is sufficient", async function () {
-            const tick = askTickPriceHelper.tickFromPrice(1);
+            const tick = askTickPriceHelper.tickFromPrice(1, "nearest");
             // Post 2 asks at different ticks
             let tx = await waitForTransaction(
               newOffer({
@@ -415,7 +418,10 @@ describe("Semibook integration tests suite", function () {
             expect(semibook.size()).to.equal(1);
 
             // Price difference between the two ticks is negligible
-            const price = semibook.tickPriceHelper.priceFromTick(tick);
+            const price = semibook.tickPriceHelper.priceFromTick(
+              tick,
+              "nearest",
+            );
             const given = 2;
 
             const expectedRemainingFillVolume = 0;
@@ -450,7 +456,7 @@ describe("Semibook integration tests suite", function () {
           });
 
           it("returns correct estimate and residue when cache is partial and offer list is insufficient", async function () {
-            const tick = askTickPriceHelper.tickFromPrice(1);
+            const tick = askTickPriceHelper.tickFromPrice(1, "nearest");
             // Post 2 asks at different ticks
             let tx = await waitForTransaction(
               newOffer({
@@ -484,7 +490,10 @@ describe("Semibook integration tests suite", function () {
             expect(semibook.size()).to.equal(1);
 
             // Price difference between the two ticks is negligible
-            const price = semibook.tickPriceHelper.priceFromTick(tick);
+            const price = semibook.tickPriceHelper.priceFromTick(
+              tick,
+              "nearest",
+            );
             const given = 3;
 
             const expectedRemainingFillVolume = 1;
@@ -528,7 +537,7 @@ describe("Semibook integration tests suite", function () {
             });
             const semibook = market.getSemibook("asks");
 
-            const tick = semibook.tickPriceHelper.tickFromPrice(2);
+            const tick = semibook.tickPriceHelper.tickFromPrice(2, "nearest");
             const tx = await waitForTransaction(
               newOffer({
                 mgv,
@@ -563,7 +572,7 @@ describe("Semibook integration tests suite", function () {
             });
             const semibook = market.getSemibook("asks");
 
-            const tick = semibook.tickPriceHelper.tickFromPrice(2);
+            const tick = semibook.tickPriceHelper.tickFromPrice(2, "nearest");
             const tx = await waitForTransaction(
               newOffer({
                 mgv,
@@ -601,8 +610,10 @@ describe("Semibook integration tests suite", function () {
 
             const offerPrice = 2;
             const offerGives = 1;
-            const offerTick =
-              semibook.tickPriceHelper.tickFromPrice(offerPrice);
+            const offerTick = semibook.tickPriceHelper.tickFromPrice(
+              offerPrice,
+              "nearest",
+            );
             const tx = await waitForTransaction(
               newOffer({
                 mgv,
@@ -617,7 +628,10 @@ describe("Semibook integration tests suite", function () {
 
             const expectedRemainingFillVolume = 1;
 
-            const price = semibook.tickPriceHelper.priceFromTick(offerTick);
+            const price = semibook.tickPriceHelper.priceFromTick(
+              offerTick,
+              "nearest",
+            );
             const given =
               (to === "buy" ? offerGives : offerGives * offerPrice) +
               expectedRemainingFillVolume;
@@ -651,8 +665,10 @@ describe("Semibook integration tests suite", function () {
 
             const offer1Price = 2;
             const offer1Gives = 1;
-            const offer1Tick =
-              semibook.tickPriceHelper.tickFromPrice(offer1Price);
+            const offer1Tick = semibook.tickPriceHelper.tickFromPrice(
+              offer1Price,
+              "nearest",
+            );
             await waitForTransaction(
               newOffer({
                 mgv,
@@ -664,8 +680,10 @@ describe("Semibook integration tests suite", function () {
             );
             const offer2Price = 2;
             const offer2Gives = 1;
-            const offer2Tick =
-              semibook.tickPriceHelper.tickFromPrice(offer2Price);
+            const offer2Tick = semibook.tickPriceHelper.tickFromPrice(
+              offer2Price,
+              "nearest",
+            );
             const tx = await waitForTransaction(
               newOffer({
                 mgv,
@@ -682,8 +700,10 @@ describe("Semibook integration tests suite", function () {
 
             // Total price will be the average of the offers since they give the same amounts
             const price = semibook.tickPriceHelper
-              .priceFromTick(offer1Tick)
-              .add(semibook.tickPriceHelper.priceFromTick(offer2Tick))
+              .priceFromTick(offer1Tick, "nearest")
+              .add(
+                semibook.tickPriceHelper.priceFromTick(offer2Tick, "nearest"),
+              )
               .div(2);
             const given =
               (to === "buy"
@@ -720,8 +740,10 @@ describe("Semibook integration tests suite", function () {
 
             const offerPrice = 2;
             const offerGives = 2;
-            const offerTick =
-              semibook.tickPriceHelper.tickFromPrice(offerPrice);
+            const offerTick = semibook.tickPriceHelper.tickFromPrice(
+              offerPrice,
+              "nearest",
+            );
             const tx = await waitForTransaction(
               newOffer({
                 mgv,
@@ -736,7 +758,10 @@ describe("Semibook integration tests suite", function () {
 
             const expectedRemainingFillVolume = 0;
 
-            const price = semibook.tickPriceHelper.priceFromTick(offerTick);
+            const price = semibook.tickPriceHelper.priceFromTick(
+              offerTick,
+              "nearest",
+            );
             const given =
               (to === "buy" ? offerGives : offerGives * offerPrice) - 1;
 
@@ -770,8 +795,10 @@ describe("Semibook integration tests suite", function () {
 
             const offersPrice = 2;
             const offer1Gives = 1;
-            const offersTick =
-              semibook.tickPriceHelper.tickFromPrice(offersPrice);
+            const offersTick = semibook.tickPriceHelper.tickFromPrice(
+              offersPrice,
+              "nearest",
+            );
             await waitForTransaction(
               newOffer({
                 mgv,
@@ -797,7 +824,10 @@ describe("Semibook integration tests suite", function () {
             const expectedRemainingFillVolume = 0;
 
             // Both offers have same price
-            const price = semibook.tickPriceHelper.priceFromTick(offersTick);
+            const price = semibook.tickPriceHelper.priceFromTick(
+              offersTick,
+              "nearest",
+            );
             const given =
               (to === "buy"
                 ? offer1Gives + offer2Gives
@@ -1154,7 +1184,10 @@ describe("Semibook integration tests suite", function () {
           });
           const semibook = market.getSemibook("asks");
 
-          const tick1 = semibook.tickPriceHelper.tickFromPrice(1.001);
+          const tick1 = semibook.tickPriceHelper.tickFromPrice(
+            1.001,
+            "nearest",
+          );
 
           await waitForTransaction(
             newOffer({
@@ -1166,7 +1199,10 @@ describe("Semibook integration tests suite", function () {
             }),
           );
 
-          const tick2 = semibook.tickPriceHelper.tickFromPrice(1.002);
+          const tick2 = semibook.tickPriceHelper.tickFromPrice(
+            1.002,
+            "nearest",
+          );
 
           const tx = await waitForTransaction(
             newOffer({
@@ -1198,7 +1234,10 @@ describe("Semibook integration tests suite", function () {
           });
           const semibook = market.getSemibook("asks");
 
-          const tick1 = semibook.tickPriceHelper.tickFromPrice(1.001);
+          const tick1 = semibook.tickPriceHelper.tickFromPrice(
+            1.001,
+            "nearest",
+          );
 
           const offer1 = await (
             await newOffer({
@@ -1211,7 +1250,10 @@ describe("Semibook integration tests suite", function () {
           ).wait();
           await waitForBlock(mgv, offer1.blockNumber);
 
-          const tick2 = semibook.tickPriceHelper.tickFromPrice(1.002);
+          const tick2 = semibook.tickPriceHelper.tickFromPrice(
+            1.002,
+            "nearest",
+          );
           await newOffer({
             mgv,
             outbound: "TokenA",
@@ -1307,7 +1349,7 @@ describe("Semibook integration tests suite", function () {
           });
           const semibook = market.getSemibook("asks");
 
-          const tick = semibook.tickPriceHelper.tickFromPrice(1.001);
+          const tick = semibook.tickPriceHelper.tickFromPrice(1.001, "nearest");
           await waitForTransaction(
             newOffer({
               mgv,

@@ -306,7 +306,7 @@ describe("Market integration tests suite", () => {
 
       const tick = 23;
 
-      const price = tickPriceHelper.priceFromTick(23);
+      const price = tickPriceHelper.priceFromTick(23, "nearest");
 
       const offer: Market.Offer = {
         id: 0,
@@ -362,7 +362,7 @@ describe("Market integration tests suite", () => {
         gasbase: 0,
         gives: expectedGives,
         tick,
-        price: tickPriceHelper.priceFromTick(tick),
+        price: tickPriceHelper.priceFromTick(tick, "nearest"),
         wants: tickPriceHelper.inboundFromOutbound(
           tick,
           expectedGives,
@@ -487,7 +487,7 @@ describe("Market integration tests suite", () => {
         gasbase: 0,
         gives,
         tick,
-        price: semiBook.tickPriceHelper.priceFromTick(tick),
+        price: semiBook.tickPriceHelper.priceFromTick(tick, "nearest"),
         wants: semiBook.tickPriceHelper.inboundFromOutbound(
           tick,
           gives,
@@ -529,7 +529,7 @@ describe("Market integration tests suite", () => {
         gasbase: 0,
         gives,
         tick,
-        price: semiBook.tickPriceHelper.priceFromTick(tick),
+        price: semiBook.tickPriceHelper.priceFromTick(tick, "nearest"),
         wants: semiBook.tickPriceHelper.inboundFromOutbound(
           tick,
           gives,
@@ -571,7 +571,7 @@ describe("Market integration tests suite", () => {
         gasbase: 0,
         gives: expectedGives,
         tick,
-        price: tickPriceHelper.priceFromTick(tick),
+        price: tickPriceHelper.priceFromTick(tick, "nearest"),
         wants: tickPriceHelper.inboundFromOutbound(
           tick,
           expectedGives,
@@ -700,8 +700,8 @@ describe("Market integration tests suite", () => {
 
     const asksGives = Big(1);
     let askPrice = Big(2);
-    const tick = askTickHelper.tickFromPrice(askPrice);
-    askPrice = askTickHelper.priceFromTick(tick);
+    const tick = askTickHelper.tickFromPrice(askPrice, "nearest");
+    askPrice = askTickHelper.priceFromTick(tick, "nearest");
 
     await helpers
       .newOffer({
@@ -733,8 +733,8 @@ describe("Market integration tests suite", () => {
     const bidsGives = Big(2);
     let bidPrice = Big(2);
 
-    const bidTick = bidTickHelper.tickFromPrice(bidPrice);
-    bidPrice = bidTickHelper.priceFromTick(bidTick);
+    const bidTick = bidTickHelper.tickFromPrice(bidPrice, "nearest");
+    bidPrice = bidTickHelper.priceFromTick(bidTick, "nearest");
 
     await newOffer({
       mgv,
@@ -907,7 +907,7 @@ describe("Market integration tests suite", () => {
       gives: rawMinGivesBase.mul(2),
     });
     const gave = askTickPriceHelper
-      .priceFromTick(1)
+      .priceFromTick(1, "nearest")
       .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     const buyPromises = await market.buy({
@@ -961,7 +961,7 @@ describe("Market integration tests suite", () => {
     const result = await buyPromises.result;
     result.summary = result.summary as Market.OrderSummary;
     const gave = askTickPriceHelper
-      .priceFromTick(1)
+      .priceFromTick(1, "nearest")
       .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
       .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
@@ -990,14 +990,14 @@ describe("Market integration tests suite", () => {
       market,
       ba: "bids",
       maker,
-      tick: bidTickPriceHelper.tickFromPrice(2),
+      tick: bidTickPriceHelper.tickFromPrice(2, "nearest"),
       gives: rawMinGivesQuote,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
-      tick: bidTickPriceHelper.tickFromPrice(1),
+      tick: bidTickPriceHelper.tickFromPrice(1, "nearest"),
       gives: rawMinGivesQuote,
     });
 
@@ -1338,7 +1338,7 @@ describe("Market integration tests suite", () => {
       {
         id: 1,
         tick: 1,
-        price: askTickPriceHelper.priceFromTick(1),
+        price: askTickPriceHelper.priceFromTick(1, "nearest"),
         gives: "1",
         gasreq: 9999,
         gasprice: 21000,
@@ -1346,7 +1346,7 @@ describe("Market integration tests suite", () => {
       {
         id: 2,
         tick: 2,
-        price: askTickPriceHelper.priceFromTick(2),
+        price: askTickPriceHelper.priceFromTick(2, "nearest"),
         gives: "1",
         gasreq: 9999,
         gasprice: 21000,
@@ -1354,7 +1354,7 @@ describe("Market integration tests suite", () => {
       {
         id: 3,
         tick: 1,
-        price: askTickPriceHelper.priceFromTick(1),
+        price: askTickPriceHelper.priceFromTick(1, "nearest"),
         gives: "1",
         gasreq: 9999,
         gasprice: 21000,
@@ -1362,7 +1362,7 @@ describe("Market integration tests suite", () => {
       {
         id: 4,
         tick: 2,
-        price: askTickPriceHelper.priceFromTick(2),
+        price: askTickPriceHelper.priceFromTick(2, "nearest"),
         gives: "1",
         gasreq: 9999,
         gasprice: 21000,
@@ -1370,7 +1370,7 @@ describe("Market integration tests suite", () => {
       {
         id: 5,
         tick: 1,
-        price: askTickPriceHelper.priceFromTick(1),
+        price: askTickPriceHelper.priceFromTick(1, "nearest"),
         gives: "1",
         gasreq: 9999,
         gasprice: 21000,
@@ -1378,7 +1378,7 @@ describe("Market integration tests suite", () => {
       {
         id: 6,
         tick: 3,
-        price: askTickPriceHelper.priceFromTick(3),
+        price: askTickPriceHelper.priceFromTick(3, "nearest"),
         gives: "1",
         gasreq: 9999,
         gasprice: 21000,
@@ -1389,7 +1389,7 @@ describe("Market integration tests suite", () => {
       {
         id: 1,
         tick: 2,
-        price: bidTickPriceHelper.priceFromTick(2),
+        price: bidTickPriceHelper.priceFromTick(2, "nearest"),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30000,
@@ -1397,7 +1397,7 @@ describe("Market integration tests suite", () => {
       {
         id: 2,
         tick: 1,
-        price: bidTickPriceHelper.priceFromTick(1),
+        price: bidTickPriceHelper.priceFromTick(1, "nearest"),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30000,
@@ -1405,7 +1405,7 @@ describe("Market integration tests suite", () => {
       {
         id: 3,
         tick: 2,
-        price: bidTickPriceHelper.priceFromTick(2),
+        price: bidTickPriceHelper.priceFromTick(2, "nearest"),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30000,
@@ -1413,7 +1413,7 @@ describe("Market integration tests suite", () => {
       {
         id: 4,
         tick: 1,
-        price: bidTickPriceHelper.priceFromTick(1),
+        price: bidTickPriceHelper.priceFromTick(1, "nearest"),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30000,
@@ -1421,7 +1421,7 @@ describe("Market integration tests suite", () => {
       {
         id: 5,
         tick: 3,
-        price: bidTickPriceHelper.priceFromTick(3),
+        price: bidTickPriceHelper.priceFromTick(3, "nearest"),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30000,
@@ -1429,7 +1429,7 @@ describe("Market integration tests suite", () => {
       {
         id: 6,
         tick: 1,
-        price: bidTickPriceHelper.priceFromTick(1),
+        price: bidTickPriceHelper.priceFromTick(1, "nearest"),
         gives: "1",
         gasreq: 10_022,
         gasprice: 30000,
