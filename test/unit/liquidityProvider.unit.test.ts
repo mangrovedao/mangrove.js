@@ -69,12 +69,12 @@ describe("Liquidity provider unit tests suite", () => {
       {
         base: new TokenCalculations(18, 18),
         quote: new TokenCalculations(6, 6),
-        tickSpacing: 1,
+        tickSpacing: 100,
       },
     );
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, -276325);
+    assert.deepStrictEqual(tick, -276400);
   });
 
   it("normalizeOfferParams, with volume and price 1, as bids", async function () {
@@ -177,12 +177,12 @@ describe("Liquidity provider unit tests suite", () => {
       {
         base: new TokenCalculations(18, 18),
         quote: new TokenCalculations(6, 6),
-        tickSpacing: 1,
+        tickSpacing: 100,
       },
     );
     assert.deepStrictEqual(gives, Big(20));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, 280378);
+    assert.deepStrictEqual(tick, 280300);
   });
   it("normalizeOfferParams, with gives and wants, as asks", async function () {
     const { tick, gives, fund } = LiquidityProvider.normalizeOfferParams(
