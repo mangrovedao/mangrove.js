@@ -54,6 +54,7 @@ describe("RestingOrder", () => {
       const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
         mgv.network.name,
       );
+      // TODO: This should not be done as MangroveOrder does not implement ILiquidityProvider
       orderLP = await LiquidityProvider.connect(orderLogic, gasreq, {
         base: "TokenA",
         quote: "TokenB",
@@ -96,6 +97,7 @@ describe("RestingOrder", () => {
       const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
         mgv.network.name,
       );
+      // TODO: This should not be done as MangroveOrder does not implement ILiquidityProvider
       orderLP = await LiquidityProvider.connect(orderLogic, gasreq, market);
       router = (await orderLogic.router()) as AbstractRouter;
 
@@ -110,22 +112,39 @@ describe("RestingOrder", () => {
       await w(tokenA.approveMangrove());
       const meAsLP = await mgv.liquidityProvider(market);
 
-      const provision = await meAsLP.computeAskProvision();
+      const askProvision = await meAsLP.computeAskProvision();
+      const bidProvision = await meAsLP.computeBidProvision();
       // fills Asks semi book
       await meAsLP.newAsk({
-        price: 10 / 10,
-        volume: 10,
-        fund: provision,
+        price: 10 / 8,
+        volume: 8,
+        fund: askProvision,
       });
       await meAsLP.newAsk({
         price: 10 / 9,
         volume: 9,
-        fund: provision,
+        fund: askProvision,
       });
       await meAsLP.newAsk({
-        price: 10 / 8,
-        volume: 8,
-        fund: provision,
+        price: 10 / 10,
+        volume: 10,
+        fund: askProvision,
+      });
+      // fills Bids semi book
+      await meAsLP.newBid({
+        price: 9 / 10,
+        volume: 10,
+        fund: bidProvision,
+      });
+      await meAsLP.newBid({
+        price: 8 / 10,
+        volume: 10,
+        fund: bidProvision,
+      });
+      await meAsLP.newBid({
+        price: 7 / 10,
+        volume: 10,
+        fund: bidProvision,
       });
       mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
     });
@@ -596,6 +615,177 @@ describe("RestingOrder", () => {
         expect(
           [...orderLP.market.getSemibook("bids")].map((o) => o.id),
         ).to.not.contain(orderResult.restingOrder!.id);
+      });
+    });
+
+    ["buy", "sell"].map((tradeOperation) => {
+      describe(`update resting ${tradeOperation} order`, () => {
+        const ba = tradeOperation === "buy" ? "bids" : "asks";
+        const initialPrice = ba === "bids" ? 0.5 : 2;
+        let initialTick: number;
+        const initialGives = 10;
+        const initialVolume =
+          ba === "bids" ? initialGives * initialPrice : initialGives;
+        const initialTotal =
+          ba === "bids" ? initialGives : initialGives * initialPrice;
+        let offerId: number;
+
+        beforeEach(async () => {
+          initialTick = orderLP.market
+            .getSemibook(ba)
+            .tickPriceHelper.tickFromPrice(initialPrice);
+          const provision =
+            ba === "bids"
+              ? await orderLP.computeBidProvision()
+              : await orderLP.computeAskProvision();
+
+          await w(tokenB.approve(router.address));
+          await w(tokenA.approve(router.address));
+
+          const tradeFunction =
+            tradeOperation === "buy" ? orderLP.market.buy : orderLP.market.sell;
+          const tradePromises = await tradeFunction.bind(orderLP.market)({
+            limitPrice: initialPrice,
+            volume: initialVolume,
+            restingOrder: { provision: provision },
+          });
+
+          const tradeTxReceipt = await waitForTransaction(
+            tradePromises.response,
+          );
+
+          const orderResult = await tradePromises.result;
+          orderResult.summary = orderResult.summary as Market.OrderSummary;
+
+          assert(
+            orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+            "Resting order was not posted",
+          );
+
+          await waitForBlock(mgv, tradeTxReceipt.blockNumber);
+
+          expect(
+            [...orderLP.market.getSemibook(ba)].map((o) => o.id),
+          ).to.contain(orderResult.restingOrder!.id);
+
+          offerId = orderResult.restingOrder!.id;
+        });
+
+        it("update tick", async () => {
+          // Act
+          const newTick = initialTick + 1;
+          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+            offerId,
+            tick: newTick,
+          });
+          const retractTxReceipt = await waitForTransaction(
+            retractPromises.response,
+          );
+          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+          await retractPromises.result;
+
+          await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+          // Assert
+          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          expect(updatedOffer.tick).to.equal(newTick);
+        });
+
+        it("update price", async () => {
+          // Act
+          const newPrice = initialPrice + 1;
+          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+            offerId,
+            price: newPrice,
+          });
+          const retractTxReceipt = await waitForTransaction(
+            retractPromises.response,
+          );
+          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+          await retractPromises.result;
+
+          await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+          // Assert
+          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          expect(updatedOffer.price.toNumber()).to.be.approximately(
+            newPrice,
+            0.001,
+          );
+        });
+
+        it("update gives", async () => {
+          // Act
+          const newGives = initialGives + 1;
+          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+            offerId,
+            gives: newGives,
+          });
+          const retractTxReceipt = await waitForTransaction(
+            retractPromises.response,
+          );
+          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+          await retractPromises.result;
+
+          await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+          // Assert
+          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          expect(updatedOffer.gives.toNumber()).to.equal(newGives);
+        });
+
+        it("update volume", async () => {
+          // Act
+          const newVolume = initialVolume + 1;
+          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+            offerId,
+            volume: newVolume,
+          });
+          const retractTxReceipt = await waitForTransaction(
+            retractPromises.response,
+          );
+          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+          await retractPromises.result;
+
+          await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+          // Assert
+          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          expect(updatedOffer.volume.toNumber()).to.be.approximately(
+            newVolume,
+            0.001,
+          );
+        });
+
+        it("update total", async () => {
+          // Act
+          const newTotal = initialTotal + 1;
+          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+            offerId,
+            total: newTotal,
+          });
+          const retractTxReceipt = await waitForTransaction(
+            retractPromises.response,
+          );
+          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+          await retractPromises.result;
+
+          await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+          // Assert
+          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          if (ba === "bids") {
+            expect(updatedOffer.gives.toNumber()).to.be.approximately(
+              newTotal,
+              0.001,
+            );
+          } else {
+            expect(updatedOffer.wants.toNumber()).to.be.approximately(
+              newTotal,
+              0.001,
+            );
+          }
+        });
       });
     });
   });

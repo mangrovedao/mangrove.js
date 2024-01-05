@@ -1,5 +1,7 @@
 # Next version
 
+- feat: Add 'Market.updateRestingOrder' function which allows updating resting orders posted by 'MangroveOrder'
+
 # 2.0.0-17
 
 - fix: Correctly match any contract deployment of the same major version as the contract package version
