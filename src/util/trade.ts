@@ -368,10 +368,6 @@ class Trade {
    * @param market the market to retract the order on
    * @param ba whether the offer is a bid or ask
    * @returns a promise that resolves to the raw parameters to send to the MangroveOrder contract
-   *
-   * @remarks
-   *
-   * @see {@link Market.CleanParams} for a more thorough description of cleaning parameters.
    */
   async getRawUpdateRestingOrderParams(
     params: Market.UpdateRestingOrderParams,
