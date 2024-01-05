@@ -1,5 +1,7 @@
 # Next version
 
+- feat: Round up, down, or to nearest depending on scenario
+- fix!: Rename getRequiredOutboundForGas to getRequiredOutboundForGasreq
 - Add Sepolia support by bumping the following packages:
   - @mangrovedao/mangrove-core to v2.0.3
   - @mangrovedao/mangrove-strats to v1.0.2
