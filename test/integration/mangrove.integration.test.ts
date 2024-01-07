@@ -87,6 +87,16 @@ describe("Mangrove integration tests suite", function () {
         1,
         "1 market should have opened",
       );
+
+      const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+      for (let market of markets) {
+        await mgvTestUtil.mint(market.base, maker, 2);
+        await mgvTestUtil.mint(market.quote, maker, 2);
+      }
+      const balances = await mgv.getTokenBalancesForEveryOpenMarkets(
+        mgv.address,
+      );
+      balances.forEach((balance) => balance.balance.eq(Big(2)));
     });
 
     it("gets correct market info and updates with cashness", async function () {
