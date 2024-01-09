@@ -43,6 +43,9 @@ class TickPriceHelper {
 
   /**
    * Inverses the rounding mode for bids.
+   * @param roundingMode the rounding mode to inverse
+   * @returns for asks, returns the rounding mode, for bids, returns the inverse of the rounding mode (roundUp becomes roundDown, roundDown becomes roundUp, and nearest stays nearest).
+   * @remarks This is useful due to ratio for bids being inbound/outbound, and price for bids being outbound/inbound, so, e.g., when rounding price up or down, the tick which determines the ratio should be rounded the opposite direction.
    */
   #inverseRoundingModeForBids(roundingMode: RoundingMode) {
     return this.ba === "asks"
