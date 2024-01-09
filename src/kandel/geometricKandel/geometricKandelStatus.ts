@@ -133,9 +133,11 @@ class GeometricKandelStatus {
     stepSize: number,
     offers: { bids: OffersWithLiveness; asks: OffersWithLiveness },
   ): Statuses {
+    // Round to nearest as that seems fair to both sides
     const midBaseQuoteTick =
       this.geometricDistributionHelper.helper.askTickPriceHelper.tickFromPrice(
         midPrice,
+        "nearest",
       );
 
     // We select an offer close to mid to since those are the first to be populated, so higher chance of being correct than offers further out.
@@ -176,9 +178,11 @@ class GeometricKandelStatus {
         expectedLiveBid: baseQuoteTick <= midBaseQuoteTick,
         expectedLiveAsk: baseQuoteTick >= midBaseQuoteTick,
         expectedBaseQuoteTick: baseQuoteTick,
+        // tick already respects tick spacing so rounding has no effect
         expectedPrice:
           this.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
             baseQuoteTick,
+            "roundUp",
           ),
         asks: undefined as
           | undefined
@@ -194,10 +198,11 @@ class GeometricKandelStatus {
       statuses[index][offerType] = {
         live,
         id,
+        // tick already respects tick spacing so rounding has no effect
         price: (offerType == "asks"
           ? this.geometricDistributionHelper.helper.askTickPriceHelper
           : this.geometricDistributionHelper.helper.bidTickPriceHelper
-        ).priceFromTick(tick),
+        ).priceFromTick(tick, "roundUp"),
         tick,
       };
     });
@@ -248,13 +253,16 @@ class GeometricKandelStatus {
         index: offer.index,
         id: offer.id,
       },
+      // ticks already respects tick spacing so rounding has no effect - if it had an effect then the inverse rounding of the inverse operation seems appropriate
       minPrice:
         this.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
           minBaseQuoteTick,
+          "roundDown",
         ),
       maxPrice:
         this.geometricDistributionHelper.helper.askTickPriceHelper.priceFromTick(
           maxBaseQuoteTick,
+          "roundUp",
         ),
       minBaseQuoteTick,
       maxBaseQuoteTick,

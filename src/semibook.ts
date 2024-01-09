@@ -461,8 +461,9 @@ class Semibook
     // if 'buying N units' set max sell to max(uint256),
     // if 'selling N units' set buy desire to 0
     const initialVolume = Big(params.given);
+    // round down to not exceed price
     const maxTick = params.limitPrice
-      ? this.tickPriceHelper.tickFromPrice(params.limitPrice)
+      ? this.tickPriceHelper.tickFromPrice(params.limitPrice, "roundDown")
       : MAX_TICK.toNumber();
 
     const { totalGot, totalGave, feePaid, fillVolume, maxTickMatched } =
@@ -579,17 +580,19 @@ class Semibook
             sor.takerGives = offerWants;
           } else {
             if (mor.fillWants) {
+              // Use same rounding as solidity contract
               sor.takerGives = this.tickPriceHelper.inboundFromOutbound(
                 offer.tick,
                 fillVolume,
-                true,
+                "roundUp",
               );
               sor.takerWants = fillVolume;
             } else {
+              // Use same rounding as solidity contract
               sor.takerWants = this.tickPriceHelper.outboundFromInbound(
                 offer.tick,
                 fillVolume,
-                false,
+                "roundDown",
               );
               sor.takerGives = fillVolume;
             }
@@ -663,7 +666,7 @@ class Semibook
    */
   getMinimumVolume(gasreq: number) {
     const config = this.config();
-    const min = config.density.getRequiredOutboundForGas(
+    const min = config.density.getRequiredOutboundForGasreq(
       gasreq + config.offer_gasbase,
     );
     return min.gt(0)
@@ -1200,9 +1203,11 @@ class Semibook
         if (desiredVolume.to === "buy") {
           return offer.gives;
         } else {
+          // round down to get at least the necessary.
           return this.tickPriceHelper.inboundFromOutbound(
             offer.tick,
             offer.gives,
+            "roundDown",
           );
         }
       };
@@ -1362,7 +1367,8 @@ class Semibook
     const gives = outbound_tkn.fromUnits(raw.gives);
     const id = Semibook.rawIdToId(raw.id);
     const tick = raw.tick.toNumber();
-    const price = this.tickPriceHelper.priceFromTick(tick);
+    // Rounding is irrelevant since tick is already binned.
+    const price = this.tickPriceHelper.priceFromTick(tick, "roundUp");
 
     if (id === undefined) throw new Error("Offer ID is 0");
     return {
@@ -1373,7 +1379,8 @@ class Semibook
       tick,
       gives,
       price,
-      wants: this.tickPriceHelper.inboundFromOutbound(tick, gives),
+      // tick is already binned, to rounding down means using the vanilla inboundFromOutbound
+      wants: this.tickPriceHelper.inboundFromOutbound(tick, gives, "roundDown"),
       volume: this.tickPriceHelper.volumeForGivesAndPrice(gives, price),
     };
   }

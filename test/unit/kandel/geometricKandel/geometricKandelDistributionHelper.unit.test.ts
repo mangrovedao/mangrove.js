@@ -70,12 +70,15 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
     GeometricKandelDistributionHelper.prototype.calculateBaseQuoteTickOffset
       .name,
     () => {
-      it("can calculate based on price ratio", () => {
+      it("can calculate based on price ratio and rounds down", () => {
+        // Arrange
+        sut.helper.market.tickSpacing = 2;
+
         // Act
         const actual = sut.calculateBaseQuoteTickOffset(Big(1.08));
 
         // Assert
-        assert.equal(actual, 769);
+        assert.equal(actual, 768);
       });
 
       it("calculates an offset that is a multiple of tickSpacing", () => {
@@ -86,7 +89,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
         const actual = sut.calculateBaseQuoteTickOffset(Big(1.08));
 
         // Assert
-        assert.equal(actual, 770);
+        assert.equal(actual, 763);
       });
 
       it("Fails if less than 1", () => {
@@ -125,11 +128,11 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
         const baseQuoteTickOffset = 769;
         const priceRatio = 1.08;
         const pricePoints = 7;
-        const maxBaseQuoteTick = 119759;
-        const minBaseQuoteTick = 115145;
+        const maxBaseQuoteTick = 119760;
+        const minBaseQuoteTick = 115146;
         const midBaseQuoteTick = 117453;
         const minPrice = Big(1001);
-        const maxPrice = Big(1587.841870262581);
+        const maxPrice = Big(1588.000654449607);
         const midPrice = Big(1260.971712);
 
         const expectedParams = {
@@ -202,13 +205,13 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
         // Arrange
         sut.helper.market.tickSpacing = 7;
         const baseQuoteTickOffset = 770;
-        const priceRatio = 1.08;
+        const priceRatio = 1.0805;
         const pricePoints = 7;
         const maxBaseQuoteTick = 119770;
         const minBaseQuoteTick = 115150;
         const midBaseQuoteTick = 117453;
         const minPrice = Big(1001);
-        const maxPrice = Big(1589);
+        const maxPrice = Big(1590);
         const midPrice = Big(1260.971712);
 
         const expectedParams = {
@@ -274,6 +277,66 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             midBaseQuoteTick,
           }),
           expectedParams,
+        );
+      });
+
+      it("uses correct rounding for min, mid, and max price to tick conversion", () => {
+        // Arrange
+        sut.helper.market.tickSpacing = 7;
+        const minPrice = Big(1001);
+        const maxPrice = Big(1589.58935);
+        const midPrice = Big(1260.971712);
+        const baseQuoteTickOffset = 770;
+        const minBaseQuoteTick = 115150;
+        const midBaseQuoteTick = 117453;
+
+        // Act
+        const result = sut.getTickDistributionParams({
+          minPrice,
+          maxPrice,
+          midPrice,
+          baseQuoteTickOffset,
+        });
+
+        // Assert
+        assert.equal(
+          result.minBaseQuoteTick,
+          Math.ceil(minBaseQuoteTick / 7) * 7,
+        );
+        assert.equal(
+          result.midBaseQuoteTick,
+          Math.ceil(midBaseQuoteTick / 7) * 7,
+        );
+        assert.equal(result.pricePoints, 6);
+      });
+
+      it("mid price to tick conversion can round down", () => {
+        // Arrange
+        const baseQuoteTickOffset = 770;
+        const minBaseQuoteTick = 115150;
+        const maxBaseQuoteTick = 119760;
+        const midPrice = Big(1260.97);
+        const midBaseQuoteTick = sut.getTickDistributionParams({
+          minBaseQuoteTick,
+          maxBaseQuoteTick,
+          midPrice,
+          baseQuoteTickOffset,
+        }).midBaseQuoteTick;
+
+        sut.helper.market.tickSpacing = 7;
+
+        // Act
+        const result = sut.getTickDistributionParams({
+          minBaseQuoteTick,
+          maxBaseQuoteTick,
+          midPrice,
+          baseQuoteTickOffset,
+        });
+
+        // Assert
+        assert.equal(
+          result.midBaseQuoteTick,
+          Math.floor(midBaseQuoteTick / 7) * 7,
         );
       });
 

@@ -637,7 +637,7 @@ describe("RestingOrder", () => {
         beforeEach(async () => {
           initialTick = market
             .getSemibook(ba)
-            .tickPriceHelper.tickFromPrice(initialPrice);
+            .tickPriceHelper.tickFromPrice(initialPrice, "nearest");
           const provision =
             ba === "bids"
               ? await orderLogic.getMissingProvision(market, "bids", gasreq)

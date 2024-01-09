@@ -81,6 +81,7 @@ describe("Cleaner integration tests suite", () => {
       maker,
       tick: askTickPriceHelper.tickFromPrice(
         Big(1).div(rawMinGivesBase.toString()),
+        "nearest",
       ),
       gives: rawMinGivesBase,
       shouldFail: true,
@@ -91,6 +92,7 @@ describe("Cleaner integration tests suite", () => {
       maker,
       tick: askTickPriceHelper.tickFromPrice(
         Big(1).div(rawMinGivesBase.mul(2).toString()),
+        "nearest",
       ),
       gives: rawMinGivesBase.mul(2),
       shouldFail: true,
@@ -172,6 +174,7 @@ describe("Cleaner integration tests suite", () => {
       maker,
       tick: askTickPriceHelper.tickFromPrice(
         Big(1).div(rawMinGivesBase.toString()),
+        "nearest",
       ),
       gives: rawMinGivesBase,
     });
@@ -247,6 +250,7 @@ describe("Cleaner integration tests suite", () => {
       maker,
       tick: askTickPriceHelper.tickFromPrice(
         Big(1).div(rawMinGivesBase.toString()),
+        "nearest",
       ),
       gives: rawMinGivesBase,
       shouldFail: true,
@@ -328,6 +332,7 @@ describe("Cleaner integration tests suite", () => {
       maker,
       tick: askTickPriceHelper.tickFromPrice(
         Big(1).div(rawMinGivesBase.toString()),
+        "nearest",
       ),
       gives: rawMinGivesBase,
       shouldFail: true,

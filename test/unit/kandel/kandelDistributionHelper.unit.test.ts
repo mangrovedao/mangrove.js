@@ -36,8 +36,8 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
         const { askGives, bidGives } = sut.calculateMinimumInitialGives(
           Big(1),
           Big(1000),
-          [sut.bidTickPriceHelper.tickFromPrice(1000)],
-          [sut.askTickPriceHelper.tickFromPrice(1000)],
+          [sut.bidTickPriceHelper.tickFromPrice(1000, "nearest")],
+          [sut.askTickPriceHelper.tickFromPrice(1000, "nearest")],
         );
 
         // Assert
@@ -47,7 +47,7 @@ describe(`${KandelDistributionHelper.prototype.constructor.name} unit tests suit
 
       it("returns higher than minimum if dual at some price would be below its minimum", () => {
         const baseQuoteTicks = [Big(2000), Big(1000), Big(500), Big(4000)].map(
-          (x) => sut.askTickPriceHelper.tickFromPrice(x),
+          (x) => sut.askTickPriceHelper.tickFromPrice(x, "nearest"),
         );
 
         // Act

@@ -165,7 +165,7 @@ export const newOffer = async (
       base: baseToken,
       quote: quoteToken,
       tickSpacing: 1,
-    }).tickFromPrice(price);
+    }).tickFromPrice(price, "nearest");
   } else {
     const { outbound: outbound_tkn, inbound: inbound_tkn } = params;
     tick = params.tick;

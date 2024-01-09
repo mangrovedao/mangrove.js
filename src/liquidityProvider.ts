@@ -199,30 +199,26 @@ class LiquidityProvider {
 
   /**
    *  Given offer params (bids/asks + price info as wants&gives or price&volume),
-   *  return `{price,wants,gives}`
+   *  return `{tick,gives,fund}`
    */
   static normalizeOfferParams(
     p: { ba: Market.BA } & LiquidityProvider.OfferParams,
     market: Market.KeyResolvedForCalculation,
   ): {
-    price: Big;
     tick: number;
     gives: Big;
-    gasreq?: number;
-    gasprice?: number;
     fund?: Bigish;
   } {
     const tickPriceHelper = new TickPriceHelper(p.ba, market);
-    let tick: number, gives: Big, price: Big;
+    let tick: number, gives: Big;
     if ("tick" in p) {
-      // deduce price from tick & gives
       tick = p.tick;
-      price = tickPriceHelper.priceFromTick(tick);
       gives = Big(p.gives);
     } else if ("price" in p) {
       // deduce tick & gives from volume & price
-      price = Big(p.price);
-      tick = tickPriceHelper.tickFromPrice(price);
+      const price = Big(p.price);
+      // round down to ensure price is not exceeded
+      tick = tickPriceHelper.tickFromPrice(price, "roundDown");
       if (p.ba === "bids") {
         gives = Big(p.volume).mul(price);
       } else {
@@ -232,15 +228,11 @@ class LiquidityProvider {
       // deduce tick and price from wants & gives
       gives = Big(p.gives);
       const wants = Big(p.wants);
-      tick = tickPriceHelper.tickFromVolumes(wants, gives);
-      if (p.ba === "bids") {
-        price = Big(gives).div(wants);
-      } else {
-        price = Big(wants).div(gives);
-      }
+      // round down to ensure price is not exceeded
+      tick = tickPriceHelper.tickFromVolumes(wants, gives, "roundDown");
     }
 
-    return { tick: tick, gives: gives, price: price, fund: p.fund };
+    return { tick: tick, gives: gives, fund: p.fund };
   }
 
   /** Post a new ask */

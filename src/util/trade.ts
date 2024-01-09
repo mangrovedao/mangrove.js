@@ -44,7 +44,8 @@ class Trade {
         slippage,
         "buy",
       );
-      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage);
+      // round down to not exceed the price
+      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         fillWants = true;
@@ -57,13 +58,21 @@ class Trade {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? true;
       if (slippage > 0) {
-        const limitPrice = tickPriceHelper.priceFromTick(params.maxTick); // This can result in small rounding differences
+        // round down to not exceed the price
+        const limitPrice = tickPriceHelper.priceFromTick(
+          params.maxTick,
+          "roundDown",
+        );
         const limitPriceWithSlippage = this.adjustForSlippage(
           limitPrice,
           slippage,
           "buy",
         );
-        maxTick = tickPriceHelper.tickFromPrice(limitPriceWithSlippage);
+        // round down to not exceed the price
+        maxTick = tickPriceHelper.tickFromPrice(
+          limitPriceWithSlippage,
+          "roundDown",
+        );
       } else {
         // if slippage is 0, we don't need to do anything
         maxTick = params.maxTick;
@@ -76,9 +85,11 @@ class Trade {
       );
       fillWants = params.fillWants ?? true;
       fillVolume = fillWants ? Big(params.wants) : givesWithSlippage;
+      // round down to not exceed price expectations
       maxTick = tickPriceHelper.tickFromVolumes(
         givesWithSlippage,
         params.wants,
+        "roundDown",
       );
     }
 
@@ -126,7 +137,8 @@ class Trade {
         slippage,
         "sell",
       );
-      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage);
+      // round down to not exceed the price
+      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       if ("volume" in params) {
         fillVolume = Big(params.volume);
         fillWants = false;
@@ -139,13 +151,18 @@ class Trade {
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
       if (slippage > 0) {
-        const limitPrice = tickPriceHelper.priceFromTick(params.maxTick); // This can result in small rounding differences
+        // Round up since a higher price is better for sell
+        const limitPrice = tickPriceHelper.priceFromTick(
+          params.maxTick,
+          "roundUp",
+        );
         const priceWithSlippage = this.adjustForSlippage(
           limitPrice,
           slippage,
           "sell",
         );
-        maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage);
+        // round down to not exceed the price expectations
+        maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       } else {
         maxTick = params.maxTick;
       }
@@ -157,9 +174,11 @@ class Trade {
       );
       fillWants = params.fillWants ?? false;
       fillVolume = fillWants ? wantsWithSlippage : Big(params.gives);
+      // round down to not exceed the price expectations
       maxTick = tickPriceHelper.tickFromVolumes(
         params.gives,
         wantsWithSlippage,
+        "roundDown",
       );
     }
 
@@ -334,10 +353,25 @@ class Trade {
       value: market.mgv.nativeToken.toUnits(restingOrderParams.provision),
     };
 
-    const { gives, tick } = await this.getRawUpdateRestingOrderParams(
+    // Get the current offer data
+    const id = params.offerId;
+    const offer =
+      ba === "asks" ? await market.askInfo(id) : await market.bidInfo(id);
+    if (offer === undefined) {
+      throw Error(`No offer in market with id ${id}.`);
+    }
+    if (offer.maker !== market.mgv.orderContract.address) {
+      throw Error(
+        `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
+      );
+    }
+
+    const { gives, tick } = this.getRawUpdateRestingOrderParams(
       params,
       market,
       ba,
+      offer.tick,
+      offer.gives,
     );
 
     // update offer
@@ -367,37 +401,24 @@ class Trade {
    * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
    * @param market the market to retract the order on
    * @param ba whether the offer is a bid or ask
-   * @returns a promise that resolves to the raw parameters to send to the MangroveOrder contract
+   * @returns the raw parameters to send to the MangroveOrder contract
    */
-  async getRawUpdateRestingOrderParams(
+  getRawUpdateRestingOrderParams(
     params: Market.UpdateRestingOrderParams,
-    market: Market,
+    market: Market.KeyResolvedForCalculation,
     ba: Market.BA,
-  ): Promise<{ gives: BigNumber; tick: number }> {
-    const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
-
-    // Get the current offer data
-    const id = params.offerId;
-    const offer =
-      ba === "asks" ? await market.askInfo(id) : await market.bidInfo(id);
-    if (offer === undefined) {
-      throw Error(`No offer in market with id ${id}.`);
-    }
-    if (offer.maker !== market.mgv.orderContract.address) {
-      throw Error(
-        `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
-      );
-    }
-
-    let tick = offer.tick;
-    let gives = offer.gives;
+    tick: number,
+    gives: Big,
+  ): { gives: BigNumber; tick: number } {
+    const tickPriceHelper = new TickPriceHelper(ba, market);
 
     if ("tick" in params && params.tick !== undefined) {
       tick = params.tick;
     }
 
     if ("price" in params && params.price !== undefined) {
-      tick = tickPriceHelper.tickFromPrice(Big(params.price));
+      // round up to ensure we as a maker get what we want for the offer.
+      tick = tickPriceHelper.tickFromPrice(Big(params.price), "roundUp");
     }
 
     if ("gives" in params && params.gives !== undefined) {
@@ -405,16 +426,22 @@ class Trade {
     }
 
     if ("volume" in params && params.volume !== undefined) {
+      // round down so that we do not give more than we expect
       gives =
         ba === "asks"
           ? Big(params.volume)
-          : tickPriceHelper.outboundFromInbound(tick, params.volume);
+          : tickPriceHelper.outboundFromInbound(
+              tick,
+              params.volume,
+              "roundDown",
+            );
     }
 
     if ("total" in params && params.total !== undefined) {
+      // round down so that we do not give more than we expect
       gives =
         ba === "asks"
-          ? tickPriceHelper.outboundFromInbound(tick, params.total)
+          ? tickPriceHelper.outboundFromInbound(tick, params.total, "roundDown")
           : Big(params.total);
     }
 

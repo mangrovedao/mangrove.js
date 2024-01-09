@@ -570,10 +570,10 @@ class Market {
     const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
       market.mgv.network.name,
     );
-    market.minVolumeAsk = config.asks.density.getRequiredOutboundForGas(
+    market.minVolumeAsk = config.asks.density.getRequiredOutboundForGasreq(
       config.asks.offer_gasbase + gasreq,
     );
-    market.minVolumeBid = config.bids.density.getRequiredOutboundForGas(
+    market.minVolumeBid = config.bids.density.getRequiredOutboundForGasreq(
       config.bids.offer_gasbase + gasreq,
     );
     return market;

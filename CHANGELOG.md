@@ -3,6 +3,8 @@
 # 2.0.0-20
 
 - Bump @mangrovedao/mangrove-deployments to v1.0.3
+- feat: Round up, down, or to nearest depending on scenario
+- fix!: Rename getRequiredOutboundForGas to getRequiredOutboundForGasreq
 
 # 2.0.0-19
 

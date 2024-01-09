@@ -3,7 +3,7 @@ import { Big } from "big.js";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
 import { BigNumber } from "ethers";
-import TickPriceHelper from "../../src/util/tickPriceHelper";
+import TickPriceHelper, { RoundingMode } from "../../src/util/tickPriceHelper";
 import { Bigish } from "../../src/types";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import UnitCalculations from "../../src/util/unitCalculations";
@@ -16,6 +16,8 @@ import {
   MIN_TICK,
 } from "../../src/util/coreCalculations/Constants";
 import { TokenCalculations } from "../../src/token";
+
+const roundingModes = ["nearest", "roundDown", "roundUp"] as RoundingMode[];
 
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
@@ -190,12 +192,106 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         // Act
-        const result = tickPriceHelper.priceFromTick(tick);
+        const result = tickPriceHelper.priceFromTick(tick, "nearest");
         // Assert
         assert.equal(
           result.toPrecision(comparisonPrecision).toString(),
           Big(price).toPrecision(comparisonPrecision).toString(),
         );
+      });
+    });
+
+    priceAndTickPairs.forEach(({ args, tick, price }) => {
+      it(`returns price=${price} for tick ${tick} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing: ${args.market.tickSpacing} (${args.ba} semibook)`, () => {
+        // Arrange
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
+
+        // Act
+        const result = tickPriceHelper.priceFromTick(tick, "nearest");
+        // Assert
+        assert.equal(
+          result.toPrecision(comparisonPrecision).toString(),
+          Big(price).toPrecision(comparisonPrecision).toString(),
+        );
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`returns expectedPrice larger than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.priceFromTick(
+            ba === "asks" ? 30 : -30,
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            // for asks price and tick are both increasing, so lower price means lower tick - for asks 30 is decreased to 0
+            // for bids price and tick are inverse, so lower price means higher tick - for bids -30 is increased to 0
+            roundDown: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            // -30 and 30 are closer to 0 than -100 and 100, so nearest is same as roundDown
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            // for asks price and tick are both increasing, so higher price means higher tick - for asks 30 is increased to 100
+            // for bids price and tick are inverse, so higher price means lower tick - for bids -30 is decreased to -100
+            roundUp: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? 100 : -100,
+              "roundDown",
+            ),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
+
+        it(`returns expectedPrice less than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.priceFromTick(
+            ba === "asks" ? -30 : 30,
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            // for asks price and tick are both increasing, so lower price means lower tick - for asks -30 is decreased to -100
+            // for bids price and tick are inverse, so lower price means higher tick - for bids 30 is increased to 100
+            roundDown: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? -100 : 100,
+              "roundDown",
+            ),
+            // -30 and 30 are closer to 0 than -100 and 100, so nearest is same as roundDown
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            // for asks price and tick are both increasing, so higher price means higher tick - for asks -30 is increased to 0
+            // for bids price and tick are inverse, so higher price means lower tick - for bids 30 is decreased to 0
+            roundUp: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
       });
     });
   });
@@ -210,37 +306,44 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       });
 
       // Act
-      const result = tickPriceHelper.tickFromVolumes(1, 1);
+      const result = tickPriceHelper.tickFromVolumes(1, 1, "nearest");
       // Assert
       assert.equal(0, result);
     });
 
-    it("returns tick=0 for inboundVolume=1, outboundVolume=1 with base decimals: 6, quote decimals: 6 (asks semibook)", () => {
-      // Arrange
-      const tickPriceHelper = new TickPriceHelper("asks", {
-        base: new TokenCalculations(6, 6),
-        quote: new TokenCalculations(6, 6),
-        tickSpacing: 100,
-      });
+    roundingModes.forEach((roundingMode) => {
+      it(`returns expectedTick for inboundVolume=2, outboundVolume=1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 6 (asks semibook)`, () => {
+        // Arrange
+        const tickPriceHelper = new TickPriceHelper("asks", {
+          base: new TokenCalculations(6, 6),
+          quote: new TokenCalculations(6, 6),
+          tickSpacing: 100,
+        });
 
-      // Act
-      const result = tickPriceHelper.tickFromVolumes(2, 1);
-      // Assert
-      assert.equal(7000, result);
+        // Act
+        const result = tickPriceHelper.tickFromVolumes(2, 1, roundingMode);
+        // Assert
+        const expectedTick = { nearest: 6900, roundDown: 6900, roundUp: 7000 }[
+          roundingMode
+        ];
+        assert.equal(expectedTick, result);
+      });
     });
 
-    it("returns tick=0 for inboundVolume=1, outboundVolume=1 with base decimals: 6, quote decimals: 6 (asks semibook)", () => {
-      // Arrange
-      const tickPriceHelper = new TickPriceHelper("asks", {
-        base: new TokenCalculations(6, 6),
-        quote: new TokenCalculations(6, 6),
-        tickSpacing: 1,
-      });
+    roundingModes.forEach((roundingMode) => {
+      it(`returns tick=0 for inboundVolume=1, outboundVolume=1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 6 (asks semibook)`, () => {
+        // Arrange
+        const tickPriceHelper = new TickPriceHelper("asks", {
+          base: new TokenCalculations(6, 6),
+          quote: new TokenCalculations(6, 6),
+          tickSpacing: 1,
+        });
 
-      // Act
-      const result = tickPriceHelper.tickFromVolumes(1, 1);
-      // Assert
-      assert.equal(0, result);
+        // Act
+        const result = tickPriceHelper.tickFromVolumes(1, 1, roundingMode);
+        // Assert
+        assert.equal(0, result);
+      });
     });
   });
 
@@ -254,9 +357,61 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         // Act
-        const result = tickPriceHelper.tickFromPrice(price);
+        const result = tickPriceHelper.tickFromPrice(price, "nearest");
         // Assert
         assert.equal(coercedTick ?? tick, result);
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`returns expectedTick for positive ticks roundingMode=${roundingMode} with base decimals: 18, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const tickPriceHelper = new TickPriceHelper(ba, {
+            base: new TokenCalculations(18, 18),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          });
+
+          // Act
+          const result = tickPriceHelper.tickFromPrice(
+            ba === "asks" ? Big(42) : Big(1).div(Big(42)),
+            roundingMode,
+          );
+          // Assert
+          const expected = {
+            nearest: 37400,
+            roundDown: 37300,
+            roundUp: 37400,
+          }[roundingMode];
+          assert.equal(expected, result);
+        });
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`returns expectedTick for negative ticks roundingMode=${roundingMode} with base decimals: 18, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const tickPriceHelper = new TickPriceHelper(ba, {
+            base: new TokenCalculations(18, 18),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          });
+
+          // Act
+          const result = tickPriceHelper.tickFromPrice(
+            ba === "asks" ? Big(1).div(Big(42)) : Big(42),
+            roundingMode,
+          );
+          // Assert
+          const expected = {
+            nearest: -37400,
+            roundDown: -37400,
+            roundUp: -37300,
+          }[roundingMode];
+          assert.equal(expected, result);
+        });
       });
     });
   });
@@ -328,23 +483,37 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       tickSpacing: 1,
     });
 
-    assert.equal(rawAskTick, askTickPriceHelper.tickFromRawRatio(rawAskRatio));
-    assert.equal(rawBidTick, bidTickPriceHelper.tickFromRawRatio(rawBidRatio));
+    assert.equal(
+      rawAskTick,
+      askTickPriceHelper.tickFromRawRatio(rawAskRatio, "nearest"),
+    );
+    assert.equal(
+      rawBidTick,
+      bidTickPriceHelper.tickFromRawRatio(rawBidRatio, "nearest"),
+    );
     // The following are slow, but they work
     //assert.ok(Math.abs(Big(1.0001).pow(rawAskTick).toNumber() - rawAskRatio) < 0.1);
     //assert.ok(Math.abs(Big(1.0001).pow(rawBidTick).toNumber() - rawBidRatio.toNumber()) < 0.1);
 
-    const calcAskTick = askTickPriceHelper.tickFromPrice(displayPrice);
-    const calcBidTick = bidTickPriceHelper.tickFromPrice(displayPrice);
+    const calcAskTick = askTickPriceHelper.tickFromPrice(
+      displayPrice,
+      "nearest",
+    );
+    const calcBidTick = bidTickPriceHelper.tickFromPrice(
+      displayPrice,
+      "nearest",
+    );
 
     // relate tickFromPrice to tickFromVolumes
     const calcAskTickFromVolumes = askTickPriceHelper.tickFromVolumes(
       displayAskInbound,
       displayAskOutbound,
+      "nearest",
     );
     const calcBidTickFromVolumes = bidTickPriceHelper.tickFromVolumes(
       displayBidInbound,
       displayBidOutbound,
+      "nearest",
     );
 
     assert.equal(
@@ -369,8 +538,14 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       "rawBidTick not equal to bid tick calculated from price",
     );
 
-    const calcAskPrice = askTickPriceHelper.priceFromTick(rawAskTick);
-    const calcBidPrice = bidTickPriceHelper.priceFromTick(rawBidTick);
+    const calcAskPrice = askTickPriceHelper.priceFromTick(
+      rawAskTick,
+      "nearest",
+    );
+    const calcBidPrice = bidTickPriceHelper.priceFromTick(
+      rawBidTick,
+      "nearest",
+    );
 
     assertApproxEqAbs(displayPrice, calcAskPrice.toNumber(), 0.01);
     assertApproxEqAbs(displayPrice, calcBidPrice.toNumber(), 0.01);
@@ -402,10 +577,12 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     const calcAskInbound = askTickPriceHelper.inboundFromOutbound(
       rawAskTick,
       displayAskOutbound,
+      "nearest",
     );
     const calcBidInbound = bidTickPriceHelper.inboundFromOutbound(
       rawBidTick,
       displayBidOutbound,
+      "nearest",
     );
 
     assertApproxEqAbs(displayAskInbound, calcAskInbound.toNumber(), 0.01);
@@ -491,7 +668,8 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
         // Act
         const result = tickPriceHelper.tickFromPrice(
-          tickPriceHelper.priceFromTick(tick),
+          tickPriceHelper.priceFromTick(tick, "nearest"),
+          "nearest",
         );
 
         // Assert
@@ -511,21 +689,24 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
         // Act
         const resultPrice = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price),
+          tickPriceHelper.tickFromPrice(price, "nearest"),
+          "nearest",
         );
 
         const resultPriceTickPlusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price) +
+          tickPriceHelper.tickFromPrice(price, "nearest") +
             (args.ba == "bids"
               ? -args.market.tickSpacing
               : args.market.tickSpacing),
+          "nearest",
         );
 
         const resultPriceTickMinusOne = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(price) +
+          tickPriceHelper.tickFromPrice(price, "nearest") +
             (args.ba == "bids"
               ? args.market.tickSpacing
               : -args.market.tickSpacing),
+          "nearest",
         );
 
         const roundedPrice = Big(price).round(comparisonPrecision);
@@ -552,14 +733,87 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         // Act
-        const result = tickPriceHelper.coercePrice(price);
+        const result = tickPriceHelper.coercePrice(price, "nearest");
         tickPriceHelper.market.tickSpacing = 1;
         const priceRoundTrip = tickPriceHelper.priceFromTick(
-          tickPriceHelper.tickFromPrice(result),
+          tickPriceHelper.tickFromPrice(result, "nearest"),
+          "nearest",
         );
 
         // Assert - since price is coerced it should not change on a roundtrip - except off by one tick
         assertApproxEqRel(priceRoundTrip.toString(), result.toString(), 0.0001);
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`coerced prices respects rounding for expectedPrice larger than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.coercePrice(
+            preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? 30 : -30,
+              "nearest",
+            ),
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            roundDown: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            roundUp: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? 100 : -100,
+              "roundDown",
+            ),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
+
+        it(`coerced prices respects rounding for expectedPrice less than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.coercePrice(
+            preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? -30 : 30,
+              "nearest",
+            ),
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            roundDown: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? -100 : 100,
+              "roundDown",
+            ),
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            roundUp: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
       });
     });
   });
@@ -574,7 +828,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
 
         // Act
-        const result = tickPriceHelper.coerceTick(tick);
+        const result = tickPriceHelper.coerceTick(tick, "nearest");
 
         // Assert - since price is coerced it should not change on a roundtrip
         assert.ok(
@@ -584,6 +838,41 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         assert.ok(
           tickPriceHelper.isTickExact(result),
           "coerced tick should be exact",
+        );
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        [
+          [6, 0, 7, 7],
+          [8, 7, 7, 14],
+          [-6, -7, -7, 0],
+          [-8, -14, -7, -7],
+          [-7, -7, -7, -7],
+          [7, 7, 7, 7],
+        ].forEach(
+          ([tick, expectedRoundDown, expectedNearest, expectedRoundUp]) => {
+            it(`coerces to expected roundingMode=${roundingMode} tick=${tick} for ba=${ba}`, () => {
+              // Arrange
+              const tickPriceHelper = new TickPriceHelper("bids", {
+                base: new TokenCalculations(18, 18),
+                quote: new TokenCalculations(6, 6),
+                tickSpacing: 7,
+              });
+
+              // Act
+              const result = tickPriceHelper.coerceTick(tick, roundingMode);
+
+              // Assert
+              const expectedTick = {
+                roundDown: expectedRoundDown,
+                nearest: expectedNearest,
+                roundUp: expectedRoundUp,
+              }[roundingMode];
+              assert.equal(expectedTick, result);
+            });
+          },
         );
       });
     });
@@ -647,22 +936,36 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             const [outbound, expectedInbound] =
               ba == "asks" ? [base, quote] : [quote, base];
 
-            const tick = tickPriceHelper.tickFromPrice(price);
+            const tick = tickPriceHelper.tickFromPrice(price, "nearest");
             // Act
-            const result = tickPriceHelper.inboundFromOutbound(tick, outbound);
+            const resultNearest = tickPriceHelper.inboundFromOutbound(
+              tick,
+              outbound,
+              "nearest",
+            );
             const resultUp = tickPriceHelper.inboundFromOutbound(
               tick,
               outbound,
-              true,
+              "roundUp",
+            );
+            const resultDown = tickPriceHelper.inboundFromOutbound(
+              tick,
+              outbound,
+              "roundDown",
             );
 
             // Assert
-            assertApproxEqAbs(result, expectedInbound, 0.1);
+            assertApproxEqAbs(resultNearest, expectedInbound, 0.1);
             assert.ok(
-              resultUp.gte(result),
-              "round up should be at least as big as round down",
+              resultUp.gte(resultNearest),
+              "round up should be at least as big as nearest",
+            );
+            assert.ok(
+              resultDown.lte(resultNearest),
+              "round down should be at most as big as nearest",
             );
             assertApproxEqAbs(resultUp, expectedInbound, 0.1);
+            assertApproxEqAbs(resultDown, expectedInbound, 0.1);
           });
 
           it(`${TickPriceHelper.prototype.outboundFromInbound.name} ba=${ba} base=${base} quote=${quote} price=${price} tickSpacing=${tickSpacing}`, () => {
@@ -675,22 +978,36 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
             const [expectedOutbound, inbound] =
               ba == "asks" ? [base, quote] : [quote, base];
 
-            const tick = tickPriceHelper.tickFromPrice(price);
+            const tick = tickPriceHelper.tickFromPrice(price, "nearest");
             // Act
-            const result = tickPriceHelper.outboundFromInbound(tick, inbound);
+            const resultNearest = tickPriceHelper.outboundFromInbound(
+              tick,
+              inbound,
+              "nearest",
+            );
             const resultUp = tickPriceHelper.outboundFromInbound(
               tick,
               inbound,
-              true,
+              "roundUp",
+            );
+            const resultDown = tickPriceHelper.outboundFromInbound(
+              tick,
+              inbound,
+              "roundDown",
             );
 
             // Assert
-            assertApproxEqAbs(result, expectedOutbound, 0.1);
+            assertApproxEqAbs(resultNearest, expectedOutbound, 0.1);
             assert.ok(
-              resultUp.gte(result),
-              "round up should be at least as big as round down",
+              resultUp.gte(resultNearest),
+              "round up should be at least as big as nearest",
+            );
+            assert.ok(
+              resultDown.lte(resultNearest),
+              "round down should be at most as big as nearest",
             );
             assertApproxEqAbs(resultUp, expectedOutbound, 0.1);
+            assertApproxEqAbs(resultDown, expectedOutbound, 0.1);
           });
         });
       });
@@ -709,12 +1026,12 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct ratio for tick, MAX_TICK", () => {
-      const result = sut.rawRatioFromTick(MAX_TICK.toNumber());
+      const result = sut.rawRatioFromTick(MAX_TICK.toNumber(), "nearest");
       assert.deepStrictEqual(result, Big(MAX_RATIO_MANTISSA.toString())); // biggest ratio
     });
 
     it("should return the correct ratio for tick, MIN_TICK", () => {
-      const result = sut.rawRatioFromTick(MIN_TICK.toNumber());
+      const result = sut.rawRatioFromTick(MIN_TICK.toNumber(), "nearest");
       const dp = Big.DP;
       Big.DP = 42;
       assert.deepStrictEqual(
@@ -725,12 +1042,12 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct ratio for tick, 0", () => {
-      const result = sut.rawRatioFromTick(0);
+      const result = sut.rawRatioFromTick(0, "nearest");
       assert.deepStrictEqual(result, Big("1")); // tick 0 = price 1
     });
 
     it("should return the correct ratio for tick, 1, tickSpacing=1", () => {
-      const result = sut.rawRatioFromTick(1);
+      const result = sut.rawRatioFromTick(1, "nearest");
       assert.deepStrictEqual(
         result.minus(Big("1.0001")).abs().gt(0) && result.lt(1.0001),
         true,
@@ -738,15 +1055,22 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       );
     });
 
-    it("should return the correct ratio for tick, 1, tickSpacing=2", () => {
-      sut.market.tickSpacing = 2;
-      const result = sut.rawRatioFromTick(1);
-      assertApproxEqAbs(
-        result,
-        Big("1.0001").pow(2),
-        0.0001,
-        `ratio should be slightly less than 1.0001^2 but is ${result}, due to man and exp cannot express 1.0001^2`,
-      );
+    roundingModes.forEach((roundingMode) => {
+      it("should return the correct ratio for tick, 1, tickSpacing=2", () => {
+        sut.market.tickSpacing = 2;
+        const result = sut.rawRatioFromTick(1, roundingMode);
+        const expected = {
+          nearest: Big("1.0001").pow(2),
+          roundUp: Big("1.0001").pow(2),
+          roundDown: Big(1),
+        }[roundingMode];
+        assertApproxEqAbs(
+          result,
+          expected,
+          0.0001,
+          `ratio should be slightly less than 1.0001^2 but is ${result}, due to man and exp cannot express 1.0001^2`,
+        );
+      });
     });
   });
 
@@ -762,26 +1086,29 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct tick for ratio, MAX_TICK", () => {
-      const maxRatio = sut.rawRatioFromTick(MAX_TICK.toNumber());
-      const result = sut.tickFromRawRatio(maxRatio);
+      const maxRatio = sut.rawRatioFromTick(MAX_TICK.toNumber(), "nearest");
+      const result = sut.tickFromRawRatio(maxRatio, "nearest");
       assert.deepStrictEqual(result, MAX_TICK.toNumber());
     });
 
     it("should return the correct tick for ratio, MIN_TICK", () => {
-      const minRatio = sut.rawRatioFromTick(MIN_TICK.toNumber());
-      const result = sut.tickFromRawRatio(minRatio);
+      const minRatio = sut.rawRatioFromTick(MIN_TICK.toNumber(), "nearest");
+      const result = sut.tickFromRawRatio(minRatio, "nearest");
       assert.deepStrictEqual(result, MIN_TICK.toNumber());
     });
 
     it("should return the correct tick for ratio = 1.0001, tickSpacing=1", () => {
-      const result = sut.tickFromRawRatio(Big(1.0001));
+      const result = sut.tickFromRawRatio(Big(1.0001), "nearest");
       assert.deepStrictEqual(result, 1);
     });
 
-    it("should return the correct tick for ratio = 1.0001, tickSpacing=2", () => {
-      sut.market.tickSpacing = 2;
-      const result = sut.tickFromRawRatio(Big(1.0001));
-      assert.deepStrictEqual(result, 2);
+    roundingModes.forEach((roundingMode) => {
+      it("should return the correct tick for ratio = 1.0001, tickSpacing=2", () => {
+        sut.market.tickSpacing = 2;
+        const result = sut.tickFromRawRatio(Big(1.0001), roundingMode);
+        const expected = { nearest: 2, roundUp: 2, roundDown: 0 }[roundingMode];
+        assert.deepStrictEqual(result, expected);
+      });
     });
   });
 
@@ -797,7 +1124,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, MAX_TICK", () => {
-      const ratio = sut.rawRatioFromTick(MAX_TICK.toNumber());
+      const ratio = sut.rawRatioFromTick(MAX_TICK.toNumber(), "nearest");
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(MAX_TICK));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
@@ -805,7 +1132,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, MIN_TICK", () => {
-      const ratio = sut.rawRatioFromTick(MIN_TICK.toNumber());
+      const ratio = sut.rawRatioFromTick(MIN_TICK.toNumber(), "nearest");
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(MIN_TICK));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man.toString(), man.toString());
@@ -813,7 +1140,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = 1", () => {
-      const ratio = sut.rawRatioFromTick(1);
+      const ratio = sut.rawRatioFromTick(1, "nearest");
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
 
@@ -822,7 +1149,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = 0", () => {
-      const ratio = sut.rawRatioFromTick(0);
+      const ratio = sut.rawRatioFromTick(0, "nearest");
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(0));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
@@ -830,7 +1157,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = -1", () => {
-      const ratio = sut.rawRatioFromTick(-1);
+      const ratio = sut.rawRatioFromTick(-1, "nearest");
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(-1));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
@@ -838,29 +1165,32 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
 
     it("should return the correct mantissa and exponent for price, tick = 1000, tickSpacing=1", () => {
-      const ratio = sut.rawRatioFromTick(1000);
+      const ratio = sut.rawRatioFromTick(1000, "nearest");
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(1000));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);
       assert.deepStrictEqual(result.exp, exp);
     });
 
-    it("should return the correct mantissa and exponent for price, tick = 1000, tickSpacing=7", () => {
-      sut.market.tickSpacing = 7;
-      const ratio = sut.rawRatioFromTick(1000);
-      const { man, exp } = TickLib.ratioFromTick(
-        TickLib.nearestBin(
-          BigNumber.from(1000),
-          BigNumber.from(sut.market.tickSpacing),
-        ).mul(sut.market.tickSpacing),
-      );
-      const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
-      assert.deepStrictEqual(result.man, man);
-      assert.deepStrictEqual(result.exp, exp);
+    roundingModes.forEach((roundingMode) => {
+      it("should return the correct mantissa and exponent for price, tick = 1000, tickSpacing=7", () => {
+        sut.market.tickSpacing = 7;
+        const ratio = sut.rawRatioFromTick(1000, roundingMode);
+        const expectedTick = { nearest: 1001, roundUp: 1001, roundDown: 994 }[
+          roundingMode
+        ];
+
+        const { man, exp } = TickLib.ratioFromTick(
+          BigNumber.from(expectedTick),
+        );
+        const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
+        assert.deepStrictEqual(result.man, man);
+        assert.deepStrictEqual(result.exp, exp);
+      });
     });
 
     it("should return the correct mantissa and exponent for price, tick = -1000", () => {
-      const ratio = sut.rawRatioFromTick(-1000);
+      const ratio = sut.rawRatioFromTick(-1000, "nearest");
       const { man, exp } = TickLib.ratioFromTick(BigNumber.from(-1000));
       const result = TickPriceHelper.rawRatioToMantissaExponent(ratio);
       assert.deepStrictEqual(result.man, man);

@@ -123,7 +123,7 @@ describe("Market unit tests suite", () => {
           base: new TokenCalculations(0, 0),
           quote: new TokenCalculations(0, 0),
           tickSpacing: 1,
-        }).tickFromRawRatio(priceBig),
+        }).tickFromRawRatio(priceBig, "roundDown"),
         price: Big(price),
         volume: Big(42),
       };
