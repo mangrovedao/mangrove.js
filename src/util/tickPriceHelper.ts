@@ -6,7 +6,7 @@ import Big from "big.js";
 import { Bigish } from "../types";
 import { MANTISSA_BITS, MIN_RATIO_EXP } from "./coreCalculations/Constants";
 
-/** roundDown rounds toward zero. roundUp rounds away from zero, and nearest tries to round to the nearest being towards or away from zero. */
+/** roundDown rounds down to a representable value, roundUp rounds up to a representable value, and nearest rounds to the nearest representable value. */
 export type RoundingMode = "nearest" | "roundDown" | "roundUp";
 
 class TickPriceHelper {
@@ -42,9 +42,22 @@ class TickPriceHelper {
   }
 
   /**
+   * Inverses the rounding mode for bids.
+   */
+  #inverseRoundingModeForBids(roundingMode: RoundingMode) {
+    return this.ba === "asks"
+      ? roundingMode
+      : roundingMode === "roundDown"
+        ? "roundUp"
+        : roundingMode === "roundUp"
+          ? "roundDown"
+          : roundingMode;
+  }
+
+  /**
    * Calculates the price at a given raw offer list tick.
    * @param tick tick to calculate price for (is coerced to nearest bin)
-   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}. Up is to a higher price, down is to a lower price.
+   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}. roundDown is to a lower price, roundUp is to a higher price.
    * @returns price at tick (not to be confused with offer list ratio).
    */
   priceFromTick(tick: number, roundingMode: RoundingMode): Big {
@@ -52,7 +65,10 @@ class TickPriceHelper {
     const dp = Big.DP;
     Big.DP = 300;
 
-    const offerListRatioFromTick = this.rawRatioFromTick(tick, roundingMode);
+    const offerListRatioFromTick = this.rawRatioFromTick(
+      tick,
+      this.#inverseRoundingModeForBids(roundingMode),
+    );
     // For scaling the price to the correct decimals since the ratio is for raw values.
     const decimalsScaling = Big(10).pow(
       this.market.base.decimals - this.market.quote.decimals,
@@ -72,7 +88,7 @@ class TickPriceHelper {
   /**
    * Calculates the raw offer list tick (coerced to nearest bin) at a given order book price (not to be confused with offer list ratio).
    * @param price price to calculate tick for
-   * @param roundingMode See {@link RoundingMode} Lower is to a lower tick, higher is to a higher tick.
+   * @param roundingMode See {@link RoundingMode} roundDown is to a lower tick, roundUp is to a higher tick.
    * @returns raw offer list tick (coerced to nearest bin) for price
    */
   tickFromPrice(price: Bigish, roundingMode: RoundingMode): number {
@@ -100,19 +116,25 @@ class TickPriceHelper {
   /**
    * Coerces a price to a representable price on a tick. Note that due to rounding, coercing a coerced price may yield a price on an adjacent tick.
    * @param price price to coerce
-   * @param roundingMode See {@link RoundingMode}
+   * @param roundingMode See {@link RoundingMode} roundUp is to a higher price, roundDown is to a lower price.
    * @returns the price coerced to nearest representable tick */
   coercePrice(price: Bigish, roundingMode: RoundingMode): Big {
     let tick = this.tickFromPrice(price, roundingMode);
     let coercedPrice = this.priceFromTick(tick, roundingMode);
     if (roundingMode === "roundDown") {
       while (coercedPrice.gt(price)) {
-        tick -= this.market.tickSpacing;
+        tick +=
+          this.ba === "bids"
+            ? this.market.tickSpacing
+            : -this.market.tickSpacing;
         coercedPrice = this.priceFromTick(tick, roundingMode);
       }
     } else if (roundingMode === "roundUp") {
       while (coercedPrice.lt(price)) {
-        tick += this.market.tickSpacing;
+        tick +=
+          this.ba === "bids"
+            ? -this.market.tickSpacing
+            : this.market.tickSpacing;
         coercedPrice = this.priceFromTick(tick, roundingMode);
       }
     }
@@ -123,7 +145,7 @@ class TickPriceHelper {
    * Calculates the inbound amount from an outbound amount at a given tick.
    * @param tick tick to calculate the amount for (coerced to nearest bin)
    * @param outboundAmount amount to calculate the inbound amount for
-   * @param roundingMode See {@link RoundingMode}.
+   * @param roundingMode See {@link RoundingMode}. roundDown is to a lower tick, roundUp is to a higher tick and usage of inboundFromOutboundUp
    * @returns inbound amount.
    */
   inboundFromOutbound(
@@ -148,7 +170,7 @@ class TickPriceHelper {
    * Calculates the outbound amount from an inbound amount at a given tick.
    * @param tick tick to calculate the amount for (coerced to nearest bin)
    * @param inboundAmount amount to calculate the outbound amount for
-   * @param roundingMode See {@link RoundingMode}
+   * @param roundingMode See {@link RoundingMode}. roundDown is to a lower tick, roundUp is to a higher tick and usage of outboundFromInboundUp
    * @returns inbound amount.
    */
   outboundFromInbound(
@@ -183,7 +205,7 @@ class TickPriceHelper {
    * Calculates the tick (coerced to nearest bin) from inbound and outbound volumes.
    * @param inboundVolume inbound amount to calculate the tick for
    * @param outboundVolume outbound amount to calculate the tick for
-   * @param roundingMode See {@link RoundingMode}. Lower is to a lower tick, higher is to a higher tick.
+   * @param roundingMode See {@link RoundingMode}. roundDown is to a lower tick, roundUp is to a higher tick.
    * @returns raw offer list tick (coerced to nearest bin) for volumes
    */
   tickFromVolumes(
@@ -226,7 +248,7 @@ class TickPriceHelper {
 
   /** Coerce a tick to its nearest bin
    * @param tick tick to coerce
-   * @param roundingMode See {@link RoundingMode}. Lower is to a lower tick, higher is to a higher tick.
+   * @param roundingMode See {@link RoundingMode}. roundDown is to a lower tick, roundUp is to a higher tick.
    * @return tick coerced to its nearest bin
    */
   public coerceTick(tick: number, roundingMode: RoundingMode): number {
@@ -241,6 +263,7 @@ class TickPriceHelper {
    * @returns true if tick is exact; otherwise, false
    */
   public isTickExact(tick: number): boolean {
+    // choice of rounding mode does not matter since we are checking if the tick is exact
     return this.nearestRepresentableTick(BigNumber.from(tick), "roundDown").eq(
       tick,
     );
@@ -255,7 +278,7 @@ class TickPriceHelper {
     tick: BigNumber,
     roundingMode: RoundingMode,
   ): BigNumber {
-    // Note: nearestBin is a misnomer - it rounds
+    // Note: nearestBin is a misnomer - it rounds up to the nearest, higher bin.
     let binnedTick = TickLib.nearestBin(
       tick,
       BigNumber.from(this.market.tickSpacing),

@@ -200,6 +200,100 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         );
       });
     });
+
+    priceAndTickPairs.forEach(({ args, tick, price }) => {
+      it(`returns price=${price} for tick ${tick} with base decimals: ${args.market.base.decimals}, quote decimals: ${args.market.quote.decimals}, tickSpacing: ${args.market.tickSpacing} (${args.ba} semibook)`, () => {
+        // Arrange
+        const tickPriceHelper = new TickPriceHelper(
+          args.ba,
+          createKeyResolvedForCalculation(args.market),
+        );
+
+        // Act
+        const result = tickPriceHelper.priceFromTick(tick, "nearest");
+        // Assert
+        assert.equal(
+          result.toPrecision(comparisonPrecision).toString(),
+          Big(price).toPrecision(comparisonPrecision).toString(),
+        );
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`returns expectedPrice larger than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.priceFromTick(
+            ba === "asks" ? 30 : -30,
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            // for asks price and tick are both increasing, so lower price means lower tick - for asks 30 is decreased to 0
+            // for bids price and tick are inverse, so lower price means higher tick - for bids -30 is increased to 0
+            roundDown: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            // -30 and 30 are closer to 0 than -100 and 100, so nearest is same as roundDown
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            // for asks price and tick are both increasing, so higher price means higher tick - for asks 30 is increased to 100
+            // for bids price and tick are inverse, so higher price means lower tick - for bids -30 is decreased to -100
+            roundUp: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? 100 : -100,
+              "roundDown",
+            ),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
+
+        it(`returns expectedPrice less than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.priceFromTick(
+            ba === "asks" ? -30 : 30,
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            // for asks price and tick are both increasing, so lower price means lower tick - for asks -30 is decreased to -100
+            // for bids price and tick are inverse, so lower price means higher tick - for bids 30 is increased to 100
+            roundDown: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? -100 : 100,
+              "roundDown",
+            ),
+            // -30 and 30 are closer to 0 than -100 and 100, so nearest is same as roundDown
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            // for asks price and tick are both increasing, so higher price means higher tick - for asks -30 is increased to 0
+            // for bids price and tick are inverse, so higher price means lower tick - for bids 30 is decreased to 0
+            roundUp: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
+      });
+    });
   });
 
   describe(TickPriceHelper.prototype.tickFromVolumes.name, () => {
@@ -266,6 +360,58 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         const result = tickPriceHelper.tickFromPrice(price, "nearest");
         // Assert
         assert.equal(coercedTick ?? tick, result);
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`returns expectedTick for positive ticks roundingMode=${roundingMode} with base decimals: 18, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const tickPriceHelper = new TickPriceHelper(ba, {
+            base: new TokenCalculations(18, 18),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          });
+
+          // Act
+          const result = tickPriceHelper.tickFromPrice(
+            ba === "asks" ? Big(42) : Big(1).div(Big(42)),
+            roundingMode,
+          );
+          // Assert
+          const expected = {
+            nearest: 37400,
+            roundDown: 37300,
+            roundUp: 37400,
+          }[roundingMode];
+          assert.equal(expected, result);
+        });
+      });
+    });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`returns expectedTick for negative ticks roundingMode=${roundingMode} with base decimals: 18, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const tickPriceHelper = new TickPriceHelper(ba, {
+            base: new TokenCalculations(18, 18),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          });
+
+          // Act
+          const result = tickPriceHelper.tickFromPrice(
+            ba === "asks" ? Big(1).div(Big(42)) : Big(42),
+            roundingMode,
+          );
+          // Assert
+          const expected = {
+            nearest: -37400,
+            roundDown: -37400,
+            roundUp: -37300,
+          }[roundingMode];
+          assert.equal(expected, result);
+        });
       });
     });
   });
@@ -598,6 +744,78 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         assertApproxEqRel(priceRoundTrip.toString(), result.toString(), 0.0001);
       });
     });
+
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        it(`coerced prices respects rounding for expectedPrice larger than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.coercePrice(
+            preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? 30 : -30,
+              "nearest",
+            ),
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            roundDown: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            roundUp: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? 100 : -100,
+              "roundDown",
+            ),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
+
+        it(`coerced prices respects rounding for expectedPrice less than or equal to 1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 18 (${ba} semibook)`, () => {
+          // Arrange
+          const market = {
+            base: new TokenCalculations(6, 6),
+            quote: new TokenCalculations(18, 18),
+            tickSpacing: 100,
+          };
+          const preciseTickPriceHelper = new TickPriceHelper(ba, {
+            ...market,
+            tickSpacing: 1,
+          });
+          const tickPriceHelper = new TickPriceHelper(ba, market);
+
+          // Act
+          const result = tickPriceHelper.coercePrice(
+            preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? -30 : 30,
+              "nearest",
+            ),
+            roundingMode,
+          );
+          // Assert
+          // roundingMode has no effect in these calls
+          const expectedPrice = {
+            roundDown: preciseTickPriceHelper.priceFromTick(
+              ba === "asks" ? -100 : 100,
+              "roundDown",
+            ),
+            nearest: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+            roundUp: preciseTickPriceHelper.priceFromTick(0, "roundDown"),
+          }[roundingMode];
+          assert.equal(expectedPrice.toString(), result.toString());
+        });
+      });
+    });
   });
 
   describe(TickPriceHelper.prototype.coerceTick.name, () => {
@@ -624,20 +842,39 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       });
     });
 
-    it("coerces to nearest", () => {
-      // Arrange
-      const tickPriceHelper = new TickPriceHelper("bids", {
-        base: new TokenCalculations(18, 18),
-        quote: new TokenCalculations(18, 18),
-        tickSpacing: 7,
+    bidsAsks.forEach((ba) => {
+      roundingModes.forEach((roundingMode) => {
+        [
+          [6, 0, 7, 7],
+          [8, 7, 7, 14],
+          [-6, -7, -7, 0],
+          [-8, -14, -7, -7],
+          [-7, -7, -7, -7],
+          [7, 7, 7, 7],
+        ].forEach(
+          ([tick, expectedRoundDown, expectedNearest, expectedRoundUp]) => {
+            it(`coerces to expected roundingMode=${roundingMode} tick=${tick} for ba=${ba}`, () => {
+              // Arrange
+              const tickPriceHelper = new TickPriceHelper("bids", {
+                base: new TokenCalculations(18, 18),
+                quote: new TokenCalculations(6, 6),
+                tickSpacing: 7,
+              });
+
+              // Act
+              const result = tickPriceHelper.coerceTick(tick, roundingMode);
+
+              // Assert
+              const expectedTick = {
+                roundDown: expectedRoundDown,
+                nearest: expectedNearest,
+                roundUp: expectedRoundUp,
+              }[roundingMode];
+              assert.equal(expectedTick, result);
+            });
+          },
+        );
       });
-
-      // Act
-      const result1 = tickPriceHelper.coerceTick(6, "nearest");
-      const result2 = tickPriceHelper.coerceTick(8, "nearest");
-
-      // Assert
-      assert.equal(result1, result2);
     });
   });
 
@@ -701,7 +938,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
             const tick = tickPriceHelper.tickFromPrice(price, "nearest");
             // Act
-            const result = tickPriceHelper.inboundFromOutbound(
+            const resultNearest = tickPriceHelper.inboundFromOutbound(
               tick,
               outbound,
               "nearest",
@@ -711,14 +948,24 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
               outbound,
               "roundUp",
             );
+            const resultDown = tickPriceHelper.inboundFromOutbound(
+              tick,
+              outbound,
+              "roundDown",
+            );
 
             // Assert
-            assertApproxEqAbs(result, expectedInbound, 0.1);
+            assertApproxEqAbs(resultNearest, expectedInbound, 0.1);
             assert.ok(
-              resultUp.gte(result),
-              "round up should be at least as big as round down",
+              resultUp.gte(resultNearest),
+              "round up should be at least as big as nearest",
+            );
+            assert.ok(
+              resultDown.lte(resultNearest),
+              "round down should be at most as big as nearest",
             );
             assertApproxEqAbs(resultUp, expectedInbound, 0.1);
+            assertApproxEqAbs(resultDown, expectedInbound, 0.1);
           });
 
           it(`${TickPriceHelper.prototype.outboundFromInbound.name} ba=${ba} base=${base} quote=${quote} price=${price} tickSpacing=${tickSpacing}`, () => {
@@ -733,7 +980,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
 
             const tick = tickPriceHelper.tickFromPrice(price, "nearest");
             // Act
-            const result = tickPriceHelper.outboundFromInbound(
+            const resultNearest = tickPriceHelper.outboundFromInbound(
               tick,
               inbound,
               "nearest",
@@ -743,14 +990,24 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
               inbound,
               "roundUp",
             );
+            const resultDown = tickPriceHelper.outboundFromInbound(
+              tick,
+              inbound,
+              "roundDown",
+            );
 
             // Assert
-            assertApproxEqAbs(result, expectedOutbound, 0.1);
+            assertApproxEqAbs(resultNearest, expectedOutbound, 0.1);
             assert.ok(
-              resultUp.gte(result),
-              "round up should be at least as big as round down",
+              resultUp.gte(resultNearest),
+              "round up should be at least as big as nearest",
+            );
+            assert.ok(
+              resultDown.lte(resultNearest),
+              "round down should be at most as big as nearest",
             );
             assertApproxEqAbs(resultUp, expectedOutbound, 0.1);
+            assertApproxEqAbs(resultDown, expectedOutbound, 0.1);
           });
         });
       });

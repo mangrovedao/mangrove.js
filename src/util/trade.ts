@@ -44,6 +44,7 @@ class Trade {
         slippage,
         "buy",
       );
+      // round down to not exceed the price
       maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       if ("volume" in params) {
         fillVolume = Big(params.volume);
@@ -416,7 +417,7 @@ class Trade {
     }
 
     if ("price" in params && params.price !== undefined) {
-      // round up to ensure we get at least the price we want for the offer.
+      // round up to ensure we as a maker get what we want for the offer.
       tick = tickPriceHelper.tickFromPrice(Big(params.price), "roundUp");
     }
 
