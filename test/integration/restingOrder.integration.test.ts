@@ -5,14 +5,7 @@ import { expect } from "chai";
 import { utils } from "ethers";
 
 import assert from "assert";
-import {
-  LiquidityProvider,
-  Mangrove,
-  Market,
-  Token,
-  OfferLogic,
-  mgvTestUtil,
-} from "../../src";
+import { Mangrove, Market, Token, OfferLogic, mgvTestUtil } from "../../src";
 import { AbstractRouter } from "../../src/types/typechain";
 
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
@@ -33,8 +26,9 @@ describe("RestingOrder", () => {
   let tokenA: Token;
   let tokenB: Token;
   let orderLogic: OfferLogic;
-  let orderLP: LiquidityProvider;
+  let gasreq: number;
   let router: AbstractRouter;
+  let market: Market;
 
   afterEach(async () => {
     mgv.disconnect();
@@ -54,8 +48,7 @@ describe("RestingOrder", () => {
       const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
         mgv.network.name,
       );
-      // TODO: This should not be done as MangroveOrder does not implement ILiquidityProvider
-      orderLP = await LiquidityProvider.connect(orderLogic, gasreq, {
+      const market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
         tickSpacing: 1,
@@ -63,7 +56,7 @@ describe("RestingOrder", () => {
       });
 
       //check that contract responds
-      assert(orderLP.computeAskProvision({ gasreq: gasreq }));
+      assert(orderLogic.getMissingProvision(market, "asks", gasreq));
     });
   });
 
@@ -87,18 +80,16 @@ describe("RestingOrder", () => {
       // @ts-ignore
       mgv.provider.pollingInterval = 10;
       orderLogic = mgv.offerLogic(mgv.orderContract.address);
-      const market = await mgv.market({
+      market = await mgv.market({
         base: "TokenA",
         quote: "TokenB",
         tickSpacing: 1,
         bookOptions: { targetNumberOfTicks: 30 },
       });
 
-      const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
+      gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
         mgv.network.name,
       );
-      // TODO: This should not be done as MangroveOrder does not implement ILiquidityProvider
-      orderLP = await LiquidityProvider.connect(orderLogic, gasreq, market);
       router = (await orderLogic.router()) as AbstractRouter;
 
       await w(orderLogic.activate(["TokenA", "TokenB"]));
@@ -153,14 +144,13 @@ describe("RestingOrder", () => {
       it(`simple resting order, with no forceRoutingToMangroveOrder and provisionOption=${provisionOption}`, async () => {
         const provision =
           provisionOption === "provided"
-            ? await orderLP.computeBidProvision()
+            ? await orderLogic.getMissingProvision(market, "bids", gasreq)
             : undefined;
-        await orderLP.computeBidProvision();
 
         await w(tokenB.approve(router.address));
         await w(tokenA.approve(router.address));
 
-        const buyPromises = await orderLP.market.buy({
+        const buyPromises = await market.buy({
           limitPrice: 1,
           volume: 20,
           restingOrder: {
@@ -197,15 +187,15 @@ describe("RestingOrder", () => {
         );
 
         const actualProvision =
-          await orderLP.logic?.retrieveLockedProvisionForOffer(
-            orderLP.market,
+          await orderLogic.retrieveLockedProvisionForOffer(
+            market,
             "bids",
             orderResult.restingOrder?.id,
           );
         const expectedProvision =
           provisionOption === "provided"
             ? provision
-            : await orderLP.computeOfferProvision("bids", {
+            : await orderLogic.getMissingProvision(market, "bids", gasreq, {
                 gasprice:
                   mgv.config().gasprice *
                   (provisionOption === "provideFactor" ? 7 : 5),
@@ -218,12 +208,16 @@ describe("RestingOrder", () => {
     });
 
     it("simple resting order, with forceRoutingToMangroveOrder:true", async () => {
-      const provision = await orderLP.computeBidProvision();
+      const provision = await orderLogic.getMissingProvision(
+        market,
+        "bids",
+        gasreq,
+      );
 
       await w(tokenB.approve(router.address));
       await w(tokenA.approve(router.address));
 
-      const buyPromises = await orderLP.market.buy({
+      const buyPromises = await market.buy({
         forceRoutingToMangroveOrder: true,
         limitPrice: 1,
         volume: 20,
@@ -252,12 +246,16 @@ describe("RestingOrder", () => {
     });
 
     it("simple resting order, with forceRoutingToMangroveOrder:false", async () => {
-      const provision = await orderLP.computeBidProvision();
+      const provision = await orderLogic.getMissingProvision(
+        market,
+        "bids",
+        gasreq,
+      );
 
       await w(tokenB.approve(router.address));
       await w(tokenA.approve(router.address));
 
-      const buyPromises = await orderLP.market.buy({
+      const buyPromises = await market.buy({
         forceRoutingToMangroveOrder: false,
         limitPrice: 1, // tokenA
         volume: 20, // tokenB
@@ -289,7 +287,7 @@ describe("RestingOrder", () => {
       await w(tokenB.approve(router.address));
       await w(tokenA.approve(router.address));
 
-      const buyPromises = await orderLP.market.buy({
+      const buyPromises = await market.buy({
         forceRoutingToMangroveOrder: true,
         limitPrice: 1, // tokenA
         volume: 5, // tokenB
@@ -316,8 +314,6 @@ describe("RestingOrder", () => {
     it("resting order with deadline and custom gasreq", async () => {
       await w(tokenB.approve(router.address));
       await w(tokenA.approve(router.address));
-
-      const market: Market = orderLP.market;
 
       const restingOrderGasreqOverride = 1000000;
       const provisionWithOverride = (
@@ -348,14 +344,17 @@ describe("RestingOrder", () => {
         orderResult.restingOrder ? orderResult.restingOrder.id : 0,
       );
 
-      const actualProvision =
-        await orderLP.logic?.retrieveLockedProvisionForOffer(
-          market,
-          "bids",
-          restingOrderId,
-        );
+      const actualProvision = await orderLogic.retrieveLockedProvisionForOffer(
+        market,
+        "bids",
+        restingOrderId,
+      );
 
-      const defaultProvision = await orderLP.computeBidProvision();
+      const defaultProvision = await orderLogic.getMissingProvision(
+        market,
+        "bids",
+        gasreq,
+      );
       assert.notEqual(
         defaultProvision.toString(),
         provisionWithOverride.toString(),
@@ -405,7 +404,7 @@ describe("RestingOrder", () => {
         `Taker received an incorrect amount ${result.summary.totalGot}`,
       );
       assert(
-        await orderLP.market.isLive(
+        await market.isLive(
           "bids",
           orderResult.restingOrder ? orderResult.restingOrder.id : 0,
         ),
@@ -436,7 +435,7 @@ describe("RestingOrder", () => {
       await w(tokenB.approve(router.address));
       await w(tokenA.approve(router.address));
 
-      const buyPromises = await orderLP.market.buy({
+      const buyPromises = await market.buy({
         forceRoutingToMangroveOrder: true,
         limitPrice: 1, // tokenA
         volume: 5, // tokenB
@@ -465,8 +464,6 @@ describe("RestingOrder", () => {
         await w(tokenB.approve(router.address));
         await w(tokenA.approve(router.address));
 
-        const market: Market = orderLP.market;
-
         const buyPromises = await market.buy({
           limitPrice: 1, // tokenA
           volume: 20, // tokenB
@@ -491,12 +488,11 @@ describe("RestingOrder", () => {
             : false,
           `orderResult.restingOrder.price should be 1 but is ${orderResult.restingOrder?.price.toNumber()}`,
         );
-        const firstProvision =
-          await orderLP.logic?.retrieveLockedProvisionForOffer(
-            orderLP.market,
-            "bids",
-            orderResult.restingOrder?.id,
-          );
+        const firstProvision = await orderLogic.retrieveLockedProvisionForOffer(
+          market,
+          "bids",
+          orderResult.restingOrder?.id,
+        );
 
         // taking resting offer
 
@@ -523,14 +519,18 @@ describe("RestingOrder", () => {
           `Taker received an incorrect amount ${result.summary.totalGot}`,
         );
         assert(
-          !(await orderLP.market.isLive(
+          !(await market.isLive(
             "bids",
             orderResult.restingOrder ? orderResult.restingOrder.id : 0,
           )),
           "Residual should not still be in the book",
         );
 
-        const provision = await orderLP.computeBidProvision();
+        const provision = await orderLogic.getMissingProvision(
+          market,
+          "bids",
+          gasreq,
+        );
         const buyAgainPromises = await market.buy({
           limitPrice: 1, // tokenA
           volume: 20, // tokenB
@@ -544,7 +544,7 @@ describe("RestingOrder", () => {
         await mgvTestUtil.waitForBlock(market.mgv, tx3.blockNumber);
 
         assert(
-          await orderLP.market.isLive("bids", orderResult.restingOrder!.id),
+          await market.isLive("bids", orderResult.restingOrder!.id),
           "Residual should be in the book again, on same offerId",
         );
 
@@ -561,8 +561,8 @@ describe("RestingOrder", () => {
         );
 
         const secondProvision =
-          await orderLP.logic?.retrieveLockedProvisionForOffer(
-            orderLP.market,
+          await orderLogic.retrieveLockedProvisionForOffer(
+            market,
             "bids",
             orderResult.restingOrder?.id,
           );
@@ -573,12 +573,16 @@ describe("RestingOrder", () => {
       });
 
       it("retract resting order", async () => {
-        const provision = await orderLP.computeBidProvision();
+        const provision = await orderLogic.getMissingProvision(
+          market,
+          "bids",
+          gasreq,
+        );
 
         await w(tokenB.approve(router.address));
         await w(tokenA.approve(router.address));
 
-        const buyPromises = await orderLP.market.buy({
+        const buyPromises = await market.buy({
           limitPrice: 1,
           volume: 20,
           restingOrder: { provision: provision },
@@ -596,11 +600,11 @@ describe("RestingOrder", () => {
 
         await waitForBlock(mgv, buyTxReceipt.blockNumber);
 
-        expect(
-          [...orderLP.market.getSemibook("bids")].map((o) => o.id),
-        ).to.contain(orderResult.restingOrder!.id);
+        expect([...market.getSemibook("bids")].map((o) => o.id)).to.contain(
+          orderResult.restingOrder!.id,
+        );
 
-        const retractPromises = await orderLP.market.retractRestingOrder(
+        const retractPromises = await market.retractRestingOrder(
           "bids",
           orderResult.restingOrder!.id,
         );
@@ -612,9 +616,9 @@ describe("RestingOrder", () => {
 
         await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
-        expect(
-          [...orderLP.market.getSemibook("bids")].map((o) => o.id),
-        ).to.not.contain(orderResult.restingOrder!.id);
+        expect([...market.getSemibook("bids")].map((o) => o.id)).to.not.contain(
+          orderResult.restingOrder!.id,
+        );
       });
     });
 
@@ -631,20 +635,20 @@ describe("RestingOrder", () => {
         let offerId: number;
 
         beforeEach(async () => {
-          initialTick = orderLP.market
+          initialTick = market
             .getSemibook(ba)
             .tickPriceHelper.tickFromPrice(initialPrice);
           const provision =
             ba === "bids"
-              ? await orderLP.computeBidProvision()
-              : await orderLP.computeAskProvision();
+              ? await orderLogic.getMissingProvision(market, "bids", gasreq)
+              : await orderLogic.getMissingProvision(market, "asks", gasreq);
 
           await w(tokenB.approve(router.address));
           await w(tokenA.approve(router.address));
 
           const tradeFunction =
-            tradeOperation === "buy" ? orderLP.market.buy : orderLP.market.sell;
-          const tradePromises = await tradeFunction.bind(orderLP.market)({
+            tradeOperation === "buy" ? market.buy : market.sell;
+          const tradePromises = await tradeFunction.bind(market)({
             limitPrice: initialPrice,
             volume: initialVolume,
             restingOrder: { provision: provision },
@@ -664,9 +668,9 @@ describe("RestingOrder", () => {
 
           await waitForBlock(mgv, tradeTxReceipt.blockNumber);
 
-          expect(
-            [...orderLP.market.getSemibook(ba)].map((o) => o.id),
-          ).to.contain(orderResult.restingOrder!.id);
+          expect([...market.getSemibook(ba)].map((o) => o.id)).to.contain(
+            orderResult.restingOrder!.id,
+          );
 
           offerId = orderResult.restingOrder!.id;
         });
@@ -674,7 +678,7 @@ describe("RestingOrder", () => {
         it("update tick", async () => {
           // Act
           const newTick = initialTick + 1;
-          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+          const retractPromises = await market.updateRestingOrder(ba, {
             offerId,
             tick: newTick,
           });
@@ -687,14 +691,14 @@ describe("RestingOrder", () => {
           await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
           // Assert
-          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          const updatedOffer = await market.offerInfo(ba, offerId);
           expect(updatedOffer.tick).to.equal(newTick);
         });
 
         it("update price", async () => {
           // Act
           const newPrice = initialPrice + 1;
-          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+          const retractPromises = await market.updateRestingOrder(ba, {
             offerId,
             price: newPrice,
           });
@@ -707,7 +711,7 @@ describe("RestingOrder", () => {
           await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
           // Assert
-          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          const updatedOffer = await market.offerInfo(ba, offerId);
           expect(updatedOffer.price.toNumber()).to.be.approximately(
             newPrice,
             0.001,
@@ -717,7 +721,7 @@ describe("RestingOrder", () => {
         it("update gives", async () => {
           // Act
           const newGives = initialGives + 1;
-          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+          const retractPromises = await market.updateRestingOrder(ba, {
             offerId,
             gives: newGives,
           });
@@ -730,14 +734,14 @@ describe("RestingOrder", () => {
           await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
           // Assert
-          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          const updatedOffer = await market.offerInfo(ba, offerId);
           expect(updatedOffer.gives.toNumber()).to.equal(newGives);
         });
 
         it("update volume", async () => {
           // Act
           const newVolume = initialVolume + 1;
-          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+          const retractPromises = await market.updateRestingOrder(ba, {
             offerId,
             volume: newVolume,
           });
@@ -750,7 +754,7 @@ describe("RestingOrder", () => {
           await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
           // Assert
-          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          const updatedOffer = await market.offerInfo(ba, offerId);
           expect(updatedOffer.volume.toNumber()).to.be.approximately(
             newVolume,
             0.001,
@@ -760,7 +764,7 @@ describe("RestingOrder", () => {
         it("update total", async () => {
           // Act
           const newTotal = initialTotal + 1;
-          const retractPromises = await orderLP.market.updateRestingOrder(ba, {
+          const retractPromises = await market.updateRestingOrder(ba, {
             offerId,
             total: newTotal,
           });
@@ -773,7 +777,7 @@ describe("RestingOrder", () => {
           await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
           // Assert
-          const updatedOffer = await orderLP.market.offerInfo(ba, offerId);
+          const updatedOffer = await market.offerInfo(ba, offerId);
           if (ba === "bids") {
             expect(updatedOffer.gives.toNumber()).to.be.approximately(
               newTotal,
