@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import {
   LiquidityProvider,
   Mangrove,
+  Market,
   OfferLogic,
   OfferMaker,
   eth,
@@ -16,8 +17,9 @@ describe("OfferMaker integration test suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
 
-  let onchain_lp: LiquidityProvider;
   let eoa_lp: LiquidityProvider;
+  let logic: OfferLogic;
+  let market: Market;
 
   beforeEach(async function () {
     //set mgv object
@@ -46,14 +48,13 @@ describe("OfferMaker integration test suite", () => {
       offerMakerSigner.signer,
     );
 
-    const logic = mgv.offerLogic(offerMakerAddress);
-    const market = await mgv.market({
+    logic = mgv.offerLogic(offerMakerAddress);
+    market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
       tickSpacing: 1,
       bookOptions: { targetNumberOfTicks: 30 },
     });
-    onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
     eoa_lp = await mgv.liquidityProvider(market);
     mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
   });
@@ -70,7 +71,6 @@ describe("OfferMaker integration test suite", () => {
 
   it("checks allowance for onchain logic", async () => {
     const tokenB = await mgv.token("TokenB");
-    const logic = onchain_lp.logic as OfferLogic;
     let allowanceForLogic /*:Big*/ = await tokenB.allowance({
       owner: logic.address,
       spender: mgv.address,
@@ -147,7 +147,6 @@ describe("OfferMaker integration test suite", () => {
   });
 
   it("checks provision for onchain logic", async () => {
-    const logic = onchain_lp.logic as OfferLogic;
     let balance = await mgv.balanceOf(logic.address);
     assert.strictEqual(balance.toNumber(), 0, "balance should be 0");
     await w(mgv.fundMangrove(2, logic.address));
@@ -157,7 +156,8 @@ describe("OfferMaker integration test suite", () => {
   });
 
   it("checks provision for onchain logic by calling provisionOf", async () => {
-    const lp = onchain_lp;
+    const lp = await LiquidityProvider.connect(logic, 20000, market);
+
     const provision = await lp.computeAskProvision();
     const { id } = await lp.newAsk({
       tick: 10,
@@ -185,7 +185,9 @@ describe("OfferMaker integration test suite", () => {
       eoaLP ? "eoa" : "onchain"
     } logic`, async () => {
       // Arrange
-      const lp = eoaLP ? eoa_lp : onchain_lp;
+      const lp = eoaLP
+        ? eoa_lp
+        : await LiquidityProvider.connect(logic, 20000, market);
       const mgvGasprice = mgv.config().gasprice;
       const provision = await lp.computeAskProvision();
       const { id } = await lp.newAsk({
@@ -222,7 +224,6 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("withdraws", async () => {
-      const logic = onchain_lp.logic as OfferLogic;
       const getBal = async () =>
         mgv.provider.getBalance(await mgv.signer.getAddress());
       let tx = await mgv.fundMangrove(10, logic.address);
@@ -242,16 +243,14 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("pushes a new offer", async () => {
+      const onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
       const provision = await onchain_lp.computeAskProvision();
       const { id: ofrId } = await onchain_lp.newAsk({
         tick: 10,
         gives: 10,
         fund: provision,
       });
-      assert(
-        await onchain_lp.market.isLive("asks", ofrId),
-        "Offer should be live",
-      );
+      assert(await market.isLive("asks", ofrId), "Offer should be live");
       // this does not work because newAsk is not synced with cache
       // const asks = onchain_lp.asks();
       // assert.strictEqual(
@@ -271,6 +270,7 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("fails, when trying to push new offer without sufficient provision", async () => {
+      const onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
       const newAskPromise = onchain_lp.newAsk({
         tick: 10,
         gives: 10,
@@ -285,6 +285,7 @@ describe("OfferMaker integration test suite", () => {
 
     it("cancels offer", async () => {
       //sets huge gasprice to induce high provision, to make sure taker receives more than gas cost when cancelling their offer
+      const onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
       let prov = await onchain_lp.computeBidProvision();
       const tx = await mgvAdmin.contract.setGasprice(12000);
       await tx.wait();
@@ -325,6 +326,7 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("fails, when trying to cancel a non-existing offer", async () => {
+      const onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
       const retractPromise = onchain_lp.retractBid(666, true); // with deprovision
 
       await assert.rejects(
@@ -335,10 +337,11 @@ describe("OfferMaker integration test suite", () => {
 
     it("fails, when trying to create an offer on a closed market", async () => {
       const closeTx = await mgvAdmin.contract.deactivate(
-        onchain_lp.market.getOLKey("asks"),
+        market.getOLKey("asks"),
       );
       await closeTx.wait();
 
+      const onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
       const prov = await onchain_lp.computeBidProvision();
 
       const createPromise = onchain_lp.newAsk({
@@ -354,6 +357,7 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("OfferMaker updates offer", async () => {
+      const onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
       const { id: ofrId } = await onchain_lp.newAsk({
         tick: 10,
         gives: 20,
@@ -381,6 +385,7 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("fails, when trying to update on a closed market", async () => {
+      const onchain_lp = await LiquidityProvider.connect(logic, 20000, market);
       const prov = await onchain_lp.computeBidProvision();
 
       const { id: ofrId } = await onchain_lp.newBid({
@@ -390,7 +395,7 @@ describe("OfferMaker integration test suite", () => {
       });
 
       const closeTx = await mgvAdmin.contract.deactivate(
-        onchain_lp.market.getOLKey("asks"),
+        market.getOLKey("asks"),
       );
       await closeTx.wait();
 
@@ -406,8 +411,7 @@ describe("OfferMaker integration test suite", () => {
     });
 
     it("approves signer for base transfer", async () => {
-      const base = onchain_lp.market.base;
-      const logic = onchain_lp.logic as OfferLogic;
+      const base = market.base;
       const signer_address = await logic.mgv.signer.getAddress();
 
       const tx = await logic.approve(base.id, {
