@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0-19
+
 - Add Sepolia support by bumping the following packages:
   - @mangrovedao/mangrove-core to v2.0.3
   - @mangrovedao/mangrove-strats to v1.0.2
