@@ -1,5 +1,7 @@
 # Next version
 
+- Bump @mangrovedao/mangrove-deployments to v1.0.3
+
 # 2.0.0-19
 
 - Add Sepolia support by bumping the following packages:
