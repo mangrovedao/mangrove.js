@@ -134,6 +134,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
         const minPrice = Big(1001);
         const maxPrice = Big(1588.000654449607);
         const midPrice = Big(1260.971712);
+        const stepSize = 1;
 
         const expectedParams = {
           baseQuoteTickOffset,
@@ -149,6 +150,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxPrice,
             priceRatio,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -158,6 +160,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxPrice,
             pricePoints,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -167,6 +170,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             priceRatio,
             pricePoints,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -176,6 +180,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             priceRatio,
             pricePoints,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -186,6 +191,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxBaseQuoteTick,
             baseQuoteTickOffset,
             midBaseQuoteTick,
+            stepSize,
           }),
           expectedParams,
         );
@@ -196,6 +202,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxBaseQuoteTick,
             pricePoints,
             midBaseQuoteTick,
+            stepSize,
           }),
           expectedParams,
         );
@@ -213,6 +220,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
         const minPrice = Big(1001);
         const maxPrice = Big(1590);
         const midPrice = Big(1260.971712);
+        const stepSize = 1;
 
         const expectedParams = {
           baseQuoteTickOffset,
@@ -228,6 +236,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxPrice,
             priceRatio,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -237,6 +246,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxPrice,
             pricePoints,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -246,6 +256,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             priceRatio,
             pricePoints,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -255,6 +266,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             priceRatio,
             pricePoints,
             midPrice,
+            stepSize,
           }),
           expectedParams,
         );
@@ -265,6 +277,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxBaseQuoteTick,
             baseQuoteTickOffset,
             midBaseQuoteTick,
+            stepSize,
           }),
           expectedParams,
         );
@@ -275,6 +288,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxBaseQuoteTick,
             pricePoints,
             midBaseQuoteTick,
+            stepSize,
           }),
           expectedParams,
         );
@@ -296,6 +310,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
           maxPrice,
           midPrice,
           baseQuoteTickOffset,
+          stepSize: 1,
         });
 
         // Assert
@@ -321,6 +336,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
           maxBaseQuoteTick,
           midPrice,
           baseQuoteTickOffset,
+          stepSize: 1,
         }).midBaseQuoteTick;
 
         sut.helper.market.tickSpacing = 7;
@@ -331,6 +347,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
           maxBaseQuoteTick,
           midPrice,
           baseQuoteTickOffset,
+          stepSize: 1,
         });
 
         // Assert
@@ -364,6 +381,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
             maxBaseQuoteTick,
             pricePoints,
             midBaseQuoteTick,
+            stepSize: 1,
           }),
           expectedParams,
         );
@@ -380,6 +398,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
               pricePoints: 2,
               maxBaseQuoteTick: 1000,
               midBaseQuoteTick: 500,
+              stepSize: 1,
             }),
           new Error("minBaseQuoteTick must be a multiple of tickSpacing"),
         );
@@ -396,6 +415,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
               baseQuoteTickOffset: 1,
               pricePoints: 2,
               midBaseQuoteTick: 500,
+              stepSize: 1,
             }),
           new Error("baseQuoteTickOffset must be a multiple of tickSpacing"),
         );
@@ -404,7 +424,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
       it("fails if neither midBaseQuoteTick nor midPrice is given", () => {
         // Act/assert
         assert.throws(
-          () => sut.getTickDistributionParams({}),
+          () => sut.getTickDistributionParams({ stepSize: 1 }),
           new Error("midPrice or midBaseQuoteTick must be provided."),
         );
       });
@@ -416,6 +436,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
           maxPrice: "2183.0164901619937",
           midPrice: "1819.180408468328",
           pricePoints: 2,
+          stepSize: 1,
         });
 
         // Assert
@@ -432,6 +453,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
               pricePoints: 10,
               maxPrice: Big(2),
               midPrice: Big(1.5),
+              stepSize: 1,
             }),
           new Error(
             "Exactly three of minPrice (or minBaseQuoteTick), maxPrice (or maxBaseQuoteTick), priceRatio (or baseQuoteTickOffset), and pricePoints must be given",
@@ -447,8 +469,37 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
               maxPrice: Big(2),
               pricePoints: 1,
               midPrice: Big(1.5),
+              stepSize: 1,
             }),
           new Error("There must be at least 2 price points"),
+        );
+      });
+
+      it("throws error if stepSize is equal to pricePoints", () => {
+        assert.throws(
+          () =>
+            sut.getTickDistributionParams({
+              minBaseQuoteTick: 1,
+              maxBaseQuoteTick: 10,
+              baseQuoteTickOffset: 1,
+              midPrice: Big(1.5),
+              stepSize: 10,
+            }),
+          new Error("stepSize must be less than pricePoints"),
+        );
+      });
+
+      it("throws error if stepSize is 0", () => {
+        assert.throws(
+          () =>
+            sut.getTickDistributionParams({
+              minPrice: "1",
+              maxPrice: "10",
+              midPrice: "5",
+              pricePoints: 2,
+              stepSize: 0,
+            }),
+          new Error("stepSize must be at least 1"),
         );
       });
 
@@ -460,6 +511,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
               maxPrice: Big(1.001),
               baseQuoteTickOffset: 1000,
               midPrice: Big(1),
+              stepSize: 1,
             }),
           new Error(
             "minBaseQuoteTick and maxBaseQuoteTick are too close. There must be room for at least two price points",
@@ -475,6 +527,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
               maxPrice: Big(1.001),
               baseQuoteTickOffset: 1000,
               midPrice: Big(1),
+              stepSize: 1,
             }),
           new Error("minBaseQuoteTick too low."),
         );
@@ -488,6 +541,7 @@ describe(`${GeometricKandelDistributionHelper.prototype.constructor.name} unit t
               maxBaseQuoteTick: 1e10,
               baseQuoteTickOffset: 1000,
               midPrice: Big(1),
+              stepSize: 1,
             }),
           new Error("maxBaseQuoteTick too high."),
         );
