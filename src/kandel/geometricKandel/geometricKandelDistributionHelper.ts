@@ -127,7 +127,7 @@ class GeometricKandelDistributionHelper {
    * @returns The tick based parameters, @see TickDistributionParams
    */
   public getTickDistributionParams(
-    params: Omit<Omit<DistributionParams, "stepSize">, "generateFromMid">,
+    params: Omit<DistributionParams, "generateFromMid">,
   ) {
     let {
       minBaseQuoteTick,
@@ -136,7 +136,7 @@ class GeometricKandelDistributionHelper {
       baseQuoteTickOffset,
       pricePoints,
     } = params;
-    const { minPrice, maxPrice, priceRatio, midPrice } = params;
+    const { minPrice, maxPrice, priceRatio, midPrice, stepSize } = params;
     if (midBaseQuoteTick == undefined) {
       if (midPrice == undefined) {
         throw Error("midPrice or midBaseQuoteTick must be provided.");
@@ -238,6 +238,13 @@ class GeometricKandelDistributionHelper {
     }
     if (baseQuoteTickOffset % this.helper.market.tickSpacing != 0) {
       throw Error("baseQuoteTickOffset must be a multiple of tickSpacing");
+    }
+
+    if (stepSize <= 0) {
+      throw Error("stepSize must be at least 1");
+    }
+    if (stepSize >= pricePoints) {
+      throw Error("stepSize must be less than pricePoints");
     }
 
     // We do not return maxBaseQuoteTick as the derived values may not end up hitting it exactly.

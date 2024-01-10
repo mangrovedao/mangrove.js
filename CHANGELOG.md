@@ -1,5 +1,7 @@
 # Next version
 
+- fix: Verify stepSize value for geometric kandel
+
 # 2.0.0-20
 
 - Bump @mangrovedao/mangrove-deployments to v1.0.3
