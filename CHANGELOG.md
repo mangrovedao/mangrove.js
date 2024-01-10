@@ -1,126 +1,39 @@
 # Next version
 
-- fix: Verify stepSize value for geometric kandel
-
-# 2.0.0-20
-
-- Bump @mangrovedao/mangrove-deployments to v1.0.3
-- feat: Round up, down, or to nearest depending on scenario
-- fix!: Rename getRequiredOutboundForGas to getRequiredOutboundForGasreq
-
-# 2.0.0-19
-
-- Add Sepolia support by bumping the following packages:
-  - @mangrovedao/mangrove-core to v2.0.3
-  - @mangrovedao/mangrove-strats to v1.0.2
-  - @mangrovedao/context-addresses to v1.0.1
-  - @mangrovedao/mangrove-deployments to v1.0.2
-
-# 2.0.0-18
-
-- feat: Add 'Market.updateRestingOrder' function which allows updating resting orders posted by 'MangroveOrder'
-
-# 2.0.0-17
-
-- fix: Correctly match any contract deployment of the same major version as the contract package version
-
-# 2.0.0-16
-
-- Change @mangrovedao/mangrove-core dependency from 'next' to '^2.0.2'
-- Change @mangrovedao/mangrove-strats dependency from 'next' to '^1.0.1'
-- Change @mangrovedao/mangrove-deployments and @mangrovedao/context-addresses dependencies from 'next' to '^1.0.0'
-- Update licenses: All code is now licensed under the MIT License.
-
-# 2.0.0-15
-
-- fix!: rename offer_gasbase on offer structures to gasbase
-- fix!: align return value of kandelInstance.getOffers() with new structure
-- fix!: rename populateGeneralChunk to populateGeneralChunks
-- feat: expose lastLiveBidIndex from Kandel distribution.
-- feat: return offset and price ratio from Kandel status.
-- fix: wrong price ratio from offset calculation in Kandel fixed.
-
-# 2.0.0-14
-
-- fix: increaseAllowance will not fail if allowance becomes larger than 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
-- fix: increaseAllowance will consider large values infinite like other approval functions.
-- fix: all token approval functions now cap the allowance to 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
-
-# 2.0.0-13
-
-- fix: Calculate default offer provision for MangroveOrder based on a gasprice factor if provision is not provided.
-- fix: Export entire configuration instead of only address and token configuration.
-- feat: Thread tickSpacing through code to be able to use it in tick/price calculations.
-- fix: Change tick and tickSpacing to be number type
-- feat!: Rename tick parameters of 'Market.simulateGas' and 'Semibook.simulateMarketOrder' to 'maxTick'.
-- fix: Semibook now maintains consistency. After the upgrade to Mangrove v2, the cache could become inconsistent as it was not ensuring that added offers were an extension of the prefix held in the case.
-- feat: Semibook cache now holds complete tick bins: If one offer with a given tick is in the cache, all offers with that tick is in the cache.
-- feat!: The 'maxOffers' option in 'CacheContentOptions' has been replaced with a new option: 'targetNumberOfTicks'. When loading from chain, the cache will load until at least this number of ticks is in the cache. The default is 'Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS'.
-- feat!: A new default value 'Semibook.DEFAULT_CHUNK_SIZE' has been introduced for 'CacheContentOptions.chunkSize'.
-- feat!: Mangrove and Semibook configs are now cached on 'connect' and (for Semibook) updated by events. The methods to read configs are no longer async and naming has been made consistent: 'Mangrove.config()', 'Market.config()', and 'Semibook.config()'.
-- feat: Two missing global config fields have been added: 'maxRecursionDepth' and 'maxGasreqForFailingOffers'.
-- feat!: All order book events now carry the relevant data for the event. And events that are not related to offers do not carry offer data.
-- feat: The market order simulation used to estimate volumes and gas has been updated to match Mangrove v2's market order logic.
-- feat!: 'Market.estimateVolume' now also estimates fees and returns it in a new 'estimatedFee' field. The existing 'estimatedVolume' field is exclusive of fees and thus represents the true amount the taker can expect to receive/pay.
-- feat: Add 'Market.retractRestingOrder' method for retracting resting orders posted by 'MangroveOrder'.
-
-# 2.0.0-12
-
-- fix: lazy load ol keys mapping
-
-# 2.0.0-11
-
-- feat: `Market.Key` type introduced to identify markets (base, quote, tick spacing) in the API.
-- feat!: `Mangrove.openMarkets` no longer connects to all markets, but returns a list of `Market.Key`s, optionally with the relevant offer list configuration attached to each. This is identical to the previous `Mangrove.openMarketsData` which has been removed.
-- feat!: Use of `Big(ish)` for `tickSpacing` in a few places has been replaced by `BigNumber(ish)` for consistency with the rest of the API.
-
-# 2.0.0-10
-
-# 2.0.0-9
-
-- feat!: `MgvToken` has been renamed to `Token`.
-- feat!: Removed `configuration.tokens.fetchDecimalsFromAddress`. Instead, use `Token.createTokenFromAddress` and read the decimals from that token.
-- feat!: `Mangrove.toUnits|fromUnits` no longer accepts a token name/symbol as this was ambiguous. Instead, use `Token.createToken` and call `toUnits|fromUnits` on that.
-- feat!: Static token configuration getters and setters have been removed from `Mangrove` and `Token`. Instead, use the methods on `configuration.token`.
-- feat!: `Mangrove.getTokenAndAddress` has been removed. Instead, use `Mangrove.tokenFromAddress` and read the address from there.
-- feat!: Remove `Mangrove.tokenFromConfig`. Use `Mangrove.token` instead.
-- feat!/fix: Token `name` was misused: Sometimes it was assumed to be a symbol and sometimes an ID. It has therefore been replaced by `id` and `symbol` in all relevant places. Configuration files have been converted to use the token instance ID's from the context-addresses package to avoid ambiguity among (1) different tokens with the same symbol and (2) multiple token instances such as `USDC` (Circle issued) and `USDC.e` (bridged from Ethereum).
-  - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. `Mangrove.token()` will create an instance of the default token ID if found.
-- feat!: `Mangrove.getNameFromAddress` has been removed: It was ambiguous (multiple names could be registered) and only used for resolving tokens which can now be done with the new `configuration.tokens.getTokenIdFromAddress()` function.
-- feat!: The `Mangrove.openMarkets` function now uses `Token` instead of a bespoke token data struct.
-- feat: `Mangrove.market` and `Market.connect` now accept either symbol, token ID, or `Token` for base and quote.
-- feat: Added `displayName` and `displayedAsPriceDecimals` to `Token`.
-- feat!: `Token.getDecimals` now throws an error instead of returning undefined if the decimals are not on record.
-
-# 2.0.0-8
-
-# 2.0.0-7
-
-# 2.0.0-6
-
-# 2.0.0-5
-
-- feat: Add usage of Geometric Kandel's call-data-reducing function
-
-# 2.0.0-4
-
-- fix: For prereleases of contract packages, include deployments of earlier prereleases of those packages.
-
-# 2.0.0-3
-
-- feat: Re-enable Kandel
-- fix: Various fixes after initial upgrade.
-
-# 2.0.0-2
-
-- feat: Use addresses from mangrove-deployments and context-addresses
-- bump: mangrove-core to 2.0.0-4
-- bump: mangrove-strats to 0.0.2-4
-
-# 2.0.0-1
-
-- feat: Upgrade to new mangrove-core and mangrove-strats. Details to be added for production release.
-- issue: Kandel is disabled for now.
+- Cross-cutting
+  - Update licenses: All code is now licensed under the MIT License.
+  - feat!: Use the new Mangrove core protocol and strats from the new @mangrovedao/mangrove-core and @mangrovedao/mangrove-strats packages. See their changelogs for details.
+  - feat!: Make consequential changes to APIs to match those changes (not all changes mentioned)
+  - feat: Read addresses from @mangrovedao/mangrove-deployments and @mangrovedao/mangrove-context-addresses
+  - feat!: Round prices/ticks/volumes etc. according to maker or taker scenario due to precision of tick based core.
+- Core
+  - feat!: Introduce Density class to wrapping floating point density from core protocol.
+  - feat!: Remove pivotId since it is no longer needed.
+  - Allowance
+    - fix: increaseAllowance will not fail if allowance becomes larger than 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
+    - fix: increaseAllowance will consider large values infinite like other approval functions.
+    - fix: all token approval functions now cap the allowance to 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
+  - fix!: rename offer_gasbase on offer structures to gasbase
+  - feat: The market order simulation used to estimate volumes and gas has been updated to match Mangrove v2's market order logic.
+  - feat!: The 'maxOffers' option in 'CacheContentOptions' has been replaced with a new option: 'targetNumberOfTicks'. When loading from chain, the cache will load until at least this number of ticks is in the cache. The default is 'Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS'.
+  - feat!: A new default value 'Semibook.DEFAULT_CHUNK_SIZE' has been introduced for 'CacheContentOptions.chunkSize'.
+  - feat!: Mangrove and Semibook configs are now cached on 'connect' and (for Semibook) updated by events. The methods to read configs are no longer async and naming has been made consistent: 'Mangrove.config()', 'Market.config()', and 'Semibook.config()'.
+  - feat!: 'Market.estimateVolume' now also estimates fees and returns it in a new 'estimatedFee' field. The existing 'estimatedVolume' field is exclusive of fees and thus represents the true amount the taker can expect to receive/pay.
+  - feat!: 'Mangrove.openMarkets' no longer connects to all markets, but returns a list of 'Market.Key's, optionally with the relevant offer list configuration attached to each. This is identical to the previous 'Mangrove.openMarketsData' which has been removed.
+- feat!: 'MgvToken' has been renamed to 'Token'.
+- feat!: 'Mangrove.toUnits|fromUnits' no longer accepts a token name/symbol as this was ambiguous. Instead, use 'Token.createToken' and call 'toUnits|fromUnits' on that.
+- feat!: Token 'name' was misused: Sometimes it was assumed to be a symbol and sometimes an ID. It has therefore been replaced by 'id' and 'symbol' in all relevant places. Configuration files have been converted to use the token instance ID's from the context-addresses package to avoid ambiguity among (1) different tokens with the same symbol and (2) multiple token instances such as 'USDC' (Circle issued) and 'USDC.e' (bridged from Ethereum).
+  - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. 'Mangrove.token()` will create an instance of the default token ID if found.
+- MangroveOrder
+  - feat: Add 'Market.updateRestingOrder' function which allows updating resting orders posted by 'MangroveOrder'
+  - feat: Add 'Market.retractRestingOrder' function for retracting resting orders posted by 'MangroveOrder'.
+  - feat: Calculate default offer provision for MangroveOrder based on a gasprice factor if provision is not provided.
+  - feat: Allow 'offerId' to be passed in to re-use an existing offer.
+- Kandel
+  - feat!: Introduce GeometricKandel classes
+  - feat!: Introduce 'populateGeometricDistribution' to populate geometric distribution respectively using reduced call data.
+  - feat!: Introduce 'populateGeneralDistribution' to populate arbitrary non-geometric distribution.
+  - feat!: Allow distribution parameters to be either price- or tick-based.
 
 # 1.4.30
 
