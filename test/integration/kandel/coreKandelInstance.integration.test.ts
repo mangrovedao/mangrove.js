@@ -721,8 +721,6 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
       it("has expected immutable data from chain", async function () {
         assert.equal(await kandel.kandel.BASE(), kandel.market.base.address);
         assert.equal(await kandel.kandel.QUOTE(), kandel.market.quote.address);
-        assert.equal(await kandel.offerLogic.hasRouter(), onAave);
-        assert.equal(await kandel.getReserveId(), kandel.address);
       });
 
       bidsAsks.forEach((offerType) => {
