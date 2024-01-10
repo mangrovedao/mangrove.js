@@ -1,6 +1,6 @@
 import Big from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import Market from "../market";
+import Market, { MangroveOrderType } from "../market";
 import { Bigish } from "../types";
 import logger from "./logger";
 import TradeEventManagement, {
@@ -307,6 +307,10 @@ class Trade {
             market: market,
             fillOrKill: params.fillOrKill ? params.fillOrKill : false,
             gasLowerBound: params.gasLowerBound ?? 0,
+            takerGivesLogic:
+              params.takerGivesLogic ?? ethers.constants.AddressZero,
+            takerWantsLogic:
+              params.takerWantsLogic ?? ethers.constants.AddressZero,
           },
           overrides,
         );
@@ -360,7 +364,7 @@ class Trade {
     if (offer === undefined) {
       throw Error(`No offer in market with id ${id}.`);
     }
-    if (offer.maker !== market.mgv.orderContract.address) {
+    if (offer.maker !== (market.mgv.orderContract as any).address) {
       throw Error(
         `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
       );
@@ -723,6 +727,31 @@ class Trade {
     return result;
   }
 
+  static toOrderType({
+    fok,
+    restingOrder,
+  }: {
+    fok: boolean;
+    restingOrder: boolean;
+  }): MangroveOrderType {
+    if (fok) return MangroveOrderType.FOK;
+    if (restingOrder) return MangroveOrderType.GTC;
+    return MangroveOrderType.IOC;
+  }
+
+  static toFokRestingOrderType(orderType: MangroveOrderType): {
+    fok: boolean;
+    restingOrder: boolean;
+  } {
+    switch (orderType) {
+      case MangroveOrderType.FOK:
+        return { fok: true, restingOrder: false };
+      case MangroveOrderType.GTC:
+        return { fok: false, restingOrder: true };
+      default:
+        return { fok: false, restingOrder: false };
+    }
+  }
   /**
    * Low level resting order.
    *
@@ -751,6 +780,8 @@ class Trade {
       restingParams: Market.RestingOrderParams | undefined;
       market: Market;
       gasLowerBound: ethers.BigNumberish;
+      takerGivesLogic: string;
+      takerWantsLogic: string;
     },
     overrides: ethers.Overrides,
   ): Promise<Market.Transaction<Market.OrderResult>> {
@@ -775,11 +806,15 @@ class Trade {
       [
         {
           olKey: olKey,
-          fillOrKill: fillOrKill,
           tick: maxTick,
           fillVolume: fillVolume,
           fillWants: fillWants,
-          restingOrder: !!restingOrderParams,
+          orderType: Trade.toOrderType({
+            fok: fillOrKill,
+            restingOrder: !!restingOrderParams,
+          }),
+          takerGivesLogic: market.base.address,
+          takerWantsLogic: market.quote.address,
           expiryDate: expiryDate,
           offerId:
             restingParams?.offerId === undefined ? 0 : restingParams.offerId,
@@ -892,7 +927,7 @@ class Trade {
     let provision = params.provision;
     if (!provision) {
       const mangroveOrder = market.mgv.offerLogic(
-        market.mgv.orderContract.address,
+        (market.mgv.orderContract as any).address,
       );
       provision = await mangroveOrder.getMissingProvision(
         market,

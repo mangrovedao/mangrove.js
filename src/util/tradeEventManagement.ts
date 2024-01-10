@@ -20,6 +20,7 @@ import {
 } from "../types/typechain/MangroveOrder";
 import { logger } from "./logger";
 import { CleanStartEvent } from "../types/typechain/IMangrove";
+import Trade from "./trade";
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
@@ -136,16 +137,19 @@ class TradeEventManagement {
     evt: MangroveOrderStartEvent,
     fillToken: Token,
   ): Market.OrderSummary {
+    const { fok, restingOrder } = Trade.toFokRestingOrderType(
+      evt.args.orderType,
+    );
     return this.createSummaryFromEvent(
       {
         args: {
           olKeyHash: evt.args.olKeyHash,
           taker: evt.args.taker,
-          fillOrKill: evt.args.fillOrKill,
+          fillOrKill: fok,
           tick: evt.args.tick,
           fillVolume: evt.args.fillVolume,
           fillWants: evt.args.fillWants,
-          restingOrder: evt.args.restingOrder,
+          restingOrder: restingOrder,
           restingOrderId: Semibook.rawIdToId(evt.args.offerId),
         },
       },

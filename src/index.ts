@@ -21,7 +21,6 @@ import GeometricKandelDistributionGenerator from "./kandel/geometricKandel/geome
 import KandelFarm from "./kandel/kandelFarm";
 import KandelSeeder from "./kandel/kandelSeeder";
 import CoreKandelInstance from "./kandel/coreKandelInstance";
-import OfferMaker from "./offerMaker";
 import { enableLogging } from "./util/logger";
 import configuration from "./configuration";
 import TickPriceHelper from "./util/tickPriceHelper";
@@ -53,7 +52,6 @@ export {
   KandelSeeder,
   CoreKandelInstance,
   GeometricKandelInstance,
-  OfferMaker,
   TickPriceHelper,
   enableLogging,
   configuration,
