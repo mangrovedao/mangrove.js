@@ -1045,11 +1045,14 @@ describe("Market integration tests suite", () => {
 
           if (forceRouting) {
             const orderLogic = mgvAdmin.offerLogic(mgv.orderContract.address);
-            const router = await orderLogic.contract.router();
+            const router = await orderLogic.contract.router(
+              await mgv.signer.getAddress(),
+            );
             await market.quote.approve(router);
             await market.base.approve(router);
 
-            await orderLogic.activate(["TokenA", "TokenB"]);
+            await orderLogic.activate("TokenA");
+            await orderLogic.activate("TokenB");
           }
 
           const maker = await mgvTestUtil.getAccount(

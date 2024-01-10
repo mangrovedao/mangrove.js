@@ -90,9 +90,12 @@ describe("RestingOrder", () => {
       gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
         mgv.network.name,
       );
-      router = (await orderLogic.router()) as AbstractRouter;
+      router = (await orderLogic.router(
+        await mgv.signer.getAddress(),
+      )) as AbstractRouter;
 
-      await w(orderLogic.activate(["TokenA", "TokenB"]));
+      await w(orderLogic.activate("TokenA"));
+      await w(orderLogic.activate("TokenB"));
 
       // minting As and Bs for test runner
       const me = await mgv.signer.getAddress();
@@ -339,7 +342,7 @@ describe("RestingOrder", () => {
         "Resting order was not posted",
       );
       const olKeyHash = mgv.getOlKeyHash(market.getOLKey("bids"));
-      const ttl = await mgv.orderContract.expiring(
+      const renegingCondition = await mgv.orderContract.reneging(
         olKeyHash!,
         orderResult.restingOrder ? orderResult.restingOrder.id : 0,
       );
@@ -415,7 +418,7 @@ describe("RestingOrder", () => {
       await (mgv.provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
 
       assert(
-        ttl.lt(
+        renegingCondition[0].lt(
           (await mgv.provider.getBlock(mgv.provider.getBlockNumber()))
             .timestamp,
         ),
