@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.0
+
 - Cross-cutting
   - Update licenses: All code is now licensed under the MIT License.
   - feat!: Use the new Mangrove core protocol and strats from the new @mangrovedao/mangrove-core and @mangrovedao/mangrove-strats packages. See their changelogs for details.
