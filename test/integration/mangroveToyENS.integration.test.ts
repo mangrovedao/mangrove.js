@@ -13,7 +13,7 @@ import node from "../../src/util/node";
 
 const defaultServerParams = {
   host: "127.0.0.1",
-  script: "MangroveJsDeploy",
+  script: "EmptyChainDeployer",
 };
 
 describe("Mangrove functionality", () => {

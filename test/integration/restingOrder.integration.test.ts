@@ -92,8 +92,6 @@ describe("RestingOrder", () => {
       );
       router = (await orderLogic.router()) as AbstractRouter;
 
-      await w(orderLogic.activate(["TokenA", "TokenB"]));
-
       // minting As and Bs for test runner
       const me = await mgv.signer.getAddress();
       await w(tokenA.contract.mintTo(me, utils.parseUnits("100", 18)));
