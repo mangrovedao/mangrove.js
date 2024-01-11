@@ -217,8 +217,8 @@ class LiquidityProvider {
     } else if ("price" in p) {
       // deduce tick & gives from volume & price
       const price = Big(p.price);
-      // round down to ensure price is not exceeded
-      tick = tickPriceHelper.tickFromPrice(price, "roundDown");
+      // round up to ensure we get at least the tick we want
+      tick = tickPriceHelper.tickFromPrice(price, "roundUp");
       if (p.ba === "bids") {
         gives = Big(p.volume).mul(price);
       } else {
