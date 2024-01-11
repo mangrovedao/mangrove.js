@@ -31,11 +31,18 @@ class Trade {
     params: Market.TradeParams,
     market: Market.KeyResolvedForCalculation,
   ) {
-    const ba: Market.BA = "asks";
-    const bs = "buy";
+    return this.getParamsForTrade(params, market, "buy");
+  }
+
+  getParamsForTrade(
+    params: Market.TradeParams,
+    market: Market.KeyResolvedForCalculation,
+    bs: Market.BS,
+  ) {
     let fillVolume: Big,
       maxTick: number,
-      fillWants: boolean = true;
+      fillWants: boolean = bs === "buy";
+    const ba = this.bsToBa(bs);
     const slippage = this.validateSlippage(params.slippage);
     const tickPriceHelper = new TickPriceHelper(ba, market);
     if ("limitPrice" in params) {
@@ -66,7 +73,7 @@ class Trade {
         // round down to not exceed the price when buying, and up to get at least price for when selling
         const limitPrice = tickPriceHelper.priceFromTick(
           params.maxTick,
-          ba === "asks" ? "roundDown" : "roundUp",
+          bs === "buy" ? "roundDown" : "roundUp",
         );
         const limitPriceWithSlippage = this.adjustForSlippage(
           limitPrice,
@@ -85,7 +92,7 @@ class Trade {
     } else {
       let wants = Big(params.wants);
       let gives = Big(params.gives);
-      if (ba === "asks") {
+      if (bs === "buy") {
         gives = this.adjustForSlippage(gives, slippage, bs);
       } else {
         wants = this.adjustForSlippage(wants, slippage, bs);
@@ -136,86 +143,7 @@ class Trade {
     params: Market.TradeParams,
     market: Market.KeyResolvedForCalculation,
   ) {
-    const ba: Market.BA = "bids";
-    const bs = "sell";
-    let fillVolume: Big,
-      maxTick: number,
-      fillWants: boolean = false;
-    const slippage = this.validateSlippage(params.slippage);
-    const tickPriceHelper = new TickPriceHelper(ba, market);
-    if ("limitPrice" in params) {
-      if (Big(params.limitPrice).lte(0)) {
-        throw new Error("Cannot buy at or below price 0");
-      }
-      const limitPriceWithSlippage = this.adjustForSlippage(
-        Big(params.limitPrice),
-        slippage,
-        bs,
-      );
-      // round down to not exceed the price
-      maxTick = tickPriceHelper.tickFromPrice(
-        limitPriceWithSlippage,
-        "roundDown",
-      );
-      if ("volume" in params) {
-        fillVolume = Big(params.volume);
-      } else {
-        fillVolume = Big(params.total);
-        fillWants = !fillWants;
-      }
-    } else if ("maxTick" in params) {
-      // in this case, we're merely asking to get the tick adjusted for slippage
-      fillVolume = Big(params.fillVolume);
-      fillWants = params.fillWants ?? fillWants;
-      if (slippage > 0) {
-        // round down to not exceed the price when buying, and up to get at least price for when selling
-        const limitPrice = tickPriceHelper.priceFromTick(
-          params.maxTick,
-          ba === "asks" ? "roundDown" : "roundUp",
-        );
-        const limitPriceWithSlippage = this.adjustForSlippage(
-          limitPrice,
-          slippage,
-          bs,
-        );
-        // round down to not exceed the price expectations
-        maxTick = tickPriceHelper.tickFromPrice(
-          limitPriceWithSlippage,
-          "roundDown",
-        );
-      } else {
-        // if slippage is 0, we don't need to do anything
-        maxTick = params.maxTick;
-      }
-    } else {
-      let wants = Big(params.wants);
-      let gives = Big(params.gives);
-      if (ba === "asks") {
-        gives = this.adjustForSlippage(gives, slippage, bs);
-      } else {
-        wants = this.adjustForSlippage(wants, slippage, bs);
-      }
-      fillWants = params.fillWants ?? fillWants;
-      fillVolume = fillWants ? wants : gives;
-      // round down to not exceed the price expectations
-      maxTick = tickPriceHelper.tickFromVolumes(gives, wants, "roundDown");
-    }
-
-    return {
-      maxTick,
-      fillVolume: fillWants
-        ? Market.getOutboundInbound(
-            ba,
-            market.base,
-            market.quote,
-          ).outbound_tkn.toUnits(fillVolume)
-        : Market.getOutboundInbound(
-            ba,
-            market.base,
-            market.quote,
-          ).inbound_tkn.toUnits(fillVolume),
-      fillWants: fillWants,
-    };
+    return this.getParamsForTrade(params, market, "sell");
   }
 
   validateSlippage = (slippage = 0) => {
