@@ -86,6 +86,9 @@ contract EmptyChainDeployer is Deployer {
 
     MangroveOrderDeployer mangroveDeployer = new MangroveOrderDeployer();
     mangroveDeployer.innerRun({admin: broadcaster(), mgv: IMangrove(payable(mgv))});
+    MangroveOrder mangroveOrder = MangroveOrder(fork.get("MangroveOrder"));
+    broadcast();
+    mangroveOrder.activate(dynamic([IERC20(tokenA), IERC20(tokenB)]));
 
     address[] memory underlying = dynamic([address(tokenA), address(tokenB), dai, usdc, weth]);
     broadcast();
