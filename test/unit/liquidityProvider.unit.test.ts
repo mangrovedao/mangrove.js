@@ -74,7 +74,7 @@ describe("Liquidity provider unit tests suite", () => {
     );
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, -276400);
+    assert.deepStrictEqual(tick, -276300);
   });
 
   it("normalizeOfferParams, with volume and price 1, as bids", async function () {
@@ -92,7 +92,7 @@ describe("Liquidity provider unit tests suite", () => {
     );
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, 276324);
+    assert.deepStrictEqual(tick, 276325);
   });
 
   it("normalizeOfferParams, with volume and price 2, as asks", async function () {
@@ -110,7 +110,7 @@ describe("Liquidity provider unit tests suite", () => {
     );
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, 6931);
+    assert.deepStrictEqual(tick, 6932);
   });
 
   it("normalizeOfferParams, with volume and price 2, as bids", async function () {
@@ -128,7 +128,7 @@ describe("Liquidity provider unit tests suite", () => {
     );
     assert.deepStrictEqual(gives, Big(2));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, -6932);
+    assert.deepStrictEqual(tick, -6931);
   });
 
   it("normalizeOfferParams, with volume and price 2, as asks", async function () {
@@ -146,7 +146,7 @@ describe("Liquidity provider unit tests suite", () => {
     );
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, 6931);
+    assert.deepStrictEqual(tick, 6932);
   });
 
   it("normalizeOfferParams, with volume and price 2, as bids", async function () {
@@ -164,7 +164,7 @@ describe("Liquidity provider unit tests suite", () => {
     );
     assert.deepStrictEqual(gives, Big(2));
     assert.deepStrictEqual(fund, undefined);
-    assert.deepStrictEqual(tick, -6932);
+    assert.deepStrictEqual(tick, -6931);
   });
 
   it("normalizeOfferParams, with gives and wants, as bids", async function () {
