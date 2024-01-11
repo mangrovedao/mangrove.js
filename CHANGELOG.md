@@ -1,5 +1,7 @@
 # Next version
 
+- feat: Moved MangroveJsDeploy from mangrove-strats to this package. Renamed script to EmptyChainDeployer
+
 # 2.0.0
 
 - Cross-cutting
