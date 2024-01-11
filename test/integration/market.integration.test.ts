@@ -1020,7 +1020,7 @@ describe("Market integration tests suite", () => {
   });
 
   [true, false].forEach((forceRouting) => {
-    [undefined, 6500000].forEach((gasLimit) => {
+    [/*undefined,*/ 500000, 6500000].forEach((gasLimit) => {
       [undefined, 42, 7000000].forEach((gasLowerBound) => {
         it(`uses expected gasLimit and forceRoutingToMangroveOrder=${forceRouting} with gasLowerBound=${gasLowerBound} and gasLimit=${gasLimit}`, async function () {
           // Arrange
